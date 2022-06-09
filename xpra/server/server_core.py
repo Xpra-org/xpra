@@ -19,7 +19,7 @@ from time import sleep, time, monotonic
 from threading import Thread, Lock
 
 from xpra.version_util import (
-    XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
+    XPRA_VERSION, version_str, full_version_str, version_compat_check, get_version_info_full,
     get_platform_info, get_host_info,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
@@ -1848,7 +1848,7 @@ class ServerCore:
     def send_version_info(self, proto, full=False):
         version = XPRA_VERSION
         if full:
-            version = full_version_str()
+            version = version_str()
         proto.send_now(("hello", {"version" : version}))
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")

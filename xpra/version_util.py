@@ -33,9 +33,20 @@ def warn(msg, *args, **kwargs):
     get_util_logger().warn(msg, *args, **kwargs)
 
 
-def full_version_str() -> str:
+def version_str() -> str:
     rstr = revision_str()
     return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
+
+def full_version_str() -> str:
+    rstr = version_str()
+    try:
+        from xpra.src_info import BRANCH
+    except ImportError:
+        pass
+    else:
+        if BRANCH=="master":
+            rstr += " beta"
+    return rstr
 
 def caps_to_version(caps : typedict) -> str:
     return caps.strget("version", "0")+"-"+caps_to_revision(caps)

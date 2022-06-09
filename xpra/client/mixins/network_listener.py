@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -7,7 +7,7 @@
 import os
 import sys
 
-from xpra.version_util import full_version_str
+from xpra.version_util import version_str
 from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR
 from xpra.os_util import bytestostr, get_machine_id
 from xpra.net.bytestreams import log_new_connection
@@ -196,7 +196,7 @@ class NetworkListener(StubClientMixin):
                 proto.send_disconnect([DETACH_REQUEST], done_callback=protocol_closed)
                 return
             elif request=="version":
-                hello_reply({"version" : full_version_str()})
+                hello_reply({"version" : version_str()})
             elif request in ("show-menu", "show-about", "show-session-info"):
                 fn = getattr(self, request.replace("-", "_"), None)
                 log.info("fn=%s", fn)
