@@ -1096,12 +1096,6 @@ class KeyboardWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
-        if POSIX and not OSX:
-            try:
-                from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-                init_gdk_display_source()
-            except Exception:
-                pass
         from xpra.platform.keyboard import Keyboard
         kbd = Keyboard()  #pylint: disable=not-callable
         layouts = {
@@ -1207,8 +1201,10 @@ def main(options=None): # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
+    from xpra.gtk_common.gtk_util import init_display_source
     with program_context("xpra-start-gui", "Xpra Start GUI"):
         enable_color()
+        init_display_source()
         init()
         gui = StartSession(options)
         register_os_signals(gui.app_signal)

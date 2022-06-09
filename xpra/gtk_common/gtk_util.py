@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
-from xpra.os_util import strtobytes, WIN32, OSX, POSIX
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
@@ -719,6 +719,16 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
     if callback:
         callback(filename)
     return filename
+
+
+def init_display_source():
+    """
+    On X11, we want to be able to access the bindings
+    so we need to get the X11 display from GDK.
+    """
+    if is_X11():
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
 
 
 def main():

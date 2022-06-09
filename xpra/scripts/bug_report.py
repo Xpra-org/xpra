@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,17 +8,13 @@ import sys
 
 
 def main(argv=()):
-    from xpra.os_util import POSIX, OSX
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
+    from xpra.gtk_common.gtk_util import init_display_source
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
         enable_color()
-
-        if POSIX and not OSX:
-            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-            init_gdk_display_source()
-
+        init_display_source()
         set_default_icon("bugs.png")
         init()
 

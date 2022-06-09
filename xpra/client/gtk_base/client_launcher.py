@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2009-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -1095,10 +1095,9 @@ def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready
+    from xpra.gtk_common.gtk_util import init_display_source
 
-    if is_X11():
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
+    init_display_source()
 
     gui_init()
     try:

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -501,8 +501,6 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
 
 def _send_client_message(window, message_type, *values):
     try:
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
         from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()

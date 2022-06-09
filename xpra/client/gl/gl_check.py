@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -426,6 +426,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
 def main():
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
+    from xpra.gtk_common.gtk_util import init_display_source
     from xpra.util import print_nested_dict
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
@@ -434,9 +435,7 @@ def main():
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
-        if POSIX and not OSX:
-            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-            init_gdk_display_source()
+        init_display_source()
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
         log("testing %s", GLContext)

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 
 import sys
 from collections import deque
 
 from xpra.util import csv
-from xpra.os_util import POSIX, OSX, bytestostr
+from xpra.os_util import bytestostr
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 
@@ -164,6 +164,7 @@ class KeyboardStateInfoWindow:
 def main():
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
+    from xpra.gtk_common.gtk_util import init_display_source
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
 
@@ -175,9 +176,7 @@ def main():
             Gtk.main_quit()
         register_os_signals(signal_handler, "test window")
 
-        if POSIX and not OSX:
-            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-            init_gdk_display_source()
+        init_display_source()
         w = KeyboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
         Gtk.main()
