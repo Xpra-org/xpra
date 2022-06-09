@@ -43,7 +43,7 @@ def init_gdk_display_source():
     import os
     backend = os.environ.get("GDK_BACKEND", "")
     if backend!="x11" and not is_X11():
-        raise InitException("cannot use X11 bindings with %s and GTK3 (buggy)" % (backend,))
+        raise InitException("cannot use X11 bindings with %r and GTK3 (buggy)" % (backend,))
     if display:
         return
     from gi.repository import Gdk
