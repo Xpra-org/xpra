@@ -201,7 +201,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Fri Jun 10 2021 Antoine Martin <antoine@xpra.org> 5.0.1-2
+* Fri Jun 10 2022 Antoine Martin <antoine@xpra.org> 5.0.1-2
 - workaround Fedora 36 LTO breakage
 
 * Wed Apr 13 2022 Antoine Martin <antoine@xpra.org> 5.0.1-1
