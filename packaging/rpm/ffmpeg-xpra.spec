@@ -1,6 +1,9 @@
 %define _build_id_links none
 %define _disable_source_fetch 0
 %global __requires_exclude ^libx264.so.*$
+%if 0%{?fedora}>=36
+%global _lto_cflags %nil
+%endif
 
 %define libva 1
 %if 0%{?el9}
@@ -198,6 +201,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Jun 10 2021 Antoine Martin <antoine@xpra.org> 5.0.1-2
+- workaround Fedora 36 LTO breakage
+
 * Wed Apr 13 2022 Antoine Martin <antoine@xpra.org> 5.0.1-1
 - new upstream release
 
