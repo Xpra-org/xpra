@@ -45,7 +45,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %{python3_sitelib}/__pycache__/pynvml*
 %{python3_sitelib}/pynvml.py*
-%{python3_sitelib}/nvidia_ml_py-%{version}?-py*.egg-info
+%{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
 * Fri Jun 10 2022 Antoine Martin <antoine@xpra.org> - 11.515.48-1
