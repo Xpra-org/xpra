@@ -28,7 +28,7 @@ BuildRequires:	gcc-c++
 #CentOS 8 ships cmake with broken dependencies, fix it:
 BuildRequires:	libarchive
 %endif
-%if !0%{?el9}
+%if !0%{?el8}%{?el9}
 BuildRequires:	gtest-devel
 %endif
 

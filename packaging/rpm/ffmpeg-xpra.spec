@@ -1,6 +1,9 @@
 %define _build_id_links none
 %define _disable_source_fetch 0
 %global __requires_exclude ^libx264.so.*$
+%if 0%{?fedora}>=36
+%global _lto_cflags %nil
+%endif
 
 %define libva 1
 %if 0%{?el9}
@@ -11,8 +14,8 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.4.1
-Release:     3%{?dist}
+Version:     5.0.1
+Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -56,7 +59,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "eadbad9e9ab30b25f5520fbfde99fae4a92a1ae3c0257a8d68569a4651e30e02" ]; then
+if [ "${sha256}" != "ef2efae259ce80a240de48ec85ecb062cecca26e4352ffb3fda562c21a93007b" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -198,6 +201,15 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Jun 10 2022 Antoine Martin <antoine@xpra.org> 5.0.1-2
+- workaround Fedora 36 LTO breakage
+
+* Wed Apr 13 2022 Antoine Martin <antoine@xpra.org> 5.0.1-1
+- new upstream release
+
+* Sat Jan 15 2022 Antoine Martin <antoine@xpra.org> 5.0-1
+- new upstream release
+
 * Wed Dec 15 2021 Antoine Martin <antoine@xpra.org> 4.4.1-3
 - force rebuild against updated libx264 (again - x264 did not build)
 
