@@ -17,14 +17,14 @@ from xpra.x11.bindings.xlib cimport (
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
     )
-from xpra.util import envint, envbool, csv, first_time, decode_str, prettify_plug_name
+from xpra.util import envint, envbool, envfloat, csv, first_time, decode_str, prettify_plug_name
 from xpra.os_util import strtobytes, bytestostr
 
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 GAMMA = envbool("XPRA_RANDR_GAMMA", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
-IDEAL_VSYNC = envint("XPRA_IDEAL_VSYNC", 50.0)
+IDEAL_VSYNC = envfloat("XPRA_IDEAL_VSYNC", 50.0)
 assert MAX_NEW_MODES>=2
 
 
