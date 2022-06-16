@@ -17,13 +17,14 @@ from xpra.x11.bindings.xlib cimport (
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
     )
-from xpra.util import envint, envbool, csv, first_time, decode_str, prettify_plug_name
+from xpra.util import envint, envbool, envfloat, csv, first_time, decode_str, prettify_plug_name
 from xpra.os_util import strtobytes, bytestostr
 
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 GAMMA = envbool("XPRA_RANDR_GAMMA", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
+IDEAL_VSYNC = envfloat("XPRA_IDEAL_VSYNC", 50.0)
 assert MAX_NEW_MODES>=2
 
 
@@ -577,7 +578,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef unsigned int maxHSync = 300*1000                   #300KHz
         cdef unsigned int minVSync = 1                          #1Hz
         cdef unsigned int maxVSync = 300                        #30Hz
-        cdef double idealVSync = 50.0
+        cdef double idealVSync = IDEAL_VSYNC
         cdef double timeHFront = 0.07           #0.074219; 0.075; Width of the black border on right edge of the screen
         cdef double timeHSync = 0.1             #0.107422; 0.1125; Sync pulse duration
         cdef double timeHBack = 0.15            #0.183594; 0.1875; Width of the black border on left edge of the screen
