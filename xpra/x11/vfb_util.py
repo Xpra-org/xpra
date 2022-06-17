@@ -29,6 +29,7 @@ from xpra.log import Logger
 
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
+XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
 def parse_resolution(s):
@@ -158,8 +159,12 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
         raise InitException("the 'xvfb' command is not defined")
 
     log = get_vfb_logger()
-    log("start_Xvfb%s", (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid))
+    log("start_Xvfb%s XVFB_EXTRA_ARGS=%s",
+        (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
+        XVFB_EXTRA_ARGS)
     use_display_fd = display_name[0]=='S'
+    if XVFB_EXTRA_ARGS:
+        xvfb_str += " "+XVFB_EXTRA_ARGS
 
     subs = {}
     def pathexpand(s):
