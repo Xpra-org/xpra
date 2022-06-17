@@ -242,7 +242,7 @@ SWITCHES = [
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "spng_decoder", "spng_encoder", "jpeg_encoder", "jpeg_decoder",
-    "nvjpeg",
+    "nvjpeg", "avif",
     "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
