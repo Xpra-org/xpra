@@ -21,6 +21,7 @@ from xpra.log import Logger
 
 log = Logger("menu")
 
+MENU_WATCHER = envbool("XPRA_MENU_WATCHER", True)
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
 
@@ -63,7 +64,8 @@ class MenuProvider:
     def setup(self):
         if OSX or not EXPORT_XDG_MENU_DATA:
             return
-        self.setup_menu_watcher()
+        if MENU_WATCHER:
+            self.setup_menu_watcher()
         self.load_menu_data()
 
     def cleanup(self):
