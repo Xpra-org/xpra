@@ -4,12 +4,12 @@
 %global debug_package %{nil}
 
 Name:           python2-pbr
-Version:        5.6.0
+Version:        5.8.0
 Release:        1.xpra1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
-Source0:        https://files.pythonhosted.org/packages/35/8c/69ed04ae31ad498c9bdea55766ed4c0c72de596e75ac0d70b58aa25e0acf/pbr-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/f5/0c/3fa7b1f9006e4d454a49b48eac995167cf8617e19375c6963a6b048af0d0/pbr-%{version}.tar.gz
 BuildRequires:  python2
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
@@ -19,7 +19,7 @@ PBR is a library that injects some useful and sensible default behaviors into yo
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "42df03e7797b796625b1029c0400279c7c34fd7df24a7d7818a1abb5b38710dd" ]; then
+if [ "${sha256}" != "672d8ebee84921862110f23fcec2acea191ef58543d34dfe9ef3d9f13c31cddf" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi 
@@ -37,6 +37,9 @@ mv %{buildroot}/usr/bin/pbr %{buildroot}/usr/bin/python2-pbr
 %{_bindir}/python2-pbr
 
 %changelog
+* Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> - 5.8.0-1
+- new upstream release
+
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 5.6.0-1.xpra1
 - verify source checksum
 
