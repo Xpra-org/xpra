@@ -31,7 +31,7 @@ from xpra.gtk_common.gtk_util import (
     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX, PYTHON3, POSIX
+from xpra.os_util import WIN32, OSX, PYTHON3, is_X11
 from xpra.make_thread import start_thread
 from xpra.client.gtk_base.gtk_tray_menu_base import (
     make_min_auto_menu, make_encodingsmenu,
@@ -1183,7 +1183,7 @@ def do_main(argv):
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     from xpra.platform.gui import init as gui_init, ready as gui_ready
 
-    if POSIX and not OSX:
+    if is_X11():
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
 
