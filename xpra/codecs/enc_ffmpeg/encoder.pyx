@@ -931,7 +931,10 @@ def init_module():
                 log.warn(" %s", e)
     CODECS = tuple(all_codecs)
 
-VAAPI_ENCODINGS = os.environ.get("XPRA_VAAPI_ENCODINGS", "h264,hevc,mpeg2,vp8,vp9").split(",")
+# hevc causes problems, so it is not included by default
+# see #3556 for details
+VAAPI_ENCODINGS = os.environ.get("XPRA_VAAPI_ENCODINGS", "h264,mpeg2,vp8,vp9").split(",")
+
 
 def init_vaapi():
     global VAAPI_CODECS
