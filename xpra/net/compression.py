@@ -16,7 +16,7 @@ MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)
 MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ("zlib", "lz4", "brotli", "none")
+ALL_COMPRESSORS = ("lz4", "zlib", "brotli", "none")
 #order for performance:
 PERFORMANCE_ORDER = ("none", "lz4", "zlib", "brotli")
 #require compression (disallow 'none'):
