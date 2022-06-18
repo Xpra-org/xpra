@@ -1,13 +1,16 @@
 # Changelog
 
-## [4.3.4] 2022-05-24
+## [4.3.4] 2022-06-18
 * major bugs:
+	* audio not starting with some packet encoders
 	* opening files with special characters remotely
 	* always free X11 images safely
 	* GDK crash when updating parked windows geometry
 	* webcam forwarding with older clients
+	* launcher gui initialization error on Wayland
+	* attach=yes failing with an invalid command line
 * minor:
-	* extra file transfers safety checks
+	* extra file transfers safety checks, fix existing one
 	* support CSP headers for stream saver of html5 client version 6
 	* always expose the server socket in the session environment
 * build:
@@ -16,10 +19,13 @@
 	* build using CUDA 11.7
 	* honour the CPP build environment variable
 	* use the correct license short names
+	* clean target left some generated files behind
+	* library updates: Cython, pynvml, etc
 * cosmetic:
 	* jpeg cleanup warnings
 	* errno Cython source name conflict
 	* include details in conversion failure messages
+	* double error in file transfer sanity checks
 
 ## [4.3.3] 2022-04-28
 * major bugs:

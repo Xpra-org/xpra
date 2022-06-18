@@ -1,11 +1,14 @@
 xpra (4.3.4-1) UNRELEASED; urgency=low
   * major bugs:
+    - audio not starting with some packet encoders
     - opening files with special characters remotely
     - always free X11 images safely
     - GDK crash when updating parked windows geometry
     - webcam forwarding with older clients
+    - launcher gui initialization error on Wayland
+    - attach=yes failing with an invalid command line
   * minor:
-    - extra file transfers safety checks
+    - extra file transfers safety checks, fix existing one
     - support CSP headers for stream saver of html5 client version 6
     - always expose the server socket in the session environment
   * build:
@@ -14,12 +17,15 @@ xpra (4.3.4-1) UNRELEASED; urgency=low
     - build using CUDA 11.7
     - honour the CPP build environment variable
     - use the correct license short names
+    - clean target left some generated files behind
+    - library updates: Cython, pynvml, etc
   * cosmetic:
     - jpeg cleanup warnings
     - errno Cython source name conflict
     - include details in conversion failure messages
+    - double error in file transfer sanity checks
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 24 May 2022 16:24:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 18 Jun 2022 21:30:40 +0700
 
 xpra (4.3.3-1) UNRELEASED; urgency=low
   * major bugs:
