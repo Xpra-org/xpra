@@ -6,6 +6,7 @@
 #include "libavcodec/version.h"
 #include "libavformat/avformat.h"
 
+// The only distro still requiring this workaround is Ubuntu Bionic
 void register_all(void) {
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
      av_register_all();
