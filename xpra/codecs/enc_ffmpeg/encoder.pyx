@@ -1617,11 +1617,11 @@ cdef class Encoder:
         if self.muxer_format:
             info["muxer"] = self.muxer_format
         if self.video_codec:
-            info["video-codec"] = self.video_codec.name[:]
-            info["video-description"] = self.video_codec.long_name[:]
+            info["video-codec"] = bytestostr(self.video_codec.name[:])
+            info["video-description"] = bytestostr(self.video_codec.long_name[:])
         if self.audio_codec:
-            info["audio-codec"] = self.audio_codec.name[:]
-            info["audio-description"] = self.audio_codec.long_name[:]
+            info["audio-codec"] = bytestostr(self.audio_codec.name[:])
+            info["audio-description"] = bytestostr(self.audio_codec.long_name[:])
         if self.src_format:
             info["src_format"] = self.src_format
         if not self.is_closed():
