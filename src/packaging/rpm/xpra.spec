@@ -897,29 +897,59 @@ fi
 
 %changelog
 * Thu Feb 10 2022 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
-- handling of packet parsing errors
-- packaging fixes:
+- major fixes:
+    GDK crash when updating parked windows geometry
+    always free X11 images safely
+    MS Windows clients mishandling some window hints (ie: Firefox)
+    connection errors when non-user-interactive clients are connected
+    filenames with special characters when opened remotely
+    missing notifications due to icon parsing errors
+    handling of packet parsing errors
+    bencoder error when cuda info is missing
+    missing auto-refresh
+    'Content-Security-Policy' fixes and workarounds for Safari, xpra-html5 v6
+    keyboard mapping not honouring the more specific keymap definition
+    honour system prefix when loading xkb keymaps
+    launcher gui initialization error on Wayland
+    audio and webcam not starting with some packet encoders
+- build and packaging:
+    build using CUDA 11.7 by default, compile as C++11
+    clean target left some generated files behind
     dependency updates
     package updates: pynvml, cython
     MacOS new package signing key
     ffmpeg 5.0 compatibility
-- clipboard errors with MS Windows clients and UTF8 data
-- workaround for missing video mode client metadata
-- store and send client properties as strings
-- missing auto-refresh
-- server errors on encoding change (ie: client tray menu)
-- configurable ping timeout delay
-- 'Content-Security-Policy' fixes and workarounds for Safari
-- silence spurious authentication modules warnings
- 'xpra showsetting' subcommand errors
-- keyboard mapping not honouring the more specific keymap definition
-- honour system prefix when loading xkb keymaps
-- clipboard error messages when there is no client handling it
-- disable vaapi with the ffmpeg encoder (crashy)
-- handle grayscale png images with transparency
-- don't send empty alpha channel
-- build using CUDA 11.6 by default, compile as C++11
-- logging tweaks and fixes
+    library updates: Cython, pynvml, etc
+    content type updates: `unityhub` is a browser, `ffplay` is video
+- minor bugs and tweaks:
+    clipboard errors with MS Windows clients and UTF8 data
+    server errors on encoding change (ie: client tray menu)
+    store and send client properties as strings
+    configurable ping timeout delay
+    make it possible to run the client without some cython extensions
+    'xpra showsetting' subcommand errors
+    always expose the server socket location
+    make socket querying code more resilient
+    potential race conditions with xpra info requests
+- cosmetic:
+    more understandable error message when ssh fails to connect
+    during shutdown, ignore errors trying to set nodelay / cork
+    clipboard error messages when there is no client handling it
+    avoid warnings triggered by Pillow v9
+    show disabled menu entries in MacOS menus with GTK3 builds
+    codec loader output was ignoring standard log output format
+    silence spurious authentication modules warnings
+    always log the full backtrace for client connection errors
+    use the correct license short names
+    nvml version query error
+    misc logging tweaks and fixes
+- encodings:
+    disable vaapi with the ffmpeg encoder (crashy)
+    handle grayscale png images with transparency
+    workaround for missing video mode client metadata
+    don't send empty alpha channel
+    never delay screen updates unless we have a video region
+    jpeg decoder generated invalid picture metadata
 
 * Tue Oct 19 2021 Antoine Martin <antoine@xpra.org> 3.1.2-10.1xpra1
 - encoding errors with vpx
