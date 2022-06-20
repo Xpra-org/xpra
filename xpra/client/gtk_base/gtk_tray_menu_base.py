@@ -9,7 +9,7 @@ import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
-from xpra.os_util import bytestostr, OSX, WIN32, PYTHON2,
+from xpra.os_util import bytestostr, OSX, WIN32, PYTHON2
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
     get_pixbuf_from_data, scaled_image,
