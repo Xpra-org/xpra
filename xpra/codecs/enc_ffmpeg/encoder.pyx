@@ -286,7 +286,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_AAC
 
     #init and free:
-    AVCodec *avcodec_find_encoder(AVCodecID id)
+    const AVCodec *avcodec_find_encoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
     int avcodec_send_frame(AVCodecContext *avctx,const AVFrame *frame) nogil
@@ -743,7 +743,7 @@ cdef class Encoder(object):
     cdef object muxer_format
     cdef object file
     #video:
-    cdef AVCodec *video_codec
+    cdef const AVCodec *video_codec
     cdef AVStream *video_stream
     cdef AVCodecContext *video_ctx
     cdef AVPixelFormat pix_fmt
@@ -755,7 +755,7 @@ cdef class Encoder(object):
     cdef object encoding
     cdef object profile
     #audio:
-    cdef AVCodec *audio_codec
+    cdef const AVCodec *audio_codec
     cdef AVStream *audio_stream
     cdef AVCodecContext *audio_ctx
     cdef uint8_t ready
