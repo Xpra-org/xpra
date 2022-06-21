@@ -1384,7 +1384,7 @@ cdef class Encoder:
             raise Exception("failed to allocate video codec context!")
         list_options(self.video_ctx, self.video_ctx.av_class)
         cdef int b_frames = 0
-        self.video_ctx.global_quality = 0
+        self.video_ctx.global_quality = 20*self.vaapi
         #we need a framerate.. make one up:
         self.video_ctx.framerate.num = 25
         self.video_ctx.framerate.den = 1
