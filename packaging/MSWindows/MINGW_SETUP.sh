@@ -42,6 +42,11 @@ $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rs
 for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
+#dependencies of browser_cookie3 and pycuda,
+#best to manage them via pacman rather than have them installed via pip
+for x in pycryptodome mako markupsafe typing_extensions; do
+	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
+done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #this needs to be converted to a PKGBUILD:
