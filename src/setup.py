@@ -2304,6 +2304,8 @@ if pillow_ENABLED:
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
     webp_pkgconfig = pkgconfig("libwebp")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(vsock_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.codecs.webp.encoder",
                     ["xpra/codecs/webp/encoder.pyx"],
                     **webp_pkgconfig))
