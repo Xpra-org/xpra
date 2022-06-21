@@ -1855,18 +1855,24 @@ if x11_ENABLED:
                 ["xpra/x11/bindings/core_bindings.pyx"],
                 **pkgconfig("x11")
                 ))
+    pds_pkgconfig = pkgconfig("x11")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(pds_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.x11.bindings.posix_display_source",
                 ["xpra/x11/bindings/posix_display_source.pyx"],
-                **pkgconfig("x11")
+                **pds_pkgconfig
                 ))
 
     cython_add(Extension("xpra.x11.bindings.randr_bindings",
                 ["xpra/x11/bindings/randr_bindings.pyx"],
                 **pkgconfig("x11", "xrandr")
                 ))
+    kbd_pkgconfig = pkgconfig("x11", "xtst", "xfixes", "xkbfile")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(kbd_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.x11.bindings.keyboard_bindings",
                 ["xpra/x11/bindings/keyboard_bindings.pyx"],
-                **pkgconfig("x11", "xtst", "xfixes", "xkbfile")
+                **kbd_pkgconfig
                 ))
 
     cython_add(Extension("xpra.x11.bindings.window_bindings",
@@ -2069,6 +2075,8 @@ if server_ENABLED or shadow_ENABLED:
 
 if sd_listen_ENABLED:
     sdp = pkgconfig("libsystemd")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(sdp, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.platform.xposix.sd_listen",
                 ["xpra/platform/xposix/sd_listen.pyx"],
                 **sdp))
@@ -2081,6 +2089,8 @@ if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     if WIN32:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     if not PYTHON3 and get_gcc_version()>=[8, 0]:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=register")
     platform = sys.platform.rstrip("0123456789")
@@ -2265,6 +2275,8 @@ if nvenc_ENABLED:
         #older versions emit spurious warnings:
         print("Warning: using workaround for outdated version of cython")
         add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
                          ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
                          **nvenc_pkgconfig))
@@ -2446,6 +2458,8 @@ if netdev_ENABLED:
 
 if vsock_ENABLED:
     vsock_pkgconfig = pkgconfig()
+    if get_gcc_version()<=[5, ]:
+        add_to_keywords(vsock_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     cython_add(Extension("xpra.net.vsock",
                 ["xpra/net/vsock.pyx"],
                 **vsock_pkgconfig))
