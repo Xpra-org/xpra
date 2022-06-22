@@ -48,7 +48,7 @@ class Authenticator(SysAuthenticator):
             self.salt = client.prepare_request_uri(
                 authorization_url,
                 redirect_uri = self.redirect_uri,
-                scope = [self.redirect_uri],
+                scope = [self.scope],
             )
         except ImportError as e:    # pragma: no cover
             log("check(..)", exc_info=True)
