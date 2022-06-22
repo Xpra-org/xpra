@@ -124,8 +124,13 @@ class Authenticator(SysAuthenticator):
                               client_secret_key=self.client_id)
 
             # Get well_known
-            config_well_know = keycloak_openid.well_know()
-            log("well_known: %r", config_well_know, exc_info=True)
+            if hasattr(keycloak_openid, "well_known"):
+                #version 1.8 and later:
+                #https://github.com/marcospereirampj/python-keycloak/commit/6bfbd0d15fa5981f35e5a6866b3efd62ef0dc968
+                config_well_known = keycloak_openid.well_known()
+            else:
+                config_well_known = keycloak_openid.well_know()
+            log("well_known: %r", config_well_known)
 
             # Get token
             token = keycloak_openid.token(code=auth_code,
