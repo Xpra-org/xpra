@@ -1100,7 +1100,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 break
                         if not mode:
                             #try to find a screen mode not added to this output yet:
-                            mode_name = ""
                             for j in range(rsc.nmode):
                                 if (
                                     rsc.modes[j].width==match_mode.width and
