@@ -1053,8 +1053,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     log.error("Error: crtc %i not found (%#x)", i, crtc)
                     continue
                 try:
-                    if m.get("primary", False):
-                        primary = i
                     output_info = XRRGetOutputInfo(self.display, rsc, output)
                     if not output_info:
                         log.error("Error: output %i not found (%#x)", i, output)
@@ -1067,8 +1065,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         continue
                     noutput = 1
                     mode = 0
-                    x, y, width, height = m["geometry"]
+                    x, y, width, height = 0, 0, 1024, 768
                     if m:
+                        if m.get("primary", False):
+                            primary = i
+                        x, y, width, height = m["geometry"]
                         #find an existing mode matching this resolution:
                         for j in range(output_info.nmode):
                             #find this RRMode in the screen modes info:

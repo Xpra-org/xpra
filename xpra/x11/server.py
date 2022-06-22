@@ -317,37 +317,38 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     window.set_property("client-geometry", (x, y, w, h))
         with xlog:
             d16 = X11RandR.is_dummy16()
-            screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
-                  (desired_w, desired_h, bigger), self.randr, self.randr_exact_size, d16)
-            if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
-                #if we have a single UI client,
-                #see if we can emulate its monitor geometry exactly
-                sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-                screenlog("%i sources=%s", len(sss), sss)
-                if len(sss)==1:
-                    ss = sss[0]
-                    #perhaps it supplied its "monitors" definition?
-                    mdef = ss.monitors
-                    if not mdef:
-                        #no? try to extract it from the legacy "screen_sizes" data:
-                        #(ie: pre v4.4 clients)
-                        screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
-                        if ss.screen_sizes and len(ss.screen_sizes[0])>6:
-                            monitors = ss.screen_sizes[0][5]
-                            mdef = {}
-                            for i, m in enumerate(monitors):
-                                mdef[i] = {
-                                    "name"      : bytestostr(m[0]),
-                                    #"primary"?
-                                    #"automatic" : True?
-                                    "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
-                                    "width-mm"  : round(m[5]),
-                                    "height-mm" : round(m[6]),
-                                    }
-                    if mdef:
-                        screenlog("configuring %s", mdef)
+        screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
+              (desired_w, desired_h, bigger), self.randr, self.randr_exact_size, d16)
+        if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
+            #if we have a single UI client,
+            #see if we can emulate its monitor geometry exactly
+            sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+            screenlog("%i sources=%s", len(sss), sss)
+            if len(sss)==1:
+                ss = sss[0]
+                #perhaps it supplied its "monitors" definition?
+                mdef = ss.monitors
+                if not mdef:
+                    #no? try to extract it from the legacy "screen_sizes" data:
+                    #(ie: pre v4.4 clients)
+                    screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
+                    if ss.screen_sizes and len(ss.screen_sizes[0])>6:
+                        monitors = ss.screen_sizes[0][5]
+                        mdef = {}
+                        for i, m in enumerate(monitors):
+                            mdef[i] = {
+                                "name"      : bytestostr(m[0]),
+                                #"primary"?
+                                #"automatic" : True?
+                                "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
+                                "width-mm"  : round(m[5]),
+                                "height-mm" : round(m[6]),
+                                }
+                if mdef:
+                    screenlog("configuring %s", mdef)
+                    with xlog:
                         X11RandR.set_crtc_config(mdef)
-                        return (desired_w, desired_h)
+                    return (desired_w, desired_h)
         return super().set_screen_size(desired_w, desired_h, bigger)
 
 
