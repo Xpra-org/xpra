@@ -195,7 +195,7 @@ websockets_ENABLED      = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 #crashes on 32-bit windows:
-enc_x265_ENABLED        = (not WIN32) and pkg_config_ok("--exists", "x265")
+enc_x265_ENABLED        = False #(not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
 spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
