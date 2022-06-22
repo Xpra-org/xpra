@@ -1036,6 +1036,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log.error("Error: only %i outputs for %i monitors", rsc.noutput, count)
             return False
         cdef RRMode mode
+        cdef XRRModeInfo *match_mode = NULL
         cdef int nmonitors
         cdef RRCrtc crtc
         cdef XRRCrtcInfo *crtc_info = NULL
@@ -1077,11 +1078,19 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             primary = i
                         x, y, width, height = m["geometry"]
                         vrefresh = m.get("vertical-refresh", DEFAULT_VSYNC)
-                        #find an existing mode matching this resolution:
+                        mode_name = "%ix%i@%i" % (width, height, vrefresh)
+                        match_mode = self.calculate_mode(mode_name, width, height, vrefresh)
+                        assert match_mode, "no mode to match"
+                        #find an existing mode matching this resolution + vrefresh:
                         for j in range(output_info.nmode):
-                            #find this RRMode in the screen modes info:
+                            #find this exact RRMode in the screen modes info:
                             for k in range(rsc.nmode):
-                                if rsc.modes[k].id==output_info.modes[j] and rsc.modes[k].width==width and rsc.modes[k].height==height:
+                                if (
+                                    rsc.modes[k].id==output_info.modes[j] and
+                                    rsc.modes[k].width==match_mode.width and
+                                    rsc.modes[k].height==match_mode.height and
+                                    rsc.modes[k].dotClock==match_mode.dotClock
+                                    ):
                                     mode = output_info.modes[j]
                                     mode_name = bytestostr(rsc.modes[j].name)
                                     log("using existing output mode %r (%#x) for %ix%i",
@@ -1093,14 +1102,17 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             #try to find a screen mode not added to this output yet:
                             mode_name = ""
                             for j in range(rsc.nmode):
-                                if rsc.modes[j].width==width and rsc.modes[j].height==height:
+                                if (
+                                    rsc.modes[j].width==match_mode.width and
+                                    rsc.modes[j].height==match_mode.height and
+                                    rsc.modes[j].dotClock==match_mode.dotClock
+                                    ):
                                     mode = rsc.modes[j].id
                                     mode_name = bytestostr(rsc.modes[j].name)
                                     log("using screen mode %s (%#x) for %ix%i",
                                         mode_name, mode, width, height)
                                     break
                             if not mode:
-                                mode_name = "%ix%i@%i" % (width, height, vrefresh)
                                 #may have already been added:
                                 mode = new_modes.get(mode_name, 0)
                                 if not mode:
@@ -1109,6 +1121,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             assert mode!=0, "mode %ix%i@%i not found" % (width, height, vrefresh)
                             XRRAddOutputMode(self.display, output, mode)
                             log("mode %r (%#x) added to output %i (%i)", mode_name, mode, i, output)
+                        XRRFreeModeInfo(match_mode)
                     else:
                         noutput = 0
 
