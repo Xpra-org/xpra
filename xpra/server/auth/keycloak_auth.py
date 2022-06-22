@@ -88,8 +88,8 @@ class Authenticator(SysAuthenticator):
         if not isinstance(response, dict):
             log.error("Error: keycloak authentication failed")
             log.error(" invalid response received from authorization endpoint")
-            log("response is of type %r but dict type is required", type(response), exc_info=True)
-            log("failed to load response %r", response, exc_info=True)
+            log("response is of type %r but dict type is required", type(response))
+            log("failed to load response %r", response)
             return False
 
         log("check(%r)", response)
@@ -144,7 +144,7 @@ class Authenticator(SysAuthenticator):
                 return False
 
             token_info = keycloak_openid.introspect(access_token)
-            log("token_info: %r", token_info, exc_info=True)
+            log("token_info: %r", token_info)
 
             token_state = token_info.get("active")
             if token_state is None:
@@ -160,7 +160,7 @@ class Authenticator(SysAuthenticator):
                 return False
 
             user_info = keycloak_openid.userinfo(access_token)
-            log("userinfo_info: %r", user_info, exc_info=True)
+            log("userinfo_info: %r", user_info)
             log("keycloak authentication succeeded: token is active")
             return True
         except KeycloakError as e:
