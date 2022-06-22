@@ -623,7 +623,7 @@ fi
 
 %changelog
 * Sat Jun 18 2022 Antoine Martin <antoine@xpra.org> 4.3.4-10
-* major bugs:
+- major bugs:
    audio not starting with some packet encoders
    opening files with special characters remotely
    always free X11 images safely
@@ -631,11 +631,11 @@ fi
    webcam forwarding with older clients
    launcher gui initialization error on Wayland
    attach=yes failing with an invalid command line
-* minor:
+- minor:
    extra file transfers safety checks, fix existing one
    support CSP headers for stream saver of html5 client version 6
    always expose the server socket in the session environment
-* build:
+- build:
    RHEL9 build fixes: missing python cairo, no pandoc
    support building on Alma Linux and Rocky Linux
    build using CUDA 11.7
@@ -643,7 +643,7 @@ fi
    use the correct license short names
    clean target left some generated files behind
    library updates: Cython, pynvml, etc
-* cosmetic:
+- cosmetic:
    jpeg cleanup warnings
    errno Cython source name conflict
    include details in conversion failure messages
