@@ -29,6 +29,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled = None
         self.desktop_size_server = None
         self.screen_sizes = ()
+        self.monitors = {}
         self.screen_resize_bigger = True
         self.desktops = 1
         self.desktop_names = ()
@@ -43,6 +44,7 @@ class ClientDisplayMixin(StubSourceMixin):
             "desktop_names" : self.desktop_names,
             "randr_notify"  : self.randr_notify,
             "opengl"        : self.opengl_props,
+            "monitors"      : self.monitors,
             }
         info.update(get_screen_info(self.screen_sizes))
         if self.desktop_mode_size:
@@ -64,6 +66,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.tupleget("screen_sizes"))
+        self.set_monitors(c.dictget("monitors"))
         desktop_names = tuple(net_utf8(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
@@ -71,6 +74,26 @@ class ClientDisplayMixin(StubSourceMixin):
         self.display_icc = c.dictget("display-icc", {})
         self.opengl_props = c.dictget("opengl", {})
 
+    def set_monitors(self, monitors):
+        self.monitors = {}
+        if monitors:
+            for i, mon_def in monitors.items():
+                vdef = self.monitors.setdefault(i, {})
+                td = typedict(mon_def)
+                for attr, conv in {
+                    "geometry"  : td.inttupleget,
+                    "primary"   : td.boolget,
+                    "refresh-rate"  : td.intget,
+                    "scale-factor"  : td.intget,
+                    "width-mm"      : td.intget,
+                    "height-mm"     : td.intget,
+                    "manufacturer"  : td.strget,
+                    "model"         : td.strget,
+                    "subpixel-layout" : td.strget,
+                    "workarea"      : td.inttupleget,
+                    }.items():
+                    vdef[attr] = conv(attr)
+        log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
     def set_screen_sizes(self, screen_sizes):
         log("set_screen_sizes(%s)", screen_sizes)

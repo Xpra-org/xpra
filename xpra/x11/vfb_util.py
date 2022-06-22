@@ -356,10 +356,7 @@ def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
                 monitors[i] = {
                     "name"      : "VFB-%i" % i,
                     "primary"   : i==0,
-                    "width"     : w,
-                    "height"    : h,
-                    "x"         : x,
-                    "y"         : y,
+                    "geometry"  : (x, y, w, h),
                     "automatic" : True,
                     }
                 x += w

@@ -24,7 +24,7 @@ from xpra.os_util import strtobytes, bytestostr
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 GAMMA = envbool("XPRA_RANDR_GAMMA", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
-IDEAL_VSYNC = envfloat("XPRA_IDEAL_VSYNC", 50.0)
+DEFAULT_VSYNC = envfloat("XPRA_DEFAULT_VSYNC", 50.0)
 assert MAX_NEW_MODES>=2
 
 
@@ -567,7 +567,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
-    cdef do_add_screen_size(self, name, unsigned int w, unsigned int h):
+    cdef do_add_screen_size(self, name, unsigned int w, unsigned int h, unsigned int vsync=0):
         self.context_check("do_add_screen_size")
         log("do_add_screen_size(%s, %i, %i)", name, w, h)
         cdef RRMode mode
@@ -578,7 +578,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef unsigned int maxHSync = 300*1000                   #300KHz
         cdef unsigned int minVSync = 1                          #1Hz
         cdef unsigned int maxVSync = 300                        #30Hz
-        cdef double idealVSync = IDEAL_VSYNC
+        cdef double idealVSync = vsync or DEFAULT_VSYNC
         cdef double timeHFront = 0.07           #0.074219; 0.075; Width of the black border on right edge of the screen
         cdef double timeHSync = 0.1             #0.107422; 0.1125; Sync pulse duration
         cdef double timeHBack = 0.15            #0.183594; 0.1875; Width of the black border on left edge of the screen
@@ -855,8 +855,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             }
         if oi.connection!=RR_Disconnected:
             info.update({
-            "mm-width"          : oi.mm_width,
-            "mm-height"         : oi.mm_height,
+            "width-mm"          : oi.mm_width,
+            "height-mm"         : oi.mm_height,
             "preferred-mode"    : oi.npreferred,
             })
             if TIMESTAMPS:
@@ -927,8 +927,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 "y"         : m.y,
                 "width"     : m.width,
                 "height"    : m.height,
-                "mm-width"  : m.mwidth,
-                "mm-height" : m.mheight,
+                "width-mm"  : m.mwidth,
+                "height-mm" : m.mheight,
                 #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
                 "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
                 }
@@ -1003,10 +1003,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         #first, find the total screen area:
         screen_w, screen_h = 0, 0
         for m in monitor_defs.values():
-            width = m.get("width", 0)
-            height = m.get("height", 0)
-            x = m.get("x", 0)
-            y = m.get("y", 0)
+            x, y, width, height = m["geometry"]
             screen_w = max(screen_w, x+width)
             screen_h = max(screen_h, y+height)
         log("total screen area is: %ix%i", screen_w, screen_h)
@@ -1058,8 +1055,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 try:
                     if m.get("primary", False):
                         primary = i
-                    width = m.get("width", 0)
-                    height = m.get("height", 0)
                     output_info = XRRGetOutputInfo(self.display, rsc, output)
                     if not output_info:
                         log.error("Error: output %i not found (%#x)", i, output)
@@ -1072,6 +1067,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         continue
                     noutput = 1
                     mode = 0
+                    x, y, width, height = m["geometry"]
                     if m:
                         #find an existing mode matching this resolution:
                         for j in range(output_info.nmode):
@@ -1108,8 +1104,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     else:
                         noutput = 0
 
-                    x = m.get("x", 0)
-                    y = m.get("y", 0)
                     log("XRRSetCrtcConfig(%#x, %#x, %i, %i, %i, %i, %i, %i, %#x, %i)",
                             <uintptr_t> self.display, <uintptr_t> rsc, crtc,
                             CurrentTime, x, y, mode, RR_Rotate_0, <uintptr_t> &output, noutput)
@@ -1118,8 +1112,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                           RR_Rotate_0, &output, noutput)
                     if r:
                         raise Exception("failed to set crtc config for monitor %i" % i)
-                    mmw = m.get("mm-width", dpi96(width))
-                    mmh = m.get("mm-height", dpi96(height))
+                    mmw = m.get("width-mm", dpi96(width))
+                    mmh = m.get("height-mm", dpi96(height))
                     self.set_output_int_property(i, "WIDTH_MM", mmw)
                     self.set_output_int_property(i, "HEIGHT_MM", mmh)
                     #this allows us to disconnect the output of this crtc:
@@ -1186,16 +1180,17 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         name = "VFB-%i" % mi
                     while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
                         name += "-%i" % mi
+                    x, y, width, height = m["geometry"]
                     active_names[mi] = name
                     monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
-                    monitor.x = m.get("x", 0)
-                    monitor.y = m.get("y", 0)
-                    monitor.width = m.get("width", 128)
-                    monitor.height = m.get("height", 128)
-                    monitor.mwidth = m.get("mm-width", dpi96(monitor.width))
-                    monitor.mheight = m.get("mm-height", dpi96(monitor.height))
+                    monitor.x = x
+                    monitor.y = y
+                    monitor.width = width
+                    monitor.height = height
+                    monitor.mwidth = m.get("width-mm", dpi96(monitor.width))
+                    monitor.mheight = m.get("height-mm", dpi96(monitor.height))
                     assert rsc.noutput>i, "only %i outputs, cannot set %i" % (rsc.noutput, i)
                     output = rsc.outputs[i]
                     monitor.outputs = &output

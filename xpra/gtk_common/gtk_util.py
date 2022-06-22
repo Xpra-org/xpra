@@ -234,9 +234,9 @@ BYTE_ORDER_NAMES = {
 def get_screens_info() -> dict:
     display = Gdk.Display.get_default()
     info = {}
-    for i in range(display.get_n_screens()):
-        screen = display.get_screen(i)
-        info[i] = get_screen_info(display, screen)
+    assert display.get_n_screens()==1, "GTK3: The number of screens is always 1"
+    screen = display.get_screen(0)
+    info[0] = get_screen_info(display, screen)
     return info
 
 def get_screen_sizes(xscale=1, yscale=1):
@@ -362,10 +362,10 @@ def get_screen_info(display, screen) -> dict:
             info[x] = int(fn())
         except Exception:
             pass
-    info["monitors"] = screen.get_n_monitors()
+    info["monitors"] = display.get_n_monitors()
     m_info = info.setdefault("monitor", {})
     for i in range(screen.get_n_monitors()):
-        m_info[i] = get_monitor_info(display, screen, i)
+        m_info[i] = get_screen_monitor_info(screen, i)
     fo = screen.get_font_options()
     #win32 and osx return nothing here...
     if fo:
@@ -478,15 +478,15 @@ def get_visual_info(v):
             vinfo[x] = vdict.get(val, val)
     return vinfo
 
-def get_monitor_info(_display, screen, i) -> dict:
+def get_screen_monitor_info(screen, i) -> dict:
     info = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
         info[x] = getattr(geom, x)
     if hasattr(screen, "get_monitor_plug_name"):
         info["plug_name"] = screen.get_monitor_plug_name(i) or ""
-    for x in ("scale_factor", "width_mm", "height_mm"):
-        fn = getattr(screen, "get_monitor_"+x, None)
+    for x in ("scale_factor", "width_mm", "height_mm", "refresh_rate"):
+        fn = getattr(screen, "get_monitor_"+x, None) or getattr(screen, "get_"+x, None)
         if fn:
             info[x] = int(fn(i))
     rectangle = screen.get_monitor_workarea(i)
@@ -495,17 +495,56 @@ def get_monitor_info(_display, screen, i) -> dict:
         workarea_info[x] = getattr(rectangle, x)
     return info
 
-
-def get_display_info() -> dict:
+def get_monitors_info(display, xscale=1, yscale=1):
     display = Gdk.Display.get_default()
+    info = {}
+    n = display.get_n_monitors()
+    for i in range(n):
+        minfo = info.setdefault(i, {})
+        monitor = display.get_monitor(i)
+        minfo["primary"] = monitor.is_primary()
+        for attr in (
+            "geometry", "refresh-rate", "scale-factor",
+            "width-mm", "height-mm",
+            "manufacturer", "model",
+            "subpixel-layout",  "workarea",
+            ):
+            getter = getattr(monitor, "get_%s" % attr.replace("-", "_"), None)
+            if getter:
+                value = getter()
+                if isinstance(value, Gdk.Rectangle):
+                    value = (round(xscale*value.x), round(yscale*value.y), round(xscale*value.width), round(yscale*value.height))
+                elif attr=="width-mm":
+                    value = round(xscale*value)
+                elif attr=="height-mm":
+                    value = round(yscale*value)
+                elif attr=="subpixel-layout":
+                    value = {
+                        Gdk.SubpixelLayout.UNKNOWN          : "unknown",
+                        Gdk.SubpixelLayout.NONE             : "none",
+                        Gdk.SubpixelLayout.HORIZONTAL_RGB   : "horizontal-rgb",
+                        Gdk.SubpixelLayout.HORIZONTAL_BGR   : "horizontal-bgr",
+                        Gdk.SubpixelLayout.VERTICAL_RGB     : "vertical-rgb",
+                        Gdk.SubpixelLayout.VERTICAL_BGR     : "vertical-bgr",
+                        }.get(value, "unknown")
+                minfo[attr] = value
+    return info
+
+def get_display_info(xscale=1, yscale=1) -> dict:
+    display = Gdk.Display.get_default()
+    def xy(v):
+        return round(xscale*v[0]), round(yscale*v[1])
+    def avg(v):
+        return round((xscale*v+yscale*v)/2)
+    root_size = get_root_size()
     info = {
-            "root-size"             : get_root_size(),
+            "root-size"             : xy(root_size),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
-            "pointer"               : display.get_pointer()[-3:-1],
+            "pointer"               : xy(display.get_pointer()[-3:-1]),
             "devices"               : len(display.list_devices()),
-            "default_cursor_size"   : display.get_default_cursor_size(),
-            "maximal_cursor_size"   : display.get_maximal_cursor_size(),
+            "default_cursor_size"   : avg(display.get_default_cursor_size()),
+            "maximal_cursor_size"   : xy(display.get_maximal_cursor_size()),
             "pointer_is_grabbed"    : display.pointer_is_grabbed(),
             }
     if not WIN32:
@@ -517,10 +556,13 @@ def get_display_info() -> dict:
             fn = getattr(display, f)
             sinfo[x]  = fn()
     info["screens"] = get_screens_info()
+    info["monitors"] = get_monitors_info(xscale, yscale)
     dm = display.get_device_manager()
-    for dt, name in {Gdk.DeviceType.MASTER  : "master",
-                     Gdk.DeviceType.SLAVE   : "slave",
-                     Gdk.DeviceType.FLOATING: "floating"}.items():
+    for dt, name in {
+        Gdk.DeviceType.MASTER  : "master",
+        Gdk.DeviceType.SLAVE   : "slave",
+        Gdk.DeviceType.FLOATING: "floating",
+        }.items():
         dinfo = info.setdefault("device", {})
         dtinfo = dinfo.setdefault(name, {})
         devices = dm.list_devices(dt)
@@ -743,7 +785,7 @@ def main():
         import warnings
         warnings.simplefilter("ignore")
         print(get_screen_sizes()[0])
-        print_nested_dict(get_screens_info()[0])
+        print_nested_dict(get_display_info())
 
 
 if __name__ == "__main__":

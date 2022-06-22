@@ -144,7 +144,7 @@ class DisplayClient(StubClientMixin):
             root_w, root_h = u_root_w, u_root_h
             sss = ss
         caps["screen_sizes"] = sss
-
+        caps["monitors"] = self.get_monitors_info()
         caps.update(self.get_screen_caps())
         caps.update(flatten_dict({
             "dpi"               : self.get_dpi_caps(),
@@ -317,6 +317,9 @@ class DisplayClient(StubClientMixin):
     def get_display_icc_info(self) -> dict:
         return get_display_icc_info()
 
+    def get_monitors_info(self):
+        return {}
+
     def _process_show_desktop(self, packet):
         show = packet[1]
         log("calling %s(%s)", show_desktop, show)
@@ -484,7 +487,8 @@ class DisplayClient(StubClientMixin):
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         vrefresh = self.get_vrefresh()
         log("get_screen_settings() vrefresh=%s", vrefresh)
-        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh)
+        monitors = self.get_monitors_info()
+        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors)
 
     def update_screen_size(self):
         self.screen_size_change_timer = None

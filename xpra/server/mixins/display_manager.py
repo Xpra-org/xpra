@@ -271,6 +271,8 @@ class DisplayManager(StubServerMixin):
         if ss is None:
             return
         ss.desktop_size = (width, height)
+        if len(packet)>=12:
+            ss.set_monitors(packet[11])
         if len(packet)>=11:
             vrefresh = packet[10]
             log("new vrefresh=%s", vrefresh)

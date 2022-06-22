@@ -326,22 +326,25 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 screenlog("%i sources=%s", len(sss), sss)
                 if len(sss)==1:
                     ss = sss[0]
-                    screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
-                    if ss.screen_sizes and len(ss.screen_sizes[0])>6:
-                        monitors = ss.screen_sizes[0][5]
-                        mdef = {}
-                        for i, m in enumerate(monitors):
-                            mdef[i] = {
-                                "name"      : bytestostr(m[0]),
-                                #"primary"?
-                                #"automatic" : True?
-                                "x"         : int(m[1]),
-                                "y"         : int(m[2]),
-                                "width"     : int(m[3]),
-                                "height"    : int(m[4]),
-                                "mm-width"  : int(m[5]),
-                                "mm-height" : int(m[6]),
-                                }
+                    #perhaps it supplied its "monitors" definition?
+                    mdef = ss.monitors
+                    if not mdef:
+                        #no? try to extract it from the legacy "screen_sizes" data:
+                        #(ie: pre v4.4 clients)
+                        screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
+                        if ss.screen_sizes and len(ss.screen_sizes[0])>6:
+                            monitors = ss.screen_sizes[0][5]
+                            mdef = {}
+                            for i, m in enumerate(monitors):
+                                mdef[i] = {
+                                    "name"      : bytestostr(m[0]),
+                                    #"primary"?
+                                    #"automatic" : True?
+                                    "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
+                                    "width-mm"  : round(m[5]),
+                                    "height-mm" : round(m[6]),
+                                    }
+                    if mdef:
                         screenlog("configuring %s", mdef)
                         X11RandR.set_crtc_config(mdef)
                         return (desired_w, desired_h)

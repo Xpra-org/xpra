@@ -31,7 +31,8 @@ from xpra.gtk_common.gtk_util import (
     get_icon_pixbuf,
     get_pixbuf_from_data,
     get_default_root_window, get_root_size,
-    get_screen_sizes, GDKWindow,
+    get_screen_sizes, get_display_info, get_monitors_info,
+    GDKWindow,
     GRAB_STATUS_STRING,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -889,6 +890,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return is_Wayland()
         return screen.get_rgba_visual() is not None
 
+
+    def get_monitors_info(self):
+        return get_monitors_info(self.xscale, self.yscale)
 
     def get_screen_sizes(self, xscale=1, yscale=1):
         return get_screen_sizes(xscale, yscale)
