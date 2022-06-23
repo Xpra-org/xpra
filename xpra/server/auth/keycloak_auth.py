@@ -121,7 +121,7 @@ class Authenticator(SysAuthenticator):
             keycloak_openid = KeycloakOpenID(server_url=self.server_url,
                               client_id=self.client_id,
                               realm_name=self.realm_name,
-                              client_secret_key=self.client_id)
+                              client_secret_key=self.client_secret_key)
 
             # Get well_known
             if hasattr(keycloak_openid, "well_known"):
