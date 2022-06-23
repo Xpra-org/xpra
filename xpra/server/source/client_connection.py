@@ -267,7 +267,7 @@ class ClientConnection(ClientConnectionClass):
             mixin.parse_client_caps(self, c)
 
         #general features:
-        self.info_namespace = c.boolget("info-namespace")
+        self.info_namespace = c.boolget("info-namespace", True)
         self.send_notifications = c.boolget("notifications")
         self.send_notifications_actions = c.boolget("notifications.actions")
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
