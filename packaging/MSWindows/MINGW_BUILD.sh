@@ -174,6 +174,8 @@ if [ "${DO_CLEAN}" == "1" ]; then
 		tail -n 20 "${CLEAN_LOG}"
 		exit 1
 	fi
+	#clean comtypes cache - it should not be included!
+	python $MINGW_PREFIX/bin/clear_comtypes_cache.py -y
 fi
 
 if [ "${DO_SERVICE}" == "1" ]; then

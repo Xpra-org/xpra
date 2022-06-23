@@ -24,7 +24,8 @@ logging.getLogger("comtypes").setLevel(logging.INFO)
 
 #we need a logger before we import comtypes, so:
 #pylint: disable=wrong-import-position
-import comtypes                                         #@UnresolvedImport
+import comtypes.client                                  #@UnresolvedImport
+comtypes.client.gen_dir = None
 from comtypes import client                             #@UnresolvedImport
 from comtypes.automation import VARIANT                 #@UnresolvedImport
 from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport

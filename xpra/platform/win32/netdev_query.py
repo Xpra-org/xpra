@@ -11,6 +11,8 @@ def get_interface_info(_fd, iface):
     from xpra.platform.win32.comtypes_util import QuietenLogging
     with QuietenLogging():
         try:
+            import comtypes.client
+            comtypes.client.gen_dir = None
             from comtypes import CoInitialize               #@UnresolvedImport
             CoInitialize()
             from comtypes.client import CreateObject        #@UnresolvedImport
