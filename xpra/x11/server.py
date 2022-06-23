@@ -11,7 +11,7 @@ import signal
 import math
 from time import monotonic, sleep
 from collections import deque
-from gi.repository import GObject, Gtk, Gdk, GdkX11
+from gi.repository import GObject, Gdk, GdkX11
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
