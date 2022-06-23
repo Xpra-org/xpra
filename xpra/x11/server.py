@@ -16,7 +16,7 @@ from gi.repository import GObject, Gdk, GdkX11
 from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
+from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, DEFAULT_REFRESH_RATE
 from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
@@ -328,7 +328,26 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 ss = sss[0]
                 #perhaps it supplied its "monitors" definition?
                 mdef = ss.monitors
-                if not mdef:
+                if mdef:
+                    #generate a monitor name if we don't have one yet:
+                    for monitor in mdef.values():
+                        name = monitor.get("name")
+                        if name:
+                            continue
+                        manufacturer = monitor.get("manufacturer")
+                        model = monitor.get("model")
+                        if not name:
+                            if manufacturer and model:
+                                #ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
+                                if model.startswith(manufacturer):
+                                    name = model
+                                else:
+                                    name = "%s %s" % (manufacturer, model)
+                            else:
+                                name = manufacturer or model
+                        if name:
+                            monitor["name"] = name
+                else:
                     #no? try to extract it from the legacy "screen_sizes" data:
                     #(ie: pre v4.4 clients)
                     screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
@@ -345,7 +364,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
                                 "height-mm" : round(m[6]),
                                 }
                 if mdef:
-                    screenlog("configuring %s", mdef)
+                    screenlog("monitor definition from client: %s", mdef)
+                    if self.refresh_rate!="auto":
+                        for monitor in mdef.values():
+                            value = monitor.get("refresh-rate", DEFAULT_REFRESH_RATE)
+                            value = self.get_refresh_rate_for_value(value)
+                            if value:
+                                monitor["refresh-rate"] = value
+                        screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
                     with xlog:
                         X11RandR.set_crtc_config(mdef)
                     return (desired_w, desired_h)

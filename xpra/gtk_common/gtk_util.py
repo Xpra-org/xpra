@@ -527,6 +527,8 @@ def get_monitors_info(display, xscale=1, yscale=1):
                         Gdk.SubpixelLayout.VERTICAL_RGB     : "vertical-rgb",
                         Gdk.SubpixelLayout.VERTICAL_BGR     : "vertical-bgr",
                         }.get(value, "unknown")
+                if isinstance(value, str):
+                    value = value.strip()
                 minfo[attr] = value
     return info
 

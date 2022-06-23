@@ -541,6 +541,7 @@ OPTION_TYPES = {
                     "min-size"          : str,
                     "max-size"          : str,
                     "desktop-scaling"   : str,
+                    "refresh-rate"      : str,
                     "display"           : str,
                     "tcp-proxy"         : str,
                     "download-path"     : str,
@@ -722,6 +723,7 @@ OPTIONS_ADDED_SINCE_V3 = [
     "source", "source-start", "headerbar",
     "splash", "sessions-dir", "http-scripts", "reconnect", "client-socket-dirs",
     "start-late", "start-child-late",
+    "refresh-rate",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -972,6 +974,7 @@ def get_defaults():
                     "min-size"          : "",
                     "max-size"          : "",
                     "desktop-scaling"   : "on",
+                    "refresh-rate"      : "auto",
                     "display"           : "",
                     "tcp-proxy"         : "",
                     "download-path"     : get_download_dir(),

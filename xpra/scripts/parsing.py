@@ -1426,6 +1426,13 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
                       help="The maximum size for normal windows, ie: 800x600. Default: %s." % nonedefault(defaults.max_size))
+    group.add_option("--refresh-rate", action="store",
+                      dest="refresh_rate", default=defaults.refresh_rate,
+                      metavar="VREFRESH",
+                      help="The vertical refresh rate to use, which is the target number of frames per second."
+                            " This value can be specified in absolute form: \"50"
+                            " or as a percentage of the value detected: 50%"
+                            " Default: '%default'.")
     group.add_option("--desktop-scaling", action="store",
                       dest="desktop_scaling", default=defaults.desktop_scaling,
                       metavar="SCALING",

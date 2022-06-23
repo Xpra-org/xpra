@@ -33,6 +33,7 @@ class DisplayManager(StubServerMixin):
         self.double_click_distance = -1, -1
         self.opengl = False
         self.opengl_props = {}
+        self.refresh_rate = "auto"
 
     def init(self, opts):
         self.opengl = opts.opengl
@@ -40,10 +41,36 @@ class DisplayManager(StubServerMixin):
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.bit_depth = self.get_display_bit_depth()
+        self.refresh_rate = opts.refresh_rate
 
     def get_display_bit_depth(self):
         return 0
 
+
+    def get_refresh_rate_for_value(self, invalue):
+        def i(v):
+            try:
+                return int(v)
+            except ValueError:
+                return None
+        if self.refresh_rate.lower() in ("none", "auto"):
+            #just honour whatever the client supplied:
+            return i(invalue)
+        v = i(self.refresh_rate)
+        if v is not None:
+            #server specifies an absolute value:
+            if 0<v<1000:
+                return v*1000
+            if v>=1000:
+                return v
+        if self.refresh_rate.endswith("%"):
+            #server specifies a percentage:
+            mult = i(self.refresh_rate[:-1])  #ie: "80%" -> 80
+            iv = i(invalue)
+            if mult and iv:
+                return iv*mult//100
+        #fallback to client supplied value, if any:
+        return i(invalue)
 
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:
@@ -144,6 +171,7 @@ class DisplayManager(StubServerMixin):
                     },
                 "antialias" : self.antialias,
                 "depth" : self.bit_depth,
+                "refresh-rate"  : self.refresh_rate,
                 }
         if self.opengl_props:
             i["opengl"] = self.opengl_props
