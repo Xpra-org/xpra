@@ -194,7 +194,7 @@ class ClientConnection(StubSourceMixin):
 
     def parse_client_caps(self, c : typedict):
         #general features:
-        self.info_namespace = c.boolget("info-namespace")
+        self.info_namespace = c.boolget("info-namespace", True)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")
