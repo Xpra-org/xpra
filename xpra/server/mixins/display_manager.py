@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util import engs, log_screen_sizes
 from xpra.os_util import bytestostr
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.common import get_refresh_rate_for_value
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -48,29 +49,7 @@ class DisplayManager(StubServerMixin):
 
 
     def get_refresh_rate_for_value(self, invalue):
-        def i(v):
-            try:
-                return int(v)
-            except ValueError:
-                return None
-        if self.refresh_rate.lower() in ("none", "auto"):
-            #just honour whatever the client supplied:
-            return i(invalue)
-        v = i(self.refresh_rate)
-        if v is not None:
-            #server specifies an absolute value:
-            if 0<v<1000:
-                return v*1000
-            if v>=1000:
-                return v
-        if self.refresh_rate.endswith("%"):
-            #server specifies a percentage:
-            mult = i(self.refresh_rate[:-1])  #ie: "80%" -> 80
-            iv = i(invalue)
-            if mult and iv:
-                return iv*mult//100
-        #fallback to client supplied value, if any:
-        return i(invalue)
+        return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:

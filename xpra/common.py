@@ -83,3 +83,44 @@ class KeyEvent:
 
     def __repr__(self):
         return "KeyEvent(%s)" % csv("%s=%s" % (k, getattr(self, k)) for k in KeyEvent.__slots__)
+
+
+def get_refresh_rate_for_value(refresh_rate_str, invalue):
+    def i(v):
+        try:
+            return int(v)
+        except ValueError:
+            return None
+    if refresh_rate_str.lower() in ("none", "auto"):
+        #just honour whatever the client supplied:
+        return i(invalue)
+    v = i(refresh_rate_str)
+    if v is not None:
+        #server specifies an absolute value:
+        if 0<v<1000:
+            return v*1000
+        if v>=1000:
+            return v
+    if refresh_rate_str.endswith("%"):
+        #server specifies a percentage:
+        mult = i(refresh_rate_str[:-1])  #ie: "80%" -> 80
+        iv = i(invalue)
+        if mult and iv:
+            return iv*mult//100
+    #fallback to client supplied value, if any:
+    return i(invalue)
+
+
+def adjust_monitor_refresh_rate(refresh_rate_str, mdef):
+    adjusted = {}
+    for i, monitor in mdef.items():
+        #make a copy, don't modify in place!
+        #(as this may be called multiple times on the same input dict)
+        mprops = dict(monitor)
+        if refresh_rate_str!="auto":
+            value = monitor.get("refresh-rate", DEFAULT_REFRESH_RATE)
+            value = get_refresh_rate_for_value(refresh_rate_str, value)
+            if value:
+                mprops["refresh-rate"] = value
+        adjusted[i] = mprops
+    return adjusted

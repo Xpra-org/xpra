@@ -31,7 +31,7 @@ from xpra.gtk_common.gtk_util import (
     get_icon_pixbuf,
     get_pixbuf_from_data,
     get_default_root_window, get_root_size,
-    get_screen_sizes, get_display_info, get_monitors_info,
+    get_screen_sizes, get_monitors_info,
     GDKWindow,
     GRAB_STATUS_STRING,
     )

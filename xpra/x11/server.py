@@ -16,7 +16,7 @@ from gi.repository import GObject, Gdk, GdkX11
 from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, DEFAULT_REFRESH_RATE
+from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, adjust_monitor_refresh_rate
 from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
@@ -365,13 +365,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
                                 }
                 if mdef:
                     screenlog("monitor definition from client: %s", mdef)
-                    if self.refresh_rate!="auto":
-                        for monitor in mdef.values():
-                            value = monitor.get("refresh-rate", DEFAULT_REFRESH_RATE)
-                            value = self.get_refresh_rate_for_value(value)
-                            if value:
-                                monitor["refresh-rate"] = value
-                        screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
+                    mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
+                    screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
                     with xlog:
                         X11RandR.set_crtc_config(mdef)
                     return (desired_w, desired_h)

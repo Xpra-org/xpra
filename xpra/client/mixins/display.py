@@ -15,6 +15,7 @@ from xpra.platform.gui import (
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
+from xpra.common import adjust_monitor_refresh_rate
 from xpra.client.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
@@ -51,6 +52,7 @@ class DisplayClient(StubClientMixin):
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = float("inf")
+        self.refresh_rate = 0
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = None
@@ -68,6 +70,7 @@ class DisplayClient(StubClientMixin):
     def init(self, opts):
         self.desktop_fullscreen = opts.desktop_fullscreen
         self.desktop_scaling = opts.desktop_scaling
+        self.refresh_rate = opts.refresh_rate
         self.dpi = int(opts.dpi)
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
         scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
@@ -144,7 +147,8 @@ class DisplayClient(StubClientMixin):
             root_w, root_h = u_root_w, u_root_h
             sss = ss
         caps["screen_sizes"] = sss
-        caps["monitors"] = self.get_monitors_info()
+        monitors = self.get_monitors_info()
+        caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())
         caps.update(flatten_dict({
             "dpi"               : self.get_dpi_caps(),
@@ -488,6 +492,7 @@ class DisplayClient(StubClientMixin):
         vrefresh = self.get_vrefresh()
         log("get_screen_settings() vrefresh=%s", vrefresh)
         monitors = self.get_monitors_info()
+        #
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors)
 
     def update_screen_size(self):
