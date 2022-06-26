@@ -196,10 +196,12 @@ Requires:			js-jquery
 %if 0%{?el7}%{?el8}
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
-BuildRequires:		centos-logos
+BuildRequires:		system-logos
+%{Recommends}:          system-logos
 %endif
 %if 0%{?el8}
-BuildRequires:		centos-backgrounds
+BuildRequires:		system-backgrounds
+%{Recommends}:          system-backgrounds
 %endif
 %description html5
 This package contains Xpra's HTML5 client.
