@@ -230,6 +230,7 @@ Recommends:			gstreamer1-plugin-timestamp
 Recommends:			gstreamer1-plugins-ugly
 Recommends:			gstreamer1-plugins-ugly-free
 Recommends:			pulseaudio
+Recommends:			pulseaudio-module-x11
 Recommends:			pulseaudio-utils
 %if 0%{?run_tests}
 Requires:			python3-gstreamer1
