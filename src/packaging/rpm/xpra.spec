@@ -898,7 +898,7 @@ fi
 
 
 %changelog
-* Thu Feb 10 2022 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
+* Sun Jun 26 2022 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
 - major fixes:
     GDK crash when updating parked windows geometry
     always free X11 images safely
@@ -918,10 +918,12 @@ fi
     build using CUDA 11.7 by default, compile as C++11
     clean target left some generated files behind
     dependency updates
-    package updates: pynvml, cython
     MacOS new package signing key
     ffmpeg 5.0 compatibility
     library updates: Cython, pynvml, etc
+    workarounds for latest Cython with GCC 4
+    support almalinux, rocklylinux and oraclelinux 8 build targets
+    aarch64 builds
     content type updates: `unityhub` is a browser, `ffplay` is video
 - minor bugs and tweaks:
     clipboard errors with MS Windows clients and UTF8 data

@@ -18,10 +18,12 @@ xpra (3.1.3-1) UNRELEASED; urgency=low
    -  build using CUDA 11.7 by default, compile as C++11
    -  clean target left some generated files behind
    -  dependency updates
-   -  package updates: pynvml, cython
    -  MacOS new package signing key
    -  ffmpeg 5.0 compatibility
    -  library updates: Cython, pynvml, etc
+   -  workarounds for latest Cython with GCC 4
+   -  support almalinux, rocklylinux and oraclelinux 8 build targets
+   -  aarch64 builds
    -  content type updates: `unityhub` is a browser, `ffplay` is video
   * minor bugs and tweaks:
    -  clipboard errors with MS Windows clients and UTF8 data
@@ -54,7 +56,7 @@ xpra (3.1.3-1) UNRELEASED; urgency=low
    -  jpeg decoder generated invalid picture metadata
   * logging tweaks and fixes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 04 Oct 2021 15:12:43 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 26 Jun 2021 18:51:15 +0700
 
 xpra (3.1.2-1) UNRELEASED; urgency=low
   * encoding errors with vpx
