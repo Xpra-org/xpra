@@ -333,6 +333,15 @@ def is_Arch():
 def is_CentOS():
     return is_distribution_variant(b"CentOS")
 
+def is_AlmaLinux() -> bool:
+    return is_distribution_variant(b"AlmaLinux")
+
+def is_RockyLinux() -> bool:
+    return is_distribution_variant(b"Rocky Linux")
+
+def is_OracleLinux() -> bool:
+    return is_distribution_variant(b"Oracle Linux")
+
 def is_RedHat():
     return is_distribution_variant(b"RedHat")
 

@@ -24,7 +24,7 @@ import xpra
 from xpra.os_util import (
     get_status_output, get_distribution_version_id, load_binary_file,
     PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat,
+    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat, is_AlmaLinux, is_RockyLinux, is_OracleLinux,
     )
 
 if sys.version<'2.7':
@@ -1508,7 +1508,7 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
-    if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
+    if is_Fedora() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or FREEBSD:
         libexec = "libexec"
     else:
         libexec = "lib"
