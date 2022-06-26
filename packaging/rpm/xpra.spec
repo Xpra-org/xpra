@@ -253,7 +253,6 @@ Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
-Recommends:			python3-pyxdg
 Recommends:         python3-psutil
 Recommends:         python3-qrencode
 Suggests:			python3-opencv
@@ -288,6 +287,8 @@ Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 Recommends:			librsvg2
 Recommends:			ibus
+Recommends:			python3-pyxdg
+Recommends:			xdg-menu
 %if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda
