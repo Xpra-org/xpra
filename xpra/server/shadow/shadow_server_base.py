@@ -20,7 +20,6 @@ notifylog = Logger("notify")
 mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 
-REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 CURSORS = envbool("XPRA_CURSORS", True)
@@ -36,6 +35,9 @@ if server_features.rfb:
 
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
+    #20 fps unless the client specifies more:
+    DEFAULT_REFRESH_RATE = 20
+
     def __init__(self, root_window, capture=None):
         super().__init__()
         self.capture = capture
@@ -44,7 +46,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.mapped = []
         self.pulseaudio = False
         self.sharing = True
-        self.refresh_delay = REFRESH_DELAY
+        self.refresh_delay = 1000//self.DEFAULT_REFRESH_RATE
         self.refresh_timer = None
         self.notifications = False
         self.notifier = None
@@ -52,7 +54,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.pointer_poll_timer = None
         self.last_cursor_data = None
         batch_config.ALWAYS = True             #always batch
-        batch_config.MIN_DELAY = 50            #never lower than 50ms
 
     def init(self, opts):
         if SHADOWSERVER_BASE_CLASS!=object:
@@ -119,6 +120,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 title = window.get_property("title")
                 x, y, w, h = window.geometry
                 log.info("  %-16s %4ix%-4i at %4i,%-4i", title, w, h, x, y)
+
+    def apply_refresh_rate(self, ss):
+        rrate = super().apply_refresh_rate(ss)
+        if rrate>0:
+            #adjust refresh delay to try to match:
+            self.set_refresh_delay(max(10, 1000//rrate))
+
 
     def make_hello(self, _source):
         return {"shadow" : True}
@@ -383,6 +391,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info(" client root window size is %sx%s", *ss.desktop_size)
         except Exception:
             log.info(" unknown client desktop size")
+        self.apply_refresh_rate(ss)
         return self.get_root_window_size()
 
     def _process_desktop_size(self, proto, packet):
