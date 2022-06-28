@@ -284,7 +284,7 @@ class DisplayManager(StubServerMixin):
             vrefresh = packet[10]
             log("new vrefresh=%s", vrefresh)
             #update clientdisplay mixin:
-            if hasattr(ss, "vrefresh") and getattr(ss, "refresh")!=vrefresh:
+            if hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=vrefresh:
                 ss.vrefresh = vrefresh
                 #update all batch configs:
                 if hasattr(ss, "all_window_sources"):
