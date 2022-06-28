@@ -15,7 +15,7 @@ from xpra.platform.gui import (
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
-from xpra.common import adjust_monitor_refresh_rate
+from xpra.common import adjust_monitor_refresh_rate, get_refresh_rate_for_value
 from xpra.client.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
@@ -490,10 +490,12 @@ class DisplayClient(StubClientMixin):
         ydpi = self.cy(ydpi)
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         vrefresh = self.get_vrefresh()
-        log("get_screen_settings() vrefresh=%s", vrefresh)
+        rrate = -1
+        if vrefresh>0:
+            rrate = (get_refresh_rate_for_value(self.refresh_rate, vrefresh) or 0)//1000
+        log("get_screen_settings() vrefresh=%s (from %s)", rrate, vrefresh)
         monitors = self.get_monitors_info()
-        #
-        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors)
+        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors)
 
     def update_screen_size(self):
         self.screen_size_change_timer = None
