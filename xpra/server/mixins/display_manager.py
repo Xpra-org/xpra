@@ -19,6 +19,7 @@ class DisplayManager(StubServerMixin):
     """
     Mixin for servers that handle displays.
     """
+    DEFAULT_REFRESH_RATE = 0
 
     def __init__(self):
         self.randr = False
@@ -274,6 +275,19 @@ class DisplayManager(StubServerMixin):
 
 
     def apply_refresh_rate(self, ss):
+        rrate = self.get_client_refresh_rate(ss)
+        if rrate>0:
+            self.set_window_refresh_rate(ss, rrate)
+        return rrate
+
+    def set_window_refresh_rate(self, ss, rrate):
+        if hasattr(ss, "all_window_sources"):
+            for window_source in ss.all_window_sources():
+                bc = window_source.batch_config
+                if bc:
+                    bc.match_vrefresh(rrate)
+
+    def get_client_refresh_rate(self, ss):
         vrefresh = []
         #use the refresh-rate value from the monitors
         #(value is pre-multiplied by 1000!)
@@ -284,17 +298,16 @@ class DisplayManager(StubServerMixin):
                     vrefresh.append(v)
         if not vrefresh and getattr(ss, "vrefresh", 0)>0:
             vrefresh.append(ss.vrefresh*1000)
+        if not vrefresh:
+            vrefresh.append(self.DEFAULT_REFRESH_RATE)
+        rrate = 0
         if vrefresh:
-            rrate = min(vrefresh)//1000
+            rrate = min(vrefresh)
             if self.refresh_rate:
                 rrate = get_refresh_rate_for_value(self.refresh_rate, rrate)
-            log("apply_refresh_rate(%s) vrefresh=%s (from %s)", ss, rrate, vrefresh)
-            #update all batch configs:
-            if hasattr(ss, "all_window_sources"):
-                for window_source in ss.all_window_sources():
-                    bc = window_source.batch_config
-                    if bc:
-                        bc.match_vrefresh(rrate)
+            rrate //= 1000
+        log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
+        return rrate
 
     def _process_desktop_size(self, proto, packet):
         log("new desktop size from %s: %s", proto, packet)
