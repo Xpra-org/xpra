@@ -285,9 +285,9 @@ class DisplayManager(StubServerMixin):
         if not vrefresh and getattr(ss, "vrefresh", 0)>0:
             vrefresh.append(ss.vrefresh*1000)
         if vrefresh:
-            rrate = min(vrefresh)
+            rrate = min(vrefresh)//1000
             if self.refresh_rate:
-                rrate = get_refresh_rate_for_value(self.refresh_rate, rrate) // 1000
+                rrate = get_refresh_rate_for_value(self.refresh_rate, rrate)
             log("apply_refresh_rate(%s) vrefresh=%s (from %s)", ss, rrate, vrefresh)
             #update all batch configs:
             if hasattr(ss, "all_window_sources"):
