@@ -212,6 +212,7 @@ class DisplayManager(StubServerMixin):
         h = min(h, maxh)
         self.set_desktop_geometry_attributes(w, h)
         self.set_icc_profile()
+        self.apply_refresh_rate(ss)
         return w, h
 
 
@@ -271,6 +272,30 @@ class DisplayManager(StubServerMixin):
         root_w, root_h = self.get_root_window_size()
         return root_w, root_h
 
+
+    def apply_refresh_rate(self, ss):
+        vrefresh = []
+        #use the refresh-rate value from the monitors
+        #(value is pre-multiplied by 1000!)
+        if ss.monitors:
+            for mdef in ss.monitors.values():
+                v = mdef.get("refresh-rate", 0)
+                if v:
+                    vrefresh.append(v)
+        if not vrefresh and getattr(ss, "vrefresh", 0)>0:
+            vrefresh.append(ss.vrefresh*1000)
+        if vrefresh:
+            rrate = min(vrefresh)
+            if self.refresh_rate:
+                rrate = get_refresh_rate_for_value(self.refresh_rate, rrate) // 1000
+            log("apply_refresh_rate(%s) vrefresh=%s (from %s)", ss, rrate, vrefresh)
+            #update all batch configs:
+            if hasattr(ss, "all_window_sources"):
+                for window_source in ss.all_window_sources():
+                    bc = window_source.batch_config
+                    if bc:
+                        bc.match_vrefresh(rrate)
+
     def _process_desktop_size(self, proto, packet):
         log("new desktop size from %s: %s", proto, packet)
         width, height = packet[1:3]
@@ -280,18 +305,11 @@ class DisplayManager(StubServerMixin):
         ss.desktop_size = (width, height)
         if len(packet)>=12:
             ss.set_monitors(packet[11])
-        if len(packet)>=11:
-            vrefresh = packet[10]
-            log("new vrefresh=%s", vrefresh)
-            #update clientdisplay mixin:
-            if hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=vrefresh:
-                ss.vrefresh = vrefresh
-                #update all batch configs:
-                if hasattr(ss, "all_window_sources"):
-                    for window_source in ss.all_window_sources():
-                        bc = window_source.batch_config
-                        if bc:
-                            bc.match_vrefresh(vrefresh)
+        elif len(packet)>=11:
+            #fallback to the older global attribute:
+            v = packet[10]
+            if 0<v<240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=v:
+                ss.vrefresh = v
         if len(packet)>=10:
             #added in 0.16 for scaled client displays:
             xdpi, ydpi = packet[8:10]
@@ -318,6 +336,7 @@ class DisplayManager(StubServerMixin):
                      width, height)
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
+        self.apply_refresh_rate(ss)
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
