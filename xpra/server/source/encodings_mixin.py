@@ -267,10 +267,9 @@ class EncodingsMixin(StubSourceMixin):
         dbc.max_events  = batch_value("max_events", batch_config.MAX_EVENTS)
         dbc.max_pixels  = batch_value("max_pixels", batch_config.MAX_PIXELS)
         dbc.time_unit   = batch_value("time_unit", batch_config.TIME_UNIT, 1)
-        self.vrefresh = c.intget("vrefresh", -1)
-        dbc.match_vrefresh(self.vrefresh)
         dbc.delay       = batch_value("delay", delay, dbc.min_delay)
         log("default batch config: %s", dbc)
+        self.vrefresh = c.intget("vrefresh", -1)
 
         #encodings:
         self.encodings_packet = c.boolget("encodings.packet", False)
