@@ -1859,7 +1859,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             if mode=="shadow" and geometry:
                 display += ",%s" % (geometry, )
             proxy_args.append(display)
-        for x in get_start_server_args(opts, compat=True):
+        for x in get_start_server_args(opts, compat=True, cmdline=cmdline):
             proxy_args.append(x)
         #we have consumed the start[-child] options
         opts.start_child = []
@@ -2370,7 +2370,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
-def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
+def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()):
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fdefaults = defaults.clone()
     fixup_options(fdefaults)
@@ -2384,12 +2384,15 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
         ov = getattr(opts, fn)
         dv = getattr(defaults, fn)
         fv = getattr(fdefaults, fn)
-        if ftype==list:
-            #compare lists using their csv representation:
-            if csv(ov)==csv(dv) or csv(ov)==csv(fv):
-                continue
-        if ov in (dv, fv):
-            continue    #same as the default
+        incmdline = ("--%s" % x) in cmdline or any(c.startswith("--%s=" % x) for c in cmdline)
+        if not incmdline:
+            #we may skip this option if the value is the same as the default:
+            if ftype==list:
+                #compare lists using their csv representation:
+                if csv(ov)==csv(dv) or csv(ov)==csv(fv):
+                    continue
+            if ov in (dv, fv):
+                continue    #same as the default
         argname = "--%s=" % x
         if compat:
             argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
