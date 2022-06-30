@@ -2384,7 +2384,10 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
         ov = getattr(opts, fn)
         dv = getattr(defaults, fn)
         fv = getattr(fdefaults, fn)
-        incmdline = ("--%s" % x) in cmdline or any(c.startswith("--%s=" % x) for c in cmdline)
+        incmdline = (
+            ("--%s" % x) in cmdline or ("--no-%s" % x) in cmdline or
+            any(c.startswith("--%s=" % x) for c in cmdline)
+            )
         if not incmdline:
             #we may skip this option if the value is the same as the default:
             if ftype==list:
