@@ -471,6 +471,7 @@ SERVER_LOAD_SKIP_OPTIONS = (
     "start-child-on-last-client-exit",
     )
 
+
 def get_options_file_contents(opts, mode="seamless"):
     from xpra.scripts.parsing import fixup_defaults
     defaults = make_defaults_struct()
@@ -505,7 +506,7 @@ def load_options():
     config_file = session_file_path("config")
     return read_config(config_file)
 
-def apply_config(opts, mode):
+def apply_config(opts, mode, cmdline):
     #if we had saved the start / start-desktop config, reload it:
     options = load_options()
     if not options:
@@ -519,6 +520,12 @@ def apply_config(opts, mode):
         if k in CLIENT_ONLY_OPTIONS:
             continue
         if k in SERVER_LOAD_SKIP_OPTIONS:
+            continue
+        incmdline = (
+            ("--%s" % k) in cmdline or ("--no-%s" % k) in cmdline or
+            any(c.startswith("--%s=" % k) for c in cmdline)
+            )
+        if incmdline:
             continue
         dtype = OPTION_TYPES.get(k)
         if not dtype:
@@ -963,7 +970,7 @@ def _do_run_server(script_file, cmdline,
     upgrading_seamless = upgrading_desktop = upgrading_monitor = False
     if upgrading:
         #if we had saved the start / start-desktop config, reload it:
-        mode = apply_config(opts, mode)
+        mode = apply_config(opts, mode, cmdline)
         if mode.startswith("upgrade-"):
             mode = mode[len("upgrade-"):]
         if mode.startswith("start-"):
