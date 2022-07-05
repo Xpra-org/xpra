@@ -1272,7 +1272,11 @@ def _do_run_server(script_file, cmdline,
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
         if not dbus_pid and dbus_env:
             no_gtk()
-            assert starting or starting_desktop or starting_monitor or proxying
+            if not (starting or starting_desktop or starting_monitor or proxying):
+                dbuslog.warn("Warning: failed to reload the dbus session attributes")
+                dbuslog.warn(" for mode %r", mode)
+                dbuslog.warn(" a new dbus instance will be started")
+                dbuslog.warn(" which may conflict with the previous one if it exists")
             try:
                 from xpra.server.dbus.dbus_start import start_dbus
             except ImportError as e:
