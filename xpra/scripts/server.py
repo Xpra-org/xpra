@@ -513,7 +513,7 @@ def apply_config(opts, mode, cmdline):
         return mode
     if mode.find("upgrade")>=0:
         #unspecified upgrade, try to find the original mode used:
-        mode = options.pop("mode", mode)
+        mode = options.pop("mode") or mode
     upgrade_config = dict_to_validated_config(options)
     #apply the previous session options:
     for k in options:
