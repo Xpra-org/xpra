@@ -122,6 +122,8 @@ except ImportError:
     bit_to_rectangles = None
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
 
+AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
+
 def parse_padding_colors(colors_str):
     padding_colors = 0, 0, 0
     if colors_str:
@@ -505,9 +507,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._unfocus()
 
     def _focus(self):
+        server_mode = self._client._remote_server_mode
+        autograb = AUTOGRAB_MODES and any(server_mode.find(x)>=0 for x in AUTOGRAB_MODES)
+        focuslog("_focus() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
+        if autograb:
+            self.keyboard_grab()
         super()._focus()
 
     def _unfocus(self):
+        self.keyboard_ungrab()
         client = self._client
         client.window_ungrab()
         if client.pointer_grabbed and client.pointer_grabbed==self._id:
@@ -1470,20 +1478,36 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def keyboard_ungrab(self, *args):
         grablog("keyboard_ungrab%s", args)
-        self._client.keyboard_grabbed = False
         gdkwin = self.get_window()
         if gdkwin:
             d = gdkwin.get_display()
             if d:
-                d.keyboard_ungrab(Gdk.CURRENT_TIME)
+                seat = d.get_default_seat()
+                if seat:
+                    seat.ungrab()
+                    self._client.keyboard_grabbed = False
         return True
 
     def keyboard_grab(self, *args):
         grablog("keyboard_grab%s", args)
-        r = Gdk.keyboard_grab(self.get_window(), True, Gdk.CURRENT_TIME)
+        gdkwin = self.get_window()
+        r = Gdk.GrabStatus.FAILED
+        seat = None
+        if gdkwin:
+            self.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
+            d = gdkwin.get_display()
+            if d:
+                seat = d.get_default_seat()
+                if seat:
+                    capabilities = Gdk.SeatCapabilities.KEYBOARD
+                    owner_events = True
+                    cursor = None
+                    event = None
+                    r = seat.grab(gdkwin, capabilities, owner_events, cursor, event, None, None)
+                    grablog.warn("%s.grab(..)=%s", seat, r)
         self._client.keyboard_grabbed = r==Gdk.GrabStatus.SUCCESS
-        grablog("keyboard_grab%s Gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
-                args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
+        grablog("keyboard_grab%s %s.grab(..)=%s, keyboard_grabbed=%s",
+                args, seat, GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
     def toggle_keyboard_grab(self):
         grabbed = self._client.keyboard_grabbed
