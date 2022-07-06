@@ -19,7 +19,7 @@ from xpra.log import Logger
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS = 100
 
-MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 30)
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 1)
 MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 250)
 FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 
