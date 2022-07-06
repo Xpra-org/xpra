@@ -274,7 +274,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.moveresize_event = None
         #add platform hooks
         self.connect_after("realize", self.on_realize)
-        self.connect('unrealize', self.on_unrealize)
+        self.connect("unrealize", self.on_unrealize)
+        self.connect("enter-notify-event", self.on_enter_notify_event)
+        self.connect("leave-notify-event", self.on_leave_notify_event)
         self.add_events(self.get_window_event_mask())
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
@@ -506,22 +508,38 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             self._unfocus()
 
-    def _focus(self):
+    def on_enter_notify_event(self, window, event):
+        focuslog("on_enter_notify_event(%s, %s)", window, event)
+        self.may_autograb()
+
+    def on_leave_notify_event(self, window, event):
+        info = {}
+        for attr in ("detail", "focus", "mode", "subwindow", "type", "window"):
+            info[attr] = getattr(event, attr, None)
+        focuslog("on_leave_notify_event(%s, %s) crossing event fields: %s", window, event, info)
+        if event.subwindow or event.detail==Gdk.NotifyType.NONLINEAR_VIRTUAL:
+            self.keyboard_ungrab()
+
+    def may_autograb(self):
         server_mode = self._client._remote_server_mode
-        autograb = AUTOGRAB_MODES and any(server_mode.find(x)>=0 for x in AUTOGRAB_MODES)
-        focuslog("_focus() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
+        autograb = AUTOGRAB_MODES and any(x=="*" or server_mode.find(x)>=0 for x in AUTOGRAB_MODES)
+        focuslog("may_autograb() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
         if autograb:
             self.keyboard_grab()
-        super()._focus()
+        return autograb
+
+    def _focus(self):
+        if super()._focus():
+            self.may_autograb()
 
     def _unfocus(self):
-        self.keyboard_ungrab()
         client = self._client
         client.window_ungrab()
         if client.pointer_grabbed and client.pointer_grabbed==self._id:
             #we lost focus, assume we also lost the grab:
             client.pointer_grabbed = None
-        super()._unfocus()
+        if super()._unfocus():
+            self.keyboard_ungrab()
 
     def cancel_focus_timer(self):
         rft = self.recheck_focus_timer
@@ -1504,7 +1522,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     cursor = None
                     event = None
                     r = seat.grab(gdkwin, capabilities, owner_events, cursor, event, None, None)
-                    grablog.warn("%s.grab(..)=%s", seat, r)
+                    grablog("%s.grab(..)=%s", seat, r)
         self._client.keyboard_grabbed = r==Gdk.GrabStatus.SUCCESS
         grablog("keyboard_grab%s %s.grab(..)=%s, keyboard_grabbed=%s",
                 args, seat, GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
