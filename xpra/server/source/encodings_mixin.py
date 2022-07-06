@@ -518,19 +518,6 @@ class EncodingsMixin(StubSourceMixin):
             ws.set_speed(speed)
 
 
-    def update_batch(self, wid : int, window, batch_props):
-        ws = self.window_sources.get(wid)
-        if ws:
-            if "reset" in batch_props:
-                ws.batch_config = self.make_batch_config(wid, window)
-            for x in ("always", "locked"):
-                if x in batch_props:
-                    setattr(ws.batch_config, x, batch_props.boolget(x))
-            for x in ("min_delay", "max_delay", "timeout_delay", "delay"):
-                if x in batch_props:
-                    setattr(ws.batch_config, x, batch_props.intget(x))
-            log("batch config updated for window %s: %s", wid, ws.batch_config)
-
     def make_batch_config(self, wid : int, window):
         config = self.default_batch_config.clone()
         config.wid = wid
