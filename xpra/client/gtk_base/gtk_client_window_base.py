@@ -123,6 +123,9 @@ except ImportError:
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
 
 AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
+AUTOGRAB_WITH_FOCUS = envbool("AUTOGRAB_WITH_FOCUS", False)
+AUTOGRAB_WITH_POINTER = envbool("AUTOGRAB_WITH_POINTER", True)
+
 
 def parse_padding_colors(colors_str):
     padding_colors = 0, 0, 0
@@ -510,14 +513,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def on_enter_notify_event(self, window, event):
         focuslog("on_enter_notify_event(%s, %s)", window, event)
-        self.may_autograb()
+        if AUTOGRAB_WITH_POINTER:
+            self.may_autograb()
 
     def on_leave_notify_event(self, window, event):
         info = {}
         for attr in ("detail", "focus", "mode", "subwindow", "type", "window"):
             info[attr] = getattr(event, attr, None)
         focuslog("on_leave_notify_event(%s, %s) crossing event fields: %s", window, event, info)
-        if event.subwindow or event.detail==Gdk.NotifyType.NONLINEAR_VIRTUAL:
+        if AUTOGRAB_WITH_POINTER and (event.subwindow or event.detail==Gdk.NotifyType.NONLINEAR_VIRTUAL):
             self.keyboard_ungrab()
 
     def may_autograb(self):
@@ -529,7 +533,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return autograb
 
     def _focus(self):
-        if super()._focus():
+        if super()._focus() and AUTOGRAB_WITH_FOCUS:
             self.may_autograb()
 
     def _unfocus(self):
@@ -538,7 +542,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if client.pointer_grabbed and client.pointer_grabbed==self._id:
             #we lost focus, assume we also lost the grab:
             client.pointer_grabbed = None
-        if super()._unfocus():
+        if super()._unfocus() and AUTOGRAB_WITH_FOCUS:
             self.keyboard_ungrab()
 
     def cancel_focus_timer(self):
