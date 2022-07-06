@@ -58,6 +58,7 @@ MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 ACK_JITTER = envint("XPRA_ACK_JITTER", 100)
 ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 250)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
+FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
@@ -1538,7 +1539,7 @@ class WindowSource(WindowIconSource):
             if congestion_elapsed<1000:
                 delay += (1000-congestion_elapsed)//4
         #raise min_delay with qsize:
-        min_delay = self.batch_config.min_delay * max(2, self.queue_size())//2
+        min_delay = max(0, self.batch_config.min_delay * max(2, self.queue_size())//2 - FRAME_OVERHEAD)
         delay = max(delay, options.get("min_delay", min_delay))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)

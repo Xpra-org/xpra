@@ -21,7 +21,6 @@ NRECS = 100
 
 MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 1)
 MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 250)
-FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 
 
 log = Logger("damage")
@@ -135,7 +134,7 @@ class DamageBatchConfig:
     def match_vrefresh(self, vrefresh=60):
         if MIN_VREFRESH<=vrefresh<=MAX_VREFRESH:
             #looks like a valid vrefresh value, use it:
-            ms_per_frame = max(5, 1000//vrefresh - FRAME_OVERHEAD)
+            ms_per_frame = max(5, 1000//vrefresh)
             self.min_delay = max(self.min_delay, ms_per_frame)
             log("match_vrefresh(%s) min_delay=%s", vrefresh, self.min_delay)
 
