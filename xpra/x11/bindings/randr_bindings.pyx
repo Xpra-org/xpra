@@ -1073,6 +1073,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         continue
                     noutput = 1
                     mode = 0
+                    vrefresh = 0
                     x, y, width, height = 0, 0, 1024, 768
                     if m:
                         if m.get("primary", False):
@@ -1145,8 +1146,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     if width==height==mmw==mmh==0:
                         log.info("disabling dummy crtc and output %i", i)
                     else:
-                        log.info("setting dummy crtc and output %i to %ix%i (%ix%i mm)%s",
-                                 i, width, height, mmw, mmh, posinfo)
+                        log.info("setting dummy crtc and output %i to %ix%i %iHz (%ix%i mm)%s",
+                                 i, width, height, round(vrefresh/1000), mmw, mmh, posinfo)
                 finally:
                     if output_info:
                         XRRFreeOutputInfo(output_info)
