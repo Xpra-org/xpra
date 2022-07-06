@@ -120,6 +120,7 @@ class SplashScreen(Gtk.Window):
         self.show_progress_value(100)
         self.progress_bar.set_text("timeout")
         self.progress_bar.set_show_text(True)
+        self.exit()
 
     def cancel_timeout_timer(self):
         tt = self.timeout_timer
