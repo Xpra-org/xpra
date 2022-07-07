@@ -14,9 +14,9 @@ from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
 
-from xpra.common import RESOLUTION_ALIASES
+from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
-from xpra.util import envbool, envint
+from xpra.util import envbool, envint, csv
 from xpra.os_util import (
     shellsub,
     setuidgid, getuid, getgid,
@@ -32,33 +32,49 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s):
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     if not s:
         return None
-    v = RESOLUTION_ALIASES.get(s.upper())
-    if v:
-        return v
-    res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
-    assert len(res)==2, "invalid resolution string '%s'" % s
-    return res
-def parse_resolutions(s):
+    s = s.upper()       #ie: 4K60
+    res_part = s
+    hz = get_refresh_rate_for_value(str(default_refresh_rate), DEFAULT_REFRESH_RATE)//1000
+    for sep in ("@", "K", "P"):
+        pos = s.find(sep)
+        if 0<pos<len(s)-1:
+            res_part, hz = s.split(sep, 1)
+            if sep!="@":
+                res_part += sep
+            break
+    res = RESOLUTION_ALIASES.get(res_part)
+    if not res:
+        try:
+            res = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
+        except ValueError:
+            raise ValueError("failed to parse resolution %s" % (res_part,)) from None
+        assert len(res)==2, "invalid resolution string '%s'" % s
+    res = list(res)
+    res.append(int(hz))
+    return tuple(res)
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):
         return ()
-    return tuple(parse_resolution(v) for v in s.split(","))
+    return tuple(parse_resolution(v, default_refresh_rate) for v in s.split(","))
 def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
                           single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
-                          default_res="8192x4096"):
+                          default_res="8192x4096",
+                          default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     s = os.environ.get(envkey)
     if s:
-        return parse_resolutions(s)
-    return (parse_resolution(os.environ.get(single_envkey, default_res)), )
+        return parse_resolutions(s, default_refresh_rate)
+    return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
 
-DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions()
-DEFAULT_DESKTOP_VFB_RESOLUTIONS = parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
-                                                        "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
-                                                        "1280x1024")
+def get_desktop_vfb_resolutions():
+    return parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
+                                 "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
+                                 "1280x1024",
+                                 default_refresh_rate=DEFAULT_REFRESH_RATE//1000)
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
@@ -194,7 +210,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
             no_arg = xvfb_cmd.index("0")
         except ValueError:
             no_arg = -1
-        geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom), pixel_depth)
+        geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom[:2]), pixel_depth)
         if no_arg>0 and xvfb_cmd[no_arg-1]=="-screen" and len(xvfb_cmd)>(no_arg+1):
             #found an existing "-screen" argument for this screen number,
             #replace it:
@@ -335,7 +351,7 @@ def kill_xvfb(xvfb_pid):
         os.unlink(xauthority)
 
 
-def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
+def set_initial_resolution(resolutions):
     try:
         log = get_vfb_logger()
         log("set_initial_resolution(%s)", resolutions)
@@ -350,13 +366,14 @@ def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
             monitors = {}
             x, y = 0, 0
             for i, res in enumerate(resolutions):
-                assert len(res)==2
-                w, h = res
-                assert isinstance(w, int) and isinstance(h, int)
+                assert len(res)==3
+                assert (isinstance(v, int) for v in res), "resolution values must be ints, found: %s (%s)" % (res, csv(type(v) for v in res))
+                w, h, hz = res
                 monitors[i] = {
                     "name"      : "VFB-%i" % i,
                     "primary"   : i==0,
                     "geometry"  : (x, y, w, h),
+                    "refresh-rate" : hz,
                     "automatic" : True,
                     }
                 x += w
@@ -364,7 +381,7 @@ def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
                 #y += h
             randr.set_crtc_config(monitors)
             return
-        res = resolutions[0]
+        res = resolutions[0][:2]
         sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
         log("RandR available, current size=%s, sizes available=%s", size, sizes)

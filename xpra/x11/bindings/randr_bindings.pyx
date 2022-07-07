@@ -18,7 +18,7 @@ from xpra.x11.bindings.xlib cimport (
     CurrentTime, Success,
     )
 from xpra.common import DEFAULT_REFRESH_RATE
-from xpra.util import envint, envbool, envfloat, csv, first_time, decode_str, prettify_plug_name
+from xpra.util import envint, envbool, csv, first_time, decode_str, prettify_plug_name
 from xpra.os_util import strtobytes, bytestostr
 
 

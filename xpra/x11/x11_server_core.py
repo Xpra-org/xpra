@@ -108,7 +108,7 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         try:
-            self.initial_resolutions = parse_resolutions(opts.resize_display)
+            self.initial_resolutions = parse_resolutions(opts.resize_display, opts.refresh_rate)
         except ValueError:
             self.initial_resolutions = None
         self.randr = opts.resize_display not in FALSE_OPTIONS

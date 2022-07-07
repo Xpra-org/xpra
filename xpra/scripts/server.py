@@ -1147,9 +1147,9 @@ def _do_run_server(script_file, cmdline,
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom = ""
             try:
-                vfb_geom = parse_resolutions(opts.resize_display)[0]
+                vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
             except Exception as e:
-                log("failed to parse resolution %r: %s", opts.resize_display, e)
+                log.warn("Warning: failed to parse resolution %r: %s", opts.resize_display, e)
 
             xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
                                                       uid, gid, username, uinput_uuid)

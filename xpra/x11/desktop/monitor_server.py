@@ -41,12 +41,12 @@ class XpraMonitorServer(DesktopServerBase):
 
     def server_init(self):
         super().server_init()
-        from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTIONS
-        screenlog("server_init() randr=%s, initial-resolutions=%s, default-resolutions=%s",
-                       self.randr, self.initial_resolutions, DEFAULT_DESKTOP_VFB_RESOLUTIONS)
+        from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
+        screenlog("server_init() randr=%s, initial-resolutions=%s",
+                       self.randr, self.initial_resolutions)
         if self.initial_resolutions==():
             return
-        res = self.initial_resolutions or DEFAULT_DESKTOP_VFB_RESOLUTIONS
+        res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
         with xlog:
             set_initial_resolution(res)
 
@@ -351,7 +351,7 @@ class XpraMonitorServer(DesktopServerBase):
         elif action=="add":
             resolution = packet[2]
             if isinstance(resolution, str):
-                resolution = parse_resolution(resolution)
+                resolution = parse_resolution(resolution, self.refresh_rate)
             assert isinstance(resolution, (tuple, list)) and len(resolution)==2
             width, height = resolution
             self.add_monitor(width, height)
