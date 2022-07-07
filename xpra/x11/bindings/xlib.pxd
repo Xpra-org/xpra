@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# @ReservedAssignment
+
 ctypedef unsigned long CARD32
 ctypedef int Bool
 ctypedef int Status
@@ -178,10 +180,6 @@ cdef extern from "X11/Xlib.h":
         unsigned int   cookie
         void           *data
 
-    ctypedef struct XRectangle:
-        short x, y
-        unsigned short width, height
-
     ctypedef unsigned char KeyCode
     ctypedef struct XModifierKeymap:
         int max_keypermod
@@ -223,7 +221,6 @@ cdef extern from "X11/Xlib.h":
     # events:
     Status XSendEvent(Display *, Window target, Bool propagate,
                       unsigned long event_mask, XEvent * event)
-
     int XSelectInput(Display * display, Window w, unsigned long event_mask)
 
     # properties:
@@ -298,7 +295,8 @@ cdef extern from "X11/Xlib.h":
     # selection:
     Window XGetSelectionOwner(Display * display, Atom selection)
     int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
-    int XConvertSelection(Display * display, Atom selection, Atom target, Atom property, Window requestor, Time time)
+    int XConvertSelection(Display * display, Atom selection, Atom target, Atom property,
+                          Window requestor, Time time)
 
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:
@@ -396,28 +394,6 @@ cdef extern from "X11/Xlib.h":
         Window window
         int width
         int height
-    ctypedef struct XAnyEvent:
-        int type
-        unsigned long serial
-        Bool send_event
-        Display * display
-        Window window
-    ctypedef struct XConfigureEvent:
-        Window event    # Same as xany.window, confusingly.
-                        # The selected-on window.
-        Window window   # The effected window.
-        int x, y, width, height, border_width
-        Window above
-        Bool override_redirect
-    # Needed to broadcast that we are a window manager, among other things:
-    union payload_for_XClientMessageEvent:
-        char b[20]
-        short s[10]
-        unsigned long l[5]
-    ctypedef struct XClientMessageEvent:
-        Atom message_type
-        int format
-        payload_for_XClientMessageEvent data
     ctypedef struct XButtonEvent:
         Window root
         Window subwindow
@@ -427,12 +403,6 @@ cdef extern from "X11/Xlib.h":
         unsigned int state      # key or button mask
         unsigned int button
         Bool same_screen
-    ctypedef struct XSelectionEvent:
-        Window requestor
-        Atom selection
-        Atom target
-        Atom property
-        Time time
     ctypedef struct XMapEvent:
         Window window
         Bool override_redirect
@@ -445,24 +415,6 @@ cdef extern from "X11/Xlib.h":
         Time time
     ctypedef struct XKeyEvent:
         unsigned int keycode, state
-    ctypedef struct XButtonEvent:
-        Window root
-        Window subwindow
-        Time time
-        int x, y                # pointer x, y coordinates in event window
-        int x_root, y_root      # coordinates relative to root */
-        unsigned int state      # key or button mask
-        unsigned int button
-        Bool same_screen
-    ctypedef struct XGenericEventCookie:
-        int            type     # of event. Always GenericEvent
-        unsigned long  serial
-        Bool           send_event
-        Display        *display
-        int            extension    #major opcode of extension that caused the event
-        int            evtype       #actual event type
-        unsigned int   cookie
-        void           *data
 
     ctypedef union XEvent:
         int type
