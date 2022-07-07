@@ -218,9 +218,27 @@ cdef extern from "X11/Xlib.h":
                    Window grab_window)
     int XQueryKeymap(Display * display, char [32] keys_return)
 
+    #Threading:
+    Status XInitThreads()
+
+    # error handling:
+    ctypedef int (*X11IOERRORHANDLER)(Display *)
+    int XSetIOErrorHandler(X11IOERRORHANDLER  handler)
+    ctypedef struct XErrorEvent:
+        int type
+        Display *display
+        unsigned long serial
+        unsigned char error_code
+        unsigned char request_code
+        unsigned char minor_code
+        XID resourceid
+    ctypedef int (*X11ERRORHANDLER)(Display *, XErrorEvent *event)
+    int XSetErrorHandler(X11ERRORHANDLER handler)
+
     # events:
     Status XSendEvent(Display *, Window target, Bool propagate,
                       unsigned long event_mask, XEvent * event)
+    void XNextEvent(Display *display, XEvent *event_return) nogil
     int XSelectInput(Display * display, Window w, unsigned long event_mask)
 
     # properties:

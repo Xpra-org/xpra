@@ -984,6 +984,7 @@ def clean():
                    "xpra/gtk_common/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_display_source.c",
+                   "xpra/x11/bindings/xwait.c",
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard_bindings.c",
                    "xpra/x11/bindings/display_source.c",
@@ -1892,6 +1893,10 @@ if OSX:
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
+    add_cython_ext("xpra.x11.bindings.xwait",
+                ["xpra/x11/bindings/xwait.pyx"],
+                **pkgconfig("x11")
+                )
     add_cython_ext("xpra.x11.bindings.wait_for_x_server",
                 ["xpra/x11/bindings/wait_for_x_server.pyx"],
                 **pkgconfig("x11")

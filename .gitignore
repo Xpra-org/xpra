@@ -95,6 +95,7 @@ tests/unittests/test-file*
 # Cython files:
 *.html
 /xpra/wait_for_x_server.c
+/xpra/xwait.c
 /xpra/monotonic_time.c
 /xpra/rectangle.c
 /xpra/buffers/new_buffers.c

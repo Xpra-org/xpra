@@ -497,6 +497,9 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_clean(options, args)
     elif mode=="recover":
         return run_recover(script_file, cmdline, error_cb, options, args, defaults)
+    elif mode == "xwait":
+        no_gtk()
+        return run_xwait(args)
     elif mode == "wminfo":
         no_gtk()
         return run_wminfo(args)
@@ -3232,6 +3235,10 @@ def display_wm_info(args):
         init_gdk_display_source()
         from xpra.x11.gtk_x11.wm_check import get_wm_info
         return get_wm_info()
+
+def run_xwait(args):
+    from xpra.x11.bindings.xwait import main as xwait_main
+    xwait_main(args)
 
 def run_wminfo(args):
     for k,v in display_wm_info(args).items():
