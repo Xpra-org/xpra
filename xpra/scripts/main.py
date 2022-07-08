@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -431,7 +431,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         #maybe the server is already running
         #and we don't need to bother trying to start it:
         try:
-            display = pick_display(error_cb, options, args)
+            display = pick_display(error_cb, options, args, cmdline)
         except Exception:
             pass
         else:
@@ -461,10 +461,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     elif mode in ("stop", "exit"):
         no_gtk()
-        return run_stopexit(mode, error_cb, options, args)
+        return run_stopexit(mode, error_cb, options, args, cmdline)
     elif mode == "top":
         no_gtk()
-        return run_top(error_cb, options, args)
+        return run_top(error_cb, options, args, cmdline)
     elif mode == "list":
         no_gtk()
         return run_list(error_cb, options, args)
@@ -526,7 +526,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.scripts import bug_report
         bug_report.main(["xpra"]+args)
     elif mode == "session-info":
-        return run_session_info(error_cb, options, args)
+        return run_session_info(error_cb, options, args, cmdline)
     elif mode == "docs":
         return run_docs()
     elif mode == "html5":
@@ -537,7 +537,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         (mode=="_proxy_shadow_start" and supports_shadow)
         ):
         nox()
-        return run_proxy(error_cb, options, script_file, args, mode, defaults)
+        return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
     elif mode in ("_sound_record", "_sound_play", "_sound_query"):
         if not has_sound_support():
             error_cb("no sound support!")
@@ -603,8 +603,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return gtk_info.main()
     elif mode=="gui-info":
         check_gtk()
-        from xpra.platform import gui
-        return gui.main()
+        from xpra.platform import gui as platform_gui
+        return platform_gui.main()
     elif mode=="network-info":
         from xpra.net import net_util
         return net_util.main()
@@ -746,7 +746,7 @@ def pick_vnc_display(error_cb, opts, extra_args):
     error_cb("cannot find vnc displays yet")
 
 
-def pick_display(error_cb, opts, extra_args):
+def pick_display(error_cb, opts, extra_args, cmdline=()):
     if len(extra_args)==1 and extra_args[0].startswith("vnc"):
         #can't identify vnc displays with xpra sockets
         #try the first N standard vnc ports:
@@ -770,9 +770,9 @@ def pick_display(error_cb, opts, extra_args):
                     }
         #if not, then fall through and hope that the xpra server supports vnc:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-    return do_pick_display(dotxpra, error_cb, opts, extra_args)
+    return do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
 
-def do_pick_display(dotxpra, error_cb, opts, extra_args):
+def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
     if not extra_args:
         # Pick a default server
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
@@ -803,7 +803,7 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args):
                 })
         return desc
     if len(extra_args) == 1:
-        return parse_display_name(error_cb, opts, extra_args[0], find_session_by_name=find_session_by_name)
+        return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
     error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
     return None
 
@@ -991,16 +991,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                                 dtype, socket_options=display_desc)
 
         if dtype in ("ssl", "wss"):
-            strict_host_check = display_desc.get("strict-host-check")
-            if strict_host_check is False:
-                opts.ssl_server_verify_mode = "none"
-            from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes, ssl_handshake
-            if not opts.ssl_server_hostname:
-                #if the server hostname was not specified explicitly,
-                #use the one from the connection string:
-                opts.ssl_server_hostname = host
-            kwargs = get_ssl_attributes(opts, server_side=False, overrides=display_desc)
-            sock = ssl_wrap_socket(sock, **kwargs)
+            from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
+            #convert option names to function arguments:
+            ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
+            sock = ssl_wrap_socket(sock, **ssl_options)
             sock = ssl_handshake(sock)
             assert sock, "failed to wrap socket %s" % sock
             conn._socket = sock
@@ -1214,14 +1208,14 @@ def connect_to_server(app, display_desc, opts):
             GLib.idle_add(app.quit, EXIT_OK)
         except InitExit as e:
             from xpra.net.socket_util import ssl_retry
+            ssllog = Logger("ssl")
             mods = ssl_retry(e, opts.ssl_ca_certs)
-            log("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
+            ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
             if mods:
-                for k,v in mods.items():
-                    setattr(opts, k, v)
+                display_desc.setdefault("ssl-options", {}).update(mods)
                 do_setup_connection()
                 return
-            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            ssllog("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, e.status)
         except InitException as e:
@@ -1333,7 +1327,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
             server_socket = os.environ.get("XPRA_SERVER_SOCKET")
             if server_socket:
                 extra_args = ["socket://%s" % server_socket]
-        display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args)
+        display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
         if len(extra_args)==1 and opts.password:
             uri = extra_args[0]
             if uri in cmdline and opts.password in uri:
@@ -1710,7 +1704,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
             #maybe the server is already running for the display specified
             #then we don't even need to bother trying to start it:
             try:
-                display = pick_display(error_cb, options, args)
+                display = pick_display(error_cb, options, args, cmdline)
             except Exception:
                 pass
             else:
@@ -1760,7 +1754,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
         #maybe the server is already running
         #and we don't need to bother trying to start it:
         try:
-            display = pick_display(error_cb, options, args)
+            display = pick_display(error_cb, options, args, cmdline)
         except Exception:
             pass
         else:
@@ -1846,7 +1840,7 @@ def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
 def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     display_name = args[0]
-    params = parse_display_name(error_cb, opts, display_name)
+    params = parse_display_name(error_cb, opts, display_name, cmdline)
     hello_extra = {}
     #strip defaults, only keep extra ones:
     for x in START_COMMAND_OPTIONS:     # ["start", "start-child", etc]
@@ -1923,8 +1917,8 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
                 from xpra.net.socket_util import ssl_retry
                 mods = ssl_retry(e, opts.ssl_ca_certs)
                 if mods:
-                    for k,v in mods.items():
-                        setattr(opts, k, v)
+                    for k, v in mods.items():
+                        setattr(opts, "ssl_%s" % k, v)
                     continue
                 raise
     except Exception as e:
@@ -2483,7 +2477,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
-def run_proxy(error_cb, opts, script_file, args, mode, defaults):
+def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
     display = None
     if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
@@ -2501,7 +2495,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                     #failed to guess!
                     pass
             elif args:
-                display = pick_display(error_cb, opts, args)
+                display = pick_display(error_cb, opts, args, cmdline)
                 display_name = display.get("display")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
@@ -2531,7 +2525,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 uri = "named-pipe://%s" % display_name
             else:
                 uri = "socket://%s" % socket_path
-            display = parse_display_name(error_cb, opts, uri)
+            display = parse_display_name(error_cb, opts, uri, cmdline)
             if proc and proc.poll() is None:
                 #start a thread just to reap server startup process (yuk)
                 #(as the server process will exit as it daemonizes)
@@ -2539,7 +2533,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
         #use display specified on command line:
-        display = pick_display(error_cb, opts, args)
+        display = pick_display(error_cb, opts, args, cmdline)
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
@@ -2548,7 +2542,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     app.run()
     return 0
 
-def run_stopexit(mode, error_cb, opts, extra_args):
+def run_stopexit(mode, error_cb, opts, extra_args, cmdline):
     assert mode in ("stop", "exit")
     no_gtk()
 
@@ -2624,7 +2618,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
     elif len(extra_args)>1:
         return multimode(extra_args)
 
-    display_desc = pick_display(error_cb, opts, extra_args)
+    display_desc = pick_display(error_cb, opts, extra_args, cmdline)
     app = None
     e = 1
     try:
@@ -2662,12 +2656,12 @@ def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)):
     sys.stdout.write("\n")
 
 
-def run_top(error_cb, options, args):
+def run_top(error_cb, options, args, cmdline):
     from xpra.client.top_client import TopClient, TopSessionClient
     app = None
     if args:
         try:
-            display_desc = pick_display(error_cb, options, args)
+            display_desc = pick_display(error_cb, options, args, cmdline)
         except Exception:
             pass
         else:
@@ -2682,9 +2676,9 @@ def run_top(error_cb, options, args):
         app = TopClient(options)
     return app.run()
 
-def run_session_info(error_cb, options, args):
+def run_session_info(error_cb, options, args, cmdline):
     check_gtk()
-    display_desc = pick_display(error_cb, options, args)
+    display_desc = pick_display(error_cb, options, args, cmdline)
     from xpra.client.gtk_base.session_info import SessionInfoClient
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
@@ -2988,7 +2982,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
     ALL = len(args)==1 and args[0].lower()=="all"
     if not ALL and len(args)==1:
         try:
-            display_descr = pick_display(error_cb, options, args)
+            display_descr = pick_display(error_cb, options, args, cmdline)
             args = []
         except Exception:
             pass

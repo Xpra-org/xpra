@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -405,7 +405,7 @@ def load_password_file(password_file):
     return None
 
 
-def parse_display_name(error_cb, opts, display_name, find_session_by_name=False):
+def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by_name=False):
     if WIN32:
         from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
     else:
@@ -624,6 +624,28 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         host = ":".join(parts)
         default_port = DEFAULT_PORTS.get(protocol, DEFAULT_PORT)
         _parse_host_string(host, default_port)
+        if protocol in ("ssl", "wss"):
+            host = desc["host"]
+            port = desc["port"]
+            ssl_host = opts.ssl_server_hostname or host
+            from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
+            #load the host+port specific options from file:
+            ssl_options = load_ssl_options(ssl_host, port)
+            #only override these options via the command line and not configuration files:
+            for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
+                x = "ssl-%s" % k
+                incmdline = (
+                    ("--%s" % x) in cmdline or ("--no-%s" % x) in cmdline or
+                    any(c.startswith("--%s=" % x) for c in cmdline)
+                )
+                if incmdline or k not in ssl_options:
+                    ssl_options[k] = v
+            #ensure the hostname is always defined and use `host` if `server_hostname` is not set:
+            ssl_options["server-hostname"] = ssl_host
+            #this is used by the launcher to disable strict host key checking:
+            if desc.get("strict-host-check") is False:
+                ssl_options["server-verify-mode"] = "none"
+            desc["ssl-options"] = ssl_options
         return desc
 
     if protocol=="vsock":
