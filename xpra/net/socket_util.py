@@ -1111,7 +1111,9 @@ def ssl_retry(e, ssl_ca_certs):
     ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     from xpra.platform.paths import get_ssl_hosts_config_dirs
-    from xpra.scripts.pinentry_wrapper import confirm
+    def confirm(*args):
+        from xpra.scripts import pinentry_wrapper
+        return pinentry_wrapper.confirm(*args)
     host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
