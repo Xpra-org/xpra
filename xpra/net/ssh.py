@@ -273,11 +273,11 @@ def ssh_paramiko_connect_to(display_desc):
                                                        paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
-            do_ssh_paramiko_connect(chan_to_middle, host,
-                                    username, password,
-                                    host_config or safe_lookup(ssh_config, "*"),
-                                    keys,
-                                    paramiko_config)
+            transport = do_ssh_paramiko_connect(chan_to_middle, host,
+                                                username, password,
+                                                host_config or safe_lookup(ssh_config, "*"),
+                                                keys,
+                                                paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
@@ -297,10 +297,12 @@ def ssh_paramiko_connect_to(display_desc):
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
-        do_ssh_paramiko_connect(sock, host, username, password,
+        modes = get_auth_modes(paramiko_config, host_config, password)
+        transport = do_ssh_paramiko_connect(sock, host, username, password,
                                 host_config or safe_lookup(ssh_config, "*"),
                                 keys,
-                                paramiko_config)
+                                paramiko_config,
+                                modes)
         remote_port = display_desc.get("remote_port", 0)
         if remote_port:
             #we want to connect directly to a remote port,
@@ -329,8 +331,37 @@ def get_default_keyfiles():
         return [x for x in dkf.split(":") if x]
     return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
 
+AUTH_MODES = ("none", "agent", "key", "password")
 
-def do_ssh_paramiko_connect(chan, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
+def get_auth_modes(paramiko_config, host_config, password):
+    def configvalue(key):
+        #if the paramiko config has a setting, honour it:
+        if paramiko_config and key in paramiko_config:
+            return paramiko_config.get(key)
+        #fallback to the value from the host config:
+        return (host_config or {}).get(key)
+    def configbool(key, default_value=True):
+        return parse_bool(key, configvalue(key), default_value)
+    auth_str = configvalue("auth")
+    if auth_str:
+        return auth_str.split("+")
+    auth = []
+    if configbool("noneauthentication", NONE_AUTH):
+        auth.append("none")
+    if password and configbool("passwordauthentication", PASSWORD_AUTH):
+        auth.append("password")
+    if configbool("agentauthentication", AGENT_AUTH):
+        auth.append("agent")
+    # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
+    if configbool("keyauthentication", KEY_AUTH):
+        auth.append("key")
+    if not password and configbool("passwordauthentication", PASSWORD_AUTH):
+        auth.append("password")
+    return auth
+
+
+def do_ssh_paramiko_connect(chan, host, username, password,
+                            host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException
     from paramiko.transport import Transport
     transport = Transport(chan)
@@ -341,9 +372,11 @@ def do_ssh_paramiko_connect(chan, host, username, password, host_config=None, ke
     except SSHException as e:
         log("SSH negotiation failed", exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
-    return do_ssh_paramiko_connect_to(transport, host, username, password, host_config, keyfiles, paramiko_config)
+    return do_ssh_paramiko_connect_to(transport, host, username, password,
+                                      host_config, keyfiles, paramiko_config, auth_modes)
 
-def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
+def do_ssh_paramiko_connect_to(transport, host, username, password,
+                               host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
@@ -623,33 +656,11 @@ keymd5(host_key),
         for x in banner.splitlines():
             log.info(" %s", x)
 
-    if paramiko_config and "auth" in paramiko_config:
-        auth = paramiko_config.get("auth", "").split("+")
-        AUTH_OPTIONS = ("none", "agent", "key", "password")
-        if any(a for a in auth if a not in AUTH_OPTIONS):
-            raise InitExit(EXIT_SSH_FAILURE, "invalid ssh authentication module specified: %s" %
-                           csv(a for a in auth if a not in AUTH_OPTIONS))
-    else:
-        auth = []
-        if configbool("noneauthentication", NONE_AUTH):
-            auth.append("none")
-        if password and configbool("passwordauthentication", PASSWORD_AUTH):
-            auth.append("password")
-        if configbool("agentauthentication", AGENT_AUTH):
-            auth.append("agent")
-        # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
-        if configbool("keyauthentication", KEY_AUTH):
-            auth.append("key")
-        if not password and configbool("passwordauthentication", PASSWORD_AUTH):
-            auth.append("password")
-    #def doauth(authtype):
-    #    return authtype in auth and not transport.is_authenticated()
-
-    log("starting authentication, authentication methods: %s", auth)
+    log("starting authentication, authentication methods: %s", auth_modes)
     # per the RFC we probably should do none first always and read off the supported
     # methods, however, the current code seems to work fine with OpenSSH
-    while not transport.is_authenticated() and auth:
-        a = auth.pop(0)
+    while not transport.is_authenticated() and auth_modes:
+        a = auth_modes.pop(0)
         log("auth=%s", a)
         if a=="none":
             auth_none()
@@ -671,6 +682,8 @@ keymd5(host_key),
                         auth_password()
                         if transport.is_authenticated():
                             break
+        else:
+            log.warn("Warning: invalid authentication mechanism %r", a)
     if not transport.is_authenticated():
         transport.close()
         raise InitExit(EXIT_CONNECTION_FAILED, "SSH Authentication on %s failed" % host)
