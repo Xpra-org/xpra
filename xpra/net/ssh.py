@@ -153,6 +153,15 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
+def safe_lookup(config_obj, host):
+    try:
+        return config_obj.lookup(host)
+    except ImportError as e:
+        log("%s.lookup(%s)", config_obj, host, exc_info=True)
+        log.warn("Warning: unable to load SSH host config for %r:", host)
+        log.warn(" %s", e)
+    return {}
+
 def ssh_paramiko_connect_to(display_desc):
     #plain socket attributes:
     host = display_desc["host"]
@@ -184,15 +193,6 @@ def ssh_paramiko_connect_to(display_desc):
         log("ssh_paramiko_connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, msg) from None
 
-    def safe_config_lookup(config_obj, host):
-        try:
-            return config_obj.lookup(host)
-        except ImportError as e:
-            log("%s.lookup(%s)", config_obj, host, exc_info=True)
-            log.warn("Warning: unable to load SSH host config for %r:", host)
-            log.warn(" %s", e)
-        return {}
-
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
@@ -207,7 +207,7 @@ def ssh_paramiko_connect_to(display_desc):
                 log("%i hosts found", len(ssh_config.get_hostnames()))
             except KeyError:
                 pass
-            host_config = safe_config_lookup(ssh_config, host)
+            host_config = safe_lookup(ssh_config, host)
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
                 host = host_config.get("hostname", host)
@@ -240,7 +240,7 @@ def ssh_paramiko_connect_to(display_desc):
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
-                                               host_config or ssh_config.lookup("*"),
+                                               host_config or safe_lookup(ssh_config, "*"),
                                                proxy_keys,
                                                paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
@@ -274,10 +274,10 @@ def ssh_paramiko_connect_to(display_desc):
                 middle_transport.start_client()
             except SSHException as e:
                 fail("SSH proxy transport negotiation failed: %s" % e)
-            proxy_host_config = ssh_config.lookup(host)
+            proxy_host_config = safe_lookup(ssh_config, host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
-                                       proxy_host_config or safe_config_lookup(ssh_config, "*"),
+                                       proxy_host_config or safe_lookup(ssh_config, "*"),
                                        proxy_keys,
                                        paramiko_config)
             log("Opening proxy channel")
@@ -291,7 +291,7 @@ def ssh_paramiko_connect_to(display_desc):
                 fail("SSH transport negotiation failed: %s" % e)
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
-                                       host_config or safe_config_lookup(ssh_config, "*"),
+                                       host_config or safe_lookup(ssh_config, "*"),
                                        keys,
                                        paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
@@ -320,7 +320,7 @@ def ssh_paramiko_connect_to(display_desc):
         except SSHException as e:
             fail("SSH negotiation failed: %s" % e)
         do_ssh_paramiko_connect_to(transport, host, username, password,
-                                   host_config or safe_config_lookup(ssh_config, "*"),
+                                   host_config or safe_lookup(ssh_config, "*"),
                                    keys,
                                    paramiko_config)
         remote_port = display_desc.get("remote_port", 0)
@@ -393,7 +393,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
                 log("HostKeys.load(%s)", known_hosts, exc_info=True)
 
         log("host keys=%s", host_keys)
-        keys = host_keys.lookup(host)
+        keys = safe_lookup(host_keys, host)
         known_host_key = (keys or {}).get(host_key.get_name())
         def keyname():
             return host_key.get_name().replace("ssh-", "")
