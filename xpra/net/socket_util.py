@@ -1110,27 +1110,20 @@ def ssl_retry(e, ssl_ca_certs):
         return None
     ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
-    from xpra.platform.paths import get_ssl_hosts_config_dirs
     def confirm(*args):
         from xpra.scripts import pinentry_wrapper
         return pinentry_wrapper.confirm(*args)
-    host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
         if ssl_ca_certs not in ("", "default"):
             ssllog("self-signed cert does not match %r", ssl_ca_certs)
             return None
         #perhaps we already have the certificate for this hostname
-        dirs = get_ssl_hosts_config_dirs()
-        host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
-        cert_filename = "cert.pem"
-        ssllog("looking for %s in %s", cert_filename, host_dirs)
-        for d in host_dirs:
-            f = os.path.join(d, cert_filename)
-            if os.path.exists(f):
-                ssllog("found certificate for %s: %s", server_hostname, f)
-                ssllog("retrying")
-                return {"ssl_ca_certs" : f}
+        CERT_FILENAME = "cert.pem"
+        cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
+        if cert_file:
+            ssllog("retrying")
+            return {"ssl_ca_certs" : cert_file}
         #download the certificate data
         import ssl
         try:
@@ -1138,7 +1131,7 @@ def ssl_retry(e, ssl_ca_certs):
         except ssl.SSLError:
             cert_data = None
         if not cert_data:
-            ssllog("failed to get server certificate from %s", addr)
+            ssllog.warn("Warning: failed to get server certificate from %s", addr)
             return None
         ssllog("downloaded ssl cert data for %s: %s", addr, ellipsizer(cert_data))
         #ask the user if he wants to accept this certificate:
@@ -1148,40 +1141,11 @@ def ssl_retry(e, ssl_ca_certs):
         ssllog("run_pinentry_confirm(..) returned %r", r)
         if not r:
             return None
-        #if there is an existing host config dir, try to use it:
-        for d in [x for x in host_dirs if os.path.exists(x)]:
-            try:
-                filename = os.path.join(d, cert_filename)
-                with open(filename, "wb") as f:
-                    f.write(cert_data.encode("latin1"))
-                ssllog.info("saved SSL certificate to %s", filename)
-                return {"ssl_ca_certs" : filename}
-            except OSError:
-                ssllog("failed to save cert data to %r", filename, exc_info=True)
-        #try to create a host config dir:
-        for d in host_dirs:
-            folders = os.path.normpath(d).split(os.sep)
-            #we have to be careful and create the 'ssl' dir with 0o700 permissions
-            #but any directory above that can use 0o755
-            try:
-                ssl_dir_index = len(folders)-1
-                while ssl_dir_index>0 and folders[ssl_dir_index]!="ssl":
-                    ssl_dir_index -= 1
-                if ssl_dir_index>1:
-                    parent = os.path.join(*folders[:ssl_dir_index-1])
-                    ssl_dir = os.path.join(*folders[:ssl_dir_index])
-                    os.makedirs(parent, exist_ok=True)
-                    os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
-                os.makedirs(d, mode=0o700)
-                filename = os.path.join(d, cert_filename)
-                with open(filename, "wb") as f:
-                    f.write(cert_data.encode("latin1"))
-                ssllog.info("saved SSL certificate to %s", filename)
-                return {"ssl_ca_certs" : filename}
-            except OSError:
-                ssllog("failed to save cert data to %r", d, exc_info=True)
-        ssllog.warn("Warning: failed to save certificate data")
-        return None
+        filename = save_ssl_config_file(server_hostname, port, CERT_FILENAME, cert_data.encode("latin1"))
+        if not filename:
+            ssllog.warn("Warning: failed to save certificate data")
+            return None
+        return {"ssl_ca_certs" : filename}
     if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH):
         #ask the user if he wants to skip verifying the host
         title = "SSL Certificate Verification Failure"
@@ -1193,6 +1157,61 @@ def ssl_retry(e, ssl_ca_certs):
             return {"ssl_check_hostname" : False}
     return None
 
+def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    from xpra.platform.paths import get_ssl_hosts_config_dirs
+    dirs = get_ssl_hosts_config_dirs()
+    host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
+    host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
+    ssllog("looking for %s in %s", filename, host_dirs)
+    for d in host_dirs:
+        f = os.path.join(d, filename)
+        if os.path.exists(f):
+            ssllog("found %s", f)
+            return f
+    return None
+
+def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", filedata=b""):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    from xpra.platform.paths import get_ssl_hosts_config_dirs
+    dirs = get_ssl_hosts_config_dirs()
+    host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
+    host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
+    #if there is an existing host config dir, try to use it:
+    for d in [x for x in host_dirs if os.path.exists(x)]:
+        try:
+            f = os.path.join(d, filename)
+            with open(f, "wb") as fd:
+                fd.write(filedata)
+            ssllog.info("saved SSL certificate to %s", f)
+            return f
+        except OSError:
+            ssllog("failed to save cert data to %r", f, exc_info=True)
+    #try to create a host config dir:
+    for d in host_dirs:
+        folders = os.path.normpath(d).split(os.sep)
+        #we have to be careful and create the 'ssl' dir with 0o700 permissions
+        #but any directory above that can use 0o755
+        try:
+            ssl_dir_index = len(folders)-1
+            while ssl_dir_index>0 and folders[ssl_dir_index]!="ssl":
+                ssl_dir_index -= 1
+            if ssl_dir_index>1:
+                parent = os.path.join(*folders[:ssl_dir_index-1])
+                ssl_dir = os.path.join(*folders[:ssl_dir_index])
+                os.makedirs(parent, exist_ok=True)
+                os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
+            os.makedirs(d, mode=0o700)
+            f = os.path.join(d, filename)
+            with open(filename, "wb") as fd:
+                fd.write(filedata)
+            ssllog.info("saved SSL certificate to %s", f)
+            return f
+        except OSError:
+            ssllog("failed to save cert data to %r", d, exc_info=True)
+    return None
 
 def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
     socktype = socket.SOCK_STREAM
