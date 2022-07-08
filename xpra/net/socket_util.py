@@ -26,6 +26,7 @@ from xpra.util import (
     DEFAULT_PORT,
     )
 from xpra.make_thread import start_thread
+from xpra.scripts.parsing import do_legacy_bool_parse
 
 #pylint: disable=import-outside-toplevel
 
@@ -1112,7 +1113,10 @@ def ssl_retry(e, ssl_ca_certs):
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     def confirm(*args):
         from xpra.scripts import pinentry_wrapper
-        return pinentry_wrapper.confirm(*args)
+        r = pinentry_wrapper.confirm(*args)
+        ssllog("run_pinentry_confirm(..) returned %r", r)
+        return r
+    options = load_ssl_options(server_hostname, port)
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
         if ssl_ca_certs not in ("", "default"):
@@ -1122,8 +1126,9 @@ def ssl_retry(e, ssl_ca_certs):
         CERT_FILENAME = "cert.pem"
         cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
         if cert_file:
-            ssllog("retrying")
-            return {"ssl_ca_certs" : cert_file}
+            ssllog("retrying with %r", cert_file)
+            options["ssl_ca_certs"] = cert_file
+            return options
         #download the certificate data
         import ssl
         try:
@@ -1137,15 +1142,14 @@ def ssl_retry(e, ssl_ca_certs):
         #ask the user if he wants to accept this certificate:
         title = "SSL Certificate Verification Failure"
         prompt = "Do you want to accept this certificate?"
-        r = confirm((msg, ), title, prompt)
-        ssllog("run_pinentry_confirm(..) returned %r", r)
-        if not r:
+        if not confirm((msg, ), title, prompt):
             return None
         filename = save_ssl_config_file(server_hostname, port, CERT_FILENAME, cert_data.encode("latin1"))
         if not filename:
             ssllog.warn("Warning: failed to save certificate data")
             return None
-        return {"ssl_ca_certs" : filename}
+        options["ssl_ca_certs"] = filename
+        return options
     if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH):
         #ask the user if he wants to skip verifying the host
         title = "SSL Certificate Verification Failure"
@@ -1154,8 +1158,43 @@ def ssl_retry(e, ssl_ca_certs):
         ssllog("run_pinentry_confirm(..) returned %r", r)
         if r:
             ssllog.info("retrying without checking the hostname")
-            return {"ssl_check_hostname" : False}
+            options["ssl_check_hostname"] = False
+            save_ssl_options(server_hostname, port, options)
+            return options
     return None
+
+def load_ssl_options(server_hostname, port):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    f = find_ssl_config_file(server_hostname, port, "options")
+    options = {}
+    if f:
+        try:
+            with open(f, "r") as fd:
+                for line in fd.readlines():
+                    line = line.rstrip("\n\r")
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split("=", 1)
+                    if len(parts)!=2:
+                        continue
+                    k, v = parts
+                    #some options use boolean values, convert them back:
+                    if k in ("ssl_check_hostname", ):
+                        v = v.lower() in TRUE_OPTIONS
+                    options[k] = v
+        except OSError as  e:
+            ssllog.warn("Warning: failed to read %r: %s", f, e)
+    ssllog("load_ssl_options%s=%s (from %r)", (server_hostname, port), options, f)
+    return options
+
+def save_ssl_options(server_hostname, port=443, options=b""):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    boptions = b"\n".join(("%s=%s" % (k, v)).encode("latin1") for k, v in options.items())
+    f = save_ssl_config_file(server_hostname, port=port, filename="options", filedata=boptions)
+    ssllog("save_ssl_options%s saved to %r", (server_hostname, port, options), f)
+    return f
 
 def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
     from xpra.log import Logger
@@ -1164,7 +1203,7 @@ def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
     dirs = get_ssl_hosts_config_dirs()
     host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
-    ssllog("looking for %s in %s", filename, host_dirs)
+    ssllog("looking for %r in %s", filename, host_dirs)
     for d in host_dirs:
         f = os.path.join(d, filename)
         if os.path.exists(f):
@@ -1185,7 +1224,7 @@ def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", filedat
             f = os.path.join(d, filename)
             with open(f, "wb") as fd:
                 fd.write(filedata)
-            ssllog.info("saved SSL certificate to %s", f)
+            ssllog.info("saved SSL certificate to %r", f)
             return f
         except OSError:
             ssllog("failed to save cert data to %r", f, exc_info=True)
