@@ -257,8 +257,6 @@ def ssh_paramiko_connect_to(display_desc):
 
         keys = get_keyfiles(host_config)
         from xpra.net.socket_util import socket_connect
-        from paramiko.transport import Transport
-        from paramiko import SSHException
         if "proxy_host" in display_desc:
             proxy_host = display_desc["proxy_host"]
             proxy_port = display_desc.get("proxy_port", 22)
@@ -268,32 +266,18 @@ def ssh_paramiko_connect_to(display_desc):
             sock = socket_connect(proxy_host, proxy_port)
             if not sock:
                 fail("SSH proxy transport failed to connect to %s:%s" % (proxy_host, proxy_port))
-            middle_transport = Transport(sock)
-            middle_transport.use_compression(False)
-            try:
-                middle_transport.start_client()
-            except SSHException as e:
-                fail("SSH proxy transport negotiation failed: %s" % e)
-            proxy_host_config = safe_lookup(ssh_config, host)
-            do_ssh_paramiko_connect_to(middle_transport, proxy_host,
-                                       proxy_username, proxy_password,
-                                       proxy_host_config or safe_lookup(ssh_config, "*"),
-                                       proxy_keys,
-                                       paramiko_config)
+            middle_transport = do_ssh_paramiko_connect(sock, proxy_host,
+                                                       proxy_username, proxy_password,
+                                                       safe_lookup(ssh_config, host) or safe_lookup(ssh_config, "*"),
+                                                       proxy_keys,
+                                                       paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
-
-            transport = Transport(chan_to_middle)
-            transport.use_compression(False)
-            try:
-                transport.start_client()
-            except SSHException as e:
-                fail("SSH transport negotiation failed: %s" % e)
-            do_ssh_paramiko_connect_to(transport, host,
-                                       username, password,
-                                       host_config or safe_lookup(ssh_config, "*"),
-                                       keys,
-                                       paramiko_config)
+            do_ssh_paramiko_connect(chan_to_middle, host,
+                                    username, password,
+                                    host_config or safe_lookup(ssh_config, "*"),
+                                    keys,
+                                    paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
@@ -313,16 +297,10 @@ def ssh_paramiko_connect_to(display_desc):
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
-        transport = Transport(sock)
-        transport.use_compression(False)
-        try:
-            transport.start_client()
-        except SSHException as e:
-            fail("SSH negotiation failed: %s" % e)
-        do_ssh_paramiko_connect_to(transport, host, username, password,
-                                   host_config or safe_lookup(ssh_config, "*"),
-                                   keys,
-                                   paramiko_config)
+        do_ssh_paramiko_connect(sock, host, username, password,
+                                host_config or safe_lookup(ssh_config, "*"),
+                                keys,
+                                paramiko_config)
         remote_port = display_desc.get("remote_port", 0)
         if remote_port:
             #we want to connect directly to a remote port,
@@ -352,12 +330,24 @@ def get_default_keyfiles():
     return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
 
 
+def do_ssh_paramiko_connect(chan, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
+    from paramiko import SSHException
+    from paramiko.transport import Transport
+    transport = Transport(chan)
+    transport.use_compression(False)
+    log("SSH transport %s", transport)
+    try:
+        transport.start_client()
+    except SSHException as e:
+        log("SSH negotiation failed", exc_info=True)
+        raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
+    return do_ssh_paramiko_connect_to(transport, host, username, password, host_config, keyfiles, paramiko_config)
+
 def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
     log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
-    log("SSH transport %s", transport)
 
     def configvalue(key):
         #if the paramiko config has a setting, honour it:
@@ -684,7 +674,7 @@ keymd5(host_key),
     if not transport.is_authenticated():
         transport.close()
         raise InitExit(EXIT_CONNECTION_FAILED, "SSH Authentication on %s failed" % host)
-
+    return transport
 
 def paramiko_run_test_command(transport, cmd):
     from paramiko import SSHException
