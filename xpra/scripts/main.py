@@ -1928,7 +1928,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
-        args = cmdline[:]
+        args = list(cmdline)
         #modify the 'mode' in the command line:
         try:
             mode_pos = args.index(mode)
