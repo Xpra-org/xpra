@@ -1083,13 +1083,14 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
 
 def ssl_retry(e, ssl_ca_certs):
     SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    ssllog("ssl_retry(%s, %s) SSL_RETRY=%s", e, ssl_ca_certs, SSL_RETRY)
     if not SSL_RETRY:
         return None
     if not isinstance(e, SSLVerifyFailure):
         return None
     #we may be able to ask the user if we wants to accept this certificate
-    from xpra.log import Logger
-    ssllog = Logger("ssl")
     verify_code = e.verify_code
     ssl_sock = e.ssl_sock
     msg = str(e)
