@@ -23,8 +23,6 @@
 #     Boston, MA  02110-1301, USA.
 #
 
-from __future__ import absolute_import
-
 import sys
 
 from cpython cimport bool
