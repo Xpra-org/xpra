@@ -300,11 +300,15 @@ def parse_remote_display(s):
             display = ":" + s       #ie: ":10.0"
         except ValueError:
             display = s             #ie: "tcp://somehost:10000/"
-    desc = {
-        "display"   : display,
-        "display_as_args"   : [display],
-        }
+    if display:
+        desc = {
+            "display"   : display,
+            "display_as_args"   : [display],
+            }
+    else:
+        desc = {}
     if options_str:
+        desc["options_str"] = options_str
         #parse extra attributes
         d = parse_simple_dict(options_str, attr_sep)
         for k,v in d.items():
@@ -413,7 +417,10 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     if display_name.startswith("/") and POSIX:
         display_name = "socket://"+display_name
 
-    desc = {"display_name" : display_name}
+    desc = {
+        "display_name"  : display_name,
+        "cmdline"       : cmdline,
+        }
     display_name, proxy_attrs = parse_proxy_attributes(display_name)
     desc.update(proxy_attrs)
 

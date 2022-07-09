@@ -723,6 +723,9 @@ def display_desc_to_uri(display_desc):
     display = display_desc.get("display")
     if display:
         uri += display.lstrip(":")
+    options_str = display_desc.get("options_str")
+    if options_str:
+        uri += "?%s" % options_str
     return uri
 
 
