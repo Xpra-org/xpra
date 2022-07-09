@@ -30,7 +30,7 @@ from xpra.os_util import (
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, envfloat, engs, csv
+from xpra.util import envint, envbool, envfloat, engs, noerr
 from xpra.log import Logger, is_debug_enabled
 
 #pylint: disable=import-outside-toplevel
@@ -59,6 +59,9 @@ MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
 EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
 EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
+
+
+PARAMIKO_SESSION_LOST = "No existing session"
 
 
 def keymd5(k) -> str:
@@ -291,18 +294,48 @@ def ssh_paramiko_connect_to(display_desc):
 
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
-        sock = socket_connect(host, port)
-        if not sock:
-            fail("SSH failed to connect to %s:%s" % (host, port))
-        sockname = sock.getsockname()
-        peername = sock.getpeername()
-        log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
-        modes = get_auth_modes(paramiko_config, host_config, password)
-        transport = do_ssh_paramiko_connect(sock, host, username, password,
-                                host_config or safe_lookup(ssh_config, "*"),
-                                keys,
-                                paramiko_config,
-                                modes)
+        auth_modes = get_auth_modes(paramiko_config, host_config, password)
+        log("authentication modes=%s", auth_modes)
+        sock = None
+        while True:
+            sock = socket_connect(host, port)
+            if not sock:
+                fail("SSH failed to connect to %s:%s" % (host, port))
+            sockname = sock.getsockname()
+            peername = sock.getpeername()
+            log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
+            transport = None
+            try:
+                transport = do_ssh_paramiko_connect(sock, host, username, password,
+                                                    host_config or safe_lookup(ssh_config, "*"),
+                                                    keys,
+                                                    paramiko_config,
+                                                    auth_modes)
+            except SSHAuthenticationError as e:
+                log("paramiko authentication errors on socket %s with modes %s: %s", sock, auth_modes, e.errors, exc_info=True)
+                pw_errors = []
+                for errs in e.errors.values():
+                    pw_errors += errs
+                if ("key" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
+                    #try connecting again but without 'key' and 'agent' authentication:
+                    #see https://github.com/Xpra-org/xpra/issues/3223
+                    for m in ("key", "agent"):
+                        try:
+                            auth_modes.remove(m)
+                        except KeyError:
+                            pass
+                    log.info("retrying SSH authentication with modes %s", auth_modes)
+                    continue
+                raise
+            else:
+                #we have a transport!
+                break
+            finally:
+                if sock and not transport:
+                    noerr(sock.shutdown)
+                    noerr(sock.close)
+                    sock = None
+
         remote_port = display_desc.get("remote_port", 0)
         if remote_port:
             #we want to connect directly to a remote port,
@@ -523,6 +556,8 @@ keymd5(host_key),
         log("ssh host key verification skipped")
 
 
+    auth_errors = {}
+
     def auth_agent():
         agent = Agent()
         agent_keys = agent.get_keys()
@@ -535,9 +570,13 @@ keymd5(host_key),
                     if transport.is_authenticated():
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
                         break
-                except SSHException:
+                except SSHException as e:
+                    auth_errors.setdefault("agent", []).append(str(e))
                     log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), username)
                     log("%s%s", transport.auth_publickey, (username, agent_key), exc_info=True)
+                    if str(e)==PARAMIKO_SESSION_LOST:
+                        #no point in trying more keys
+                        break
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
@@ -563,6 +602,7 @@ keymd5(host_key),
                     log("no %s key type", pkey_classname)
                     continue
                 log("trying to load as %s", pkey_classname)
+                key = None
                 try:
                     key = pkey_class.from_private_key_file(keyfile_path)
                     log.info("loaded %s private key from '%s'", pkey_classname, keyfile_path)
@@ -599,9 +639,13 @@ keymd5(host_key),
                 try:
                     transport.auth_publickey(username, key)
                 except SSHException as e:
+                    auth_errors.setdefault("key", []).append(str(e))
                     log("key '%s' rejected", keyfile_path, exc_info=True)
                     log.info("SSH authentication using key '%s' failed:", keyfile_path)
                     log.info(" %s", e)
+                    if str(e)==PARAMIKO_SESSION_LOST:
+                        #no point in trying more keys
+                        break
                 else:
                     if transport.is_authenticated():
                         break
@@ -612,7 +656,8 @@ keymd5(host_key),
         log("trying none authentication")
         try:
             transport.auth_none(username)
-        except SSHException:
+        except SSHException as e:
+            auth_errors.setdefault("none", []).append(str(e))
             log("auth_none()", exc_info=True)
 
     def auth_password():
@@ -620,6 +665,7 @@ keymd5(host_key),
         try:
             transport.auth_password(username, password)
         except SSHException as e:
+            auth_errors.setdefault("password", []).append(str(e))
             log("auth_password(..)", exc_info=True)
             log.info("SSH password authentication failed:")
             for emsg in getattr(e, "message", str(e)).split(";"):
@@ -645,6 +691,7 @@ keymd5(host_key),
             myiauthhandler = iauthhandler()
             transport.auth_interactive(username, myiauthhandler.handle_request, "")
         except SSHException as e:
+            auth_errors.setdefault("interactive", []).append(str(e))
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
             for emsg in getattr(e, "message", str(e)).split(";"):
@@ -657,10 +704,11 @@ keymd5(host_key),
             log.info(" %s", x)
 
     log("starting authentication, authentication methods: %s", auth_modes)
+    auth = list(auth_modes)
     # per the RFC we probably should do none first always and read off the supported
     # methods, however, the current code seems to work fine with OpenSSH
-    while not transport.is_authenticated() and auth_modes:
-        a = auth_modes.pop(0)
+    while not transport.is_authenticated() and auth:
+        a = auth.pop(0)
         log("auth=%s", a)
         if a=="none":
             auth_none()
@@ -684,10 +732,22 @@ keymd5(host_key),
                             break
         else:
             log.warn("Warning: invalid authentication mechanism %r", a)
+        #detect session-lost problems:
+        #(no point in continuing without a session)
+        if auth_errors and not transport.is_authenticated():
+            for err_strs in auth_errors.values():
+                if PARAMIKO_SESSION_LOST in err_strs:
+                    raise SSHAuthenticationError(host, auth_errors)
     if not transport.is_authenticated():
         transport.close()
-        raise InitExit(EXIT_CONNECTION_FAILED, "SSH Authentication on %s failed" % host)
+        log("authentication errors: %s", auth_errors)
+        raise SSHAuthenticationError(host, auth_errors)
     return transport
+
+class SSHAuthenticationError(InitExit):
+    def __init__(self, host, errors):
+        super().__init__(EXIT_CONNECTION_FAILED, "SSH Authentication failed for %r" % host)
+        self.errors = errors
 
 def paramiko_run_test_command(transport, cmd):
     from paramiko import SSHException
