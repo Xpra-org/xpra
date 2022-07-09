@@ -62,8 +62,12 @@ FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
-FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
-STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
+FORCE_BATCH = envbool("XPRA_FORCE_BATCH", True)
+STRICT_MODE = envbool("XPRA_ENCODING_STRICT_MODE", False)
+MAX_QUALITY = envint("XPRA_ENCODING_MAX_QUALITY", 100)
+MAX_SPEED = envint("XPRA_ENCODING_MAX_SPEED", 100)
+assert MAX_QUALITY>0 and MAX_SPEED>0
+
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
 DOWNSCALE = envbool("XPRA_DOWNSCALE", True)
 DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
@@ -295,8 +299,10 @@ class WindowSource(WindowIconSource):
         # they may have fixed values:
         self._fixed_quality = default_encoding_options.get("quality", -1)
         self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
+        self._fixed_max_quality = capr(default_encoding_options.get("max-quality", MAX_QUALITY))
         self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
+        self._fixed_max_speed = capr(default_encoding_options.get("max-speed", MAX_SPEED))
         self._encoding_hint = None
         self._quality_hint = self.window.get("quality", -1)
         dyn_props = window.get_dynamic_property_names()
@@ -469,8 +475,10 @@ class WindowSource(WindowIconSource):
         #
         self._fixed_quality = -1
         self._fixed_min_quality = 0
+        self._fixed_max_quality = MAX_QUALITY
         self._fixed_speed = -1
         self._fixed_min_speed = 0
+        self._fixed_max_speed = MAX_SPEED
         #
         self._damage_delayed = None
         self._sequence = 1
@@ -628,12 +636,22 @@ class WindowSource(WindowIconSource):
                 "fullscreen"            : self.fullscreen or False,
                 #speed / quality properties (not necessarily the same as the video encoder settings..):
                 "encoding-hint"         : self._encoding_hint or "",
-                "min_speed"             : self._fixed_min_speed,
-                "speed"                 : self._fixed_speed,
-                "speed-hint"            : self._speed_hint,
-                "min_quality"           : self._fixed_min_quality,
-                "quality"               : self._fixed_quality,
-                "quality-hint"          : self._quality_hint,
+                "speed" : {
+                    "min"               : self._fixed_min_speed,
+                    "max"               : self._fixed_max_speed,
+                    "fixed"             : self._fixed_speed,
+                    "cur"               : self._current_speed,
+                    "hint"              : self._speed_hint,
+                    "refresh"           : self.refresh_speed,
+                    },
+                "quality" : {
+                    "min"               : self._fixed_min_quality,
+                    "max"               : self._fixed_max_quality,
+                    "fixed"             : self._fixed_quality,
+                    "cur"               : self._current_quality,
+                    "hint"              : self._quality_hint,
+                    "refresh"           : self.refresh_quality,
+                    },
                 }
 
 
@@ -1280,7 +1298,7 @@ class WindowSource(WindowIconSource):
         speed_data.append((monotonic(), target))
         speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
         speed = max(0, self._fixed_min_speed, speed)
-        speed = int(min(max_speed, speed))
+        speed = int(min(self._fixed_max_speed, speed))
         self._current_speed = speed
         statslog("update_speed() speed=%2i (target=%2i, max=%2i) for wid=%i, info=%s",
                  speed, target, max_speed, self.wid, info)
@@ -1292,6 +1310,8 @@ class WindowSource(WindowIconSource):
     def set_min_speed(self, min_speed):
         min_speed = capr(min_speed)
         if self._fixed_min_speed!=min_speed:
+            if min_speed>0:
+                self._fixed_speed = 0
             self._fixed_min_speed = min_speed
             self.reconfigure(True)
 
@@ -1352,7 +1372,7 @@ class WindowSource(WindowIconSource):
         ves_copy.append((now, target))
         quality = int(time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
         quality = max(0, self._fixed_min_quality, quality)
-        quality = int(min(99, quality))
+        quality = int(min(self._fixed_max_quality, quality))
         self._current_quality = quality
         statslog("update_quality() quality=%2i (target=%2i) for wid=%i, info=%s", quality, target, self.wid, info)
         self._encoding_quality_info = info
@@ -1361,8 +1381,11 @@ class WindowSource(WindowIconSource):
         self.global_statistics.quality.append((now, ww*wh, quality))
 
     def set_min_quality(self, min_quality):
+        min_quality = capr(min_quality)
         if self._fixed_min_quality!=min_quality:
-            self._fixed_min_quality = capr(min_quality)
+            if min_quality>0:
+                self._fixed_quality = 0
+            self._fixed_min_quality = min_quality
             self.update_quality()
             self.reconfigure(True)
 
@@ -1836,7 +1859,7 @@ class WindowSource(WindowIconSource):
                 if packets_backlog is None:
                     packets_backlog = self.get_packets_backlog()
                 speed = (speed - packets_backlog*20) * speed_pct // 100
-                speed = min(100, max(1, self._fixed_min_speed, speed))
+                speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
         if quality==0:
             if self._fixed_quality>0:
@@ -1856,7 +1879,7 @@ class WindowSource(WindowIconSource):
                 if "scaled-width" in options or "scaled-height" in options:
                     scaling_discount = 20
                 quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
-                quality = min(100, max(1, self._fixed_min_quality, quality))
+                quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
         eoptions = dict(options)
         eoptions.update({
             "quality"   : quality,
@@ -2094,7 +2117,7 @@ class WindowSource(WindowIconSource):
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
             packet = self.make_data_packet(damage_time, process_damage_time, image, coding, sequence, options, flush)
-        except Exception as e:
+        except Exception:
             log("make_data_packet%s", (damage_time, process_damage_time, image, coding, sequence, options, flush),
                 exc_info=True)
             if not self.is_cancelled(sequence):
