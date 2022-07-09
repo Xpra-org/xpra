@@ -50,7 +50,7 @@ from xpra.scripts.parsing import (
     )
 from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS,
-    NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
+    NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
     fixup_options, dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
@@ -1954,7 +1954,24 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             except ValueError:
                 raise InitException("URI not found in command line arguments") from None
             args[uri_pos] = uri
-        os.execv(script_file, args)
+        #remove command line options consumed by 'start' that should not be used again:
+        attach_args = []
+        i = 0
+        while i<len(args):
+            arg = args[i]
+            i += 1
+            if arg.startswith("--"):
+                pos = arg.find("=")
+                if pos>0:
+                    option = arg[2:pos]
+                else:
+                    option = arg[2:]
+                if option.startswith("start") or option not in CLIENT_OPTIONS:
+                    if pos<0 and i<len(args) and not args[i].startswith("--"):
+                        i += 1
+                    continue
+            attach_args.append(arg)
+        os.execv(script_file, attach_args)
     return r
 
 
