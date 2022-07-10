@@ -181,6 +181,7 @@ vsock_ENABLED           = LINUX and any(os.path.exists(d+"/linux/vm_sockets.h") 
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
+brotli_ENABLED          = DEFAULT and any(os.path.exists(d+"/brotli/decode.h") for d in INCLUDE_DIRS)
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
@@ -246,7 +247,7 @@ SWITCHES = [
     "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
-    "bencode", "cython_bencode", "rencodeplus",
+    "bencode", "cython_bencode", "rencodeplus", "brotli",
     "vsock", "netdev", "mdns",
     "clipboard",
     "scripts",
@@ -333,7 +334,7 @@ if "clean" not in sys.argv:
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
-        cython_bencode_ENABLED = rencodeplus_ENABLED = False
+        cython_bencode_ENABLED = rencodeplus_ENABLED = brotli_ENABLED = False
         gtk3_ENABLED = False
         x11_ENABLED = False
     #sanity check the flags:
@@ -1001,6 +1002,7 @@ def clean():
                    "xpra/platform/xposix/netdev_query.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
+                   "xpra/net/brotli/decompressor.c",
                    "xpra/net/websockets/mask.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
@@ -2472,6 +2474,14 @@ if cython_bencode_ENABLED:
     add_cython_ext("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig)
+
+toggle_packages(brotli_ENABLED, "xpra.net.brotli.decompressor")
+if brotli_ENABLED:
+    brotli_pkgconfig = pkgconfig(optimize=3)
+    add_to_keywords(brotli_pkgconfig, "extra_link_args", "-lbrotlidec")
+    add_cython_ext("xpra.net.brotli.decompressor",
+                ["xpra/net/brotli/decompressor.pyx"],
+                **brotli_pkgconfig)
 
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 if rencodeplus_ENABLED:

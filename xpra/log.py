@@ -240,7 +240,7 @@ STRUCT_KNOWN_FILTERS = {
                 "regiondetect"  : "Video region detection",
                 "regionrefresh" : "Video region refresh",
                 "refresh"       : "Refresh of lossy screen updates",
-                "compress"      : "Pixel compression (non video)",
+                "compress"      : "Pixel compression",
                 },
     "Codec" : {
                 #codecs:
@@ -277,6 +277,7 @@ STRUCT_KNOWN_FILTERS = {
                 "gtk"           : "All GTK code: bindings, client, etc",
                 "util"          : "All utility functions",
                 "gobject"       : "Command line clients",
+                "brotli"        : "Brotli bindings",
                 #server bits:
                 "test"          : "Test code",
                 "verbose"       : "Very verbose flag",

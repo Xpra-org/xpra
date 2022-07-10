@@ -7,13 +7,10 @@
 
 from collections import namedtuple
 
-from xpra.util import envbool, envint
+from xpra.util import envbool
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
+from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
-
-#MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 512)
-MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)
-MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 #all the compressors we know about, in best compatibility order:
 ALL_COMPRESSORS = ("lz4", "zlib", "brotli", "none")
@@ -66,7 +63,13 @@ def init_brotli():
         if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
         return level | BROTLI_FLAG, brotli.compress(packet, quality=level)
-    return Compression("brotli", None, brotli.__version__, brotli_compress, brotli.decompress)
+    brotli_decompress = brotli.decompress
+    try:
+        from xpra.net.brotli.decompressor import decompress
+        brotli_decompress = decompress
+    except ImportError:
+        pass
+    return Compression("brotli", None, brotli.__version__, brotli_compress, brotli_decompress)
 
 def init_zlib():
     import zlib
@@ -104,7 +107,7 @@ def init_compressors(*names):
         except (TypeError, ImportError, AttributeError):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
-            logger.debug("no %s", x, exc_info=True)
+            logger("no %s", x, exc_info=True)
 
 def init_all():
     init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
