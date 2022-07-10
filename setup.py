@@ -2482,6 +2482,11 @@ if brotli_ENABLED:
     add_cython_ext("xpra.net.brotli.decompressor",
                 ["xpra/net/brotli/decompressor.pyx"],
                 **brotli_pkgconfig)
+    brotli_pkgconfig = pkgconfig(optimize=3)
+    add_to_keywords(brotli_pkgconfig, "extra_link_args", "-lbrotlienc")
+    add_cython_ext("xpra.net.brotli.compressor",
+                ["xpra/net/brotli/compressor.pyx"],
+                **brotli_pkgconfig)
 
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 if rencodeplus_ENABLED:

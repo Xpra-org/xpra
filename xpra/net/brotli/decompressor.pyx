@@ -12,7 +12,6 @@ log = Logger("brotli")
 
 
 cdef extern from "Python.h":
-    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS

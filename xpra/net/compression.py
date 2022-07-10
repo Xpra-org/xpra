@@ -54,22 +54,26 @@ def init_lz4():
     return Compression("lz4", version, VERSION.encode("latin1"), lz4_compress, lz4_decompress)
 
 def init_brotli():
-    import brotli
-    def brotli_compress(packet, level):
+    try:
+        from xpra.net.brotli.compressor import compress, get_version
+        from xpra.net.brotli.decompressor import decompress
+        brotli_decompress = decompress
+        brotli_compress = compress
+        brotli_version = get_version()
+    except ImportError:
+        import brotli
+        brotli_decompress = brotli.decompress
+        brotli_compress = brotli.decompress
+        brotli_version = brotli.__version__
+    def brotli_compress_shim(packet, level):
         if len(packet)>1024*1024:
             level = min(9, level)
         else:
             level = min(11, level)
         if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
-        return level | BROTLI_FLAG, brotli.compress(packet, quality=level)
-    brotli_decompress = brotli.decompress
-    try:
-        from xpra.net.brotli.decompressor import decompress
-        brotli_decompress = decompress
-    except ImportError:
-        pass
-    return Compression("brotli", None, brotli.__version__, brotli_compress, brotli_decompress)
+        return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
+    return Compression("brotli", None, brotli_version, brotli_compress_shim, brotli_decompress)
 
 def init_zlib():
     import zlib
@@ -107,7 +111,7 @@ def init_compressors(*names):
         except (TypeError, ImportError, AttributeError):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
-            logger("no %s", x, exc_info=True)
+            logger.warn("no %s", x, exc_info=True)
 
 def init_all():
     init_compressors(*(list(ALL_COMPRESSORS)+["none"]))

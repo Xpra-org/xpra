@@ -1505,7 +1505,7 @@ static PyObject *__pyx_codeobj__7;
 static PyObject *__pyx_codeobj__9;
 /* Late includes */
 
-/* "xpra/net/brotli/decompressor.pyx":65
+/* "xpra/net/brotli/decompressor.pyx":64
  *     }
  * 
  * def get_version():             # <<<<<<<<<<<<<<
@@ -1543,7 +1543,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_version", 0);
 
-  /* "xpra/net/brotli/decompressor.pyx":66
+  /* "xpra/net/brotli/decompressor.pyx":65
  * 
  * def get_version():
  *     cdef uint32_t bv = BrotliDecoderVersion()             # <<<<<<<<<<<<<<
@@ -1552,7 +1552,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
  */
   __pyx_v_bv = BrotliDecoderVersion();
 
-  /* "xpra/net/brotli/decompressor.pyx":67
+  /* "xpra/net/brotli/decompressor.pyx":66
  * def get_version():
  *     cdef uint32_t bv = BrotliDecoderVersion()
  *     cdef unsigned int major = bv >> 24             # <<<<<<<<<<<<<<
@@ -1561,7 +1561,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
  */
   __pyx_v_major = (__pyx_v_bv >> 24);
 
-  /* "xpra/net/brotli/decompressor.pyx":68
+  /* "xpra/net/brotli/decompressor.pyx":67
  *     cdef uint32_t bv = BrotliDecoderVersion()
  *     cdef unsigned int major = bv >> 24
  *     cdef unsigned int minor = (bv >> 12) & 0xFFF             # <<<<<<<<<<<<<<
@@ -1570,7 +1570,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
  */
   __pyx_v_minor = ((__pyx_v_bv >> 12) & 0xFFF);
 
-  /* "xpra/net/brotli/decompressor.pyx":69
+  /* "xpra/net/brotli/decompressor.pyx":68
  *     cdef unsigned int major = bv >> 24
  *     cdef unsigned int minor = (bv >> 12) & 0xFFF
  *     cdef unsigned int patch = bv & 0xFFF             # <<<<<<<<<<<<<<
@@ -1579,7 +1579,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
  */
   __pyx_v_patch = (__pyx_v_bv & 0xFFF);
 
-  /* "xpra/net/brotli/decompressor.pyx":70
+  /* "xpra/net/brotli/decompressor.pyx":69
  *     cdef unsigned int minor = (bv >> 12) & 0xFFF
  *     cdef unsigned int patch = bv & 0xFFF
  *     return (major, minor, patch)             # <<<<<<<<<<<<<<
@@ -1587,13 +1587,13 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_unsigned_int(__pyx_v_major); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_unsigned_int(__pyx_v_major); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_minor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_minor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyInt_From_unsigned_int(__pyx_v_patch); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_unsigned_int(__pyx_v_patch); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1);
@@ -1608,7 +1608,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "xpra/net/brotli/decompressor.pyx":65
+  /* "xpra/net/brotli/decompressor.pyx":64
  *     }
  * 
  * def get_version():             # <<<<<<<<<<<<<<
@@ -1630,7 +1630,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_get_version(CYTHON_U
   return __pyx_r;
 }
 
-/* "xpra/net/brotli/decompressor.pyx":72
+/* "xpra/net/brotli/decompressor.pyx":71
  *     return (major, minor, patch)
  * 
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):             # <<<<<<<<<<<<<<
@@ -1678,7 +1678,7 @@ static PyObject *__pyx_pw_4xpra_3net_6brotli_12decompressor_3decompress(PyObject
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "decompress") < 0)) __PYX_ERR(0, 72, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "decompress") < 0)) __PYX_ERR(0, 71, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -1694,7 +1694,7 @@ static PyObject *__pyx_pw_4xpra_3net_6brotli_12decompressor_3decompress(PyObject
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("decompress", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 72, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("decompress", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 71, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("xpra.net.brotli.decompressor.decompress", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1748,7 +1748,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("decompress", 0);
 
-  /* "xpra/net/brotli/decompressor.pyx":73
+  /* "xpra/net/brotli/decompressor.pyx":72
  * 
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
  *     cdef const uint8_t *in_ptr = NULL             # <<<<<<<<<<<<<<
@@ -1757,7 +1757,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_in_ptr = NULL;
 
-  /* "xpra/net/brotli/decompressor.pyx":74
+  /* "xpra/net/brotli/decompressor.pyx":73
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
  *     cdef const uint8_t *in_ptr = NULL
  *     cdef size_t available_in = 0             # <<<<<<<<<<<<<<
@@ -1766,7 +1766,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_available_in = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":75
+  /* "xpra/net/brotli/decompressor.pyx":74
  *     cdef const uint8_t *in_ptr = NULL
  *     cdef size_t available_in = 0
  *     cdef MemBuf out_buf = getbuf(512*1024, True)             # <<<<<<<<<<<<<<
@@ -1775,12 +1775,12 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.readonly = 1;
-  __pyx_t_1 = ((PyObject *)__pyx_f_4xpra_7buffers_6membuf_getbuf(0x80000, &__pyx_t_2)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __pyx_t_1 = ((PyObject *)__pyx_f_4xpra_7buffers_6membuf_getbuf(0x80000, &__pyx_t_2)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_out_buf = ((struct __pyx_obj_4xpra_7buffers_6membuf_MemBuf *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":76
+  /* "xpra/net/brotli/decompressor.pyx":75
  *     cdef size_t available_in = 0
  *     cdef MemBuf out_buf = getbuf(512*1024, True)
  *     cdef size_t available_out = 0             # <<<<<<<<<<<<<<
@@ -1789,7 +1789,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_available_out = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":77
+  /* "xpra/net/brotli/decompressor.pyx":76
  *     cdef MemBuf out_buf = getbuf(512*1024, True)
  *     cdef size_t available_out = 0
  *     cdef uint8_t *out_ptr = NULL             # <<<<<<<<<<<<<<
@@ -1798,7 +1798,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_out_ptr = NULL;
 
-  /* "xpra/net/brotli/decompressor.pyx":78
+  /* "xpra/net/brotli/decompressor.pyx":77
  *     cdef size_t available_out = 0
  *     cdef uint8_t *out_ptr = NULL
  *     cdef size_t total_out = 0             # <<<<<<<<<<<<<<
@@ -1807,7 +1807,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_total_out = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":79
+  /* "xpra/net/brotli/decompressor.pyx":78
  *     cdef uint8_t *out_ptr = NULL
  *     cdef size_t total_out = 0
  *     cdef size_t decoded = 0             # <<<<<<<<<<<<<<
@@ -1816,7 +1816,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_decoded = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":81
+  /* "xpra/net/brotli/decompressor.pyx":80
  *     cdef size_t decoded = 0
  * 
  *     cdef BrotliDecoderState* state = NULL             # <<<<<<<<<<<<<<
@@ -1825,19 +1825,19 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_state = NULL;
 
-  /* "xpra/net/brotli/decompressor.pyx":84
+  /* "xpra/net/brotli/decompressor.pyx":83
  *     cdef Py_buffer in_buf
  *     cdef BrotliDecoderResult r
  *     chunks = []             # <<<<<<<<<<<<<<
  * 
  *     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_chunks = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":86
+  /* "xpra/net/brotli/decompressor.pyx":85
  *     chunks = []
  * 
  *     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):             # <<<<<<<<<<<<<<
@@ -1847,23 +1847,23 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   __pyx_t_3 = (PyObject_GetBuffer(__pyx_v_data, (&__pyx_v_in_buf), PyBUF_ANY_CONTIGUOUS) != 0);
   if (unlikely(__pyx_t_3)) {
 
-    /* "xpra/net/brotli/decompressor.pyx":87
+    /* "xpra/net/brotli/decompressor.pyx":86
  * 
  *     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
  *         raise Exception("failed to read data from %s" % type(data))             # <<<<<<<<<<<<<<
  *     in_ptr = <const uint8_t*> in_buf.buf
  *     available_in = in_buf.len
  */
-    __pyx_t_1 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_failed_to_read_data_from_s, ((PyObject *)Py_TYPE(__pyx_v_data))); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 87, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_failed_to_read_data_from_s, ((PyObject *)Py_TYPE(__pyx_v_data))); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 86, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_4 = __Pyx_PyObject_CallOneArg(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])), __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 87, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_CallOneArg(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])), __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_Raise(__pyx_t_4, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __PYX_ERR(0, 87, __pyx_L1_error)
+    __PYX_ERR(0, 86, __pyx_L1_error)
 
-    /* "xpra/net/brotli/decompressor.pyx":86
+    /* "xpra/net/brotli/decompressor.pyx":85
  *     chunks = []
  * 
  *     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):             # <<<<<<<<<<<<<<
@@ -1872,7 +1872,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   }
 
-  /* "xpra/net/brotli/decompressor.pyx":88
+  /* "xpra/net/brotli/decompressor.pyx":87
  *     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
  *         raise Exception("failed to read data from %s" % type(data))
  *     in_ptr = <const uint8_t*> in_buf.buf             # <<<<<<<<<<<<<<
@@ -1881,7 +1881,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   __pyx_v_in_ptr = ((uint8_t const *)__pyx_v_in_buf.buf);
 
-  /* "xpra/net/brotli/decompressor.pyx":89
+  /* "xpra/net/brotli/decompressor.pyx":88
  *         raise Exception("failed to read data from %s" % type(data))
  *     in_ptr = <const uint8_t*> in_buf.buf
  *     available_in = in_buf.len             # <<<<<<<<<<<<<<
@@ -1891,16 +1891,16 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   __pyx_t_5 = __pyx_v_in_buf.len;
   __pyx_v_available_in = __pyx_t_5;
 
-  /* "xpra/net/brotli/decompressor.pyx":90
+  /* "xpra/net/brotli/decompressor.pyx":89
  *     in_ptr = <const uint8_t*> in_buf.buf
  *     available_in = in_buf.len
  *     log("brotli.decompress(%i bytes, %i)", available_in, maxsize)             # <<<<<<<<<<<<<<
  *     try:
  *         state = BrotliDecoderCreateInstance(NULL, NULL, NULL)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_log); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_log); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_6 = __Pyx_PyInt_FromSize_t(__pyx_v_available_in); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_FromSize_t(__pyx_v_available_in); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_7 = NULL;
   __pyx_t_8 = 0;
@@ -1917,7 +1917,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_1)) {
     PyObject *__pyx_temp[4] = {__pyx_t_7, __pyx_kp_u_brotli_decompress_i_bytes_i, __pyx_t_6, __pyx_v_maxsize};
-    __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 3+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 3+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 89, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -1926,14 +1926,14 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_1)) {
     PyObject *__pyx_temp[4] = {__pyx_t_7, __pyx_kp_u_brotli_decompress_i_bytes_i, __pyx_t_6, __pyx_v_maxsize};
-    __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 3+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 3+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 89, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   } else
   #endif
   {
-    __pyx_t_9 = PyTuple_New(3+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_9 = PyTuple_New(3+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 89, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     if (__pyx_t_7) {
       __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7); __pyx_t_7 = NULL;
@@ -1947,14 +1947,14 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
     __Pyx_GIVEREF(__pyx_v_maxsize);
     PyTuple_SET_ITEM(__pyx_t_9, 2+__pyx_t_8, __pyx_v_maxsize);
     __pyx_t_6 = 0;
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_9, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_9, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 89, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":91
+  /* "xpra/net/brotli/decompressor.pyx":90
  *     available_in = in_buf.len
  *     log("brotli.decompress(%i bytes, %i)", available_in, maxsize)
  *     try:             # <<<<<<<<<<<<<<
@@ -1963,7 +1963,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
   /*try:*/ {
 
-    /* "xpra/net/brotli/decompressor.pyx":92
+    /* "xpra/net/brotli/decompressor.pyx":91
  *     log("brotli.decompress(%i bytes, %i)", available_in, maxsize)
  *     try:
  *         state = BrotliDecoderCreateInstance(NULL, NULL, NULL)             # <<<<<<<<<<<<<<
@@ -1972,7 +1972,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
     __pyx_v_state = BrotliDecoderCreateInstance(NULL, NULL, NULL);
 
-    /* "xpra/net/brotli/decompressor.pyx":93
+    /* "xpra/net/brotli/decompressor.pyx":92
  *     try:
  *         state = BrotliDecoderCreateInstance(NULL, NULL, NULL)
  *         assert state!=NULL, "failed to allocate a brotli decoder instance"             # <<<<<<<<<<<<<<
@@ -1983,12 +1983,12 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
     if (unlikely(!Py_OptimizeFlag)) {
       if (unlikely(!((__pyx_v_state != NULL) != 0))) {
         PyErr_SetObject(PyExc_AssertionError, __pyx_kp_u_failed_to_allocate_a_brotli_deco);
-        __PYX_ERR(0, 93, __pyx_L5_error)
+        __PYX_ERR(0, 92, __pyx_L5_error)
       }
     }
     #endif
 
-    /* "xpra/net/brotli/decompressor.pyx":94
+    /* "xpra/net/brotli/decompressor.pyx":93
  *         state = BrotliDecoderCreateInstance(NULL, NULL, NULL)
  *         assert state!=NULL, "failed to allocate a brotli decoder instance"
  *         while True:             # <<<<<<<<<<<<<<
@@ -1997,17 +1997,17 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
     while (1) {
 
-      /* "xpra/net/brotli/decompressor.pyx":95
+      /* "xpra/net/brotli/decompressor.pyx":94
  *         assert state!=NULL, "failed to allocate a brotli decoder instance"
  *         while True:
  *             available_out = len(out_buf)             # <<<<<<<<<<<<<<
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             with nogil:
  */
-      __pyx_t_5 = PyObject_Length(((PyObject *)__pyx_v_out_buf)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 95, __pyx_L5_error)
+      __pyx_t_5 = PyObject_Length(((PyObject *)__pyx_v_out_buf)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 94, __pyx_L5_error)
       __pyx_v_available_out = __pyx_t_5;
 
-      /* "xpra/net/brotli/decompressor.pyx":96
+      /* "xpra/net/brotli/decompressor.pyx":95
  *         while True:
  *             available_out = len(out_buf)
  *             out_ptr = <uint8_t*> out_buf.get_mem()             # <<<<<<<<<<<<<<
@@ -2016,7 +2016,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
       __pyx_v_out_ptr = ((uint8_t *)((struct __pyx_vtabstruct_4xpra_7buffers_6membuf_MemBuf *)__pyx_v_out_buf->__pyx_vtab)->get_mem(__pyx_v_out_buf));
 
-      /* "xpra/net/brotli/decompressor.pyx":97
+      /* "xpra/net/brotli/decompressor.pyx":96
  *             available_out = len(out_buf)
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             with nogil:             # <<<<<<<<<<<<<<
@@ -2031,7 +2031,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
           #endif
           /*try:*/ {
 
-            /* "xpra/net/brotli/decompressor.pyx":98
+            /* "xpra/net/brotli/decompressor.pyx":97
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             with nogil:
  *                 r = BrotliDecoderDecompressStream(state,             # <<<<<<<<<<<<<<
@@ -2041,7 +2041,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
             __pyx_v_r = BrotliDecoderDecompressStream(__pyx_v_state, (&__pyx_v_available_in), (&__pyx_v_in_ptr), (&__pyx_v_available_out), (&__pyx_v_out_ptr), (&__pyx_v_total_out));
           }
 
-          /* "xpra/net/brotli/decompressor.pyx":97
+          /* "xpra/net/brotli/decompressor.pyx":96
  *             available_out = len(out_buf)
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             with nogil:             # <<<<<<<<<<<<<<
@@ -2060,23 +2060,23 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
           }
       }
 
-      /* "xpra/net/brotli/decompressor.pyx":102
+      /* "xpra/net/brotli/decompressor.pyx":101
  *                                                   &available_out, &out_ptr,
  *                                                   &total_out)
  *             log("BrotliDecoderDecompressStream(..)=%s", RESULT_STR.get(r, r))             # <<<<<<<<<<<<<<
  *             if total_out>maxsize:
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  */
-      __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_log); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 102, __pyx_L5_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_log); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_RESULT_STR); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 102, __pyx_L5_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_RESULT_STR); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 101, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_6);
-      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 102, __pyx_L5_error)
+      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 101, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-      __pyx_t_6 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 102, __pyx_L5_error)
+      __pyx_t_6 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 101, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_6);
-      __pyx_t_10 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 102, __pyx_L5_error)
+      __pyx_t_10 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 101, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_10);
       __pyx_t_11 = NULL;
       __pyx_t_8 = 0;
@@ -2093,7 +2093,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       #if CYTHON_FAST_PYCALL
       if (PyFunction_Check(__pyx_t_7)) {
         PyObject *__pyx_temp[3] = {__pyx_t_11, __pyx_t_6, __pyx_t_10};
-        __pyx_t_9 = __Pyx_PyFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_9 = __Pyx_PyFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
         __Pyx_GOTREF(__pyx_t_9);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -2103,7 +2103,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       #if CYTHON_FAST_PYCCALL
       if (__Pyx_PyFastCFunction_Check(__pyx_t_7)) {
         PyObject *__pyx_temp[3] = {__pyx_t_11, __pyx_t_6, __pyx_t_10};
-        __pyx_t_9 = __Pyx_PyCFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_9 = __Pyx_PyCFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
         __Pyx_GOTREF(__pyx_t_9);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -2111,7 +2111,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       } else
       #endif
       {
-        __pyx_t_12 = PyTuple_New(2+__pyx_t_8); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_12 = PyTuple_New(2+__pyx_t_8); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_12);
         if (__pyx_t_11) {
           __Pyx_GIVEREF(__pyx_t_11); PyTuple_SET_ITEM(__pyx_t_12, 0, __pyx_t_11); __pyx_t_11 = NULL;
@@ -2122,7 +2122,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
         PyTuple_SET_ITEM(__pyx_t_12, 1+__pyx_t_8, __pyx_t_10);
         __pyx_t_6 = 0;
         __pyx_t_10 = 0;
-        __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_7, __pyx_t_12, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_7, __pyx_t_12, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_9);
         __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
       }
@@ -2142,7 +2142,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       #if CYTHON_FAST_PYCALL
       if (PyFunction_Check(__pyx_t_1)) {
         PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_kp_u_BrotliDecoderDecompressStream_s, __pyx_t_9};
-        __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -2151,14 +2151,14 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       #if CYTHON_FAST_PYCCALL
       if (__Pyx_PyFastCFunction_Check(__pyx_t_1)) {
         PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_kp_u_BrotliDecoderDecompressStream_s, __pyx_t_9};
-        __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_8, 2+__pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       } else
       #endif
       {
-        __pyx_t_12 = PyTuple_New(2+__pyx_t_8); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_12 = PyTuple_New(2+__pyx_t_8); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_12);
         if (__pyx_t_7) {
           __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_12, 0, __pyx_t_7); __pyx_t_7 = NULL;
@@ -2169,45 +2169,45 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
         __Pyx_GIVEREF(__pyx_t_9);
         PyTuple_SET_ITEM(__pyx_t_12, 1+__pyx_t_8, __pyx_t_9);
         __pyx_t_9 = 0;
-        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_12, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 102, __pyx_L5_error)
+        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_12, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
       }
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-      /* "xpra/net/brotli/decompressor.pyx":103
+      /* "xpra/net/brotli/decompressor.pyx":102
  *                                                   &total_out)
  *             log("BrotliDecoderDecompressStream(..)=%s", RESULT_STR.get(r, r))
  *             if total_out>maxsize:             # <<<<<<<<<<<<<<
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  */
-      __pyx_t_4 = __Pyx_PyInt_FromSize_t(__pyx_v_total_out); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 103, __pyx_L5_error)
+      __pyx_t_4 = __Pyx_PyInt_FromSize_t(__pyx_v_total_out); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 102, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_1 = PyObject_RichCompare(__pyx_t_4, __pyx_v_maxsize, Py_GT); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L5_error)
+      __pyx_t_1 = PyObject_RichCompare(__pyx_t_4, __pyx_v_maxsize, Py_GT); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 102, __pyx_L5_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 103, __pyx_L5_error)
+      __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 102, __pyx_L5_error)
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       if (unlikely(__pyx_t_3)) {
 
-        /* "xpra/net/brotli/decompressor.pyx":104
+        /* "xpra/net/brotli/decompressor.pyx":103
  *             log("BrotliDecoderDecompressStream(..)=%s", RESULT_STR.get(r, r))
  *             if total_out>maxsize:
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)             # <<<<<<<<<<<<<<
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  *                 raise ValueError("brotli decoder error")
  */
-        __pyx_t_1 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_brotli_decompression_would_excee, __pyx_v_maxsize); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 104, __pyx_L5_error)
+        __pyx_t_1 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_brotli_decompression_would_excee, __pyx_v_maxsize); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L5_error)
+        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 103, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(0, 104, __pyx_L5_error)
+        __PYX_ERR(0, 103, __pyx_L5_error)
 
-        /* "xpra/net/brotli/decompressor.pyx":103
+        /* "xpra/net/brotli/decompressor.pyx":102
  *                                                   &total_out)
  *             log("BrotliDecoderDecompressStream(..)=%s", RESULT_STR.get(r, r))
  *             if total_out>maxsize:             # <<<<<<<<<<<<<<
@@ -2216,7 +2216,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
       }
 
-      /* "xpra/net/brotli/decompressor.pyx":105
+      /* "xpra/net/brotli/decompressor.pyx":104
  *             if total_out>maxsize:
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  *             if r==BROTLI_DECODER_RESULT_ERROR:             # <<<<<<<<<<<<<<
@@ -2226,20 +2226,20 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       __pyx_t_3 = ((__pyx_v_r == BROTLI_DECODER_RESULT_ERROR) != 0);
       if (unlikely(__pyx_t_3)) {
 
-        /* "xpra/net/brotli/decompressor.pyx":106
+        /* "xpra/net/brotli/decompressor.pyx":105
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  *                 raise ValueError("brotli decoder error")             # <<<<<<<<<<<<<<
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:
  */
-        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 106, __pyx_L5_error)
+        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L5_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(0, 106, __pyx_L5_error)
+        __PYX_ERR(0, 105, __pyx_L5_error)
 
-        /* "xpra/net/brotli/decompressor.pyx":105
+        /* "xpra/net/brotli/decompressor.pyx":104
  *             if total_out>maxsize:
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  *             if r==BROTLI_DECODER_RESULT_ERROR:             # <<<<<<<<<<<<<<
@@ -2248,7 +2248,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
       }
 
-      /* "xpra/net/brotli/decompressor.pyx":107
+      /* "xpra/net/brotli/decompressor.pyx":106
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  *                 raise ValueError("brotli decoder error")
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:             # <<<<<<<<<<<<<<
@@ -2258,7 +2258,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       __pyx_t_3 = ((__pyx_v_r == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT) != 0);
       if (__pyx_t_3) {
 
-        /* "xpra/net/brotli/decompressor.pyx":108
+        /* "xpra/net/brotli/decompressor.pyx":107
  *                 raise ValueError("brotli decoder error")
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:             # <<<<<<<<<<<<<<
@@ -2268,20 +2268,20 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
         __pyx_t_3 = ((__pyx_v_available_in <= 0) != 0);
         if (unlikely(__pyx_t_3)) {
 
-          /* "xpra/net/brotli/decompressor.pyx":109
+          /* "xpra/net/brotli/decompressor.pyx":108
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:
  *                     raise ValueError("brotli decompressor expected more input data")             # <<<<<<<<<<<<<<
  *                 continue
  *             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r
  */
-          __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L5_error)
+          __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 108, __pyx_L5_error)
           __Pyx_GOTREF(__pyx_t_4);
           __Pyx_Raise(__pyx_t_4, 0, 0, 0);
           __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-          __PYX_ERR(0, 109, __pyx_L5_error)
+          __PYX_ERR(0, 108, __pyx_L5_error)
 
-          /* "xpra/net/brotli/decompressor.pyx":108
+          /* "xpra/net/brotli/decompressor.pyx":107
  *                 raise ValueError("brotli decoder error")
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:             # <<<<<<<<<<<<<<
@@ -2290,7 +2290,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
         }
 
-        /* "xpra/net/brotli/decompressor.pyx":110
+        /* "xpra/net/brotli/decompressor.pyx":109
  *                 if available_in<=0:
  *                     raise ValueError("brotli decompressor expected more input data")
  *                 continue             # <<<<<<<<<<<<<<
@@ -2299,7 +2299,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
         goto __pyx_L7_continue;
 
-        /* "xpra/net/brotli/decompressor.pyx":107
+        /* "xpra/net/brotli/decompressor.pyx":106
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  *                 raise ValueError("brotli decoder error")
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:             # <<<<<<<<<<<<<<
@@ -2308,7 +2308,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
       }
 
-      /* "xpra/net/brotli/decompressor.pyx":111
+      /* "xpra/net/brotli/decompressor.pyx":110
  *                     raise ValueError("brotli decompressor expected more input data")
  *                 continue
  *             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r             # <<<<<<<<<<<<<<
@@ -2327,29 +2327,29 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
           break;
         }
         if (unlikely(!__pyx_t_3)) {
-          __pyx_t_4 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 111, __pyx_L5_error)
+          __pyx_t_4 = __Pyx_PyInt_From_BrotliDecoderResult(__pyx_v_r); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 110, __pyx_L5_error)
           __Pyx_GOTREF(__pyx_t_4);
-          __pyx_t_1 = PyUnicode_Format(__pyx_kp_u_unknown_return_value_i, __pyx_t_4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L5_error)
+          __pyx_t_1 = PyUnicode_Format(__pyx_kp_u_unknown_return_value_i, __pyx_t_4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 110, __pyx_L5_error)
           __Pyx_GOTREF(__pyx_t_1);
           __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
           PyErr_SetObject(PyExc_AssertionError, __pyx_t_1);
           __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-          __PYX_ERR(0, 111, __pyx_L5_error)
+          __PYX_ERR(0, 110, __pyx_L5_error)
         }
       }
       #endif
 
-      /* "xpra/net/brotli/decompressor.pyx":112
+      /* "xpra/net/brotli/decompressor.pyx":111
  *                 continue
  *             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r
  *             decoded = len(out_buf) - available_out             # <<<<<<<<<<<<<<
  *             assert decoded>0, "decoder returned no data"
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  */
-      __pyx_t_5 = PyObject_Length(((PyObject *)__pyx_v_out_buf)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 112, __pyx_L5_error)
+      __pyx_t_5 = PyObject_Length(((PyObject *)__pyx_v_out_buf)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 111, __pyx_L5_error)
       __pyx_v_decoded = (__pyx_t_5 - __pyx_v_available_out);
 
-      /* "xpra/net/brotli/decompressor.pyx":113
+      /* "xpra/net/brotli/decompressor.pyx":112
  *             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r
  *             decoded = len(out_buf) - available_out
  *             assert decoded>0, "decoder returned no data"             # <<<<<<<<<<<<<<
@@ -2360,12 +2360,12 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       if (unlikely(!Py_OptimizeFlag)) {
         if (unlikely(!((__pyx_v_decoded > 0) != 0))) {
           PyErr_SetObject(PyExc_AssertionError, __pyx_kp_u_decoder_returned_no_data);
-          __PYX_ERR(0, 113, __pyx_L5_error)
+          __PYX_ERR(0, 112, __pyx_L5_error)
         }
       }
       #endif
 
-      /* "xpra/net/brotli/decompressor.pyx":114
+      /* "xpra/net/brotli/decompressor.pyx":113
  *             decoded = len(out_buf) - available_out
  *             assert decoded>0, "decoder returned no data"
  *             out_ptr = <uint8_t*> out_buf.get_mem()             # <<<<<<<<<<<<<<
@@ -2374,28 +2374,28 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
       __pyx_v_out_ptr = ((uint8_t *)((struct __pyx_vtabstruct_4xpra_7buffers_6membuf_MemBuf *)__pyx_v_out_buf->__pyx_vtab)->get_mem(__pyx_v_out_buf));
 
-      /* "xpra/net/brotli/decompressor.pyx":115
+      /* "xpra/net/brotli/decompressor.pyx":114
  *             assert decoded>0, "decoder returned no data"
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             b = out_ptr[:decoded]             # <<<<<<<<<<<<<<
  *             chunks.append(b)
  *             if r==BROTLI_DECODER_RESULT_SUCCESS:
  */
-      __pyx_t_1 = __Pyx_PyBytes_FromStringAndSize(((const char*)__pyx_v_out_ptr) + 0, __pyx_v_decoded - 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L5_error)
+      __pyx_t_1 = __Pyx_PyBytes_FromStringAndSize(((const char*)__pyx_v_out_ptr) + 0, __pyx_v_decoded - 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L5_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_XDECREF_SET(__pyx_v_b, ((PyObject*)__pyx_t_1));
       __pyx_t_1 = 0;
 
-      /* "xpra/net/brotli/decompressor.pyx":116
+      /* "xpra/net/brotli/decompressor.pyx":115
  *             out_ptr = <uint8_t*> out_buf.get_mem()
  *             b = out_ptr[:decoded]
  *             chunks.append(b)             # <<<<<<<<<<<<<<
  *             if r==BROTLI_DECODER_RESULT_SUCCESS:
  *                 break
  */
-      __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_chunks, __pyx_v_b); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 116, __pyx_L5_error)
+      __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_chunks, __pyx_v_b); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 115, __pyx_L5_error)
 
-      /* "xpra/net/brotli/decompressor.pyx":117
+      /* "xpra/net/brotli/decompressor.pyx":116
  *             b = out_ptr[:decoded]
  *             chunks.append(b)
  *             if r==BROTLI_DECODER_RESULT_SUCCESS:             # <<<<<<<<<<<<<<
@@ -2405,7 +2405,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       __pyx_t_3 = ((__pyx_v_r == BROTLI_DECODER_RESULT_SUCCESS) != 0);
       if (__pyx_t_3) {
 
-        /* "xpra/net/brotli/decompressor.pyx":118
+        /* "xpra/net/brotli/decompressor.pyx":117
  *             chunks.append(b)
  *             if r==BROTLI_DECODER_RESULT_SUCCESS:
  *                 break             # <<<<<<<<<<<<<<
@@ -2414,7 +2414,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
         goto __pyx_L8_break;
 
-        /* "xpra/net/brotli/decompressor.pyx":117
+        /* "xpra/net/brotli/decompressor.pyx":116
  *             b = out_ptr[:decoded]
  *             chunks.append(b)
  *             if r==BROTLI_DECODER_RESULT_SUCCESS:             # <<<<<<<<<<<<<<
@@ -2427,7 +2427,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
     __pyx_L8_break:;
   }
 
-  /* "xpra/net/brotli/decompressor.pyx":120
+  /* "xpra/net/brotli/decompressor.pyx":119
  *                 break
  *     finally:
  *         PyBuffer_Release(&in_buf)             # <<<<<<<<<<<<<<
@@ -2438,7 +2438,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
     /*normal exit:*/{
       PyBuffer_Release((&__pyx_v_in_buf));
 
-      /* "xpra/net/brotli/decompressor.pyx":121
+      /* "xpra/net/brotli/decompressor.pyx":120
  *     finally:
  *         PyBuffer_Release(&in_buf)
  *         if state:             # <<<<<<<<<<<<<<
@@ -2448,7 +2448,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       __pyx_t_3 = (__pyx_v_state != 0);
       if (__pyx_t_3) {
 
-        /* "xpra/net/brotli/decompressor.pyx":122
+        /* "xpra/net/brotli/decompressor.pyx":121
  *         PyBuffer_Release(&in_buf)
  *         if state:
  *             BrotliDecoderDestroyInstance(state)             # <<<<<<<<<<<<<<
@@ -2457,7 +2457,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
         BrotliDecoderDestroyInstance(__pyx_v_state);
 
-        /* "xpra/net/brotli/decompressor.pyx":121
+        /* "xpra/net/brotli/decompressor.pyx":120
  *     finally:
  *         PyBuffer_Release(&in_buf)
  *         if state:             # <<<<<<<<<<<<<<
@@ -2491,7 +2491,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
       __pyx_t_8 = __pyx_lineno; __pyx_t_14 = __pyx_clineno; __pyx_t_15 = __pyx_filename;
       {
 
-        /* "xpra/net/brotli/decompressor.pyx":120
+        /* "xpra/net/brotli/decompressor.pyx":119
  *                 break
  *     finally:
  *         PyBuffer_Release(&in_buf)             # <<<<<<<<<<<<<<
@@ -2500,7 +2500,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
         PyBuffer_Release((&__pyx_v_in_buf));
 
-        /* "xpra/net/brotli/decompressor.pyx":121
+        /* "xpra/net/brotli/decompressor.pyx":120
  *     finally:
  *         PyBuffer_Release(&in_buf)
  *         if state:             # <<<<<<<<<<<<<<
@@ -2510,7 +2510,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
         __pyx_t_3 = (__pyx_v_state != 0);
         if (__pyx_t_3) {
 
-          /* "xpra/net/brotli/decompressor.pyx":122
+          /* "xpra/net/brotli/decompressor.pyx":121
  *         PyBuffer_Release(&in_buf)
  *         if state:
  *             BrotliDecoderDestroyInstance(state)             # <<<<<<<<<<<<<<
@@ -2519,7 +2519,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
  */
           BrotliDecoderDestroyInstance(__pyx_v_state);
 
-          /* "xpra/net/brotli/decompressor.pyx":121
+          /* "xpra/net/brotli/decompressor.pyx":120
  *     finally:
  *         PyBuffer_Release(&in_buf)
  *         if state:             # <<<<<<<<<<<<<<
@@ -2545,7 +2545,7 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
     __pyx_L6:;
   }
 
-  /* "xpra/net/brotli/decompressor.pyx":123
+  /* "xpra/net/brotli/decompressor.pyx":122
  *         if state:
  *             BrotliDecoderDestroyInstance(state)
  *     del out_buf             # <<<<<<<<<<<<<<
@@ -2554,19 +2554,19 @@ static PyObject *__pyx_pf_4xpra_3net_6brotli_12decompressor_2decompress(CYTHON_U
   __Pyx_DECREF(((PyObject *)__pyx_v_out_buf));
   __pyx_v_out_buf = NULL;
 
-  /* "xpra/net/brotli/decompressor.pyx":124
+  /* "xpra/net/brotli/decompressor.pyx":123
  *             BrotliDecoderDestroyInstance(state)
  *     del out_buf
  *     return b"".join(chunks)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyBytes_Join(__pyx_kp_b__4, __pyx_v_chunks); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyBytes_Join(__pyx_kp_b__4, __pyx_v_chunks); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "xpra/net/brotli/decompressor.pyx":72
+  /* "xpra/net/brotli/decompressor.pyx":71
  *     return (major, minor, patch)
  * 
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):             # <<<<<<<<<<<<<<
@@ -2696,7 +2696,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 104, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 103, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -2706,25 +2706,25 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "xpra/net/brotli/decompressor.pyx":106
+  /* "xpra/net/brotli/decompressor.pyx":105
  *                 raise ValueError("brotli decompression would exceed maximum size allowed %i" % maxsize)
  *             if r==BROTLI_DECODER_RESULT_ERROR:
  *                 raise ValueError("brotli decoder error")             # <<<<<<<<<<<<<<
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_brotli_decoder_error); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 106, __pyx_L1_error)
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_brotli_decoder_error); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 105, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "xpra/net/brotli/decompressor.pyx":109
+  /* "xpra/net/brotli/decompressor.pyx":108
  *             if r==BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT:
  *                 if available_in<=0:
  *                     raise ValueError("brotli decompressor expected more input data")             # <<<<<<<<<<<<<<
  *                 continue
  *             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r
  */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_brotli_decompressor_expected_mor); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_brotli_decompressor_expected_mor); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 108, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
@@ -2739,29 +2739,29 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
 
-  /* "xpra/net/brotli/decompressor.pyx":65
+  /* "xpra/net/brotli/decompressor.pyx":64
  *     }
  * 
  * def get_version():             # <<<<<<<<<<<<<<
  *     cdef uint32_t bv = BrotliDecoderVersion()
  *     cdef unsigned int major = bv >> 24
  */
-  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_bv, __pyx_n_s_major, __pyx_n_s_minor, __pyx_n_s_patch); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_bv, __pyx_n_s_major, __pyx_n_s_minor, __pyx_n_s_patch); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
-  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(0, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_xpra_net_brotli_decompressor_pyx, __pyx_n_s_get_version, 65, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(0, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_xpra_net_brotli_decompressor_pyx, __pyx_n_s_get_version, 64, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 64, __pyx_L1_error)
 
-  /* "xpra/net/brotli/decompressor.pyx":72
+  /* "xpra/net/brotli/decompressor.pyx":71
  *     return (major, minor, patch)
  * 
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):             # <<<<<<<<<<<<<<
  *     cdef const uint8_t *in_ptr = NULL
  *     cdef size_t available_in = 0
  */
-  __pyx_tuple__8 = PyTuple_Pack(14, __pyx_n_s_data, __pyx_n_s_maxsize, __pyx_n_s_in_ptr, __pyx_n_s_available_in, __pyx_n_s_out_buf, __pyx_n_s_available_out, __pyx_n_s_out_ptr, __pyx_n_s_total_out, __pyx_n_s_decoded, __pyx_n_s_state, __pyx_n_s_in_buf, __pyx_n_s_r, __pyx_n_s_chunks, __pyx_n_s_b); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_tuple__8 = PyTuple_Pack(14, __pyx_n_s_data, __pyx_n_s_maxsize, __pyx_n_s_in_ptr, __pyx_n_s_available_in, __pyx_n_s_out_buf, __pyx_n_s_available_out, __pyx_n_s_out_ptr, __pyx_n_s_total_out, __pyx_n_s_decoded, __pyx_n_s_state, __pyx_n_s_in_buf, __pyx_n_s_r, __pyx_n_s_chunks, __pyx_n_s_b); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
-  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(2, 0, 14, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_xpra_net_brotli_decompressor_pyx, __pyx_n_s_decompress, 72, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(2, 0, 14, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_xpra_net_brotli_decompressor_pyx, __pyx_n_s_decompress, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -3124,85 +3124,85 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_log, __pyx_t_2) < 0) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":59
+  /* "xpra/net/brotli/decompressor.pyx":58
  * 
  * RESULT_STR = {
  *     BROTLI_DECODER_RESULT_ERROR : "error",             # <<<<<<<<<<<<<<
  *     BROTLI_DECODER_RESULT_SUCCESS   : "success",
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",
  */
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 59, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_ERROR); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 59, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_ERROR); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_n_u_error) < 0) __PYX_ERR(0, 59, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_n_u_error) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":60
+  /* "xpra/net/brotli/decompressor.pyx":59
  * RESULT_STR = {
  *     BROTLI_DECODER_RESULT_ERROR : "error",
  *     BROTLI_DECODER_RESULT_SUCCESS   : "success",             # <<<<<<<<<<<<<<
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT : "needs-more-output",
  */
-  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_SUCCESS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_SUCCESS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_n_u_success) < 0) __PYX_ERR(0, 59, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_n_u_success) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":61
+  /* "xpra/net/brotli/decompressor.pyx":60
  *     BROTLI_DECODER_RESULT_ERROR : "error",
  *     BROTLI_DECODER_RESULT_SUCCESS   : "success",
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",             # <<<<<<<<<<<<<<
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT : "needs-more-output",
  *     }
  */
-  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 60, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_kp_u_needs_more_input) < 0) __PYX_ERR(0, 59, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_kp_u_needs_more_input) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":62
+  /* "xpra/net/brotli/decompressor.pyx":61
  *     BROTLI_DECODER_RESULT_SUCCESS   : "success",
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",
  *     BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT : "needs-more-output",             # <<<<<<<<<<<<<<
  *     }
  * 
  */
-  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_BrotliDecoderResult(BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 61, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_kp_u_needs_more_output) < 0) __PYX_ERR(0, 59, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_t_1, __pyx_kp_u_needs_more_output) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_RESULT_STR, __pyx_t_2) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_RESULT_STR, __pyx_t_2) < 0) __PYX_ERR(0, 57, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":65
+  /* "xpra/net/brotli/decompressor.pyx":64
  *     }
  * 
  * def get_version():             # <<<<<<<<<<<<<<
  *     cdef uint32_t bv = BrotliDecoderVersion()
  *     cdef unsigned int major = bv >> 24
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_4xpra_3net_6brotli_12decompressor_1get_version, NULL, __pyx_n_s_xpra_net_brotli_decompressor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_4xpra_3net_6brotli_12decompressor_1get_version, NULL, __pyx_n_s_xpra_net_brotli_decompressor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_version, __pyx_t_2) < 0) __PYX_ERR(0, 65, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_version, __pyx_t_2) < 0) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "xpra/net/brotli/decompressor.pyx":72
+  /* "xpra/net/brotli/decompressor.pyx":71
  *     return (major, minor, patch)
  * 
  * def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):             # <<<<<<<<<<<<<<
  *     cdef const uint8_t *in_ptr = NULL
  *     cdef size_t available_in = 0
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MAX_DECOMPRESSED_SIZE); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MAX_DECOMPRESSED_SIZE); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_k_ = __pyx_t_2;
   __Pyx_GIVEREF(__pyx_t_2);
   __pyx_t_2 = 0;
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_4xpra_3net_6brotli_12decompressor_3decompress, NULL, __pyx_n_s_xpra_net_brotli_decompressor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_4xpra_3net_6brotli_12decompressor_3decompress, NULL, __pyx_n_s_xpra_net_brotli_decompressor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_decompress, __pyx_t_2) < 0) __PYX_ERR(0, 72, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_decompress, __pyx_t_2) < 0) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "xpra/net/brotli/decompressor.pyx":1
