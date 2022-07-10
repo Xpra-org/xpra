@@ -511,7 +511,7 @@ class Protocol:
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         compressors = caps.strtupleget("compressors")
-        log("enable_compressor_from_caps(..) options=%s", opts)
+        log("enable_compressor_from_caps(..) options=%s, compressors from caps=%s", opts, compressors)
         for c in opts:      #ie: [zlib, lz4]
             if c=="none":
                 continue
@@ -520,6 +520,8 @@ class Protocol:
                 return
             log("client does not support %s", c)
         log.warn("Warning: compression disabled, no matching compressor found")
+        log.warn(" capabilities: %s", csv(compressors))
+        log.warn(" enabled compressors: %s", csv(opts))
         self.enable_compressor("none")
 
     def enable_compressor(self, compressor):
