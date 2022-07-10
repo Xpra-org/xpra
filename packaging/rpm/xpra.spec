@@ -182,7 +182,6 @@ Recommends:         python3-kerberos
 Recommends:         python3-gssapi
 Recommends:         python3-ldap
 Recommends:         python3-ldap3
-Recommends:         python3-brotli
 #Suggests:           python3-cpuinfo
 Requires:			libwebp
 %if 0%{?fedora}

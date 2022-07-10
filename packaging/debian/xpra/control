@@ -58,8 +58,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-pil
 # packet compression:
         ,python3-lz4
-# clipboard packet compression:
-        ,python3-brotli
 # ssl (generate cert), wss:
         ,openssl
 #we need a vfb: either Xdummy or Xvfb
