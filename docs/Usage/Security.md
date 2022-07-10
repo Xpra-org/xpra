@@ -50,3 +50,8 @@ This is not a theoretical issue, ie: [pdfium 0-day](https://github.com/Xpra-org/
 ## Anti-viruses
 Because of the way xpra intercepts and injects pointer and keyboard events to do its job, it is regularly misidentified as malware:
 [f-secure and bitdefender false-positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350), [Microsoft AI](https://github.com/Xpra-org/xpra/issues/2781#issuecomment-765546100)
+
+## Vulnerabilities
+It is difficult to keep track of all the security related issues that have affected the project over the years.
+Some have been assigned CVEs, most have not.  
+Likewise, it is quite hard to keep track of all the bugs affecting the libraries xpra is built on (ie: [Rencode Denial Of Service](https://packetstormsecurity.com/files/164084/) - [rencode segfault](https://github.com/Xpra-org/xpra/issues/1217)).  
