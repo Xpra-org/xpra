@@ -12,7 +12,7 @@ import sys
 import unittest
 import binascii
 
-from xpra.os_util import strtobytes, bytestostr, get_util_logger
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import repr_ellipsized
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
 from xpra.net import bencode
