@@ -18,6 +18,9 @@ Or even:
 xpra start --exec-wrapper="vglrun" --start="glxgears"
 ```
 
+* ## via WSL - Windows Subsystem for Linux
+See [WSL - Windows Subsystem for Linux](./WSL.md) OpenGL acceleration.
+
 * ## via Xwayland
 From within an X11 session, you can use start the Weston Wayland compositor, then start Xwayland and the xpra server with the `-use-display` option:
 ```shell
