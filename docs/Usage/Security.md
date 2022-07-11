@@ -5,9 +5,9 @@ completely removed from the underlying protocols that those applications normall
 As a result, the architecture, features and options are often directly related to the mechanisms allowing this fine grained control.  
 Equally, a server should be quite well protected from a hostile client.
 
-A default installation should be quite secure by default, but the are trade-offs to be made.
-Some specific subsystems also deserve their own details.
+A default installation should be quite secure by default, but there are trade-offs to be made.
 One common theme is that it is impossible to take advantage of a feature or subsystem that isn't available.
+
 
 ## Architecture
 The way xpra is structured into independent python sub-modules allows it to partition off each subsystem.  
@@ -16,10 +16,14 @@ For details, see [dynamic client connection class](https://github.com/Xpra-org/x
 The same principle applies to [codecs and all swappable components](https://github.com/Xpra-org/xpra/issues/614).  
 Moreover, the use of pure Python code for the vast majority of the data handling completely prevents whole classes of vulnerabilities. The parts of the code that do require high performance (data mangling, (de)compression, etc) use heavily optimized libraries (see _audio_ and _encodings_ below).  
 
+
 ## Subsystems
 Most of the features below have explicit command line switches which can be used to completely disable the subsystem, to start with the feature turned off so as to require an explicit user action to turn it on, or to restrict the feature.  
 If a client or server turns off a subsystem then the remote end cannot enable the feature. Some switches only affect the on / off state of the feature instead, which does allow for the feature to be enabled through a user action once the connection is established.  
 These toggles may also be accessible through the server's control channel and dbus interface.
+
+<details>
+  <summary>Specific Subsystems</summary>
 
 ### [Clipboard](../Features/Clipboard.md)
 Obviously, from a security perspective, the safest clipboard is one that is disabled (`--clipboard=no`)
@@ -39,7 +43,7 @@ xpra runs the audio processing in a separate process which does not have access 
 Xpra supports a large number of picture and video codecs as well as raw uncompressed pixel data.  
 Each option has different strengths and weaknesses. The raw options `rgb` and `mmap` are obviously the safest since they do not require any parsing, but they can require humongous amounts of bandwidth (ie: tens of Gbps for a 4K window).  
 Older picture encodings like `png` and `jpeg` are probably the safests due to their maturity.
-Video encodings as well as newer picture encodings derived from the same technologies (like `webp` and `avif`) are probably less safe due to their complexity.
+Video encodings as well as newer picture encodings derived from the same technologies (like `webp` and `avif`) are probably less safe due to their complexity - see also _hardawre access_ below.
 
 ### [Printing](../Features/Printing.md)
 Printer forwarding presents security challenges for both the server and the client:
@@ -66,9 +70,18 @@ _In addition to interprocess communication, D-Bus helps coordinate process lifec
 This makes `dbus` both a very useful desktop environment component and a wide attack target.  
 The limited `--dbus-proxy` calls can safely be turned off and the `--dbus-control` channel should be turned off if unused.
 
+### Hardware Access
+Any subsystem that accesses hardware directly is an inherent security risk.  
+This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system integration_), hardware OpenGL [server](./OpenGL.md) and [client](./Client-OpenGL.md) acceleration, printer access and some authentication modules.
+
+</details>
+
 ---
 
 ## Platforms
+
+<details>
+  <summary>binaries, anti-viruses, system-integration, etc</summary>
 
 ## Binaries - MS Windows and MacOS
 The distribution of binary bundles applies to MS Windows, MacOS builds and also on Linux when using formats like `appimage`, `flatpak`, `snap` (these formats are not currently supported, in part because of this particular problem) or - to a lesser extent - with container builds.  
@@ -82,11 +95,22 @@ Because of the way xpra intercepts and injects pointer and keyboard events - and
 [f-secure and bitdefender false-positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350), [Microsoft AI](https://github.com/Xpra-org/xpra/issues/2781#issuecomment-765546100)
 
 ## [HTML5](https://github.com/Xpra-org/xpra-html5)
-The builtin web server ships with fairly restrictive [http headers and content security policy](https://github.com/Xpra-org/xpra/issues/1741), even [blocking some valid use cases by default](https://github.com/Xpra-org/xpra/issues/3442).
+The builtin web server ships with fairly restrictive [http headers and content security policy](https://github.com/Xpra-org/xpra/issues/1741), even [blocking some valid use cases by default](https://github.com/Xpra-org/xpra/issues/3442).  
+For security issues related to the html5 client, please refer to [xpra-html5 issues](https://github.com/Xpra-org/xpra-html5/issues)
 
 ## SELinux
 On Linux systems that support it, xpra includes an SELinux policy to properly confine
 its server process whilst still giving it access to the paths and sockets it needs to function: https://github.com/Xpra-org/xpra/tree/master/fs/share/selinux
+
+## System Integration
+The xpra server and client(s) can both be embedded with or integrated into other sotware components, this completely changes the security profile of the solution.  
+For example:
+* By using an external websocket proxy (ie: [Apache HTTP Proxy](./Apache-Proxy.md)) one can shield the xpra server from potentially hostile external traffic and add a separately configured authentication layer with only minimal latency costs (when configured properly)
+* Xpra's own [proxy server](./Proxy-Server.md) can be used to provide hardware acceleration within a different context than the one that is executing user applications.  
+* Running the [system wide proxy server](./Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
+* OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](./WSL.md)
+
+</details>
 
 
 ---
@@ -107,7 +131,7 @@ Debugging tools and diagnostics can sometimes be at odds with good security prac
 When that happens, we usually [err on the side of caution](https://github.com/Xpra-org/xpra/issues/1939) but not always when it affects usability: [http scripts information disclosure](https://github.com/Xpra-org/xpra/pull/3156)
 
 ## Tests
-Although the test coverage is not as high as we would like, there are comprehensive unit tests that test individual narrow code paths and other tests that will exercise the client and server code end-to-end, including the network layer.
+Although the test coverage is not as high as we would like, there are comprehensive unit tests that test individual narrow code paths and other tests that will exercise the client and server code end-to-end, including the network layer and graphics access.
 More details in [client-server mixin tests](https://github.com/Xpra-org/xpra/issues/2357), [better unit tests](https://github.com/Xpra-org/xpra/issues/2362)
 
 ## Vulnerabilities
