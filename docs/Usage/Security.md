@@ -29,6 +29,15 @@ Using a codec without a container reduces the complexity somewhat, but using a r
 That said, `mp3` is now over 30 years old and the libraries parsing it are very mature. Other codecs have had a few issues in more recent times (ie: [faac and faad2 security issues](https://github.com/Xpra-org/xpra/issues/2474)  
 xpra runs the audio processing in a separate process which does not have access to the display.
 
+## [Printing](../Features/Printing.md)
+Printer forwarding presents security challenges for both the server and the client:
+* the server parses printer data from the client and then uses privileged commands to create an equivallent virtual printer. The client can also update the list of printers at any time, causing the whole setup process to be repeated.
+* the client receives Postscript or PDF files which are sent to the real printer, this is compartively quite safe 
+
+## SELinux
+On Linux systems that support it, xpra includes an SELinux policy to properly confine
+its server process whilst still giving it access to the paths and sockets it needs to function: https://github.com/Xpra-org/xpra/tree/master/fs/share/selinux
+
 ## Modes
 Some features are harder to implement correctly in [seamless mode](./Seamless.md) because of the inherent complexity when handling windows client side. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))  
 For that reason, it may be worth considering [desktop mode](./Start-Desktop.md)
@@ -55,3 +64,4 @@ Because of the way xpra intercepts and injects pointer and keyboard events to do
 It is difficult to keep track of all the security related issues that have affected the project over the years.
 Some have been assigned CVEs, most have not.  
 Likewise, it is quite hard to keep track of all the bugs affecting the libraries xpra is built on (ie: [Rencode Denial Of Service](https://packetstormsecurity.com/files/164084/) - [rencode segfault](https://github.com/Xpra-org/xpra/issues/1217)).  
+By and large, the biggest concern is the complete lack of security updates from [downstream distributions](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
