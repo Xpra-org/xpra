@@ -5,7 +5,7 @@ Xpra's authentication modules can be useful for:
 * making the unix domain socket accessible to other users safely
 * using the [proxy server](./Proxy-Server.md)
 
-For more information on the different types of connections, see [network](../Network/README.md)
+For more information on the different types of connections, see [network](../Network/README.md). For more generic security information, please see [security considerations](./Security.md)
 
 SSL mode can also be used for authentication using certificates (see #1252)
 
