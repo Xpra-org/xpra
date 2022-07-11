@@ -32,6 +32,7 @@ You can select the pseudo-encoding using the `--encoding=ENC` switch.
 |`rgb`|all|very fast|raw RGB pixels, potentially compressed with a stream compressor (ie: `lz4`)|
 |`webp`|24 / 32|good|fast, supports transparency, lossy and lossless modes|
 |`jpeg`|24|fast|easy to support|
+|`avif`|24|average|limited support|
 |`png`|24 / 32|slow|easy to support|
 |`png/P`|8|slow|only useful for 8-bit [desktop mode](./Start-Desktop.md)|
 |`png/L`|8|slow|greyscale|
