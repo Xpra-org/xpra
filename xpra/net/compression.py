@@ -111,7 +111,7 @@ def init_compressors(*names):
         except (TypeError, ImportError, AttributeError):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
-            logger.warn("no %s", x, exc_info=True)
+            logger("no %s", x, exc_info=True)
 
 def init_all():
     init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
