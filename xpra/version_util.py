@@ -60,7 +60,7 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     rstr = ""
     try:
         rstr += "r%s" % revision
-        if local_modifications>0:
+        if isinstance(local_modifications, int) and local_modifications>0:
             rstr += "M"
         if branch=="master" and commit:
             rstr += " (%s)" % commit
