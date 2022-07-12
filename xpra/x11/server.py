@@ -696,6 +696,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def add_control_commands(self):
+        if not server_features.control:
+            return
         super().add_control_commands()
         from xpra.server.control_command import ArgsControlCommand
         cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])

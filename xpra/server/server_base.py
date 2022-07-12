@@ -10,7 +10,6 @@ import os
 from time import monotonic
 
 from xpra.server.server_core import ServerCore
-from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, WIN32
@@ -24,7 +23,10 @@ from xpra.server import server_features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
 
-SERVER_BASES = [ServerCore, ServerBaseControlCommands]
+SERVER_BASES = [ServerCore]
+if server_features.control:
+    from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
+    SERVER_BASES.append(ServerBaseControlCommands)
 if server_features.notifications:
     from xpra.server.mixins.notification_forwarder import NotificationForwarder
     SERVER_BASES.append(NotificationForwarder)

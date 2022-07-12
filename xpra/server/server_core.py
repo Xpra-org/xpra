@@ -701,11 +701,20 @@ class ServerCore:
     ######################################################################
     # control commands:
     def init_control_commands(self):
-        from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl
-        self.control_commands = {"hello"    : HelloCommand(),
-                                 "debug"    : DebugControl()}
-        help_command = HelpCommand(self.control_commands)
-        self.control_commands["help"] = help_command
+        try:
+            from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl, DisabledCommand
+        except ImportError:
+            return
+        from xpra.server import server_features
+        self.control_commands = {
+            "hello"     : HelloCommand(),
+            }
+        if server_features.control:
+            self.control_commands["debug"] = DebugControl()
+            self.control_commands["help"] = HelpCommand(self.control_commands)
+        else:
+            self.control_commands["*"] = DisabledCommand()
+
 
     def handle_command_request(self, proto, *args):
         """ client sent a command request as part of the hello packet """
@@ -719,7 +728,7 @@ class ServerCore:
         assert args, "control command must have arguments"
         name = args[0]
         try:
-            command = self.control_commands.get(name)
+            command = self.control_commands.get(name) or self.control_commands.get("*")
             commandlog("process_control_command control_commands[%s]=%s", name, command)
             if not command:
                 commandlog.warn("invalid command: '%s' (must be one of: %s)", name, csv(self.control_commands))

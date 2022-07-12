@@ -276,6 +276,7 @@ def set_server_features(opts):
                     log.warn("Warning: missing %s module", mod)
                 return False
         return True
+    server_features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
     server_features.notifications   = opts.notifications and impcheck("notifications")
     server_features.webcam          = b(opts.webcam) and impcheck("codecs")
     server_features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
@@ -284,7 +285,7 @@ def set_server_features(opts):
     server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
     server_features.mmap            = b(opts.mmap)
     server_features.input_devices   = not opts.readonly and impcheck("keyboard")
-    server_features.commands        = impcheck("server.control_command")
+    server_features.commands        = envbool("XPRA_RUN_COMMANDS", True)
     server_features.dbus            = opts.dbus_proxy and impcheck("dbus", "server.dbus")
     server_features.encoding        = impcheck("codecs")
     server_features.logging         = b(opts.remote_logging)

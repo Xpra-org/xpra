@@ -79,6 +79,12 @@ class FixedMessageCommand(ControlCommand):
         return self.message
 
 
+class DisabledCommand(FixedMessageCommand):
+    __slots__ = ()
+    def __init__(self):
+        super().__init__("*", "the control channel is disabled")
+
+
 class HelloCommand(FixedMessageCommand):
     """ Just says hello """
     __slots__ = ()
