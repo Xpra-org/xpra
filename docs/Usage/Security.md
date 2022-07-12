@@ -11,7 +11,7 @@ A default xpra installation should be quite secure by default, but there are tra
 ## Architecture
 The way xpra is structured into independent python sub-modules allows it to partition off each subsystem.  
 When features are disabled, they are not just unused, they are [not even loaded into memory](https://github.com/Xpra-org/xpra/issues/1861#issuecomment-76549942500) in the first place. Those subsystem interfaces cannot be abused since they don't even exist in that process space - very much like when features are not installed on the system at all.  
-For details, see [dynamic client connection class](https://github.com/Xpra-org/xpra/issues/2351) and [completely skip server base classes](https://github.com/Xpra-org/xpra/issues/1838)
+For details, see [dynamic client connection class](https://github.com/Xpra-org/xpra/issues/2351) and [completely skip server base classes](https://github.com/Xpra-org/xpra/issues/1838)  
 The same principle applies to [codecs](https://github.com/Xpra-org/xpra/issues/2344) and [all swappable components](https://github.com/Xpra-org/xpra/issues/614).  
 Moreover, the use of pure Python code for the vast majority of the data handling completely prevents whole classes of vulnerabilities. The parts of the code that do require high performance (data mangling, (de)compression, etc) use heavily optimized libraries (see _audio_ and _encodings_ below) - which are all optional.  
 
