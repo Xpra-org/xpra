@@ -6,3 +6,5 @@ For that, you need to use one of these three options:
 * [SSL](./SSL.md)
 * [AES](./AES.md)
 * [SSH](./SSH.md)
+
+See also: [Security Considerations](../Usage/Security.md)
