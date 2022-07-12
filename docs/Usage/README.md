@@ -1,8 +1,10 @@
-# Usage Examples
+# Command line usage Examples
 
-The examples below should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
-[The online manual](https://xpra.org/manual.html) is for the current development version, use `man xpra` to get the version corresponding to the version you have installed.  
-On MS Windows, the command you should use with the examples below is `Xpra_cmd.exe` rather than plain `Xpra`. (the former will print messages whereas the latter will use a log file)
+Xpra includes a _start_ GUI capable of replacing most of the example command lines found below.  
+
+These examples should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
+Use `man xpra` to get the manual corresponding to the version you have installed.  
+On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#command-line).  
 
 ## Simple [seamless](./Seamless.md) application forwarding
 This is how xpra is most often used.\
@@ -15,7 +17,7 @@ xpra start ssh://USERNAME@HOST/ --start-child=xterm
   <summary>Step by step</summary>
 
 Instead of starting and attaching to the session using a single command:\
-on the server which will export the application (`xterm` in the example), start an xpra server instance on a free display of your choice (`:100 in this example`):
+first connect to the server via ssh and start the xpra server instance on a free display of your choice (`:100 in this example`):
 ```shell
 xpra start :100 --start=xterm
 ```
@@ -40,10 +42,10 @@ xpra attach
 <details>
   <summary>Access without SSH</summary>
 
-SSH is great, it provides secure authentication and encryption, it is available on all platforms and is well tested.
+SSH is great, it provides host verification, secure authentication and encryption, it is available on all platforms and is well tested.
 
 However, in some cases, you may not want to give remote users shell access, or you may want to share sessions between multiple remote users. \
-In this case, use TCP sockets:
+For this type of use case, you can use TCP sockets:
 ```shell
 xpra start --start=xterm --bind-tcp=0.0.0.0:10000
 ```
@@ -52,10 +54,10 @@ Then, assuming that the port you have chosen (`10000` in the example above) is a
 xpra attach tcp://SERVERHOST:10000/
 ```
 
-Beware: this TCP socket is insecure, see [authentication](./Authentication.md).
+Beware: this TCP socket is insecure in this example, see [authentication](./Authentication.md).
 </details>
 <details>
-  <summary>Attach with session files</summary>
+  <summary>Attach with a session file</summary>
   Typing the same attach commands over and over again can be tedious, especially if you tweak the command line options.
 
   Instead, you can create session files and just double-click on them to connect to the session:
@@ -65,8 +67,7 @@ mode=ssh
 host=YOURSERVER
 speaker=off
 ```
-  These session files accept all the same options that you would normally specify on the command line.  
-The [html5 client](https://github.com/Xpra-org/xpra-html5) can also generate them.
+  For more information, see [session files](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#session-files)
 </details>
 
 ***
@@ -105,6 +106,7 @@ xpra shadow --printing=yes --windows=no --speaker=no ssh://SERVERHOST/
 The local printers should be virtualized on the server.
 
 ## Other Documentation Links
+* [Client](./Client.md) - launching the xpra client
 * [Client OpenGL](./Client-OpenGL.md) - for better window rendering performance
 * [OpenGL](./OpenGL.md) - running accelerated OpenGL application on the server
 * [Configuration](./Configuration.md) - using configuration files
