@@ -54,6 +54,7 @@ PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 AGENT_AUTH = envbool("XPRA_SSH_AGENT_AUTH", True)
 KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
+SSH_AGENT = envbool("XPRA_SSH_AGENT", False)
 assert PASSWORD_RETRY>=0
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
@@ -849,6 +850,10 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             log("open_session", exc_info=True)
             raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
         else:
+            if SSH_AGENT:
+                log.info("paramiko SSH agent forwarding enabled")
+                from paramiko.agent import AgentRequestHandler
+                AgentRequestHandler(chan)
             log("channel exec_command(%s)" % cmd)
             chan.exec_command(cmd)
             return chan
