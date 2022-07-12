@@ -16,6 +16,7 @@ Session files use the extension `.xpra` and record all the session settings, inc
 Any command line option can be specified in this file by removing the `--` that precedes options when they're used via the command line.
 ie: `--min-quality=50` becomes just `quality=50`.  
 Double clicking a session file brings up the launcher and if the session file contains `autoconnect=true` then the connection will be made without first showing the launcher dialog.
+The [html5 client](https://github.com/Xpra-org/xpra-html5) can also generate session files from its connection form.
 
 ## Session Browser
 `xpra sessions` shows the session browser, this window lists all the sessions that can be found either on the local system or through [mDNS](../Network/Multicast-DNS.md) on the local network.  
