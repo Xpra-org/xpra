@@ -83,34 +83,34 @@ This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system in
 <details>
   <summary>Running mode, network connections and diagnostics, malicious peers</summary>
 
-## Modes
+### Modes
 Some features are harder to implement correctly in [seamless mode](./Seamless.md) because of the inherent complexity of handling windows client side and synchronizing their state. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))  
 By definition, shadow mode gives access to the full desktop, without any kind of restriction - for better or worse.  
 For these reasons, it may be worth considering [desktop mode](./Start-Desktop.md) instead.
 
-## [Network](../Network) and [Authentication](./Authentication.md)
+### [Network](../Network) and [Authentication](./Authentication.md)
 Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.  
 The safest option will depend on the type of xpra client connecting - but generally speaking, `ssl` and `ssh` are considered the safest
 as they provide host verification and encryption in one protocol.  
 Each connection can also combine any number of [authentication modules](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#authentication-modules).
 
-## [Logging](./Logging.md) and diagnostics
+### [Logging](./Logging.md) and diagnostics
 Debugging tools and diagnostics can sometimes be at odds with good security practices. When that happens, we usually [err on the side of caution](https://github.com/Xpra-org/xpra/issues/1939) but not always when it affects usability: [http scripts information disclosure](https://github.com/Xpra-org/xpra/pull/3156)  
 The extensive [debug logging](./Logging.md) capabilities normally obfuscate sensitive information like passwords and keys,
 but it may still be possible to glean enough data to be present a real risk. A good preventative measure is to disable remote logging and turn off the server's control channel (#3573).  
 The xpra shell is a very powerful debugging feature which allows full access to all the data structures held in the client and server. It is disabled by default.  
   
-## Malicious clients
-Servers should be using authentication so tipically this means that malicious clients have had their authentication credentials compromised or the whole clients is.
+### Malicious clients and servers
+Servers should be using authentication, so tipically this means that malicious clients have had their authentication credentials compromised or perhaps the whole clients is compromised.  
+Clients should be using SSL certificates or SSH host keys to verify the identity of a server. A malicious server would be one that has been compromised or which is running a compromised application (ie: a browser).  
 
-## Malicious servers
-To verify the identity of a server, use SSL certificates or SSH host keys. In that case, a malicious server would be one that has been compromised.  
-Such servers can collect information about the client: xpra client and library versions, network connection, etc  
-As per the list above, if the subsytems are not disabled, they may be able to:
-* send malicious files to be downloaded by the client or documents to print
-* send notifications trying to impersonate local applications, or misleading the client
-* monitor all clipboard transfers and copy the data
-* play a misleading audio stream?
+As per the list above, if the specific subsytem is not disabled, a malicious actor may be able to:
+* collect information about the remote peer: xpra and library versions, network connection, etc
+* send malicious files to be downloaded or opened by the client, documents to be printed
+* send notifications trying to impersonate local applications or to mislead the client
+* monitor all application or client clipboard transfers and copy the data
+* play a misleading audio stream, etc
+Moreover, a malicious server would be able to easily take screen captures of all applications, record all pointer events and keystrokes - making it relatively easy to capture any credentials typed into the session.
 
 </details>
 
@@ -122,30 +122,30 @@ As per the list above, if the subsytems are not disabled, they may be able to:
 <details>
   <summary>binaries, anti-viruses, system-integration, etc</summary>
 
-## [Build options](../Build)
+### [Build options](../Build)
 By default, xpra is built using strict compilation options and any warning will cause the build to fail (`-Werror`).  
 Whenever needed or required (libraries missing in a specific distribution or variant thereof), the xpra project provides up to date versions of key libraries on many platforms: https://github.com/Xpra-org/xpra/tree/master/packaging/ and not just xpra. That said, binaries..
 
-## Binaries - MS Windows and MacOS
+### Binaries - MS Windows and MacOS
 The distribution of binary bundles applies to MS Windows, MacOS builds and also on Linux when using formats like `appimage`, `flatpak`, `snap` (these formats are not currently supported, in part because of this particular problem) or - to a lesser extent - with container builds.  
 The issue here is that by bundling all these libraries into one container format (ie: `EXE` or `DMG`), it becomes impossible to propagate library updates in a timely manner.  
 This means that it may take weeks or months before the patch for a zero-day exploit is deployed.  
 Sadly, this is not a theoretical issue: [pdfium 0-day](https://github.com/Xpra-org/xpra/issues/2470), [putty vulnerability](https://github.com/Xpra-org/xpra/issues/2222), [tortoisesvn unpatched security fix](https://github.com/Xpra-org/xpra/commit/ac9b2f86b19bdad8194f494ecf57877eaa577b81) and many many more.
 The MS Windows libraries are maintained by [MSYS2](https://www.msys2.org/), the MacOS libraries are maintained using our fork of [gtk-osx-build](https://github.com/Xpra-org/gtk-osx-build)
 
-## Anti-viruses
+### Anti-viruses
 Because of the way xpra intercepts and injects pointer and keyboard events - and the API it uses to perform these tasks, it is regularly misidentified as malware:
 [f-secure and bitdefender false-positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350), [Microsoft AI](https://github.com/Xpra-org/xpra/issues/2781#issuecomment-765546100)
 
-## [HTML5](https://github.com/Xpra-org/xpra-html5)
+### [HTML5](https://github.com/Xpra-org/xpra-html5)
 The builtin web server ships with fairly restrictive [http headers and content security policy](https://github.com/Xpra-org/xpra/issues/1741), even [blocking some valid use cases by default](https://github.com/Xpra-org/xpra/issues/3442) - though we could [go even further](https://github.com/Xpra-org/xpra/issues/3100).  
 For security issues related to the html5 client, please refer to [xpra-html5 project issues](https://github.com/Xpra-org/xpra-html5/issues)
 
-## SELinux
+### SELinux
 On Linux systems that support it, xpra includes an SELinux policy to properly confine
 its server process whilst still giving it access to the paths and sockets it needs to function: https://github.com/Xpra-org/xpra/tree/master/fs/share/selinux
 
-## System Integration
+### System Integration
 The xpra server and client(s) can both be embedded with or integrated into other sotware components, this completely changes the security profile of the solution.  
 For example:
 * By using an external websocket proxy (ie: [Apache HTTP Proxy](./Apache-Proxy.md)) one can shield the xpra server from potentially hostile external traffic and add a separately configured authentication layer with only minimal latency costs (when configured properly)
@@ -153,7 +153,7 @@ For example:
 * Running the [system wide proxy server](./Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
 * OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](./WSL.md)
 
-## Containers - VM
+### Containers - VM
 Using containers or virtual machines is a very popular way of deploying xpra, both offer a strong extra security layer which can also be used to restrict access to system resources - though this limited access to the underlying hardware also restricts hardware acceleration options.
 
 </details>
@@ -161,10 +161,6 @@ Using containers or virtual machines is a very popular way of deploying xpra, bo
 
 ---
 
-
-## Tests
-Although the test coverage is not as high as we would like, there are comprehensive unit tests that exercise individual narrow code paths and other tests that will cover the client and server code end-to-end, including the network layer and graphics access.  
-More details in [client-server mixin tests](https://github.com/Xpra-org/xpra/issues/2357), [better unit tests](https://github.com/Xpra-org/xpra/issues/2362)
 
 ## Vulnerabilities
 It is difficult to keep track of all the security related issues that have affected the project over the years.
