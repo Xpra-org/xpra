@@ -16,7 +16,7 @@ from xpra.scripts.main import (
     )
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import parse_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry_wrapper import input_pass, confirm
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.make_thread import start_thread
@@ -344,7 +344,7 @@ def ssh_paramiko_connect_to(display_desc):
             chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
             log("direct channel to remote port %i : %s", remote_port, chan)
         else:
-            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
         conn.timeout = SOCKET_TIMEOUT
@@ -786,7 +786,8 @@ def paramiko_run_test_command(transport, cmd):
     chan.close()
     return out, err, code
 
-def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None):
+def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
+                             socket_dir=None, display_as_args=None, paramiko_config=None):
     from paramiko import SSHException
     assert remote_xpra
     log("will try to run xpra from: %s", remote_xpra)
@@ -850,7 +851,9 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             log("open_session", exc_info=True)
             raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
         else:
-            if SSH_AGENT:
+            agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
+            log("paramiko agent_option=%s", agent_option)
+            if agent_option.lower() in TRUE_OPTIONS:
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
