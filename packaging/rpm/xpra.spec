@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.3.4
+%define version 4.3.5
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -622,6 +622,8 @@ fi
 
 
 %changelog
+* Wed Jul 13 2022 Antoine Martin <antoine@xpra.org> 4.3.5-10
+- TODO
 * Sat Jun 18 2022 Antoine Martin <antoine@xpra.org> 4.3.4-10
 - major bugs:
    audio not starting with some packet encoders
