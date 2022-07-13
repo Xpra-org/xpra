@@ -2123,7 +2123,6 @@ class ServerCore:
             auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
             cryptolog("server cipher=%s", auth_caps)
             return auth_caps
-        conn = proto._conn
         if proto.encryption:
             cryptolog("client does not provide encryption tokens")
             return auth_failed("missing encryption tokens")
