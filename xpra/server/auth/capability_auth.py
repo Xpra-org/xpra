@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
-from xpra.util import typedict, ellipsizer
+from xpra.util import typedict
 
 
 class Authenticator(SysAuthenticator):
