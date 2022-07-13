@@ -81,7 +81,7 @@ This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system in
 ## Operation
 
 <details>
-  <summary>Running mode, network connections and diagnostics, malicious peers</summary>
+  <summary>Running mode, network connections and diagnostics, malicious peers, specific options</summary>
 
 ### Modes
 Some features are harder to implement correctly in [seamless mode](./Seamless.md) because of the inherent complexity of handling windows client side and synchronizing their state. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))  
@@ -112,6 +112,26 @@ As per the list above, if the specific subsytem is not disabled, a malicious act
 * play a misleading audio stream, etc
 Moreover, a malicious server would be able to easily take screen captures of all applications, record all pointer events and keystrokes - making it relatively easy to capture any credentials typed into the session.
 
+### Options
+Some specific options have a direct impact on the security of the system:
+* `start-new-commands` this is precisely a remote command execution and should be disabled if the client is not trusted
+* `terminate-children` should be used to prevent child commands from lingering - most commands are killed when their connection to the display is terminated, but some may survive
+* `exit-with-children` to terminate servers when applications are closed
+* `exit-with-client` to terminate when clients exit
+* `idle-timeout` to prevent unused client sessions from consuming server resources
+* `server-idle-timeout` to prevent unused servers from consuming resources
+* `start-via-proxy` causes the sessions to be registered with the system's login service, which usually has the effect of moving them to their own session control group
+* `systemd-run` runs the server in a transient systemd scope unit
+* `proxy-start-sessions=yes|no` should be disabled if only existing sessions should be accessed via the proxy server
+* `daemon`, `chdir`, `pidfile`, `log-dir` and `log-file`: the server's filesystem context
+* `remote-xpra` the command executed from client SSH connections
+* `source=SOURCE` and `env=ENV`: anything that modifies the server's environment variables can potentially be used to subvert the server process
+* `source-start=SOURCE_START`, `start-env=START_ENV`: as above, but for commands started by the server
+* `mdns` will advertize sessions on local networks
+* `readonly` sessions are unable to receive any keyboard or pointer input
+* `sharing` and `lock` control if and when sessions are transfered between clients
+* `border`, `min-size`, `max-size`, `modal-windows`: to distinguish and constrain remote windows
+* `challenge-handlers` to restrict the type of authentication mechanisms the client will use (ie: prevent password prompts)
 </details>
 
 
