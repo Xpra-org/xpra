@@ -30,7 +30,7 @@ class Authenticator(SysAuthenticator):
 
     def authenticate(self, caps : typedict) -> bool:    #pylint: disable=arguments-differ
         value = caps.strget(self.property, None)
-        log("capability.authenticate(..) %r=%r (value required: %r",
+        log("capability.authenticate(..) %r=%r (value required: %r)",
             self.property, value, self.value)
         return value==self.value
 
