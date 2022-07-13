@@ -56,6 +56,7 @@ KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 SSH_AGENT = envbool("XPRA_SSH_AGENT", False)
 assert PASSWORD_RETRY>=0
+LOG_FAILED_CREDENTIALS = envbool("XPRA_LOG_FAILED_CREDENTIALS", False)
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
 EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
@@ -668,9 +669,15 @@ keymd5(host_key),
         except SSHException as e:
             auth_errors.setdefault("password", []).append(str(e))
             log("auth_password(..)", exc_info=True)
+            emsgs = getattr(e, "message", str(e)).split(";")
+        else:
+            emsgs = []
+        if not transport.is_authenticated():
             log.info("SSH password authentication failed:")
-            for emsg in getattr(e, "message", str(e)).split(";"):
+            for emsg in emsgs:
                 log.info(" %s", emsg)
+            if log.is_debug_enabled() and LOG_FAILED_CREDENTIALS:
+                log.info(" invalid username or passwod: %r - %r", username, password)
 
     def auth_interactive():
         log("trying interactive authentication")
