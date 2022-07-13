@@ -117,7 +117,9 @@ def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
                 return True     #read more data
             if output.startswith(b"D "):
                 pin_value = output[2:].rstrip(b"\n\r").decode()
-                pin_cb(pin_value)
+                from urllib.parse import unquote
+                decoded = unquote(pin_value).replace("\\", "\\")
+                pin_cb(decoded)
             else:
                 err_cb()
     do_run_pinentry(pinentry_proc, get_input, process_output)
