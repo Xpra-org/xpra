@@ -25,26 +25,27 @@ Here is the full list:
 |------|------|-------|
 |[allow](../../xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
 |[none](../../xpra/server/auth/none_auth.py)|always allows the user to login, the username used is the one the server is running as|dangerous / only for testing|
-|[fail](../../xpra/trunk/src/xpra/server/auth/fail_auth.py)|always fails authentication, no password required|useful for testing|
-|[reject](../../xpra/trunk/src/xpra/server/auth/reject_auth.py)|always fails authentication, pretends to ask for a password|useful for testing|
-|[env](../../xpra/trunk/src/xpra/server/auth/env_auth.py)|matches against an environment variable (`XPRA_PASSWORD` by default)|alternative to file module|
-|[password](../../xpra/trunk/src/xpra/server/auth/password_auth.py)|matches against a password given as a module option, ie: `auth=password:value=mysecret`|alternative to file module|
-|[multifile](../../xpra/trunk/src/xpra/server/auth/multifile_auth.py)|matches usernames and passwords against an authentication file|proxy: see password-file below|
+|[fail](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/fail_auth.py)|always fails authentication, no password required|useful for testing|
+|[reject](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/reject_auth.py)|always fails authentication, pretends to ask for a password|useful for testing|
+|[env](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/env_auth.py)|matches against an environment variable (`XPRA_PASSWORD` by default)|alternative to file module|
+|[password](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/password_auth.py)|matches against a password given as a module option, ie: `auth=password:value=mysecret`|alternative to file module|
+|[multifile](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/multifile_auth.py)|matches usernames and passwords against an authentication file|proxy: see password-file below|
 |[file](../../xpra/server/auth/file_auth.py)|compares the password against the contents of a password file, see password-file below|simple password authentication|
-|[pam](../../xpra/trunk/src/xpra/server/auth/pam.py)|linux PAM authentication|Linux system authentication|
-|[win32](../../xpra/trunk/src/xpra/server/auth/win32_auth.py)|win32security authentication|MS Windows system authentication|
+|[pam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/pam.py)|linux PAM authentication|Linux system authentication|
+|[win32](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/win32_auth.py)|win32security authentication|MS Windows system authentication|
 |`sys`|system authentication|virtual module which will choose win32 or pam authentication automatically|
-|[sqlite](../../xpra/trunk/src/xpra/server/auth/sqlite_auth.py)|sqlite database authentication|[#1488](../https://github.com/Xpra-org/xpra/issues/1488#issuecomment-765477498)|
-|[peercred](../../xpra/trunk/src/xpra/server/auth/peercred_auth.py)|`SO_PEERCRED` authentication|
-|[tcp hosts](../../xpra/trunk/src/xpra/server/auth/hosts_auth.py)|[TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)|[#1730](../https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022)|
-|[exec](../../xpra/server/auth/exec_auth.py)|Delegates to an external command|[#1690](../https://github.com/Xpra-org/xpra/issues/1690)|
-|[kerberos-password](../../xpra/server/auth/kerberos_password_auth.py)|Uses kerberos to authenticate a username + password|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[kerberos-ticket](../../xpra/server/auth/kerberos_ticket_auth.py)|Uses a kerberos ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[gss_auth](../../xpra/trunk/src/xpra/server/auth/gss_auth.py)|Uses a GSS ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[keycloak](../../xpra/server/auth/keycloak_auth.py)|Uses a keycloak token to authenticate a client|[#3334](../https://github.com/Xpra-org/xpra/issues/3334)|
-|[ldap](../../xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
-|[ldap3](../../xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
-|[u2f](../../xpra/trunk/src/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](../https://github.com/Xpra-org/xpra/issues/1789)|
+|[sqlite](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/sqlite_auth.py)|sqlite database authentication|[#1488](https://github.com/Xpra-org/xpra/issues/1488#issuecomment-765477498)|
+|[capability](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/capability_auth.py)|matches values in the capabilities supplied by the client|[#3575](https://github.com/Xpra-org/xpra/issues/3575#issuecomment-1183292333)|
+|[peercred](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/peercred_auth.py)|`SO_PEERCRED` authentication|[#1524](https://github.com/Xpra-org/xpra/issues/issues/1524)|
+|[tcp hosts](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/hosts_auth.py)|[TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)|[#1730](https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022)|
+|[exec](../../xpra/server/auth/exec_auth.py)|Delegates to an external command|[#1690](https://github.com/Xpra-org/xpra/issues/1690)|
+|[kerberos-password](../../xpra/server/auth/kerberos_password_auth.py)|Uses kerberos to authenticate a username + password|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[kerberos-ticket](../../xpra/server/auth/kerberos_ticket_auth.py)|Uses a kerberos ticket to authenticate a client|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[gss_auth](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/gss_auth.py)|Uses a GSS ticket to authenticate a client|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[keycloak](../../xpra/server/auth/keycloak_auth.py)|Uses a keycloak token to authenticate a client|[#3334](https://github.com/Xpra-org/xpra/issues/3334)|
+|[ldap](../../xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](https://github.com/Xpra-org/xpra/issues/1791)|
+|[ldap3](../../xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](https://github.com/Xpra-org/xpra/issues/1791)|
+|[u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](https://github.com/Xpra-org/xpra/issues/1789)|
 </details>
 
 ***
