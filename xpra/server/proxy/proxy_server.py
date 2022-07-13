@@ -270,8 +270,8 @@ class ProxyServer(ServerCore):
         if not protocol.is_closed():
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
-    def hello_oked(self, proto, packet, c, auth_caps):
-        if super().hello_oked(proto, packet, c, auth_caps):
+    def hello_oked(self, proto, c, auth_caps):
+        if super().hello_oked(proto, c, auth_caps):
             #already handled in superclass
             return
         self.accept_client(proto, c)

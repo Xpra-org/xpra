@@ -285,12 +285,12 @@ class ServerBase(ServerBaseClass):
             accepted = False
         return accepted, share_count, disconnected
 
-    def hello_oked(self, proto, packet, c, auth_caps):
+    def hello_oked(self, proto, c, auth_caps):
         if self._server_sources.get(proto):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
             return
-        if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
+        if ServerCore.hello_oked(self, proto, c, auth_caps):
             #has been handled
             return
         if not self.sanity_checks(proto, c):

@@ -2048,19 +2048,19 @@ class ServerCore:
                 auth_failed("authentication failed")
                 return
         authlog("all authentication modules passed")
-        self.auth_verified(proto, packet, auth_caps)
-
-    def auth_verified(self, proto, packet, auth_caps):
         capabilities = packet[1]
         c = typedict(capabilities)
-        command_req = tuple(net_utf8(x) for x in c.tupleget("command_request"))
+        self.auth_verified(proto, c, auth_caps)
+
+    def auth_verified(self, proto, caps, auth_caps):
+        command_req = tuple(net_utf8(x) for x in caps.tupleget("command_request"))
         if command_req:
             #call from UI thread:
             authlog("auth_verified(..) command request=%s", command_req)
             self.idle_add(self.handle_command_request, proto, *command_req)
             return
         #continue processing hello packet in UI thread:
-        self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
+        self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
 
     def setup_encryption(self, proto, c : typedict):
@@ -2149,13 +2149,13 @@ class ServerCore:
                     return v
         return None
 
-    def call_hello_oked(self, proto, packet, c, auth_caps):
+    def call_hello_oked(self, proto, c, auth_caps):
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
                 raise Exception("Simulating a server error")
-            self.hello_oked(proto, packet, c, auth_caps)
+            self.hello_oked(proto, c, auth_caps)
         except ClientException as e:
-            log("call_hello_oked(%s, %s, %s, %s)", proto, packet, ellipsizer(c), auth_caps, exc_info=True)
+            log("call_hello_oked(%s, %s, %s)", proto, ellipsizer(c), auth_caps, exc_info=True)
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.error(" %s", e)
@@ -2165,7 +2165,7 @@ class ServerCore:
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
             self.disconnect_client(proto, CONNECTION_ERROR, "error accepting new connection")
 
-    def hello_oked(self, proto, _packet, c, _auth_caps):
+    def hello_oked(self, proto, c, _auth_caps):
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
