@@ -1,5 +1,17 @@
 xpra (4.3.5-1) UNRELEASED; urgency=low
-  * TODO
+  * major bugs:
+   - failure to upgrade sessions when dbus was missing
+   - escaping error for some password characters
+  * build:
+   - compilation warnings on MS Windows
+   - support for OracleLinux 8, RockyLinux 8, AlmaLinux 8
+  * network:
+   - honour new bind options when upgrading servers
+   - workaround for missing paramiko 'invoke' dependency
+  * misc:
+   - safe to assume 6 year old feature is always present
+   - add generic capability authentication
+   - make the version information code more resilient
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Jul 2022 15:32:42 -0400
 

@@ -1,7 +1,19 @@
 # Changelog
 
 ## [4.3.5] 2022-07-13
-* TODO
+* major bugs:
+	* failure to upgrade sessions when dbus was missing
+	* escaping error for some password characters
+* build:
+	* compilation warnings on MS Windows
+	* support for OracleLinux 8, RockyLinux 8, AlmaLinux 8
+* network:
+	* honour new bind options when upgrading servers
+	* workaround for missing paramiko 'invoke' dependency
+* misc:
+	* safe to assume 6 year old feature is always present
+	* add generic capability authentication
+	* make the version information code more resilient
 
 ## [4.3.4] 2022-06-18
 * major bugs:
