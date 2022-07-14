@@ -8,7 +8,7 @@ import re
 import os.path
 
 from xpra.util import ellipsizer
-from xpra.os_util import getuid, OSX, POSIX
+from xpra.os_util import getuid, OSX, POSIX, bytestostr, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
@@ -27,79 +27,101 @@ def getprop(window, prop):
     except TypeError:
         log.error("Error querying %s on %s", prop, window, exc_info=True)
 
+################################################################
+# generic file parsing functions
+################################################################
+
+def _load_dict_file(filename, parser) -> dict:
+    #filter out comments and remove line endings
+    lines = []
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.rstrip("\n\r")
+            if line.startswith("#") or not line.strip():
+                continue
+            lines.append(line)
+    log("_load_dict_file(%s)=%s", filename, ellipsizer(lines))
+    return parser(lines)
+
+def _load_dict_dir(d, parser) -> dict:
+    #load all the .conf files from the directory
+    if not os.path.exists(d) or not os.path.isdir(d):
+        log("load_content_categories_dir(%s) directory not found", d)
+        return {}
+    v = {}
+    for f in sorted(os.listdir(d)):
+        if f.endswith(".conf"):
+            cc_file = os.path.join(d, f)
+            if os.path.isfile(cc_file):
+                try:
+                    v.update(_load_dict_file(cc_file, parser))
+                except Exception as e:
+                    log("_load_dict_dir(%s)", cc_file, exc_info=True)
+                    log.error("Error loading file data from '%s'", cc_file)
+                    log.error(" %s", e)
+    log("_load_dict_dir(%s)=%s", d, v)
+    return v
+
+def _load_dict_dirs(dirname, parser) -> dict:
+    #finds all the ".conf" files from the dirname specified
+    #and calls `load` on them.
+    #looks for system and user conf dirs
+    values = {}
+    for d in get_system_conf_dirs():
+        v = _load_dict_dir(os.path.join(d, dirname), parser)
+        values.update(v)
+    if not POSIX or getuid()>0:
+        for d in get_user_conf_dirs():
+            v = _load_dict_dir(os.path.join(d, dirname), parser)
+            values.update(v)
+    return values
+
+
+################################################################
+# `content-type` mapping:
+################################################################
 
 content_type_defs = None
 def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
-        content_type_defs = {}
-        for d in get_system_conf_dirs():
-            load_content_type_dir(os.path.join(d, "content-type"))
-        if not POSIX or getuid()>0:
-            for d in get_user_conf_dirs():
-                load_content_type_dir(os.path.join(d, "content-type"))
-        for e in CONTENT_TYPE_DEFS.split(","):
-            if not process_content_type_entry(e):
-                log.warn(" invalid entry in environment variable")
+        content_type_defs = _load_dict_dirs("content-type", parse_content_types)
+        #add env defs:
+        for entries in CONTENT_TYPE_DEFS.split(","):
+            content_type_defs.update(parse_content_types(entries))
     return content_type_defs
 
-def load_content_type_dir(d):
-    log("load_content_type_dir(%s)", d)
-    if not os.path.exists(d) or not os.path.isdir(d):
-        return
-    for f in sorted(os.listdir(d)):
-        if f.endswith(".conf"):
-            ct_file = os.path.join(d, f)
-            if os.path.isfile(ct_file):
-                try:
-                    load_content_type_file(ct_file)
-                except Exception as e:
-                    log("load_content_type_file(%s)", ct_file, exc_info=True)
-                    log.error("Error loading content-type data from '%s'", ct_file)
-                    log.error(" %s", e)
-
-def load_content_type_file(ct_file):
-    with open(ct_file, "r") as f:
-        l = 0
-        for line in f:
-            if not process_content_type_entry(line):
-                log.warn(" line %i of file '%s'", l, ct_file)
-            l += 1
-
-def process_content_type_entry(entry):
-    global content_type_defs
-    entry = entry.rstrip("\n\r")
-    if entry.startswith("#") or not entry.strip():
-        return True
-    parts = entry.rsplit("=", 1)
-    #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
-    if len(parts)!=2:
-        log.warn("Warning: invalid content-type definition")
-        log.warn(" found in '%s'", entry)
-        log.warn(" '%s' is missing a '='", entry)
-        return False
-    match, content_type = parts
-    parts = match.split(":", 1)
-    #ie: "title:helloworld" -> "title", "helloworld"
-    if len(parts)!=2:
-        log.warn("Warning: invalid content-type definition")
-        log.warn(" match string '%s' is missing a ':'", match)
-        return False
-    #ignore comments:
-    #"text    #some comments here" > "text"
-    content_type = content_type.split(":")[0].strip()
-    prop_name, regex = parts
-    try:
-        c = re.compile(regex)
-        content_type_defs.setdefault(prop_name, {})[c]=(regex, content_type)
-        log("%16s matching '%s' is %s", prop_name, regex, content_type)
-    except Exception as e:
-        log.warn("Warning: invalid regular expression")
-        log.warn(" match string '%s':", regex)
-        log.warn(" %s", e)
-        return False
-    return True
-
+def parse_content_types(lines) -> dict:
+    defs = {}
+    for line in lines:
+        parts = line.rsplit("=", 1)
+        #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
+        if len(parts)!=2:
+            log.warn("Warning: invalid content-type definition")
+            log.warn(" %r is missing a '='", line)
+            continue
+        match_str, content_type = parts
+        parts = match_str.split(":", 1)
+        #ie: "title:helloworld" -> "title", "helloworld"
+        if len(parts)!=2:
+            log.warn("Warning: invalid content-type definition")
+            log.warn(" match string %r is missing a ':'", match_str)
+            continue
+        #ignore comments:
+        #"text    #some comments here" > "text"
+        content_type = content_type.split(":")[0].strip()
+        prop_name, regex = parts
+        try:
+            c = re.compile(regex)
+        except Exception as e:
+            log.warn("Warning: invalid regular expression")
+            log.warn(" match string '%s':", regex)
+            log.warn(" %s", e)
+            continue
+        else:
+            defs.setdefault(prop_name, {})[c]=(regex, content_type)
+            log("%16s matching '%s' is %s", prop_name, regex, content_type)
+    return defs
 
 def get_content_type_properties():
     """ returns the list of window properties which can be used
@@ -132,53 +154,31 @@ def guess_content_type_from_defs(window) -> str:
                     return content_type
     return None
 
-def load_categories_to_type():
-    categories_to_type = {}
-    for d in get_system_conf_dirs():
-        v = load_content_categories_dir(os.path.join(d, "content-categories"))
-        categories_to_type.update(v)
-    if not POSIX or getuid()>0:
-        for d in get_user_conf_dirs():
-            load_content_categories_dir(os.path.join(d, "content-categories"))
-            categories_to_type.update(v)
-    return categories_to_type
-def load_content_categories_dir(d):
-    if not os.path.exists(d) or not os.path.isdir(d):
-        log("load_content_categories_dir(%s) directory not found", d)
-        return {}
-    categories_to_type = {}
-    for f in sorted(os.listdir(d)):
-        if f.endswith(".conf"):
-            cc_file = os.path.join(d, f)
-            if os.path.isfile(cc_file):
-                try:
-                    categories_to_type.update(load_content_categories_file(cc_file))
-                except Exception as e:
-                    log("load_content_type_file(%s)", cc_file, exc_info=True)
-                    log.error("Error loading content-type data from '%s'", cc_file)
-                    log.error(" %s", e)
-    log("load_categories_to_type(%s)=%s", d, categories_to_type)
-    return categories_to_type
-def load_content_categories_file(cc_file):
+################################################################
+# `content-categories` mapping:
+################################################################
+
+def parse_content_categories_file(lines) -> dict:
     d = {}
-    with open(cc_file, "r") as f:
-        l = 0
-        for line in f:
-            l += 1
-            line = line.rstrip("\n\r")
-            if line.startswith("#") or not line.strip():
-                continue
-            parts = line.rsplit(":", 1)
-            #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
-            if len(parts)!=2:
-                log.warn("Warning: invalid content-type definition")
-                log.warn(" found in '%s' at line %i", line, l)
-                log.warn(" '%s' is missing a '='", line)
-                continue
-            category, content_type = parts
-            d[category.strip("\t ").lower()] = content_type.strip("\t ")
-    log("load_content_categories_file(%s)=%s", cc_file, d)
+    for line in lines:
+        parts = line.rsplit(":", 1)
+        #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
+        if len(parts)!=2:
+            log.warn("Warning: invalid content-type definition")
+            log.warn(" %r is missing a '='", line)
+            continue
+        category, content_type = parts
+        d[category.strip("\t ").lower()] = content_type.strip("\t ")
+    log("parse_content_categories_file(%s)=%s", lines, d)
     return d
+
+def load_categories_to_type() -> dict:
+    return _load_dict_dirs("content-categories", parse_content_categories_file)
+
+
+################################################################
+# command mapping: using menu data
+################################################################
 
 command_to_type = None
 def load_command_to_type():
@@ -226,5 +226,55 @@ def guess_content_type_from_command(window):
     return None
 
 
+################################################################
+# `content-parent` mapping:
+################################################################
+
+def parse_content_parent(lines):
+    v = {}
+    for line in lines:
+        parts = line.split(":", 1)
+        if len(parts)==2:
+            v[parts[0].strip()] = parts[1].strip()
+    return v
+
+parent_to_type = None
+def get_parent_to_type():
+    global parent_to_type
+    if parent_to_type is None:
+        parent_to_type = _load_dict_dirs("content-parent", parse_content_parent)
+    return parent_to_type
+
+def guess_content_type_from_parent(window):
+    ppid = getprop(window, "ppid")
+    if not ppid:
+        return None
+    return guess_content_from_parent_pid(ppid)
+
+def guess_content_from_parent_pid(ppid):
+    parent_command = get_proc_cmdline(ppid)
+    if not parent_command:
+        return None
+    try:
+        executable = os.path.basename(parent_command[0]).decode()
+    except UnicodeDecodeError:
+        executable = bytestostr(parent_command[0])
+    pt = get_parent_to_type()
+    return pt.get(executable)
+
+
 def guess_content_type(window):
-    return guess_content_type_from_defs(window) or guess_content_type_from_command(window) or DEFAULT_CONTENT_TYPE
+    return guess_content_type_from_defs(window) or guess_content_type_from_command(window) or guess_content_type_from_parent(window) or DEFAULT_CONTENT_TYPE
+
+
+
+def main():
+    import sys
+    assert len(sys.argv)==2
+    ppid = int(sys.argv[1])
+    c = guess_content_from_parent_pid(ppid)
+    print("guess_content_from_parent_pid(%i)=%s" % (ppid, c))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

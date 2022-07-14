@@ -40,6 +40,12 @@ if not XRes.check_xres():
     log.warn("Warning: X Resource Extension missing or too old")
     XRes = None
 
+try:
+    from xpra.platform.xposix.proc import get_parent_pid
+except ImportError:
+    log("proc.get_parent_pid is not available", exc_info=True)
+    get_parent_pid = None
+
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
@@ -140,6 +146,10 @@ class CoreX11WindowModel(WindowModelStub):
                 "PID of owning process", "",
                 -1, 65535, -1,
                 GObject.ParamFlags.READABLE),
+        "ppid": (GObject.TYPE_INT,
+                "PID of parent process", "",
+                -1, 65535, -1,
+                GObject.ParamFlags.READABLE),
         #from _NET_WM_PID
         "wm-pid": (GObject.TYPE_INT,
                 "PID of owning process", "",
@@ -209,7 +219,7 @@ class CoreX11WindowModel(WindowModelStub):
     #things that we expose:
     _property_names         = [
         "xid", "depth", "has-alpha",
-        "client-machine", "pid", "wm-pid",
+        "client-machine", "pid", "ppid", "wm-pid",
         "title", "role",
         "command", "shape",
         "class-instance", "protocols",
@@ -392,10 +402,12 @@ class CoreX11WindowModel(WindowModelStub):
         #immutable ones:
         depth = X11Window.get_depth(self.xid)
         pid = XRes.get_pid(self.xid) if XRes else -1
-        metalog("initial X11 properties: xid=%#x, depth=%i, pid=%i", self.xid, depth, pid)
+        ppid = get_parent_pid(pid) if pid and get_parent_pid else 0
+        metalog("initial X11 properties: xid=%#x, depth=%i, pid=%i, ppid=%i", self.xid, depth, pid, ppid)
         self._updateprop("depth", depth)
         self._updateprop("xid", self.xid)
         self._updateprop("pid", pid)
+        self._updateprop("ppid", ppid)
         self._updateprop("has-alpha", depth==32)
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())

@@ -177,6 +177,7 @@ pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OS
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
+proc_ENABLED            = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and any(os.path.exists(d+"/linux/vm_sockets.h") for d in INCLUDE_DIRS)
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
@@ -248,7 +249,7 @@ SWITCHES = [
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "rencodeplus", "brotli",
-    "vsock", "netdev", "mdns",
+    "vsock", "netdev", "proc", "mdns",
     "clipboard",
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
@@ -1000,6 +1001,7 @@ def clean():
                    "xpra/platform/darwin/gdk_bindings.c",
                    "xpra/platform/xposix/sd_listen.c",
                    "xpra/platform/xposix/netdev_query.c",
+                   "xpra/platform/xposix/proc.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
                    "xpra/net/brotli/decompressor.c",
@@ -1553,8 +1555,8 @@ if WIN32:
 
     if data_ENABLED:
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
-        for d in ("http-headers", "content-type", "content-categories"):
-            add_data_files("etc/xpra/%s" % d, glob.glob("fs/etc/%s/*" % d))
+        for d in ("http-headers", "content-type", "content-categories", "content-parent"):
+            add_data_files("etc/xpra/%s" % d, glob.glob("fs/etc/xpra/%s/*" % d))
 
         add_data_files('', glob.glob("packaging/MSWindows/bundle-extra/*"))
 
@@ -1728,7 +1730,7 @@ else:
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
-                for d in ("http-headers", "content-type", "content-categories"):
+                for d in ("http-headers", "content-type", "content-categories", "content-parent"):
                     dirtodir("fs/etc/xpra/%s" % d, "/etc/xpra/%s" % d)
 
     # add build_conf to build step
@@ -2507,6 +2509,15 @@ if netdev_ENABLED:
     add_cython_ext("xpra.platform.xposix.netdev_query",
                 ["xpra/platform/xposix/netdev_query.pyx"],
                 **netdev_pkgconfig)
+
+if proc_ENABLED:
+    proc_pkgconfig = pkgconfig()
+    #redefines likely / unlikely and causes a warning we can't silence:
+    add_to_keywords(proc_pkgconfig, "extra_compile_args", "-Wno-error")
+    add_to_keywords(proc_pkgconfig, 'extra_link_args', "-lprocps")
+    add_cython_ext("xpra.platform.xposix.proc",
+                ["xpra/platform/xposix/proc.pyx"],
+                **proc_pkgconfig)
 
 if vsock_ENABLED:
     vsock_pkgconfig = pkgconfig()

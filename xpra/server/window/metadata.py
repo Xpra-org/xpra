@@ -41,11 +41,17 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
                 return {}
             return {propname: ""}
         return {propname: v}
-    if propname in ("pid", "wm-pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
+    if propname in (
+        "pid", "ppid", "wm-pid",
+        "workspace",
+        "bypass-compositor", "depth", "opacity",
+        "quality", "speed",
+        ):
         v = raw()
         assert v is not None, "%s is None!" % propname
         default_value = {
             "pid"               : 0,
+            "ppid"              : 0,
             "wm-pid"            : 0,
             "workspace"         : WORKSPACE_UNSET,
             "bypass-compositor" : 0,
