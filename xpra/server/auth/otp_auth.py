@@ -1,0 +1,115 @@
+# This file is part of Xpra.
+# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import base64
+import binascii
+
+from xpra.util import envbool, obsc
+from xpra.os_util import bytestostr
+from xpra.net.digest import get_salt
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.log import enable_color
+
+SHOW = envbool("XPRA_OTP_SHOW", False)
+SHOW_URI = envbool("XPRA_OTP_SHOW_URI", False)
+
+def b32(s):
+    try:
+        assert base64.b32decode(s, casefold=True)
+        return s
+    except binascii.Error:
+        return base64.b32encode(s.encode())
+
+
+class Authenticator(SysAuthenticator):
+
+    #DEFAULT_PROMPT = "OTP for '{username}'"
+    DEFAULT_PROMPT = "OTP"
+
+    def __init__(self, **kwargs):
+        log("otp.Authenticator(%s)", kwargs)
+        self.uid = -1
+        self.gid = -1
+        import pyotp
+        assert pyotp
+        self.issuer_name = kwargs.pop("issuer-name", "Xpra")
+        self.secret = b32(kwargs.pop("secret", pyotp.random_hex()))
+        self.valid_window = int(kwargs.pop("valid-window", 0))
+        #validate the base32 secret early:
+        base64.b32decode(self.secret, casefold=True)
+        super().__init__(**kwargs)
+        if SHOW_URI:
+            totp_uri = pyotp.totp.TOTP(self.secret).provisioning_uri(self.username, issuer_name=self.issuer_name)
+            log("provisioning_uri=%s", totp_uri)
+
+    def get_uid(self):
+        return self.uid
+
+    def get_gid(self):
+        return self.gid
+
+
+    def requires_challenge(self):
+        return True
+
+    def get_challenge(self, digests):
+        if self.salt is not None:
+            log.error("Error: authentication challenge already sent!")
+            return None
+        if "xor" not in digests:
+            log.error("Error: xor is not supported by the client")
+            return None
+        self.salt = get_salt()
+        self.digest = "xor"
+        self.challenge_sent = True
+        if SHOW:
+            import pyotp
+            totp = pyotp.TOTP(self.secret)
+            now = totp.now()
+            log("otp current value for secret %s: %s", self.secret, now)
+            log("recheck: %s", totp.verify(now))
+        return self.salt, self.digest
+
+    def check(self, password) -> bool:
+        log("otp.check(%s)", obsc(password))
+        import pyotp
+        totp = pyotp.TOTP(self.secret)
+        r = totp.verify(bytestostr(password), valid_window=self.valid_window)
+        log("otp.check(%s)=%s", obsc(password), r)
+        if not r:
+            raise Exception("invalid OTP value")
+        return True
+
+    def __repr__(self):
+        return "otp"
+
+
+def main(argv):
+    if len(argv)<2 or len(argv)>4:
+        print("usage: %s SECRET [username] [issuer-name]" % (argv[0], ))
+        return 1
+    enable_color()
+    import os
+    secret = b32(argv[1])
+    username = os.environ.get("USERNAME")
+    issuer_name = "Xpra"
+    if len(argv)>=3:
+        username = argv[2]
+    if len(argv)>=4:
+        issuer_name = argv[3]
+    import pyotp
+    totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(username, issuer_name)
+    log.info("provisioning_uri=%s", totp_uri)
+    #qrcode module has problems - don't use it for now
+    #try:
+    #    from xpra.net.qrcode import show_qr
+    #except ImportError as e:
+    #    log.info(" unable to show qr code: %s", e)
+    #else:
+    #    show_qr(totp_uri)
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main(sys.argv))
