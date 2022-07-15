@@ -94,7 +94,7 @@ class ClientInfoMixin(StubSourceMixin):
         if self.client_session_type:
             pinfo += " %s" % self.client_session_type
         revinfo = ""
-        if self.client_revision:
+        if self.client_revision and isinstance(self.client_revision, int):
             revinfo="-r%s" % self.client_revision
         bitsstr = ""
         if self.client_bits:
