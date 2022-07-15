@@ -2334,7 +2334,7 @@ if v4l2_ENABLED:
 
 
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
-tace(evdi_ENABLED, "xpra.codecs.evdi.capture", "evdi")
+tace(evdi_ENABLED, "xpra.codecs.evdi.capture", language="c++", extra_link_args="-levdi")
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
