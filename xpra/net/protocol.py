@@ -268,8 +268,7 @@ class Protocol:
     def parse_remote_caps(self, caps : typedict):
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
-        if FLUSH_HEADER:
-            self.send_flush_flag = caps.boolget("flush", False)
+        self.send_flush_flag = FLUSH_HEADER and caps.boolget("flush", False)
 
     def get_info(self, alias_info=True) -> dict:
         info = {

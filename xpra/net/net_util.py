@@ -10,6 +10,7 @@ import socket
 import sys
 
 from xpra.os_util import WIN32
+from xpra.net.common import FLUSH_HEADER
 from xpra.log import Logger
 
 log = Logger("network", "util")
@@ -374,9 +375,7 @@ def get_network_caps() -> dict:
                 "compressors"           : get_enabled_compressors(),
                 "encoders"              : get_enabled_encoders(),
                }
-    from xpra.net.common import FLUSH_HEADER
-    if FLUSH_HEADER:
-        caps["flush"] = True
+    caps["flush"] = FLUSH_HEADER
     caps.update(get_crypto_caps())
     caps.update(get_compression_caps())
     caps.update(get_packet_encoding_caps())
