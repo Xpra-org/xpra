@@ -598,7 +598,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_setting_changed(setting, value)
 
     def server_setting_changed(self, setting, value):
-        log("setting_changed(%s, %s)", setting, value)
+        log("setting_changed(%s, %s)", setting, ellipsizer(value, limit=200))
         cbs = self._on_server_setting_changed.get(setting)
         if cbs:
             for cb in cbs:
