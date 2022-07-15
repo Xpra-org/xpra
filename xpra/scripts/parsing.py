@@ -846,6 +846,8 @@ def do_parse_cmdline(cmdline, defaults):
         ignore_options(cmdline, defaults.keys())
         for k,v in defaults.items():
             hidden_options[k.replace("-", "_")] = v
+    #removed in 4.4:
+    ignore_options(cmdline, "global-menus")
     group = optparse.OptionGroup(parser, "Server Options",
                 "These options are only relevant on the server when using the %s mode." %
                 " or ".join(["'%s'" % x for x in get_server_modes()]))
@@ -1271,10 +1273,6 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Which API to use for input devices. Default: %s." % defaults.input_devices)
     else:
         ignore({"input-devices" : INPUT_DEVICES[0]})
-    legacy_bool_parse("global-menus")
-    group.add_option("--global-menus", action="store",
-                      dest="global_menus", default=defaults.global_menus, metavar="yes|no",
-                      help="Forward application global menus. Default: %s." % enabled_str(defaults.global_menus))
     legacy_bool_parse("xsettings")
     if POSIX:
         group.add_option("--xsettings", action="store", metavar="auto|yes|no",
