@@ -130,14 +130,6 @@ def pkg_config_version(req_version, pkgname):
         from distutils.version import LooseVersion
     return LooseVersion(out)>=LooseVersion(req_version)
 
-def is_RH():
-    try:
-        with open("/etc/redhat-release", mode='rb') as rel:
-            data = rel.read()
-        return data.startswith(b"CentOS") or data.startswith(b"RedHat")
-    except (FileNotFoundError, OSError):
-        pass
-    return False
 
 DEFAULT = True
 if "--minimal" in sys.argv:
@@ -941,7 +933,8 @@ def build_xpra_conf(install_dir):
     #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     webcam = webcam_ENABLED and not (OSX or WIN32)
     #no python-avahi on RH / CentOS, need dbus module on *nix:
-    mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
+    is_RH = is_RedHat() or is_CentOS() or is_OracleLinux() or is_AlmaLinux() or is_RockyLinux()
+    mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
     SUBS = {
             'xvfb_command'          : wrap_cmd_str(xvfb_command),
             'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
