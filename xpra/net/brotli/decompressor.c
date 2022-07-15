@@ -5,14 +5,20 @@
     "distutils": {
         "depends": [],
         "extra_compile_args": [
-            "-O3",
             "-Wall",
             "-Werror",
             "-fPIC"
         ],
         "extra_link_args": [
+            "-Wl,-rpath=/usr/lib64/xpra",
             "-Wall",
             "-lbrotlidec"
+        ],
+        "libraries": [
+            "X11"
+        ],
+        "library_dirs": [
+            "/usr/lib64/xpra"
         ],
         "name": "xpra.net.brotli.decompressor",
         "sources": [
