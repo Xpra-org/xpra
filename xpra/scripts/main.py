@@ -501,7 +501,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_list_sessions(args, options)
     elif mode == "sessions":
         no_gtk()
-        return run_sessions_gui(error_cb, options)
+        return run_sessions_gui(options)
     elif mode == "displays":
         no_gtk()
         return run_displays(args)
@@ -2767,10 +2767,17 @@ def run_desktop_greeter(args):
     from xpra.gtk_common.desktop_greeter import main
     main()
 
-def run_sessions_gui(error_cb, options):
+def run_sessions_gui(options):
     mdns = supports_mdns and options.mdns
     if mdns:
-        return run_mdns_gui(error_cb, options)
+        from xpra.net.mdns import get_listener_class
+        listener = get_listener_class()
+        if listener:
+            from xpra.client.gtk_base import mdns_gui
+            return mdns_gui.do_main(options)
+        else:
+            warn("Warning: no mDNS support")
+            warn(" only local sessions will be shown")
     from xpra.client.gtk_base import sessions_gui
     return sessions_gui.do_main(options)
 
