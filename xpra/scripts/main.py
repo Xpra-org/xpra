@@ -527,7 +527,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_wmname(args)
     elif mode == "desktop-greeter":
         check_gtk()
-        return run_desktop_greeter(args)
+        return run_desktop_greeter()
     elif mode == "launcher":
         check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
@@ -2763,7 +2763,7 @@ def _browser_open(what, *path_options):
     raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
 
-def run_desktop_greeter(args):
+def run_desktop_greeter():
     from xpra.gtk_common.desktop_greeter import main
     main()
 
