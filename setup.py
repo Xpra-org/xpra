@@ -165,6 +165,14 @@ cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
+def find_header_file(name):
+    matches = [v for v in
+               [d+name for d in INCLUDE_DIRS]
+               if os.path.exists(v)]
+    if not matches:
+        return None
+    return matches[0]
+
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
@@ -172,17 +180,16 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and any(
-    (os.path.exists(d+"/pam/pam_misc.h") or os.path.exists(d+"/security/pam_misc.h")) for d in INCLUDE_DIRS)
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and find_header_file("security/pam_misc.h") or find_header_file("security/pam_misc.h")
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 proc_ENABLED            = LINUX and DEFAULT
-vsock_ENABLED           = LINUX and any(os.path.exists(d+"/linux/vm_sockets.h") for d in INCLUDE_DIRS)
+vsock_ENABLED           = LINUX and find_header_file("/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
-brotli_ENABLED          = DEFAULT and any(os.path.exists(d+"/brotli/decode.h") for d in INCLUDE_DIRS)
+brotli_ENABLED          = DEFAULT and find_header_file("/brotli/decode.h") and find_header_file("/brotli/encode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
@@ -667,20 +674,21 @@ def get_gcc_version():
     global GCC_VERSION
     if not GCC_VERSION:
         cc = os.environ.get("CC", "gcc")
-        r, _, err = get_status_output([cc]+["-v"])
+        r, _, err = get_status_output([cc, "-v"])
         if r==0:
             V_LINE = "gcc version "
             tmp_version = []
             for line in err.splitlines():
-                if line.startswith(V_LINE):
-                    v_str = line[len(V_LINE):].split(" ")[0]
-                    for p in v_str.split("."):
-                        try:
-                            tmp_version.append(int(p))
-                        except ValueError:
-                            break
-                    print("found gcc version: %s" % ".".join([str(x) for x in GCC_VERSION]))
-                    break
+                if not line.startswith(V_LINE):
+                    continue
+                v_str = line[len(V_LINE):].strip().split(" ")[0]
+                for p in v_str.split("."):
+                    try:
+                        tmp_version.append(int(p))
+                    except ValueError:
+                        break
+                print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
+                break
             GCC_VERSION = tuple(tmp_version)
     return GCC_VERSION
 
@@ -2309,23 +2317,19 @@ if v4l2_ENABLED:
     v4l2_pkgconfig = pkgconfig()
     #fugly warning: cython makes this difficult,
     #we have to figure out if "device_caps" exists in the headers:
-    for d in INCLUDE_DIRS:
-        videodev2_h = d+"/linux/videodev2.h"
-        if os.path.exists(videodev2_h):
-            break
+    videodev2_h = find_header_file("/linux/videodev2.h")
     constants_pxi = "xpra/codecs/v4l2/constants.pxi"
-    if not os.path.exists(videodev2_h) or should_rebuild(videodev2_h, constants_pxi):
+    if videodev2_h and should_rebuild(videodev2_h, constants_pxi):
         ENABLE_DEVICE_CAPS = 0
-        if os.path.exists(videodev2_h):
-            try:
-                with subprocess.Popen("%s -fpreprocessed %s | grep -q device_caps" % (CPP, videodev2_h),
-                                     shell=True) as proc:
-                    ENABLE_DEVICE_CAPS = proc.wait()==0
-            except OSError:
-                with open(videodev2_h) as f:
-                    hdata = f.read()
-                ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
-                print("failed to detect device caps, assuming off")
+        try:
+            with subprocess.Popen("%s -fpreprocessed %s | grep -q device_caps" % (CPP, videodev2_h),
+                                 shell=True) as proc:
+                ENABLE_DEVICE_CAPS = proc.wait()==0
+        except OSError:
+            with open(videodev2_h) as f:
+                hdata = f.read()
+            ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
+            print("failed to detect device caps, assuming off")
         with open(constants_pxi, "wb") as f:
             f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
     add_cython_ext("xpra.codecs.v4l2.pusher",
