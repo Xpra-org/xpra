@@ -2272,7 +2272,7 @@ toggle_packages(libav_common, "xpra.codecs.libav_common")
 tace(libav_common, "xpra.codecs.libav_common.av_log", "libavutil")
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
-tace(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2.decoder,xpra/codecs/dec_avcodec2/register_compat.c", "libavcodec", "libavutil", "libavformat")
+tace(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2.decoder,xpra/codecs/dec_avcodec2/register_compat.c", "libavcodec,libavutil,libavformat")
 
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter",
