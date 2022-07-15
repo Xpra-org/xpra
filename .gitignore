@@ -138,6 +138,7 @@ tests/unittests/test-file*
 /xpra/net/brotli/decompressor.c
 /xpra/net/brotli/decompressor.c
 /xpra/net/websockets/mask.c
+/xpra/net/qrencode.c
 /xpra/platform/darwin/gdk3_bindings.c
 /xpra/platform/win32/propsys.cpp
 /xpra/platform/xposix/netdev_query.c
