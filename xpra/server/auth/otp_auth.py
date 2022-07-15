@@ -103,12 +103,12 @@ def main(argv):
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(username, issuer_name)
     log.info("provisioning_uri=%s", totp_uri)
     #qrcode module has problems - don't use it for now
-    #try:
-    #    from xpra.net.qrcode import show_qr
-    #except ImportError as e:
-    #    log.info(" unable to show qr code: %s", e)
-    #else:
-    #    show_qr(totp_uri)
+    try:
+        from xpra.net.qrcode import show_qr
+    except ImportError as e:
+        log.info(" unable to show qr code: %s", e)
+    else:
+        show_qr(totp_uri)
 
 if __name__ == "__main__":
     import sys

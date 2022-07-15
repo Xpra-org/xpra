@@ -190,6 +190,7 @@ bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and find_header_file("/brotli/decode.h") and find_header_file("/brotli/encode.h")
+qrencode_ENABLED        = DEFAULT and find_header_file("qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
@@ -255,7 +256,7 @@ SWITCHES = [
     "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
-    "bencode", "cython_bencode", "rencodeplus", "brotli",
+    "bencode", "cython_bencode", "rencodeplus", "brotli", "qrencode",
     "vsock", "netdev", "proc", "mdns",
     "clipboard",
     "scripts",
@@ -342,7 +343,7 @@ if "clean" not in sys.argv:
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
-        cython_bencode_ENABLED = rencodeplus_ENABLED = brotli_ENABLED = False
+        cython_bencode_ENABLED = rencodeplus_ENABLED = brotli_ENABLED = qrencode_ENABLED = False
         gtk3_ENABLED = False
         x11_ENABLED = False
     #sanity check the flags:
@@ -1036,6 +1037,7 @@ def clean():
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
                    "xpra/net/brotli/decompressor.c",
+                   "xpra/net/qrencode.c",
                    "xpra/net/websockets/mask.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
@@ -1344,7 +1346,6 @@ if WIN32:
             add_DLLs("rsvg", "croco")
 
         if client_ENABLED or server_ENABLED:
-            packages.append("qrencode")
             add_DLLs("qrencode")
 
         if sound_ENABLED:
@@ -2347,6 +2348,8 @@ tace(cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode", optimize=3)
 toggle_packages(brotli_ENABLED, "xpra.net.brotli.decompressor")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
+
+tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
 
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)

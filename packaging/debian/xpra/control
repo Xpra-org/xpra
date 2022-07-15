@@ -32,6 +32,7 @@ Build-Depends: debhelper (>= 8)
               ,libsystemd-dev
               ,libpam-dev
               ,brotli-dev
+              ,qrencode-dev
               ,pandoc
 #jammy:              ,libavif-dev
 #bookworm:              ,libavif-dev
@@ -126,8 +127,8 @@ Recommends: python3-dbus
         ,sshpass
 #most of the examples use an xterm:
         ,xterm
-#ability to generate qr codes:
-        ,python3-qrencode
+#ability to generate qr codes URLs and otp authentication:
+        ,qrencode
 Suggests: openssh-server
 # for sound forwarding (server side):
         ,pulseaudio
