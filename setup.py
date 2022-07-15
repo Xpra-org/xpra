@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -441,11 +441,7 @@ if "unittests" in sys.argv:
 
 #*******************************************************************************
 # default sets:
-
-external_includes = ["hashlib",
-                     "ctypes", "platform"]
-
-
+external_includes = ["hashlib", "ctypes", "platform"]
 if gtk3_ENABLED or sound_ENABLED:
     external_includes += ["gi"]
 
@@ -1375,18 +1371,15 @@ if WIN32:
             #used by proxy server:
             external_includes += ["multiprocessing", "setproctitle"]
 
-        external_includes += ["encodings"]
-        external_includes += ["mimetypes"]
+        external_includes += ["encodings", "mimetypes"]
         if client_ENABLED:
-            #for parsing "open-command":
-            external_includes += ["shlex"]
-            #for version check:
             external_includes += [
-                                  "ftplib", "fileinput",
-                                  ]
-            external_includes += ["urllib", "http.cookiejar", "http.client"]
-            #for websocket browser cookie
-            external_includes += ["browser_cookie3", "pyaes", "pbkdf2", "keyring"]
+                "shlex",                #for parsing "open-command"
+                "ftplib", "fileinput",  #for version check
+                "urllib", "http.cookiejar", "http.client",
+                #for websocket browser cookie:
+                "browser_cookie3", "pyaes", "pbkdf2", "keyring",
+                ]
 
         if dec_avcodec2_ENABLED:
             #why isn't this one picked up automatically?
@@ -1508,19 +1501,25 @@ if WIN32:
         #building etc files in-place:
         if data_ENABLED:
             build_xpra_conf("./fs")
-            add_data_files('etc/xpra', glob.glob("fs/etc/xpra/*conf"))
-            add_data_files('etc/xpra', glob.glob("fs/etc/xpra/nvenc*.keys"))
-            add_data_files('etc/xpra', glob.glob("fs/etc/xpra/nvfbc*.keys"))
+            add_data_files('etc/xpra',
+                           glob.glob("fs/etc/xpra/*conf")+
+                           glob.glob("fs/etc/xpra/nvenc*.keys")+
+                           glob.glob("fs/etc/xpra/nvfbc*.keys")
+                           )
             add_data_files('etc/xpra/conf.d', glob.glob("fs/etc/xpra/conf.d/*conf"))
 
     if data_ENABLED:
-        add_data_files("",              ["packaging/MSWindows/website.url"])
-        add_data_files("",              ["packaging/MSWindows/DirectShow.tlb"])
+        add_data_files("", [
+            "packaging/MSWindows/website.url",
+            "packaging/MSWindows/DirectShow.tlb",
+            ])
 
     remove_packages(*external_excludes)
-    external_includes.append("pyu2f")
-    external_includes.append("mmap")
-    external_includes.append("comtypes")    #used by webcam and netdev_query
+    external_includes += [
+        "pyu2f",
+        "mmap",
+        "comtypes"      #used by webcam and netdev_query
+        ]
     remove_packages("comtypes.gen")         #this is generated at runtime
                                             #but we still have to remove the empty directory by hand
                                             #afterwards because cx_freeze does weird things (..)
@@ -1773,8 +1772,7 @@ else:
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.xposix")
         #to support GStreamer 1.x we need this:
-        modules.append("importlib")
-        modules.append("mimetypes")
+        modules += ["importlib", "mimetypes"]
         external_excludes.append("numpy")
     else:
         add_packages("xpra.platform.xposix")
@@ -1878,12 +1876,9 @@ if annotate_ENABLED:
 if modules_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
-    extra_compile_args = None
     import platform
-    if platform.machine()=="i386":
-        #this may well be sub-optimal:
-        extra_compile_args = "-mfpmath=387"
-
+    #this may well be sub-optimal:
+    extra_compile_args = "-mfpmath=387" if platform.machine()=="i386" else None
     tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3, extra_compile_args=extra_compile_args)
     tace(cython_ENABLED, "xpra.buffers.xxh,xpra/buffers/xxhash.c", optimize=3, extra_compile_args=extra_compile_args)
 
@@ -1925,18 +1920,15 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.window_bindings", "x11,xtst,xfixes,xcomposite,xdamage,xext")
     ace("xpra.x11.bindings.ximage", "x11,xext,xcomposite")
     ace("xpra.x11.bindings.res_bindings", "x11,xres")
-    
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2_bindings", "x11,xi")
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.gtk3")
-    #GTK3 display source:
     ace("xpra.x11.gtk3.gdk_display_source", "gdk-3.0")
     ace("xpra.x11.gtk3.gdk_bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage")
 
-#cairo workaround:
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo")
 
 if client_ENABLED or server_ENABLED:
@@ -1957,20 +1949,16 @@ if bundle_tests_ENABLED:
 
 #python-cryptography needs workarounds for bundling:
 if crypto_ENABLED and (OSX or WIN32):
-    external_includes.append("_ssl")
-    external_includes.append("cffi")
-    external_includes.append("_cffi_backend")
-    external_includes.append("cryptography")
-    external_includes.append("idna")
-    external_includes.append("idna.idnadata")
-    external_includes.append("pkg_resources._vendor.packaging")
-    external_includes.append("pkg_resources._vendor.packaging.requirements")
-    external_includes.append("pkg_resources._vendor.pyparsing")
-    add_modules("cryptography.hazmat.bindings._openssl")
-    add_modules("cryptography.hazmat.bindings._constant_time")
-    add_modules("cryptography.hazmat.bindings._padding")
-    add_modules("cryptography.hazmat.backends.openssl")
-    add_modules("cryptography.fernet")
+    external_includes += [
+        "_ssl", "cffi", "_cffi_backend",
+        "cryptography", "idna", "idna.idnadata",
+        "pkg_resources._vendor.packaging", "pkg_resources._vendor.packaging.requirements", "pkg_resources._vendor.pyparsing",
+        ]
+    add_modules("cryptography.hazmat.bindings._openssl",
+                "cryptography.hazmat.bindings._constant_time",
+                "cryptography.hazmat.bindings._padding",
+                "cryptography.hazmat.backends.openssl",
+                "cryptography.fernet")
     if WIN32:
         external_includes.append("appdirs")
 
