@@ -571,8 +571,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         from xpra.scripts.pinentry_wrapper import input_pass
         password = input_pass((args+["password"])[0])
-        print("password=%s" % (password,))
-        return len(password)>0
+        get_util_logger().log(f"password={password}")
+        return len(password or "")>0
     elif mode=="_dialog":
         check_gtk()
         return run_dialog(args)
