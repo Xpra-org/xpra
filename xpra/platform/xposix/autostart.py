@@ -23,6 +23,9 @@ def get_autostart_file():
                 break
     else:
         adir = os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "autostart")
+    if not adir:
+        return None
+    adir = os.path.expanduser(adir)
     if not os.path.exists(adir):
         os.mkdir(adir, mode=0o755)
     return os.path.join(adir, "xpra.desktop")
