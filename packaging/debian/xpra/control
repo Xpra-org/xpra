@@ -31,6 +31,7 @@ Build-Depends: debhelper (>= 8)
               ,dh-python
               ,libsystemd-dev
               ,libpam-dev
+              ,brotli-dev
               ,pandoc
 #jammy:              ,libavif-dev
 #bookworm:              ,libavif-dev
@@ -76,6 +77,8 @@ Recommends: python3-dbus
         ,python3-setproctitle
 # packet encoder:
         ,python3-rencode
+# text packet compression:
+        ,brotli
 #not available?
         ,python3-zeroconf
         ,python3-netifaces

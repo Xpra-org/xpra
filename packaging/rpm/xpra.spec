@@ -131,6 +131,7 @@ BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
+BuildRequires:		brotli-devel
 %if 0%{?run_tests}
 BuildRequires:		dbus-x11
 BuildRequires:		dbus-tools
@@ -176,6 +177,7 @@ Recommends:			python3-avahi
 Recommends:			python3-zeroconf
 %endif
 %endif
+Recommends:			brotli
 Recommends:			python3-dns
 Recommends:			python3-paramiko
 Recommends:         python3-kerberos
