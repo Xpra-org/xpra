@@ -372,7 +372,27 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
             return systemd_run_wrap(mode, argv, options.systemd_run_args)
     configure_env(options.env)
     configure_logging(options, mode)
-    configure_network(options)
+    if mode not in (
+        "showconfig", "splash",
+        "list", "list-windows", "list-mdns", "mdns-gui",
+        "list-sessions", "sessions", "displays",
+        "clean-displays", "clean-sockets", "clean",
+        "xwait", "wminfo", "wmname",
+        "desktop-greeter", "gui", "start-gui",
+        "docs", "html5",
+        "pinentry", "input_pass", "_dialog", "_pass",
+        "opengl", "opengl-probe", "opengl-test",
+        "autostart",
+        "encoding", "video",
+        "nvinfo", "webcam",
+        "keyboard", "gtk-info", "gui-info", "network-info",
+        "compression", "packet-encoding", "path-info",
+        "printing-info", "version-info", "toolbox",
+        "initenv",
+        "auth", "showconfig", "showsetting",
+        "applications-menu", "sessions-menu",
+        ):
+        configure_network(options)
 
     if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
         xrd = "/run/user/%i" % getuid()
