@@ -142,6 +142,7 @@ tests/unittests/test-file*
 /xpra/platform/win32/propsys.cpp
 /xpra/platform/xposix/netdev_query.c
 /xpra/platform/xposix/sd_listen.c
+/xpra/platform/xposix/proc.c
 /xpra/server/cystats.c
 /xpra/server/pam.c
 /xpra/server/sd_listen.c
