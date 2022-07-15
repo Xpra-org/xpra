@@ -143,22 +143,22 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             send_wm_request_frame_extents(root, win)
 
     def run(self):
-        log("run() HAS_X11_BINDINGS=%s", HAS_X11_BINDINGS)
+        log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
         UIXpraClient.run(self)
         self.gtk_main()
-        log("GTKXpraClient.run_main_loop() main loop ended, returning exit_code=%s", self.exit_code)
+        log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
         return self.exit_code
 
     def gtk_main(self):
-        log("GTKXpraClient.gtk_main() calling %s", Gtk.main)
+        log(f"GTKXpraClient.gtk_main() calling {Gtk.main}",)
         Gtk.main()
         log("GTKXpraClient.gtk_main() ended")
 
 
     def quit(self, exit_code=0):
-        log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
+        log(f"GTKXpraClient.quit({exit_code}) current exit_code={self.exit_code}")
         if self.exit_code is None:
             self.exit_code = exit_code
         if Gtk.main_level()>0:
@@ -167,21 +167,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #try harder!:
             self.timeout_add(5*1000, self.force_quit)
         self.cleanup()
-        log("GTKXpraClient.quit(%s) cleanup done, main_level=%s",
-            exit_code, Gtk.main_level())
+        log(f"GTKXpraClient.quit({exit_code}) cleanup done, main_level={Gtk.main_level()}")
         if Gtk.main_level()>0:
-            log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout",
-                exit_code, Gtk.main_level())
+            log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
             self.timeout_add(500, self.exit)
 
     def force_quit(self):
         from xpra.os_util import force_quit
-        log("GTKXpraClient.force_quit() calling %s", force_quit)
+        log(f"GTKXpraClient.force_quit() calling {force_quit}")
         force_quit()
 
     def exit(self):
         self.show_progress(100, "terminating")
-        log("GTKXpraClient.exit() calling %s", Gtk.main_quit)
+        log(f"GTKXpraClient.exit() calling {Gtk.main_quit}", )
         Gtk.main_quit()
 
     def cleanup(self):
@@ -239,7 +237,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         display = Gdk.Display.get_default()
         for m in range(display.get_n_monitors()):
             monitor = display.get_monitor(m)
-            log("monitor %i (%s) refresh-rate=%i", m, monitor.get_model(), monitor.get_refresh_rate())
+            log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
             rates[m] = monitor.get_refresh_rate()
         rate = -1
         if rates:
@@ -264,7 +262,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)
             notifylog.warn("Warning: cannot load GTK notifier:")
-            notifylog.warn(" %s", e)
+            notifylog.warn(f" {e}")
         return ncs
 
 
@@ -279,8 +277,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
         from xpra.scripts.pinentry_wrapper import get_pinentry_command
         pinentry_cmd = get_pinentry_command(PINENTRY)
-        authlog("do_process_challenge_prompt%s get_pinentry_command(%s)=%s",
-                (packet, prompt), PINENTRY, pinentry_cmd)
+        authlog(f"do_process_challenge_prompt%s get_pinentry_command({PINENTRY})={pinentry_cmd}",
+                (packet, prompt))
         if pinentry_cmd:
             start_thread(self.handle_challenge_with_pinentry,
                          "pinentry", True, (packet, prompt, pinentry_cmd))
@@ -414,13 +412,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if endpoint:
                 m.update(strtobytes(endpoint))
             color_str = "#%s" % m.hexdigest()[:6]
-            log("border color derived from %s: %s", endpoint, color_str)
+            log(f"border color derived from {endpoint}: {color_str}")
         try:
             color = color_parse(color_str)
             assert color is not None
         except Exception as e:
             if warn:
-                log.warn("Warning: invalid border color specified '%s'", color_str)
+                log.warn(f"Warning: invalid border color specified '{color_str!r}'")
                 if str(e):
                     log.warn(" %s", e)
                 self.show_border_help()
@@ -433,14 +431,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 size = int(size_str)
             except Exception as e:
                 if warn:
-                    log.warn("Warning: invalid border size specified '%s'", size_str)
-                    log.warn(" %s", e)
+                    log.warn(f"Warning: invalid border size specified {size_str!r}")
+                    log.warn(f" {e}")
                     self.show_border_help()
             if size<=0:
-                log("border size is %s, disabling it", size)
+                log(f"border size is {size}, disabling it")
                 return
             if size>=45:
-                log.warn("Warning: border size is too large: %s, clipping it", size)
+                log.warn(f"Warning: border size is too large: {size}, clipping it")
                 size = 45
         from xpra.client.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
@@ -462,8 +460,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log.warn("Warning: cannot start new commands")
             log.warn(" the feature is currently disabled on the server")
             return
-        log("show_start_new_command%s current start_new_command=%s, flag=%s",
-            args, self.start_new_command, self.server_start_new_commands)
+        log(f"show_start_new_command{args} current start_new_command={self.start_new_command}, flag={self.server_start_new_commands}")
         if self.start_new_command is None:
             from xpra.client.gtk_base.start_new_command import getStartNewCommand
             def run_command_cb(command, sharing=True):
@@ -524,7 +521,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #check if we have accepted this file via the GUI:
         r = self.data_send_requests.pop(send_id, None)
         if not r:
-            filelog("accept_data: data send request %s not found", send_id)
+            filelog(f"accept_data: data send request {send_id} not found")
             from xpra.net.file_transfer import FileTransferHandler
             return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
         edtype = r[0]
@@ -549,9 +546,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
         parent = None
         msgs = (
-                "Warning: cannot %s the file '%s'" % (action, basefilename),
-                "this file is too large: %sB" % std_unit(filesize),
-                "the %s file size limit is %sB" % (location, std_unit(limit)),
+                f"Warning: cannot {action} the file {basefilename!r}",
+                f"this file is too large: {std_unit(filesize)}B",
+                f"the {location} file size limit is {std_unit(limit)!r}B",
                 )
         self.file_size_dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
                                                   Gtk.ButtonsType.CLOSE, "\n".join(msgs))
@@ -559,7 +556,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
             self.file_size_dialog.set_image(image)
         except Exception as e:
-            log.warn("Warning: failed to set dialog image: %s", e)
+            log.warn(f"Warning: failed to set dialog image: {e}")
         self.file_size_dialog.connect("response", self.close_file_size_warning)
         self.file_size_dialog.show()
 
@@ -583,7 +580,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if self.file_dialog:
             self.file_dialog.present()
             return
-        filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
+        filelog(f"show_file_upload{args} can open={self.remote_open_files}")
         buttons = [Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL]
         if self.remote_open_files:
             buttons += [Gtk.STOCK_OPEN,      Gtk.ResponseType.ACCEPT]
@@ -605,11 +602,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def file_upload_dialog_response(self, dialog, v):
         if v not in (Gtk.ResponseType.OK, Gtk.ResponseType.ACCEPT):
-            filelog("dialog response code %s", v)
+            filelog(f"dialog response code {v}")
             self.close_file_upload_dialog()
             return
         filename = dialog.get_filename()
-        filelog("file_upload_dialog_response: filename=%s", filename)
+        filelog("file_upload_dialog_response: filename={filename!r}")
         try:
             filesize = os.stat(filename).st_size
         except OSError:
@@ -620,7 +617,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return
         gfile = dialog.get_file()
         self.close_file_upload_dialog()
-        filelog("load_contents: filename=%s, response=%s", filename, v)
+        filelog(f"load_contents: filename={filename!r}, response={v}")
         cancellable = None
         user_data = (filename, v==Gtk.ResponseType.ACCEPT)
         gfile.load_contents_async(cancellable, self.file_upload_ready, user_data)
@@ -630,12 +627,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         filename, openit = user_data
         _, data, entity = gfile.load_contents_finish(result)
         filesize = len(data)
-        filelog("load_contents_finish(%s)=%s", result, (type(data), filesize, entity))
+        filelog(f"load_contents_finish({result})=%s", (type(data), filesize, entity))
         if not data:
-            log.warn("Warning: failed to load file '%s'", filename)
+            log.warn(f"Warning: failed to load file {filename!r}")
             return
-        filelog("load_contents: filename=%s, %i bytes, entity=%s, openit=%s",
-                filename, filesize, entity, openit)
+        filelog(f"load_contents: filename={filename}, {filesize} bytes, entity={entity}, openit={openit}")
         self.send_file(filename, "", data, filesize=filesize, openit=openit)
 
 
@@ -694,7 +690,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #gives the server time to send an info response..
         #(by the time the user clicks on copy, it should have arrived, we hope!)
         def got_server_log(filename, filesize):
-            log("got_server_log(%s, %s)", filename, filesize)
+            log(f"got_server_log({filename!r}, {filesize})")
             filedata = load_binary_file(filename)
             self.bug_report.set_server_log_data(filedata)
         self.download_server_log(got_server_log)
@@ -704,12 +700,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_image(self, icon_name, size=None):
         try:
             pixbuf = get_icon_pixbuf(icon_name)
-            log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+            log(f"get_image({icon_name!r}, {size}) pixbuf={pixbuf}")
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
         except Exception:
-            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
+            log.error(f"Error: get_image({icon_name!r}, {size})", icon_name, size, exc_info=True)
             return None
 
 
@@ -719,7 +715,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         root = self.get_root_window()
         with xsync:
             win = window.get_window()
-            framelog("request_frame_extents(%s) xid=%#x", window, win.get_xid())
+            framelog(f"request_frame_extents({window}) xid={win.get_xid()}")
             send_wm_request_frame_extents(root, win)
 
     def get_frame_extents(self, window):
@@ -727,7 +723,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         x, y = window.get_position()
         w, h = window.get_size()
         v = get_window_frame_size(x, y, w, h)   #pylint: disable=assignment-from-none
-        framelog("get_window_frame_size%s=%s", (x, y, w, h), v)
+        framelog(f"get_window_frame_size{(x, y, w, h)}={v}")
         if v:
             #(OSX does give us these values via Quartz API)
             return v
@@ -738,7 +734,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         gdkwin = window.get_window()
         assert gdkwin
         v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-        framelog("get_frame_extents(%s)=%s", window.get_title(), v)
+        framelog(f"get_frame_extents({window.get_title()})={v}")
         return v
 
     def get_window_frame_sizes(self):
@@ -753,19 +749,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 try:
                     if len(v)==8:
                         if first_time("invalid-frame-extents"):
-                            framelog.warn("Warning: invalid frame extents value '%s'", v)
+                            framelog.warn(f"Warning: invalid frame extents value {v!r}")
                             if wm_name:
-                                framelog.warn(" this is probably a bug in '%s'", wm_name)
-                            framelog.warn(" using '%s' instead", v[4:])
+                                framelog.warn(f" this is probably a bug in {wm_name!r}")
+                            framelog.warn(f" using {v[4:]} instead")
                         v = v[4:]
                     l, r, t, b = v
                     wfs["frame"] = (l, r, t, b)
                     wfs["offset"] = (l, t)
                 except Exception as e:
-                    framelog.warn("Warning: invalid frame extents value '%s'", v)
-                    framelog.warn(" %s", e)
-                    framelog.warn(" this is probably a bug in '%s'", wm_name)
-        framelog("get_window_frame_sizes()=%s", wfs)
+                    framelog.warn(f"Warning: invalid frame extents value {v}")
+                    framelog.warn(f" {e}")
+                    framelog.warn(f" this is probably a bug in {wm_name!r}")
+        framelog(f"get_window_frame_sizes()={wfs}")
         return wfs
 
 
@@ -831,13 +827,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 #if d not in it.get_search_path():
                 #    it.append_search_path(d)
                 #    it.rescan_if_needed()
-                log("default icon theme: %s", it)
-                log("icon search path: %s", it.get_search_path())
-                log("contexts: %s", it.list_contexts())
+                log(f"default icon theme: {it}")
+                log(f"icon search path: {it.get_search_path()}")
+                log(f"contexts: {it.list_contexts()}")
                 icons = []
                 for context in it.list_contexts():
                     icons += it.list_icons(context)
-                log("icons: %s", icons)
+                log(f"icons: {icons}")
                 capabilities["theme.default.icons"] = tuple(set(icons))
         if METADATA_SUPPORTED:
             ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
@@ -905,12 +901,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def set_windows_cursor(self, windows, cursor_data):
-        cursorlog("set_windows_cursor(%s, args[%i])", windows, len(cursor_data))
+        cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")
         cursor = None
         if cursor_data:
             try:
                 cursor = self.make_cursor(cursor_data)
-                cursorlog("make_cursor(..)=%s", cursor)
+                cursorlog(f"make_cursor(..)={cursor}")
             except Exception as e:
                 log.warn("error creating cursor: %s (using default)", e, exc_info=True)
             if cursor is None:
@@ -1087,7 +1083,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             gdkwindow = window.get_window()
         if gdkwindow is None:
             gdkwindow = self.get_root_window()
-        log("window_bell(..) gdkwindow=%s", gdkwindow)
+        log(f"window_bell(..) gdkwindow={gdkwindow}")
         if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             #fallback to simple beep:
             Gdk.beep()
@@ -1096,7 +1092,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _process_raise_window(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        focuslog("going to raise window %s - %s", wid, window)
+        focuslog(f"going to raise window {wid} - {window}")
         if window:
             if window.has_toplevel_focus():
                 log("window already has top level focus")
@@ -1149,7 +1145,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     #OpenGL bits:
     def init_opengl(self, enable_opengl):
-        opengllog("init_opengl(%s)", enable_opengl)
+        opengllog(f"init_opengl({enable_opengl})")
         #enable_opengl can be True, False, force, probe-failed, probe-success, or None (auto-detect)
         #ie: "on:native,gtk", "auto", "no"
         #ie: "probe-failed:SIGSEGV"
@@ -1157,7 +1153,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         enable_opengl = (enable_opengl or "")
         parts = enable_opengl.split(":", 1)
         enable_option = parts[0].lower()        #ie: "on"
-        opengllog("init_opengl: enable_option=%s", enable_option)
+        opengllog(f"init_opengl: enable_option={enable_option}")
         if enable_option in ("probe-failed", "probe-error", "probe-crash"):
             msg = enable_option.replace("-", " ")
             if len(parts)>1 and any(len(x) for x in parts[1:]):
@@ -1358,12 +1354,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         def find_gdk_window(metadata_key="transient-for"):
             return self.find_gdk_window(metadata, metadata_key)
         win = find_gdk_window("group-leader-wid") or find_gdk_window("transient-for") or find_gdk_window("parent")
-        log("get_group_leader(..)=%s", win)
+        log(f"get_group_leader(..)={win}")
         if win:
             return win
         pid = metadata.intget("pid", -1)
         leader_xid = metadata.intget("group-leader-xid", -1)
-        log("get_group_leader: leader pid=%s, xid=%s", pid, leader_xid)
+        log(f"get_group_leader: leader pid={pid}, xid={leader_xid}")
         reftype = "xid"
         ref = leader_xid
         if ref<0:
@@ -1452,12 +1448,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         tray = self.tray
         if not tray or not CLIPBOARD_NOTIFY:
             return
-        clipboardlog("clipboard_notify(%s) notification timer=%s", n, self.clipboard_notification_timer)
+        clipboardlog(f"clipboard_notify({n}) notification timer={self.clipboard_notification_timer}")
         self.cancel_clipboard_notification_timer()
         if n>0 and self.clipboard_enabled:
             self.last_clipboard_notification = monotonic()
             tray.set_icon("clipboard")
-            tray.set_tooltip("%s clipboard requests in progress" % n)
+            tray.set_tooltip(f"{n} clipboard requests in progress")
             tray.set_blinking(True)
         else:
             #no more pending clipboard transfers,
