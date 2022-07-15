@@ -362,14 +362,13 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "start", "start-desktop",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "shadow",
-        ) and not display_is_remote:
-        if use_systemd_run(options.systemd_run):
-            #make sure we run via the same interpreter,
-            #inject it into the command line if we have to:
-            argv = list(cmdline)
-            if argv[0].find("python")<0:
-                argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
-            return systemd_run_wrap(mode, argv, options.systemd_run_args)
+        ) and not display_is_remote and use_systemd_run(options.systemd_run):
+        #make sure we run via the same interpreter,
+        #inject it into the command line if we have to:
+        argv = list(cmdline)
+        if argv[0].find("python")<0:
+            argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
+        return systemd_run_wrap(mode, argv, options.systemd_run_args)
     configure_env(options.env)
     configure_logging(options, mode)
     if mode not in (
