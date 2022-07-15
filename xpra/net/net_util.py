@@ -144,8 +144,10 @@ def do_get_bind_ifacemask(iface):
                 mask = address['netmask']
                 if addr!= '::1' and addr != '0.0.0.0' and addr.find("%")<0:
                     try:
-                        socket.inet_aton(addr)
-                        ipmasks.append((addr,mask))
+                        fam = socket.AF_INET6 if len(addr.split(":"))>2 else socket.AF_INET
+                        b = socket.inet_pton(fam, addr)
+                        log(f"socket.inet_pton(AF_INET%s, {addr}={b}", "6" if fam==socket.AF_INET6 else "")
+                        ipmasks.append((addr, mask))
                     except Exception as e:
                         log("do_get_bind_ifacemask(%s)", iface, exc_info=True)
                         log.error("Error converting address '%s' to binary, for interface %s", addr, iface)
@@ -198,16 +200,30 @@ def get_iface(ip) -> str:
                 #exact match
                 log("get_iface(%s)=%s", iface, ip)
                 return iface
-            test_ip_parts = test_ip.split(".")
-            mask_parts = mask.split(".")
-            if len(test_ip_parts)!=4 or len(mask_parts)!=4:
-                log.error("incorrect ip or mask: %s/%s", test_ip, mask)
+            ipv6 = len(test_ip.split(":"))>2
+            if ipv6:
+                test_ip_parts = test_ip.split("/")[0].split(":")
+                mask_parts = mask.split("/")[0].split(":")
+            else:
+                test_ip_parts = test_ip.split(".")
+                mask_parts = mask.split(".")
+                if len(test_ip_parts)!=4 or len(mask_parts)!=4:
+                    log.error("incorrect ip or mask: %s / %s", test_ip, mask)
             match = True
             try:
-                for i in (0,1,2,3):
-                    mask_part = int(mask_parts[i])
-                    ip_part = int(ip_parts[i]) & mask_part
-                    test_ip_part = int(test_ip_parts[i]) & mask_part
+                for i, ip_part_str in enumerate(test_ip_parts):
+                    if i>=len(mask_parts):
+                        #end of the mask
+                        break
+                    try:
+                        mask_part = int(mask_parts[i] or 0)
+                    except ValueError:
+                        mask_part = int(mask_parts[i], 16)
+                    try:
+                        ip_part = int(ip_part_str or 0)
+                    except ValueError:
+                        ip_part = int(ip_part_str, 16)
+                    test_ip_part = ip_part & mask_part
                     if ip_part!=test_ip_part:
                         match = False
                         break
