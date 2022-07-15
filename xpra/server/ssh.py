@@ -177,11 +177,11 @@ class SSHServer(paramiko.ServerInterface):
                 out, err = proc.communicate()
             except Exception as e:
                 log("check_channel_exec_request(%s, %s)", channel, command, exc_info=True)
-                chan_send(channel.send_stderr, "failed to execute command: %s" % e)
+                chan_send(channel.send_stderr, f"failed to execute command: {e}")
                 channel.send_exit_status(1)
             else:
-                log("check_channel_exec_request: out(%s)=%s", cmd, out)
-                log("check_channel_exec_request: err(%s)=%s", cmd, err)
+                log(f"check_channel_exec_request: out(`{cmd}`)={out!r}")
+                log(f"check_channel_exec_request: err(`{cmd}`)={err!r}")
                 chan_send(channel.send, out)
                 chan_send(channel.send_stderr, err)
                 channel.send_exit_status(proc.returncode)
@@ -191,7 +191,7 @@ class SSHServer(paramiko.ServerInterface):
             if subcommand in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
                 proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
                 if not proxy_start:
-                    log.warn("Warning: received a %r session request", subcommand)
+                    log.warn(f"Warning: received a {subcommand!r} session request")
                     log.warn(" this feature is not yet implemented with the builtin ssh server")
                     return fail()
                 self.proxy_start(channel, subcommand, cmd[2:])
@@ -201,11 +201,11 @@ class SSHServer(paramiko.ServerInterface):
                     display = cmd[2]
                     display_name = getattr(self, "display_name", None)
                     if display_name!=display:
-                        log.warn("Warning: the display requested (%r)", display)
-                        log.warn(" is not the current display (%r)", display_name)
+                        log.warn(f"Warning: the display requested ({display})")
+                        log.warn(f" is not the current display ({display_name})")
                         return fail()
             else:
-                log.warn("Warning: unsupported xpra subcommand '%s'", cmd[1])
+                log.warn(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
                 return fail()
             #we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
@@ -249,7 +249,7 @@ class SSHServer(paramiko.ServerInterface):
                 self._run_proxy(channel)
             else:
                 log.warn("Warning: unsupported ssh command:")
-                log.warn(" %s", cmd)
+                log.warn(f" `{cmd}`")
                 return fail()
         return True
 
@@ -282,8 +282,8 @@ class SSHServer(paramiko.ServerInterface):
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
             proc.poll()
         except OSError:
-            log.error("Error starting proxy subcommand %s", subcommand, exc_info=True)
-            log.error(" with args=%s", args)
+            log.error(f"Error starting proxy subcommand `{subcommand}`", exc_info=True)
+            log.error(f" with args={args}")
             return
         from xpra.child_reaper import getChildReaper
         def proxy_ended(*args):
@@ -291,7 +291,7 @@ class SSHServer(paramiko.ServerInterface):
         def close():
             if proc.poll() is None:
                 proc.terminate()
-        getChildReaper().add_process(proc, "proxy-start-%s" % subcommand, cmd, True, True, proxy_ended)
+        getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
         def proc_to_channel(read, send):
             while proc.poll() is None:
                 #log("proc_to_channel(%s, %s) waiting for data", read, send)
@@ -339,16 +339,16 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
     t = None
     def close():
         if t:
-            log("close() closing %s", t)
+            log(f"close() closing {t}")
             try:
                 t.close()
             except Exception:
-                log("%s.close()", t, exc_info=True)
-        log("close() closing %s", conn)
+                log(f"{t}.close()", exc_info=True)
+        log(f"close() closing {conn}")
         try:
             conn.close()
         except Exception:
-            log("%s.close()", conn)
+            log(f"{conn}.close()")
     try:
         t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
         gss_host = socket_options.get("ssh-gss-host", socket.getfqdn(""))
@@ -361,16 +361,16 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             ff = os.path.join(fd, f)
             keytype = f[len(PREFIX):-len(SUFFIX)]
             if not keytype:
-                log.warn("Warning: unknown host key format '%s'", f)
+                log.warn(f"Warning: unknown host key format '{f}'")
                 return False
             keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
             if keyclass is None:
                 #Ed25519Key
                 keyclass = getattr(paramiko, "%s%sKey" % (keytype[:1].upper(), keytype[1:]), None)
             if keyclass is None:
-                log("key type %s is not supported, cannot load '%s'", keytype, ff)
+                log(f"key type {keytype} is not supported, cannot load {ff!r}")
                 return False
-            log("loading %s key from '%s' using %s", keytype, ff, keyclass)
+            log(f"loading {keytype} key from {ff!r} using {keyclass}")
             try:
                 host_key = keyclass(filename=ff)
                 if host_key not in host_keys:

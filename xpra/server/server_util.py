@@ -95,12 +95,12 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = proc.communicate()
         if proc.returncode!=0:
-            log.error("Error %i running source script '%s'", proc.returncode, filename)
+            log.error(f"Error {proc.returncode} running source script {filename!r}")
     except OSError as e:
         log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
-        log(" stdout=%r (%s)", out, type(out))
-        log.error("Error running source script '%s'", proc.returncode, file_to_source_path)
-        log.error(" %s", e)
+        log(f" stdout={out} ({type(out)})")
+        log.error(f"Error {proc.returncode} running source script {file_to_source_path!r}")
+        log.error(f" {e}")
         return {}
     log("stdout(%s)=%r", filename, out)
     log("stderr(%s)=%r", filename, err)

@@ -407,11 +407,11 @@ def query_sound():
     kwargs = exec_kwargs()
     env = exec_env()
     env.update(get_sound_wrapper_env())
-    log("query_sound() command=%s, env=%s, kwargs=%s", command, env, kwargs)
+    log(f"query_sound() command=`{command}`, env={env}, kwargs={kwargs}")
     proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, **kwargs)
     out, err = proc.communicate(None)
-    log("query_sound() process returned %s", proc.returncode)
-    log("query_sound() out=%s, err=%s", out, err)
+    log(f"query_sound() process returned {proc.returncode}")
+    log(f"query_sound() out={out!r}, err={err!r}")
     if proc.returncode!=0:
         return typedict()
     d = typedict()
@@ -425,5 +425,5 @@ def query_sound():
                 v = [bytestostr(x) for x in v.split(b",")]
             #d["decoders"] = ["mp3", "vorbis"]
             d[bytestostr(k)] = v
-    log("query_sound()=%s", d)
+    log(f"query_sound()={d}")
     return d

@@ -39,15 +39,15 @@ def pactl_output(log_errors=True, *pactl_args):
     env["LC_ALL"] = "C"
     try:
         import subprocess
-        log("running %s", cmd)
+        log(f"running `{cmd}`")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         from xpra.child_reaper import getChildReaper
         procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
-        log("waiting for %s output", cmd)
+        log(f"waiting for `{cmd}` output")
         out, err = process.communicate()
         getChildReaper().add_dead_process(procinfo)
         code = process.poll()
-        log("pactl_output%s returned %s", pactl_args, code)
+        log(f"pactl_output{pactl_args} returned {code}")
         return  code, out, err
     except Exception as e:
         if log_errors:

@@ -262,24 +262,25 @@ class ChildCommandServer(StubServerMixin):
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
         real_cmd = []
+        cmd_str = None
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
+            cmd_str = " ".join(bytestostr(x) for x in real_cmd)
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
-            log("pid(%s)=%s", real_cmd, proc.pid)
-            log.info("started command '%s' with pid %s", " ".join(bytestostr(x) for x in real_cmd), proc.pid)
+            log.info(f"started command `{cmd_str}` with pid {proc.pid}")
             if not ignore:
                 self.children_count += 1
             self.children_started.append(procinfo)
             return proc
         except (OSError, ValueError) as e:
             log("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), exc_info=True)
-            log.error("Error spawning child '%s':" % (child_cmd, ))
+            log.error(f"Error spawning child {child_cmd!r}")
             if len(real_cmd)>1:
                 log.error(" using command:")
-                log.error(" %s", " ".join("'%s'" % x for x in real_cmd))
-            log.error(" %s" % (e,))
+                log.error(f" `{cmd_str}`")
+            log.error(f" {e}")
             return None
 
 
