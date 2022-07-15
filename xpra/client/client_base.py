@@ -167,7 +167,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def show_progress(self, pct, text=""):
-        log("progress(%s, %s)", pct, text)
+        log(f"progress({pct}, {text!r})")
         if SPLASH_LOG:
             log.info("%3i %s", pct, text)
         pp = self.progress_process
@@ -196,7 +196,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def init_challenge_handlers(self, challenge_handlers):
         #register the authentication challenge handlers:
-        authlog("init_challenge_handlers(%s)", challenge_handlers)
+        authlog(f"init_challenge_handlers({challenge_handlers})")
         ch = tuple(x.strip() for x in (challenge_handlers or "".split(",")))
         for ch_name in ch:
             if ch_name=="none":
@@ -230,19 +230,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if len(parts)==2:
             kwargs = parse_simple_dict(parts[1])
         auth_mod_name = "xpra.client.auth.%s_handler" % mod_name
-        authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
+        authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
         try:
             auth_module = __import__(auth_mod_name, {}, {}, ["Handler"])
             auth_class = auth_module.Handler
             instance = auth_class(self, **kwargs)
             return instance
         except ImportError as e:
-            import_error_logger("Error: authentication handler %s not available", mod_name)
-            import_error_logger(" %s", e)
+            import_error_logger(f"Error: authentication handler {mod_name!r} is not available")
+            import_error_logger(f" {e}")
         except Exception as e:
             authlog("get_challenge_handler(%s)", auth, exc_info=True)
             authlog.error("Error: cannot instantiate authentication handler")
-            authlog.error(" '%s': %s", mod_name, e)
+            authlog.error(f" {mod_name!r}: {e}")
         return None
 
 

@@ -102,7 +102,7 @@ class UIXpraClient(ClientBaseClass):
             __signals__ += c.__signals__
 
     def __init__(self):
-        log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
+        log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()} {BITS}-bit")
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
         self.mmap_enabled = False
@@ -114,12 +114,12 @@ class UIXpraClient(ClientBaseClass):
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-            log.info(" running on %s", osinfo)
+            log.info(f" running on {osinfo}")
         except Exception:
             log("platform name error:", exc_info=True)
         wm = get_wm_name()      #pylint: disable=assignment-from-none
         if wm:
-            log.info(" window manager is '%s'", wm)
+            log.info(f" window manager is {wm!r}")
 
         self._ui_events = 0
         self.title = ""
@@ -171,7 +171,7 @@ class UIXpraClient(ClientBaseClass):
         """ initialize variables from configuration """
         self.init_aliases()
         for c in CLIENT_BASES:
-            log("init: %s", c)
+            log(f"init: {c}")
             c.init(self, opts)
 
         self.title = opts.title
@@ -204,7 +204,7 @@ class UIXpraClient(ClientBaseClass):
                                                                   opts.keyboard_raw, *overrides)
             except ImportError as e:
                 keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
-                keylog.warn("Warning: no keyboard support, %s", e)
+                keylog.warn(f"Warning: no keyboard support, {e}")
 
         if mixin_features.windows:
             self.init_opengl(opts.opengl)
@@ -227,7 +227,7 @@ class UIXpraClient(ClientBaseClass):
                 #discount by 5ms to ensure we have time to hit the target
                 v = max(60, self.get_vrefresh())
                 self._mouse_position_delay = max(5, 1000//v//2 - 5)
-                log("mouse delay: %s", self._mouse_position_delay)
+                log(f"mouse position delay: {self._mouse_position_delay}")
             except Exception:
                 log("failed to calculate automatic delay", exc_info=True)
 
@@ -254,11 +254,11 @@ class UIXpraClient(ClientBaseClass):
         for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras):
             if x is None:
                 continue
-            log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
+            log(f"UIXpraClient.cleanup() calling {type(x)}.cleanup()")
             try:
                 x.cleanup()
             except Exception:
-                log.error("error on %s cleanup", type(x), exc_info=True)
+                log.error(f"error on {type(x)} cleanup", exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
         reaper_cleanup()
@@ -288,18 +288,18 @@ class UIXpraClient(ClientBaseClass):
                 i = c.get_info(self)
                 info = merge_dicts(info, i)
             except Exception:
-                log.error("Error collection information from %s", c, exc_info=True)
+                log.error(f"Error collection information from {c}", exc_info=True)
         return info
 
 
     def show_about(self, *_args):
-        log.warn("show_about() is not implemented in %s", self)
+        log.warn(f"show_about() is not implemented in {self!r}")
 
     def show_session_info(self, *_args):
-        log.warn("show_session_info() is not implemented in %s", self)
+        log.warn(f"show_session_info() is not implemented in {self!r}")
 
     def show_bug_report(self, *_args):
-        log.warn("show_bug_report() is not implemented in %s", self)
+        log.warn(f"show_bug_report() is not implemented in {self!r}")
 
 
     def init_opengl(self, _enable_opengl):
@@ -322,8 +322,7 @@ class UIXpraClient(ClientBaseClass):
 
 
     def send_start_new_commands(self):
-        log("send_start_new_commands() request_start=%s, request_start_child=%s",
-            self.request_start, self.request_start_child)
+        log(f"send_start_new_commands() request_start={self.request_start}, request_start_child={self.request_start_child}")
         import shlex
         for cmd in self.request_start:
             cmd_parts = shlex.split(cmd)
@@ -333,7 +332,7 @@ class UIXpraClient(ClientBaseClass):
             self.send_start_command(cmd_parts[0], cmd, False)
 
     def send_start_command(self, name, command, ignore, sharing=True):
-        log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
+        log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
 
@@ -366,7 +365,7 @@ class UIXpraClient(ClientBaseClass):
     def server_disconnect(self, reason, *info):
         body = "\n".join(info)
         self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
-                        "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+                        f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
@@ -433,7 +432,7 @@ class UIXpraClient(ClientBaseClass):
     def parse_server_capabilities(self, c : typedict) -> bool:
         for cb in CLIENT_BASES:
             if not cb.parse_server_capabilities(self, c):
-                log.info("failed to parse server capabilities in %s", cb)
+                log.info(f"failed to parse server capabilities in {cb}")
                 return False
         self.server_session_name = c.uget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
@@ -472,15 +471,15 @@ class UIXpraClient(ClientBaseClass):
             r += "-r%s" % self._remote_revision
         mode = c.strget("server.mode", "server")
         bits = c.intget("python.bits", 32)
-        log.info("Xpra %s server version %s %i-bit", mode, std(r), bits)
+        log.info(f"Xpra {mode} server version {std(r)} {bits}-bit")
         if i:
-            log.info(" running on %s", std(i))
+            log.info(f" running on {std(i)}")
         if c.boolget("desktop") or c.boolget("shadow"):
             v = c.intpair("actual_desktop_size")
             if v:
                 w, h = v
                 ss = c.tupleget("screen_sizes")
-                log.info(" remote desktop size is %sx%s", w, h)
+                log.info(f" remote desktop size is {w}x{h}")
                 if ss:
                     log_screen_sizes(w, h, ss)
         if c.boolget("proxy"):
@@ -766,7 +765,7 @@ class UIXpraClient(ClientBaseClass):
         if self.readonly or self.keyboard_helper is None:
             return False
         wid = self._window_to_id[window]
-        keylog("handle_key_action(%s, %s) wid=%s", window, key_event, wid)
+        keylog(f"handle_key_action({window}, {key_event}) wid={wid}")
         return self.keyboard_helper.handle_key_action(window, wid, key_event)
 
     def mask_to_names(self, mask):
@@ -810,7 +809,7 @@ class UIXpraClient(ClientBaseClass):
         #draws spinner on top of the window, or not (plain repaint)
         #depending on whether the server is ok or not
         ok = self.server_ok()
-        log("redraw_spinners() ok=%s", ok)
+        log(f"redraw_spinners() ok={ok}")
         for w in self._id_to_window.values():
             if not w.is_tray():
                 w.spinner(ok)
