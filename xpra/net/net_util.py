@@ -149,9 +149,9 @@ def do_get_bind_ifacemask(iface):
                         log(f"socket.inet_pton(AF_INET%s, {addr}={b}", "6" if fam==socket.AF_INET6 else "")
                         ipmasks.append((addr, mask))
                     except Exception as e:
-                        log("do_get_bind_ifacemask(%s)", iface, exc_info=True)
-                        log.error("Error converting address '%s' to binary, for interface %s", addr, iface)
-                        log.error(" %s", e)
+                        log(f"do_get_bind_ifacemask({iface})", exc_info=True)
+                        log.error(f"Error converting address {addr!r} with mask {mask!r} to binary for interface {iface}")
+                        log.error(f" {e}")
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
@@ -194,8 +194,8 @@ def get_iface(ip) -> str:
 
     best_match = None
     get_bind_IPs()
-    for (iface, ipmasks) in iface_ipmasks.items():
-        for (test_ip,mask) in ipmasks:
+    for iface, ipmasks in iface_ipmasks.items():
+        for test_ip, mask in ipmasks:
             if test_ip == ip:
                 #exact match
                 log("get_iface(%s)=%s", iface, ip)
@@ -208,7 +208,7 @@ def get_iface(ip) -> str:
                 test_ip_parts = test_ip.split(".")
                 mask_parts = mask.split(".")
                 if len(test_ip_parts)!=4 or len(mask_parts)!=4:
-                    log.error("incorrect ip or mask: %s / %s", test_ip, mask)
+                    log.error(f"Error: incorrect IP {test_ip} or mask {mask}")
             match = True
             try:
                 for i, ip_part_str in enumerate(test_ip_parts):
@@ -230,7 +230,8 @@ def get_iface(ip) -> str:
                 if match:
                     best_match = iface
             except Exception as e:
-                log.error("error parsing ip (%s) or its mask (%s): %s", test_ip, mask, e)
+                log("ip parsing error", exc_info=True)
+                log.error(f"Error parsing IP {test_ip!r} or its mask {mask!r}: {e}")
     log("get_iface(%s)=%s", ip, best_match)
     return best_match
 
