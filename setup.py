@@ -2282,7 +2282,7 @@ tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter",
         )
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
-tace(csc_swscale_ENABLED, "xpra.codecs.csc_swscale.colorspace_converter", "libswscale", "libavutil")
+tace(csc_swscale_ENABLED, "xpra.codecs.csc_swscale.colorspace_converter", "libswscale,libavutil")
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize=3)
