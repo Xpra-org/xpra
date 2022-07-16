@@ -633,11 +633,11 @@ class ServerCore:
                     break
         if not os.path.exists(self._www_dir) and self._html:
             httplog.error("Error: cannot find the html web root")
-            httplog.error(" '%s' does not exist", self._www_dir)
-            httplog.error(" install the xpra-html5 package")
+            httplog.error(f" {self._www_dir!r} does not exist")
+            httplog.error(" install the `xpra-html5` package")
             self._html = False
         if self._html:
-            httplog.info("serving html content from '%s'", self._www_dir)
+            httplog.info(f"serving html content from {self._www_dir!r}")
             self._http_headers_dirs = []
             for d in get_system_conf_dirs():
                 self._http_headers_dirs.append(os.path.join(d, "http-headers"))

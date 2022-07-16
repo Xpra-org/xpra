@@ -332,11 +332,11 @@ def write_pidfile(pidfile):
                 inode = os.fstat(f.fileno()).st_ino
             except OSError:
                 inode = 0
-        log.info("wrote pid %s to '%s'", pidstr, pidfile)
+        log.info(f"wrote pid {pidstr} to {pidfile!r}")
     except Exception as e:
-        log("write_pidfile(%s)", pidfile, exc_info=True)
-        log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
-        log.error(" %s", e)
+        log(f"write_pidfile({pidfile})", exc_info=True)
+        log.info(f"Error: failed to write pid {pidstr} to {pidfile!r}")
+        log.error(f" {e}")
     return inode
 
 def rm_pidfile(pidfile, inode):

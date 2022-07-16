@@ -176,7 +176,7 @@ class AudioServer(StubServerMixin):
                     pa_path = t
                     break
             if not pa_path:
-                msg = "pulseaudio not started: '%s' command not found" % pa_cmd
+                msg = f"pulseaudio not started: {pa_cmd!r} command not found"
                 if self.pulseaudio is None:
                     soundlog.info(msg)
                 else:

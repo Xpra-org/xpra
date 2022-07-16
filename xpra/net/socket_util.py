@@ -424,8 +424,8 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     if iport==0:
         iport = tcp_socket.getsockname()[1]
         log.info("allocated %s port %i on %s", socktype, iport, host)
-    log("%s: %s:%s : %s", socktype, host, iport, socket)
-    log.info("created %s socket '%s:%s'", socktype, host, iport)
+    log(f"{socktype}: {host}:{iport} : {socket}")
+    log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
 def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
@@ -682,7 +682,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     #create it:
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
-                        log.info("created unix domain socket '%s'", sockpath)
+                        log.info(f"created unix domain socket {sockpath!r}")
                         defs[("unix-domain", sock, sockpath, cleanup_socket)] = options
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)

@@ -92,10 +92,10 @@ class DisplayManager(StubServerMixin):
                     props[k] = v
                 gllog("opengl props=%s", props)
                 if props:
-                    gllog.info("OpenGL is supported on display '%s'", self.display_name)
+                    gllog.info(f"OpenGL is supported on display {self.display_name!r}")
                     renderer = props.get("renderer")
                     if renderer:
-                        gllog.info(" using '%s' renderer", renderer)
+                        gllog.info(f" using {renderer!r} renderer")
                 else:
                     gllog.info("No OpenGL information available")
             else:
@@ -110,11 +110,11 @@ class DisplayManager(StubServerMixin):
                         break
                 props["error"] = error
                 log.warn("Warning: OpenGL support check failed:")
-                log.warn(" %s", error)
+                log.warn(f" {error}")
         except Exception as e:
             gllog("query_opengl()", exc_info=True)
             gllog.error("Error: OpenGL support check failed")
-            gllog.error(" '%s'", e)
+            gllog.error(f" {e!r}")
             props["error"] = str(e)
         gllog("OpenGL: %s", props)
         return props
