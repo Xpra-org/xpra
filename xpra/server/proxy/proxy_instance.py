@@ -578,14 +578,8 @@ class ProxyInstance:
     def encode_loop(self):
         """ thread for slower encoding related work """
         def delvideo(wid):
-            try:
-                del self.video_encoders[wid]
-            except KeyError:
-                pass
-            try:
-                del self.video_encoders_last_used_time[wid]
-            except KeyError:
-                pass
+            self.video_encoders.pop(wid, None)
+            self.video_encoders_last_used_time.pop(wid, None)
         while not self.exit:
             packet = self.encode_queue.get()
             if packet is None:
