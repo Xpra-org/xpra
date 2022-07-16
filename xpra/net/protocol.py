@@ -188,6 +188,7 @@ class Protocol:
         self._read_parser_thread = None         #started when needed
         self._write_format_thread = None        #started when needed
         self._source_has_more = Event()
+        self.receive_pending = False
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
@@ -271,12 +272,15 @@ class Protocol:
         self.send_flush_flag = FLUSH_HEADER and caps.boolget("flush", False)
 
     def get_info(self, alias_info=True) -> dict:
+        shm = self._source_has_more
         info = {
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
             "flush"                 : self.send_flush_flag,
+            "has_more"              : shm and shm.is_set(),
+            "receive-pending"       : self.receive_pending,
             }
         c = self.compressor
         if c:
@@ -316,8 +320,6 @@ class Protocol:
                                                    "padding" : self.cipher_out_padding
                                                    },
                         })
-        shm = self._source_has_more
-        info["has_more"] = shm and shm.is_set()
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
             if t:
                 info.setdefault("thread", {})[t.name] = t.is_alive()
@@ -1020,6 +1022,9 @@ class Protocol:
                     if len(raw_packets)>=4:
                         self.invalid("too many raw packets: %s" % len(raw_packets), data)
                         return
+                    #we know for sure that another packet should follow immediately
+                    #the one with packet_index=0 for this raw packet
+                    self.receive_pending = True
                     continue
                 #final packet (packet_index==0), decode it:
                 try:
@@ -1061,6 +1066,7 @@ class Protocol:
                     log("%s: %i bytes", packet_type, HEADER_SIZE + payload_size)
 
                 self.input_packetcount += 1
+                self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", bytestostr(packet_type))
                 self._process_packet_cb(self, packet)
                 packet = None

@@ -68,7 +68,9 @@ class ProxyInstance:
             "%s: %s.." % (type(caps), ellipsizer(caps))))
         self.uuid = get_hex_uuid()
         self.client_protocol = None
+        self.client_has_more = False
         self.server_protocol = None
+        self.server_has_more = False
         #ping handling:
         self.client_last_ping = 0
         self.server_last_ping = 0
@@ -313,7 +315,7 @@ class ProxyInstance:
         p = self.client_packets.get()
         s = self.client_packets.qsize()
         log("sending to client: %s (queue size=%i)", bytestostr(p[0]), s)
-        return p, None, None, None, True, s>0
+        return p, None, None, None, True, s>0 or self.server_has_more
 
     def process_client_packet(self, proto, packet):
         packet_type = bytestostr(packet[0])
@@ -321,6 +323,7 @@ class ProxyInstance:
         if packet_type==CONNECTION_LOST:
             self.stop(proto, "client connection lost")
             return
+        self.client_has_more = proto.receive_pending
         if packet_type=="set_deflate":
             #echo it back to the client:
             self.client_packets.put(packet)
@@ -372,7 +375,7 @@ class ProxyInstance:
         p = self.server_packets.get()
         s = self.server_packets.qsize()
         log("sending to server: %s (queue size=%i)", bytestostr(p[0]), s)
-        return p, None, None, None, True, s>0
+        return p, None, None, None, True, s>0 or self.client_has_more
 
 
     def _packet_recompress(self, packet, index, name):
@@ -450,6 +453,7 @@ class ProxyInstance:
         if packet_type==CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
+        self.server_has_more = proto.receive_pending
         if packet_type=="disconnect":
             reason = bytestostr(packet[1])
             log("got disconnect from server: %s", reason)
