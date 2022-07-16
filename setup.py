@@ -2292,7 +2292,7 @@ tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
-tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec", "libavformat", "libavutil")
+tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 if v4l2_ENABLED:
