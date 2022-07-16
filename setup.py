@@ -2026,13 +2026,11 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
 if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
-    extra_compile_args = []
-    if WIN32:
-        extra_compile_args += ["-Wno-endif-labels", "-Wno-error=address"]
     platform = sys.platform.rstrip("0123456789")
     ace("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
                          "nvfbc",
                          language="c++",
+                         extra_compile_args = ["-Wno-endif-labels", "-Wno-error=address"] if WIN32 else [],
                          )
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
