@@ -115,9 +115,9 @@ class Authenticator(SysAuthenticator):
         from cryptography.hazmat.primitives.asymmetric import ec
         errors = {}
         for origin, public_key in self.public_keys.items():
-            verifier = public_key.verifier(sig, ec.ECDSA(hashes.SHA256()))
-            verifier.update(param)
             try:
+                verifier = public_key.verifier(sig, ec.ECDSA(hashes.SHA256()))
+                verifier.update(param)
                 verifier.verify()
                 log("ECDSA SHA256 verification passed for '%s'", origin)
                 return True
