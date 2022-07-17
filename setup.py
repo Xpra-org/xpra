@@ -172,7 +172,7 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and find_header_file("security/pam_misc.h") or find_header_file("security/pam_misc.h")
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and bool(find_header_file("/pam/pam_misc.h") or find_header_file("/security/pam_misc.h"))
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
