@@ -373,7 +373,7 @@ def set_initial_resolution(resolutions):
                     "name"      : "VFB-%i" % i,
                     "primary"   : i==0,
                     "geometry"  : (x, y, w, h),
-                    "refresh-rate" : hz,
+                    "refresh-rate" : hz*1000,
                     "automatic" : True,
                     }
                 x += w
