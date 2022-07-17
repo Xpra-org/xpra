@@ -5,19 +5,21 @@
 
 from time import monotonic, time
 from math import ceil
-import numpy
 
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
-from pycuda import driver
-
+from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.cuda_common.cuda_context import get_CUDA_function
 from xpra.net.compression import Compressed
 from xpra.util import envbool, typedict
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
+
+with numpy_import_lock:
+    import numpy
+    from pycuda import driver  # @UnresolvedImport
 
 
 cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")

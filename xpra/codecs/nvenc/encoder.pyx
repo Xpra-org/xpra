@@ -5,14 +5,12 @@
 
 import binascii
 import os
-import numpy
 import platform
 from collections import deque
 from time import monotonic
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
-from pycuda import driver
 
 from xpra.os_util import WIN32, LINUX, strtobytes
 from xpra.make_thread import start_thread
@@ -57,6 +55,10 @@ cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
 
+
+with numpy_import_lock:
+    import numpy
+    from pycuda import driver  # @UnresolvedImport
 
 device_lock = Lock()
 
