@@ -1674,7 +1674,7 @@ else:
                 lib_cups = "lib/cups"
                 if FREEBSD:
                     lib_cups = "libexec/cups"
-                copytodir("fs/lib/cups/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
+                copytodir("fs/lib/cups/backend/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
