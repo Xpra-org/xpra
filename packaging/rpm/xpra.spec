@@ -458,6 +458,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
 %config %{_sysconfdir}/xpra/content-type/*
 %config %{_sysconfdir}/xpra/content-categories/*
+%config %{_sysconfdir}/xpra/content-parent/*
 %config %{_sysconfdir}/xpra/http-headers/*
 %if 0%{?with_selinux}
 %{_datadir}/selinux/*/*.pp
