@@ -52,6 +52,37 @@ def err(msg):
     syslog.syslog(syslog.LOG_ERR, msg)
 
 
+def noop(msg):
+    pass
+write_back = noop
+def init_write_back_fn():
+    from ctypes.util import find_library
+    soname = find_library("cups")
+    if not soname:
+        err("Error: failed to locate the `cups` shared library")
+        return
+    from ctypes import cdll
+    try:
+        cups_lib = cdll.LoadLibrary(soname)
+    except OSError as e:
+        err(f"Error: failed to load {soname!r}: {e}")
+        return
+    try:
+        cupsBackChannelWrite = cups_lib.cupsBackChannelWrite
+    except AttributeError as e:
+        err(f"Error: {e}")
+        return
+    from ctypes import c_size_t, c_char_p, c_double
+    cupsBackChannelWrite.argtypes = [c_char_p, c_size_t, c_double]
+    cupsBackChannelWrite.restype = c_size_t
+    def _write_back(msg):
+        bmsg = msg.encode()
+        r = cupsBackChannelWrite(bmsg, len(bmsg), 1.0)
+        return r
+    global write_back
+    write_back = _write_back
+
+
 def exec_command(command, env=os.environ.copy()):
     info("running: %s" % command)
     PIPE = subprocess.PIPE
@@ -83,11 +114,20 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
     #(using "su" causes even more problems)
     env = os.environ.copy()
     env["XPRA_NO_ROOT_WARNING"] = "1"
-    return exec_command(command, env=env)
+    write_back("INFO: contacting xpra server")
+    r = exec_command(command, env=env)
+    if r==0:
+        write_back("INFO: forwarding")
+    else:
+        from xpra.exit_codes import EXIT_STR
+        errstr = EXIT_STR.get(r, r)
+        write_back(f"ERROR: contacting the xpra server: {errstr!r}")
+    return r
 
 
 def do_main():
     info(" ".join(["'%s'" % x for x in sys.argv]))
+    init_write_back_fn()
 
     if len(sys.argv) == 1:
         # Without arguments should give backend info.
@@ -100,6 +140,7 @@ def do_main():
         sys.stdout.flush()
         err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
         return 1
+    write_back("INFO: parsing request")
     job_id, username, title, no_copies, print_options = sys.argv[1:6]
     if len(sys.argv)==7:
         filename = sys.argv[6]
@@ -148,7 +189,8 @@ def main():
     try:
         r = do_main()
     except Exception as e:
-        err("failure in xpraforwarder main: %s" % e)
+        write_back(f"ERROR: xpra print backend error: {e}")
+        err(f"failure in xpraforwarder main: {e}")
         for x in traceback.format_tb(sys.exc_info()[2]):
             err(x)
         r = 1
