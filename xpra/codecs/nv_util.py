@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
+from threading import RLock
 
 from xpra.util import pver, print_nested_dict, engs, envbool, csv
 from xpra.os_util import bytestostr, strtobytes, POSIX
@@ -14,6 +15,10 @@ from xpra.log import Logger
 log = Logger("encoder", "util")
 
 MIN_VERSION = 375
+
+
+numpy_import_lock = RLock()
+
 
 nvml_init_warned = False
 def wrap_nvml_init(nvmlInit) -> bool:
