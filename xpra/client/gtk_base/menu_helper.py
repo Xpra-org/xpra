@@ -439,14 +439,18 @@ class MenuHelper:
 
 
     def make_qrmenuitem(self):
-        from xpra.net.qrcode import show_qr, get_qrencode_fn
+        from xpra.net.qrcode import show_qr
         def show(*_args):
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
         self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
-        qrencode_fn = get_qrencode_fn()
-        log("make_qrmenuitem() qrencode_fn=%s", qrencode_fn)
-        if qrencode_fn:
+        try:
+            from xpra.net.qrencode import encode_image
+        except ImportError as e:
+            log(f"no qrcode support {e}")
+            return None
+        log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
+        if encode_image:
             def with_connection(*_args):
                 uri = self.client.display_desc.get("display_name")
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
