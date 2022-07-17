@@ -69,7 +69,7 @@ from xpra.util import (
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
-    SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
+    VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     CONNECTION_ERROR,
     )
 from xpra.log import Logger, get_info as get_log_info
@@ -96,7 +96,9 @@ SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
-SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
+
+FULL_INFO = envbool("XPRA_FULL_INFO", True)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
@@ -130,7 +132,6 @@ def get_server_info():
             "platform"  : get_platform_info(),
             "build"     : get_version_info_full(),
             }
-    info.update(get_host_info())
     return info
 
 def get_thread_info(proto=None):
@@ -2220,7 +2221,7 @@ class ServerCore:
         now = time()
         capabilities = flatten_dict(get_network_caps())
         if source is None or source.wants_versions:
-            capabilities.update(flatten_dict(get_server_info()))
+            capabilities.update(flatten_dict(self.get_minimal_server_info()))
         capabilities.update({
                         "version"               : XPRA_VERSION,
                         "start_time"            : int(self.start_time),
@@ -2322,32 +2323,35 @@ class ServerCore:
 
     def get_server_info(self) -> dict:
         #this function is for non UI thread info
-        si = {}
-        si.update(self.get_minimal_server_info())
-        si.update(get_server_info())
-        si.update({
+        return get_server_info()
+
+    def get_server_load_info(self) -> dict:
+        if not POSIX:
+            return {}
+        try:
+            return {"load" : tuple(int(x*1000) for x in os.getloadavg())}
+        except OSError:
+            log("cannot get load average", exc_info=True)
+
+    def get_server_exec_info(self) -> dict:
+        info = {
             "argv"              : sys.argv,
             "path"              : sys.path,
             "exec_prefix"       : sys.exec_prefix,
             "executable"        : sys.executable,
             "idle-timeout"      : int(self.server_idle_timeout),
-            })
+            }
         if self.pidfile:
-            si["pidfile"] = {
+            info["pidfile"] = {
                 "path"  : self.pidfile,
                 "inode" : self.pidinode,
                 }
         logfile = os.environ.get("XPRA_SERVER_LOG")
         if logfile:
-            si["log-file"] = logfile
-        if POSIX:
-            try:
-                si["load"] = tuple(int(x*1000) for x in os.getloadavg())
-            except OSError:
-                log("cannot get load average", exc_info=True)
+            info["log-file"] = logfile
         if self.original_desktop_display:
-            si["original-desktop-display"] = self.original_desktop_display
-        return si
+            info["original-desktop-display"] = self.original_desktop_display
+        return info
 
     def get_info(self, proto, *_args):
         start = monotonic()
@@ -2356,40 +2360,49 @@ class ServerCore:
         def up(prefix, d):
             info[prefix] = d
 
-        si = self.get_server_info()
-        if SYSCONFIG:
-            si["sysconfig"] = get_sysconfig_info()
+        authenticated = proto and proto.authenticators
+        full = FULL_INFO or authenticated
+        if full:
+            si = self.get_server_info()
+            si.update(self.get_server_load_info())
+            si.update(self.get_server_exec_info())
+            if SYSCONFIG:
+                si["sysconfig"] = get_sysconfig_info()
+        else:
+            si = self.get_minimal_server_info()
+        si.update(get_host_info(not full))
         up("server", si)
-
-        ni = get_net_info()
-        ni.update({
-                   "sockets"        : self.get_socket_info(),
-                   "encryption"     : self.encryption or "",
-                   "tcp-encryption" : self.tcp_encryption or "",
-                   "bandwidth-limit": self.bandwidth_limit or 0,
-                   "packet-handlers" : self.get_packet_handlers_info(),
-                   "www"    : {
-                       ""                   : self._html,
-                       "dir"                : self._www_dir or "",
-                       "http-headers-dirs"   : self._http_headers_dirs or "",
-                       },
-                   "mdns"           : self.mdns,
-                   })
-        up("network", ni)
-        up("threads",   self.get_thread_info(proto))
-        up("logging", get_log_info())
-        from xpra.platform.info import get_sys_info
-        up("sys", get_sys_info())
-        up("env", get_info_env())
         if self.session_name:
             info["session"] = {"name" : self.session_name}
-        if self.child_reaper:
-            info.update(self.child_reaper.get_info())
-        if self.dbus_pid:
-            up("dbus", {
-                "pid"   : self.dbus_pid,
-                "env"   : self.dbus_env,
-                })
+
+        if full:
+            ni = get_net_info()
+            ni.update({
+                       "sockets"        : self.get_socket_info(),
+                       "encryption"     : self.encryption or "",
+                       "tcp-encryption" : self.tcp_encryption or "",
+                       "bandwidth-limit": self.bandwidth_limit or 0,
+                       "packet-handlers" : self.get_packet_handlers_info(),
+                       "www"    : {
+                           ""                   : self._html,
+                           "dir"                : self._www_dir or "",
+                           "http-headers-dirs"   : self._http_headers_dirs or "",
+                           },
+                       "mdns"           : self.mdns,
+                       })
+            up("network", ni)
+            up("threads",   self.get_thread_info(proto))
+            up("logging", get_log_info())
+            from xpra.platform.info import get_sys_info
+            up("sys", get_sys_info())
+            up("env", get_info_env())
+            if self.child_reaper:
+                info.update(self.child_reaper.get_info())
+            if self.dbus_pid:
+                up("dbus", {
+                    "pid"   : self.dbus_pid,
+                    "env"   : self.dbus_env,
+                    })
         end = monotonic()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info

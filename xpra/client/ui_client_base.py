@@ -84,6 +84,7 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
+FULL_INFO = envbool("XPRA_FULL_INFO", True)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", False)
 
 
@@ -273,14 +274,16 @@ class UIXpraClient(ClientBaseClass):
 
 
     def get_info(self):
-        info = {
-            "pid"       : os.getpid(),
-            "threads"   : get_frame_info(),
-            "env"       : get_info_env(),
-            "sys"       : get_sys_info(),
-            "network"   : get_net_info(),
-            "logging"   : get_log_info(),
-            }
+        info = {}
+        if FULL_INFO:
+            info.update({
+                "pid"       : os.getpid(),
+                "sys"       : get_sys_info(),
+                "network"   : get_net_info(),
+                "logging"   : get_log_info(),
+                "threads"   : get_frame_info(),
+                "env"       : get_info_env(),
+                })
         if SYSCONFIG:
             info["sysconfig"] = get_sysconfig_info()
         for c in CLIENT_BASES:

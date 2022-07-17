@@ -110,7 +110,6 @@ def version_compat_check(remote_version : str):
 def get_host_info(obfuscate=False) -> dict:
     #this function is for non UI thread info
     info = {
-        "pid"                   : os.getpid(),
         "byteorder"             : sys.byteorder,
         "python"                : {
             "bits"                  : BITS,

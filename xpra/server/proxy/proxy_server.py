@@ -659,7 +659,7 @@ class ProxyServer(ServerCore):
     def get_info(self, proto, *_args):
         authenticated = proto and proto.authenticators
         if not authenticated:
-            info = super().get_server_info()
+            info = self.get_minimal_server_info()
         else:
             #only show more info if we have authenticated
             #as the user running the proxy server process:
