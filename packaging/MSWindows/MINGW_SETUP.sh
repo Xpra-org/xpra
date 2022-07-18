@@ -74,4 +74,4 @@ echo
 echo "to support NVIDIA hardware accelerated encoders NVENC and NVJPEG,"
 echo "install CUDA, then:"
 echo "ln -sf /c/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v11.7/ ./cuda"
-echo "cp *.pc $MINGW_PREFIX/lib/pkgconfig/"
+echo "cp pkgconfig/*.pc $MINGW_PREFIX/lib/pkgconfig/"
