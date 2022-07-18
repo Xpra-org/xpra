@@ -7,13 +7,14 @@
 import re
 import os.path
 
-from xpra.util import ellipsizer
+from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, bytestostr, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
 log = Logger("window", "util")
 
+GUESS_CONTENT = envbool("XPRA_GUESS_CONTENT", True)
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
 CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS","")
 
@@ -63,6 +64,8 @@ def _load_dict_dir(d, parser) -> dict:
     return v
 
 def _load_dict_dirs(dirname, parser) -> dict:
+    if not GUESS_CONTENT:
+        return {}
     #finds all the ".conf" files from the dirname specified
     #and calls `load` on them.
     #looks for system and user conf dirs
@@ -86,9 +89,10 @@ def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
         content_type_defs = _load_dict_dirs("content-type", parse_content_types)
-        #add env defs:
-        for entries in CONTENT_TYPE_DEFS.split(","):
-            content_type_defs.update(parse_content_types(entries))
+        if GUESS_CONTENT:
+            #add env defs:
+            for entries in CONTENT_TYPE_DEFS.split(","):
+                content_type_defs.update(parse_content_types(entries))
     return content_type_defs
 
 def parse_content_types(lines) -> dict:
@@ -185,6 +189,8 @@ def load_command_to_type():
     global command_to_type
     if command_to_type is None:
         command_to_type = {}
+        if not GUESS_CONTENT:
+            return command_to_type
         from xpra.server.menu_provider import get_menu_provider
         xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
         categories_to_type = load_categories_to_type()
@@ -264,6 +270,8 @@ def guess_content_from_parent_pid(ppid):
 
 
 def guess_content_type(window):
+    if not GUESS_CONTENT:
+        return DEFAULT_CONTENT_TYPE
     return guess_content_type_from_defs(window) or guess_content_type_from_command(window) or guess_content_type_from_parent(window) or DEFAULT_CONTENT_TYPE
 
 
