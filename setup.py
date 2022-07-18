@@ -199,6 +199,7 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 #crashes on 32-bit windows:
 enc_x265_ENABLED        = False #(not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
+argb_ENABLED            = DEFAULT
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
 spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
@@ -244,7 +245,7 @@ SWITCHES = [
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "spng_decoder", "spng_encoder", "jpeg_encoder", "jpeg_decoder",
-    "nvjpeg", "avif",
+    "nvjpeg", "avif", "argb",
     "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
@@ -2200,9 +2201,8 @@ add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc")
 
-if client_ENABLED or server_ENABLED:
-    add_packages("xpra.codecs.argb")
-    ace("xpra.codecs.argb.argb", optimize=3)
+toggle_packages(argb_ENABLED, "xpra.codecs.argb")
+tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 tace(evdi_ENABLED, "xpra.codecs.evdi.capture", "evdi", language="c++")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
