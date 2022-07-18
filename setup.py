@@ -2131,16 +2131,6 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 cmd.append("-std=c++11")
             if gcc_version>=(12, 0):
                 cmd.append("--allow-unsupported-compiler")
-            CL_VERSION = os.environ.get("CL_VERSION")
-            if CL_VERSION:
-                cmd += ["--use-local-env", "--cl-version", CL_VERSION]
-                #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
-                cmd += ["--machine", "32"]
-            if WIN32:
-                #cmd += ["--compiler-bindir", "C:\\msys64\\mingw64\\bin\\g++.exe"]
-                #cmd += ["--input-drive-prefix", "/"]
-                #cmd += ["--dependency-drive-prefix", "/"]
-                cmd += ["-I%s" % os.path.abspath("win32")]
             if nvcc_version>=(11, 5):
                 cmd += ["-arch=all",
                         "-Wno-deprecated-gpu-targets",
