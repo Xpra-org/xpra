@@ -1555,9 +1555,6 @@ if WIN32:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
-    #make sure we don't include the gstreamer 0.10 "pygst" bindings:
-    remove_packages("pygst", "gst", "gst.extend")
-
     #add subset of PyOpenGL modules (only when installing):
     if opengl_ENABLED and "install_exe" in sys.argv:
         #for this hack to work, you must add "." to the sys.path
