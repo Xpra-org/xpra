@@ -10,4 +10,4 @@ Version: 11
 Requires:
 Conflicts:
 Libs: -L${libdir}
-Cflags: -I${includedir} -Wno-error=deprecated-declarations
+Cflags: -I${includedir} -Wno-error=deprecated-declarations -Wno-error=address
