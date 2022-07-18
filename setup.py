@@ -2202,7 +2202,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
-tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder")
+tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 tace(enc_x264_ENABLED, "xpra.codecs.enc_x264.encoder", "x264")
