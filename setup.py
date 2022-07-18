@@ -2285,8 +2285,9 @@ if ext_modules:
     from Cython.Build import cythonize
     #this causes Cython to fall over itself:
     #gdb_debug=debug_ENABLED
+    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,
-                                             nthreads=0 if (debug_ENABLED or WIN32 or OSX or ARM) else os.cpu_count(),
+                                             nthreads=nthreads,
                                              gdb_debug=debug_ENABLED,
                                              compiler_directives=compiler_directives,
                                              )
