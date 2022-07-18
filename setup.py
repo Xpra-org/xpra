@@ -20,7 +20,6 @@ import os.path
 import subprocess
 
 from distutils.core import setup
-from distutils.extension import Extension
 from distutils.command.build import build
 from distutils.command.install_data import install_data
 
@@ -612,7 +611,7 @@ def add_cython_ext(*args, **kwargs):
             ]
         extra_compile_args = kwargs.setdefault("extra_compile_args", [])
         extra_compile_args += ["-Wno-error"]
-    from Cython.Distutils import build_ext
+    from Cython.Distutils import build_ext, Extension
     global cmdclass, ext_modules
     ext_modules.append(Extension(*args, **kwargs))
     cmdclass['build_ext'] = build_ext
@@ -630,8 +629,7 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
         if value is not None:
             if isinstance(value, str):
                 value = (value, )
-            for item in value:
-                add_to_keywords(pkgc, addto, item)
+            add_to_keywords(pkgc, addto, *value)
     pkgc.update(kwargs)
     add_cython_ext(modname, src, **pkgc)
 
