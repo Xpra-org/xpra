@@ -131,7 +131,9 @@ BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
+%if 0%{?fedora}
 BuildRequires:		procps-devel
+%endif
 BuildRequires:		brotli-devel
 BuildRequires:		qrencode-devel
 %if 0%{?run_tests}
