@@ -157,10 +157,10 @@ cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
-def find_header_file(name):
+def find_header_file(name, isdir=False):
     matches = [v for v in
                [d+name for d in INCLUDE_DIRS]
-               if os.path.exists(v)]
+               if os.path.exists(v) and os.path.isdir(v)==isdir]
     if not matches:
         return None
     return matches[0]
@@ -1853,6 +1853,24 @@ else:
         setup_options["app"]     = ["xpra/scripts/main.py"]
 
 
+if WIN32 or OSX:
+    external_includes += ["ssl", "_ssl"]
+    if pillow_ENABLED:
+        external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
+    #python-cryptography needs workarounds for bundling:
+    if crypto_ENABLED:
+        external_includes += [
+            "cffi", "_cffi_backend",
+            "cryptography", "idna", "idna.idnadata", "appdirs",
+            "pkg_resources._vendor.packaging", "pkg_resources._vendor.packaging.requirements", "pkg_resources._vendor.pyparsing",
+            ]
+        add_modules("cryptography.hazmat.bindings._openssl",
+                    "cryptography.hazmat.bindings._constant_time",
+                    "cryptography.hazmat.bindings._padding",
+                    "cryptography.hazmat.backends.openssl",
+                    "cryptography.fernet")
+
+
 if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
@@ -1872,12 +1890,6 @@ if data_ENABLED:
         ICONS += glob.glob("fs/share/xpra/icons/*.ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
     add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
-
-
-if WIN32 or OSX:
-    external_includes.append("ssl")
-    external_includes.append("_ssl")
-
 
 if annotate_ENABLED:
     from Cython.Compiler import Options
@@ -1961,20 +1973,6 @@ if bundle_tests_ENABLED:
             k = os.sep+k
         add_data_files("unit"+k, v)
 
-#python-cryptography needs workarounds for bundling:
-if crypto_ENABLED and (OSX or WIN32):
-    external_includes += [
-        "_ssl", "cffi", "_cffi_backend",
-        "cryptography", "idna", "idna.idnadata",
-        "pkg_resources._vendor.packaging", "pkg_resources._vendor.packaging.requirements", "pkg_resources._vendor.pyparsing",
-        ]
-    add_modules("cryptography.hazmat.bindings._openssl",
-                "cryptography.hazmat.bindings._constant_time",
-                "cryptography.hazmat.bindings._padding",
-                "cryptography.hazmat.backends.openssl",
-                "cryptography.fernet")
-    if WIN32:
-        external_includes.append("appdirs")
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
