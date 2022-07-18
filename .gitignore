@@ -46,6 +46,7 @@ packaging/MacOS/xpra-html5
 /install
 /MANIFEST
 /dist
+/xpra.iss
 *.dll
 *.orig
 *.bak
