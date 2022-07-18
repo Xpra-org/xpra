@@ -59,6 +59,8 @@ packaging/MacOS/xpra-html5
 #CUDA:
 *.fatbin
 *.cubin
+#CUDA symlink on MS Windows:
+/cuda
 #xpra's own:
 /xpra/src_info.py
 /xpra/build_info.py
