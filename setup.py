@@ -1910,9 +1910,7 @@ if modules_ENABLED:
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
-toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
-toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
@@ -1957,9 +1955,6 @@ if gtk_x11_ENABLED:
 
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo")
 
-if client_ENABLED or server_ENABLED:
-    add_packages("xpra.codecs.argb")
-    ace("xpra.codecs.argb.argb", optimize=3)
 
 
 #build tests, but don't install them:
@@ -2028,18 +2023,21 @@ tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.rectangle", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
+tace(pam_ENABLED, "xpra.server.pam")
 
+#platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
+tace(proc_ENABLED, "xpra.platform.xposix.proc", "libprocps", extra_compile_args = "-Wno-error")
 
+#codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
-
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
 if nvfbc_ENABLED:
     #platform: ie: `linux2` -> `linux`, `win32` -> `win`
     platform = sys.platform.rstrip("0123456789")
     ace("xpra.codecs.nvfbc.fbc_capture_%s" % platform, "nvfbc", language="c++")
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "nvenc")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
@@ -2202,70 +2200,52 @@ add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc")
 
+if client_ENABLED or server_ENABLED:
+    add_packages("xpra.codecs.argb")
+    ace("xpra.codecs.argb.argb", optimize=3)
+toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
+tace(evdi_ENABLED, "xpra.codecs.evdi.capture", "evdi", language="c++")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 tace(enc_x264_ENABLED, "xpra.codecs.enc_x264.encoder", "x264")
-
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 tace(enc_x265_ENABLED, "xpra.codecs.enc_x265.encoder", "x265")
-
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
-if pillow_ENABLED:
-    external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
-
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 tace(webp_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
 tace(webp_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
-
 toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
-
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
-if nvjpeg_ENABLED:
-    ace("xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
-    ace("xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
-    ace("xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
-
-jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
-toggle_packages(jpeg, "xpra.codecs.jpeg")
+tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
+tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
+tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
+toggle_packages(jpeg_decoder_ENABLED or jpeg_encoder_ENABLED, "xpra.codecs.jpeg")
 tace(jpeg_encoder_ENABLED, "xpra.codecs.jpeg.encoder", "libturbojpeg")
 tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
-
 toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
-
 #swscale and avcodec2 use libav_common/av_log:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
 toggle_packages(libav_common, "xpra.codecs.libav_common")
 tace(libav_common, "xpra.codecs.libav_common.av_log", "libavutil")
-
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 tace(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2.decoder,xpra/codecs/dec_avcodec2/register_compat.c", "libavcodec,libavutil,libavformat")
-
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter",
-        "libyuv",
-        language="c++",
-        extra_compile_args = ("-Wno-error=address", ) if WIN32 else ()
-        )
-
+tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter", "libyuv", language="c++",
+        extra_compile_args = ("-Wno-error=address", ) if WIN32 else ())
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 tace(csc_swscale_ENABLED, "xpra.codecs.csc_swscale.colorspace_converter", "libswscale,libavutil")
-
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize=3)
-
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil")
-
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 if v4l2_ENABLED:
-    v4l2_pkgconfig = pkgconfig()
     #fugly warning: cython makes this difficult,
     #we have to figure out if "device_caps" exists in the headers:
     videodev2_h = find_header_file("/linux/videodev2.h")
@@ -2277,46 +2257,31 @@ if v4l2_ENABLED:
                                  shell=True) as proc:
                 ENABLE_DEVICE_CAPS = proc.wait()==0
         except OSError:
-            with open(videodev2_h) as f:
-                hdata = f.read()
+            hdata = load_binary_file(videodev2_h)
             ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
             print("failed to detect device caps, assuming off")
         with open(constants_pxi, "wb") as f:
             f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
+    v4l2_pkgconfig = pkgconfig()
     add_cython_ext("xpra.codecs.v4l2.pusher",
                 ["xpra/codecs/v4l2/pusher.pyx"],
                 **v4l2_pkgconfig)
 
-
-toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
-tace(evdi_ENABLED, "xpra.codecs.evdi.capture", language="c++", extra_link_args="-levdi")
-
+#network:
+toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
+tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3)
+toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
+tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 tace(cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode", optimize=3)
-
 toggle_packages(brotli_ENABLED, "xpra.net.brotli.decompressor")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
-
+toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
-
-toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
-tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
-
-toggle_packages(websockets_ENABLED, "xpra.net.websockets")
-tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3)
-
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
-
-tace(proc_ENABLED, "xpra.platform.xposix.proc",
-     extra_compile_args = "-Wno-error",
-     extra_link_args = "-lprocps",
-    )
-
 tace(vsock_ENABLED, "xpra.net.vsock")
-
-tace(pam_ENABLED, "xpra.server.pam", "pam,pam_misc")
 
 
 if ext_modules:
