@@ -164,6 +164,8 @@ def find_header_file(name, isdir=False):
     if not matches:
         return None
     return matches[0]
+def has_header_file(name, isdir=False):
+    return bool(find_header_file(name, isdir))
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -172,17 +174,17 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and bool(find_header_file("/pam/pam_misc.h") or find_header_file("/security/pam_misc.h"))
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (has_header_file("/pam/pam_misc.h") or has_header_file("/security/pam_misc.h"))
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 proc_ENABLED            = LINUX and DEFAULT
-vsock_ENABLED           = LINUX and find_header_file("/linux/vm_sockets.h")
+vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
-brotli_ENABLED          = DEFAULT and find_header_file("/brotli/decode.h") and find_header_file("/brotli/encode.h")
-qrencode_ENABLED        = DEFAULT and find_header_file("qrencode.h")
+brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
+qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
