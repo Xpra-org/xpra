@@ -221,7 +221,7 @@ nvjpeg_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", 
 nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
 nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
-cuda_rebuild_ENABLED    = DEFAULT
+cuda_rebuild_ENABLED    = not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 example_ENABLED         = DEFAULT
 
@@ -701,10 +701,10 @@ def get_dummy_driver_version():
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
-    optimize = kw.pop("optimize", None)
     if "INCLUDE_DIRS" in os.environ:
         for d in INCLUDE_DIRS:
             add_to_keywords(kw, 'extra_compile_args', "-I", d)
+    optimize = kw.pop("optimize", None)
     if optimize and not debug_ENABLED and not cython_tracing_ENABLED:
         if isinstance(optimize, bool):
             optimize = int(optimize)*3
@@ -719,37 +719,54 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
 
-    def add_tokens(s, extra="extra_link_args", extra_map={"-W" : "extra_compile_args"}):
+    def add_tokens(s, add_to="extra_link_args"):
         if not s:
             return
-        flag_map = {'-I': 'include_dirs',
-                    '-L': 'library_dirs',
-                    '-l': 'libraries'}
+        flag_map = {
+            '-I': 'include_dirs',
+            '-L': 'library_dirs',
+            '-l': 'libraries',
+            }
         for token in shlex.split(s):
             if token in ignored_tokens:
                 pass
             elif token[:2] in ignored_flags:
                 pass
             elif token[:2] in flag_map:
+                #this overrules 'add_to' - is this still needed?
                 if len(token)>2:
-                    add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+                    add_to_keywords(kw, flag_map[token[:2]], token[2:])
                 else:
                     print("Warning: invalid token '%s'" % token)
             else:
-                extra_name = extra_map.get(token, extra)
-                add_to_keywords(kw, extra_name, token)
+                add_to_keywords(kw, add_to, token)
+
+    def hascflag(s):
+        return s in kw.get("extra_compile_args", [])
+    def addcflags(*s):
+        add_to_keywords(kw, "extra_compile_args", *s)
+    def addldflags(*s):
+        add_to_keywords(kw, "extra_link_args", *s)
 
     if pkgs_options:
-        pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(pkgs_options),)]
-        if verbose_ENABLED:
-            print("pkg_config_cmd=%s" % (pkg_config_cmd,))
-        r, pkg_config_out, err = get_status_output(pkg_config_cmd)
-        if r!=0:
-            sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
-        add_tokens(pkg_config_out)
+        for pc_arg, add_to in {
+            "--libs" : "extra_links_args",
+            "--cflags" : "extra_compile_args"
+            }.items():
+            pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
+            if verbose_ENABLED:
+                print("pkg_config_cmd=%s" % (pkg_config_cmd, ))
+            r, pkg_config_out, err = get_status_output(pkg_config_cmd)
+            if r!=0:
+                sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
+            if verbose_ENABLED:
+                print("pkg-config output: %s" % (pkg_config_out, ))
+            add_tokens(pkg_config_out, add_to)
+            if verbose_ENABLED:
+                print("pkg-config kw=%s" % (kw, ))
     if warn_ENABLED:
-        add_to_keywords(kw, 'extra_compile_args', "-Wall")
-        add_to_keywords(kw, 'extra_link_args', "-Wall")
+        addcflags("-Wall")
+        addldflags("-Wall")
     if strict_ENABLED:
         if os.environ.get("CC", "").find("clang")>=0:
             #clang emits too many warnings with cython code,
@@ -757,44 +774,46 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             #this list of flags should allow clang to build the whole source tree,
             #as of Cython 0.26 + clang 4.0. Other version combinations may require
             #(un)commenting other switches.
-            eifd = ["-Werror",
-                    #"-Wno-unneeded-internal-declaration",
-                    #"-Wno-unknown-attributes",
-                    #"-Wno-unused-function",
-                    #"-Wno-self-assign",
-                    #"-Wno-sometimes-uninitialized",
-                    #cython adds rpath to the compilation command??
-                    #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
-                    "-Wno-deprecated-register",
-                    "-Wno-unused-command-line-argument",
-                    ]
+            if not hascflag("-Wno-error"):
+                addcflags("-Werror")
+            addcflags(
+                "-Wno-deprecated-register",
+                "-Wno-unused-command-line-argument",
+                #"-Wno-unneeded-internal-declaration",
+                #"-Wno-unknown-attributes",
+                #"-Wno-unused-function",
+                #"-Wno-self-assign",
+                #"-Wno-sometimes-uninitialized",
+                #cython adds rpath to the compilation command??
+                #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
+                )
         elif get_gcc_version()>=(4, 4):
-            eifd = ["-Werror"]
+            if not hascflag("-Wno-error"):
+                addcflags("-Werror")
             if NETBSD:
                 #see: http://trac.cython.org/ticket/395
-                eifd += ["-fno-strict-aliasing"]
+                addcflags("-fno-strict-aliasing")
             elif FREEBSD:
-                eifd += ["-Wno-error=unused-function"]
-        else:
-            #older versions of OSX ship an old gcc,
-            #not much we can do with this:
-            eifd = []
-        for eif in eifd:
-            add_to_keywords(kw, 'extra_compile_args', eif)
+                addcflags("-Wno-error=unused-function")
         remove_from_keywords(kw, 'extra_compile_args', "-fpermissive")
     if PIC_ENABLED:
-        add_to_keywords(kw, 'extra_compile_args', "-fPIC")
+        addcflags("-fPIC")
     if debug_ENABLED:
-        add_to_keywords(kw, 'extra_compile_args', '-g')
-        add_to_keywords(kw, 'extra_compile_args', '-ggdb')
+        addcflags("-g", "-ggdb")
         if get_gcc_version()>=(4, 8) and not WIN32:
-            add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
-            add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
+            addcflags("-fsanitize=address")
+            addldflags("-fsanitize=address")
     if rpath and kw.get("libraries"):
         insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
-    add_tokens(os.environ.get("CFLAGS"), "extra_compile_args", {})
-    add_tokens(os.environ.get("LDFLAGS"), "extra_link_args", {})
+    CFLAGS = os.environ.get("CFLAGS")
+    LDFLAGS = os.environ.get("LDFLAGS")
+    #win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
+    if verbose_ENABLED:
+        print("adding CFLAGS=%s" % (CFLAGS, ))
+        print("adding LDFLAGS=%s" % (LDFLAGS, ))
+    add_tokens(CFLAGS, "extra_compile_args")
+    add_tokens(LDFLAGS, "extra_link_args")
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
@@ -1071,14 +1090,7 @@ def clean():
                    #special case for the generated xpra conf files in build (see #891):
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
     if cuda_rebuild_ENABLED:
-        CLEAN_FILES += [
-            "fs/share/xpra/cuda/XRGB_to_NV12.fatbin",
-            "fs/share/xpra/cuda/XRGB_to_YUV444.fatbin",
-            "fs/share/xpra/cuda/BGRX_to_NV12.fatbin",
-            "fs/share/xpra/cuda/BGRX_to_YUV444.fatbin",
-            "fs/share/xpra/cuda/BGRX_to_RGB.fatbin",
-            "fs/share/xpra/cuda/RGBX_to_RGB.fatbin",
-            ]
+        CLEAN_FILES += glob.glob("fs/share/xpra/cuda/*.fatbin")
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
         if ext in (".c", ".cpp", ".pxi"):
@@ -2229,31 +2241,9 @@ tace(spng_decoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
-    if WIN32:
-        nvjpeg_pkgconfig = pkgconfig()
-        assert nvcc, "cannot enable nvjpeg without the CUDA path"
-        cuda_path = os.path.dirname(nvcc)       #strip nvcc.exe
-        cuda_path = os.path.dirname(cuda_path)      #strip /bin/
-        cuda_include = os.path.join(cuda_path, "include")
-        cuda_bin = os.path.join(cuda_path, "bin")
-        add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-I%s" % cuda_include)
-        add_to_keywords(nvjpeg_pkgconfig, 'extra_link_args', "-L%s" % cuda_bin, "-lnvjpeg64_11")
-    else:
-        nvjpeg_pkgconfig = pkgconfig("nvjpeg")
-        assert skip_build or nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
-        cuda_pkgconfig = pkgconfig("cuda")
-        assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
-        for k, v in cuda_pkgconfig.items():
-            add_to_keywords(nvjpeg_pkgconfig, k, *v)
-    add_cython_ext("xpra.codecs.nvjpeg.common",
-                         ["xpra/codecs/nvjpeg/common.pyx"],
-                         **nvjpeg_pkgconfig)
-    add_cython_ext("xpra.codecs.nvjpeg.encoder",
-                         ["xpra/codecs/nvjpeg/encoder.pyx"],
-                         **nvjpeg_pkgconfig)
-    add_cython_ext("xpra.codecs.nvjpeg.decoder",
-                         ["xpra/codecs/nvjpeg/decoder.pyx"],
-                         **nvjpeg_pkgconfig)
+    ace("xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
+    ace("xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
+    ace("xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
 toggle_packages(jpeg, "xpra.codecs.jpeg")

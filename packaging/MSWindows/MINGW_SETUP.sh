@@ -44,14 +44,14 @@ for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko com
 done
 #dependencies of browser_cookie3 and pycuda,
 #best to manage them via pacman rather than have them installed via pip
-for x in pycryptodome mako markupsafe typing_extensions; do
+for x in pycryptodome mako markupsafe typing_extensions platformdirs; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #this needs to be converted to a PKGBUILD:
 $PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}gcc
-for x in browser-cookie3 qrencode; do
+for x in browser-cookie3; do
 	pip3 install $x
 done
 #for webcam support:
@@ -72,5 +72,6 @@ echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10
 echo " (see ticket #2762)"
 echo
 echo "to support NVIDIA hardware accelerated encoders NVENC and NVJPEG,"
-echo "install their headers and libraries"
-echo "then create a pkgconfig file so the build system will detect them"
+echo "install CUDA, then:"
+echo "ln -sf /c/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v11.7/ ./cuda"
+echo "cp *.pc $MINGW_PREFIX/lib/pkgconfig/"

@@ -1,0 +1,10 @@
+cuda_prefix=./cuda
+exec_prefix=${cuda_prefix}
+libdir=${cuda_prefix}/bin
+includedir=${cuda_prefix}/include
+
+Name: CUDA
+Description: Library for the CUDA GPU toolkit
+Version: 11
+Cflags: -I${includedir}
+Libs: -L${libdir} -lcudart64_110

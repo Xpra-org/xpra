@@ -266,13 +266,16 @@ if [ "${DO_SERVICE}" == "1" ]; then
 fi
 
 if [ "${DO_CUDA}" == "1" ]; then
-	echo "* Building CUDA kernels"
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRX_to_NV12 || exit 1
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRX_to_YUV444 || exit 1
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" XRGB_to_NV12 || exit 1
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" XRGB_to_YUV444 || exit 1
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRX_to_RGB || exit 1
-	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" RGBX_to_RGB || exit 1
+	echo "* Building all the CUDA kernels"
+	BUILD_CUDA_KERNEL="packaging\\MSWindows\\BUILD_CUDA_KERNEL"
+	for cupath in `ls fs/share/xpra/cuda/*.cu`; do
+		cu=`basename $cupath`
+		fatbin="${cupath/.cu/.fatbin}"
+		if [[ "$cupath" -nt "$fatbin" ]] || [[ "$BUILD_CUDA_KERNEL" -nt "fatbin" ]]; then
+			kname="${cu%.*}"
+			cmd.exe //c "${BUILD_CUDA_KERNEL}" "$kname" || exit 1
+		fi
+	done
 else
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
 fi

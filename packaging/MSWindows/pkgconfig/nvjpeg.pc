@@ -1,0 +1,10 @@
+cuda_prefix=./cuda
+exec_prefix=${cuda_prefix}
+libdir=${cuda_prefix}/bin
+includedir=${cuda_prefix}/include
+
+Name: nvjpeg
+Description: Library for the nvjpeg GPU compression
+Version: 11
+Cflags: -I${includedir} -Wno-error
+Libs: -L${libdir} -lnvjpeg64_11
