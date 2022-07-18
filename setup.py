@@ -815,6 +815,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     add_tokens(CFLAGS, "extra_compile_args")
     add_tokens(LDFLAGS, "extra_link_args")
     #add_to_keywords(kw, 'include_dirs', '.')
+    if debug_ENABLED and WIN32 and MINGW_PREFIX:
+        extra_compile_args.append("-DDEBUG")
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
     return kw
@@ -1989,8 +1991,6 @@ toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client
 toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     extra_compile_args = []
-    if debug_ENABLED:
-        extra_compile_args.append("-DDEBUG")
     if WIN32:
         extra_compile_args.append("-Wno-error=address")
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
