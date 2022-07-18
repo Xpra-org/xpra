@@ -2019,7 +2019,7 @@ tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.rectangle", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
-tace(pam_ENABLED, "xpra.server.pam")
+tace(pam_ENABLED, "xpra.server.pam", "pam,pam_misc")
 
 #platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
