@@ -2202,20 +2202,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
-if nvenc_ENABLED:
-    nvencmodule = "nvenc"
-    nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
-    if get_gcc_version()<=(8, 0):
-        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
-    #make it possible to build against SDK v10
-    add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
-    #don't link against libnvidia-encode, we load it dynamically:
-    libraries = nvenc_pkgconfig.get("libraries", [])
-    if "nvidia-encode" in libraries:
-        libraries.remove("nvidia-encode")
-    add_cython_ext("xpra.codecs.%s.encoder" % nvencmodule,
-                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
-                         **nvenc_pkgconfig)
+tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 tace(enc_x264_ENABLED, "xpra.codecs.enc_x264.encoder", "x264")
