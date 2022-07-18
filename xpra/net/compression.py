@@ -63,7 +63,7 @@ def init_brotli():
     except ImportError:
         import brotli
         brotli_decompress = brotli.decompress
-        brotli_compress = brotli.decompress
+        brotli_compress = brotli.compress
         brotli_version = brotli.__version__
     def brotli_compress_shim(packet, level):
         if len(packet)>1024*1024:
