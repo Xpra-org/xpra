@@ -2318,19 +2318,7 @@ tace(proc_ENABLED, "xpra.platform.xposix.proc",
 
 tace(vsock_ENABLED, "xpra.net.vsock")
 
-if pam_ENABLED:
-    pam_pkgconfig = pkgconfig()
-    for d in INCLUDE_DIRS:
-        pam_dir = os.path.join(d, "pam")
-        if os.path.exists(pam_dir):
-            add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I%s" % pam_dir)
-        security_dir = os.path.join(d, "security")
-        if os.path.exists(security_dir):
-            add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I%s" % security_dir)
-    add_to_keywords(pam_pkgconfig, 'extra_link_args', "-lpam", "-lpam_misc")
-    add_cython_ext("xpra.server.pam",
-                ["xpra/server/pam.pyx"],
-                **pam_pkgconfig)
+tace(pam_ENABLED, "xpra.server.pam", "pam,pam_misc")
 
 
 if ext_modules:
