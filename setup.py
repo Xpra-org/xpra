@@ -1594,8 +1594,6 @@ if WIN32:
         for d in ("http-headers", "content-type", "content-categories", "content-parent"):
             add_data_files("etc/xpra/%s" % d, glob.glob("fs/etc/xpra/%s/*" % d))
 
-        add_data_files('', glob.glob("packaging/MSWindows/bundle-extra/*"))
-
     #END OF win32
 #*******************************************************************************
 else:
