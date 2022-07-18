@@ -2035,7 +2035,7 @@ if nvfbc_ENABLED:
     platform = sys.platform.rstrip("0123456789")
     ace("xpra.codecs.nvfbc.fbc_capture_%s" % platform, "nvfbc", language="c++")
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc", "nvenc")
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
