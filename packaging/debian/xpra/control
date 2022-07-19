@@ -30,7 +30,7 @@ Build-Depends: debhelper (>= 8)
               ,libswscale-dev [!i386]
               ,dh-python
               ,libsystemd-dev
-              ,libpam-dev
+              ,libpam0g-dev
               ,libprocps-dev
               ,libbrotli-dev
               ,libqrencode-dev
