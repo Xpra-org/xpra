@@ -173,7 +173,7 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and has_header_file("/security/pam_misc.h")
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc"))
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
@@ -2019,7 +2019,12 @@ tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.rectangle", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
-tace(pam_ENABLED, "xpra.server.pam", "pam,pam_misc")
+if pam_ENABLED:
+    if pkg_config_ok("--exists", "pam", "pam_misc"):
+        kwargs = {"pkgconfig_names" : "pam,pam_misc"}
+    else:
+        kwargs = {"extra_compile_args", "-I" + find_header_file("/security", isdir=True)}
+    ace("xpra.server.pam", **kwargs)
 
 #platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")

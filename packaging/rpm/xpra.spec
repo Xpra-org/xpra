@@ -130,8 +130,8 @@ Recommends:		mesa-libOSMesa
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
-%if 0%{?fedora}
 BuildRequires:		pam-devel
+%if 0%{?fedora}
 BuildRequires:		procps-devel
 %endif
 BuildRequires:		brotli-devel
