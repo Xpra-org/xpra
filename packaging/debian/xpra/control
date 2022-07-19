@@ -32,8 +32,8 @@ Build-Depends: debhelper (>= 8)
               ,libsystemd-dev
               ,libpam-dev
               ,libprocps-dev
-              ,brotli-dev
-              ,qrencode-dev
+              ,libbrotli-dev
+              ,libqrencode-dev
               ,pandoc
 #jammy:              ,libavif-dev
 #bookworm:              ,libavif-dev
