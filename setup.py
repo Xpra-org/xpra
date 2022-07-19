@@ -177,7 +177,7 @@ pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OS
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
-proc_ENABLED            = LINUX and DEFAULT
+proc_ENABLED            = LINUX and has_header_file("/proc/procps.h")
 vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
