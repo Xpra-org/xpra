@@ -14,9 +14,8 @@ import os.path
 import optparse
 
 from xpra.version_util import full_version_str
-from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
-from xpra.os_util import getuid, WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.scripts.config import (
     OPTION_TYPES, FALSE_OPTIONS,
     InitException, InitInfo, InitExit,
@@ -81,21 +80,6 @@ def error(msg):
     if not _stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
-
-
-supports_proxy  = True
-supports_shadow = SHADOW_SUPPORTED
-supports_server = LOCAL_SERVERS_SUPPORTED
-if supports_server:
-    try:
-        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
-    except ImportError:
-        supports_server = False
-try:
-    from xpra.net import mdns
-    supports_mdns = bool(mdns)
-except ImportError:
-    supports_mdns = False
 
 
 #this parse doesn't exit when it encounters an error,
@@ -748,15 +732,25 @@ def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=F
     return args
 
 
+def supports_x11_server():
+    if OSX or WIN32:
+        return False
+    try:
+        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
+        return bool(wait_for_x_server)
+    except ImportError:
+        return False
+
 def get_server_modes():
-    server_modes = []
-    if supports_server:
-        server_modes.append("start")
-        server_modes.append("start-desktop")
-        server_modes.append("start-monitor")
-        server_modes.append("upgrade")
-    if supports_shadow:
-        server_modes.append("shadow")
+    if supports_x11_server():
+        server_modes = [
+            "start",
+            "start-desktop",
+            "start-monitor",
+            ]
+    else:
+        server_modes = ["shadow"]
+    server_modes += ["upgrade"]
     return server_modes
 
 
@@ -766,16 +760,16 @@ def get_subcommands():
 
 def get_usage():
     command_options = [""]
-    if supports_server:
-        command_options += ["start [DISPLAY]",
-                           "start-desktop [DISPLAY]",
-                           "start-monitor [DISPLAY]",
-                           "upgrade [DISPLAY]",
-                           "upgrade-desktop [DISPLAY]",
-                           "recover [DISPLAY]",
-                           ]
-    if supports_shadow:
-        command_options.append("shadow [DISPLAY]")
+    if supports_x11_server():
+        command_options += [
+            "start [DISPLAY]",
+            "start-desktop [DISPLAY]",
+            "start-monitor [DISPLAY]",
+            "upgrade [DISPLAY]",
+            "upgrade-desktop [DISPLAY]",
+            "recover [DISPLAY]",
+            "shadow [DISPLAY]",
+            ]
 
     command_options += [
                         "attach [DISPLAY]",
@@ -809,9 +803,15 @@ def get_usage():
                         "encoding",
                         "path-info",
                       ]
-    if supports_mdns:
-        command_options.append("list-mdns")
-        command_options.append("mdns-gui")
+    try:
+        from xpra.net import mdns
+        assert mdns
+        command_options += [
+            "list-mdns",
+            "mdns-gui",
+            ]
+    except ImportError:
+        pass
     return command_options
 
 def parse_cmdline(cmdline):
@@ -830,8 +830,6 @@ def do_parse_cmdline(cmdline, defaults):
 
     version = "xpra v%s" % full_version_str()
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
-    if not supports_server:
-        usage_strs = ["(this xpra installation does not support starting local servers)\n"]+usage_strs
     parser = ModifiedOptionParser(version=version, usage="\n" + "".join(usage_strs))
     hidden_options = {
                       "display"         : defaults.display,
@@ -947,84 +945,59 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Define environment variables used with 'start-child' and 'start',"
                       +" can be specified multiple times. Default: %s." % csv(
                           ("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
-    if POSIX:
-        legacy_bool_parse("systemd-run")
-        group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
-                          dest="systemd_run", default=defaults.systemd_run,
-                          help="Wrap server start commands with systemd-run. Default: %default.")
-        group.add_option("--systemd-run-args", action="store", metavar="ARGS",
-                          dest="systemd_run_args", default=defaults.systemd_run_args,
-                          help="Command line arguments passed to systemd-run. Default: '%default'.")
-    else:
-        ignore({"systemd_run"       : defaults.systemd_run,
-                "systemd_run_args"  : defaults.systemd_run_args})
-
+    legacy_bool_parse("systemd-run")
+    group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
+                      dest="systemd_run", default=defaults.systemd_run,
+                      help="Wrap server start commands with systemd-run. Default: %default.")
+    group.add_option("--systemd-run-args", action="store", metavar="ARGS",
+                      dest="systemd_run_args", default=defaults.systemd_run_args,
+                      help="Command line arguments passed to systemd-run. Default: '%default'.")
     legacy_bool_parse("html")
-    if supports_server or supports_shadow:
-        group.add_option("--tcp-proxy", action="store",
-                          dest="tcp_proxy", default=defaults.tcp_proxy,
-                          metavar="HOST:PORT",
-                          help="The address to which non-xpra packets will be forwarded. Default: '%default'.")
-        group.add_option("--html", action="store",
-                          dest="html", default=defaults.html,
-                          metavar="on|off|[HOST:]PORT",
-                          help="Enable the web server and the html5 client. Default: '%default'.")
-        group.add_option("--http-scripts", action="store",
-                          dest="http_scripts", default=defaults.http_scripts,
-                          metavar="off|all|SCRIPTS",
-                          help="Enable the builtin web server scripts. Default: '%default'.")
-    else:
-        ignore({"tcp_proxy" : "",
-                "html"      : ""})
+    group.add_option("--tcp-proxy", action="store",
+                      dest="tcp_proxy", default=defaults.tcp_proxy,
+                      metavar="HOST:PORT",
+                      help="The address to which non-xpra packets will be forwarded. Default: '%default'.")
+    group.add_option("--http-scripts", action="store",
+                      dest="http_scripts", default=defaults.http_scripts,
+                      metavar="off|all|SCRIPTS",
+                      help="Enable the builtin web server scripts. Default: '%default'.")
+    group.add_option("--html", action="store",
+                      dest="html", default=defaults.html,
+                      metavar="on|off|[HOST:]PORT",
+                      help="Enable the web server and the html5 client. Default: '%default'.")
     legacy_bool_parse("daemon")
     legacy_bool_parse("attach")
-    if POSIX and getuid()==0:
-        group.add_option("--uid", action="store",
-                          dest="uid", default=defaults.uid,
-                          help="The user id to change to when the server is started by root."
-                          +" Default: %s." % defaults.uid)
-        group.add_option("--gid", action="store",
-                          dest="gid", default=defaults.gid,
-                          help="The group id to change to when the server is started by root."
-                          +" Default: %s." % defaults.gid)
-    else:
-        ignore({
-                "uid"   : defaults.uid,
-                "gid"   : defaults.gid,
-                })
-    if (supports_server or supports_shadow) and CAN_DAEMONIZE:
-        group.add_option("--daemon", action="store", metavar="yes|no",
-                          dest="daemon", default=defaults.daemon,
-                          help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
-        group.add_option("--chdir", action="store", metavar="DIR",
-                          dest="chdir", default=defaults.chdir,
-                          help="Change to this directory (default: %s)" % enabled_str(defaults.chdir))
-        group.add_option("--pidfile", action="store",
-                      dest="pidfile", default=defaults.pidfile,
-                      help="Write the process id to this file (default: '%default')")
-        group.add_option("--log-dir", action="store",
-                      dest="log_dir", default=defaults.log_dir,
-                      help="The directory where log files are placed"
-                      )
-        group.add_option("--log-file", action="store",
-                      dest="log_file", default=defaults.log_file,
-                      help="When daemonizing, this is where the log messages will go. Default: '%default'."
-                      + " If a relative filename is specified the it is relative to --log-dir,"
-                      + " the value of '$DISPLAY' will be substituted with the actual display used"
-                      )
-    else:
-        ignore({
-                "daemon"    : defaults.daemon,
-                "pidfile"   : defaults.pidfile,
-                "log_file"  : defaults.log_file,
-                "log_dir"   : defaults.log_dir,
-                "chdir"     : defaults.chdir,
-                })
+    group.add_option("--uid", action="store",
+                      dest="uid", default=defaults.uid,
+                      help="The user id to change to when the server is started by root."
+                      +" Default: %s." % defaults.uid)
+    group.add_option("--gid", action="store",
+                      dest="gid", default=defaults.gid,
+                      help="The group id to change to when the server is started by root."
+                      +" Default: %s." % defaults.gid)
+    group.add_option("--daemon", action="store", metavar="yes|no",
+                      dest="daemon", default=defaults.daemon,
+                      help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
+    group.add_option("--chdir", action="store", metavar="DIR",
+                      dest="chdir", default=defaults.chdir,
+                      help="Change to this directory (default: %s)" % enabled_str(defaults.chdir))
+    group.add_option("--pidfile", action="store",
+                  dest="pidfile", default=defaults.pidfile,
+                  help="Write the process id to this file (default: '%default')")
+    group.add_option("--log-dir", action="store",
+                  dest="log_dir", default=defaults.log_dir,
+                  help="The directory where log files are placed"
+                  )
+    group.add_option("--log-file", action="store",
+                  dest="log_file", default=defaults.log_file,
+                  help="When daemonizing, this is where the log messages will go. Default: '%default'."
+                  + " If a relative filename is specified the it is relative to --log-dir,"
+                  + " the value of '$DISPLAY' will be substituted with the actual display used"
+                  )
     group.add_option("--attach", action="store", metavar="yes|no|auto",
                       dest="attach", default=defaults.attach,
                       help="Attach a client as soon as the server has started"
                       +" (default: %s)" % enabled_or_auto(defaults.attach))
-
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
     legacy_bool_parse("open-files")
@@ -1044,33 +1017,24 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--file-size-limit", action="store", metavar="SIZE",
                       dest="file_size_limit", default=defaults.file_size_limit,
                       help="Maximum size of file transfers. Default: '%s'." % defaults.file_size_limit)
-    if supports_server:
-        group.add_option("--lpadmin", action="store",
-                          dest="lpadmin", default=defaults.lpadmin,
-                          metavar="COMMAND",
-                          help="Specify the lpadmin command to use. Default: '%default'.")
-        group.add_option("--lpinfo", action="store",
-                          dest="lpinfo", default=defaults.lpinfo,
-                          metavar="COMMAND",
-                          help="Specify the lpinfo command to use. Default: '%default'.")
-    else:
-        ignore({
-                "lpadmin"               : defaults.lpadmin,
-                "lpinfo"                : defaults.lpinfo,
-                })
+    group.add_option("--lpadmin", action="store",
+                      dest="lpadmin", default=defaults.lpadmin,
+                      metavar="COMMAND",
+                      help="Specify the lpadmin command to use. Default: '%default'.")
+    group.add_option("--lpinfo", action="store",
+                      dest="lpinfo", default=defaults.lpinfo,
+                      metavar="COMMAND",
+                      help="Specify the lpinfo command to use. Default: '%default'.")
     #options without command line equivallents:
     hidden_options["pdf-printer"] = defaults.pdf_printer
     hidden_options["postscript-printer"] = defaults.postscript_printer
     hidden_options["add-printer-options"] = defaults.add_printer_options
 
     legacy_bool_parse("exit-with-client")
-    if (supports_server or supports_shadow):
-        group.add_option("--exit-with-client", action="store", metavar="yes|no",
-                          dest="exit_with_client", default=defaults.exit_with_client,
-                          help="Terminate the server when the last client disconnects."
-                          +" Default: %s" % enabled_str(defaults.exit_with_client))
-    else:
-        ignore({"exit_with_client" : defaults.exit_with_client})
+    group.add_option("--exit-with-client", action="store", metavar="yes|no",
+                      dest="exit_with_client", default=defaults.exit_with_client,
+                      help="Terminate the server when the last client disconnects."
+                      +" Default: %s" % enabled_str(defaults.exit_with_client))
     group.add_option("--idle-timeout", action="store",
                       dest="idle_timeout", type="int", default=defaults.idle_timeout,
                       help="Disconnects the client when idle (0 to disable)."
@@ -1081,139 +1045,101 @@ def do_parse_cmdline(cmdline, defaults):
                       +" Default: %s seconds" % defaults.server_idle_timeout)
     legacy_bool_parse("fake-xinerama")
     legacy_bool_parse("use-display")
-    if supports_server:
-        group.add_option("--use-display", action="store", metavar="yes|no|auto",
-                          dest="use_display", default=defaults.use_display,
-                          help="Use an existing display rather than starting one with the xvfb command."
-                          +" Default: %s" % enabled_str(defaults.use_display))
-        group.add_option("--xvfb", action="store",
-                          dest="xvfb",
-                          default=defaults.xvfb,
-                          metavar="CMD",
-                          help="How to run the headless X server. Default: '%default'.")
-        group.add_option("--displayfd", action="store", metavar="FD",
-                          dest="displayfd", default=defaults.displayfd,
-                          help="The xpra server will write the display number back on this file descriptor"
-                          +" as a newline-terminated string.")
-        group.add_option("--fake-xinerama", action="store", metavar="path|auto|no",
-                          dest="fake_xinerama",
-                          default=defaults.fake_xinerama,
-                          help="Setup fake xinerama support for the session. "+
-                          "You can specify the path to the libfakeXinerama.so library or a boolean."
-                          +" Default: %s." % enabled_str(defaults.fake_xinerama))
-    else:
-        ignore({
-            "use-display"   : defaults.use_display,
-            "xvfb"          : defaults.xvfb,
-            "displayfd"     : defaults.displayfd,
-            "fake-xinerama" : defaults.fake_xinerama,
-            })
+    group.add_option("--use-display", action="store", metavar="yes|no|auto",
+                      dest="use_display", default=defaults.use_display,
+                      help="Use an existing display rather than starting one with the xvfb command."
+                      +" Default: %s" % enabled_str(defaults.use_display))
+    group.add_option("--xvfb", action="store",
+                      dest="xvfb",
+                      default=defaults.xvfb,
+                      metavar="CMD",
+                      help="How to run the headless X server. Default: '%default'.")
+    group.add_option("--displayfd", action="store", metavar="FD",
+                      dest="displayfd", default=defaults.displayfd,
+                      help="The xpra server will write the display number back on this file descriptor"
+                      +" as a newline-terminated string.")
+    group.add_option("--fake-xinerama", action="store", metavar="path|auto|no",
+                      dest="fake_xinerama",
+                      default=defaults.fake_xinerama,
+                      help="Setup fake xinerama support for the session. "+
+                      "You can specify the path to the libfakeXinerama.so library or a boolean."
+                      +" Default: %s." % enabled_str(defaults.fake_xinerama))
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no|widthxheight[@HZ]",
                       help="Whether the server display should be resized to match the client resolution."
                       +" Default: %s." % enabled_str(defaults.resize_display))
     defaults_bind = defaults.bind
-    if supports_server or supports_shadow:
-        group.add_option("--bind", action="append",
-                          dest="bind", default=[],
-                          metavar="SOCKET",
-                          help="Listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
-                          +" You may specify this option multiple times to listen on different locations."
-                          +" Default: %s" % dcsv(defaults_bind))
-        group.add_option("--bind-tcp", action="append",
-                          dest="bind_tcp", default=list(defaults.bind_tcp or []),
-                          metavar="[HOST]:[PORT]",
-                          help="Listen for connections over TCP."
-                          + " Use --tcp-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-ws", action="append",
-                          dest="bind_ws", default=list(defaults.bind_ws or []),
-                          metavar="[HOST]:[PORT]",
-                          help="Listen for connections over Websocket."
-                          + " Use --ws-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-wss", action="append",
-                          dest="bind_wss", default=list(defaults.bind_wss or []),
-                          metavar="[HOST]:[PORT]",
-                          help="Listen for connections over HTTPS / wss (secure Websocket)."
-                          + " Use --wss-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-ssl", action="append",
-                          dest="bind_ssl", default=list(defaults.bind_ssl or []),
-                          metavar="[HOST]:PORT",
-                          help="Listen for connections over SSL."
-                          + " Use --ssl-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-ssh", action="append",
-                          dest="bind_ssh", default=list(defaults.bind_ssh or []),
-                          metavar="[HOST]:PORT",
-                          help="Listen for connections using SSH transport."
-                          + " Use --ssh-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-rfb", action="append",
-                          dest="bind_rfb", default=list(defaults.bind_rfb or []),
-                          metavar="[HOST]:PORT",
-                          help="Listen for RFB connections."
-                          + " Use --rfb-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
-    else:
-        ignore({
-            "bind"      : defaults.bind,
-            "bind-tcp"  : defaults.bind_tcp,
-            "bind-ws"   : defaults.bind_ws,
-            "bind-wss"  : defaults.bind_wss,
-            "bind-ssl"  : defaults.bind_ssl,
-            "bind-ssh"  : defaults.bind_ssh,
-            "bind-rfb"  : defaults.bind_rfb,
-            })
-    try:
-        from xpra.net import vsock
-    except ImportError:
-        vsock = None
-    if vsock:
-        group.add_option("--bind-vsock", action="append",
-                          dest="bind_vsock", default=list(defaults.bind_vsock or []),
-                          metavar="[CID]:[PORT]",
-                          help="Listen for connections over VSOCK."
-                            + " You may specify this option multiple times with different CID and port combinations")
-    else:
-        ignore({"bind-vsock" : []})
+    group.add_option("--bind", action="append",
+                      dest="bind", default=[],
+                      metavar="SOCKET",
+                      help="Listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
+                      +" You may specify this option multiple times to listen on different locations."
+                      +" Default: %s" % dcsv(defaults_bind))
+    group.add_option("--bind-tcp", action="append",
+                      dest="bind_tcp", default=list(defaults.bind_tcp or []),
+                      metavar="[HOST]:[PORT]",
+                      help="Listen for connections over TCP."
+                      + " Use --tcp-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-ws", action="append",
+                      dest="bind_ws", default=list(defaults.bind_ws or []),
+                      metavar="[HOST]:[PORT]",
+                      help="Listen for connections over Websocket."
+                      + " Use --ws-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-wss", action="append",
+                      dest="bind_wss", default=list(defaults.bind_wss or []),
+                      metavar="[HOST]:[PORT]",
+                      help="Listen for connections over HTTPS / wss (secure Websocket)."
+                      + " Use --wss-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-ssl", action="append",
+                      dest="bind_ssl", default=list(defaults.bind_ssl or []),
+                      metavar="[HOST]:PORT",
+                      help="Listen for connections over SSL."
+                      + " Use --ssl-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-ssh", action="append",
+                      dest="bind_ssh", default=list(defaults.bind_ssh or []),
+                      metavar="[HOST]:PORT",
+                      help="Listen for connections using SSH transport."
+                      + " Use --ssh-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-rfb", action="append",
+                      dest="bind_rfb", default=list(defaults.bind_rfb or []),
+                      metavar="[HOST]:PORT",
+                      help="Listen for RFB connections."
+                      + " Use --rfb-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-vsock", action="append",
+                      dest="bind_vsock", default=list(defaults.bind_vsock or []),
+                      metavar="[CID]:[PORT]",
+                      help="Listen for connections over VSOCK."
+                        + " You may specify this option multiple times with different CID and port combinations")
     legacy_bool_parse("mdns")
-    if (supports_server or supports_shadow):
-        group.add_option("--mdns", action="store", metavar="yes|no",
-                          dest="mdns", default=defaults.mdns,
-                          help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
-    else:
-        ignore({"mdns" : defaults.mdns})
+    group.add_option("--mdns", action="store", metavar="yes|no",
+                      dest="mdns", default=defaults.mdns,
+                      help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
     legacy_bool_parse("pulseaudio")
     legacy_bool_parse("dbus-proxy")
     legacy_bool_parse("dbus-control")
-    if supports_server:
-        group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
-                      dest="pulseaudio", default=defaults.pulseaudio,
-                      help="Start a pulseaudio server for the session."
-                      +" Default: %s." % enabled_or_auto(defaults.pulseaudio))
-        group.add_option("--pulseaudio-command", action="store",
-                      dest="pulseaudio_command", default=defaults.pulseaudio_command,
-                      help="The command used to start the pulseaudio server. Default: '%default'.")
-        group.add_option("--pulseaudio-configure-commands", action="append",
-                      dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
-                      help="The commands used to configure the pulseaudio server. Default: '%default'.")
-        group.add_option("--dbus-proxy", action="store", metavar="yes|no",
-                      dest="dbus_proxy", default=defaults.dbus_proxy,
-                      help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
-        group.add_option("--dbus-control", action="store", metavar="yes|no",
-                      dest="dbus_control", default=defaults.dbus_control,
-                      help="Allows the server to be controlled via its dbus interface."
-                      + " Default: %s." % enabled_str(defaults.dbus_control))
-    else:
-        ignore({"pulseaudio"            : defaults.pulseaudio,
-                "pulseaudio-command"    : defaults.pulseaudio_command,
-                "dbus-proxy"            : defaults.dbus_proxy,
-                "dbus-control"          : defaults.dbus_control,
-                "pulseaudio-configure-commands" : defaults.pulseaudio_configure_commands,
-                })
-
+    group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
+                  dest="pulseaudio", default=defaults.pulseaudio,
+                  help="Start a pulseaudio server for the session."
+                  +" Default: %s." % enabled_or_auto(defaults.pulseaudio))
+    group.add_option("--pulseaudio-command", action="store",
+                  dest="pulseaudio_command", default=defaults.pulseaudio_command,
+                  help="The command used to start the pulseaudio server. Default: '%default'.")
+    group.add_option("--pulseaudio-configure-commands", action="append",
+                  dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
+                  help="The commands used to configure the pulseaudio server. Default: '%default'.")
+    group.add_option("--dbus-proxy", action="store", metavar="yes|no",
+                  dest="dbus_proxy", default=defaults.dbus_proxy,
+                  help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
+    group.add_option("--dbus-control", action="store", metavar="yes|no",
+                  dest="dbus_control", default=defaults.dbus_control,
+                  help="Allows the server to be controlled via its dbus interface."
+                  + " Default: %s." % enabled_str(defaults.dbus_control))
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                 "These options be specified on the client or on the server, "
                 "but the server's settings will have precedence over the client's.")
@@ -1266,20 +1192,13 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
                       "('invert-all', 'invert-x', invert-y', 'invert-z')."
                       +" Default: %s." % defaults.mousewheel)
-    from xpra.platform.features import INPUT_DEVICES
-    if len(INPUT_DEVICES)>1:
-        group.add_option("--input-devices", action="store", metavar="APINAME",
-                          dest="input_devices", default=defaults.input_devices,
-                          help="Which API to use for input devices. Default: %s." % defaults.input_devices)
-    else:
-        ignore({"input-devices" : INPUT_DEVICES[0]})
+    group.add_option("--input-devices", action="store", metavar="APINAME",
+                      dest="input_devices", default=defaults.input_devices,
+                      help="Which API to use for input devices. Default: %s." % defaults.input_devices)
     legacy_bool_parse("xsettings")
-    if POSIX:
-        group.add_option("--xsettings", action="store", metavar="auto|yes|no",
-                          dest="xsettings", default=defaults.xsettings,
-                          help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
-    else:
-        ignore({"xsettings" : defaults.xsettings})
+    group.add_option("--xsettings", action="store", metavar="auto|yes|no",
+                      dest="xsettings", default=defaults.xsettings,
+                      help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     legacy_bool_parse("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                       dest="mmap", default=defaults.mmap,
@@ -1303,40 +1222,30 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("speaker")
     legacy_bool_parse("microphone")
     legacy_bool_parse("av-sync")
-    if has_sound_support():
-        group.add_option("--speaker", action="store", metavar="on|off|disabled",
-                          dest="speaker", default=defaults.speaker,
-                          help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
-        CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
-    This parameter can be specified multiple times and the order in which the codecs
-    are specified defines the preferred codec order.
-    Use the special value 'help' to get a list of options.
-    When unspecified, all the available codecs are allowed and the first one is used."""
-        group.add_option("--speaker-codec", action="append",
-                          dest="speaker_codec", default=list(defaults.speaker_codec or []),
-                          help=CODEC_HELP % "speaker")
-        group.add_option("--microphone", action="store", metavar="on|off|disabled",
-                          dest="microphone", default=defaults.microphone,
-                          help="Forward sound input to the server. Default: %s." % sound_option(defaults.microphone))
-        group.add_option("--microphone-codec", action="append",
-                          dest="microphone_codec", default=list(defaults.microphone_codec or []),
-                          help=CODEC_HELP % "microphone")
-        group.add_option("--sound-source", action="store",
-                          dest="sound_source", default=defaults.sound_source,
-                          help="Specifies which sound system to use to capture the sound stream "
-                          +" (use 'help' for options)")
-        group.add_option("--av-sync", action="store",
-                          dest="av_sync", default=defaults.av_sync,
-                          help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
-    else:
-        ignore({"av-sync"           : defaults.av_sync,
-                "speaker"           : defaults.speaker,
-                "speaker-codec"     : defaults.speaker_codec,
-                "microphone"        : defaults.microphone,
-                "microphone-codec"  : defaults.microphone_codec,
-                "sound-source"      : defaults.sound_source,
-                })
-
+    group.add_option("--speaker", action="store", metavar="on|off|disabled",
+                      dest="speaker", default=defaults.speaker,
+                      help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
+    CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
+This parameter can be specified multiple times and the order in which the codecs
+are specified defines the preferred codec order.
+Use the special value 'help' to get a list of options.
+When unspecified, all the available codecs are allowed and the first one is used."""
+    group.add_option("--speaker-codec", action="append",
+                      dest="speaker_codec", default=list(defaults.speaker_codec or []),
+                      help=CODEC_HELP % "speaker")
+    group.add_option("--microphone", action="store", metavar="on|off|disabled",
+                      dest="microphone", default=defaults.microphone,
+                      help="Forward sound input to the server. Default: %s." % sound_option(defaults.microphone))
+    group.add_option("--microphone-codec", action="append",
+                      dest="microphone_codec", default=list(defaults.microphone_codec or []),
+                      help=CODEC_HELP % "microphone")
+    group.add_option("--sound-source", action="store",
+                      dest="sound_source", default=defaults.sound_source,
+                      help="Specifies which sound system to use to capture the sound stream "
+                      +" (use 'help' for options)")
+    group.add_option("--av-sync", action="store",
+                      dest="av_sync", default=defaults.av_sync,
+                      help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default settings.")
@@ -1721,32 +1630,23 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--rfb-auth", action="append",
                       dest="rfb_auth", default=list(defaults.rfb_auth or []),
                       help="The authentication module to use for RFB sockets (default: %s)" % dcsv(defaults.rfb_auth))
-    if vsock:
-        group.add_option("--vsock-auth", action="append",
-                         dest="vsock_auth", default=list(defaults.vsock_auth or []),
-                         help="The authentication module to use for vsock sockets (default: '%s')" % dcsv(defaults.vsock_auth))
-    else:
-        ignore({"vsock-auth" : defaults.vsock_auth})
+    group.add_option("--vsock-auth", action="append",
+                     dest="vsock_auth", default=list(defaults.vsock_auth or []),
+                     help="The authentication module to use for vsock sockets (default: '%s')" % dcsv(defaults.vsock_auth))
     group.add_option("--min-port", action="store",
                       dest="min_port", default=defaults.min_port,
                       help="The minimum port number allowed when creating TCP sockets (default: '%default')")
     ignore({"password"           : defaults.password})
-    if POSIX:
-        group.add_option("--mmap-group", action="store",
-                          dest="mmap_group", default=defaults.mmap_group,
-                          help="When creating the mmap file with the client,"
-                          +" set the group permission on the mmap file to this group,"
-                          +" use the special value 'auto' to use the same value as the owner"
-                          +" of the server socket file we connect to (default: '%default')")
-        group.add_option("--socket-permissions", action="store",
-                          dest="socket_permissions", default=defaults.socket_permissions,
-                          help="When creating the server unix domain socket,"
-                          +" what file access mode to use (default: '%default')")
-    else:
-        ignore({"mmap-group"            : defaults.mmap_group,
-                "socket-permissions"    : defaults.socket_permissions,
-                })
-
+    group.add_option("--mmap-group", action="store",
+                      dest="mmap_group", default=defaults.mmap_group,
+                      help="When creating the mmap file with the client,"
+                      +" set the group permission on the mmap file to this group,"
+                      +" use the special value 'auto' to use the same value as the owner"
+                      +" of the server socket file we connect to (default: '%default')")
+    group.add_option("--socket-permissions", action="store",
+                      dest="socket_permissions", default=defaults.socket_permissions,
+                      help="When creating the server unix domain socket,"
+                      +" what file access mode to use (default: '%default')")
     replace_option("--enable-pings", "--pings=5")
     group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,

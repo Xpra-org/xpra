@@ -9,8 +9,6 @@ from xpra.os_util import is_unity, is_Wayland
 
 SYSTEM_TRAY_SUPPORTED = not is_unity()
 
-LOCAL_SERVERS_SUPPORTED = True
-SHADOW_SUPPORTED = True#
 AUTOSTART = True
 
 DEFAULT_ENV = [

@@ -45,7 +45,6 @@ from xpra.scripts.parsing import (
     info, warn, error,
     parse_display_name, parse_env,
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
-    supports_shadow, supports_server, supports_proxy, supports_mdns,
     MODE_ALIAS,
     )
 from xpra.scripts.config import (
@@ -490,10 +489,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "list-windows":
         no_gtk()
         return run_list_windows(error_cb, options, args)
-    elif mode == "list-mdns" and supports_mdns:
+    elif mode == "list-mdns":
         no_gtk()
         return run_list_mdns(error_cb, args)
-    elif mode == "mdns-gui" and supports_mdns:
+    elif mode == "mdns-gui":
         check_gtk()
         return run_mdns_gui(error_cb, options)
     elif mode == "list-sessions":
@@ -552,8 +551,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_html5()
     elif (
         mode=="_proxy" or
-        (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
-        (mode=="_proxy_shadow_start" and supports_shadow)
+        mode in ("_proxy_start", "_proxy_start_desktop") or
+        mode=="_proxy_shadow_start"
         ):
         nox()
         return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
@@ -670,8 +669,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         if mode!="help":
             print("Invalid subcommand '%s'" % (mode,))
         print("Usage:")
-        from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
-        if not LOCAL_SERVERS_SUPPORTED:
+        if not POSIX or OSX:
             print("(this xpra installation does not support starting local servers)")
         cmd = os.path.basename(script_file)
         for x in get_usage():
@@ -1765,15 +1763,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     if (
         mode in ("start", "start-desktop", "start-monitor",
-                 "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor") and not supports_server
-        ) or (
-        mode=="shadow" and not supports_shadow
-        ) or (
-        mode=="proxy" and not supports_proxy
-        ) or (
-        mode not in ("start", "start-desktop", "start-monitor",
-                     "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-                     "shadow", "proxy")
+                 "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor") and (OSX or WIN32)
         ):
         raise InitException("%s is not supported by this build of xpra" % mode)
 
@@ -2768,7 +2758,12 @@ def run_desktop_greeter():
     main()
 
 def run_sessions_gui(options):
-    mdns = supports_mdns and options.mdns
+    mdns = options.mdns
+    try:
+        from xpra.net import mdns
+        assert mdns
+    except ImportError:
+        mdns = False
     if mdns:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
@@ -2798,7 +2793,6 @@ def run_list_mdns(error_cb, extra_args):
             MDNS_WAIT = 5
     else:
         error_cb("too many arguments for mode")
-    assert supports_mdns
     from xpra.net.mdns import XPRA_MDNS_TYPE
     try:
         from xpra.net.mdns.avahi_listener import AvahiListener

@@ -142,9 +142,8 @@ print("ARCH=%s" % (ARCH,))
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
 CPP = os.environ.get("CPP", "cpp")
 
-from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
-server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
+shadow_ENABLED = DEFAULT
+server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")

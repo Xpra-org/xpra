@@ -10,8 +10,6 @@ import os
 from xpra.util import envbool
 
 #defaults which may be overriden by platform_import:
-LOCAL_SERVERS_SUPPORTED = False
-SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = False
@@ -60,8 +58,6 @@ TCP_OPTIONS = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 
 _features_list_ = [
-                   "LOCAL_SERVERS_SUPPORTED",
-                   "SHADOW_SUPPORTED",
                    "AUTOSTART",
                    "CAN_DAEMONIZE",
                    "SYSTEM_TRAY_SUPPORTED",
