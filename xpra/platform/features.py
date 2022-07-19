@@ -11,7 +11,6 @@ from xpra.util import envbool
 
 #defaults which may be overriden by platform_import:
 CAN_DAEMONIZE = True
-SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = False
 AUTOSTART = False
 
@@ -60,7 +59,6 @@ TCP_OPTIONS = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 _features_list_ = [
                    "AUTOSTART",
                    "CAN_DAEMONIZE",
-                   "SYSTEM_TRAY_SUPPORTED",
                    "REINIT_WINDOWS",
                    "COMMAND_SIGNALS",
                    "SOURCE",

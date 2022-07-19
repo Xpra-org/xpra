@@ -1,13 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-from xpra.os_util import is_unity, is_Wayland
+from xpra.os_util import is_Wayland
 
-SYSTEM_TRAY_SUPPORTED = not is_unity()
 
 AUTOSTART = True
 

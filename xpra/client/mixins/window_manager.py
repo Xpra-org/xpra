@@ -22,7 +22,6 @@ from xpra.platform.gui import (
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
     )
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
-from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_exec_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
@@ -167,7 +166,7 @@ class WindowClient(StubClientMixin):
         self._button_state = {}
 
     def init(self, opts):
-        if opts.system_tray and SYSTEM_TRAY_SUPPORTED:
+        if opts.system_tray:
             try:
                 from xpra.client import client_tray
                 assert client_tray
