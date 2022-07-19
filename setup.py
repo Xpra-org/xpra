@@ -554,13 +554,6 @@ def toggle_modules(enabled, *module_names):
     else:
         remove_packages(*module_names)
 
-
-#always included:
-if modules_ENABLED:
-    add_modules("xpra", "xpra.platform", "xpra.net")
-    add_modules("xpra.scripts.main")
-
-
 def add_data_files(target_dir, files):
     #this is overriden below because cx_freeze uses the opposite structure (files first...). sigh.
     assert isinstance(target_dir, str)
@@ -579,26 +572,6 @@ def print_option(prefix, k, v):
 
 #*******************************************************************************
 # Utility methods for building with Cython
-compiler_directives = {
-    "auto_pickle"           : False,
-    "language_level"        : 3,
-    "cdivision"             : True,
-    "always_allow_keywords" : False,
-    "unraisable_tracebacks" : True,
-    }
-if strict_ENABLED and verbose_ENABLED:
-    compiler_directives.update({
-        #"warn.undeclared"       : True,
-        #"warn.maybe_uninitialized" : True,
-        "warn.unused"           : True,
-        "warn.unused_result"    : True,
-        })
-if cython_tracing_ENABLED:
-    compiler_directives.update({
-        "linetrace" : True,
-        "binding" : True,
-        "profile" : True,
-        })
 
 def add_cython_ext(*args, **kwargs):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
@@ -1867,6 +1840,10 @@ if WIN32 or OSX:
                     "cryptography.fernet")
 
 
+#always included:
+if modules_ENABLED:
+    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main")
+
 if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
@@ -1875,7 +1852,7 @@ toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
     if not is_openSUSE():
-        add_data_files(share_xpra,                      ["README.md", "COPYING"])
+        add_data_files(share_xpra,                  ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     if LINUX:
         add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
@@ -2256,8 +2233,27 @@ tace(vsock_ENABLED, "xpra.net.vsock")
 
 if ext_modules:
     from Cython.Build import cythonize
-    #this causes Cython to fall over itself:
-    #gdb_debug=debug_ENABLED
+    compiler_directives = {
+        "auto_pickle"           : False,
+        "language_level"        : 3,
+        "cdivision"             : True,
+        "always_allow_keywords" : False,
+        "unraisable_tracebacks" : True,
+        }
+    if strict_ENABLED and verbose_ENABLED:
+        compiler_directives.update({
+            #"warn.undeclared"       : True,
+            #"warn.maybe_uninitialized" : True,
+            "warn.unused"           : True,
+            "warn.unused_result"    : True,
+            })
+    if cython_tracing_ENABLED:
+        compiler_directives.update({
+            "linetrace" : True,
+            "binding" : True,
+            "profile" : True,
+            })
+
     nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,
                                              nthreads=nthreads,
