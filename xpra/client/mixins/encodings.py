@@ -10,6 +10,7 @@ from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
+from xpra.common import FULL_INFO
 from xpra.net import compression
 from xpra.util import envint, envbool, updict, csv, typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
