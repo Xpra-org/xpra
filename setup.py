@@ -2235,27 +2235,7 @@ tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil")
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
-if v4l2_ENABLED:
-    #fugly warning: cython makes this difficult,
-    #we have to figure out if "device_caps" exists in the headers:
-    videodev2_h = find_header_file("/linux/videodev2.h")
-    constants_pxi = "xpra/codecs/v4l2/constants.pxi"
-    if videodev2_h and should_rebuild(videodev2_h, constants_pxi):
-        ENABLE_DEVICE_CAPS = 0
-        try:
-            with subprocess.Popen("%s -fpreprocessed %s | grep -q device_caps" % (CPP, videodev2_h),
-                                 shell=True) as proc:
-                ENABLE_DEVICE_CAPS = proc.wait()==0
-        except OSError:
-            hdata = load_binary_file(videodev2_h)
-            ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
-            print("failed to detect device caps, assuming off")
-        with open(constants_pxi, "wb") as f:
-            f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
-    v4l2_pkgconfig = pkgconfig()
-    add_cython_ext("xpra.codecs.v4l2.pusher",
-                ["xpra/codecs/v4l2/pusher.pyx"],
-                **v4l2_pkgconfig)
+tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
 #network:
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")

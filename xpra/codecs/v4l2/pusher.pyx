@@ -32,8 +32,6 @@ cdef extern from "Python.h":
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
-include "constants.pxi"
-
 cdef extern from "./video.h":
     int V4L2_FIELD_NONE
     int V4L2_FIELD_TOP
@@ -76,23 +74,14 @@ cdef extern from "./video.h":
     #    (((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
     int v4l2_fourcc(unsigned char a, unsigned char b, unsigned char c, unsigned char d)
 
-    IF ENABLE_DEVICE_CAPS:
-        cdef struct v4l2_capability:
-            uint8_t driver[16]
-            uint8_t card[32]
-            uint8_t bus_info[32]
-            uint32_t version
-            uint32_t capabilities
-            uint32_t device_caps
-            uint32_t reserved[3]
-    ELSE:
-        cdef struct v4l2_capability:        #redefined without device_caps!
-            uint8_t driver[16]
-            uint8_t card[32]
-            uint8_t bus_info[32]
-            uint32_t version
-            uint32_t capabilities
-            uint32_t reserved[3]
+    cdef struct v4l2_capability:
+        uint8_t driver[16]
+        uint8_t card[32]
+        uint8_t bus_info[32]
+        uint32_t version
+        uint32_t capabilities
+        uint32_t device_caps
+        uint32_t reserved[3]
 
     cdef struct v4l2_pix_format:
         uint32_t width
@@ -262,9 +251,8 @@ def query_video_device(device="/dev/video0"):
                 "bus_info"      : vid_caps.bus_info,
                 "version"       : vid_caps.version,
                 "capabilities"  : [v for k,v in V4L2_CAPS.items() if vid_caps.capabilities & k],
-                }
-            IF ENABLE_DEVICE_CAPS:
-                info["device_caps"] = [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k]
+                "device_caps"   : [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k],
+            }
             return dict((k,v) for k,v in info.items() if v)
     except Exception as e:
         log("query_video_device(%s)", device, exc_info=True)
