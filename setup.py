@@ -187,8 +187,6 @@ qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
-if WIN32 or OSX:
-    Xdummy_ENABLED = False
 sound_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
@@ -365,7 +363,6 @@ if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")
 
 
-
 def should_rebuild(src_file, bin_file):
     if not os.path.exists(bin_file):
         return "no file"
@@ -438,7 +435,6 @@ if "pdf-doc" in sys.argv:
 
 if "unittests" in sys.argv:
     os.execv("./tests/unittests/run", ["run"])
-
 
 
 #*******************************************************************************
@@ -554,21 +550,11 @@ def toggle_modules(enabled, *module_names):
     else:
         remove_packages(*module_names)
 
-def add_data_files(target_dir, files):
-    #this is overriden below because cx_freeze uses the opposite structure (files first...). sigh.
-    assert isinstance(target_dir, str)
-    assert isinstance(files, (list, tuple))
-    data_files.append((target_dir, files))
 
+#always included:
+if modules_ENABLED:
+    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main")
 
-#for pretty printing of options:
-def print_option(prefix, k, v):
-    if isinstance(v, dict):
-        print("%s* %s:" % (prefix, k))
-        for kk,vv in v.items():
-            print_option(" "+prefix, kk, vv)
-    else:
-        print("%s* %s=%s" % (prefix, k, v))
 
 #*******************************************************************************
 # Utility methods for building with Cython
@@ -1581,6 +1567,10 @@ else:
             libexec_scripts += ["xdg-open", "gnome-open", "gvfs-open"]
         if server_ENABLED:
             libexec_scripts.append("auth_dialog")
+    def add_data_files(target_dir, files):
+        assert isinstance(target_dir, str)
+        assert isinstance(files, (list, tuple))
+        data_files.append((target_dir, files))
     add_data_files("libexec/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
@@ -1840,10 +1830,6 @@ if WIN32 or OSX:
                     "cryptography.fernet")
 
 
-#always included:
-if modules_ENABLED:
-    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main")
-
 if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
@@ -1861,15 +1847,8 @@ if data_ENABLED:
         ICONS += glob.glob("fs/share/xpra/icons/*.icns")
     if WIN32:
         ICONS += glob.glob("fs/share/xpra/icons/*.ico")
-    add_data_files("%s/icons" % share_xpra,          ICONS)
-    add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
-
-if annotate_ENABLED:
-    from Cython.Compiler import Options
-    Options.annotate = True
-    Options.docstrings = False
-    Options.buffer_max_dims = 3
-
+    add_data_files("%s/icons" % share_xpra,         ICONS)
+    add_data_files("%s/css" % share_xpra,           glob.glob("fs/share/xpra/css/*"))
 
 #*******************************************************************************
 if modules_ENABLED:
@@ -2240,6 +2219,11 @@ if ext_modules:
         "always_allow_keywords" : False,
         "unraisable_tracebacks" : True,
         }
+    if annotate_ENABLED:
+        from Cython.Compiler import Options
+        Options.annotate = True
+        Options.docstrings = False
+        Options.buffer_max_dims = 3
     if strict_ENABLED and verbose_ENABLED:
         compiler_directives.update({
             #"warn.undeclared"       : True,
@@ -2272,13 +2256,8 @@ def main():
         print("setup options:")
         if verbose_ENABLED:
             print("setup_options=%s" % (setup_options,))
-        try:
-            from xpra.util import repr_ellipsized as pv
-        except ImportError:
-            def pv(v):
-                return str(v)
-        for k,v in setup_options.items():
-            print_option("", k, pv(v))
+        for k, v in setup_options.items():
+            print(f"* {k}={v!r}")
         print("")
 
     setup(**setup_options)
