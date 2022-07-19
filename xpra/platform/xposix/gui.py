@@ -67,7 +67,7 @@ device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
-USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", is_unity() or (is_Ubuntu() and is_gnome()) or (is_gnome() and not is_Fedora()) or is_kde())
+USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
