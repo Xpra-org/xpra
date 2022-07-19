@@ -17,6 +17,7 @@ from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
+from xpra.common import FULL_INFO
 from xpra.os_util import (
     get_hex_uuid, bytestostr, strtobytes,
     )
@@ -24,7 +25,7 @@ from xpra.util import (
     flatten_dict, typedict, updict, ellipsizer, envint, envbool,
     csv, first_time, SERVER_SHUTDOWN,
     )
-from xpra.version_util import XPRA_VERSION
+from xpra.version_util import XPRA_VERSION, version_str
 from xpra.make_thread import start_thread
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.log import Logger
@@ -196,9 +197,10 @@ class ProxyInstance:
             linfo["client"] = int(self.client_last_ping_latency)
         if self.server_last_ping_latency:
             linfo["server"] = int(self.server_last_ping_latency)
+        version = XPRA_VERSION.split(".", 1)[0] if FULL_INFO else version_str()
         return {
             "proxy" : {
-                "version"    : XPRA_VERSION,
+                "version"    : version,
                 ""           : sinfo,
                 "latency"    : linfo,
                 },

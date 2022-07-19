@@ -15,7 +15,10 @@ from xpra.platform.gui import (
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
-from xpra.common import adjust_monitor_refresh_rate, get_refresh_rate_for_value
+from xpra.common import (
+    adjust_monitor_refresh_rate, get_refresh_rate_for_value,
+    FULL_INFO,
+    )
 from xpra.client.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
@@ -114,9 +117,10 @@ class DisplayClient(StubClientMixin):
             "show-desktop"  : True,
             "vrefresh"      : self.get_vrefresh(),
             }
-        wm_name = get_wm_name()
-        if wm_name:
-            caps["wm_name"] = wm_name
+        if FULL_INFO:
+            wm_name = get_wm_name()
+            if wm_name:
+                caps["wm_name"] = wm_name
 
         self._last_screen_settings = self.get_screen_settings()
         root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]

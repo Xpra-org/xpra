@@ -164,7 +164,7 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
          "cipher.padding.options"       : PADDING_OPTIONS,
          }
 
-def get_crypto_caps() -> dict:
+def get_crypto_caps(full=True) -> dict:
     if not backend:
         return {}
     caps = {
@@ -172,7 +172,8 @@ def get_crypto_caps() -> dict:
             "modes"         : {"options"    : MODES},
             "stretch"       : {"options"    : KEY_STRETCHING},
             }
-    caps.update(backend.get_info())
+    if full:
+        caps.update(backend.get_info())
     return caps
 
 

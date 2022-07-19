@@ -19,6 +19,7 @@ from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import load_binary_file
+from xpra.common import FULL_INFO
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
@@ -139,7 +140,7 @@ class GTKServerBase(ServerBase):
                 "cursor.default_size"   : display.get_default_cursor_size(),
                 "cursor.max_size"       : max_size,
                 })
-        if source.wants_versions:
+        if source.wants_versions and FULL_INFO:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 

@@ -63,6 +63,7 @@ from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
+from xpra.common import LOG_HELLO
 from xpra.util import (
     first_time, noerr, net_utf8,
     csv, merge_dicts, typedict, notypedict, flatten_dict,
@@ -1856,9 +1857,7 @@ class ServerCore:
     ######################################################################
     # hello / authentication:
     def send_version_info(self, proto, full=False):
-        version = XPRA_VERSION
-        if full:
-            version = version_str()
+        version = XPRA_VERSION.split(".", 1)[0] if full else version_str()
         proto.send_now(("hello", {"version" : version}))
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
@@ -1866,6 +1865,9 @@ class ServerCore:
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         c = typedict(capabilities)
+        if LOG_HELLO:
+            from xpra.util import print_nested_dict
+            print_nested_dict(c, print_fn=netlog.info)
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
         proto.enable_compressor_from_caps(c)
         if not proto.enable_encoder_from_caps(c):
@@ -2219,11 +2221,12 @@ class ServerCore:
 
     def make_hello(self, source=None):
         now = time()
-        capabilities = flatten_dict(get_network_caps())
+        capabilities = flatten_dict(get_network_caps(FULL_INFO))
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(self.get_minimal_server_info()))
+        version = XPRA_VERSION.split(".", 1)[0] if FULL_INFO else version_str()
         capabilities.update({
-                        "version"               : XPRA_VERSION,
+                        "version"               : version,
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
@@ -2307,15 +2310,9 @@ class ServerCore:
         return get_thread_info(proto)
 
     def get_minimal_server_info(self) -> dict:
-        now = time()
         info = {
             "mode"              : self.get_server_mode(),
             "session-type"      : self.session_type,
-            "type"              : "Python",
-            "python"            : {"version" : platform.python_version()},
-            "start_time"        : int(self.start_time),
-            "current_time"      : int(now),
-            "elapsed_time"      : int(now - self.start_time),
             "uuid"              : self.uuid,
             "machine-id"        : get_machine_id(),
             }
@@ -2323,7 +2320,15 @@ class ServerCore:
 
     def get_server_info(self) -> dict:
         #this function is for non UI thread info
-        return get_server_info()
+        info = get_server_info()
+        now = time()
+        info.update({
+            "type"              : "Python",
+            "python"            : {"version" : platform.python_version()},
+            "start_time"        : int(self.start_time),
+            "current_time"      : int(now),
+            "elapsed_time"      : int(now - self.start_time),
+            })
 
     def get_server_load_info(self) -> dict:
         if not POSIX:

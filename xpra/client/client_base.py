@@ -14,7 +14,7 @@ from time import monotonic
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
-from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO
+from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
@@ -412,7 +412,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def make_hello_base(self):
-        capabilities = flatten_dict(get_network_caps())
+        capabilities = flatten_dict(get_network_caps(FULL_INFO))
         #add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
@@ -424,6 +424,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "username"              : self.username,    #for authentication
                 "compression_level"     : self.compression_level,
                 })
+        if self.display:
+            capabilities["display"] = self.display
         if FULL_INFO:
             capabilities.update({
                 "client_type"           : self.client_type(),
@@ -441,10 +443,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             capabilities.update({
                 "version"               : XPRA_VERSION.split(".", 1)[0],
                 })
-
         capabilities.update(self.get_file_transfer_features())
-        if self.display:
-            capabilities["display"] = self.display
         def up(prefix, d):
             updict(capabilities, prefix, d)
         up("build",     self.get_version_info())
@@ -953,6 +952,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         raise InitExit(EXIT_ENCRYPTION, "no encryption key")
 
     def _process_hello(self, packet):
+        if LOG_HELLO:
+            from xpra.util import print_nested_dict
+            print_nested_dict(packet[1], print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
         if not self.password_sent and self.has_password():
             p = self._protocol

@@ -121,20 +121,21 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps() -> dict:
+def get_compression_caps(full=True) -> dict:
     caps = {}
     for x in ALL_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:
             continue
         ccaps = caps.setdefault(x, {})
-        if c.version:
-            ccaps["version"] = c.version
-        if c.python_version:
-            pcaps = ccaps.setdefault("python-%s" % x, {})
-            pcaps[""] = True
-            if c.python_version is not None:
-                pcaps["version"] = c.python_version
+        if full:
+            if c.version:
+                ccaps["version"] = c.version
+            if c.python_version:
+                pcaps = ccaps.setdefault("python-%s" % x, {})
+                pcaps[""] = True
+                if c.python_version is not None:
+                    pcaps["version"] = c.python_version
         ccaps[""] = True
     return caps
 

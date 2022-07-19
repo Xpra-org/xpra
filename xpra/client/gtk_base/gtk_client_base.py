@@ -21,6 +21,7 @@ from xpra.os_util import (
     bytestostr, strtobytes, hexstr, load_binary_file,
     WIN32, OSX, POSIX, is_Wayland,
     )
+from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -813,7 +814,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["encoding.transparency"] = self.has_transparency()
-        capabilities.update(flatten_dict(get_gtk_version_info()))
+        if FULL_INFO:
+            capabilities.update(flatten_dict(get_gtk_version_info()))
         if EXPORT_ICON_DATA:
             #tell the server which icons GTK can use
             #so it knows when it should supply one as fallback
@@ -876,7 +878,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     "icons.size"        : (64, 64),     #size we want
                     "icons.max_size"    : (128, 128),   #limit
                     })
-        capabilities["opengl"] = self.opengl_props
+        if FULL_INFO:
+            capabilities["opengl"] = self.opengl_props
         return capabilities
 
 

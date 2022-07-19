@@ -93,7 +93,7 @@ def init_all():
     init_encoders(*(list(ALL_ENCODERS)+["none"]))
 
 
-def get_packet_encoding_caps() -> dict:
+def get_packet_encoding_caps(full=True) -> dict:
     caps = {}
     for name in ALL_ENCODERS:
         d = caps.setdefault(name, {})
@@ -101,7 +101,8 @@ def get_packet_encoding_caps() -> dict:
         d[""] = e is not None
         if e is None:
             continue
-        d["version"] = e.version
+        if full:
+            d["version"] = e.version
     return caps
 
 def get_enabled_encoders(order=ALL_ENCODERS):
