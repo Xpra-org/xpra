@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envint, csv
+from xpra.util import envint, envbool, csv
 
 
 RESOLUTION_ALIASES = {
@@ -55,6 +55,7 @@ MAX_WINDOW_SIZE = 2**15-2**13
 
 GROUP = os.environ.get("XPRA_GROUP", "xpra")
 
+FULL_INFO = envbool("XPRA_FULL_INFO", True)
 
 #MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 512)
 MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)

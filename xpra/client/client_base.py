@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,7 +14,7 @@ from time import monotonic
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
-from xpra.common import SPLASH_EXIT_DELAY
+from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
@@ -420,20 +420,28 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 capabilities["digest"].append(digest)
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
-                "version"               : XPRA_VERSION,
-                "websocket.multi-packet": True,
-                "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
-                "session-id"            : self.session_id,
                 "username"              : self.username,    #for authentication
-                "user"                  : get_username(),
-                "name"                  : get_name(),
+                "compression_level"     : self.compression_level,
+                })
+        if FULL_INFO:
+            capabilities.update({
                 "client_type"           : self.client_type(),
+                "session-id"            : self.session_id,
+                "version"               : XPRA_VERSION,
                 "python.version"        : sys.version_info[:3],
                 "python.bits"           : BITS,
-                "compression_level"     : self.compression_level,
+                "hostname"              : socket.gethostname(),
+                "user"                  : get_username(),
+                "name"                  : get_name(),
                 "argv"                  : sys.argv,
                 })
+        else:
+            #only show major number
+            capabilities.update({
+                "version"               : XPRA_VERSION.split(".", 1)[0],
+                })
+
         capabilities.update(self.get_file_transfer_features())
         if self.display:
             capabilities["display"] = self.display
@@ -463,7 +471,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "key_salt"              : key_salt,
                 "key_size"              : DEFAULT_KEYSIZE,
                 "key_hash"              : DEFAULT_KEY_HASH,
-                "key_stretch"           : "PBKDF2",
+                "key_stretch"           : DEFAULT_KEY_STRETCH,
                 "key_stretch_iterations": iterations,
                 "padding"               : padding,
                 "padding.options"       : PADDING_OPTIONS,
@@ -477,7 +485,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return capabilities
 
     def get_version_info(self) -> dict:
-        return get_version_info()
+        return get_version_info(FULL_INFO)
 
     def make_hello(self):
         capabilities = {

@@ -63,7 +63,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.name = c.strget("name")
         self.argv = c.strtupleget("argv")
         self.sharing = c.boolget("share")
-        self.client_type = c.strget("client_type", "PyGTK")
+        self.client_type = c.strget("client_type", "")
         self.client_platform = c.strget("platform")
         self.client_machine = c.strget("platform.machine")
         self.client_processor = c.strget("platform.processor")
@@ -86,22 +86,34 @@ class ClientInfoMixin(StubSourceMixin):
         log("client uuid %s", self.uuid)
 
     def get_connect_info(self) -> list:
-        cinfo = []
         #client platform / version info:
-        pinfo = ""
+        pinfo = [std(self.client_type)]
         if self.client_platform:
-            pinfo = " %s" % platform_name(self.client_platform, self.client_linux_distribution or self.client_release)
+            pinfo += [platform_name(self.client_platform, self.client_linux_distribution or self.client_release)]
         if self.client_session_type:
-            pinfo += " %s" % self.client_session_type
-        revinfo = ""
-        if self.client_revision and isinstance(self.client_revision, int):
-            revinfo="-r%s" % self.client_revision
-        bitsstr = ""
-        if self.client_bits:
-            bitsstr = " %i-bit" % self.client_bits
-        cinfo.append("%s%s client version %s%s%s" % (
-            std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
-        )
+            pinfo += [self.client_session_type]
+        revinfo = f"-r{self.client_revision}" if isinstance(self.client_revision, int) else ""
+        bitsstr = f" {self.client_bits}-bit" if self.client_bits else ""
+        pinfo += [f"client version {std(self.client_version)}{std(revinfo)}{bitsstr}"]
+        cinfo = [" ".join(x for x in pinfo if x)]
+        #connection info:
+        if self.hostname or self.username:
+            msg = "connected from %r" % std(self.hostname or "unknown host")
+            if self.username:
+                msg += " as '%s'" % std(self.username)
+                if self.name and self.name!=self.username:
+                    msg += " - '%s'" % std(self.name)
+            if msg:
+                cinfo.append(msg)
+        #proxy info
+        if self.client_proxy:
+            msg = "via %s proxy version %s" % (
+                platform_name(self.proxy_platform, self.proxy_release),
+                std(self.proxy_version or "unknown")
+                )
+            if self.proxy_hostname:
+                msg += " on '%s'" % std(self.proxy_hostname)
+            cinfo.append(msg)
         #opengl info:
         if self.client_opengl:
             msg = "OpenGL is "
@@ -113,41 +125,26 @@ class ClientInfoMixin(StubSourceMixin):
                 if driver_info:
                     msg += " with %s" % driver_info
             cinfo.append(msg)
-        #connection info:
-        msg = ""
-        if self.hostname:
-            msg += "connected from '%s'" % std(self.hostname)
-        if self.username:
-            msg += " as '%s'" % std(self.username)
-            if self.name and self.name!=self.username:
-                msg += " - '%s'" % std(self.name)
-        if msg:
-            cinfo.append(msg)
-        #proxy info
-        if self.client_proxy:
-            msg = "via %s proxy version %s" % (
-                platform_name(self.proxy_platform, self.proxy_release),
-                std(self.proxy_version or "unknown")
-                )
-            if self.proxy_hostname:
-                msg += " on '%s'" % std(self.proxy_hostname)
-            cinfo.append(msg)
         return cinfo
 
 
     def get_info(self) -> dict:
         info = {
-                "version"           : self.client_version or "unknown",
-                "revision"          : self.client_revision or "unknown",
-                "platform_name"     : platform_name(self.client_platform, self.client_release),
-                "session-type"      : self.client_session_type or "",
-                "session-type.full" : self.client_session_type_full or "",
                 "sharing"           : bool(self.sharing),
                 }
+        for k, v in {
+                "version"           : self.client_version,
+                "revision"          : self.client_revision,
+                "platform_name"     : platform_name(self.client_platform, self.client_release),
+                "session-type"      : self.client_session_type,
+                "session-type.full" : self.client_session_type_full,
+                }.items():
+            if v and v!="unknown":
+                info[k] = v
         def addattr(k, name=None):
             v = getattr(self, (name or k).replace("-", "_"))
             #skip empty values:
-            if v is not None:
+            if v:
                 info[k] = v
         for k in ("session-id", "uuid", "user", "name", "argv"):
             addattr(k)

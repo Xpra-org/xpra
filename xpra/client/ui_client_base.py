@@ -12,6 +12,7 @@ from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
+from xpra.common import FULL_INFO
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.net_util import get_info as get_net_info
@@ -84,7 +85,6 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
-FULL_INFO = envbool("XPRA_FULL_INFO", True)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", False)
 
 
@@ -340,7 +340,9 @@ class UIXpraClient(ClientBaseClass):
         self.send("start-command", name, command, ignore, sharing)
 
     def get_version_info(self) -> dict:
-        return get_version_info_full()
+        if FULL_INFO:
+            return get_version_info_full()
+        return super().get_version_info()
 
 
     ######################################################################
@@ -380,7 +382,6 @@ class UIXpraClient(ClientBaseClass):
     # hello:
     def make_hello(self):
         caps = XpraClientBase.make_hello(self)
-        caps["session-type"] = get_session_type()
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
         if POSIX and not is_Wayland():
@@ -388,12 +389,14 @@ class UIXpraClient(ClientBaseClass):
             try:
                 from xpra.server.server_uuid import get_uuid, get_mode  #pylint: disable=import-outside-toplevel
                 if get_mode()!="shadow":
-                    caps["server_uuid"] = get_uuid() or ""
+                    uuid = get_uuid()
+                    if uuid:
+                        caps["server_uuid"] = uuid
             except ImportError:
                 pass
         for x in (#generic feature flags:
             "wants_events", "setting-change",
-            "xdg-menu-update",
+            "xdg-menu-update", "mouse",
             ):
             caps[x] = True
         caps.update({
@@ -402,15 +405,16 @@ class UIXpraClient(ClientBaseClass):
             "lock"                      : self.client_lock,
             "xdg-menu"                  : self.start_new_commands,
             })
-        caps.update({"mouse" : True})
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))
         def u(prefix, c):
             updict(caps, prefix, c, flatten_dicts=False)
         u("control_commands",   self.get_control_commands_caps())
-        u("platform",           get_platform_info())
-        u("opengl",             self.opengl_props)
+        if FULL_INFO:
+            u("platform",           get_platform_info())
+            u("opengl",             self.opengl_props)
+            caps["session-type"] = get_session_type()
         return caps
 
 
@@ -604,7 +608,7 @@ class UIXpraClient(ClientBaseClass):
         cbs = self._on_server_setting_changed.get(setting)
         if cbs:
             for cb in cbs:
-                log("setting_changed(%s, %s) calling %s", setting, value, cb)
+                log("setting_changed(%s, %s) calling %s", setting, ellipsizer(value, limit=200), cb)
                 cb(setting, value)
 
 

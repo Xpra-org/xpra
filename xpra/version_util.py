@@ -136,20 +136,21 @@ def get_host_info(obfuscate=False) -> dict:
             })
     return info
 
-def get_version_info() -> dict:
+def get_version_info(full=True) -> dict:
     props = {
              "version"  : XPRA_VERSION
              }
-    try:
-        from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
-        props.update({
-            "local_modifications"   : LOCAL_MODIFICATIONS,
-            "revision"              : REVISION,
-            "branch"                : BRANCH,
-            "commit"                : COMMIT,
-            })
-    except ImportError as e:
-        warn("missing some source information: %s", e)
+    if full:
+        try:
+            from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
+            props.update({
+                "local_modifications"   : LOCAL_MODIFICATIONS,
+                "revision"              : REVISION,
+                "branch"                : BRANCH,
+                "commit"                : COMMIT,
+                })
+        except ImportError as e:
+            warn("missing some source information: %s", e)
     return props
 
 def get_version_info_full() -> dict:
