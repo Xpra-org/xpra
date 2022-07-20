@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from pycuda import driver       #@UnresolvedImport
 
 from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -15,6 +14,7 @@ log = Logger("cuda", "nvfbc")
 
 with numpy_import_lock:
     import numpy
+    from pycuda import driver       #@UnresolvedImport
 
 
 class CUDAImageWrapper(ImageWrapper):
