@@ -332,7 +332,7 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     display = verify_gdk_display(display_name)
     if not display:
         return 1
-    log("GDK can access the display")
+    log(f"GDK can access the display {display_name!r}")
     return 0
 
 def write_displayfd(display_name, fd):
@@ -349,8 +349,8 @@ def write_displayfd(display_name, fd):
         assert displayfd.write_displayfd(fd, display_no), "timeout"
     except Exception as e:
         log.error("write_displayfd failed", exc_info=True)
-        log.error("Error: failed to write '%s' to fd=%s", display_name, fd)
-        log.error(" %s", str(e) or type(e))
+        log.error(f"Error: failed to write {display_name} to fd={fd}")
+        log.estr(e)
 
 
 def get_session_dir(mode, sessions_dir, display_name, uid):
@@ -409,32 +409,36 @@ def save_session_file(filename, contents, uid=None, gid=None):
         from xpra.log import Logger
         log = Logger("server")
         log("save_session_file", exc_info=True)
-        log.error("Error saving session file '%s'", path)
-        log.error(" %s", e)
+        log.error(f"Error saving session file {path!r}")
+        log.estr(e)
     return path
 
 def rm_session_dir():
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
         return
+    from xpra.log import Logger
     try:
         session_files = os.listdir(session_dir)
     except OSError as e:
-        from xpra.log import Logger
         log = Logger("server")
         log("os.listdir(%s)", session_dir, exc_info=True)
-        log.warn("Warning: cannot access '%s'", session_dir)
-        log.warn(" %s", e)
+        log.error(f"Error: cannot access {session_dir!r}")
+        log.estr(e)
         return
-    if not session_files:
-        try:
-            os.rmdir(session_dir)
-        except OSError as e:
-            from xpra.log import Logger
-            log = Logger("server")
-            log("rmdir(%s)", session_dir, exc_info=True)
-            log.error("Error: failed to remove session directory '%s':", session_dir)
-            log.error(" %s", e)
+    if session_files:
+        log.info(f"session directory {session_dir!r} was not removed")
+        log.info(f" as some files still exist:")
+        for f in session_files:
+            log.info(f" {f!r}")
+        return
+    try:
+        os.rmdir(session_dir)
+    except OSError as e:
+        log = Logger("server")
+        log(f"rmdir({session_dir})", exc_info=True)
+        log.error(f"Error: failed to remove session directory {session_dir!r}")
+        log.estr(e)
 
 def clean_session_files(*filenames):
     if not CLEAN_SESSION_FILES:
@@ -449,9 +453,9 @@ def clean_session_files(*filenames):
             except OSError as e:
                 from xpra.log import Logger
                 log = Logger("server")
-                log("clean_session_files%s", filenames, exc_info=True)
-                log.error("Error removing session file '%s'", filename)
-                log.error(" %s", e)
+                log(f"clean_session_files{filenames}", exc_info=True)
+                log.error(f"Error removing session file {filename}")
+                log.estr(e)
     rm_session_dir()
 
 SERVER_SAVE_SKIP_OPTIONS = (
@@ -523,8 +527,8 @@ def apply_config(opts, mode, cmdline):
         if k in SERVER_LOAD_SKIP_OPTIONS:
             continue
         incmdline = (
-            ("--%s" % k) in cmdline or ("--no-%s" % k) in cmdline or
-            any(c.startswith("--%s=" % k) for c in cmdline)
+            f"--{k}" in cmdline or f"--no-{k}" in cmdline or
+            any(c.startswith(f"--{k}=") for c in cmdline)
             )
         if incmdline:
             continue
@@ -533,10 +537,10 @@ def apply_config(opts, mode, cmdline):
             continue
         fn = k.replace("-", "_")
         if not hasattr(upgrade_config, fn):
-            warn("%s not found in saved config" % k)
+            warn(f"{k!r} not found in saved config")
             continue
         if not hasattr(opts, fn):
-            warn("%s not found in config" % k)
+            warn(f"{k!r} not found in config")
             continue
         value = getattr(upgrade_config, fn)
         setattr(opts, fn, value)
@@ -551,8 +555,7 @@ def reload_dbus_attributes(display_name):
     except ValueError:
         dbus_pid = 0
     dbus_env_data = load_session_file("dbus.env")
-    dbuslog("reload_dbus_attributes(%s) found dbus_pid=%s, dbus_env_data=%s",
-            display_name, dbus_pid, dbus_env_data)
+    dbuslog(f"reload_dbus_attributes({display_name}) found dbus_pid={dbus_pid}, dbus_env_data={dbus_env_data}")
     dbus_env = {}
     if dbus_env_data:
         for line in dbus_env_data.splitlines():
@@ -560,8 +563,7 @@ def reload_dbus_attributes(display_name):
                 continue
             parts = line.split(b"=", 1)
             dbus_env[parts[0]] = parts[1]
-    dbuslog("reload_dbus_attributes(%s) dbus_env=%s",
-            display_name, dbus_env)
+    dbuslog(f"reload_dbus_attributes({display_name}) dbus_env={dbus_env}")
     dbus_address = dbus_env.get(b"DBUS_SESSION_BUS_ADDRESS")
     if not (dbus_pid and dbus_address):
         #less reliable: get it from the wminfo output:
@@ -578,10 +580,10 @@ def reload_dbus_attributes(display_name):
             if dbus_address:
                 dbus_env[b"DBUS_SESSION_BUS_ADDRESS"] = dbus_address.encode()
     if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
-        dbuslog("dbus pid %s is no longer valid", dbus_pid)
+        dbuslog(f"dbus pid {dbus_pid} is no longer valid")
         dbus_pid = 0
     if dbus_pid and dbus_address:
-        dbuslog("retrieved dbus pid: %s, environment: %s", dbus_pid, dbus_env)
+        dbuslog(f"retrieved dbus pid: {dbus_pid}, environment: {dbus_env}")
     return dbus_pid, dbus_env
 
 
