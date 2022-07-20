@@ -11,19 +11,19 @@ import unittest
 from xpra.log import add_debug_category, remove_debug_category
 from xpra.os_util import nomodule_context, WIN32
 from xpra.scripts.parsing import (
-    parse_ssh_string, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
+    parse_ssh_option, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
     )
 
 class TestParsing(unittest.TestCase):
 
     def test_ssh_parsing(self):
-        assert parse_ssh_string("auto")[0] in ("paramiko", "ssh")
-        assert parse_ssh_string("ssh")==["ssh"]
-        assert parse_ssh_string("ssh -v")==["ssh", "-v"]
+        assert parse_ssh_option("auto")[0] in ("paramiko", "ssh")
+        assert parse_ssh_option("ssh")==["ssh"]
+        assert parse_ssh_option("ssh -v")==["ssh", "-v"]
         with nomodule_context("paramiko"):
             add_debug_category("ssh")
             def pssh(s, e):
-                r = parse_ssh_string(s)[0]
+                r = parse_ssh_option(s)[0]
                 assert r==e, "expected %s got %s" % (e, r)
             if WIN32:
                 pssh("auto", "plink.exe")

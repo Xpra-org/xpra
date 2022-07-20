@@ -36,7 +36,7 @@ from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
     )
-from xpra.scripts.parsing import is_local, add_ssh_args, parse_ssh_string, add_ssh_proxy_args
+from xpra.scripts.parsing import is_local, add_ssh_args, parse_ssh_option, add_ssh_proxy_args
 from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
@@ -144,7 +144,7 @@ class ApplicationWindow:
         self.current_error = None
 
     def parse_ssh(self):
-        ssh_cmd = parse_ssh_string(self.config.ssh)[0].strip().lower()
+        ssh_cmd = parse_ssh_option(self.config.ssh)[0].strip().lower()
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
@@ -721,7 +721,7 @@ class ApplicationWindow:
                     username = username[:ppos]
             if self.config.ssh_port and self.config.ssh_port!=22:
                 params["port"] = self.config.ssh_port
-            ssh_cmd = parse_ssh_string(self.config.ssh)
+            ssh_cmd = parse_ssh_option(self.config.ssh)
             ssh_cmd_0 = ssh_cmd[0].strip().lower()
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
             self.is_paramiko = ssh_cmd_0 =="paramiko"

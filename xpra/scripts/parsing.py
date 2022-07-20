@@ -518,7 +518,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
                         vnc_uri += ":%i/" % vnc_port
                 desc["display_as_args"] = [vnc_uri]
         #ie: ssh=["/usr/bin/ssh", "-v"]
-        ssh = parse_ssh_string(opts.ssh)
+        ssh = parse_ssh_option(opts.ssh)
         full_ssh = ssh[:]
 
         #maybe restrict to win32 only?
@@ -685,7 +685,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     error_cb("unknown format for display name: %s" % display_name)
 
 
-def parse_ssh_string(ssh_setting):
+def parse_ssh_option(ssh_setting):
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
