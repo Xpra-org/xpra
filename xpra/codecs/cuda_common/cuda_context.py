@@ -10,12 +10,15 @@
 import os
 from time import monotonic
 from threading import RLock
-import pycuda               #@UnresolvedImport
-from pycuda import driver   #@UnresolvedImport
 
+from xpra.codecs.nv_util import numpy_import_lock
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
 from xpra.os_util import load_binary_file
 from xpra.log import Logger
+
+with numpy_import_lock:
+    import pycuda               #@UnresolvedImport
+    from pycuda import driver   #@UnresolvedImport
 
 log = Logger("cuda")
 
