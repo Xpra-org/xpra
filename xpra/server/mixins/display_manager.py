@@ -7,7 +7,7 @@
 from xpra.util import engs, log_screen_sizes
 from xpra.os_util import bytestostr
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.common import get_refresh_rate_for_value
+from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -127,7 +127,7 @@ class DisplayManager(StubServerMixin):
             "cursors"       : self.cursors,
             "desktop_size"  : self._get_desktop_size_capability(source, root_w, root_h),
             }
-        if self.opengl_props:
+        if FULL_INFO and self.opengl_props:
             caps["opengl"] = self.opengl_props
         return caps
 
