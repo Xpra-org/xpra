@@ -10,7 +10,7 @@ import socket
 import errno
 import stat
 
-from xpra.os_util import get_util_logger, osexpand, umask_context
+from xpra.os_util import get_util_logger, osexpand, umask_context, is_socket
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
 from xpra.platform import platform_import
 
@@ -30,22 +30,6 @@ def strip_display_prefix(s):
 def debug(msg, *args, **kwargs):
     log = get_util_logger()
     log(msg, *args, **kwargs)
-
-def is_socket(sockpath, check_uid=None):
-    try:
-        s = os.stat(sockpath)
-    except OSError as e:
-        debug("is_socket(%s) path cannot be accessed: %s", sockpath, e)
-        #socket cannot be accessed
-        return False
-    if not stat.S_ISSOCK(s.st_mode):
-        return False
-    if check_uid is not None:
-        if s.st_uid!=check_uid:
-            #socket uid does not match
-            debug("is_socket(%s) uid %i does not match %s", sockpath, s.st_uid, check_uid)
-            return False
-    return True
 
 
 class DotXpra:

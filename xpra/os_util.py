@@ -8,6 +8,7 @@
 import re
 import os
 import sys
+import stat
 import signal
 import uuid
 import time
@@ -937,3 +938,19 @@ def get_peercred(sock):
         #use getpeereid
         #then pwd to get the gid?
     return None
+
+def is_socket(sockpath, check_uid=None):
+    try:
+        s = os.stat(sockpath)
+    except OSError as e:
+        get_util_logger().debug(f"is_socket({sockpath}) path cannot be accessed: {e}")
+        #socket cannot be accessed
+        return False
+    if not stat.S_ISSOCK(s.st_mode):
+        return False
+    if check_uid is not None:
+        if s.st_uid!=check_uid:
+            #socket uid does not match
+            get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
+            return False
+    return True
