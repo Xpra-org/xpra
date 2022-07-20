@@ -467,7 +467,7 @@ class Logger:
     def error(self, msg : str, *args, **kwargs):
         self.log(logging.ERROR, msg, *args, **kwargs)
     def estr(self, e, **kwargs):
-        self.error(logging.ERROR, " %s" % (str(e) or type(e)), **kwargs)
+        self.error(" %s" % (str(e) or type(e), ), **kwargs)
 
 
 class CaptureHandler(logging.Handler):
