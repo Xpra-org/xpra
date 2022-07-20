@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,7 +12,7 @@ from time import monotonic
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, csv,
     SERVER_EXIT, CONNECTION_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
@@ -359,7 +359,8 @@ class ServerBase(ServerBaseClass):
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
-
+            #deal with ssh agent forwarding:
+            self.accept_client_ssh_agent(c.strget("uuid"), c.strget("ssh-auth-sock"))
         self.accept_client(proto, c)
         #use blocking sockets from now on:
         if not WIN32:
@@ -392,6 +393,32 @@ class ServerBase(ServerBaseClass):
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
 
+    def accept_client_ssh_agent(self, uuid, ssh_auth_sock):
+        sshlog = Logger("server", "ssh")
+        if not uuid:
+            sshlog("cannot setup ssh agent without client uuid")
+            return
+        from xpra.scripts.server import set_ssh_agent, get_ssh_agent_path
+        #perhaps the agent sock path for this uuid already exists:
+        #ie: /run/user/1000/xpra/10/$UUID
+        sockpath = get_ssh_agent_path(uuid)
+        sshlog(f"get_ssh_agent_path({uuid})={sockpath}")
+        if not os.path.exists(sockpath) or not is_socket(sockpath):
+            #perhaps this is a local client,
+            #and we can find its agent socket and create the symlink now:
+            sshlog(f"client supplied ssh-auth-sock={ssh_auth_sock}")
+            if os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
+                try:
+                    os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
+                except OSError as e:
+                    sshlog(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
+                    sshlog.error("Error setting up ssh agent socket symlink")
+                    sshlog.estr(e)
+                    sockpath = None
+        if sockpath and os.path.exists(sockpath):
+            sshlog(f"setting ssh agent link to: {uuid}")
+            set_ssh_agent(uuid)
+
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int):
         #adds try:except around parse hello ui code:
@@ -411,7 +438,7 @@ class ServerBase(ServerBaseClass):
 
             if self._closing:
                 raise Exception("server is shutting down")
-        except Exception as e:
+        except Exception:
             #log exception but don't disclose internal details to the client
             p = ss.protocol
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))

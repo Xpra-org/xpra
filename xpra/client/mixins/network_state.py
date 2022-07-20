@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -20,6 +20,7 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
+SSH_AGENT = envbool("XPRA_SSH_AGENT", True)
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 MIN_PING_TIMEOUT = envint("XPRA_MIN_PING_TIMEOUT", 2)
@@ -101,6 +102,16 @@ class NetworkState(StubClientMixin):
             "network-state" : True,
             "info-namespace" : True,            #v4 servers assume this is always supported
             }
+        ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
+        if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
+            #ensure agent forwarding is actually requested?
+            #(checking the socket type is not enough:
+            # one could still bind mount the path and connect via tcp! why though?)
+            #meh: if the transport doesn't have agent forwarding enabled,
+            # then it won't create a server-side socket
+            # and nothing will happen,
+            # exposing this client-side path is no big deal
+            caps["ssh-auth-sock"] = ssh_auth_sock
         #get socket speed if we have it:
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})

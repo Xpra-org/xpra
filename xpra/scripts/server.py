@@ -51,6 +51,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
+SSH_AGENT_DISPATCH = envbool("XPRA_SSH_AGENT_DISPATCH", POSIX)
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
@@ -413,24 +414,79 @@ def save_session_file(filename, contents, uid=None, gid=None):
         log.estr(e)
     return path
 
-def rm_session_dir():
+def ssh_dir_path():
+    session_dir = os.environ["XPRA_SESSION_DIR"]
+    return os.path.join(session_dir, "ssh")
+
+def setup_ssh_auth_sock():
+    #the 'ssh' dir contains agent socket symlinks to the real agent socket
+    #and we can just update the "agent" symlink
+    #which is the one that applications are told to use
+    ssh_dir = ssh_dir_path()
+    if not os.path.exists(ssh_dir):
+        os.mkdir(ssh_dir, 0o700)
+    #ie: "/run/user/1000/xpra/10/ssh/agent"
+    agent_sockpath = get_ssh_agent_path("agent")
+    #the current value from the environment:
+    #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
+    # or "SSH_AUTH_SOCK=/run/user/1000/keyring/ssh"
+    cur_sockpath = os.environ.pop("SSH_AUTH_SOCK", None)
+    #ie: "/run/user/1000/xpra/10/ssh/agent.default"
+    agent_default_sockpath = get_ssh_agent_path("agent.default")
+    if cur_sockpath and cur_sockpath!=agent_sockpath and not os.path.exists(agent_default_sockpath):
+        #the current agent socket will be the default:
+        #ie: "agent.default" -> "/run/user/1000/keyring/ssh"
+        os.symlink(cur_sockpath, agent_default_sockpath)
+    set_ssh_agent()
+    os.environ["SSH_AUTH_SOCK"] = agent_sockpath
+    return agent_sockpath
+
+def get_ssh_agent_path(filename):
+    ssh_dir = ssh_dir_path()
+    assert "/" not in filename and ".." not in filename
+    return os.path.join(ssh_dir, filename or "agent.default")
+
+def set_ssh_agent(filename=None):
+    ssh_dir = ssh_dir_path()
+    if os.path.isabs(filename):
+        sockpath = filename
+    else:
+        filename = filename or "agent.default"
+        sockpath = get_ssh_agent_path(filename)
+    if not os.path.exists(sockpath):
+        return
+    agent_sockpath = os.path.join(ssh_dir, "agent")
+    try:
+        if os.path.exists(agent_sockpath):
+            os.unlink(agent_sockpath)
+        os.symlink(filename, agent_sockpath)
+    except OSError as e:
+        from xpra.log import Logger
+        log = Logger("server", "ssh")
+        log(f"set_ssh_agent({filename})", exc_info=True)
+        log.error(f"Error: failed to set ssh agent socket path to {filename!r}")
+        log.estr(e)
+
+def rm_session_dir(warn=True):
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
         return
     from xpra.log import Logger
+    log = Logger("server")
     try:
         session_files = os.listdir(session_dir)
     except OSError as e:
-        log = Logger("server")
         log("os.listdir(%s)", session_dir, exc_info=True)
-        log.error(f"Error: cannot access {session_dir!r}")
-        log.estr(e)
+        if warn:
+            log.error(f"Error: cannot access {session_dir!r}")
+            log.estr(e)
         return
     if session_files:
-        log.info(f"session directory {session_dir!r} was not removed")
-        log.info(f" as some files still exist:")
-        for f in session_files:
-            log.info(f" {f!r}")
+        if warn:
+            log.info(f"session directory {session_dir!r} was not removed")
+            log.info(f" because it still contains some files:")
+            for f in session_files:
+                log.info(f" {f!r}")
         return
     try:
         os.rmdir(session_dir)
@@ -449,14 +505,19 @@ def clean_session_files(*filenames):
             clean_session_files(*glob.glob(path))
         elif os.path.exists(path):
             try:
-                os.unlink(path)
+                #only recurse down specific subdirectories:
+                if os.path.isdir(path) and SSH_AGENT_DISPATCH and filename=="ssh":
+                    import shutil
+                    shutil.rmtree(path)
+                else:
+                    os.unlink(path)
             except OSError as e:
                 from xpra.log import Logger
                 log = Logger("server")
                 log(f"clean_session_files{filenames}", exc_info=True)
                 log.error(f"Error removing session file {filename}")
                 log.estr(e)
-    rm_session_dir()
+    rm_session_dir(False)
 
 SERVER_SAVE_SKIP_OPTIONS = (
     "systemd-run",
@@ -1293,6 +1354,16 @@ def _do_run_server(script_file, cmdline,
                     write_session_file("dbus.env", dbus_env_data)
         if dbus_env:
             os.environb.update(dbus_env)
+
+    if SSH_AGENT_DISPATCH and (not shadowing or proxying):
+        progress(50, "setup ssh agent forwarding")
+        try:
+            protected_env["SSH_AUTH_SOCK"] = setup_ssh_auth_sock()
+        except Exception as e:
+            log("ssh agent forwarding setup error", exc_info=True)
+            log.error("Error setting up ssh agent forwarding")
+            log.estr(e)
+            progress(50, "error setting up ssh agent forwarding: %s" % e)
 
     if not proxying:
         if POSIX and not OSX:

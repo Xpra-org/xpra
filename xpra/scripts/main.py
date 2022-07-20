@@ -38,7 +38,7 @@ from xpra.os_util import (
     bytestostr, use_tty, osexpand,
     OSEnvContext,
     set_proc_title,
-    is_systemd_pid1,
+    is_systemd_pid1, is_socket,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -56,6 +56,7 @@ from xpra.scripts.config import (
     make_defaults_struct, parse_bool, has_sound_support, name_to_field,
     )
 from xpra.log import is_debug_enabled, Logger, get_debug_args
+from platform import _follow_symlinks
 assert callable(error), "used by modules importing this function from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -2512,6 +2513,54 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
+def setup_proxy_ssh_socket(sessions_dir, cmdline, display_name):
+    if not display_name or not display_name.startswith(":"):
+        return
+    sshlog = Logger("ssh")
+    #this is the socket path that the ssh client wants us to use:
+    #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
+    auth_sock = os.environ.get("SSH_AUTH_SOCK")
+    if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
+        sshlog(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
+        return
+    #locate the ssh agent uuid,
+    #which is used to derive the agent path symlink
+    #that the server will want to use for this connection,
+    #newer clients pass it to the remote proxy command process using an env var:
+    agent_uuid = None
+    for x in cmdline:
+        if x.startswith("--env=SSH_AGENT_UUID="):
+            agent_uuid = x[len("--env=SSH_AGENT_UUID="):]
+            break
+    #prevent illegal paths:
+    if not agent_uuid or agent_uuid.find("/")>=0 or agent_uuid.find(".")>=0:
+        sshlog(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
+        return
+    from xpra.scripts.server import get_session_dir, get_ssh_agent_path
+    with OSEnvContext():
+        #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
+        #and we use an OSEnvContext to avoid polluting the env with it
+        #(we need it to use the server ssh agent path functions)
+        os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", sessions_dir, display_name, getuid())
+        #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
+        agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
+        try:
+            if os.path.islink(agent_uuid_sockpath):
+                if is_socket(agent_uuid_sockpath):
+                    sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
+                    #keep the existing socket unchanged - somehow it still works?
+                    return
+                sshlog(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
+                os.unlink(agent_uuid_sockpath)
+            sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
+            os.symlink(auth_sock, agent_uuid_sockpath)
+            #the server will take care of doing this when accepting the connection:
+            #set_ssh_agent(agent_uuid)
+            #which sets up the symlink from "agent" to our agent symlink
+        except OSError as e:
+            sshlog.error("Error setting up ssh agent symlink:")
+            sshlog.estr(e)
+
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
     display = None
@@ -2569,6 +2618,8 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     if not display:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args, cmdline)
+    if display and mode.find("shadow")<0:
+        setup_proxy_ssh_socket(opts.sessions_dir, cmdline, display.get("display_name"))
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
