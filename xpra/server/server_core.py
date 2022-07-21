@@ -2331,12 +2331,12 @@ class ServerCore:
             })
 
     def get_server_load_info(self) -> dict:
-        if not POSIX:
-            return {}
-        try:
-            return {"load" : tuple(int(x*1000) for x in os.getloadavg())}
-        except OSError:
-            log("cannot get load average", exc_info=True)
+        if POSIX:
+            try:
+                return {"load" : tuple(int(x*1000) for x in os.getloadavg())}
+            except OSError:
+                log("cannot get load average", exc_info=True)
+        return {}
 
     def get_server_exec_info(self) -> dict:
         info = {
