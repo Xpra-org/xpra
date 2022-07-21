@@ -1245,7 +1245,7 @@ class ServerCore:
                 k = k.replace("-", "_")
                 if k.startswith("ssl_"):
                     k = k[4:]
-                kwargs[k] = v
+                    kwargs[k] = v
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:
