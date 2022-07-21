@@ -567,18 +567,34 @@ cdef class XShmWrapper:
     def get_size(self):
         return self.width, self.height
 
-    def get_image(self, Drawable drawable, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
+    def get_image(self, Drawable drawable, int x, int y, int w, int h):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
-        if x>=self.width or y>=self.height:
-            xshmlog("XShmWrapper.get_image%s position outside image dimensions %ix%i", (drawable, x, y, w, h), self.width, self.height)
+        cdef int maxw = self.width
+        cdef int maxh = self.height
+        if w+x<=0 or h+y<=0:
+            xshmlog("XShmWrapper.get_image%s invalid position + dimensions", (drawable, x, y, w, h))
+            return None
+        if x<0:
+            w += x
+            x = 0
+        elif x>=maxw:
+            xshmlog("XShmWrapper.get_image%s x-value is outside image dimensions %ix%i", (drawable, x, y, w, h), self.width, self.height)
+            return None
+        if y<0:
+            h += y
+            y = 0
+        elif y>=maxh:
+            xshmlog("XShmWrapper.get_image%s y-value is outside image dimensions %ix%i", (drawable, x, y, w, h), self.width, self.height)
             return None
         #clamp size to image size:
-        if x+w>self.width:
-            w = self.width-x
-        if y+h>self.height:
-            h = self.height-y
+        if x+w>maxw:
+            w = maxw-x
+            assert w>0
+        if y+h>maxh:
+            h = maxh-y
+            assert h>0
         if not self.got_image:
             if not XShmGetImage(self.display, drawable, self.image, 0, 0, 0xFFFFFFFF):
                 xshmlog("XShmWrapper.get_image(%#x, %i, %i, %i, %i) XShmGetImage failed!", drawable, x, y, w, h)
