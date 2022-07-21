@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from random import randint
+
 from xpra.util import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
@@ -109,7 +111,7 @@ class MMAP_Connection(StubSourceMixin):
                     from xpra.os_util import get_int_uuid
                     self.mmap_client_token = get_int_uuid()
                     self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                    self.mmap_client_token_index = self.mmap_size-self.mmap_client_token_bytes
+                    self.mmap_client_token_index = randint(0, self.mmap_size-self.mmap_client_token_bytes)
                     write_mmap_token(self.mmap,
                                      self.mmap_client_token,
                                      self.mmap_client_token_index,

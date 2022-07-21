@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from random import randint
 
 from xpra.util import envbool, typedict
 from xpra.os_util import get_int_uuid
@@ -132,7 +133,7 @@ class MmapClient(StubClientMixin):
         if self.mmap_enabled:
             self.mmap_token = get_int_uuid()
             self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
-            self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
+            self.mmap_token_index = randint(0, self.mmap_size - DEFAULT_TOKEN_BYTES)
             write_mmap_token(self.mmap, self.mmap_token, self.mmap_token_index, self.mmap_token_bytes)
 
     def clean_mmap(self):
