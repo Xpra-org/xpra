@@ -407,7 +407,7 @@ class ServerBase(ServerBaseClass):
             #perhaps this is a local client,
             #and we can find its agent socket and create the symlink now:
             sshlog(f"client supplied ssh-auth-sock={ssh_auth_sock}")
-            if os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
+            if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
                 try:
                     os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
                 except OSError as e:
