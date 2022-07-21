@@ -11,6 +11,7 @@ from time import monotonic
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
+from xpra.common import SSH_AGENT_DISPATCH
 from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
@@ -359,8 +360,9 @@ class ServerBase(ServerBaseClass):
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
-            #deal with ssh agent forwarding:
-            self.accept_client_ssh_agent(c.strget("uuid"), c.strget("ssh-auth-sock"))
+            if SSH_AGENT_DISPATCH:
+                #deal with ssh agent forwarding:
+                self.accept_client_ssh_agent(c.strget("uuid"), c.strget("ssh-auth-sock"))
         self.accept_client(proto, c)
         #use blocking sockets from now on:
         if not WIN32:

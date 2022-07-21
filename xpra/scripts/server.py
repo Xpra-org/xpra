@@ -32,7 +32,7 @@ from xpra.scripts.config import (
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
-from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
+from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH
 from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE, EXIT_UPGRADE
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
@@ -51,7 +51,6 @@ from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
-SSH_AGENT_DISPATCH = envbool("XPRA_SSH_AGENT_DISPATCH", POSIX)
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
