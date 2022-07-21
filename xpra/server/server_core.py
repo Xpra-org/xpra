@@ -2329,6 +2329,7 @@ class ServerCore:
             "current_time"      : int(now),
             "elapsed_time"      : int(now - self.start_time),
             })
+        return info
 
     def get_server_load_info(self) -> dict:
         if POSIX:
