@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util import std, typedict, net_utf8
+from xpra.common import FULL_INFO
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 from xpra.log import Logger
@@ -88,43 +89,49 @@ class ClientInfoMixin(StubSourceMixin):
     def get_connect_info(self) -> list:
         #client platform / version info:
         pinfo = [std(self.client_type)]
-        if self.client_platform:
-            pinfo += [platform_name(self.client_platform, self.client_linux_distribution or self.client_release)]
-        if self.client_session_type:
-            pinfo += [self.client_session_type]
-        revinfo = f"-r{self.client_revision}" if isinstance(self.client_revision, int) else ""
-        bitsstr = f" {self.client_bits}-bit" if self.client_bits else ""
-        pinfo += [f"client version {std(self.client_version)}{std(revinfo)}{bitsstr}"]
+        if FULL_INFO:
+            if self.client_platform:
+                pinfo += [platform_name(self.client_platform, self.client_linux_distribution or self.client_release)]
+            if self.client_session_type:
+                pinfo += [self.client_session_type]
+            revinfo = f"-r{self.client_revision}" if isinstance(self.client_revision, int) else ""
+            bitsstr = f" {self.client_bits}-bit" if self.client_bits else ""
+            version = self.client_version
+        else:
+            revinfo = bitsstr = ""
+            version = (self.client_version or "").split(".")[0]
+        pinfo += [f"client version {std(version)}{std(revinfo)}{bitsstr}"]
         cinfo = [" ".join(x for x in pinfo if x)]
-        #connection info:
-        if self.hostname or self.username:
-            msg = "connected from %r" % std(self.hostname or "unknown host")
-            if self.username:
-                msg += " as '%s'" % std(self.username)
-                if self.name and self.name!=self.username:
-                    msg += " - '%s'" % std(self.name)
-            if msg:
+        if FULL_INFO:
+            #connection info:
+            if self.hostname or self.username:
+                msg = "connected from %r" % std(self.hostname or "unknown host")
+                if self.username:
+                    msg += " as '%s'" % std(self.username)
+                    if self.name and self.name!=self.username:
+                        msg += " - '%s'" % std(self.name)
+                if msg:
+                    cinfo.append(msg)
+            #proxy info
+            if self.client_proxy:
+                msg = "via %s proxy version %s" % (
+                    platform_name(self.proxy_platform, self.proxy_release),
+                    std(self.proxy_version or "unknown")
+                    )
+                if self.proxy_hostname:
+                    msg += " on '%s'" % std(self.proxy_hostname)
                 cinfo.append(msg)
-        #proxy info
-        if self.client_proxy:
-            msg = "via %s proxy version %s" % (
-                platform_name(self.proxy_platform, self.proxy_release),
-                std(self.proxy_version or "unknown")
-                )
-            if self.proxy_hostname:
-                msg += " on '%s'" % std(self.proxy_hostname)
-            cinfo.append(msg)
-        #opengl info:
-        if self.client_opengl:
-            msg = "OpenGL is "
-            if not self.client_opengl.boolget("enabled"):
-                msg += "disabled"
-            else:
-                msg += "enabled"
-                driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
-                if driver_info:
-                    msg += " with %s" % driver_info
-            cinfo.append(msg)
+            #opengl info:
+            if self.client_opengl:
+                msg = "OpenGL is "
+                if not self.client_opengl.boolget("enabled"):
+                    msg += "disabled"
+                else:
+                    msg += "enabled"
+                    driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
+                    if driver_info:
+                        msg += " with %s" % driver_info
+                cinfo.append(msg)
         return cinfo
 
 
@@ -132,22 +139,22 @@ class ClientInfoMixin(StubSourceMixin):
         info = {
                 "sharing"           : bool(self.sharing),
                 }
-        for k, v in {
-                "version"           : self.client_version,
-                "revision"          : self.client_revision,
-                "platform_name"     : platform_name(self.client_platform, self.client_release),
-                "session-type"      : self.client_session_type,
-                "session-type.full" : self.client_session_type_full,
-                }.items():
-            if v and v!="unknown":
-                info[k] = v
+        if self.client_version:
+            info["version"] = self.client_version if FULL_INFO else self.client_version.split(".")[0]
         def addattr(k, name=None):
             v = getattr(self, (name or k).replace("-", "_"))
             #skip empty values:
             if v:
-                info[k] = v
-        for k in ("session-id", "uuid", "user", "name", "argv"):
+                info[k.replace("_", "-")] = v
+        for k in ("session-id", "uuid"):
             addattr(k)
-        for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
-            addattr(x, "client_"+x)
+        if FULL_INFO:
+            for k in ("user", "name", "argv"):
+                addattr(k)
+            for x in (
+                "revision",
+                "type", "platform", "release", "machine", "processor", "proxy",
+                "wm_name", "session_type", "session_type_full"):
+                addattr(x, "client_"+x)
+            info["platform_name"] = platform_name(self.client_platform, self.client_release)
         return info
