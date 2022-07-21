@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -175,10 +175,9 @@ def clean_mmap(mmap_filename):
             log.error("Error: failed to remove the mmap file '%s':", mmap_filename)
             log.error(" %s", e)
 
-DEFAULT_TOKEN_INDEX = 512
 DEFAULT_TOKEN_BYTES = 128
 
-def write_mmap_token(mmap_area, token, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BYTES):
+def write_mmap_token(mmap_area, token, index, count=DEFAULT_TOKEN_BYTES):
     assert count>0
     #write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
@@ -189,7 +188,7 @@ def write_mmap_token(mmap_area, token, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_
         v = v>>8
     assert v==0, "token value is too big"
 
-def read_mmap_token(mmap_area, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BYTES):
+def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES):
     assert count>0
     v = 0
     for i in range(0, count):

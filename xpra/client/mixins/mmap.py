@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -64,11 +64,11 @@ class MmapClient(StubClientMixin):
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
         if self.mmap_enabled:
-            from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
+            from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_BYTES
             def iget(attrname, default_value=0):
                 return c.intget("mmap_%s" % attrname) or c.intget("mmap.%s" % attrname) or default_value
             mmap_token = iget("token")
-            mmap_token_index = iget("token_index", DEFAULT_TOKEN_INDEX)
+            mmap_token_index = iget("token_index", 0)
             mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
             token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             if token!=mmap_token:
@@ -120,7 +120,7 @@ class MmapClient(StubClientMixin):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.net.mmap_pipe import (  #pylint: disable=import-outside-toplevel
             init_client_mmap, write_mmap_token,
-            DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES,
+            DEFAULT_TOKEN_BYTES,
             )
         #calculate size:
         root_w, root_h = self.get_root_size()
@@ -133,12 +133,7 @@ class MmapClient(StubClientMixin):
             self.mmap_token = get_int_uuid()
             self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
             self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
-            #self.mmap_token_index = DEFAULT_TOKEN_INDEX*2
-            #write the token twice:
-            # once at the old default offset for older servers,
-            # and at the offset we want to use with new servers
-            for index in (DEFAULT_TOKEN_INDEX, self.mmap_token_index):
-                write_mmap_token(self.mmap, self.mmap_token, index, self.mmap_token_bytes)
+            write_mmap_token(self.mmap, self.mmap_token, self.mmap_token_index, self.mmap_token_bytes)
 
     def clean_mmap(self):
         log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)

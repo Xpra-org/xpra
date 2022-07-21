@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -82,13 +82,13 @@ class MMAP_Connection(StubSourceMixin):
                 init_server_mmap,
                 read_mmap_token,
                 write_mmap_token,
-                DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES,
+                DEFAULT_TOKEN_BYTES,
                 )
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
             if self.mmap_size>0:
-                index = c.intget(mmapattr("token_index"), DEFAULT_TOKEN_INDEX)
+                index = c.intget(mmapattr("token_index"), 0)
                 count = c.intget(mmapattr("token_bytes"), DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)
                 log("mmap_token=%#x, verification=%#x", mmap_token, v)
@@ -109,13 +109,7 @@ class MMAP_Connection(StubSourceMixin):
                     from xpra.os_util import get_int_uuid
                     self.mmap_client_token = get_int_uuid()
                     self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                    if c.intget("mmap_token_index"):
-                        #we can write the token anywhere we want and tell the client,
-                        #so write it right at the end:
-                        self.mmap_client_token_index = self.mmap_size-self.mmap_client_token_bytes
-                    else:
-                        #use the expected default for older versions:
-                        self.mmap_client_token_index = DEFAULT_TOKEN_INDEX
+                    self.mmap_client_token_index = self.mmap_size-self.mmap_client_token_bytes
                     write_mmap_token(self.mmap,
                                      self.mmap_client_token,
                                      self.mmap_client_token_index,
