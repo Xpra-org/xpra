@@ -390,6 +390,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "initenv",
         "auth", "showconfig", "showsetting",
         "applications-menu", "sessions-menu",
+        "_proxy",
         ):
         configure_network(options)
 
