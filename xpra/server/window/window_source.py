@@ -2024,8 +2024,8 @@ class WindowSource(WindowIconSource):
             #window is now smaller than the region we're trying to request
             w = ww-x
             h = wh-y
-        if w==0 or h==0:
-            return nodata("dropped, zero dimensions")
+        if w<=0 or h<=0:
+            return nodata("dropped, invalid dimensions %ix%i" % (w, h))
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
