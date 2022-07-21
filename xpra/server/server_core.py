@@ -1238,14 +1238,14 @@ class ServerCore:
 
     def _ssl_wrap_socket(self, socktype, sock, socket_options):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
+        kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
         try:
-            kwargs = self._ssl_attributes.copy()
             for k,v in socket_options.items():
                 #options use '-' but attributes and parameters use '_':
                 k = k.replace("-", "_")
                 if k.startswith("ssl_"):
                     k = k[4:]
-                    kwargs[k] = v
+                kwargs[k] = v
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:
