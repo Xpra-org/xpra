@@ -27,7 +27,6 @@ FAKE_START_FAILURE = envbool("XPRA_SOUND_FAKE_START_FAILURE", False)
 FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
 FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000)
-BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
 DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS",
     "--windows=no "+
@@ -175,8 +174,7 @@ def run_sound(mode, error_cb, options, args):
                  "python.version"   : sys.version_info[:3],
                  "python.bits"      : BITS,
                 }
-            if BUNDLE_METADATA:
-                d["bundle-metadata"] = True
+            d["bundle-metadata"] = True
             for k,v in d.items():
                 if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)
