@@ -318,7 +318,7 @@ for arg in sys.argv:
     if not matched:
         filtered_args.append(arg)
 sys.argv = filtered_args
-if "clean" not in sys.argv:
+if "clean" not in sys.argv and "sdist" not in sys.argv:
     switches_info = {}
     for x in SWITCHES:
         switches_info[x] = vars()["%s_ENABLED" % x]
