@@ -7,11 +7,11 @@
 from time import monotonic
 
 from xpra.os_util import bytestostr
-from xpra.x11.bindings.display_source import get_display_name
+from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
 
 
-from xpra.x11.bindings.core_bindings import call_context_check
+from xpra.x11.bindings.core_bindings import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
@@ -103,7 +103,7 @@ cdef extern from "X11/Xlib.h":
 
     XImage *XGetImage(Display *display, Drawable d,
             int x, int y, unsigned int width, unsigned int  height,
-            unsigned long plane_mask, int format)
+            unsigned long plane_mask, int fmt)
 
     void XDestroyImage(XImage *ximage)
 
@@ -115,7 +115,7 @@ cdef extern from "X11/Xutil.h":
     pass
 
 cdef extern from "X11/extensions/Xcomposite.h":
-    Bool XCompositeQueryExtension(Display *, int *, int *)
+    Bool XCompositeQueryExtension(Display *, int * major, int * minor)
     Status XCompositeQueryVersion(Display *, int * major, int * minor)
     int XFreePixmap(Display *, Pixmap pixmap)
     Pixmap XCompositeNameWindowPixmap(Display *xdisplay, Window xwindow)
@@ -137,7 +137,7 @@ cdef extern from "X11/extensions/XShm.h":
     Bool XShmDetach(Display *display, XShmSegmentInfo *shminfo)
 
     XImage *XShmCreateImage(Display *display, Visual *visual,
-                            unsigned int depth, int format, char *data,
+                            unsigned int depth, int fmt, char *data,
                             XShmSegmentInfo *shminfo,
                             unsigned int width, unsigned int height)
 
