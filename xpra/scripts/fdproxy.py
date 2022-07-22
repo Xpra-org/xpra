@@ -44,7 +44,7 @@ class XpraProxy:
         self._to_client.setDaemon(True)
         self._to_server = threading.Thread(target=self._to_server_loop)
         self._to_server.setDaemon(True)
-        self._exit_code = 0
+        self.exit_code = 0
         signal.signal(signal.SIGINT, self.signal_quit)
         signal.signal(signal.SIGTERM, self.signal_quit)
         if POSIX:
@@ -62,6 +62,7 @@ class XpraProxy:
         self._to_server.join()
         log("XpraProxy.run() %s: all the threads have ended, calling quit() to close the connections", self._name)
         self.quit()
+        return self.exit_code
 
     def _to_client_loop(self):
         self._copy_loop("<-server %s" % self._name, self._server_conn, self._client_conn)
@@ -98,7 +99,7 @@ class XpraProxy:
         return not self._closed
 
     def signal_quit(self, signum, _frame=None):
-        self._exit_code = 128+signum
+        self.exit_code = 128+signum
         self.quit()
 
     def quit(self, *args):
@@ -118,4 +119,4 @@ class XpraProxy:
             quit_cb(self)
 
     def do_quit(self, _proxy):
-        force_quit(self._exit_code)
+        force_quit(self.exit_code)
