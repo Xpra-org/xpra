@@ -1128,6 +1128,20 @@ if WIN32:
     #this is where the win32 gi installer will put things:
     gnome_include_path = os.environ.get("MINGW_PREFIX")
 
+    #cx_freeze doesn't use "data_files"...
+    del setup_options["data_files"]
+    #it wants source files first, then where they are placed...
+    #one item at a time (no lists)
+    #all in its own structure called "include_files" instead of "data_files"...
+    def add_data_files(target_dir, files):
+        if verbose_ENABLED:
+            print("add_data_files(%s, %s)" % (target_dir, files))
+        assert isinstance(target_dir, str)
+        assert isinstance(files, (list, tuple))
+        for f in files:
+            target_file = os.path.join(target_dir, os.path.basename(f))
+            data_files.append((f, target_file))
+
     #only add the cx_freeze specific options
     #only if we are packaging:
     if "install_exe" in sys.argv:
@@ -1138,20 +1152,6 @@ if WIN32:
             #workaround for broken sqlite hook with python 2.7, see:
             #https://github.com/anthony-tuininga/cx_Freeze/pull/272
             sys.base_prefix = sys.prefix
-
-        #cx_freeze doesn't use "data_files"...
-        del setup_options["data_files"]
-        #it wants source files first, then where they are placed...
-        #one item at a time (no lists)
-        #all in its own structure called "include_files" instead of "data_files"...
-        def add_data_files(target_dir, files):
-            if verbose_ENABLED:
-                print("add_data_files(%s, %s)" % (target_dir, files))
-            assert isinstance(target_dir, str)
-            assert isinstance(files, (list, tuple))
-            for f in files:
-                target_file = os.path.join(target_dir, os.path.basename(f))
-                data_files.append((f, target_file))
 
         #pass a potentially nested dictionary representing the tree
         #of files and directories we do want to include
