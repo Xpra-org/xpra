@@ -735,15 +735,21 @@ class UIXpraClient(ClientBaseClass):
     # keyboard:
     def get_keyboard_caps(self):
         caps = {}
-        if self.readonly or not self.keyboard_helper:
+        kh = self.keyboard_helper
+        if self.readonly or not kh:
             #don't bother sending keyboard info, as it won't be used
             caps["keyboard"] = False
         else:
-            caps.update(self.get_keymap_properties())
+            #legacy, unprefixed:
+            caps.update(kh.get_prefixed_keymap_properties())
+            caps.update({
+                "keyboard"  : True,
+                "keymap"    : kh.get_keymap_properties(),
+                "modifiers" :self.get_current_modifiers(),
+                })
             #show the user a summary of what we have detected:
             self.keyboard_helper.log_keyboard_info()
 
-            caps["modifiers"] = self.get_current_modifiers()
             delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
             if delay_ms>0 and interval_ms>0:
                 caps["key_repeat"] = (delay_ms,interval_ms)
@@ -760,13 +766,6 @@ class UIXpraClient(ClientBaseClass):
         keylog("window_keyboard_layout_changed(%s)", window)
         if self.keyboard_helper:
             self.keyboard_helper.keymap_changed()
-
-    def get_keymap_properties(self):
-        if not self.keyboard_helper:
-            return {}
-        props = self.keyboard_helper.get_keymap_properties()
-        props["modifiers"] = self.get_current_modifiers()
-        return props
 
     def handle_key_action(self, window, key_event):
         if self.readonly or self.keyboard_helper is None:

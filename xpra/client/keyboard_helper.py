@@ -313,7 +313,10 @@ class KeyboardHelper:
 
     def send_keymap(self):
         log("send_keymap()")
-        self.send("keymap-changed", self.get_keymap_properties())
+        props = self.get_prefixed_keymap_properties()
+        #legacy format: flat with 'xkbmap_' prefix:
+        props["keymap"] = self.get_keymap_properties()
+        self.send("keymap-changed", props)
 
 
     def update_hash(self):
@@ -335,6 +338,11 @@ class KeyboardHelper:
         return []
 
 
+    def get_prefixed_keymap_properties(self):
+        key_props = self.get_keymap_properties()
+        #legacy format: flat with 'xkbmap_' prefix:
+        return dict((f"xkbmap_{k}", v) for k, v in key_props.items())
+
     def get_keymap_properties(self):
         props = {}
         for x in ("layout", "layouts", "variant", "variants",
@@ -343,10 +351,8 @@ class KeyboardHelper:
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
             v = getattr(self, p)
-            #replace None with empty string:
-            if v is None:
-                v = ""
-            props[p] = v
+            if v:
+                props[x] = v
         return  props
 
 
