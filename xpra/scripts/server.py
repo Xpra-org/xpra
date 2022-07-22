@@ -437,7 +437,6 @@ def setup_ssh_auth_sock():
         #ie: "agent.default" -> "/run/user/1000/keyring/ssh"
         os.symlink(cur_sockpath, agent_default_sockpath)
     set_ssh_agent()
-    os.environ["SSH_AUTH_SOCK"] = agent_sockpath
     return agent_sockpath
 
 def get_ssh_agent_path(filename):
@@ -1357,7 +1356,9 @@ def _do_run_server(script_file, cmdline,
     if SSH_AGENT_DISPATCH and (not shadowing or proxying):
         progress(50, "setup ssh agent forwarding")
         try:
-            protected_env["SSH_AUTH_SOCK"] = setup_ssh_auth_sock()
+            ssh_auth_sock = setup_ssh_auth_sock()
+            os.environ["SSH_AUTH_SOCK"] = ssh_auth_sock
+            protected_env["SSH_AUTH_SOCK"] = ssh_auth_sock
         except Exception as e:
             log.error("Error setting up ssh agent forwarding", exc_info=True)
             progress(50, "error setting up ssh agent forwarding: %s" % e)

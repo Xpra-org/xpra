@@ -710,7 +710,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if pkgs_options:
         for pc_arg, add_to in {
             "--libs" : "extra_link_args",
-            "--cflags" : "extra_compile_args"
+            "--cflags" : "extra_compile_args",
             }.items():
             pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
             if verbose_ENABLED:
