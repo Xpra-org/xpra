@@ -2514,16 +2514,18 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
-def setup_proxy_ssh_socket(sessions_dir, cmdline, display_name):
-    if not display_name or not display_name.startswith(":"):
-        return None
+def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
     sshlog = Logger("ssh")
+    sshlog(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     #this is the socket path that the ssh client wants us to use:
     #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
-    auth_sock = os.environ.get("SSH_AUTH_SOCK")
     if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
         sshlog(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
         return None
+    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    if not session_dir or not os.path.exists(session_dir):
+        sshlog(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
+        return
     #locate the ssh agent uuid,
     #which is used to derive the agent path symlink
     #that the server will want to use for this connection,
@@ -2537,14 +2539,9 @@ def setup_proxy_ssh_socket(sessions_dir, cmdline, display_name):
     if not agent_uuid or agent_uuid.find("/")>=0 or agent_uuid.find(".")>=0:
         sshlog(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
         return None
-    from xpra.scripts.server import get_session_dir, get_ssh_agent_path
-    with OSEnvContext():
-        #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
-        #and we use an OSEnvContext to avoid polluting the env with it
-        #(we need it to use the server ssh agent path functions)
-        os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", sessions_dir, display_name, getuid())
-        #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-        agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
+    from xpra.scripts.server import get_ssh_agent_path
+    #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
+    agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
     if os.path.islink(agent_uuid_sockpath):
         if is_socket(agent_uuid_sockpath):
             sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
@@ -2616,7 +2613,14 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     if display and mode.find("shadow")<0:
         display_name = display.get("display_name")
         try:
-            setup_proxy_ssh_socket(opts.sessions_dir, cmdline, display_name)
+            from xpra.scripts.server import get_session_dir
+            with OSEnvContext():
+                #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
+                #and we use an OSEnvContext to avoid polluting the env with it
+                #(we need it to use the server ssh agent path functions)
+                os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
+                #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
+                setup_proxy_ssh_socket(cmdline)
         except OSError:
             sshlog = Logger("ssh")
             sshlog = Logger("ssh")

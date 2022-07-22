@@ -20,6 +20,7 @@ from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_bool
+from xpra.common import SSH_AGENT_DISPATCH
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
 from xpra.log import Logger
 
@@ -54,6 +55,8 @@ class SSHServer(paramiko.ServerInterface):
         self.password_auth = password_auth
         self.proxy_channel = None
         self.options = options or {}
+        self.agent = None
+        self.transport = None
 
     def get_allowed_auths(self, username):
         #return "gssapi-keyex,gssapi-with-mic,password,publickey"
@@ -72,6 +75,16 @@ class SSHServer(paramiko.ServerInterface):
         if kind=="session":
             return paramiko.OPEN_SUCCEEDED
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
+
+    def check_channel_forward_agent_request(self, channel):
+        log(f"check_channel_forward_agent_request({channel}) SSH_AGENT_DISPATCH={SSH_AGENT_DISPATCH}")
+        if SSH_AGENT_DISPATCH:
+            from paramiko.agent import AgentServerProxy
+            self.agent = AgentServerProxy(self.transport)
+            ssh_auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
+            log(f"agent SSH_AUTH_SOCK={ssh_auth_sock}")
+            return bool(ssh_auth_sock)
+        return False
 
     def check_auth_none(self, username):
         log("check_auth_none(%s) none_auth=%s", username, self.none_auth)
@@ -151,6 +164,13 @@ class SSHServer(paramiko.ServerInterface):
             self.event.set()
             channel.close()
             return False
+        def setup_agent(cmd):
+            if SSH_AGENT_DISPATCH and self.agent:
+                auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
+                log(f"paramiko agent socket={auth_sock!r}")
+                if auth_sock:
+                    from xpra.scripts.main import setup_proxy_ssh_socket
+                    setup_proxy_ssh_socket(cmd, auth_sock)
         log("check_channel_exec_request(%s, %s)", channel, command)
         cmd = shlex.split(decode_str(command))
         log("check_channel_exec_request: cmd=%s", cmd)
@@ -197,6 +217,7 @@ class SSHServer(paramiko.ServerInterface):
                 self.proxy_start(channel, subcommand, cmd[2:])
             elif subcommand=="_proxy":
                 display_name = getattr(self, "display_name", "")
+                #if specified, the display name must match this session:
                 display = None
                 for arg in cmd[2:]:
                     if not arg.startswith("--"):
@@ -205,6 +226,8 @@ class SSHServer(paramiko.ServerInterface):
                     log.warn(f"Warning: the display requested {display!r}")
                     log.warn(f" does not match the current display {display_name!r}")
                     return fail()
+                log(f"ssh 'xpra _proxy' subcommand: display_name={display_name!r}, agent={self.agent}")
+                setup_agent(cmd)
             else:
                 log.warn(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
                 return fail()
@@ -231,7 +254,7 @@ class SSHServer(paramiko.ServerInterface):
                 parse_cmd = ""
             #for older clients, try to parse the long command
             #and identify the subcommands from there
-            subcommands = []
+            subcommands = {}
             for s in parse_cmd.split("if "):
                 if (s.startswith("type \"xpra\"") or
                     s.startswith("which \"xpra\"") or
@@ -244,9 +267,11 @@ class SSHServer(paramiko.ServerInterface):
                     parts = shlex.split(then_str)
                     if len(parts)>=2:
                         subcommand = parts[1]       #ie: "_proxy"
-                        subcommands.append(subcommand)
+                        subcommands[subcommand] = parts
             log("subcommands=%s", subcommands)
-            if subcommands and tuple(set(subcommands))[0]=="_proxy":
+            proxy_cmd = subcommands.get("_proxy")
+            if proxy_cmd:
+                setup_agent(proxy_cmd)
                 self._run_proxy(channel)
             else:
                 log.warn("Warning: unsupported ssh command:")
@@ -352,6 +377,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             log(f"{conn}.close()")
     try:
         t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
+        ssh_server.transport = t
         gss_host = socket_options.get("ssh-gss-host", socket.getfqdn(""))
         t.set_gss_host(gss_host)
         #load host keys:
