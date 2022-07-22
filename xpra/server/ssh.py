@@ -16,7 +16,7 @@ import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
-from xpra.util import csv, envint, first_time, decode_str, ellipsizer
+from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_bool
