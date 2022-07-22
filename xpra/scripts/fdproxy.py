@@ -25,8 +25,7 @@ class XpraProxy:
     """
         This is the proxy command that runs
         when one uses the hidden subcommand
-        "xpra _proxy" or when forwarding data
-        using the tcp-proxy option.
+        "xpra _proxy".
         It simply forwards stdin/stdout to
         the server socket.
     """

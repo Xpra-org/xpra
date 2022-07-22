@@ -167,8 +167,6 @@ class ServerCore:
         #networking bits:
         self._socket_info = {}
         self._potential_protocols = []
-        self._tcp_proxy_clients = []
-        self._tcp_proxy = ""
         self._rfb_upgrade = 0
         self._ssl_attributes = {}
         self._accept_timeout = SOCKET_TIMEOUT + 1
@@ -451,7 +449,6 @@ class ServerCore:
 
     def cleanup(self):
         self.stop_splash_process()
-        self.stop_tcp_proxy_clients()
         self.cancel_touch_timer()
         self.mdns_cleanup()
         self.cleanup_all_protocols()
@@ -584,8 +581,7 @@ class ServerCore:
 
 
     def init_html_proxy(self, opts):
-        httplog("init_html_proxy(..) options: tcp_proxy=%s, html='%s'", opts.tcp_proxy, opts.html)
-        self._tcp_proxy = opts.tcp_proxy
+        httplog(f"init_html_proxy(..) options: html={opts.html!r}")
         #opts.html can contain a boolean, "auto" or the path to the webroot
         www_dir = None
         if opts.html and os.path.isabs(opts.html):
@@ -647,10 +643,6 @@ class ServerCore:
                 for d in get_user_conf_dirs():
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
-        if self._html and self._tcp_proxy:
-            httplog.warn("Warning: the built in html server is enabled,")
-            httplog.warn(" disabling the tcp-proxy option")
-            self._tcp_proxy = False
         if opts.http_scripts.lower() not in FALSE_OPTIONS:
             script_options = {
                 "/Status"           : self.http_status_request,
@@ -1195,7 +1187,7 @@ class ServerCore:
 
         if socktype in ("tcp", "unix-domain", "named-pipe") and peek_data:
             #see if the packet data is actually xpra or something else
-            #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
+            #that we need to handle via an ssl wrapper or the websocket adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
@@ -1457,16 +1449,11 @@ class ServerCore:
                 return False, None, None
             self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
             return False, conn, None
-        if self._tcp_proxy and not is_ssl:
-            netlog.info("New tcp proxy connection received from %s", frominfo)
-            t = start_thread(self.start_tcp_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True, args=(conn, conn.remote))
-            netlog("may_wrap_socket handling via tcp proxy thread %s", t)
-            return False, conn, None
         return True, conn, peek_data
 
     def invalid_header(self, proto, data, msg=""):
-        netlog("invalid header: %s, input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
-               ellipsizer(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
+        netlog("invalid header: %s, input_packetcount=%s, html=%s, ssl=%s",
+               ellipsizer(data), proto.input_packetcount, self._html, bool(self._ssl_attributes))
         if data==b"RFB " and self._rfb_upgrade>0:
             netlog("RFB header, trying to upgrade protocol")
             self.cancel_upgrade_to_rfb_timer(proto)
@@ -1679,62 +1666,9 @@ class ServerCore:
         return content
 
 
-    def start_tcp_proxy(self, conn, frominfo):
-        proxylog("start_tcp_proxy(%s, %s)", conn, frominfo)
-        #connect to web server:
-        try:
-            host, port = self._tcp_proxy.split(":", 1)
-            port = int(port)
-        except ValueError as e:
-            proxylog.error("Error: invalid tcp proxy value '%s'", self._tcp_proxy)
-            proxylog.error(" %s", e)
-            conn.close()
-            return
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(10)
-            sock.connect((host, int(port)))
-            sock.settimeout(None)
-            tcp_server_connection = SocketConnection(sock, sock.getsockname(), sock.getpeername(),
-                                                     "tcp-proxy-for-%s" % frominfo, "tcp")
-        except Exception as e:
-            proxylog("start_tcp_proxy(%s, %s)", conn, frominfo, exc_info=True)
-            proxylog.error("Error: failed to connect to TCP proxy endpoint: %s:%s", host, port)
-            proxylog.error(" %s", e)
-            conn.close()
-            return
-        proxylog("proxy connected to tcp server at %s:%s : %s", host, port, tcp_server_connection)
-        sock.settimeout(self._socket_timeout)
-
-        #we can use blocking sockets for the client:
-        conn.settimeout(None)
-        #but not for the server, which could deadlock on exit:
-        sock.settimeout(1)
-
-        #now start forwarding:
-        from xpra.scripts.fdproxy import XpraProxy  #pylint: disable=import-outside-toplevel
-        p = XpraProxy(frominfo, conn, tcp_server_connection, self.tcp_proxy_quit)
-        self._tcp_proxy_clients.append(p)
-        proxylog.info("client connection from %s forwarded to proxy server on %s:%s", frominfo, host, port)
-        p.start_threads()
-
-
-    def stop_tcp_proxy_clients(self):
-        tpc = tuple(self._tcp_proxy_clients)
-        netlog("stop_tcp_proxy_clients() stopping %s tcp proxy clients: %s", len(tpc), tpc)
-        self._tcp_proxy_clients = []
-        for p in tpc:
-            p.quit()
-
-    def tcp_proxy_quit(self, proxy):
-        proxylog("tcp_proxy_quit(%s)", proxy)
-        if proxy in self._tcp_proxy_clients:
-            self._tcp_proxy_clients.remove(proxy)
-
     def is_timedout(self, protocol):
         #subclasses may override this method (ServerBase does)
-        v = not protocol.is_closed() and protocol in self._potential_protocols and \
-            protocol not in self._tcp_proxy_clients
+        v = not protocol.is_closed() and protocol in self._potential_protocols
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
 

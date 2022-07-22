@@ -966,10 +966,6 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="systemd_run_args", default=defaults.systemd_run_args,
                       help="Command line arguments passed to systemd-run. Default: '%default'.")
     legacy_bool_parse("html")
-    group.add_option("--tcp-proxy", action="store",
-                      dest="tcp_proxy", default=defaults.tcp_proxy,
-                      metavar="HOST:PORT",
-                      help="The address to which non-xpra packets will be forwarded. Default: '%default'.")
     group.add_option("--http-scripts", action="store",
                       dest="http_scripts", default=defaults.http_scripts,
                       metavar="off|all|SCRIPTS",

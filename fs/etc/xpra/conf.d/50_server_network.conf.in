@@ -79,11 +79,7 @@ ssl = auto
 
 
 ########################################################################
-# html / tcp-proxy:
-
-# Where to send non xpra clients:
-# (can be used to share the port with a web server)
-#tcp-proxy = 127.0.0.1:80
+# html
 
 # Respond to HTTP requests on the TCP ports (requires bind-tcp):
 #html = no

@@ -284,8 +284,6 @@ class RFBProtocol:
 
 
     #delegates to invalid_header()
-    #(so this can more easily be intercepted and overriden
-    # see tcp-proxy)
     def invalid_header(self, proto, data, msg=""):
         log("invalid_header%s", (proto, data, msg))
         self._invalid_header(proto, data, msg)

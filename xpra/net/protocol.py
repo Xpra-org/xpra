@@ -788,8 +788,7 @@ class Protocol:
 
 
     #delegates to invalid_header()
-    #(so this can more easily be intercepted and overriden
-    # see tcp-proxy)
+    #(so this can more easily be intercepted and overriden)
     def invalid_header(self, proto, data, msg="invalid packet header"):
         self._invalid_header(proto, data, msg)
 
