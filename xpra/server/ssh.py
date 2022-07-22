@@ -196,14 +196,15 @@ class SSHServer(paramiko.ServerInterface):
                     return fail()
                 self.proxy_start(channel, subcommand, cmd[2:])
             elif subcommand=="_proxy":
-                if len(cmd)==3:
-                    #only the display can be specified here
-                    display = cmd[2]
-                    display_name = getattr(self, "display_name", "")
-                    if display_name!=display:
-                        log.warn(f"Warning: the display requested {display!r}")
-                        log.warn(f" does not match the current display {display_name!r}")
-                        return fail()
+                display_name = getattr(self, "display_name", "")
+                display = None
+                for arg in cmd[2:]:
+                    if not arg.startswith("--"):
+                        display = arg
+                if display and display_name!=display:
+                    log.warn(f"Warning: the display requested {display!r}")
+                    log.warn(f" does not match the current display {display_name!r}")
+                    return fail()
             else:
                 log.warn(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
                 return fail()
