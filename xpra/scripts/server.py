@@ -456,7 +456,7 @@ def set_ssh_agent(filename=None):
         return
     agent_sockpath = os.path.join(ssh_dir, "agent")
     try:
-        if os.path.exists(agent_sockpath):
+        if os.path.islink(agent_sockpath):
             os.unlink(agent_sockpath)
         os.symlink(filename, agent_sockpath)
     except OSError as e:
