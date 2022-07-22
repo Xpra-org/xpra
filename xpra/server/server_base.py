@@ -23,6 +23,7 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import server_features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
+from xpra.scripts.server import set_ssh_agent
 
 SERVER_BASES = [ServerCore]
 if server_features.control:
@@ -816,6 +817,13 @@ class ServerBase(ServerBaseClass):
                 self.set_ui_driver(remaining_sources[0])
             else:
                 self.set_ui_driver(None)
+        if SSH_AGENT_DISPATCH:
+            agent = None
+            for ss in remaining_sources:
+                if ss.uuid and ss.ssh_auth_sock:
+                    agent = ss.uuid
+                    break
+            set_ssh_agent(agent)
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("%s client %i disconnected.", ptype, source.counter)
