@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,6 +13,7 @@ from collections import deque
 from queue import Queue
 
 from xpra.make_thread import start_thread
+from xpra.common import FULL_INFO
 from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
@@ -109,6 +110,7 @@ class ClientConnection(StubSourceMixin):
         self.client_connection_data = {}
         self.adapter_type = ""
         self.jitter = 0
+        self.ssh_auth_sock = ""
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -213,6 +215,7 @@ class ClientConnection(StubSourceMixin):
         self.jitter = ccd.intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
+        self.ssh_auth_sock = c.strget("ssh-auth-sock", "")
 
         if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
@@ -347,6 +350,8 @@ class ClientConnection(StubSourceMixin):
     ######################################################################
     # info:
     def get_info(self) -> dict:
+        if not FULL_INFO:
+            return {"protocol" : "xpra"}
         info = {
                 "protocol"          : "xpra",
                 "connection_time"   : int(self.connection_time),
@@ -355,6 +360,7 @@ class ClientConnection(StubSourceMixin):
                 "hello-sent"        : self.hello_sent,
                 "jitter"            : self.jitter,
                 "adapter-type"      : self.adapter_type,
+                "ssh-auth-sock"     : self.ssh_auth_sock,
                 "bandwidth-limit"   : {
                     "detection"     : self.bandwidth_detection,
                     "actual"        : self.soft_bandwidth_limit or 0,
