@@ -447,7 +447,7 @@ def get_ssh_agent_path(filename):
 
 def set_ssh_agent(filename=None):
     ssh_dir = ssh_dir_path()
-    if os.path.isabs(filename):
+    if filename and os.path.isabs(filename):
         sockpath = filename
     else:
         filename = filename or "agent.default"
@@ -1359,9 +1359,7 @@ def _do_run_server(script_file, cmdline,
         try:
             protected_env["SSH_AUTH_SOCK"] = setup_ssh_auth_sock()
         except Exception as e:
-            log("ssh agent forwarding setup error", exc_info=True)
-            log.error("Error setting up ssh agent forwarding")
-            log.estr(e)
+            log.error("Error setting up ssh agent forwarding", exc_info=True)
             progress(50, "error setting up ssh agent forwarding: %s" % e)
 
     if not proxying:
