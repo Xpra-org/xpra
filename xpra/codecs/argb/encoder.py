@@ -71,7 +71,9 @@ def encode(coding : str, image, options : dict):
     algo = "not"
     l = len(pixels)
     lz4 = options.get("lz4", False)
-    if l>=512 and (lz4 or speed<100):
+    if not lz4:
+        level = 0
+    elif l>=512 and (lz4 or speed<100):
         if l>=4096:
             level = 1+max(0, min(7, int(100-speed)//14))
         else:
@@ -79,11 +81,9 @@ def encode(coding : str, image, options : dict):
             #and use a lower level (max=3)
             level = max(0, min(3, int(125-speed)//35))
     if level>0:
-        zlib = options.get("zlib", False)
         can_inline = l<=32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
-                                      zlib=zlib, lz4=lz4,
-                                      brotli=False, none=False,
+                                      lz4=lz4,
                                       can_inline=can_inline)
         if isinstance(cwrapper, LevelCompressed):
             #add compressed marker:

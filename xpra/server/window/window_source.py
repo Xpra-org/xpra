@@ -212,7 +212,6 @@ class WindowSource(WindowIconSource):
         self.picture_encodings = ()                     #non-video only
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.rgb_zlib = use("zlib") and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
         self.rgb_lz4 = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.client_render_size = encoding_options.get("render-size")
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
@@ -426,7 +425,6 @@ class WindowSource(WindowIconSource):
         self.full_csc_modes = typedict()
         self.client_refresh_encodings = ()
         self.encoding_options = {}
-        self.rgb_zlib = False
         self.rgb_lz4 = False
         self.supports_transparency = False
         self.full_frames_only = False
@@ -1885,7 +1883,6 @@ class WindowSource(WindowIconSource):
             "quality"   : quality,
             "speed"     : speed,
             "rgb_formats"   : self.rgb_formats,
-            "zlib"      : self.rgb_zlib,
             "lz4"       : self.rgb_lz4,
             })
         if self.encoding=="grayscale":
