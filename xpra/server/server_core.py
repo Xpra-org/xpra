@@ -33,7 +33,7 @@ from xpra.net.socket_util import (
     ssl_wrap_socket,
     )
 from xpra.net.bytestreams import (
-    SocketConnection, SSLSocketConnection,
+    SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
     )
 from xpra.net.net_util import (
