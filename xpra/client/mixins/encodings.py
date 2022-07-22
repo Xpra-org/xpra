@@ -289,7 +289,7 @@ class Encodings(StubClientMixin):
         return e
 
     def get_window_icon_encodings(self):
-        e = ["premult_argb32", "BGRA", "default"]
+        e = ["BGRA", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
         return e

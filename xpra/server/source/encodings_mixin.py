@@ -51,7 +51,7 @@ class EncodingsMixin(StubSourceMixin):
         self.encodings = ()                         #all the encodings supported by the client
         self.core_encodings = ()
         self.encodings_packet = False               #supports delayed encodings initialization?
-        self.window_icon_encodings = ["premult_argb32"]
+        self.window_icon_encodings = []
         self.rgb_formats = ("RGB",)
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
@@ -281,7 +281,7 @@ class EncodingsMixin(StubSourceMixin):
         send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
         if send_ui and not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
-        self.window_icon_encodings = c.strtupleget("encodings.window-icon", ("premult_argb32",))
+        self.window_icon_encodings = c.strtupleget("encodings.window-icon", ())
         #try both spellings for older versions:
         for x in ("encodings", "encoding",):
             self.rgb_formats = c.strtupleget(x+".rgb_formats", self.rgb_formats)
