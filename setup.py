@@ -192,6 +192,7 @@ crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
 
+codecs_ENABLED          = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 #crashes on 32-bit windows:
@@ -236,16 +237,25 @@ bundle_tests_ENABLED    = False
 tests_ENABLED           = False
 rebuild_ENABLED         = not skip_build
 
+
 #allow some of these flags to be modified on the command line:
-SWITCHES = [
-    "cython", "cython_tracing",
-    "modules", "data",
-    "enc_x264", "enc_x265", "enc_ffmpeg",
-    "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
-    "vpx", "webp", "pillow", "spng_decoder", "spng_encoder", "jpeg_encoder", "jpeg_decoder",
+CODEC_SWITCHES = [
+    "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc",
+    "cuda_kernels", "cuda_rebuild",
+    "nvfbc",
+    "vpx", "webp", "pillow",
+    "spng_decoder", "spng_encoder",
+    "jpeg_encoder", "jpeg_decoder",
     "nvjpeg", "avif", "argb",
     "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
+    "csc_cython", "csc_libyuv",
+    ]
+SWITCHES = [
+    "cython", "cython_tracing",
+    "modules", "data",
+    "codecs",
+    ] + CODEC_SWITCHES + [
     "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "rencodeplus", "brotli", "qrencode",
     "vsock", "netdev", "proc", "mdns",
@@ -263,6 +273,11 @@ SWITCHES = [
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     ]
+#some switches can control multiple switches:
+SWITCH_ALIAS = {
+    "codecs"    : ["codecs"] + CODEC_SWITCHES,
+    }
+
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -303,16 +318,20 @@ for arg in sys.argv:
     for x in SWITCHES:
         with_str = "--with-%s" % x
         without_str = "--without-%s" % x
+        var_names = SWITCH_ALIAS.get(x, [x])
         if arg.startswith(with_str+"="):
-            vars()["%s_ENABLED" % x] = arg[len(with_str)+1:]
+            for var in var_names:
+                vars()[f"{var}_ENABLED"] = arg[len(with_str)+1:]
             matched = True
             break
         elif arg==with_str:
-            vars()["%s_ENABLED" % x] = True
+            for var in var_names:
+                vars()[f"{var}_ENABLED"] = True
             matched = True
             break
         elif arg==without_str:
-            vars()["%s_ENABLED" % x] = False
+            for var in var_names:
+                vars()[f"{var}_ENABLED"] = False
             matched = True
             break
     if not matched:
