@@ -386,7 +386,8 @@ class WindowSource(WindowIconSource):
                         picture_encodings.append(encoding)
             return encoder
         rgb = add("enc_rgb")
-        assert rgb, "rgb encoder is missing"
+        if not rgb:
+            log.warn("Warning: plain rgb encoder is missing!")
         #we need pillow for scaling and grayscale:
         pillow = add("enc_pillow")
         if self._mmap_size>0:
