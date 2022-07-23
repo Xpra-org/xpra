@@ -89,13 +89,9 @@ class AudioClient(StubClientMixin):
                     from xpra.sound.wrapper import query_sound
                     self.sound_properties = query_sound()
                     assert self.sound_properties, "query did not return any data"
-                    def vinfo(k):
-                        val = self.sound_properties.strtupleget(k)
-                        assert val, "%s not found in sound properties" % k
-                        return ".".join(val[:3])
-                    bits = self.sound_properties.intget("python.bits", 32)
-                    log.info("GStreamer version %s for Python %s %s-bit",
-                             vinfo("gst.version"), vinfo("python.version"), bits)
+                    gstv = self.sound_properties.strtupleget("gst.version")
+                    if gstv:
+                        log.info("GStreamer version %s", ".".join(gstv[:3]))
                 except Exception as e:
                     log("failed to query sound", exc_info=True)
                     log.error("Error: failed to query sound subsystem:")
