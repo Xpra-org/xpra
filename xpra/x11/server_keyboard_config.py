@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,7 +9,7 @@
 import hashlib
 from gi.repository import Gdk
 
-from xpra.util import csv, envbool
+from xpra.util import csv, envbool, typedict
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -139,29 +139,34 @@ class KeyboardConfig(KeyboardConfigBase):
             to set the keyboard attributes """
         super().parse_options(props)
         modded = {}
-        def parse_option(name, parse_fn, *parse_args):
+        #clients version 4.4 and later use a 'keymap' substructure:
+        keymap_dict = typedict(props.dictget("keymap"))
+        def parse_option(name, parse_fn, old_parse_fn, *parse_args):
             prop = "xkbmap_%s" % name
             cv = getattr(self, prop)
-            nv = parse_fn(prop, *parse_args)
+            if keymap_dict:
+                nv = parse_fn(name, *parse_args)
+            else:
+                nv = old_parse_fn(prop, *parse_args)
             if cv!=nv:
                 setattr(self, prop, nv)
                 modded[prop] = nv
         #plain strings:
         for x in ("query", ):
-            parse_option(x, props.strget)
+            parse_option(x, keymap_dict.strget, props.strget)
         #lists:
-        parse_option("keycodes", props.tupleget)
+        parse_option("keycodes", keymap_dict.tupleget, props.tupleget)
         #dicts:
         for x in ("mod_meanings", "x11_keycodes", "query_struct"):
-            parse_option(x, props.dictget, {})
+            parse_option(x, keymap_dict.dictget, props.dictget, {})
         #lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
-            parse_option(x, props.strtupleget)
-        parse_option("raw", props.boolget)
+            parse_option(x, keymap_dict.strtupleget, props.strtupleget)
+        parse_option("raw", keymap_dict.boolget, props.boolget)
         #older clients don't specify if they support layout groups safely
         #(MS Windows clients used base-1)
         #so only enable it by default for X11 clients
-        parse_option("layout_groups", props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
+        parse_option("layout_groups", keymap_dict.boolget, props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
