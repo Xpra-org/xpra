@@ -83,15 +83,23 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
 
 
 def version_as_numbers(version : str):
-    return [int(x) for x in version.split(".")]
+    return [int(x) for x in version.split("-")[0].split(".")]
 
 def version_compat_check(remote_version : str):
     if remote_version is None:
         msg = "remote version not available!"
         log(msg)
         return msg
-    rv = version_as_numbers(remote_version)
-    lv = version_as_numbers(XPRA_VERSION)
+    try:
+        rv = version_as_numbers(remote_version)
+    except ValueError:
+        log.warn(f"Warning: failed to parse remote version {remote_version!r}")
+        return None
+    try:
+        lv = version_as_numbers(remote_version)
+    except ValueError:
+        log.warn(f"Warning: failed to parse local version {XPRA_VERSION!r}")
+        return None
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return None
