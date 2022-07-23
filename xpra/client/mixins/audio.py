@@ -92,6 +92,8 @@ class AudioClient(StubClientMixin):
                     gstv = self.sound_properties.strtupleget("gst.version")
                     if gstv:
                         log.info("GStreamer version %s", ".".join(gstv[:3]))
+                    else:
+                        log.info("GStreamer loaded")
                 except Exception as e:
                     log("failed to query sound", exc_info=True)
                     log.error("Error: failed to query sound subsystem:")

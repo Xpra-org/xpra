@@ -321,13 +321,11 @@ class AudioServer(StubServerMixin):
                 from xpra.sound.wrapper import query_sound
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"
-                def vinfo(k):
-                    val = self.sound_properties.tupleget(k)
-                    assert val, "%s not found in sound properties" % bytestostr(k)
-                    return ".".join(bytestostr(x) for x in val[:3])
-                bits = self.sound_properties.intget("python.bits", 32)
-                soundlog.info("GStreamer version %s for Python %s %i-bit",
-                              vinfo("gst.version"), vinfo("python.version"), bits)
+                gstv = self.sound_properties.strtupleget("gst.version")
+                if gstv:
+                    log.info("GStreamer version %s", ".".join(gstv[:3]))
+                else:
+                    log.info("GStreamer loaded")
             except Exception as e:
                 soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
