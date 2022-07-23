@@ -103,7 +103,7 @@ def version_compat_check(remote_version : str):
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return None
-    if rv[0:3]<[0, 14, 10]:
+    if rv[0:2]<[3, 0]:
         #this is the oldest version we support
         msg = "remote version %s is too old, sorry" % str(rv[:2])
         log(msg)
