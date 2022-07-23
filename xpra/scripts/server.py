@@ -484,7 +484,8 @@ def rm_session_dir(warn=True):
             log.info(f"session directory {session_dir!r} was not removed")
             log.info(f" because it still contains some files:")
             for f in session_files:
-                log.info(f" {f!r}")
+                extra = " (directory)" if os.path.isdir(os.path.join(session_dir, f)) else ""
+                log.info(f" {f!r}{extra}")
         return
     try:
         os.rmdir(session_dir)
