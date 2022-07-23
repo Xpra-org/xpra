@@ -230,7 +230,7 @@ class X11ServerCore(GTKServerBase):
         if not kc:
             keylog(f"set_keyboard_layout_group({grp}) ignored, no config")
             return
-        if not kc.xkbmap_layout_groups:
+        if not kc.layout_groups:
             keylog(f"set_keyboard_layout_group({grp}) ignored, no layout groups support")
             #not supported by the client that owns the current keyboard config,
             #so make sure we stick to the default group:
