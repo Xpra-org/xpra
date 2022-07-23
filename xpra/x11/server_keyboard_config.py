@@ -345,7 +345,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 has_keycodes = bool(self.x11_keycodes) or bool(self.keycodes)
                 assert has_keycodes, "client failed to provide any keycodes!"
 
-                clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
+                clear_modifiers()
                 clean_keyboard_state()
 
                 #now set all the keycodes:

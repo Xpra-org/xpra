@@ -655,10 +655,8 @@ def keymap_to_xmodmap(trans_keycodes):
 ################################################################################
 # modifiers
 
-def clear_modifiers(_modifiers):
-    instructions = []
-    for i in range(0, 8):
-        instructions.append(("clear", i))
+def clear_modifiers():
+    instructions = [("clear", i) for i in range(0, 8)]
     apply_xmodmap(instructions)
 
 def set_modifiers(modifiers):
