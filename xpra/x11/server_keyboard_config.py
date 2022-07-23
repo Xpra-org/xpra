@@ -49,7 +49,6 @@ class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
         self.xkbmap_raw = False
-        self.xkbmap_query = None
         self.xkbmap_query_struct = None
         self.xkbmap_mod_meanings = {}
         self.xkbmap_mod_managed = []
@@ -150,9 +149,6 @@ class KeyboardConfig(KeyboardConfigBase):
             if cv!=nv:
                 setattr(self, f"xkbmap_{name}", nv)
                 modded[name] = nv
-        #plain strings:
-        for x in ("query", ):
-            parse_option(x, keymap_dict.strget, props.strget)
         #lists:
         parse_option("keycodes", keymap_dict.tupleget, props.tupleget)
         #dicts:
@@ -165,7 +161,7 @@ class KeyboardConfig(KeyboardConfigBase):
         #older clients don't specify if they support layout groups safely
         #(MS Windows clients used base-1)
         #so only enable it by default for X11 clients
-        parse_option("layout_groups", keymap_dict.boolget, props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
+        parse_option("layout_groups", keymap_dict.boolget, props.boolget, bool(self.xkbmap_query_struct))
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
@@ -188,7 +184,7 @@ class KeyboardConfig(KeyboardConfigBase):
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(super().get_hash())
-        for x in (self.xkbmap_query, self.xkbmap_raw, \
+        for x in (self.xkbmap_raw, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
             hashadd(x)
@@ -328,9 +324,8 @@ class KeyboardConfig(KeyboardConfigBase):
     def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap(%s) layout=%r, variant=%r, options=%r, query=%r",
-            translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-            self.xkbmap_query)
+        log("set_keymap(%s) layout=%r, variant=%r, options=%r, query-struct=%r",
+            translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options, self.xkbmap_query_struct)
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
@@ -360,7 +355,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 #on the keycode mappings (at least for the from_keycodes case):
                 self.compute_modifiers()
                 #key translation:
-                if bool(self.xkbmap_query):
+                if bool(self.xkbmap_query_struct):
                     #native full mapping of all keycodes:
                     self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
                 else:
@@ -465,7 +460,7 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1, group
         if self.xkbmap_raw:
             return client_keycode, group
-        if self.xkbmap_query:
+        if self.xkbmap_query_struct:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             self.kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group

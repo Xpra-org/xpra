@@ -60,9 +60,8 @@ def clean_keyboard_state():
 def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options, xkbmap_query_struct):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
         xkbmap_variant is the layout variant (may not be set)
-        xkbmap_print is the output of "setxkbmap -print" on the client
-        xkbmap_query is the output of "setxkbmap -query" on the client
-        xkbmap_query_struct is xkbmap_query parsed into a dictionary
+        xkbmap_query_struct is the output of "setxkbmap -query" on the client
+        parsed into a dictionary
         Use those to try to setup the correct keyboard map for the client
         so that all the keycodes sent will be mapped
     """
