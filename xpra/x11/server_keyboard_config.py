@@ -353,7 +353,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 #on the keycode mappings (at least for the from_keycodes case):
                 self.compute_modifiers()
                 #key translation:
-                if bool(self.query_struct):
+                if self.x11_keycodes and self.query_struct:
                     #native full mapping of all keycodes:
                     self.keycode_translation = set_all_keycodes(self.x11_keycodes, self.keycodes, False, self.keynames_for_mod)
                 else:
