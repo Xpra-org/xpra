@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -34,7 +34,7 @@ class KeyboardHelper:
         self.key_shortcuts_strs = key_shortcuts
         self.key_shortcuts = {}
         #command line overrides:
-        self.xkbmap_raw = raw
+        self.raw = raw
         self.layout_option = layout
         self.variant_option = variant
         self.layouts_option = layouts
@@ -57,21 +57,20 @@ class KeyboardHelper:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self):
-        self.xkbmap_keycodes = []
-        self.xkbmap_x11_keycodes = {}
-        self.xkbmap_mod_meanings = {}
-        self.xkbmap_mod_managed = []
-        self.xkbmap_mod_pointermissing = []
-        self.xkbmap_layout = ""
-        self.xkbmap_layouts = []
-        self.xkbmap_variant = ""
-        self.xkbmap_variants = []
-        self.xkbmap_options = ""
-        self.xkbmap_print = ""
-        self.xkbmap_query = ""
-        self.xkbmap_query_struct = {}
-        self.xkbmap_layout_groups = LAYOUT_GROUPS
-        self.xkbmap_raw = False
+        self.keycodes = []
+        self.x11_keycodes = {}
+        self.mod_meanings = {}
+        self.mod_managed = []
+        self.mod_pointermissing = []
+        self.layout = ""
+        self.layouts = []
+        self.variant = ""
+        self.variants = []
+        self.options = ""
+        self.query = ""
+        self.query_struct = {}
+        self.layout_groups = LAYOUT_GROUPS
+        self.raw = False
 
         self.hash = None
 
@@ -98,7 +97,7 @@ class KeyboardHelper:
         return self.key_shortcuts
 
     def get_modifier_names(self):
-        return get_modifier_names(self.xkbmap_mod_meanings)
+        return get_modifier_names(self.mod_meanings)
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
@@ -241,7 +240,7 @@ class KeyboardHelper:
         return val
 
     def get_keymap_spec(self):
-        _print, query, query_struct = self.keyboard.get_keymap_spec()
+        query_struct = self.keyboard.get_keymap_spec()[2]
         if query_struct:
             if self.layout_option:
                 query_struct["layout"] = self.layout_option
@@ -256,42 +255,33 @@ class KeyboardHelper:
                     query_struct["options"] = ""
                 else:
                     query_struct["options"] = self.options
-            if self.layout_option or self.layouts_option or self.variant_option or self.variants_option or self.options:
-                from xpra.keyboard.layouts import xkbmap_query_tostring
-                query = xkbmap_query_tostring(query_struct)
-        return _print, query, query_struct
+        return query_struct
 
     def query_xkbmap(self):
         log("query_xkbmap()")
         (
-            self.xkbmap_layout, self.xkbmap_layouts,
-            self.xkbmap_variant, self.xkbmap_variants,
-            self.xkbmap_options,
+            self.layout, self.layouts,
+            self.variant, self.variants,
+            self.options,
             ) = self.get_layout_spec()
-        spec = self.get_keymap_spec()
-        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = spec
-        log("query_xkbmap() get_keymap_spec()=%s", spec)
-        self.xkbmap_keycodes = self.get_full_keymap()
-        log("query_xkbmap() get_full_keymap()=%s", self.xkbmap_keycodes)
-        self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
-        log("query_xkbmap() %s.get_x11_keymap()=%s", self.keyboard, self.xkbmap_x11_keycodes)
+        self.query_struct = self.get_keymap_spec()
+        log(f"query_xkbmap() query_struct={self.query_struct}")
+        self.keycodes = self.get_full_keymap()
+        log(f"query_xkbmap() keycodes={self.keycodes}")
+        self.x11_keycodes = self.keyboard.get_x11_keymap()
+        log(f"query_xkbmap() {self.keyboard}.get_x11_keymap()={self.x11_keycodes}")
         mods = self.keyboard.get_keymap_modifiers()
-        (
-            self.xkbmap_mod_meanings,
-            self.xkbmap_mod_managed,
-            self.xkbmap_mod_pointermissing,
-            ) = mods
-        log("query_xkbmap() %s.get_keymap_modifiers()=%s", self.keyboard, mods)
+        self.mod_meanings, self.mod_managed, self.mod_pointermissing = mods
+        log(f"query_xkbmap() get_keymap_modifiers()={mods}")
         self.update_hash()
-        log("layout=%s, layouts=%s, variant=%s, variants=%s",
-            self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
-        log("print=%r, query=%r, struct=%s", self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
-        log("keycodes=%s", ellipsizer(self.xkbmap_keycodes))
-        log("x11 keycodes=%s", ellipsizer(self.xkbmap_x11_keycodes))
-        log("mod managed: %s", self.xkbmap_mod_managed)
-        log("mod meanings: %s", self.xkbmap_mod_meanings)
-        log("mod pointermissing: %s", self.xkbmap_mod_pointermissing)
-        log("hash=%s", self.hash)
+        log(f"layout={self.layout}, layouts={self.layouts}, variant={self.variant}, variants={self.variants}")
+        log(f"query-struct={self.query_struct}")
+        log("keycodes=%s", ellipsizer(self.keycodes))
+        log("x11 keycodes=%s", ellipsizer(self.x11_keycodes))
+        log(f"mod managed: {self.mod_managed}")
+        log(f"mod meanings: {self.mod_meanings}")
+        log(f"mod pointermissing: {self.mod_pointermissing}")
+        log(f"hash={self.hash}")
 
     def update(self):
         if not self.locked:
@@ -300,16 +290,16 @@ class KeyboardHelper:
 
     def layout_str(self):
         return " / ".join([bytestostr(x) for x in (
-            self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
+            self.layout_option or self.layout, self.variant_option or self.variant) if bool(x)])
 
 
     def send_layout(self):
-        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s, xkbmap_options=%s",
-            self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant, self.xkbmap_options)
+        log("send_layout() layout_option=%s, layout=%s, variant_option=%s, variant=%s, options=%s",
+            self.layout_option, self.layout, self.variant_option, self.variant, self.options)
         self.send("layout-changed",
-                  self.layout_option or self.xkbmap_layout or "",
-                  self.variant_option or self.xkbmap_variant or "",
-                  self.xkbmap_options or "")
+                  self.layout_option or self.layout or "",
+                  self.variant_option or self.variant or "",
+                  self.options or "")
 
     def send_keymap(self):
         log("send_keymap()")
@@ -324,15 +314,13 @@ class KeyboardHelper:
         h = hashlib.sha256()
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
-        for x in (self.xkbmap_print, self.xkbmap_query, \
-                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
-                  self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
+        for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
             hashadd(x)
-        if self.xkbmap_query_struct:
+        if self.query_struct:
             #flatten the dict in a predicatable order:
-            for k in sorted(self.xkbmap_query_struct.keys()):
-                hashadd(self.xkbmap_query_struct.get(k))
-        self.hash = "/".join([str(x) for x in (self.xkbmap_layout, self.xkbmap_variant, h.hexdigest()) if bool(x)])
+            for k in sorted(self.query_struct.keys()):
+                hashadd(self.query_struct.get(k))
+        self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self):
         return []
@@ -345,32 +333,28 @@ class KeyboardHelper:
 
     def get_keymap_properties(self):
         props = {}
-        for x in ("layout", "layouts", "variant", "variants",
-                  "raw", "layout_groups",
-                  "print", "query", "query_struct", "mod_meanings",
-                  "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
-            p = "xkbmap_%s" % x
-            v = getattr(self, p)
+        for x in (
+            "layout", "layouts", "variant", "variants",
+            "raw", "layout_groups",
+            "query_struct", "mod_meanings",
+            "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
+            ):
+            v = getattr(self, x)
             if v:
                 props[x] = v
-        return  props
+        return props
 
 
     def log_keyboard_info(self):
         #show the user a summary of what we have detected:
         kb_info = {}
-        if self.xkbmap_query_struct or self.xkbmap_query:
-            xkbqs = self.xkbmap_query_struct
-            if not xkbqs:
-                #parse query into a dict
-                from xpra.keyboard.layouts import parse_xkbmap_query
-                xkbqs = parse_xkbmap_query(self.xkbmap_query)
+        if self.query_struct:
             for x in ("rules", "model", "layout"):
-                v = xkbqs.get(x)
+                v = self.query_struct.get(x)
                 if v:
                     kb_info[x] = v
-        if self.xkbmap_layout:
-            kb_info["layout"] = self.xkbmap_layout
+        if self.layout:
+            kb_info["layout"] = self.layout
         if not kb_info:
             log.info(" using default keyboard settings")
         else:

@@ -47,10 +47,10 @@ class GTKKeyboardHelper(KeyboardHelper):
                 #automatic changes not allowed!
                 log.info("ignoring keymap change: layout is locked to '%s'", self.layout_str())
                 return
-            if self.update() and self.xkbmap_layout:
+            if self.update() and self.layout:
                 log.info("keymap has been changed to '%s'", self.layout_str())
                 log.info(" sending updated mappings to the server")
-                if self.xkbmap_layout:
+                if self.layout:
                     self.send_layout()
                 self.send_keymap()
         GLib.timeout_add(500, do_keys_changed)
@@ -60,7 +60,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         super().update()
         if is_X11():
             try:
-                self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.xkbmap_mod_meanings)
+                self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
             except Exception:
                 log.error("error querying modifier map", exc_info=True)
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)

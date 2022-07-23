@@ -1165,14 +1165,11 @@ class GTKTrayMenuBase(MenuHelper):
                 else:
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
-        keyboard_helper = self.client.keyboard_helper
+        kh = self.client.keyboard_helper
         def set_layout_enabled(*args):
-            log("set_layout_enabled%s full_layout_list=%s",
-                     args, full_layout_list)
-            log("set_layout_enabled%s layout=%s, print=%s, query=%s",
-                     args, keyboard_helper.xkbmap_layout, keyboard_helper.xkbmap_print, keyboard_helper.xkbmap_query)
-            if full_layout_list and \
-            (keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query):
+            log(f"set_layout_enabled({args}) full_layout_list={full_layout_list}")
+            log(f"set_layout_enabled({args}) layout={kh.layout}, query-struct={kh.query_struct}")
+            if full_layout_list and (kh.layout or kh.query_struct):
                 #we have detected a layout
                 #so no need to show the user the huge layout list
                 keyboard.hide()

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,14 +12,14 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def get_modifier_names(xkbmap_mod_meanings):
+def get_modifier_names(mod_meanings):
     #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
     #but the user expects the name of the key to be used, ie: "alt" or "super"
     #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
     #so generate a map from one to the other:
     modifier_names = {}
     from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-    meanings = xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
+    meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS
     DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
     for pub_name,mod_name in meanings.items():
         if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
