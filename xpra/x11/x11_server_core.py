@@ -226,31 +226,31 @@ class X11ServerCore(GTKServerBase):
 
 
     def set_keyboard_layout_group(self, grp):
-        if not self.keyboard_config:
-            keylog("set_keyboard_layout_group(%i) ignored, no config", grp)
+        kc = self.keyboard_config
+        if not kc:
+            keylog(f"set_keyboard_layout_group({grp}) ignored, no config")
             return
-        if not self.keyboard_config.xkbmap_layout_groups:
-            keylog("set_keyboard_layout_group(%i) ignored, no layout groups support", grp)
+        if not kc.xkbmap_layout_groups:
+            keylog(f"set_keyboard_layout_group({grp}) ignored, no layout groups support")
             #not supported by the client that owns the current keyboard config,
             #so make sure we stick to the default group:
             grp = 0
         if not X11Keyboard.hasXkb():
-            keylog("set_keyboard_layout_group(%i) ignored, no Xkb support", grp)
+            keylog(f"set_keyboard_layout_group({grp}) ignored, no Xkb support")
             return
         if grp<0:
             grp = 0
         if self.current_keyboard_group!=grp:
-            keylog("set_keyboard_layout_group(%i) ignored, value unchanged", grp)
+            keylog(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
             return
-        keylog("set_keyboard_layout_group(%i) config=%s, current keyboard group=%s",
-               grp, self.keyboard_config, self.current_keyboard_group)
+        keylog(f"set_keyboard_layout_group({grp}) config={self.keyboard_config}, current keyboard group={self.current_keyboard_group}")
         try:
             with xsync:
                 self.current_keyboard_group = X11Keyboard.set_layout_group(grp)
         except XError as e:
-            keylog("set_keyboard_layout_group group=%s", grp, exc_info=True)
-            keylog.error("Error: failed to set keyboard layout group '%s'", grp)
-            keylog.error(" %s", e)
+            keylog(f"set_keyboard_layout_group({grp})", exc_info=True)
+            keylog.error(f"Error: failed to set keyboard layout group {grp}")
+            keylog.estr(e)
 
     def init_packet_handlers(self):
         super().init_packet_handlers()
@@ -446,9 +446,7 @@ class X11ServerCore(GTKServerBase):
         keyboard_config = KeyboardConfig()
         keyboard_config.enabled = props.boolget("keyboard", True)
         keyboard_config.parse_options(props)
-        keyboard_config.xkbmap_layout = props.strget("xkbmap_layout")
-        keyboard_config.xkbmap_variant = props.strget("xkbmap_variant")
-        keyboard_config.xkbmap_options = props.strget("xkbmap_options")
+        keyboard_config.parse_layout(props)
         keylog("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 

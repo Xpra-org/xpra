@@ -240,7 +240,7 @@ class KeyboardHelper:
         return val
 
     def get_keymap_spec(self):
-        query_struct = self.keyboard.get_keymap_spec()[2]
+        query_struct = self.keyboard.get_keymap_spec()
         if query_struct:
             if self.layout_option:
                 query_struct["layout"] = self.layout_option
@@ -259,11 +259,7 @@ class KeyboardHelper:
 
     def query_xkbmap(self):
         log("query_xkbmap()")
-        (
-            self.layout, self.layouts,
-            self.variant, self.variants,
-            self.options,
-            ) = self.get_layout_spec()
+        self.layout, self.layouts, self.variant, self.variants, self.options = self.get_layout_spec()
         self.query_struct = self.get_keymap_spec()
         log(f"query_xkbmap() query_struct={self.query_struct}")
         self.keycodes = self.get_full_keymap()

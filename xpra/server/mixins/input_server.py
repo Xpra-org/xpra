@@ -28,7 +28,7 @@ class InputServer(StubServerMixin):
         self.input_devices_format = None
         self.input_devices_data = None
 
-        self.xkbmap_mod_meanings = {}
+        self.mod_meanings = {}
         self.keyboard_config = None
         self.keymap_changing = False            #to ignore events when we know we are changing the configuration
         self.key_repeat = None
@@ -106,7 +106,7 @@ class InputServer(StubServerMixin):
                                    "interval"   : self.key_repeat_interval,
                                    },
              "keys_pressed"     : tuple(self.keys_pressed.values()),
-             "modifiers"        : self.xkbmap_mod_meanings,
+             "modifiers"        : self.mod_meanings,
              }
         kc = self.keyboard_config
         if kc:

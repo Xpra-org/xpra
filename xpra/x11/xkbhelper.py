@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,6 @@ from xpra.util import std, csv, envbool, typedict
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.log import Logger
 
 init_gdk_display_source()
@@ -58,8 +57,7 @@ def clean_keyboard_state():
 ################################################################################
 # keyboard layouts
 
-def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
-                  xkbmap_query, xkbmap_query_struct):
+def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options, xkbmap_query_struct):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
         xkbmap_variant is the layout variant (may not be set)
         xkbmap_print is the output of "setxkbmap -print" on the client
@@ -70,8 +68,6 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
     """
     #First we try to use data from setxkbmap -query,
     #preferably as structured data:
-    if xkbmap_query and not xkbmap_query_struct:
-        xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
     xkbmap_query_struct = typedict(xkbmap_query_struct)
     if xkbmap_query_struct:
         log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)

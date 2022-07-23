@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,6 @@ import os
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
-from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
 from xpra.os_util import is_X11, is_Wayland, bytestostr
 if not is_Wayland():
@@ -107,15 +106,11 @@ class Keyboard(KeyboardBase):
                 if layout:
                     query_struct["layout"] = layout
             log("query_struct(%s)=%s", locale, query_struct)
-            return None, None, query_struct
+            return query_struct
         with xsync:
             query_struct = self.keyboard_bindings.getXkbProperties()
-        _query = xkbmap_query_tostring(query_struct)
-        log("get_keymap_spec() Xkb query tostring(%s)=%r", query_struct, _query)
-        #we no longer support servers via xkbmap_print:
-        xkbmap_print = ""
-        log("get_keymap_spec()=(%r, %r, %r)", xkbmap_print, _query, query_struct)
-        return xkbmap_print, _query, query_struct
+        log("get_keymap_spec()=%r", query_struct)
+        return query_struct
 
 
     def get_xkb_rules_names_property(self):
@@ -215,10 +210,10 @@ class Keyboard(KeyboardBase):
         log("get_keyboard_repeat()=%s", v)
         return v
 
-    def update_modifier_map(self, display, xkbmap_mod_meanings):
+    def update_modifier_map(self, display, mod_meanings):
         try:
             from xpra.x11.gtk_x11.keys import grok_modifier_map
-            self.modifier_map = grok_modifier_map(display, xkbmap_mod_meanings)
+            self.modifier_map = grok_modifier_map(display, mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
         #force re-query on next call:
@@ -227,4 +222,4 @@ class Keyboard(KeyboardBase):
             dn = "%s %s" % (type(display).__name__, display.get_name())
         except Exception:
             dn = str(display)
-        log("update_modifier_map(%s, %s) modifier_map=%s", dn, xkbmap_mod_meanings, self.modifier_map)
+        log(f"update_modifier_map({dn}, {mod_meanings}) modifier_map={self.modifier_map}")

@@ -142,15 +142,14 @@ class KeyboardConfig(KeyboardConfigBase):
         #clients version 4.4 and later use a 'keymap' substructure:
         keymap_dict = typedict(props.dictget("keymap"))
         def parse_option(name, parse_fn, old_parse_fn, *parse_args):
-            prop = "xkbmap_%s" % name
-            cv = getattr(self, prop)
+            cv = getattr(self, f"xkbmap_{name}")
             if keymap_dict:
                 nv = parse_fn(name, *parse_args)
             else:
-                nv = old_parse_fn(prop, *parse_args)
+                nv = old_parse_fn("xkbmap_%s" % name, *parse_args)
             if cv!=nv:
-                setattr(self, prop, nv)
-                modded[prop] = nv
+                setattr(self, f"xkbmap_{name}", nv)
+                modded[name] = nv
         #plain strings:
         for x in ("query", ):
             parse_option(x, keymap_dict.strget, props.strget)
@@ -169,6 +168,16 @@ class KeyboardConfig(KeyboardConfigBase):
         parse_option("layout_groups", keymap_dict.boolget, props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
+
+    def parse_layout(self, props):
+        """ used by both process_hello and process_keymap """
+        #clients version 4.4 and later use a 'keymap' substructure:
+        keymap_dict = typedict(props.dictget("keymap"))
+        def l(k):
+            return keymap_dict.strget(k, props.get(f"xkbmap_{k}"))
+        self.layout = l("layout")
+        self.variant = l("variant")
+        self.options = l("options")
 
 
     def get_hash(self):
@@ -333,9 +342,8 @@ class KeyboardConfig(KeyboardConfigBase):
 
         with xlog:
             clean_keyboard_state()
-            do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-                          self.xkbmap_query, self.xkbmap_query_struct)
-        log("set_keymap: xkbmap_query=%r", self.xkbmap_query)
+            do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options, self.xkbmap_query_struct)
+        log("set_keymap: xkbmap_query_struct=%r", self.xkbmap_query_struct)
         with xlog:
             #first clear all existing modifiers:
             clean_keyboard_state()
