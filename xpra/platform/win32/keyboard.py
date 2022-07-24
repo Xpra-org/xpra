@@ -231,11 +231,10 @@ class Keyboard(KeyboardBase):
             layout_code = layouts_defs.get(layout, 0)
 
         if layout and self.last_layout_message!=layout:
-            log.info("keyboard layout code %#x", layout_code)
             if descr:
-                log.info("identified as '%s' : %s", descr, layout)
+                log.info(f"keyboard layout {descr!r} : {layout!r} ({layout_code:#x})")
             else:
-                log.info("identified as %s", layout)
+                log.info(f"keyboard layout {layout!r} ({layout_code:#x})")
             self.last_layout_message = layout
         return layout, layouts, variant, variants, options
 
