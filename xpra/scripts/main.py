@@ -56,7 +56,6 @@ from xpra.scripts.config import (
     make_defaults_struct, parse_bool, has_sound_support, name_to_field,
     )
 from xpra.log import is_debug_enabled, Logger, get_debug_args
-from platform import _follow_symlinks
 assert callable(error), "used by modules importing this function from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
