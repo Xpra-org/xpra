@@ -500,23 +500,27 @@ def clean_session_files(*filenames):
         return
     for filename in filenames:
         path = session_file_path(filename)
-        if path.find("*")>=0:
-            clean_session_files(*glob.glob(path))
-        elif os.path.exists(path):
-            try:
-                #only recurse down specific subdirectories:
-                if os.path.isdir(path) and SSH_AGENT_DISPATCH and filename=="ssh":
-                    import shutil
-                    shutil.rmtree(path)
-                else:
-                    os.unlink(path)
-            except OSError as e:
-                from xpra.log import Logger
-                log = Logger("server")
-                log(f"clean_session_files{filenames}", exc_info=True)
-                log.error(f"Error removing session file {filename}")
-                log.estr(e)
+        if filename.find("*")>=0:
+            for p in glob.glob(path):
+                clean_session_path(p)
+        else:
+            clean_session_path(path)
     rm_session_dir(False)
+
+def clean_session_path(path):
+    from xpra.log import Logger
+    log = Logger("server")
+    log(f"clean_session_path({path})")
+    if os.path.exists(path):
+        try:
+            if os.path.isdir(path):
+                os.rmdir(path)
+            else:
+                os.unlink(path)
+        except OSError as e:
+            log(f"clean_session_path({path})", exc_info=True)
+            log.error(f"Error removing session path {path}")
+            log.estr(e)
 
 SERVER_SAVE_SKIP_OPTIONS = (
     "systemd-run",

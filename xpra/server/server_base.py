@@ -118,6 +118,10 @@ class ServerBase(ServerBaseClass):
         #duplicated from Server Source...
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
 
+        if SSH_AGENT_DISPATCH and "ssh" not in self.session_files:
+            self.session_files.append("ssh/*")
+            self.session_files.append("ssh")
+
         self.init_packet_handlers()
         self.init_aliases()
 
@@ -401,7 +405,7 @@ class ServerBase(ServerBaseClass):
         if not uuid:
             sshlog("cannot setup ssh agent without client uuid")
             return
-        from xpra.scripts.server import set_ssh_agent, get_ssh_agent_path
+        from xpra.scripts.server import get_ssh_agent_path
         #perhaps the agent sock path for this uuid already exists:
         #ie: /run/user/1000/xpra/10/$UUID
         sockpath = get_ssh_agent_path(uuid)
