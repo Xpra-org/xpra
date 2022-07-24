@@ -358,6 +358,9 @@ class ServerCore:
         self.closing()
         noerr(sys.stdout.flush)
         self.late_cleanup()
+        if not self._upgrading:
+            self.clean_session_files()
+            rm_session_dir()
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
@@ -470,9 +473,6 @@ class ServerCore:
         if self.pidfile:
             netlog("cleanup removing pidfile %s", self.pidfile)
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
-        if not self._upgrading:
-            self.clean_session_files()
-            rm_session_dir()
 
     def clean_session_files(self):
         self.do_clean_session_files(*self.session_files)
