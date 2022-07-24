@@ -139,7 +139,7 @@ class KeyboardConfig(KeyboardConfigBase):
         super().parse_options(props)
         modded = {}
         #clients version 4.4 and later use a 'keymap' substructure:
-        keymap_dict = typedict(props.dictget("keymap")) or {})
+        keymap_dict = typedict(props.dictget("keymap") or {})
         def parse_option(name, parse_fn, old_parse_fn, *parse_args):
             cv = getattr(self, name)
             if keymap_dict:
