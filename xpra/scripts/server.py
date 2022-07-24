@@ -28,7 +28,7 @@ from xpra.scripts.main import (
     )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
-    FALSE_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
+    FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
@@ -1209,10 +1209,8 @@ def _do_run_server(script_file, cmdline,
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom = ""
-            try:
+            if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
                 vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
-            except Exception as e:
-                log.warn("Warning: failed to parse resolution %r: %s", opts.resize_display, e)
 
             xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
                                                       uid, gid, username, uinput_uuid)

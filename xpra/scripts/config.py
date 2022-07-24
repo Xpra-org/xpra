@@ -1131,6 +1131,7 @@ NO_FILE_OPTIONS = ("daemon", )
 
 TRUE_OPTIONS = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS = ("off", )
 def parse_bool(k, v, auto=None):
     if isinstance(v, str):
