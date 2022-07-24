@@ -3026,6 +3026,7 @@ def run_clean(opts, args):
             ]
         KNOWN_SERVER_DIRS = [
             "pulse",
+            "ssh",
             ]
         ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
         unknown_files = [x for x in session_files if x not in ALL_KNOWN]
@@ -3040,7 +3041,9 @@ def run_clean(opts, args):
                 if x in KNOWN_SERVER_FILES:
                     os.unlink(pathname)
                 else:
-                    os.rmdir(pathname)
+                    assert x in KNOWN_SERVER_DIRS
+                    import shutil
+                    shutil.rmtree(pathname)
             except OSError as e:
                 error("Error removing %r: %s" % (pathname, e))
         try:
