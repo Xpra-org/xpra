@@ -85,12 +85,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
         GObject.GObject.__init__(self)
         X11ServerBase.__init__(self)
         self.session_type = "seamless"
+        self._exit_with_windows = False
         self._xsettings_enabled = True
 
     def init(self, opts):
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb)
         self.system_tray = opts.system_tray
+        self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
         self.fake_xinerama = opts.fake_xinerama
         def log_server_event(_, event):
@@ -269,6 +271,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     #
     def do_get_info(self, proto, server_sources):
         info = super().do_get_info(proto, server_sources)
+        info["exit-with-windows"] = self._exit_with_windows
         info.setdefault("state", {}).update({
                                              "focused"  : self._has_focus,
                                              "grabbed"  : self._has_grab,
@@ -787,7 +790,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def _lost_window(self, window, wm_exiting=False):
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
-        if not wm_exiting:
+        if self._exit_with_windows and len(self._id_to_window)==0:
+            log.info("no more windows to manage, exiting")
+            self.clean_quit()
+        elif not wm_exiting:
             self.repaint_root_overlay()
 
     def _contents_changed(self, window, event):

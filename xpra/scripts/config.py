@@ -632,6 +632,7 @@ OPTION_TYPES = {
                     "terminate-children": bool,
                     "exit-with-children": bool,
                     "exit-with-client"  : bool,
+                    "exit-with-windows" : bool,
                     "exit-ssh"          : bool,
                     "dbus-control"      : bool,
                     "av-sync"           : bool,
@@ -722,6 +723,7 @@ OPTIONS_ADDED_SINCE_V3 = [
     "splash", "sessions-dir", "http-scripts", "reconnect", "client-socket-dirs",
     "start-late", "start-child-late",
     "refresh-rate",
+    "exit-with-windows",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -788,7 +790,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "fake-xinerama", "resize-display", "dpi", "pixel-depth",
     "readonly", "keyboard-sync", "cursors", "bell", "notifications", "xsettings",
     "system-tray", "sharing", "lock", "windows", "webcam", "html", "http-scripts",
-    "terminate-children", "exit-with-children", "exit-with-client",
+    "terminate-children", "exit-with-children", "exit-with-client", "exit-with-windows",
     "av-sync",
     "forward-xdg-open", "modal-windows", "bandwidth-detection",
     "ssh-upgrade",
@@ -1061,6 +1063,7 @@ def get_defaults():
                     "terminate-children": False,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
+                    "exit-with-windows" : False,
                     "start-new-commands": True,
                     "proxy-start-sessions": True,
                     "av-sync"           : True,

@@ -927,6 +927,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--exit-with-children", action="store", metavar="yes|no",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
+    legacy_bool_parse("exit-with-windows")
+    group.add_option("--exit-with-windows", action="store", metavar="yes|no",
+                      dest="exit_with_windows", default=defaults.exit_with_windows,
+                      help="Terminate the server when the last window disappears")
     legacy_bool_parse("start-new-commands")
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
