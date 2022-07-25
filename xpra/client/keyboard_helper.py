@@ -35,7 +35,7 @@ class KeyboardHelper:
         self.key_shortcuts = {}
         #command line overrides:
         self.raw = raw
-        self.layout_option = layout if layout.lower() not in ("client", "auto") else ""
+        self.layout_option = layout if (layout or "").lower() not in ("client", "auto") else ""
         self.variant_option = variant
         self.layouts_option = layouts
         self.variants_option = variants
