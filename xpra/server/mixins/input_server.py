@@ -44,6 +44,15 @@ class InputServer(StubServerMixin):
 
         self.last_mouse_user = None
 
+    def init(self, opts):
+        props = typedict()
+        keymap = props.setdefault("keymap", {})
+        for option in ("sync", "layout", "layouts", "variant", "variants", "options"):
+            v = getattr(opts, f"keyboard_{option}")
+            if v:
+                keymap[option] = v
+        self.keyboard_config = self.get_keyboard_config(props)
+
     def setup(self):
         self.watch_keymap_changes()
 

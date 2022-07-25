@@ -297,18 +297,28 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         GTKShadowServerBase.__init__(self)
         X11ServerCore.__init__(self)
         self.session_type = "shadow"
+        self.modify_keymap = False
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         #don't call init on X11ServerCore,
         #this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.do_init(self, opts)
+        self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
     def init_fake_xinerama(self):
         #don't enable fake xinerama with shadow servers,
         #we want to keep whatever settings they have
         self.libfakeXinerama_so = None
 
+
+    def set_keymap(self, server_source, force=False):
+        if self.readonly:
+            return
+        if self.modify_keymap:
+            X11ServerCore.set_keymap(self, server_source, force)
+        else:
+            ShadowServerBase.set_keymap(self, server_source, force)
 
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
