@@ -94,6 +94,8 @@ class SplashScreen(Gtk.Window):
             signal.signal(SIGPIPE, self.handle_signal)
         self.opacity = 100
         self.pct = 0
+        self.had_top_level_focus = False
+        self.connect("notify::has-toplevel-focus", self._focus_change)
 
 
     def run(self):
@@ -112,6 +114,15 @@ class SplashScreen(Gtk.Window):
             GLib.timeout_add(scrash, crash)
         Gtk.main()
         return self.exit_code or 0
+
+    def _focus_change(self, *args):
+        has = self.has_toplevel_focus()
+        had = self.had_top_level_focus
+        log(f"_focus_change{args} had={had}, has={has}")
+        if had and not has:
+            self.exit()
+        elif has:
+            self.had_top_level_focus = True
 
     def timeout(self):
         log("timeout()")
