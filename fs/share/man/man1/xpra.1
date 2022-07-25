@@ -974,6 +974,11 @@ given.  If it is given, then the xpra server will monitor the status
 of the children started by \fB--start-child\fP, and will
 automatically terminate itself when the last of them has exited.
 .TP
+\fB--exit-with-windows\fP=\fIyes\fP|\fIno\fP
+The server will terminate automatically when there are no more windows
+or system trays being forwarded.
+This option is only relevant for seamless servers.
+.TP
 \fB--exit-with-client\fP=\fIyes\fP|\fIno\fP
 The server will terminate when the last client disconnects.
 .TP
