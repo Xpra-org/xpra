@@ -913,6 +913,9 @@ class ClientWindowBase(ClientWidgetBase):
     def show_file_upload(self, *args):
         self._client.show_file_upload(*args)
 
+    def show_shortcuts(self, *args):
+        self._client.show_shortcuts(*args)
+
 
     def log(self, message=""):
         log.info(message)
