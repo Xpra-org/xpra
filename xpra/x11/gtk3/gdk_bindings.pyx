@@ -807,12 +807,14 @@ cdef object _gw(display, Window xwin):
         disp = get_raw_display_for(display)
         gdk_x11_display_error_trap_push(disp)
         try:
+          try:
             win = GdkX11.X11Window.foreign_new_for_display(display, xwin)
-        except TypeError as e:
+          except TypeError as e:
             verbose("cannot get gdk window for %s, %#x: %s", display, xwin, e)
             return None
-        gdk_display_flush(disp)
-        error = gdk_x11_display_error_trap_pop(disp)
+          gdk_display_flush(disp)
+        finally:
+          error = gdk_x11_display_error_trap_pop(disp)
     except Exception as e:
         verbose("cannot get gdk window for %s, %#x: %s", display, xwin, e)
         if disp:
