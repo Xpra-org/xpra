@@ -641,6 +641,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         force_focus()
         about()
 
+    def show_docs(self, *_args):
+        from xpra.scripts.main import run_docs
+        run_docs()
+
     def show_shortcuts(self, *_args):
         if self.shortcuts_info and not self.shortcuts_info.is_closed:
             force_focus()

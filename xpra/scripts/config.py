@@ -826,6 +826,7 @@ def get_default_key_shortcuts():
                (True,   "#+F4:quit"),
                (True,   "#+F5:show_window_info"),
                (True,   "#+F6:show_shortcuts"),
+               (True,   "#+F7:show_docs"),
                (True,   "#+F10:magic_key"),
                (True,   "#+F11:show_session_info"),
                (True,   "#+F12:toggle_debug"),

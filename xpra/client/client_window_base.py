@@ -916,6 +916,9 @@ class ClientWindowBase(ClientWidgetBase):
     def show_shortcuts(self, *args):
         self._client.show_shortcuts(*args)
 
+    def show_docs(self, *args):
+        self._client.show_docs(*args)
+
 
     def log(self, message=""):
         log.info(message)
