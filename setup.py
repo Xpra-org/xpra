@@ -1589,7 +1589,12 @@ else:
         assert isinstance(target_dir, str)
         assert isinstance(files, (list, tuple))
         data_files.append((target_dir, files))
-    add_data_files("libexec/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
+    if is_openSUSE():
+        # basically need $(basename $(rpm -E '%{_libexecdir}'))
+        libexec_dir = "__LIBEXECDIR__"
+    else:
+        libexec_dir = "libexec"
+    add_data_files(libexec_dir+"/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
