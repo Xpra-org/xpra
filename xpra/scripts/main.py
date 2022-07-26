@@ -181,7 +181,7 @@ def configure_logging(options, mode):
     if mode in (
         "attach", "listen", "launcher",
         "sessions", "mdns-gui",
-        "bug-report", "session-info", "docs",
+        "bug-report", "session-info", "docs", "documentation",
         "recover",
         "splash", "qrcode",
         "opengl-test",
@@ -377,7 +377,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "clean-displays", "clean-sockets", "clean",
         "xwait", "wminfo", "wmname",
         "desktop-greeter", "gui", "start-gui",
-        "docs", "html5",
+        "docs", "documentation", "html5",
         "pinentry", "input_pass", "_dialog", "_pass",
         "opengl", "opengl-probe", "opengl-test",
         "autostart",
@@ -546,7 +546,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         bug_report.main(["xpra"]+args)
     elif mode == "session-info":
         return run_session_info(error_cb, options, args, cmdline)
-    elif mode == "docs":
+    elif mode in ("docs", "documentation"):
         return run_docs()
     elif mode == "html5":
         return run_html5()
@@ -2776,13 +2776,20 @@ def run_session_info(error_cb, options, args, cmdline):
 
 def run_docs():
     from xpra.platform.paths import get_resources_dir, get_app_dir
-    return _browser_open(
-        "documentation",
-        os.path.join(get_resources_dir(), "share", "doc", "xpra", "index.html"),
-        os.path.join(get_resources_dir(), "share", "xpra", "doc", "index.html"),
-        os.path.join(get_app_dir(), "doc", "index.html"),
-        os.path.join(get_resources_dir(), "doc", "index.html"),
-        )
+    paths = []
+    prefixes = {get_resources_dir(), get_app_dir()}
+    if POSIX:
+        prefixes.add("/usr/share")
+        prefixes.add("/usr/local/share")
+    for prefix in prefixes:
+        for parts in (
+            ("doc", "xpra", "index.html"),
+            ("xpra", "doc", "index.html"),
+            ("doc", "index.html"),
+            ("doc", "index.html"),
+            ):
+            paths.append(os.path.join(prefix, *parts))
+    return _browser_open("documentation", *paths)
 
 def run_html5(url_options=None):
     from xpra.platform.paths import get_resources_dir, get_app_dir
