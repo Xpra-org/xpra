@@ -132,6 +132,7 @@ Some specific options have a direct impact on the security of the system:
 * `sharing` and `lock` control if and when sessions are transfered between clients
 * `border`, `min-size`, `max-size`, `modal-windows`: to distinguish and constrain remote windows
 * `challenge-handlers` to restrict the type of authentication mechanisms the client will use (ie: prevent password prompts)
+* `uinput` virtual devices should be avoided as they can be used to inject input events into a system at a lower level
 </details>
 
 
