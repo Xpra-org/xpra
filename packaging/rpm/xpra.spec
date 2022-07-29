@@ -261,6 +261,7 @@ Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:         python3-psutil
 Recommends:         qrencode
+Recommends:		    python3-pysocks
 Suggests:			python3-opencv
 #without this, the system tray is unusable with gnome!
 %if 0%{?el8}

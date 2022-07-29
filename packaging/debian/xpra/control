@@ -94,6 +94,8 @@ Recommends: python3-dbus
 #for ssh transport:
         ,python3-paramiko
         ,python3-dnspython
+#for connections through proxies
+        ,python3-socks
 #the start-session GUI:
         ,python3-xdg
         ,python3-pyinotify

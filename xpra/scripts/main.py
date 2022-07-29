@@ -883,11 +883,42 @@ def connect_or_fail(display_desc, opts):
         Logger("network").debug("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e) from None
 
+def proxy_connect(options):
+    #if is_debug_enabled("proxy"):
+    #log = logging.getLogger(__name__)
+    try:
+        import socks
+    except ImportError as e:
+        raise ValueError("cannot connect via a proxy: %s" % e) from None
+    to = typedict(options)
+    ptype = to.strget("proxy-type")
+    proxy_type = {
+        "SOCKS5"    : socks.SOCKS5,
+        "SOCKS4"    : socks.SOCKS4,
+        }.get(ptype)
+    if not proxy_type:
+        raise InitExit(EXIT_UNSUPPORTED, f"unsupported proxy type {ptype!r}")
+    host = to.strget("proxy-host")
+    port = to.intget("proxy-port", 1080)
+    rdns = to.boolget("proxy-rdns", True)
+    username = options.get("proxy-username")
+    password = options.get("proxy-password")
+    timeout = options.get("timeout", 20)
+    sock = socks.socksocket()
+    sock.set_proxy(proxy_type, host, port, rdns, username, password)
+    sock.settimeout(timeout)
+    sock.connect((options["host"], options["port"]))
+    return sock
 
-def retry_socket_connect(dtype, host, port, timeout=20):
+def retry_socket_connect(options):
+    host = options["host"]
+    port = options["port"]
+    if "proxy-host" in options:
+        return proxy_connect(options)
     from xpra.net.socket_util import socket_connect
     start = monotonic()
     retry = 0
+    timeout = options.get("timeout", 20)
     while True:
         sock = socket_connect(host, port, timeout=timeout)
         if sock:
@@ -898,6 +929,7 @@ def retry_socket_connect(dtype, host, port, timeout=20):
             werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, timeout))
         retry += 1
         time.sleep(1)
+    dtype = options["type"]
     raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s socket %s:%s" % (dtype, host, port))
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
@@ -1012,7 +1044,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         host = display_desc["host"]
         port = display_desc["port"]
-        sock = retry_socket_connect(dtype, host, port)
+        sock = retry_socket_connect(display_desc)
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
                                 dtype, socket_options=display_desc)
