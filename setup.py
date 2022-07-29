@@ -1837,6 +1837,8 @@ else:
 
 if WIN32 or OSX:
     external_includes += ["ssl", "_ssl"]
+    #socks proxy support:
+    add_packages("socks")
     if pillow_ENABLED:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
     #python-cryptography needs workarounds for bundling:
