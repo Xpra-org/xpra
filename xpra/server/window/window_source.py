@@ -2358,8 +2358,8 @@ class WindowSource(WindowIconSource):
         return {
                 "optimize"      : False,
                 "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
-                "quality"       : AUTO_REFRESH_QUALITY,
-                "speed"         : AUTO_REFRESH_SPEED,
+                "quality"       : self.refresh_quality,
+                "speed"         : self.refresh_speed,
                 }
 
     def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0, options=None):
