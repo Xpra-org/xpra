@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -512,7 +512,7 @@ class WindowVideoSource(WindowSource):
                 lim = now-4
                 pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
                 if pixels_last_4secs<((3+text_hint*6)*videomin):
-                    return nonvideo(30, "not enough frames")
+                    return nonvideo("not enough frames")
                 lim = now-1
                 pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
                 if pixels_last_sec<pixels_last_4secs//8:
@@ -530,7 +530,7 @@ class WindowVideoSource(WindowSource):
             max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
             if pixel_count<=max_nvp:
                 #below threshold
-                return nonvideo(30, "not enough pixels")
+                return nonvideo("not enough pixels")
         return current_encoding
 
     def get_best_nonvideo_encoding(self, ww, wh, options, current_encoding=None, encoding_options=()):
