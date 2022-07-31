@@ -505,6 +505,10 @@ class EncodingsMixin(StubSourceMixin):
         for ws in tuple(self.all_window_sources()):
             ws.set_min_quality(min_quality)
 
+    def set_max_quality(self, max_quality : int):
+        for ws in tuple(self.all_window_sources()):
+            ws.set_max_quality(max_quality)
+
     def set_quality(self, quality : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_quality(quality)
@@ -512,6 +516,10 @@ class EncodingsMixin(StubSourceMixin):
     def set_min_speed(self, min_speed : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_min_speed(min_speed)
+
+    def set_max_speed(self, max_speed : int):
+        for ws in tuple(self.all_window_sources()):
+            ws.set_max_speed(max_speed)
 
     def set_speed(self, speed : int):
         for ws in tuple(self.all_window_sources()):

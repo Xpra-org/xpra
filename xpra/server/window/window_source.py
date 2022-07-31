@@ -1314,6 +1314,12 @@ class WindowSource(WindowIconSource):
             self._fixed_min_speed = min_speed
             self.reconfigure(True)
 
+    def set_max_speed(self, max_speed):
+        max_speed = capr(max_speed)
+        if self._fixed_max_speed!=max_speed:
+            self._fixed_max_speed = max_speed
+            self.reconfigure(True)
+
     def set_speed(self, speed):
         speed = capr(speed)
         if self._fixed_speed!=speed:
@@ -1385,6 +1391,13 @@ class WindowSource(WindowIconSource):
             if min_quality>0:
                 self._fixed_quality = 0
             self._fixed_min_quality = min_quality
+            self.update_quality()
+            self.reconfigure(True)
+
+    def set_max_quality(self, max_quality):
+        max_quality = capr(max_quality)
+        if self._fixed_max_quality!=max_quality:
+            self._fixed_max_quality = max_quality
             self.update_quality()
             self.reconfigure(True)
 

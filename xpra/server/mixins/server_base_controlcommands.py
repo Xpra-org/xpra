@@ -118,7 +118,10 @@ class ServerBaseControlCommands(StubServerMixin):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
             self.control_commands[cmd.name] = cmd
         #encoding bits:
-        for name in ("quality", "min-quality", "speed", "min-speed"):
+        for name in (
+            "quality", "min-quality", "max-quality",
+            "speed", "min-speed", "max-speed",
+            ):
             fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
             self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, validation=[from0to100])
 
@@ -491,10 +494,14 @@ class ServerBaseControlCommands(StubServerMixin):
         return self._set_encoding_property("quality", quality, *wids)
     def control_command_min_quality(self, min_quality, *wids):
         return self._set_encoding_property("min-quality", min_quality, *wids)
+    def control_command_max_quality(self, max_quality, *wids):
+        return self._set_encoding_property("max-quality", max_quality, *wids)
     def control_command_speed(self, speed, *wids):
         return self._set_encoding_property("speed", speed, *wids)
     def control_command_min_speed(self, min_speed, *wids):
         return self._set_encoding_property("min-speed", min_speed, *wids)
+    def control_command_max_speed(self, max_speed, *wids):
+        return self._set_encoding_property("max-speed", max_speed, *wids)
 
     def control_command_auto_refresh(self, auto_refresh, *wids):
         delay = int(float(auto_refresh)*1000.0)      # ie: 0.5 -> 500 (milliseconds)

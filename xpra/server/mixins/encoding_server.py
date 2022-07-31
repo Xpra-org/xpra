@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -221,38 +221,21 @@ class EncodingServer(StubServerMixin):
         ss.set_encoding(encoding, wids)
         self._refresh_windows(proto, wid_windows, {})
 
-    def _process_quality(self, proto, packet):
-        quality = packet[1]
-        log("Setting quality to %s", quality)
+    def _modify_sq(self, proto, packet):
+        """ modify speed or quality """
         ss = self.get_server_source(proto)
-        if ss:
-            ss.set_quality(quality)
-            self.call_idle_refresh_all_windows(proto)
-
-    def _process_min_quality(self, proto, packet):
-        min_quality = packet[1]
-        log("Setting min quality to %s", min_quality)
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.set_min_quality(min_quality)
-            self.call_idle_refresh_all_windows(proto)
-
-    def _process_speed(self, proto, packet):
-        speed = packet[1]
-        log("Setting speed to ", speed)
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.set_speed(speed)
-            self.call_idle_refresh_all_windows(proto)
-
-    def _process_min_speed(self, proto, packet):
-        min_speed = packet[1]
-        log("Setting min speed to ", min_speed)
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.set_min_speed(min_speed)
-            self.call_idle_refresh_all_windows(proto)
-
+        if not ss:
+            return
+        ptype = bytestostr(packet[0])
+        assert ptype in (
+            "quality", "min-quality", "max-quality",
+            "speed", "min-speed", "max-speed",
+            )
+        value = int(packet[1])
+        log("Setting %s to %s", ptype, value)
+        fn = getattr(ss, "set_%s" % ptype.replace("-", "_"))
+        fn(value)
+        self.call_idle_refresh_all_windows(proto)
 
     def call_idle_refresh_all_windows(self, proto):
         #we can't assume that the window server mixin is loaded:
@@ -262,10 +245,8 @@ class EncodingServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self.add_packet_handlers({
-            "quality"       : self._process_quality,
-            "min-quality"   : self._process_min_quality,
-            "speed"         : self._process_speed,
-            "min-speed"     : self._process_min_speed,
-            "encoding"      : self._process_encoding,
-            })
+        for ptype in (
+            "quality", "min-quality", "max-quality",
+            "speed", "min-speed", "max-speed",
+            ):
+            self.add_packet_handler(ptype, self._modify_sq)
