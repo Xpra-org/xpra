@@ -1080,7 +1080,7 @@ class WindowSource(WindowIconSource):
         alpha = self._want_alpha or self.is_tray
         quality = options.get("quality", 0)
         if self._lossless_threshold_base<quality<100 and self._fixed_quality<=0:
-            quality = 100
+            quality = self._fixed_max_quality
         if w*h<self._rgb_auto_threshold and not grayscale:
             if depth>24 and self.client_bit_depth>24 and "rgb32" in co:
                 return "rgb32"

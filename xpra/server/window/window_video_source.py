@@ -453,7 +453,7 @@ class WindowVideoSource(WindowSource):
         def nonvideo(qdiff=None, info=""):
             if qdiff:
                 quality = options.get("quality", self._current_quality) + qdiff
-                options["quality"] = max(self._fixed_min_quality, min(100, quality))
+                options["quality"] = max(self._fixed_min_quality, min(self._fixed_max_quality, quality))
             log("nonvideo(%s, %s)", qdiff, info)
             return WindowSource.get_auto_encoding(self, ww, wh, options)
 
@@ -468,7 +468,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(100, "system tray")
         text_hint = self.content_type.find("text")>=0
         if text_hint and not TEXT_USE_VIDEO:
-            return nonvideo(info="text content-type")
+            return nonvideo(100, info="text content-type")
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
