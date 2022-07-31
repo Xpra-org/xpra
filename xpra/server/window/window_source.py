@@ -915,9 +915,7 @@ class WindowSource(WindowIconSource):
                 #window is fully opaque
                 self._want_alpha = False
                 break
-        self._lossless_threshold_base = min(90, 60+self._current_speed//5 + int(cv*100))
-        if self.content_type.find("text")>=0 or self.is_shadow:
-            self._lossless_threshold_base -= 20
+        self._lossless_threshold_base = max(0, min(90, 60+self._current_speed//5 + int(cv*100) - int(self.is_shadow)*20))
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
@@ -1368,9 +1366,7 @@ class WindowSource(WindowIconSource):
         info, target = get_target_quality(self.window_dimensions, self.batch_config,
                                           self.global_statistics, self.statistics,
                                           self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
-        if self.content_type.find("text")>=0:
-            target = min(100, target+50)
-        elif self.content_type.find("video")>=0:
+        if self.content_type.find("video")>=0:
             target = max(0, target-20)
         #make a copy to work on:
         ves_copy = list(self._encoding_quality)
