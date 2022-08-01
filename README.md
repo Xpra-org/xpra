@@ -1,4 +1,3 @@
-# Table of Contents
 1. [About](#about)
 2. [Installation](#installation)
 3. [Usage](#usage)
