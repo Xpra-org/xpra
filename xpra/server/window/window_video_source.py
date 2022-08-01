@@ -1765,8 +1765,6 @@ class WindowVideoSource(WindowSource):
             options["scaled-width"] = enc_width*n//d
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
-        if self.cuda_device_context:
-            options["cuda-device-context"] = self.cuda_device_context
 
         ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, options)
         #record new actual limits:
@@ -1787,7 +1785,7 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height):
         #tweaks for "real" video:
-        opts = {}
+        opts = {"cuda-device-context" : self.cuda_device_context}
         if not self._fixed_quality and not self._fixed_speed and self._fixed_min_quality<50:
             #only allow bandwidth to drive video encoders
             #when we don't have strict quality or speed requirements:
@@ -2217,7 +2215,6 @@ class WindowVideoSource(WindowSource):
 
         start = monotonic()
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
-        options["cuda-device-context"] = self.cuda_device_context
         try:
             ret = ve.compress_image(csc_image, options)
         except Exception as e:
