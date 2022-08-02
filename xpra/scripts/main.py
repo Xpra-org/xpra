@@ -895,7 +895,7 @@ def proxy_connect(options):
     proxy_type = {
         "SOCKS5"    : socks.SOCKS5,
         "SOCKS4"    : socks.SOCKS4,
-        }.get(ptype)
+        }.get(ptype, socks.SOCKS5)
     if not proxy_type:
         raise InitExit(EXIT_UNSUPPORTED, f"unsupported proxy type {ptype!r}")
     host = to.strget("proxy-host")

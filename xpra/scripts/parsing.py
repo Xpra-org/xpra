@@ -190,58 +190,31 @@ def _sep_pos(display_name):
         return scpos
     return min(scpos, slpos)
 
-def parse_proxy_attributes(display_name):
-    import re
-    # Notes:
-    # (1) this regex permits a "?" in the password or username (because not just splitting at "?").
-    #     It doesn't look for the next  "?" until after the "@", where a "?" really indicates
-    #     another field.
-    # (2) all characters including "@"s go to "userpass" until the *last* "@" after which it all goes
-    #     to "hostport"
-    reout = re.search("\\?proxy=(?P<p>((?P<userpass>.+)@)?(?P<hostport>[^?]+))", display_name)
-    if not reout:
-        return display_name, {}
+
+def auto_proxy(scheme, host):
     try:
-        desc_tmp = {}
-        # This one should *always* return a host, and should end with an optional numeric port
-        hostport = reout.group("hostport")
-        hostport_match = re.match(r"(?P<host>[^:]+)($|:(?P<port>\d+)$)", hostport)
-        if not hostport_match:
-            raise RuntimeError("bad format for 'hostport': '%s'" % hostport)
-        host = hostport_match.group("host")
-        if not host:
-            raise RuntimeError("bad format: missing host in '%s'" % hostport)
-        desc_tmp["proxy_host"] = host
-        if hostport_match.group("port"):
-            port_str = hostport_match.group("port")
-            try:
-                desc_tmp["proxy_port"] = int(port_str)
-            except ValueError:
-                raise RuntimeError("bad format: proxy port '%s' is not a number" % port_str) from None
-        userpass = reout.group("userpass")
-        if userpass:
-            # The username ends at the first colon. This decision was not unique: I could have
-            # allowed one colon in username if there were two in the string.
-            userpass_match = re.match("(?P<username>[^:]+)(:(?P<password>.+))?", userpass)
-            if not userpass_match:
-                raise RuntimeError("bad format for 'userpass': '%s'" % userpass)
-            # If there is a "userpass" part, then it *must* have a username
-            username = userpass_match.group("username")
-            if not username:
-                raise RuntimeError("bad format: missing username in '%s'" % userpass)
-            desc_tmp["proxy_username"] = username
-            password = userpass_match.group("password")
-            if password:
-                desc_tmp["proxy_password"] = password
-    except RuntimeError:
-        from xpra.log import Logger
-        sshlog = Logger("ssh")
-        sshlog.error("bad proxy argument: " + reout.group(0))
-        return display_name, {}
-    else:
-        # rip out the part we've processed
-        display_name = display_name[:reout.start()] + display_name[reout.end():]
-        return display_name, desc_tmp
+        from xpra.net.libproxy import ProxyFactory
+    except ImportError as e:
+        warn("Warning: unable to detect proxy settings")
+        warn(f" {e}")
+        return {}
+    p = ProxyFactory()
+    proxies = p.getProxies("%s://%s" % (scheme, host))
+    if not proxies or proxies[0]=="direct://":
+        return {}
+    #for the time being, just try the first one:
+    from urllib.parse import urlparse
+    url = urlparse(proxies[0])
+    if not url.scheme or not url.netloc:
+        return {}
+    options = {"proxy-host" : url.hostname}
+    if url.port:
+        options["proxy-port"] = url.port
+    if url.username:
+        options["proxy-username"] = url.username
+    if url.password:
+        options["proxy-password"] = url.password
+    return options
 
 def parse_remote_display(s):
     if not s:
@@ -405,8 +378,6 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         "display_name"  : display_name,
         "cmdline"       : cmdline,
         }
-    display_name, proxy_attrs = parse_proxy_attributes(display_name)
-    desc.update(proxy_attrs)
 
     pos = _sep_pos(display_name)
     if pos<0 or (display_name and display_name[0] in "0123456789"):
@@ -650,6 +621,10 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             if desc.get("strict-host-check") is False:
                 ssl_options["server-verify-mode"] = "none"
             desc["ssl-options"] = ssl_options
+        proxy = desc.get("proxy")
+        if proxy=="auto":
+            proxy_options = auto_proxy(desc["host"], desc["port"])
+            desc.update(proxy_options)
         return desc
 
     if protocol=="vsock":

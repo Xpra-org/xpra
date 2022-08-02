@@ -264,7 +264,7 @@ def ssh_paramiko_connect_to(display_desc):
         from xpra.net.socket_util import socket_connect
         if "proxy_host" in display_desc:
             proxy_host = display_desc["proxy_host"]
-            proxy_port = display_desc.get("proxy_port", 22)
+            proxy_port = int(display_desc.get("proxy_port", 22))
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
             proxy_keys = get_keyfiles(host_config, "proxy_key")
