@@ -5,6 +5,7 @@ libyuv
 nasm
 x264-xpra
 ffmpeg-xpra
+python3-lz4
 python3-Cython
 python3-pbr
 python3-rencode
