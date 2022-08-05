@@ -49,5 +49,5 @@ git commit -m "bump version" \
 	packaging/rpm/xpra.spec \
 	packaging/debian/xpra/changelog \
 	packaging/MSWindows/xpra.iss \
-	fs/lib/cups/xpraforwarder \
+        fs/lib/cups/backend/xpraforwarder \
 	docs/CHANGELOG.md
