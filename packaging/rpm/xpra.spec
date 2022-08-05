@@ -641,7 +641,7 @@ fi
 
 
 %changelog
-* Wed Dec 22 2021 Antoine Martin <antoine@xpra.org> 4.4-10
+* Fri Aug 05 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - TODO
 
 * Wed Dec 08 2021 Antoine Martin <antoine@xpra.org> 4.3-10
