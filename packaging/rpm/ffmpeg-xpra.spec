@@ -14,7 +14,7 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     5.0.1
+Version:     5.1
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
@@ -59,7 +59,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ef2efae259ce80a240de48ec85ecb062cecca26e4352ffb3fda562c21a93007b" ]; then
+if [ "${sha256}" != "55eb6aab5ee235550fa54a33eaf8bf1b4ec66c01453182b12f6a993d75698b03" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -201,6 +201,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Aug 06 2022 Antoine Martin <antoine@xpra.org> 5.1-1
+- new upstream release
+
 * Fri Jun 10 2022 Antoine Martin <antoine@xpra.org> 5.0.1-2
 - workaround Fedora 36 LTO breakage
 
