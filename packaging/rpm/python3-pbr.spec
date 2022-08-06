@@ -7,7 +7,7 @@ Release:        1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
-Source0:        https://files.pythonhosted.org/packages/f5/0c/3fa7b1f9006e4d454a49b48eac995167cf8617e19375c6963a6b048af0d0/pbr-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/96/9f/f4bc832eeb4ae723b86372277da56a5643b0ad472a95314e8f516a571bb0/pbr-%{version}.tar.gz
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
@@ -16,7 +16,7 @@ PBR is a library that injects some useful and sensible default behaviors into yo
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "672d8ebee84921862110f23fcec2acea191ef58543d34dfe9ef3d9f13c31cddf" ]; then
+if [ "${sha256}" != "e8dca2f4b43560edef58813969f52a56cef023146cbb8931626db80e6c1c4308" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
