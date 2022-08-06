@@ -1,10 +1,10 @@
 %define _disable_source_fetch 0
 %define _build_id_links none
-%define commit 5db6aa6cab1b146e07b60cc1736a01f21da01154
+%define commit baee400fa9ced6f5481a728138fed6e867b0ff7f
 %global debug_package %{nil}
 
 Name:	     x264-xpra
-Version:     20211215
+Version:     20220602
 Release:     1%{?dist}
 Summary:     x264 library for xpra
 Group:       Applications/Multimedia
@@ -38,7 +38,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "f3795b0b428e1b329305b2c19eb244e3e911231023f5bb8456dcb705a74d9545" ]; then
+if [ "${sha256}" != "0d2585d044102ad400cee540321a582a59598911dadbdb2b09a82837bfa09a1e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -83,6 +83,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Wed Dec 15 2021 Antoine Martin <antoine@xpra.org> - 20220602-1
+- use newer commit
+
 * Wed Dec 15 2021 Antoine Martin <antoine@xpra.org> - 20211215-1
 - bump version no as well as commit id
 
