@@ -2213,8 +2213,8 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg", extra_compile_args="-Wno-deprecated-declarations")
-tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil")
+toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
+tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
