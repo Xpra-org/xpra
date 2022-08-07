@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           python3-pbr
-Version:        5.8.0
+Version:        5.9.0
 Release:        1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
