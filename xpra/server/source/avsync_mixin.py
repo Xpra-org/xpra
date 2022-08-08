@@ -51,11 +51,18 @@ class AVSyncMixin(StubSourceMixin):
             }
 
     def parse_client_caps(self, c : typedict):
-        av_sync = c.boolget("av-sync")
-        self.av_sync_enabled = self.av_sync and av_sync
-        self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY))
+        av_sync = c.get("av-sync")
+        if isinstance(av_sync, dict):
+            av_sync = typedict(av_sync)
+            enabled = av_sync.boolget("enabled")
+            delay = typedict(av_sync.dictget("delay", {})).get("default", DEFAULT_AV_SYNC_DELAY)
+        else:
+            enabled = bool(av_sync)
+            delay = c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY)
+        self.av_sync_enabled = self.av_sync and enabled
+        self.set_av_sync_delay(int(self.av_sync_enabled) * delay)
         log("av-sync: server=%s, client=%s, enabled=%s, total=%s",
-                 self.av_sync, av_sync, self.av_sync_enabled, self.av_sync_delay_total)
+                 self.av_sync, enabled, self.av_sync_enabled, self.av_sync_delay_total)
 
 
     def set_av_sync_delta(self, delta):

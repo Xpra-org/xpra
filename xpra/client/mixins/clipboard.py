@@ -87,6 +87,7 @@ class ClipboardClient(StubClientMixin):
             return {}
         ccaps = {
             ""                          : True,
+            "enabled"                   : True,
             "notifications"             : True,
             "selections"                : CLIPBOARDS,
             #buggy osx clipboards:

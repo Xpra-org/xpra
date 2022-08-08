@@ -157,8 +157,14 @@ class AudioClient(StubClientMixin):
 
     def get_caps(self) -> dict:
         d = {}
-        updict(d, "av-sync", self.get_avsync_capabilities())
-        updict(d, "sound", self.get_audio_capabilities())
+        avcaps = self.get_avsync_capabilities()
+        acaps = self.get_audio_capabilities()
+        #legacy flat format:
+        updict(d, "av-sync", avcaps)
+        updict(d, "sound", acaps)
+        #v4.4 namespace:
+        d["av-sync"] = avcaps
+        d["audio"] = acaps
         return d
 
     def get_audio_capabilities(self) -> dict:
@@ -180,9 +186,12 @@ class AudioClient(StubClientMixin):
     def get_avsync_capabilities(self) -> dict:
         if not self.av_sync:
             return {}
+        delay = max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA)
         return {
             ""              : True,
-            "delay.default" : max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA),
+            "enabled"       : True,
+            "delay.default" : delay,
+            "delay"         : delay,
             }
 
 
