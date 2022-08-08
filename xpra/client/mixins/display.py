@@ -199,11 +199,13 @@ class DisplayClient(StubClientMixin):
     def get_screen_caps(self) -> dict:
         caps = {
             "vrefresh"      : self.get_vrefresh(),
-            "antialias"    : get_antialias_info(),
             "cursor" : {
                 "size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
                 },
             }
+        aa = get_antialias_info()
+        if aa:
+            caps["antialias"] = aa
         if SYNC_ICC:
             caps.update({
             "icc"          : self.get_icc_info(),
