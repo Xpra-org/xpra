@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -72,22 +72,24 @@ class ClipboardServer(StubServerMixin):
             self._clipboard_helper, self._clipboard_client, server_source, clipboard)
         if not clipboard:
             return {}
+        ccaps = {
+            "notifications"         : True,
+            "selections"            : self._clipboards,
+            "enable-selections"     : True,             #client check removed in v4
+            "contents-slice-fix"    : True,             #fixed in v2.4, removed check in v4.3
+            "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
+            "want_targets"          : CLIPBOARD_WANT_TARGETS,
+            "greedy"                : CLIPBOARD_GREEDY,
+            "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
+            "set_enabled"           : True,     #v4 servers no longer use or show this flag
+            "direction"             : self.clipboard_direction,
+            }
         f = {
+            #duplicated in the sub-dict in v4.4:
             "clipboards"            : self._clipboards,
             "clipboard-direction"   : self.clipboard_direction,
-            "clipboard" : {
-                ""                      : True,
-                "notifications"         : True,
-                "selections"            : CLIPBOARDS,
-                "enable-selections"     : True,             #client check removed in v4
-                "contents-slice-fix"    : True,             #fixed in v2.4, removed check in v4.3
-                "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
-                "want_targets"          : CLIPBOARD_WANT_TARGETS,
-                "greedy"                : CLIPBOARD_GREEDY,
-                "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
-                "set_enabled"           : True,     #v4 servers no longer use or show this flag
-                },
-             }
+            "clipboard"             : ccaps,
+            }
         return f
 
     def init_clipboard(self):

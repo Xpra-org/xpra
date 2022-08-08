@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -41,14 +41,25 @@ class ClipboardConnection(StubSourceMixin):
         self.cancel_clipboard_progress_timer()
 
     def parse_client_caps(self, c : typedict):
-        self.clipboard_enabled = c.boolget("clipboard", False)
-        self.clipboard_notifications = c.boolget("clipboard.notifications")
+        ccaps = c.get("clipboard")
+        if ccaps and isinstance(ccaps, dict):
+            ccaps = typedict(ccaps)
+            self.clipboard_enabled = True
+            self.clipboard_notifications = ccaps.boolget("notifications")
+            self.clipboard_greedy = ccaps.boolget("greedy")
+            self.clipboard_want_targets = ccaps.boolget("want_targets")
+            self.clipboard_selections = ccaps.strtupleget("selections", CLIPBOARDS)
+            self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
+        else:
+            #no namespace in v4.3 and earlier:
+            self.clipboard_enabled = c.boolget("clipboard", False)
+            self.clipboard_notifications = c.boolget("clipboard.notifications")
+            self.clipboard_greedy = c.boolget("clipboard.greedy")
+            self.clipboard_want_targets = c.boolget("clipboard.want_targets")
+            self.clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
+            self.clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
-        self.clipboard_greedy = c.boolget("clipboard.greedy")
-        self.clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
-        self.clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
 

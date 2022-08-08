@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -85,20 +85,22 @@ class ClipboardClient(StubClientMixin):
     def get_caps(self) -> dict:
         if not self.client_supports_clipboard:
             return {}
-        caps = flatten_dict({
-            "clipboard" : {
-                ""                          : True,
-                "notifications"             : True,
-                "selections"                : CLIPBOARDS,
-                #buggy osx clipboards:
-                "want_targets"              : CLIPBOARD_WANT_TARGETS,
-                #buggy osx and win32 clipboards:
-                "greedy"                    : CLIPBOARD_GREEDY,
-                "preferred-targets"         : CLIPBOARD_PREFERRED_TARGETS,
-                "set_enabled"               : True,     #v4 servers no longer use or show this flag
-                "contents-slice-fix"        : True,     #fixed in v2.4, removed check in v4.3
-                },
-             })
+        ccaps = {
+            ""                          : True,
+            "notifications"             : True,
+            "selections"                : CLIPBOARDS,
+            #buggy osx clipboards:
+            "want_targets"              : CLIPBOARD_WANT_TARGETS,
+            #buggy osx and win32 clipboards:
+            "greedy"                    : CLIPBOARD_GREEDY,
+            "preferred-targets"         : CLIPBOARD_PREFERRED_TARGETS,
+            "set_enabled"               : True,     #v4 servers no longer use or show this flag
+            "contents-slice-fix"        : True,     #fixed in v2.4, removed check in v4.3
+            }
+        #legacy flat format:
+        caps = flatten_dict({"clipboard" : ccaps})
+        #v4.4 uses namespace:
+        caps["clipboard"] = ccaps
         return caps
 
     def parse_server_capabilities(self, c : typedict) -> bool:
