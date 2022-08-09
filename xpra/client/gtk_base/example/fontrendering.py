@@ -85,7 +85,7 @@ class FontWindow(Gtk.Window):
         bw = w//4
         bh = h//4
         #copy ANTIALIAS_NONE to right hand side,
-        #then substract each image
+        #then subtract each image
         for background, foreground, yoffset in (
             (BLACK, WHITE, 0),
             (WHITE, BLACK, 2),

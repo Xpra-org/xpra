@@ -47,7 +47,7 @@ class TestRegion(unittest.TestCase):
         assert not R1.contains_rect(R4)
         assert not R1.contains_rect(R5)
 
-    def test_substract(self):
+    def test_subtract(self):
         #  ##########          ##########
         #  #        #          ##########
         #  #        #          ##########
@@ -60,7 +60,7 @@ class TestRegion(unittest.TestCase):
         #  ##########                                          ##########
         r = rectangle(0, 0, 100, 100)
         sub = rectangle(40, 40, 20, 20)
-        l = r.substract_rect(sub)
+        l = r.subtract_rect(sub)
         assert len(l)==4
         #verify total area has not changed:
         total = r.width*r.height
@@ -86,7 +86,7 @@ class TestRegion(unittest.TestCase):
         #                    ##########
         r = rectangle(0, 0, 100, 100)
         sub = rectangle(50, 50, 100, 100)
-        l = r.substract_rect(sub)
+        l = r.subtract_rect(sub)
         assert len(l)==2
         assert rectangle(0, 0, 100, 50) in l
         assert rectangle(0, 50, 50, 50) in l

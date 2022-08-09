@@ -675,7 +675,7 @@ class WindowVideoSource(WindowSource):
         self.video_subregion.add_video_refresh(ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
-        return sum(sarr(r) for r in region.substract_rect(vr))
+        return sum(sarr(r) for r in region.subtract_rect(vr))
 
     def matches_video_subregion(self, width, height):
         vr = self.video_subregion.rectangle
@@ -798,10 +798,10 @@ class WindowVideoSource(WindowSource):
             self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height,
                                        coding, video_options)
 
-            #now substract this region from the rest:
+            #now subtract this region from the rest:
             trimmed = []
             for r in regions:
-                trimmed += r.substract_rect(actual_vr)
+                trimmed += r.subtract_rect(actual_vr)
             if not trimmed:
                 sublog("do_send_delayed_regions: nothing left after removing video region %s", actual_vr)
                 return
@@ -1096,7 +1096,7 @@ class WindowVideoSource(WindowSource):
                         #figure out if the new region had pending regular refreshes:
                         subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
                         if old:
-                            #we don't bother substracting new and old (too complicated)
+                            #we don't bother subtracting new and old (too complicated)
                             refreshlog("scheduling refresh of old region: %s", old)
                             #this may also schedule a refresh:
                             super().add_refresh_region(old)

@@ -202,7 +202,7 @@ class VideoSubregion:
         nonvideo = []
         for r in self.refresh_regions:
             if not rect.contains_rect(r):
-                nonvideo += r.substract_rect(rect)
+                nonvideo += r.subtract_rect(rect)
         delay = max(150, self.auto_refresh_delay)
         self.nonvideo_regions += nonvideo
         if self.nonvideo_regions:
@@ -283,7 +283,7 @@ class VideoSubregion:
                             ex = max(0, ww-ew)
                         if ey<0:
                             ey = max(0, wh-eh)
-                    new_rects += r.substract(ex, ey, ew, eh)
+                    new_rects += r.subtract(ex, ey, ew, eh)
                 rects = new_rects
         return rects
 
@@ -385,7 +385,7 @@ class VideoSubregion:
                 inregion = r.intersection_rect(region)
                 if inregion:
                     incount += inregion.width*inregion.height*int(count)
-                outregions = r.substract_rect(region)
+                outregions = r.subtract_rect(region)
                 for x in outregions:
                     if ignore_size>0 and x.width*x.height<ignore_size:
                         #skip small region outside rectangle
@@ -401,7 +401,7 @@ class VideoSubregion:
                 r = rectangle(x,y,w,h)
                 new_rects = []
                 for cr in rects:
-                    new_rects += cr.substract_rect(r)
+                    new_rects += cr.subtract_rect(r)
                 if not new_rects:
                     #nothing left: damage covered the whole rect
                     return 1.0

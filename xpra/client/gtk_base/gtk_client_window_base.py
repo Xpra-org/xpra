@@ -831,7 +831,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             plug_name, x, y, w, h = monitor[:5]
             new_rects = []
             for rect in rects:
-                new_rects += rect.substract(x, y, w, h)
+                new_rects += rect.subtract(x, y, w, h)
             geomlog("after removing areas visible on %s from %s: %s", plug_name, rects, new_rects)
             rects = new_rects
             if not rects:

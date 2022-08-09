@@ -98,7 +98,7 @@ cdef class rectangle:
         return self.contains(rect.x, rect.y, rect.width, rect.height)
 
 
-    def substract(self, const int x, const int y, const int w, const int h):
+    def subtract(self, const int x, const int y, const int w, const int h):
         """ returns the rectangle(s) remaining when
             one subtracts the given rectangle from it, or None if nothing remains
         """
@@ -137,8 +137,8 @@ cdef class rectangle:
             rects.append(rectangle(self.x, y+h, self.width, self.y+self.height-(y+h)))
         return rects
 
-    def substract_rect(self, rectangle rect):
-        return self.substract(rect.x, rect.y, rect.width, rect.height)
+    def subtract_rect(self, rectangle rect):
+        return self.subtract(rect.x, rect.y, rect.width, rect.height)
 
     def get_geometry(self):
         return (self.x, self.y, self.width, self.height)
@@ -179,7 +179,7 @@ def add_rectangle(object regions, rectangle region):
             total = 0
             #only add the parts that are not already in the rectangle
             #it intersects:
-            for sub in region.substract_rect(r):
+            for sub in region.subtract_rect(r):
                 total += add_rectangle(regions, sub)
             return total
     #not found at all, add it all:
@@ -195,7 +195,7 @@ def remove_rectangle(object regions, rectangle region):
     cdef rectangle r
     new_regions = []
     for r in copy:
-        new_regions += r.substract(x, y, w, h)
+        new_regions += r.subtract(x, y, w, h)
     regions[:] = new_regions
 
 def merge_all(rectangles):

@@ -1933,7 +1933,7 @@ class WindowSource(WindowIconSource):
         else:
             non_ex = set()
             for r in regions:
-                for v in r.substract_rect(exclude_region):
+                for v in r.subtract_rect(exclude_region):
                     non_ex.add(v)
             regions = tuple(non_ex)
 
@@ -1949,7 +1949,7 @@ class WindowSource(WindowIconSource):
             #try to merge all the regions to see if we save anything:
             merged = merge_all(regions)
             if exclude_region:
-                merged_rects = merged.substract_rect(exclude_region)
+                merged_rects = merged.subtract_rect(exclude_region)
                 merged_pixel_count = sum(r.width*r.height for r in merged_rects)
             else:
                 merged_rects = (merged,)
@@ -2177,7 +2177,7 @@ class WindowSource(WindowIconSource):
                        encoding, actual_quality, lossy, msg,
                        region, self.refresh_regions, refresh_exclude)
         if not lossy or options.get("auto_refresh", False):
-            #substract this region from the list of refresh regions:
+            #subtract this region from the list of refresh regions:
             #(window video source may remove it from the video subregion)
             self.remove_refresh_region(region)
             if not self.refresh_timer:

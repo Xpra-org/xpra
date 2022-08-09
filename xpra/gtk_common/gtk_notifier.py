@@ -285,7 +285,7 @@ class Popup(Gtk.Window):
 
     def get_y(self, h):
         y = self.stack.get_origin_y()
-        if y >= (self.stack.max_height//2):        #if near bottom, substract window height
+        if y >= (self.stack.max_height//2):        #if near bottom, subtract window height
             y = y - h
         if (y + h) >= self.stack.max_height:
             y = self.stack.max_height - h
