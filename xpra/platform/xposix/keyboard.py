@@ -127,7 +127,7 @@ class Keyboard(KeyboardBase):
         log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
         #ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
         if prop:
-            xkb_rules_names = prop.split("\0")
+            xkb_rules_names = bytestostr(prop).split("\0")
             #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return xkb_rules_names
