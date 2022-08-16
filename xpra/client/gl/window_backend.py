@@ -135,7 +135,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         gl_icon = get_icon_filename("opengl", ext="png")
         icon_data = None
         if os.path.exists(gl_icon):
-            from PIL import Image
+            from PIL import Image  # @UnresolvedImport
             img = Image.open(gl_icon)
             img.load()
             icon_w, icon_h = img.size

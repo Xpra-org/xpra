@@ -92,7 +92,7 @@ if SAVE_BUFFERS not in ("png", "jpeg", None):
     SAVE_BUFFERS = None
 if SAVE_BUFFERS:
     from OpenGL.GL import glGetTexImage     #pylint: disable=ungrouped-imports
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageOps         # @UnresolvedImport
 
 
 PIXEL_FORMAT_TO_CONSTANT = {
@@ -1062,7 +1062,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
                     #pylint: disable=import-outside-toplevel
                     from pycuda.driver import memcpy_dtod   #pylint: disable=no-name-in-module
-                    from pycuda.gl import RegisteredBuffer, graphics_map_flags
+                    from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
                     cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
