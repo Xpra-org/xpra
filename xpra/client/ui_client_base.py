@@ -477,8 +477,9 @@ class UIXpraClient(ClientBaseClass):
         if self._remote_revision:
             r += "-r%s" % self._remote_revision
         mode = c.strget("server.mode", "server")
-        bits = c.intget("python.bits", 32)
-        log.info(f"Xpra {mode} server version {std(r)} {bits}-bit")
+        bits = c.intget("python.bits", 0)
+        bitsstr = "" if bits==0 else f" {bits}-bit"
+        log.info(f"Xpra {mode} server version {std(r)}{bitsstr}")
         if i:
             log.info(f" running on {std(i)}")
         if c.boolget("desktop") or c.boolget("shadow"):
