@@ -1,0 +1,20 @@
+diff --git a/src/cpp/cuda.hpp b/src/cpp/cuda.hpp
+index f60bb1d9cd77286b801b2bc7a65b3586e5daf7a0..18079ab485e24be4f55a388fcd62365d695ac623 100644
+--- a/src/cpp/cuda.hpp
++++ b/src/cpp/cuda.hpp
+@@ -159,9 +159,12 @@ typedef Py_ssize_t PYCUDA_BUFFER_SIZE_T;
+         << std::endl; \
+   }
+ #define CUDAPP_CATCH_CLEANUP_ON_DEAD_CONTEXT(TYPE) \
+-  catch (pycuda::cannot_activate_out_of_thread_context) \
+-  { } \
+-  catch (pycuda::cannot_activate_dead_context) \
++  catch (pycuda::cannot_activate_out_of_thread_context &e) \
++  { \
++    PyErr_Warn( \
++        PyExc_UserWarning, #TYPE " in out-of-thread context could not be cleaned up"); \
++  } \
++  catch (pycuda::cannot_activate_dead_context &e) \
+   { \
+     /* PyErr_Warn( \
+         PyExc_UserWarning, #TYPE " in dead context was implicitly cleaned up");*/ \

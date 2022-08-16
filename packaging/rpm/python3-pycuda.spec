@@ -17,12 +17,13 @@
 
 Name:           python3-pycuda
 Version:        2022.1
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
+Patch0:         pycuda-show-cleanup-failure-warning.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -52,6 +53,7 @@ if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%patch0 -p1
 
 %build
 CUDA=/opt/cuda
@@ -80,6 +82,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Tue Aug 16 2022 Antoine Martin <antoine@xpra.org> - 2022.1-2
+- add patch to show context cleanup failures
+
 * Sat Jun 25 2022 Antoine Martin <antoine@xpra.org> - 2022.1-1
 - new upstream release
 
