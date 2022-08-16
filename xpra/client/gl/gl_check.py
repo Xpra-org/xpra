@@ -9,7 +9,7 @@ import sys
 import logging
 
 from xpra.util import envbool, envint, csv
-from xpra.os_util import POSIX, OSX, bytestostr
+from xpra.os_util import bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
 
