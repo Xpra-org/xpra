@@ -90,6 +90,7 @@ class AudioMixin(StubSourceMixin):
         self.wants_sound = c.boolget("wants_sound", True)
         audio = c.dictget("audio")
         if audio:
+            audio = typedict(audio)
             self.pulseaudio_id = audio.strget("pulseaudio.id")
             self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
             self.pulseaudio_server = audio.strget("pulseaudio.server")
