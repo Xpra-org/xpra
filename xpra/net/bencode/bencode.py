@@ -106,7 +106,6 @@ def encode_int(x, r):
     r.extend(('i', str(int(x)), 'e'))
 
 def encode_memoryview(x, r):
-    print("memoryview!")
     encode_string(x.tobytes(), r)
 
 def encode_string(x, r):
