@@ -25,7 +25,21 @@ COMPRESSION = {}
 
 
 def init_lz4():
-    from lz4 import VERSION, block
+    try:
+        from xpra.net.lz4 import compress, decompress, get_version
+        def lz4_compress(packet, level):
+            flag = min(15, level) | LZ4_FLAG
+            return flag, compress(packet, acceleration=max(0, 5-level//3))
+        def lz4_decompress(data):
+            return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
+        return Compression("lz4", get_version(), 1, lz4_compress, lz4_decompress)
+    except ImportError:
+        #fall through to try `python-lz4` instead:
+        pass
+    return _init_python_lz4()
+
+def _init_python_lz4():
+    from lz4 import VERSION, block  #@UnresolvedImport
     import struct
     block_compress = block.compress
     block_decompress = block.decompress

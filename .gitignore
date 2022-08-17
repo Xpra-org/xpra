@@ -138,6 +138,7 @@ tests/unittests/test-file*
 /xpra/net/vsock.c
 /xpra/net/bencode/cython_bencode.c
 /xpra/net/rencodeplus/rencodeplus.c
+/xpra/net/lz4.c
 /xpra/net/brotli/compressor.c
 /xpra/net/brotli/decompressor.c
 /xpra/net/websockets/mask.c

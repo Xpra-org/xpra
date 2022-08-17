@@ -278,6 +278,7 @@ STRUCT_KNOWN_FILTERS = {
                 "util"          : "All utility functions",
                 "gobject"       : "Command line clients",
                 "brotli"        : "Brotli bindings",
+                "lz4"           : "LZ4 bindings",
                 #server bits:
                 "test"          : "Test code",
                 "verbose"       : "Very verbose flag",

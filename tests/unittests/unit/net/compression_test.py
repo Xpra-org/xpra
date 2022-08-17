@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 from xpra.net import compression
+
 
 class TestCompression(unittest.TestCase):
 
@@ -86,6 +87,29 @@ class TestCompression(unittest.TestCase):
                     except Exception:
                         print("error decompressing %s - generated with settings: %s" % (v, kwargs))
                         raise
+
+    def test_lz4(self):
+        try:
+            from xpra.net.lz4 import compress, decompress
+            from lz4 import block
+        except ImportError as e:
+            print(f"lz4 test skipped: {e}")
+            return
+        for t in (
+            b"abc", b"foobar",
+            b"\0"*1000000,
+            ):
+            for accel in (0, 1, 5, 9):
+                N = 1
+                for _ in range(N):
+                    c1 = compress(t, acceleration=accel)
+                for _ in range(N):
+                    c2 = block.compress(t, mode="fast", acceleration=accel)
+                assert c1==c2
+                d1 = decompress(c1)
+                d2 = block.decompress(c2)
+                assert d1==d2==t
+
 
 def main():
     unittest.main()

@@ -178,6 +178,7 @@ xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 proc_ENABLED            = LINUX and has_header_file("/proc/procps.h")
 vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
+lz4_ENABLED             = DEFAULT
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
@@ -258,7 +259,7 @@ SWITCHES = [
     ] + CODEC_SWITCHES + [
     "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "rencodeplus", "brotli", "qrencode",
-    "vsock", "netdev", "proc", "mdns",
+    "vsock", "netdev", "proc", "mdns", "lz4",
     "clipboard",
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
@@ -1028,6 +1029,7 @@ def clean():
                    "xpra/net/qrencode.c",
                    "xpra/net/websockets/mask.c",
                    "xpra/net/vsock.c",
+                   "xpra/net/lz4.c",
                    "xpra/buffers/membuf.c",
                    "xpra/buffers/xxh.c",
                    "xpra/buffers/cyxor.c",
@@ -1819,8 +1821,6 @@ else:
         #Note: despite our best efforts, py2app will not copy all the modules we need
         #so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
-        #needed by python-lz4:
-        add_modules("distutils")
         py2app_options = {
             'iconfile'          : './fs/share/icons/xpra.icns',
             'plist'             : Plist,
@@ -2233,6 +2233,7 @@ toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
 tace(vsock_ENABLED, "xpra.net.vsock")
+tace(lz4_ENABLED, "xpra.net.lz4", "liblz4")
 
 
 if ext_modules:
