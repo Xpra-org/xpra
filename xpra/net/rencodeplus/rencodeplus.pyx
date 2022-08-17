@@ -29,7 +29,14 @@ from cpython cimport bool
 from libc.stdlib cimport realloc, free
 from libc.string cimport memcpy
 
-__version__ = ("Cython", 1, 0, 7)
+__version__ = ("Cython", 1, 0, 8)
+
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
+
 
 cdef bool big_endian = sys.byteorder!="little"
 
@@ -204,6 +211,18 @@ cdef encode_float64(char **buf, unsigned int *pos, double x):
         x = swap_byte_order_double(<char *>&x)
     write_buffer(buf, pos, &x, sizeof(x))
 
+cdef encode_memoryview(char **buf, unsigned int *pos, mem):
+    cdef Py_buffer mv
+    if PyObject_GetBuffer(mem, &mv, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to read data from %s" % type(mem))
+    cdef int lx = mv.len
+    s = b"%i/" % lx
+    cdef char *p = s
+    write_buffer(buf, pos, p, len(s))
+    p = <char *> mv.buf
+    write_buffer(buf, pos, <char *>p, lx)
+    PyBuffer_Release(&mv)
+
 cdef encode_bytes(char **buf, unsigned int *pos, bytes x):
     cdef char *p
     cdef int lx = len(x)
@@ -285,6 +304,9 @@ cdef encode(char **buf, unsigned int *pos, data):
 
     elif t == bytes:
         encode_bytes(buf, pos, data)
+
+    elif t == memoryview:
+        encode_memoryview(buf, pos, data)
 
     elif t == str:
         encode_str(buf, pos, data.encode("utf8"))
