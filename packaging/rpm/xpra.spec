@@ -154,7 +154,6 @@ Summary:			Xpra gives you "persistent remote applications" for X. Python3 build.
 Group:				Networking
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3
-Requires:			python3-lz4
 Requires:			python3-pillow
 Requires:			python3-numpy
 Requires:			libyuv

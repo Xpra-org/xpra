@@ -59,8 +59,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-numpy
 # for PNG and JPEG support:
         ,python3-pil
-# packet compression:
-        ,python3-lz4
 # ssl (generate cert), wss:
         ,openssl
 #we need a vfb: either Xdummy or Xvfb
