@@ -105,6 +105,10 @@ def encode_int(x, r):
     # Explicit cast, because bool.__str__ is annoying.
     r.extend(('i', str(int(x)), 'e'))
 
+def encode_memoryview(x, r):
+    print("memoryview!")
+    encode_string(x.tobytes(), r)
+
 def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
 
@@ -135,6 +139,7 @@ encode_func = {
     dict    : encode_dict,
     bool    : encode_int,
     bytes   : encode_string,
+    memoryview : encode_memoryview,
     }
 
 def bencode(x):

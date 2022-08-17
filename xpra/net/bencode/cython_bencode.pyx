@@ -167,6 +167,8 @@ cdef int encode(object v, r) except -1:
         return encode_int(v, r)
     elif t==bytes:
         return encode_string(v, r)
+    elif t==memoryview:
+        return encode_string(v.tobytes(), r)
     elif t==str:
         return encode_unicode(v, r)
     elif t==list:
