@@ -549,7 +549,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         msgs = (
                 f"Warning: cannot {action} the file {basefilename!r}",
                 f"this file is too large: {std_unit(filesize)}B",
-                f"the {location} file size limit is {std_unit(limit)!r}B",
+                f"the {location} file size limit is {std_unit(limit)}B",
                 )
         self.file_size_dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
                                                   Gtk.ButtonsType.CLOSE, "\n".join(msgs))
