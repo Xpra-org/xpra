@@ -365,6 +365,10 @@ class FileTransferHandler(FileTransferAttributes):
             progress(-1, "file data size mismatch")
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
+        if chunk_state[-4]:
+            #check again if the transfer has been cancelled
+            filelog("got chunk for a cancelled file transfer, ignoring it")
+            return
         if has_more:
             progress(written)
             timer = chunk_state[-2]
