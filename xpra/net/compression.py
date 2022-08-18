@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -25,29 +25,20 @@ COMPRESSION = {}
 
 
 def init_lz4():
-    try:
-        from xpra.net.lz4 import compress, decompress, get_version
-        def lz4_compress(packet, level):
-            flag = min(15, level) | LZ4_FLAG
-            return flag, compress(packet, acceleration=max(0, 5-level//3))
-        def lz4_decompress(data):
-            return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
-        return Compression("lz4", get_version(), 1, lz4_compress, lz4_decompress)
-    except ImportError:
-        pass
+    from xpra.net.lz4 import compress, decompress, get_version  # @UnresolvedImport
+    def lz4_compress(packet, level):
+        flag = min(15, level) | LZ4_FLAG
+        return flag, compress(packet, acceleration=max(0, 5-level//3))
+    def lz4_decompress(data):
+        return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
+    return Compression("lz4", get_version(), 1, lz4_compress, lz4_decompress)
 
 def init_brotli():
-    try:
-        from xpra.net.brotli.compressor import compress, get_version
-        from xpra.net.brotli.decompressor import decompress
-        brotli_decompress = decompress
-        brotli_compress = compress
-        brotli_version = get_version()
-    except ImportError:
-        import brotli
-        brotli_decompress = brotli.decompress
-        brotli_compress = brotli.compress
-        brotli_version = brotli.__version__
+    from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
+    from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
+    brotli_decompress = decompress
+    brotli_compress = compress
+    brotli_version = get_version()
     def brotli_compress_shim(packet, level):
         if len(packet)>1024*1024:
             level = min(9, level)
