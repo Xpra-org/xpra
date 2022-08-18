@@ -19,7 +19,7 @@ PERFORMANCE_ORDER = ("none", "lz4", "zlib", "brotli")
 #require compression (disallow 'none'):
 PERFORMANCE_COMPRESSION = ("lz4", "zlib", "brotli")
 
-Compression = namedtuple("Compression", ["name", "version", "python_version", "compress", "decompress"])
+Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])
 
 COMPRESSION = {}
 
@@ -31,7 +31,7 @@ def init_lz4():
         return flag, compress(packet, acceleration=max(0, 5-level//3))
     def lz4_decompress(data):
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
-    return Compression("lz4", get_version(), 1, lz4_compress, lz4_decompress)
+    return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
 
 def init_brotli():
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
@@ -47,7 +47,7 @@ def init_brotli():
         if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
         return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
-    return Compression("brotli", None, brotli_version, brotli_compress_shim, brotli_decompress)
+    return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
 def init_zlib():
     import zlib
@@ -61,7 +61,7 @@ def init_zlib():
         v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
         assert not d.unconsumed_tail, "not all data was decompressed"
         return v
-    return Compression("zlib", None, zlib.__version__, zlib_compress, zlib_decompress)
+    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)
 
 def init_none():
     def nocompress(packet, _level):
@@ -70,7 +70,7 @@ def init_none():
         return 0, packet
     def nodecompress(v):
         return v
-    return Compression("none", None, None, nocompress, nodecompress)
+    return Compression("none", None, nocompress, nodecompress)
 
 
 def init_compressors(*names):
@@ -105,11 +105,6 @@ def get_compression_caps(full=True) -> dict:
         if full:
             if c.version:
                 ccaps["version"] = c.version
-            if c.python_version:
-                pcaps = ccaps.setdefault("python-%s" % x, {})
-                pcaps[""] = True
-                if c.python_version is not None:
-                    pcaps["version"] = c.python_version
         ccaps[""] = True
     return caps
 
