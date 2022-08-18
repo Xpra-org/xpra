@@ -504,6 +504,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         #check digest if present:
         if digest:
+            digest.update(file_data)
             expected_digest = options.strget(digest.name)   #ie: "sha256"
             if expected_digest and digest.hexdigest()!=expected_digest:
                 self.digest_mismatch(basefilename, digest, expected_digest)
