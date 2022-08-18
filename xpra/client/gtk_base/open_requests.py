@@ -72,15 +72,15 @@ class OpenRequestsWindow:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
-        def btn(label, tooltip, callback, icon_name=None):
-            b = self.btn(label, tooltip, callback, icon_name)
+        def btn(label, callback, icon_name=None):
+            b = self.btn(label, callback, icon_name)
             hbox.pack_start(b)
         if self.show_file_upload_cb:
-            btn("Upload", "", self.show_file_upload_cb, "upload.png")
-        btn("Close", "", self.close, "quit.png")
+            btn("Upload", self.show_file_upload_cb, "upload.png")
+        btn("Close", self.close, "quit.png")
         downloads = get_download_dir()
         if downloads:
-            btn("Show Downloads Folder", "", self.show_downloads, "browse.png")
+            btn("Show Downloads Folder", self.show_downloads, "browse.png")
 
         def accel_close(*_args):
             self.close()
@@ -90,11 +90,10 @@ class OpenRequestsWindow:
         self.window.add(vbox)
         self.populate_table()
 
-    def btn(self, label, tooltip, callback, icon_name=None):
+    def btn(self, label, callback, icon_name=None):
         btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
-        btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
         if icon_name:
             icon = get_icon_pixbuf(icon_name)
@@ -156,7 +155,7 @@ class OpenRequestsWindow:
                     main_label.set_label(parts[0]+"?..")
                     main_label.set_tooltip_text(s)
                 main_label.set_line_wrap(True)
-                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
                 main_label.set_size_request(URI_MAX_WIDTH, -1)
                 main_label.set_selectable(True)
                 items = (main_label, l(details), expires_label, buttons)
@@ -179,60 +178,64 @@ class OpenRequestsWindow:
         hbox = Gtk.HBox()
         def remove_entry(can_close=False):
             self.remove_entry(send_id, can_close)
-        def show_progressbar():
+        def stop(*args):
+            log(f"stop{args}")
+            remove_entry(True)
+            self.cancel_download(send_id, "User cancelled")
+        def show_progressbar(pct=0):
             expire = self.expire_labels.pop(send_id, None)
             if expire:
                 expire_label = expire[0]
                 expire_label.set_text("")
             for b in hbox.get_children():
                 hbox.remove(b)
-            def stop(*_args):
-                remove_entry(True)
-                self.cancel_download(send_id, "User cancelled")
-            stop_btn = self.btn("Stop", None, stop, "close.png")
-            hbox.pack_start(stop_btn)
+            stop_btn = None
+            if pct!=None:
+                stop_btn = self.btn("Stop", stop, "close.png")
+                hbox.pack_start(stop_btn)
             pb = Gtk.ProgressBar()
             hbox.set_spacing(20)
             hbox.pack_start(pb)
             hbox.show_all()
             pb.set_size_request(420, 30)
-            self.progress_bars[send_id] = (pb, stop_btn)
-        def cancel(*_args):
+            self.progress_bars[send_id] = [stop_btn, pb, pct]
+        def cancel(*args):
+            log(f"cancel{args}")
             remove_entry(True)
             cb_answer(DENY)
-        def accept(*_args):
+        def accept(*args):
+            log(f"accept{args}")
             remove_entry(False)
             cb_answer(ACCEPT, True)
-        def remote(*_args):
+        def remote(*args):
+            log(f"remote{args}")
             remove_entry(True)
             cb_answer(OPEN)
-        def progress(*_args):
+        def progress(*args):
+            log(f"progress{args}")
             cb_answer(ACCEPT, False)
             show_progressbar()
-        def progressaccept(*_args):
+        def progressaccept(*args):
+            log(f"progressaccept{args}")
             cb_answer(ACCEPT, True)
             show_progressbar()
-        pb_stop = self.progress_bars.get(send_id)
-        if pb_stop:
+        pbd = self.progress_bars.pop(send_id, None)
+        if pbd:
             #we already accepted this one, show stop + progressbar
-            pb, stop_btn = pb_stop
-            if stop_btn:
-                hbox.pack_start(stop_btn)
-            hbox.set_spacing(20)
-            hbox.pack_start(pb)
+            show_progressbar(pbd[2])
             return hbox
-        cancel_btn = self.btn("Cancel", None, cancel, "close.png")
+        cancel_btn = self.btn("Cancel", cancel, "close.png")
         hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
-            hbox.pack_start(self.btn("Open Locally", None, accept, "open.png"))
-            hbox.pack_start(self.btn("Open on server", None, remote))
+            hbox.pack_start(self.btn("Open Locally", accept, "open.png"))
+            hbox.pack_start(self.btn("Open on server", remote))
         elif printit:
-            hbox.pack_start(self.btn("Print", None, progressaccept, "printer.png"))
+            hbox.pack_start(self.btn("Print", progressaccept, "printer.png"))
         else:
-            hbox.pack_start(self.btn("Download", None, progress, "download.png"))
+            hbox.pack_start(self.btn("Download", progress, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, progressaccept, "open.png"))
-                hbox.pack_start(self.btn("Open on server", None, remote))
+                hbox.pack_start(self.btn("Download and Open", progressaccept, "open.png"))
+                hbox.pack_start(self.btn("Open on server", remote))
         return hbox
 
     def schedule_timer(self):
@@ -247,25 +250,28 @@ class OpenRequestsWindow:
 
 
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
-        buttons = self.progress_bars.get(transfer_id)
-        if not buttons:
+        pbd = self.progress_bars.get(transfer_id)
+        if not pbd:
             #we're not tracking this transfer: no progress bar
             return
-        pb, stop_btn = buttons
+        stop_btn, pb = pbd[:2]
         log("transfer_progress_update%s pb=%s", (send, transfer_id, elapsed, position, total, error), pb)
         if error:
-            self.progress_bars[transfer_id] = (pb, None)
-            stop_btn.hide()
+            pbd[2] = None
+            if stop_btn:
+                stop_btn.hide()
             pb.set_text("Error: %s, file transfer aborted" % error)
             GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
             return
         if pb:
+            pbd[2] = position/total
             pb.set_fraction(position/total)
             pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             pb.set_show_text(True)
         if position==total:
-            self.progress_bars[transfer_id] = (pb, None)
-            stop_btn.hide()
+            pbd[2] = 1
+            if stop_btn:
+                stop_btn.hide()
             pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
             GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
