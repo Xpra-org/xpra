@@ -196,19 +196,24 @@ class OpenRequestsWindow:
             hbox.show_all()
             pb.set_size_request(420, 30)
             self.progress_bars[send_id] = (pb, stop_btn)
-        def cancel(*_args):
+        def cancel(*args):
+            log(f"cancel{args}")
             remove_entry(True)
             cb_answer(DENY)
-        def accept(*_args):
+        def accept(*args):
+            log(f"accept{args}")
             remove_entry(False)
             cb_answer(ACCEPT, True)
-        def remote(*_args):
+        def remote(*args):
+            log(f"remote{args}")
             remove_entry(True)
             cb_answer(OPEN)
-        def progress(*_args):
+        def progress(*args):
+            log(f"progress{args}")
             cb_answer(ACCEPT, False)
             show_progressbar()
-        def progressaccept(*_args):
+        def progressaccept(*args):
+            log(f"progressaccept{args}")
             cb_answer(ACCEPT, True)
             show_progressbar()
         pb_stop = self.progress_bars.get(send_id)
