@@ -34,38 +34,7 @@ def init_lz4():
             return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
         return Compression("lz4", get_version(), 1, lz4_compress, lz4_decompress)
     except ImportError:
-        #fall through to try `python-lz4` instead:
         pass
-    return _init_python_lz4()
-
-def _init_python_lz4():
-    from lz4 import VERSION, block  #@UnresolvedImport
-    import struct
-    block_compress = block.compress
-    block_decompress = block.decompress
-    LZ4_HEADER = struct.Struct(b'<L')
-    try:
-        from lz4 import library_version_string
-        version = library_version_string()
-    except ImportError:
-        from lz4.version import version
-    def lz4_compress(packet, level):
-        flag = min(15, level) | LZ4_FLAG
-        if level>=9:
-            return flag, block_compress(packet, mode="high_compression", compression=level)
-        if level<=3:
-            return flag, block_compress(packet, mode="fast", acceleration=8-level*2)
-        return flag, block_compress(packet)
-    def lz4_decompress(data):
-        size = LZ4_HEADER.unpack_from(data[:4])[0]
-        #it would be better to use the max_size we have in protocol,
-        #but this hardcoded value will do for now
-        if size>MAX_DECOMPRESSED_SIZE:
-            sizemb = size//1024//1024
-            maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
-            raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-        return block_decompress(data)
-    return Compression("lz4", version, VERSION.encode("latin1"), lz4_compress, lz4_decompress)
 
 def init_brotli():
     try:
