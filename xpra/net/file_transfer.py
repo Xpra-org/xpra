@@ -259,7 +259,11 @@ class FileTransferHandler(FileTransferAttributes):
     def digest_mismatch(self, filename, digest, expected_digest):
         filelog.error("Error: data does not match, invalid %s file digest for '%s'", digest.name, filename)
         filelog.error(" received %s, expected %s", digest.hexdigest(), expected_digest)
-        os.unlink(filename)
+        try:
+            if os.path.exists(filename):
+                os.unlink(filename)
+        except OSError:
+            filelog.error(f"Error: failed to delete uploaded file %r", filename)
         raise Exception("failed %s digest verification" % digest.name)
 
 
