@@ -38,7 +38,7 @@ cdef extern from "lz4.h":
 
 def get_version():
     cdef int v = LZ4_versionNumber()
-    return v//1000, (v//100) % 100, v % 100
+    return v//10000, (v//100) % 100, v % 100
 
 
 cdef class compressor:
