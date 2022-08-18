@@ -72,15 +72,15 @@ class OpenRequestsWindow:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
-        def btn(label, tooltip, callback, icon_name=None):
-            b = self.btn(label, tooltip, callback, icon_name)
+        def btn(label, callback, icon_name=None):
+            b = self.btn(label, callback, icon_name)
             hbox.pack_start(b)
         if self.show_file_upload_cb:
-            btn("Upload", "", self.show_file_upload_cb, "upload.png")
-        btn("Close", "", self.close, "quit.png")
+            btn("Upload", self.show_file_upload_cb, "upload.png")
+        btn("Close", self.close, "quit.png")
         downloads = get_download_dir()
         if downloads:
-            btn("Show Downloads Folder", "", self.show_downloads, "browse.png")
+            btn("Show Downloads Folder", self.show_downloads, "browse.png")
 
         def accel_close(*_args):
             self.close()
@@ -90,11 +90,10 @@ class OpenRequestsWindow:
         self.window.add(vbox)
         self.populate_table()
 
-    def btn(self, label, tooltip, callback, icon_name=None):
+    def btn(self, label, callback, icon_name=None):
         btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
-        btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
         if icon_name:
             icon = get_icon_pixbuf(icon_name)
@@ -156,7 +155,7 @@ class OpenRequestsWindow:
                     main_label.set_label(parts[0]+"?..")
                     main_label.set_tooltip_text(s)
                 main_label.set_line_wrap(True)
-                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
                 main_label.set_size_request(URI_MAX_WIDTH, -1)
                 main_label.set_selectable(True)
                 items = (main_label, l(details), expires_label, buttons)
@@ -189,7 +188,7 @@ class OpenRequestsWindow:
             def stop(*_args):
                 remove_entry(True)
                 self.cancel_download(send_id, "User cancelled")
-            stop_btn = self.btn("Stop", None, stop, "close.png")
+            stop_btn = self.btn("Stop", stop, "close.png")
             hbox.pack_start(stop_btn)
             pb = Gtk.ProgressBar()
             hbox.set_spacing(20)
@@ -221,18 +220,18 @@ class OpenRequestsWindow:
             hbox.set_spacing(20)
             hbox.pack_start(pb)
             return hbox
-        cancel_btn = self.btn("Cancel", None, cancel, "close.png")
+        cancel_btn = self.btn("Cancel", cancel, "close.png")
         hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
-            hbox.pack_start(self.btn("Open Locally", None, accept, "open.png"))
-            hbox.pack_start(self.btn("Open on server", None, remote))
+            hbox.pack_start(self.btn("Open Locally", accept, "open.png"))
+            hbox.pack_start(self.btn("Open on server", remote))
         elif printit:
-            hbox.pack_start(self.btn("Print", None, progressaccept, "printer.png"))
+            hbox.pack_start(self.btn("Print", progressaccept, "printer.png"))
         else:
-            hbox.pack_start(self.btn("Download", None, progress, "download.png"))
+            hbox.pack_start(self.btn("Download", progress, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, progressaccept, "open.png"))
-                hbox.pack_start(self.btn("Open on server", None, remote))
+                hbox.pack_start(self.btn("Download and Open", progressaccept, "open.png"))
+                hbox.pack_start(self.btn("Open on server", remote))
         return hbox
 
     def schedule_timer(self):
