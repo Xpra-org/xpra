@@ -182,7 +182,7 @@ class OpenRequestsWindow:
             log(f"stop{args}")
             remove_entry(True)
             self.cancel_download(send_id, "User cancelled")
-        def show_progressbar(pct=0):
+        def show_progressbar(position=0, total=1):
             expire = self.expire_labels.pop(send_id, None)
             if expire:
                 expire_label = expire[0]
@@ -190,7 +190,7 @@ class OpenRequestsWindow:
             for b in hbox.get_children():
                 hbox.remove(b)
             stop_btn = None
-            if pct!=None:
+            if position!=None:
                 stop_btn = self.btn("Stop", stop, "close.png")
                 hbox.pack_start(stop_btn)
             pb = Gtk.ProgressBar()
@@ -198,7 +198,10 @@ class OpenRequestsWindow:
             hbox.pack_start(pb)
             hbox.show_all()
             pb.set_size_request(420, 30)
-            self.progress_bars[send_id] = [stop_btn, pb, pct]
+            if position!=None and total>0:
+                pb.set_fraction(position/total)
+                pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
+            self.progress_bars[send_id] = [stop_btn, pb, position, total]
         def cancel(*args):
             log(f"cancel{args}")
             remove_entry(True)
@@ -222,7 +225,7 @@ class OpenRequestsWindow:
         pbd = self.progress_bars.pop(send_id, None)
         if pbd:
             #we already accepted this one, show stop + progressbar
-            show_progressbar(pbd[2])
+            show_progressbar(pbd[2], pbd[3])
             return hbox
         cancel_btn = self.btn("Cancel", cancel, "close.png")
         hbox.pack_start(cancel_btn)
@@ -263,13 +266,14 @@ class OpenRequestsWindow:
             pb.set_text("Error: %s, file transfer aborted" % error)
             GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
             return
-        if pb:
-            pbd[2] = position/total
+        else:
+            pbd[2] = position
+            pbd[3] = total
+        if pb and total>0:
             pb.set_fraction(position/total)
             pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             pb.set_show_text(True)
         if position==total:
-            pbd[2] = 1
             if stop_btn:
                 stop_btn.hide()
             pb.set_text("Complete: %sB" % std_unit(total))
