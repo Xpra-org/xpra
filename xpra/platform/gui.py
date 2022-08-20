@@ -90,9 +90,9 @@ def get_ydpi():
     return -1
 
 
-def get_monitors_info(display, xscale=1, yscale=1):
+def get_monitors_info(xscale=1, yscale=1):
     from xpra.gtk_common import gtk_util
-    return gtk_util.get_monitors_info(display, xscale, yscale)
+    return gtk_util.get_monitors_info(xscale, yscale)
 
 
 def get_icon_size():
@@ -285,6 +285,7 @@ def get_info_base():
             "wm_name"                       : get_wm_name() or "",
             "workarea"                      : get_workarea() or "",
             "workareas"                     : get_workareas(),
+            "monitors"                      : get_monitors_info(),
             "desktops"                      : get_number_of_desktops(),
             "desktop_names"                 : get_desktop_names(),
             "session-type"                  : get_session_type(),

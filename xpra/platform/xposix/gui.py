@@ -10,7 +10,7 @@ import struct
 
 from xpra.os_util import (
     bytestostr, hexstr, get_saved_env,
-    is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, get_saved_env_var,
+    is_X11, is_Wayland, get_saved_env_var,
     )
 from xpra.util import u, envbool, envint, csv, ellipsizer
 from xpra.log import Logger

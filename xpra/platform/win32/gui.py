@@ -903,9 +903,9 @@ def show_desktop(b):
 
 
 
-def get_monitors_info(display, xscale=1, yscale=1):
+def get_monitors_info(xscale=1, yscale=1):
     from xpra.gtk_common import gtk_util
-    monitors_info = gtk_util.get_monitors_info(display, xscale, yscale)
+    monitors_info = gtk_util.get_monitors_info(xscale, yscale)
     if MONITOR_DPI:
         #try to get more precise data by querying the DPI using comtypes:
         from xpra.platform.win32.comtypes_util import CIMV2_Query

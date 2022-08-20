@@ -495,7 +495,7 @@ def get_screen_monitor_info(screen, i) -> dict:
         workarea_info[x] = getattr(rectangle, x)
     return info
 
-def get_monitors_info(display, xscale=1, yscale=1):
+def get_monitors_info(xscale=1, yscale=1):
     display = Gdk.Display.get_default()
     info = {}
     n = display.get_n_monitors()
