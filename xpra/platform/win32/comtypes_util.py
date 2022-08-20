@@ -25,6 +25,9 @@ class QuietenLogging:
             logger.setLevel(logging.WARNING)
         self.verbose = None
         from comtypes import client                  #@UnresolvedImport
+        client.gen_dir = None
+        from comtypes import CoInitialize               #@UnresolvedImport
+        CoInitialize()
         gen = getattr(client, "_generate", None)
         if gen:
             self.verbose = getattr(gen, "__verbose__", None)
@@ -41,3 +44,17 @@ class QuietenLogging:
                 gen.__verbose__ = self.verbose
         for i, logger in enumerate(self.loggers):
             logger.setLevel(self.saved_levels[i])
+
+
+class CIMV2_Query(QuietenLogging):
+
+    def __init__(self, query):
+        self.query = query
+        super().__init__()
+
+    def __enter__(self):
+        super().__enter__()
+        from comtypes.client import CreateObject        #@UnresolvedImport
+        o = CreateObject("WbemScripting.SWbemLocator")
+        s = o.ConnectServer(".", "root\\cimv2")
+        return s.ExecQuery(self.query)

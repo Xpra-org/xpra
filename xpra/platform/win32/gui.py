@@ -35,7 +35,6 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo,
     GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
     GetMonitorInfo,
-    user32,
     )
 from xpra.common import KeyEvent
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
@@ -53,6 +52,7 @@ USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
+MONITOR_DPI = envbool("XPRA_WIN32_MONITOR_DPI", True)
 
 
 PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
@@ -900,6 +900,47 @@ def show_desktop(b):
         SendMessageA(root, win32con.WM_COMMAND, v, 0)
     except Exception as e:
         log.warn("failed to call show_desktop(%s): %s", b, e)
+
+
+
+def get_monitors_info(display, xscale=1, yscale=1):
+    from xpra.gtk_common import gtk_util
+    monitors_info = gtk_util.get_monitors_info(display, xscale, yscale)
+    if MONITOR_DPI:
+        #try to get more precise data by querying the DPI using comtypes:
+        from xpra.platform.win32.comtypes_util import CIMV2_Query
+        with CIMV2_Query("SELECT * FROM Win32_DesktopMonitor") as res:
+            index = 0
+            for monitor in res:
+                dminfo = dict((k, monitor.Properties_[k].Value) for k in (
+                    "DeviceID", "MonitorManufacturer", "MonitorType",
+                    "ScreenWidth", "ScreenHeight",
+                    "PixelsPerXLogicalInch", "PixelsPerYLogicalInch",
+                    ))
+                log(f"Win32_DesktopMonitor {index}: {dminfo}")
+                manufacturer = dminfo["MonitorManufacturer"]
+                model = dminfo["MonitorType"]
+                #find this monitor entry in the gtk info:
+                mmatch = None
+                for monitor_info in monitors_info.values():
+                    if monitor_info.get("manufacturer")==manufacturer and monitor_info.get("model")==model:
+                        mmatch = monitor_info
+                        break
+                if mmatch:
+                    dpix = dminfo["PixelsPerXLogicalInch"]
+                    dpiy = dminfo["PixelsPerYLogicalInch"]
+                    #get the screen size from gtk because Win32_DesktopMonitor can be None!
+                    width = dminfo["ScreenWidth"] or mmatch["geometry"][2]
+                    height = dminfo["ScreenHeight"] or mmatch["geometry"][3]
+                    if dpix>0 and dpiy>0 and width>0 and height>0:
+                        mmatch.update({
+                            "dpi-x" : dpix,
+                            "dpi-y" : dpiy,
+                            "width-mm"  : round(width*25.4/dpix),
+                            "height-mm" : round(height*25.4/dpiy),
+                            })
+                index += 1
+    return monitors_info
 
 
 WM_WTSSESSION_CHANGE = 0x02b1

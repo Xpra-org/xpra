@@ -90,6 +90,11 @@ def get_ydpi():
     return -1
 
 
+def get_monitors_info(display, xscale=1, yscale=1):
+    from xpra.gtk_common import gtk_util
+    return gtk_util.get_monitors_info(display, xscale, yscale)
+
+
 def get_icon_size():
     xdpi = get_xdpi()
     ydpi = get_ydpi()
@@ -324,7 +329,7 @@ platform_import(globals(), "gui", False,
                 "get_session_type",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
-                "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi",
+                "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi", "get_monitors_info",
                 "get_icon_size",
                 "get_window_min_size", "get_window_max_size",
                 "get_mouse_config",
