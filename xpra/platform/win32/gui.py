@@ -943,6 +943,47 @@ def get_monitors_info(xscale=1, yscale=1):
     return monitors_info
 
 
+
+TaskbarLib = None
+def getTaskbar():
+    global TaskbarLib
+    if TaskbarLib is None:
+        try:
+            from xpra.platform.paths import get_app_dir
+            TLB_FILENAME = "TaskbarLib.tlb"
+            tlb_file = None
+            for d in (get_app_dir(), os.getcwd()):
+                tlb_file = os.path.join(d, TLB_FILENAME)
+                if os.path.exists(tlb_file):
+                    break
+            from xpra.platform.win32.comtypes_util import QuietenLogging
+            with QuietenLogging():
+                import comtypes.client as cc
+                cc.GetModule(tlb_file)
+                import comtypes.gen.TaskbarLib as tbl  # @UnresolvedImport
+                TaskbarLib = tbl
+                log(f"loaded {tlb_file}")
+        except Exception as e:
+            log.error(f"Error: failed to load taskbar library from {tlb_file}")
+            log.error(f" {e}")
+            TaskbarLib = False
+    if not TaskbarLib:
+        return None
+    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=tbl.ITaskbarList3)
+    taskbar.HrInit()
+    return taskbar
+
+
+def set_window_progress(window, pct):
+    taskbar = getattr(window, "taskbar", None)
+    if not taskbar:
+        taskbar = getTaskbar()
+        window.taskbar = taskbar
+    if taskbar:
+        handle = get_window_handle(window)
+        taskbar.SetProgressValue(handle, max(0, min(100, pct)), 100)
+
+
 WM_WTSSESSION_CHANGE = 0x02b1
 WTS_CONSOLE_CONNECT         = 0x1
 WTS_CONSOLE_DISCONNECT      = 0x2

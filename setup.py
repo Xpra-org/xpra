@@ -1506,6 +1506,7 @@ if WIN32:
         add_data_files("", [
             "packaging/MSWindows/website.url",
             "packaging/MSWindows/DirectShow.tlb",
+            "packaging/MSWindows/TaskbarLib.tlb",
             ])
 
     remove_packages(*external_excludes)

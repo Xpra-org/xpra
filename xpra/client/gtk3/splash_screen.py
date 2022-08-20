@@ -16,7 +16,7 @@ from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
-from xpra.platform.gui import force_focus
+from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -208,6 +208,7 @@ class SplashScreen(Gtk.Window):
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
             self.opacity = min(100, max(50, 130-pct))
             self.set_opacity(self.opacity/100.0)
+        set_window_progress(self, pct)
 
     def cancel_exit_timer(self):
         et = self.exit_timer

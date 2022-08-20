@@ -263,6 +263,10 @@ def can_access_display():
     return True
 
 
+def set_window_progress(window, pct):
+    pass
+
+
 take_screenshot = None
 ClientExtras = None
 
@@ -339,6 +343,7 @@ platform_import(globals(), "gui", False,
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
                 "can_access_display",
+                "set_window_progress",
                 "get_info")
 
 
