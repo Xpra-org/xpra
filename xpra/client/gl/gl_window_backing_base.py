@@ -1048,69 +1048,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_paint_jpeg(self, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         if self.nvjpeg_decoder and NVJPEG:
             def paint_nvjpeg(gl_context):
-                with self.assign_cuda_context(True):
-                    img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
-                    log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
-                    #'pixels' is a cuda buffer:
-                    cuda_buffer = img.get_pixels()
-                    size = img.get_rowstride()*img.get_height()
-
-                    self.gl_init()
-                    pbo = glGenBuffers(1)
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
-                    glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
-                    #pylint: disable=import-outside-toplevel
-                    from pycuda.driver import memcpy_dtod   #pylint: disable=no-name-in-module
-                    from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
-                    cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
-                    log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
-                    mapping = cuda_pbo.map()
-                    ptr, msize = mapping.device_ptr_and_size()
-                    assert msize>=size, "registered buffer size %i too small for pbo size %i" % (msize, size)
-                    log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
-                    memcpy_dtod(ptr, cuda_buffer, size)
-                    mapping.unmap()
-                    cuda_pbo.unregister()
-                    cuda_buffer.free()
-
-                rgb_format = img.get_pixel_format()
-                assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
-                pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
-
-                target = GL_TEXTURE_RECTANGLE_ARB
-                glEnable(target)
-                glBindTexture(target, self.textures[TEX_RGB])
-                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-                glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, None)
-                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
-
-                self.set_alignment(width, width*len(rgb_format), rgb_format)
-                # Draw textured RGB quad at the right coordinates
-                glBegin(GL_QUADS)
-                glTexCoord2i(0, 0)
-                glVertex2i(x, y)
-                glTexCoord2i(0, height)
-                glVertex2i(x, y+height)
-                glTexCoord2i(width, height)
-                glVertex2i(x+width, y+height)
-                glTexCoord2i(width, 0)
-                glVertex2i(x+width, y)
-                glEnd()
-
-                glBindTexture(target, 0)
-                glDisable(target)
-
-                self.paint_box(encoding, x, y, width, height)
-                # Present update to screen
-                if not self.draw_needs_refresh:
-                    self.present_fbo(x, y, width, height, options.intget("flush", 0))
-                # present_fbo has reset state already
-                fire_paint_callbacks(callbacks)
-                glDeleteBuffers(1, [pbo])
-
+                self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
             self.idle_add(self.with_gl_context, paint_nvjpeg)
             return
         if JPEG_YUV and width>=2 and height>=2 and encoding=="jpeg":
@@ -1133,6 +1071,71 @@ class GLWindowBackingBase(WindowBackingBase):
         rgb_format = img.get_pixel_format()
         self.idle_add(self.do_paint_rgb, rgb_format, img.get_pixels(), x, y, w, h, width, height,
                       img.get_rowstride(), options, callbacks)
+
+    def paint_nvjpeg(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
+        with self.assign_cuda_context(True):
+            img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
+            log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
+            #'pixels' is a cuda buffer:
+            cuda_buffer = img.get_pixels()
+            size = img.get_rowstride()*img.get_height()
+
+            self.gl_init()
+            pbo = glGenBuffers(1)
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
+            glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+            #pylint: disable=import-outside-toplevel
+            from pycuda.driver import memcpy_dtod   #pylint: disable=no-name-in-module
+            from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
+            cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
+            log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
+            mapping = cuda_pbo.map()
+            ptr, msize = mapping.device_ptr_and_size()
+            assert msize>=size, "registered buffer size %i too small for pbo size %i" % (msize, size)
+            log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
+            memcpy_dtod(ptr, cuda_buffer, size)
+            mapping.unmap()
+            cuda_pbo.unregister()
+            cuda_buffer.free()
+
+        rgb_format = img.get_pixel_format()
+        assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
+        pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
+
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glEnable(target)
+        glBindTexture(target, self.textures[TEX_RGB])
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, None)
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+
+        self.set_alignment(width, width*len(rgb_format), rgb_format)
+        # Draw textured RGB quad at the right coordinates
+        glBegin(GL_QUADS)
+        glTexCoord2i(0, 0)
+        glVertex2i(x, y)
+        glTexCoord2i(0, height)
+        glVertex2i(x, y+height)
+        glTexCoord2i(width, height)
+        glVertex2i(x+width, y+height)
+        glTexCoord2i(width, 0)
+        glVertex2i(x+width, y)
+        glEnd()
+
+        glBindTexture(target, 0)
+        glDisable(target)
+
+        self.paint_box(encoding, x, y, width, height)
+        # Present update to screen
+        if not self.draw_needs_refresh:
+            self.present_fbo(x, y, width, height, options.intget("flush", 0))
+        # present_fbo has reset state already
+        fire_paint_callbacks(callbacks)
+        glDeleteBuffers(1, [pbo])
+
 
     def paint_webp(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         subsampling = options.strget("subsampling")
