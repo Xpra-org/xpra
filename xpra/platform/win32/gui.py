@@ -953,7 +953,7 @@ def getTaskbar():
             TLB_FILENAME = "TaskbarLib.tlb"
             tlb_file = None
             for d in (get_app_dir(), os.getcwd()):
-                tlb_file = os.path.join(d, TLB_FILENAME)
+                tlb_file = os.path.abspath(os.path.join(d, TLB_FILENAME)).replace("/", "\\")
                 if os.path.exists(tlb_file):
                     break
             from xpra.platform.win32.comtypes_util import QuietenLogging
@@ -964,12 +964,13 @@ def getTaskbar():
                 TaskbarLib = tbl
                 log(f"loaded {tlb_file}")
         except Exception as e:
+            log("getTaskbar()", exc_info=True)
             log.error(f"Error: failed to load taskbar library from {tlb_file}")
-            log.error(f" {e}")
+            log.estr(e)
             TaskbarLib = False
     if not TaskbarLib:
         return None
-    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=tbl.ITaskbarList3)
+    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=TaskbarLib.ITaskbarList3)
     taskbar.HrInit()
     return taskbar
 

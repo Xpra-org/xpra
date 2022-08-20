@@ -25,6 +25,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
     TableBuilder, get_icon_pixbuf,
     )
+from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
 
@@ -279,6 +280,10 @@ class OpenRequestsWindow:
             pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
             GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
+        #totals:
+        position = sum(pbd[2] for pbd in self.progress_bars.values())
+        total = sum(pbd[3] for pbd in self.progress_bars.values())
+        set_window_progress(self.window, round(100*position/total))
 
 
     def show(self):
