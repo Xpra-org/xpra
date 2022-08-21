@@ -212,7 +212,7 @@ class Encodings(StubClientMixin):
             caps["scaling.control"] = self.video_scaling
         if self.encoding:
             caps[""] = self.encoding
-        if FULL_INFO:
+        if FULL_INFO>1:
             for k,v in codec_versions.items():
                 caps["%s.version" % k] = v
         if self.quality>0:

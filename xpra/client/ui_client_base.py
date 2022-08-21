@@ -85,7 +85,7 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
-SYSCONFIG = envbool("XPRA_SYSCONFIG", False)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
 
 
 """
@@ -275,7 +275,7 @@ class UIXpraClient(ClientBaseClass):
 
     def get_info(self):
         info = {}
-        if FULL_INFO:
+        if FULL_INFO>0:
             info.update({
                 "pid"       : os.getpid(),
                 "sys"       : get_sys_info(),
@@ -340,7 +340,7 @@ class UIXpraClient(ClientBaseClass):
         self.send("start-command", name, command, ignore, sharing)
 
     def get_version_info(self) -> dict:
-        if FULL_INFO:
+        if FULL_INFO>1:
             return get_version_info_full()
         return super().get_version_info()
 
@@ -411,7 +411,7 @@ class UIXpraClient(ClientBaseClass):
         def u(prefix, c):
             updict(caps, prefix, c, flatten_dicts=False)
         u("control_commands",   self.get_control_commands_caps())
-        if FULL_INFO:
+        if FULL_INFO>0:
             u("platform",           get_platform_info())
             u("opengl",             self.opengl_props)
             caps["session-type"] = get_session_type()

@@ -818,7 +818,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["encoding.transparency"] = self.has_transparency()
-        if FULL_INFO:
+        if FULL_INFO>1:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         if EXPORT_ICON_DATA:
             #tell the server which icons GTK can use

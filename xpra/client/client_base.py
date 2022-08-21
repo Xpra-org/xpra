@@ -28,7 +28,7 @@ from xpra.net.crypto import (
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES, DEFAULT_KEY_STRETCH,
     )
-from xpra.version_util import get_version_info, XPRA_VERSION
+from xpra.version_util import get_version_info, vparts, XPRA_VERSION
 from xpra.platform.info import get_name, get_username
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
@@ -412,7 +412,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def make_hello_base(self):
-        capabilities = flatten_dict(get_network_caps(FULL_INFO))
+        capabilities = flatten_dict(get_network_caps(FULL_INFO>0))
         #add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
@@ -423,25 +423,23 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "uuid"                  : self.uuid,
                 "username"              : self.username,    #for authentication
                 "compression_level"     : self.compression_level,
+                "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
                 })
         if self.display:
             capabilities["display"] = self.display
-        if FULL_INFO:
+        if FULL_INFO>0:
             capabilities.update({
                 "client_type"           : self.client_type(),
                 "session-id"            : self.session_id,
-                "version"               : XPRA_VERSION,
+                })
+        if FULL_INFO>1:
+            capabilities.update({
                 "python.version"        : sys.version_info[:3],
                 "python.bits"           : BITS,
                 "hostname"              : socket.gethostname(),
                 "user"                  : get_username(),
                 "name"                  : get_name(),
                 "argv"                  : sys.argv,
-                })
-        else:
-            #only show major number
-            capabilities.update({
-                "version"               : XPRA_VERSION.split(".", 1)[0],
                 })
         capabilities.update(self.get_file_transfer_features())
         def up(prefix, d):

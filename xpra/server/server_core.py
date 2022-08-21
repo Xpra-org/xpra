@@ -19,7 +19,7 @@ from time import sleep, time, monotonic
 from threading import Thread, Lock
 
 from xpra.version_util import (
-    XPRA_VERSION, version_str, full_version_str, version_compat_check, get_version_info_full,
+    XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info_full,
     get_platform_info, get_host_info,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
@@ -98,7 +98,7 @@ SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
-SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
@@ -2157,9 +2157,8 @@ class ServerCore:
         capabilities = flatten_dict(get_network_caps(FULL_INFO))
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(self.get_minimal_server_info()))
-        version = XPRA_VERSION.split(".", 1)[0] if FULL_INFO else version_str()
         capabilities.update({
-                        "version"               : version,
+                        "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
@@ -2300,7 +2299,7 @@ class ServerCore:
             info[prefix] = d
 
         authenticated = proto and proto.authenticators
-        full = FULL_INFO or authenticated
+        full = FULL_INFO>0 or authenticated
         if full:
             si = self.get_server_info()
             si.update(self.get_server_load_info())

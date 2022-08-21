@@ -117,7 +117,7 @@ class DisplayClient(StubClientMixin):
             "show-desktop"  : True,
             "vrefresh"      : self.get_vrefresh(),
             }
-        if FULL_INFO:
+        if FULL_INFO>0:
             wm_name = get_wm_name()
             if wm_name:
                 caps["wm_name"] = wm_name

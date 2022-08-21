@@ -55,7 +55,8 @@ MAX_WINDOW_SIZE = 2**15-2**13
 
 GROUP = os.environ.get("XPRA_GROUP", "xpra")
 
-FULL_INFO = envbool("XPRA_FULL_INFO", True)
+FULL_INFO = envint("XPRA_FULL_INFO", 1)
+assert FULL_INFO>=0
 LOG_HELLO = envbool("XPRA_LOG_HELLO", False)
 
 SSH_AGENT_DISPATCH = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")

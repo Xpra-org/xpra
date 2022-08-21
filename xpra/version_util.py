@@ -33,6 +33,10 @@ def warn(msg, *args, **kwargs):
     get_util_logger().warn(msg, *args, **kwargs)
 
 
+def vparts(version_str, n=1):
+    return ".".join(version_str.split(".")[:n])
+
+
 def version_str() -> str:
     rstr = revision_str()
     return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
@@ -144,23 +148,22 @@ def get_host_info(obfuscate=False) -> dict:
             })
     return info
 
-def get_version_info(full=True) -> dict:
-    if not full:
-        return {"version" : XPRA_VERSION.split(".")[0]}
-    props = {}
-    try:
-        from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
-        for k,v in {
-            "version"               : XPRA_VERSION,
-            "local_modifications"   : LOCAL_MODIFICATIONS,
-            "revision"              : REVISION,
-            "branch"                : BRANCH,
-            "commit"                : COMMIT,
-            }.items():
-            if v and v!="unknown":
-                props[k] = v
-    except ImportError as e:
-        warn("missing some source information: %s", e)
+def get_version_info(full=1) -> dict:
+    props = {"version" : vparts(XPRA_VERSION, full+1)}
+    if full>0:
+        try:
+            from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
+            for k,v in {
+                "version"               : XPRA_VERSION,
+                "local_modifications"   : LOCAL_MODIFICATIONS,
+                "revision"              : REVISION,
+                "branch"                : BRANCH,
+                "commit"                : COMMIT,
+                }.items():
+                if v and v!="unknown":
+                    props[k] = v
+        except ImportError as e:
+            warn("missing some source information: %s", e)
     return props
 
 def get_version_info_full() -> dict:

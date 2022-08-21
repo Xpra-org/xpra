@@ -6,6 +6,7 @@
 
 from xpra.util import std, typedict, net_utf8
 from xpra.common import FULL_INFO
+from xpra.version_util import vparts
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 from xpra.log import Logger
@@ -89,7 +90,7 @@ class ClientInfoMixin(StubSourceMixin):
     def get_connect_info(self) -> list:
         #client platform / version info:
         pinfo = [std(self.client_type)]
-        if FULL_INFO:
+        if FULL_INFO>0:
             if self.client_platform:
                 pinfo += [platform_name(self.client_platform, self.client_linux_distribution or self.client_release)]
             if self.client_session_type:
@@ -102,7 +103,7 @@ class ClientInfoMixin(StubSourceMixin):
             version = (self.client_version or "").split(".")[0]
         pinfo += [f"client version {std(version)}{std(revinfo)}{bitsstr}"]
         cinfo = [" ".join(x for x in pinfo if x)]
-        if FULL_INFO:
+        if FULL_INFO>0:
             #connection info:
             if self.hostname or self.username:
                 msg = "connected from %r" % std(self.hostname or "unknown host")
@@ -140,7 +141,7 @@ class ClientInfoMixin(StubSourceMixin):
                 "sharing"           : bool(self.sharing),
                 }
         if self.client_version:
-            info["version"] = self.client_version if FULL_INFO else self.client_version.split(".")[0]
+            info["version"] = vparts(self.client_version, FULL_INFO+1)
         def addattr(k, name=None):
             v = getattr(self, (name or k).replace("-", "_"))
             #skip empty values:
@@ -148,7 +149,7 @@ class ClientInfoMixin(StubSourceMixin):
                 info[k.replace("_", "-")] = v
         for k in ("session-id", "uuid"):
             addattr(k)
-        if FULL_INFO:
+        if FULL_INFO>1:
             for k in ("user", "name", "argv"):
                 addattr(k)
             for x in (
