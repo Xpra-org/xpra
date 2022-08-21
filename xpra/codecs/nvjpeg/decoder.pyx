@@ -116,7 +116,10 @@ def decompress_with_device(rgb_format, img_data, options=None):
     else:
         raise ValueError("invalid rgb format %r" % rgb_format)
     cdef nvjpegImage_t nv_image
+    stream = (options or {}).get("stream", None)
     cdef cudaStream_t nv_stream = NULL
+    if stream:
+        nv_stream = <cudaStream_t> (<uintptr_t> stream.handle)
     cdef nvjpegStatus_t r
     cdef uintptr_t dmem = 0
     cdef int rowstride = 0, width = 0, height = 0
@@ -200,7 +203,7 @@ def decompress_with_device(rgb_format, img_data, options=None):
                     memcpy.set_src_device(rgb)
                     memcpy.set_dst_device(rgba)
                     memcpy.height = width*height
-                    memcpy(aligned=False)
+                    memcpy(stream)
                     rgb.free()
                     #fill in the alpha channel:
                     memcpy = Memcpy2D()
@@ -212,7 +215,7 @@ def decompress_with_device(rgb_format, img_data, options=None):
                     memcpy.set_src_device(alpha)
                     memcpy.set_dst_device(rgba)
                     memcpy.height = alpha_size
-                    memcpy(aligned=False)
+                    memcpy(stream)
                     alpha.free()
                     end = monotonic()
                     log("alpha merge took %ims", 1000*(end-start))

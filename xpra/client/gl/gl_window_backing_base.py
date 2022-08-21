@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -1074,6 +1074,9 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_nvjpeg(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         with self.assign_cuda_context(True):
+            from pycuda.driver import Stream  # @UnresolvedImport
+            stream = Stream()
+            options["stream"] = stream
             img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
             log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
             #'pixels' is a cuda buffer:
@@ -1086,18 +1089,19 @@ class GLWindowBackingBase(WindowBackingBase):
             glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
             #pylint: disable=import-outside-toplevel
-            from pycuda.driver import memcpy_dtod   #pylint: disable=no-name-in-module
+            from pycuda.driver import memcpy_dtod_async   #pylint: disable=no-name-in-module
             from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
             cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
             log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
-            mapping = cuda_pbo.map()
+            mapping = cuda_pbo.map(stream)
             ptr, msize = mapping.device_ptr_and_size()
             assert msize>=size, "registered buffer size %i too small for pbo size %i" % (msize, size)
             log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
-            memcpy_dtod(ptr, cuda_buffer, size)
-            mapping.unmap()
+            memcpy_dtod_async(ptr, cuda_buffer, size, stream)
+            mapping.unmap(stream)
             cuda_pbo.unregister()
             cuda_buffer.free()
+            stream.synchronize()
 
         rgb_format = img.get_pixel_format()
         assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)

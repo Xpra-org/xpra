@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -461,7 +461,7 @@ class cuda_device_context:
         start = monotonic()
         cf = driver.ctx_flags
         if self.opengl:
-            from pycuda import gl
+            from pycuda import gl  # @UnresolvedImport
             self.context = gl.make_context(self.device)
         else:
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
