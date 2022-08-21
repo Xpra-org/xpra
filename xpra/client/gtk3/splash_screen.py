@@ -26,7 +26,7 @@ inject_css_overrides()
 
 TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
 LINES = envint("XPRA_SPLASH_LINES", 4)
-READ_SLEEP = envint("XPRA_READ_SLEEP", 10)
+READ_SLEEP = envint("XPRA_READ_SLEEP", 0)
 
 #PULSE_CHARS = "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
 PULSE_CHARS = "◐◓◑◒"
