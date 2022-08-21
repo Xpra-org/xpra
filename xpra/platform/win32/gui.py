@@ -958,14 +958,14 @@ def getTaskbar():
                     break
             from xpra.platform.win32.comtypes_util import QuietenLogging
             with QuietenLogging():
-                import comtypes.client as cc
+                import comtypes.client as cc  # @UnresolvedImport
                 cc.GetModule(tlb_file)
                 import comtypes.gen.TaskbarLib as tbl  # @UnresolvedImport
                 TaskbarLib = tbl
                 log(f"loaded {tlb_file}")
         except Exception as e:
             log("getTaskbar()", exc_info=True)
-            log.error(f"Error: failed to load taskbar library from {tlb_file}")
+            log.error(f"Error: failed to load taskbar library from {tlb_file!r}")
             log.estr(e)
             TaskbarLib = False
     if not TaskbarLib:
