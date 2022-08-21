@@ -127,26 +127,15 @@ class ClientWindowBase(ClientWidgetBase):
 
     def get_info(self):
         attributes = []
-        if self._fullscreen:
-            attributes.append("fullscreen")
-        if self._maximized:
-            attributes.append("maximized")
-        if self._above:
-            attributes.append("above")
-        if self._below:
-            attributes.append("below")
-        if self._shaded:
-            attributes.append("shaded")
-        if self._sticky:
-            attributes.append("sticky")
-        if self._skip_pager:
-            attributes.append("skip-pager")
-        if self._skip_taskbar:
-            attributes.append("skip-taskbar")
-        if self._iconified:
-            attributes.append("iconified")
-        if self._focused:
-            attributes.append("focused")
+        for attr in (
+            "fullscreen", "maximized",
+            "above", "below",
+            "shaded", "sticky",
+            "skip-pager", "skip-taskbar",
+            "iconified", "focused",
+            ):
+            if getattr(self, "_%s" % attr.replace("-", "_"), False):
+                attributes.append(attr)
         info = super().get_info()
         info.update({
             "override-redirect"     : self._override_redirect,
