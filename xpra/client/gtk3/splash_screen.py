@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import signal
+from time import sleep, monotonic
 from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
 from xpra.util import envint
-from xpra.os_util import SIGNAMES, OSX
+from xpra.os_util import SIGNAMES, OSX, WIN32
 from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
@@ -25,6 +26,7 @@ inject_css_overrides()
 
 TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
 LINES = envint("XPRA_SPLASH_LINES", 4)
+READ_SLEEP = envint("XPRA_READ_SLEEP", 10)
 
 #PULSE_CHARS = "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
 PULSE_CHARS = "◐◓◑◒"
@@ -94,6 +96,7 @@ class SplashScreen(Gtk.Window):
             signal.signal(SIGPIPE, self.handle_signal)
         self.opacity = 100
         self.pct = 0
+        self.start_time = monotonic()
         self.had_top_level_focus = False
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
@@ -112,10 +115,14 @@ class SplashScreen(Gtk.Window):
                 import ctypes  #pylint: disable=import-outside-toplevel
                 ctypes.string_at(0)
             GLib.timeout_add(scrash, crash)
+        self.start_time = monotonic()
         Gtk.main()
         return self.exit_code or 0
 
     def _focus_change(self, *args):
+        if WIN32 and monotonic()-self.start_time<1:
+            #ignore initial focus events on win32
+            return
         has = self.has_toplevel_focus()
         had = self.had_top_level_focus
         log(f"_focus_change{args} had={had}, has={has}")
@@ -158,8 +165,9 @@ class SplashScreen(Gtk.Window):
             if not line:
                 self.exit_code = EXIT_CONNECTION_LOST
                 self.exit()
-            else:
-                GLib.idle_add(self.handle_stdin_line, line)
+                break
+            GLib.idle_add(self.handle_stdin_line, line)
+            sleep(READ_SLEEP)
 
     def handle_stdin_line(self, line):
         parts = line.rstrip("\n\r").split(":", 1)
