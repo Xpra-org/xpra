@@ -63,7 +63,7 @@ from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
-from xpra.common import LOG_HELLO
+from xpra.common import LOG_HELLO, FULL_INFO
 from xpra.util import (
     first_time, noerr, net_utf8,
     csv, merge_dicts, typedict, notypedict, flatten_dict,
@@ -98,7 +98,6 @@ SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
-FULL_INFO = envbool("XPRA_FULL_INFO", True)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
