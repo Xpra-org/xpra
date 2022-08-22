@@ -36,8 +36,11 @@ from xpra.gtk_common.gtk_util import (
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.common import KeyEvent
 from xpra.client.client_window_base import ClientWindowBase
-from xpra.platform.gui import set_fullscreen_monitors, set_shaded
-from xpra.platform.gui import add_window_hooks, remove_window_hooks
+from xpra.platform.gui import (
+    set_fullscreen_monitors, set_shaded,
+    add_window_hooks, remove_window_hooks,
+    pointer_grab, pointer_ungrab,
+    )
 from xpra.log import Logger
 
 focuslog = Logger("focus", "grab")
@@ -1541,6 +1544,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def pointer_grab(self, *args):
         gdkwin = self.get_window()
+        #try platform specific variant first:
+        if pointer_grab(gdkwin):
+            self._client.pointer_grabbed = self._id
+            grablog(f"{pointer_grab}({gdkwin}) success")
+            return
         em = Gdk.EventMask
         event_mask = (em.BUTTON_PRESS_MASK |
                       em.BUTTON_RELEASE_MASK |
@@ -1555,6 +1563,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
     def pointer_ungrab(self, *args):
+        gdkwin = self.get_window()
+        if pointer_ungrab(gdkwin):
+            self._client.pointer_grabbed = None
+            grablog(f"{pointer_ungrab}({gdkwin}) success")
+            return
         grablog("pointer_ungrab%s pointer_grabbed=%s",
                 args, self._client.pointer_grabbed)
         self._client.pointer_grabbed = None

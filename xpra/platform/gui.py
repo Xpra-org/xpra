@@ -251,6 +251,18 @@ def set_shaded(_window, _shaded):
     xposix clients will hook it up here.
     """
 
+def pointer_grab(_window):
+    """
+    Pointer grabs require platform specific code
+    """
+    return False
+
+def pointer_ungrab(_window):
+    """
+    Pointer grabs require platform specific code
+    """
+    return False
+
 
 def gl_check():
     return None     #no problem
@@ -324,6 +336,7 @@ platform_import(globals(), "gui", False,
                 "use_stdin",
                 "get_wm_name",
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
+                "pointer_grab", "pointer_ungrab",
                 "ClientExtras",
                 "take_screenshot",
                 "get_clipboard_native_class",
@@ -344,7 +357,8 @@ platform_import(globals(), "gui", False,
                 "system_bell",
                 "can_access_display",
                 "set_window_progress",
-                "get_info")
+                "get_info",
+                )
 
 
 def main():
