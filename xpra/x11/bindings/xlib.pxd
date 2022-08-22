@@ -15,6 +15,7 @@ ctypedef char* XPointer
 ctypedef XID Drawable
 ctypedef XID Window
 ctypedef XID Pixmap
+ctypedef XID Cursor
 ctypedef CARD32 Colormap
 ctypedef CARD32 VisualID
 ctypedef CARD32 Time
@@ -87,7 +88,10 @@ cdef extern from "X11/Xlib.h":
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
 
     int XUngrabKeyboard(Display * display, Time t)
-    int XUngrabPointer(Display * display, Time t)
+    int XGrabPointer(Display *display, Window grab_window, Bool owner_events,
+                     unsigned int event_mask, int pointer_mode, int keyboard_mode,
+                     Window confine_to, Cursor cursor, Time time)
+    int XUngrabPointer(Display *display, Time time)
 
     int *XSynchronize(Display *display, Bool onoff)
 

@@ -122,10 +122,12 @@ cdef class X11CoreBindingsInstance:
         XGetErrorText(self.display, code, buffer, 128)
         return (bytes(buffer[:128]).split(b"\0", 1)[0]).decode("latin1")
 
-    def UngrabKeyboard(self, time=CurrentTime):
+    def UngrabKeyboard(self, Time time=CurrentTime):
+        self.context_check("UngrabKeyboard")
         assert self.display!=NULL, "display is closed"
         return XUngrabKeyboard(self.display, time)
 
-    def UngrabPointer(self, time=CurrentTime):
+    def UngrabPointer(self, Time time=CurrentTime):
+        self.context_check("UngrabPointer")
         assert self.display!=NULL, "display is closed"
         return XUngrabPointer(self.display, time)

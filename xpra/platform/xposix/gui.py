@@ -499,6 +499,28 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
         return False
 
 
+def pointer_grab(gdk_window):
+    if is_X11():
+        try:
+            from xpra.gtk_common.error import xsync
+            with xsync:
+                return X11WindowBindings().pointer_grab(gdk_window.get_xid())
+        except Exception:
+            log.error("Error: failed to grab pointer", exc_info=True)
+    return False
+
+def pointer_ungrab(_window):
+    if is_X11():
+        try:
+            from xpra.gtk_common.error import xsync
+            with xsync:
+                return X11WindowBindings().UngrabPointer()==0
+            return True
+        except Exception:
+            log.error("Error: failed to ungrab pointer", exc_info=True)
+    return False
+
+
 def _send_client_message(window, message_type, *values):
     try:
         from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
@@ -945,9 +967,9 @@ class ClientExtras:
             return False
         try:
             from xpra.gtk_common.error import xsync, XError
-            assert X11WindowBindings, "no X11 window bindings"
-            assert X11XI2Bindings, "no XI2 window bindings"
+            assert X11WindowBindings(), "no X11 window bindings"
             XI2 = X11XI2Bindings()
+            assert XI2, "no XI2 window bindings"
             #this may fail when windows are being destroyed,
             #ie: when another client disconnects because we are stealing the session
             try:

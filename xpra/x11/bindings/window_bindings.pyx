@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from libc.stdint cimport uintptr_t
 from xpra.gtk_common.error import XError
 
 from xpra.log import Logger
@@ -11,7 +12,8 @@ log = Logger("x11", "bindings", "window")
 
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime,
+    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor,
+    GrabModeAsync, XGrabPointer,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
     XWindowAttributes, XWindowChanges,
@@ -1223,3 +1225,13 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 protocols.append(protocol.decode("latin1"))
                 i += 1
         return protocols
+
+
+    def pointer_grab(self, Window xwindow):
+        self.context_check("pointer_grab")
+        cdef Cursor cursor = 0
+        cdef unsigned int event_mask = PointerMotionMask
+        cdef int r = XGrabPointer(self.display, xwindow, True,
+                                  event_mask, GrabModeAsync, GrabModeAsync,
+                                  xwindow, cursor, CurrentTime)
+        return r==0
