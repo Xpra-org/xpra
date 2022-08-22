@@ -1001,6 +1001,8 @@ def _do_run_server(script_file, cmdline,
             xrd = ""
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR")
+        if OSX and not xrd:
+            xrd = osexpand("~/.xpra", uid=uid, gid=gid)
     xrd = create_runtime_dir(xrd, uid, gid)
     if xrd:
         #this may override the value we get from pam
