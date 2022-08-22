@@ -247,7 +247,7 @@ class TrayBacking(WindowBackingBase):
         if rgb_mode=="rgb32":
             mode += "A"
             data_mode += "A"
-        from PIL import Image
+        from PIL import Image  #@UnresolvedImport
         img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width*len(data_mode), 1)
         filename = "./tray-%s-%s.png" % (rgb_mode, time())
         img.save(filename, "PNG")

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw  #@UnresolvedImport
 from gi.repository import GLib
 
 from xpra.net.mmap_pipe import mmap_read
