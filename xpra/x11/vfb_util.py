@@ -70,11 +70,11 @@ def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
         return parse_resolutions(s, default_refresh_rate)
     return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
 
-def get_desktop_vfb_resolutions():
+def get_desktop_vfb_resolutions(default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     return parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
                                  "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
                                  "1280x1024",
-                                 default_refresh_rate=DEFAULT_REFRESH_RATE//1000)
+                                 default_refresh_rate=default_refresh_rate)
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
