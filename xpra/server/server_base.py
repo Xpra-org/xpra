@@ -11,7 +11,7 @@ from time import monotonic
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
-from xpra.common import SSH_AGENT_DISPATCH
+from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO
 from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
@@ -810,10 +810,9 @@ class ServerBase(ServerBaseClass):
         return source
 
     def cleanup_source(self, source):
-        try:
-            ptype = source.protocol.TYPE
-        except (AttributeError, ValueError):
-            ptype = "xpra"
+        ptype = "xpra"
+        if FULL_INFO>0:
+            ptype = getattr(source, "client_type", "xpra")
         self.server_event("connection-lost", source.uuid)
         remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver==source.uuid:
