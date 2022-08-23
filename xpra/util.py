@@ -391,8 +391,8 @@ class typedict(dict):
         try:
             return conv(v)
         except (TypeError, ValueError, AssertionError) as e:
-            self._warn("Warning: failed to convert %r", k)
-            self._warn(" from %s using %s: %s", type(v), conv, e)
+            self._warn(f"Warning: failed to convert {k}")
+            self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
     def uget(self, k, default=None):
