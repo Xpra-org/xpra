@@ -84,13 +84,13 @@ class ClipboardServer(StubServerMixin):
             "set_enabled"           : True,     #v4 servers no longer use or show this flag
             "direction"             : self.clipboard_direction,
             }
-        f = {
-            #duplicated in the sub-dict in v4.4:
+        log("clipboard server caps=%s", ccaps)
+        return {
+            "clipboard"             : ccaps,
+            #for versions older than v4.4, duplicated here without the namespace:
             "clipboards"            : self._clipboards,
             "clipboard-direction"   : self.clipboard_direction,
-            "clipboard"             : ccaps,
             }
-        return f
 
     def init_clipboard(self):
         log("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
