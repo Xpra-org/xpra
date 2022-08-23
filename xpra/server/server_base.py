@@ -526,7 +526,10 @@ class ServerBase(ServerBaseClass):
                  "keyboard"                     : server_features.input_devices,
                  "pointer"                      : server_features.input_devices,
                  })
-            capabilities.update(flatten_dict(self.get_server_features(source)))
+            sf = self.get_server_features(source)
+            #for older clients, without namespace:
+            capabilities.update(flatten_dict(sf))
+            capabilities.update(sf)
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
