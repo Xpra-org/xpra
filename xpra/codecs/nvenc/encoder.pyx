@@ -2642,12 +2642,13 @@ cdef class Encoder:
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
                     }
-        if self.lossless:
+        if self.lossless and not self.scaling:
             client_options["quality"] = 100
         else:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling:
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
+            client_options["scaling-quality"] = "low"   #our dumb scaling kernels produce low quality output
         cdef double end = monotonic()
         self.frames += 1
         self.last_frame_times.append((start, end))

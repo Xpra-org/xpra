@@ -338,6 +338,7 @@ cdef class Encoder:
             gridw = max(1, ceil(width/blockw))
             gridh = max(1, ceil(height/blockh))
             buffers = []
+            client_options = {}
             if self.encoding=="jpeg":
                 #use a single RGB buffer as input to the encoder:
                 nchannels = 1
@@ -378,6 +379,8 @@ cdef class Encoder:
             del upload_buffer
             end = monotonic()
             log("nvjpeg: csc / scaling took %.1fms", 1000*(end-start))
+            if abs(width-self.encoder_width)>1 or abs(height-self.encoder_height)>1:
+                client_options["scaling-quality"] = "low"   #our dumb scaling kernels produces low quality output
             #now we actuall compress the rgb buffer:
             start = monotonic()
             with nogil:
@@ -404,7 +407,7 @@ cdef class Encoder:
             log("nvjpeg: downloaded %i jpeg bytes in %.1fms", length, 1000*(end-start))
             if self.encoding=="jpeg":
                 free_buffers()
-                return memoryview(output_buf), {}
+                return memoryview(output_buf), client_options
             #now compress alpha:
             jpeg = memoryview(output_buf).tobytes()
             start = monotonic()
@@ -433,7 +436,8 @@ cdef class Encoder:
                 end = monotonic()
                 log("nvjpeg: downloaded %i alpha bytes in %.1fms", length, 1000*(end-start))
                 jpega = memoryview(output_buf).tobytes()
-                return jpeg+jpega, {"alpha-offset" : len(jpeg)}
+                client_options["alpha-offset"] = len(jpeg)
+                return jpeg+jpega, client_options
             finally:
                 free_buffers()
                 #restore settings:
