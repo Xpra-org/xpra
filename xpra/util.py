@@ -353,7 +353,7 @@ class typedict(dict):
     def _process_args(mapping=(), **kwargs):
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
-        return ((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
+        return dict((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
     def __init__(self, mapping=(), **kwargs):
         super().__init__(self._process_args(mapping, **kwargs))
         self.warn = self._warn
