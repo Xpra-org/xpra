@@ -12,6 +12,7 @@ from time import monotonic
 from threading import RLock
 
 from xpra.codecs.nv_util import numpy_import_lock
+from xpra.codecs.codec_constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
 from xpra.os_util import load_binary_file
 from xpra.log import Logger
@@ -452,7 +453,8 @@ class cuda_device_context:
         return self.device is not None
 
     def __enter__(self):
-        assert self.lock.acquire(False), "failed to acquire cuda device lock"
+        if not self.lock.acquire(False):
+            raise TransientCodecException("failed to acquire cuda device lock")
         if not self.context:
             self.make_context()
         return self.push_context()
