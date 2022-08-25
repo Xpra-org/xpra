@@ -20,6 +20,10 @@ log = Logger("http")
 HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").split(",")
 DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 
+AUTH_REALM = os.environ.get("XPRA_HTTP_AUTH_REALM", "Xpra")
+AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME")
+AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD")
+
 EXTENSION_TO_MIMETYPE = {
     ".wasm" : "application/wasm",
     ".js"   : "text/javascript",
@@ -63,10 +67,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, sock, addr,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dirs=("/etc/xpra/http-headers",), script_paths=None):
+                 http_headers_dirs=("/etc/xpra/http-headers",), script_paths=None,
+                 username=AUTH_USERNAME, password=AUTH_PASSWORD):
         self.web_root = web_root
         self.http_headers_dirs = http_headers_dirs
         self.script_paths = script_paths or {}
+        self.username = username
+        self.password = password
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
@@ -205,6 +212,33 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.handle_request()
 
     def handle_request(self):
+        if self.password:
+            def auth_err(msg):
+                self.do_AUTHHEAD()
+                self.wfile.write(msg.encode("latin1"))
+                log.warn(f"http authentication failed: {msg}")
+            auth = self.headers.get("Authorization")
+            log("handle_request() auth header=%s", auth)
+            if not auth:
+                return auth_err("missing authentication header")
+            #ie: auth = 'Basic dGVzdDp0ZXN0'
+            if not auth.startswith("Basic "):
+                return auth_err("invalid authentication header")
+            b64str = auth.split("Basic ", 1)[1]
+            import base64
+            try:
+                s = base64.b64decode(b64str).decode("utf8")
+            except Exception:
+                s = ""
+            if s.find(":")<0:
+                return auth_err("invalid authentication format")
+            username, password = s.split(":", 1)
+            if (self.username and username!=self.username) or password!=self.password:
+                log("http authentication: expected %s:%s but received %s:%s",
+                    self.username or "", self.password, username, password)
+                return auth_err("invalid credentials")
+            log("http authentication passed")
+
         content = self.send_head()
         if content:
             try:
@@ -224,6 +258,15 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self):
         self.send_head()
+
+    def do_AUTHHEAD(self):
+        self.send_response(401)
+        if self.password:
+            self.send_header("WWW-Authenticate", f"Basic realm=\"{AUTH_REALM}\"")
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+
 
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):

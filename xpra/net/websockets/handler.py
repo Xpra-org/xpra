@@ -5,7 +5,7 @@
 
 from xpra.util import envbool
 from xpra.net.websockets.common import make_websocket_accept_hash
-from xpra.net.http_handler import HTTPRequestHandler
+from xpra.net.http_handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
 
 log = Logger("network", "websocket")
@@ -26,11 +26,15 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                  web_root="/usr/share/xpra/www/",
                  http_headers_dir="/etc/xpra/http-headers",
                  script_paths=None,
-                 redirect_https=False):
+                 redirect_https=False,
+                 username=AUTH_USERNAME, password=AUTH_PASSWORD,
+                 ):
         self.new_websocket_client = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.redirect_https = redirect_https
-        super().__init__(sock, addr, web_root, http_headers_dir, script_paths)
+        super().__init__(sock, addr,
+                         web_root, http_headers_dir, script_paths,
+                         username, password)
 
     def handle_websocket(self):
         log("handle_websocket() calling %s, request=%s (%s)",
