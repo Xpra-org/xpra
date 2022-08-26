@@ -63,7 +63,6 @@ def client_upgrade(read, write, host, port, path=""):
     while http_request and monotonic()-now<MAX_WRITE_TIME:
         w = write(http_request)
         http_request = http_request[w:]
-
     now = monotonic()
     response = b""
     while ("sec-websocket-protocol" not in u(response).lower()) and monotonic()-now<MAX_READ_TIME:

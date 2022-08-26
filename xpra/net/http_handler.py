@@ -11,6 +11,7 @@ from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.net.bytestreams import pretty_socket
 from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
@@ -220,6 +221,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.do_AUTHHEAD()
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
+            import socket
+            try:
+                peername = self.request.getpeername()
+                authlog.warn(" from %s", pretty_socket(peername))
+            except (AttributeError, socket.error):
+                pass
             return False
         auth = self.headers.get("Authorization")
         authlog("handle_request() auth header=%s", auth)
