@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
 log = Logger("auth")
+
 
 class Handler:
 
@@ -29,11 +30,8 @@ class Handler:
     def handle(self, packet) -> bool:
         log("handle(..) password_file=%s", self.password_file)
         if not self.password_file:
-            return False
+            return None
         filename = os.path.expanduser(self.password_file)
         data = load_binary_file(filename)
         log("loaded password data from %s: %s", filename, bool(data))
-        if not data:
-            return False
-        self.client.send_challenge_reply(packet, data)
-        return True
+        return data

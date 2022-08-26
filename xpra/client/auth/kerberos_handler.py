@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -42,7 +42,7 @@ class Handler:
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
             #not a kerberos challenge
-            return False
+            return None
         try:
             if WIN32:
                 import winkerberos as kerberos
@@ -56,7 +56,7 @@ class Handler:
         if service not in self.services and "*" not in self.services:
             log.warn("Warning: invalid kerberos request for service '%s'", service)
             log.warn(" services supported: %s", csv(self.services))
-            return False
+            return None
         log("kerberos service=%s", service)
         try:
             r, ctx = kerberos.authGSSClientInit(service)
@@ -65,15 +65,14 @@ class Handler:
             log("kerberos.authGSSClientInit(%s)", service, exc_info=True)
             log.error("Error: cannot initialize kerberos client:")
             log_kerberos_exception(e)
-            return False
+            return None
         try:
             kerberos.authGSSClientStep(ctx, "")
         except Exception as e:
             log("kerberos.authGSSClientStep", exc_info=True)
             log.error("Error: kerberos client authentication failure:")
             log_kerberos_exception(e)
-            return False
+            return None
         token = kerberos.authGSSClientResponse(ctx)
         log("kerberos token=%s", token)
-        self.client.send_challenge_reply(packet, token)
-        return True
+        return token

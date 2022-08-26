@@ -18,6 +18,7 @@ from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
+from xpra.make_thread import start_thread
 from xpra.net.protocol_classes import get_client_protocol_class
 from xpra.net.protocol import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
@@ -709,16 +710,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog("processing challenge: %s", packet[1:])
         if not self.validate_challenge_packet(packet):
             return
-        authlog("challenge handlers: %s", self.challenge_handlers)
+        start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet, ))
+
+    def do_process_challenge(self, packet):
         digest = bytestostr(packet[3])
+        authlog(f"challenge handlers: {self.challenge_handlers}, digest: {digest}")
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
             try:
                 authlog("calling challenge handler %s", handler)
-                r = handler.handle(packet)
-                authlog("%s(%s)=%s", handler.handle, packet, r)
-                if r:
-                    #the challenge handler claims to have handled authentication
+                value = handler.handle(packet)
+                authlog("%s(%s)=%s", handler.handle, packet, value)
+                if value:
+                    self.send_challenge_reply(packet, value)
+                    #stop since we have sent the reply
                     return
             except Exception as e:
                 authlog("%s(%s)", handler.handle, packet, exc_info=True)
@@ -749,23 +754,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             authlog("stdin isatty, using password prompt")
             password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
             authlog("password read from tty via getpass: %s", obsc(password))
-            self.send_challenge_reply(packet, password)
-            return True
-        else:
-            from xpra.platform.paths import get_nodock_command
-            cmd = get_nodock_command()+["_pass", prompt]
-            try:
-                from subprocess import Popen, PIPE
-                proc = Popen(cmd, stdout=PIPE)
-                getChildReaper().add_process(proc, "password-prompt", cmd, True, True)
-                out, err = proc.communicate(None, 60)
-                authlog("err(%s)=%s", cmd, err)
-                password = out.decode()
-                self.send_challenge_reply(packet, password)
-                return True
-            except Exception:
-                log("Error: failed to show GUi for password prompt", exc_info=True)
-        return False
+            return password
+        from xpra.platform.paths import get_nodock_command
+        cmd = get_nodock_command()+["_pass", prompt]
+        try:
+            from subprocess import Popen, PIPE
+            proc = Popen(cmd, stdout=PIPE)
+            getChildReaper().add_process(proc, "password-prompt", cmd, True, True)
+            out, err = proc.communicate(None, 60)
+            authlog("err(%s)=%s", cmd, err)
+            password = out.decode()
+            return password
+        except Exception:
+            log("Error: failed to show GUi for password prompt", exc_info=True)
+            return None
 
     def auth_error(self, code, message, server_message="authentication failed"):
         authlog.error("Error: authentication failed:")
@@ -811,15 +813,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             pass
         return text
 
-    def send_challenge_reply(self, packet, password):
-        if not password:
-            if self.password_file:
-                self.auth_error(EXIT_PASSWORD_FILE_ERROR,
-                                "failed to load password from file%s %s" % (engs(self.password_file), csv(self.password_file)),
-                                "no password available")
-            else:
-                self.auth_error(EXIT_PASSWORD_REQUIRED,
-                                "this server requires authentication and no password is available")
+    def send_challenge_reply(self, packet, value):
+        if not value:
+            self.auth_error(EXIT_PASSWORD_REQUIRED,
+                            "this server requires authentication and no password is available")
             return
         encryption = self.get_encryption()
         if encryption:
@@ -828,6 +825,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             key = self.get_encryption_key()
             if not self.set_server_encryption(server_cipher, key):
                 return
+        #some authentication handlers give us the response and salt,
+        #ready to use without needing to use the digest
+        #(ie: u2f handler)
+        if isinstance(value, (tuple, list)) and len(value)==2:
+            self.do_send_challenge_reply(*value)
+            return
+        password = value
         #all server versions support a client salt,
         #they also tell us which digest to use:
         server_salt = bytestostr(packet[1])
@@ -864,8 +868,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.password_sent = True
         if self._protocol.TYPE=="rfb":
             self._protocol.send_challenge_reply(challenge_response)
-        else:
-            self.send_hello(challenge_response, client_salt)
+            return
+        #call send_hello from the UI thread:
+        self.idle_add(self.send_hello, challenge_response, client_salt)
 
     ########################################
     # Encryption

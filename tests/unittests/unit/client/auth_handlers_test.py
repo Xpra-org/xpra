@@ -30,12 +30,10 @@ class AuthHandlersTest(unittest.TestCase):
 		salt_digest = kwargs.pop("salt-digest", "xor")
 		packet = ("challenge", server_salt, "", digest, salt_digest)
 		r = h.handle(packet)
-		assert r==success, "expected %s(%s) to return %s but got %s (handler class=%s)" % (
-			h.handle, packet, success, r, handler_class)
-		if success:
-			passwords = h.client.challenge_reply_passwords
-			assert len(passwords)==1
-			assert passwords[0]==password
+		if not success:
+			assert not r, f"expected {h.handle}({packet}) to fail but it returned {r} (handler class={handler_class})"
+		else:
+			assert r==password, f"expected password value {password} but got {r}"
 			h.get_digest()
 		#client_salt = ""
 		#salt = gendigest(salt_digest, client_salt, server_salt)
@@ -46,10 +44,7 @@ class AuthHandlersTest(unittest.TestCase):
 		from xpra.client.auth.prompt_handler import Handler
 		client = FakeClient()
 		password = "prompt-password"
-		def rec(packet, _prompt):
-			client.send_challenge_reply(packet, password)
-			return True
-		client.do_process_challenge_prompt = rec
+		client.do_process_challenge_prompt = lambda packet, prompt : password
 		self.do_test_handler(client, True, password, Handler, digest="gss:token-type")
 
 	def test_env_handler(self):

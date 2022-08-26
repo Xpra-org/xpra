@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,6 +9,7 @@ import os
 import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
+from threading import Event
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -281,10 +282,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         authlog(f"do_process_challenge_prompt%s get_pinentry_command({PINENTRY})={pinentry_cmd}",
                 (packet, prompt))
         if pinentry_cmd:
-            start_thread(self.handle_challenge_with_pinentry,
-                         "pinentry", True, (packet, prompt, pinentry_cmd))
-            return True
-        return self.do_process_challenge_prompt_dialog(packet, prompt)
+            return self.handle_challenge_with_pinentry(packet, prompt, pinentry_cmd)
+        return self.process_challenge_prompt_dialog(packet, prompt)
 
     def stop_pinentry(self):
         pp = self.pinentry_proc
@@ -310,28 +309,40 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             proc = Popen([cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except OSError:
             authlog("pinentry failed", exc_info=True)
-        else:
-            self.pinentry_proc = proc
-            q = "Enter %s" % prompt
-            p = self._protocol
-            if p:
-                conn = getattr(p, "_conn", None)
-                if conn:
-                    from xpra.net.bytestreams import pretty_socket
-                    cinfo = conn.get_info()
-                    endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
-                    q += "\n at %s" % endpoint
-            def got_pin(value):
-                self.idle_add(self.send_challenge_reply, packet, value)
-            def no_pin():
-                self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
-            from xpra.scripts.pinentry_wrapper import pinentry_getpin
-            title = self.get_server_authentication_string()
-            pinentry_getpin(proc, title, q, got_pin, no_pin)
-            return True
-        return self.do_process_challenge_prompt_dialog(packet, prompt)
+            return self.process_challenge_prompt_dialog(packet, prompt)
+        self.pinentry_proc = proc
+        q = "Enter %s" % prompt
+        p = self._protocol
+        if p:
+            conn = getattr(p, "_conn", None)
+            if conn:
+                from xpra.net.bytestreams import pretty_socket
+                cinfo = conn.get_info()
+                endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
+                q += "\n at %s" % endpoint
+        title = self.get_server_authentication_string()
+        values = []
+        def rec(value=None):
+            values.append(value)
+        from xpra.scripts.pinentry_wrapper import pinentry_getpin
+        pinentry_getpin(proc, title, q, rec, rec)
+        if not values:
+            return None
+        return values[0]
 
-    def do_process_challenge_prompt_dialog(self, packet, prompt="password"):
+    def process_challenge_prompt_dialog(self, packet, prompt="password"):
+        #challenge handlers run in a separate 'challenge' thread
+        #but we need to run in the UI thread to access the GUI with Gtk
+        #so we block the current thread using an event:
+        wait = Event()
+        values = []
+        self.idle_add(self.do_process_challenge_prompt_dialog, packet, values, wait, prompt)
+        wait.wait()
+        if not values:
+            return None
+        return values[0]
+
+    def do_process_challenge_prompt_dialog(self, packet, values : list, wait : Event, prompt="password"):
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title,
                None,
@@ -366,9 +377,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             dialog.hide()
             dialog.destroy()
             if response!=Gtk.ResponseType.ACCEPT or not password:
-                self.quit(EXIT_PASSWORD_REQUIRED)
-                return
-            self.send_challenge_reply(packet, password)
+                values.append(None)
+            else:
+                values.append(password)
+            wait.set()
         def password_activate(*_args):
             handle_response(dialog, Gtk.ResponseType.ACCEPT)
         password_input.connect("activate", password_activate)
@@ -377,7 +389,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             from xpra.platform.darwin.gui import enable_focus_workaround
             enable_focus_workaround()
         dialog.show()
-        return True
 
 
     def setup_connection(self, conn):

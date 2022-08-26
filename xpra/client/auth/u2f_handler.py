@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,14 +28,14 @@ class Handler:
         digest = bytestostr(packet[3])
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
-            return False
+            return None
         try:
             from pyu2f import model                     #@UnresolvedImport
             from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
         except ImportError as e:
             log.warn("Warning: cannot use u2f authentication handler")
             log.warn(" %s", e)
-            return False
+            return None
         if not is_debug_enabled("auth"):
             logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
             logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
@@ -43,7 +43,7 @@ class Handler:
         APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
         key_handle = self.get_key_handle()
         if not key_handle:
-            return False
+            return None
         key = model.RegisteredKey(key_handle)
         #use server salt as challenge directly
         challenge = packet[1]
@@ -52,8 +52,7 @@ class Handler:
         sig = response.signature_data
         client_data = response.client_data
         log("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
-        self.client.do_send_challenge_reply(bytes(sig), client_data.origin)
-        return True
+        return bytes(sig), client_data.origin
 
     def get_key_handle(self) -> bytes:
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
