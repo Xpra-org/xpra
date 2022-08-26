@@ -417,7 +417,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
             if digest:
-                capabilities["digest"].append(digest)
+                digests = capabilities.setdefault("digest", [])
+                if digest not in digests:
+                    digests.append(digest)
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "uuid"                  : self.uuid,
