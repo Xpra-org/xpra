@@ -211,34 +211,42 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.handle_request()
 
-    def handle_request(self):
-        if self.password:
-            def auth_err(msg):
-                self.do_AUTHHEAD()
-                self.wfile.write(msg.encode("latin1"))
-                log.warn(f"http authentication failed: {msg}")
-            auth = self.headers.get("Authorization")
-            log("handle_request() auth header=%s", auth)
-            if not auth:
-                return auth_err("missing authentication header")
-            #ie: auth = 'Basic dGVzdDp0ZXN0'
-            if not auth.startswith("Basic "):
-                return auth_err("invalid authentication header")
-            b64str = auth.split("Basic ", 1)[1]
-            import base64
-            try:
-                s = base64.b64decode(b64str).decode("utf8")
-            except Exception:
-                s = ""
-            if s.find(":")<0:
-                return auth_err("invalid authentication format")
-            username, password = s.split(":", 1)
-            if (self.username and username!=self.username) or password!=self.password:
-                log("http authentication: expected %s:%s but received %s:%s",
-                    self.username or "", self.password, username, password)
-                return auth_err("invalid credentials")
-            log("http authentication passed")
 
+    def handle_authentication(self):
+        if not self.password:
+            return True
+        authlog = Logger("auth", "http")
+        def auth_err(msg):
+            self.do_AUTHHEAD()
+            self.wfile.write(msg.encode("latin1"))
+            authlog.warn(f"http authentication failed: {msg}")
+            return False
+        auth = self.headers.get("Authorization")
+        authlog("handle_request() auth header=%s", auth)
+        if not auth:
+            return auth_err("missing authentication header")
+        #ie: auth = 'Basic dGVzdDp0ZXN0'
+        if not auth.startswith("Basic "):
+            return auth_err("invalid authentication header")
+        b64str = auth.split("Basic ", 1)[1]
+        import base64
+        try:
+            s = base64.b64decode(b64str).decode("utf8")
+        except Exception:
+            s = ""
+        if s.find(":")<0:
+            return auth_err("invalid authentication format")
+        username, password = s.split(":", 1)
+        if (self.username and username!=self.username) or password!=self.password:
+            authlog("http authentication: expected %s:%s but received %s:%s",
+                self.username or "", self.password, username, password)
+            return auth_err("invalid credentials")
+        authlog("http authentication passed")
+        return True
+
+    def handle_request(self):
+        if not self.handle_authentication():
+            return
         content = self.send_head()
         if content:
             try:
