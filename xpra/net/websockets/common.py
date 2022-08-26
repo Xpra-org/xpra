@@ -65,7 +65,9 @@ def client_upgrade(read, write, host, port, path=""):
         http_request = http_request[w:]
     now = monotonic()
     response = b""
-    while ("sec-websocket-protocol" not in u(response).lower()) and monotonic()-now<MAX_READ_TIME:
+    def hasheader(k):
+        return k in parse_response_header(response)
+    while monotonic()-now<MAX_READ_TIME and not (hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
@@ -77,7 +79,7 @@ def parse_response_header(response):
     lines = head.split(b"\r\n")
     headers = {}
     for line in lines:
-        parts = line.split(b": ", 1)
+        parts = bytestostr(line).split(": ", 1)
         if len(parts)==2:
             headers[parts[0].lower()] = parts[1]
     return headers
@@ -86,17 +88,19 @@ def verify_response_headers(headers, key):
     log("verify_response_headers(%s)", headers)
     if not headers:
         raise Exception("no http headers found in response")
-    upgrade = headers.get(b"upgrade", b"")
+    if headers.get("www-authenticate"):
+        raise Exception("http connection requires authentication")
+    upgrade = headers.get("upgrade")
     if not upgrade:
         raise Exception("http connection was not upgraded to websocket")
-    if upgrade!=b"websocket":
-        raise Exception("invalid http upgrade: '%s'" % bytestostr(upgrade))
-    protocol = headers.get(b"sec-websocket-protocol", b"")
-    if protocol!=b"binary":
-        raise Exception("invalid websocket protocol: '%s'" % bytestostr(protocol))
-    accept_key = headers.get(b"sec-websocket-accept", b"")
+    if upgrade!="websocket":
+        raise Exception("invalid http upgrade: '%s'" % upgrade)
+    protocol = headers.get("sec-websocket-protocol")
+    if protocol!="binary":
+        raise Exception("invalid websocket protocol: '%s'" % protocol)
+    accept_key = headers.get("sec-websocket-accept")
     if not accept_key:
         raise Exception("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
-    if bytestostr(accept_key)!=bytestostr(expected_key):
+    if bytestostr(accept_key)!=expected_key:
         raise Exception("websocket accept key is invalid")
