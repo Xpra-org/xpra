@@ -37,8 +37,7 @@ class Handler:
     def get_digest(self) -> str:
         return "kerberos"
 
-    def handle(self, packet) -> bool:
-        digest = bytestostr(packet[3])
+    def handle(self, challenge, digest, prompt) -> bool:
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
             #not a kerberos challenge

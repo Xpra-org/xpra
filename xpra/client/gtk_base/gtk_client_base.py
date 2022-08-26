@@ -273,17 +273,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         Gdk.notify_startup_complete()
 
 
-    def do_process_challenge_prompt(self, packet, prompt="password"):
+    def do_process_challenge_prompt(self, prompt="password"):
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
         from xpra.scripts.pinentry_wrapper import get_pinentry_command
         pinentry_cmd = get_pinentry_command(PINENTRY)
-        authlog(f"do_process_challenge_prompt%s get_pinentry_command({PINENTRY})={pinentry_cmd}",
-                (packet, prompt))
+        authlog(f"do_process_challenge_prompt({prompt}) get_pinentry_command({PINENTRY})={pinentry_cmd}")
         if pinentry_cmd:
-            return self.handle_challenge_with_pinentry(packet, prompt, pinentry_cmd)
-        return self.process_challenge_prompt_dialog(packet, prompt)
+            return self.handle_challenge_with_pinentry(prompt, pinentry_cmd)
+        return self.process_challenge_prompt_dialog(prompt)
 
     def stop_pinentry(self):
         pp = self.pinentry_proc
@@ -302,14 +301,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             server_type = ""
         return "%sServer Authentication:" % server_type
 
-    def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
+    def handle_challenge_with_pinentry(self, prompt="password", cmd="pinentry"):
         authlog = Logger("auth")
-        authlog("handle_challenge_with_pinentry%s", (packet, prompt, cmd))
+        authlog("handle_challenge_with_pinentry%s", (prompt, cmd))
         try:
             proc = Popen([cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except OSError:
             authlog("pinentry failed", exc_info=True)
-            return self.process_challenge_prompt_dialog(packet, prompt)
+            return self.process_challenge_prompt_dialog(prompt)
         self.pinentry_proc = proc
         q = "Enter %s" % prompt
         p = self._protocol
@@ -330,19 +329,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return None
         return values[0]
 
-    def process_challenge_prompt_dialog(self, packet, prompt="password"):
+    def process_challenge_prompt_dialog(self, prompt="password"):
         #challenge handlers run in a separate 'challenge' thread
         #but we need to run in the UI thread to access the GUI with Gtk
         #so we block the current thread using an event:
         wait = Event()
         values = []
-        self.idle_add(self.do_process_challenge_prompt_dialog, packet, values, wait, prompt)
+        self.idle_add(self.do_process_challenge_prompt_dialog, values, wait, prompt)
         wait.wait()
         if not values:
             return None
         return values[0]
 
-    def do_process_challenge_prompt_dialog(self, packet, values : list, wait : Event, prompt="password"):
+    def do_process_challenge_prompt_dialog(self, values : list, wait : Event, prompt="password"):
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title,
                None,

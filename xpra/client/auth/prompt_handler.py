@@ -18,11 +18,7 @@ class Handler:
     def get_digest(self) -> str:
         return None
 
-    def handle(self, packet) -> bool:
-        prompt = "password"
-        digest = bytestostr(packet[3])
-        if digest.startswith("gss:") or digest.startswith("kerberos:"):
+    def handle(self, challenge, digest, prompt : str = "password") -> bool:
+        if not prompt and (digest.startswith("gss:") or digest.startswith("kerberos:")):
             prompt = "%s token" % (digest.split(":", 1)[0])
-        if len(packet)>=6:
-            prompt = std(bytestostr(packet[5]), extras="-,./: '")
-        return self.client.do_process_challenge_prompt(packet, prompt)
+        return self.client.do_process_challenge_prompt(prompt)

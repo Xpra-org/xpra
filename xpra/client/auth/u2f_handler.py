@@ -7,7 +7,7 @@ import os
 import logging
 import binascii
 
-from xpra.os_util import bytestostr, load_binary_file, osexpand
+from xpra.os_util import load_binary_file, osexpand
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("auth")
@@ -24,8 +24,7 @@ class Handler:
     def get_digest(self) -> str:
         return "u2f"
 
-    def handle(self, packet) -> bool:
-        digest = bytestostr(packet[3])
+    def handle(self, challenge, digest, prompt) -> bool:
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
             return None
@@ -46,7 +45,6 @@ class Handler:
             return None
         key = model.RegisteredKey(key_handle)
         #use server salt as challenge directly
-        challenge = packet[1]
         log.info("activate your U2F device for authentication")
         response = dev.Authenticate(APP_ID, challenge, [key])
         sig = response.signature_data

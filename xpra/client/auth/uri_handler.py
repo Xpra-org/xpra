@@ -15,5 +15,5 @@ class Handler:
     def get_digest(self) -> str:
         return None
 
-    def handle(self, packet) -> bool:
+    def handle(self, challenge, digest, prompt) -> bool:
         return self.client.password

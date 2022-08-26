@@ -798,7 +798,7 @@ class ApplicationWindow:
         self.set_sensitive(False)
         try:
             log("calling %s%s", connect_to, (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
-            conn = connect_to(display_desc, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
+            conn = connect_to(display_desc, opts=self.config, client=self.client, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log("do_connect_builtin(%s) failed to connect", display_desc, exc_info=True)
             self.handle_exception(e)

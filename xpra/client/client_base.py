@@ -39,15 +39,15 @@ from xpra.os_util import (
     parse_encoded_bin_data,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict, parse_simple_dict, noerr,
+    flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl,
-    envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
+    envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
     SERVER_UPGRADE, CONNECTION_ERROR,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
-        EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
+        EXIT_PASSWORD_REQUIRED, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE, EXIT_CONNECTION_FAILED,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
         EXIT_STR,
@@ -718,8 +718,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
             try:
+                challenge = packet[1]
+                digest = bytestostr(packet[3])
+                prompt = "password"
+                if len(packet)>=6:
+                    prompt = std(bytestostr(packet[5]), extras="-,./: '")
                 authlog("calling challenge handler %s", handler)
-                value = handler.handle(packet)
+                value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
                 authlog("%s(%s)=%s", handler.handle, packet, value)
                 if value:
                     self.send_challenge_reply(packet, value)
@@ -733,10 +738,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog.warn("Warning: failed to connect, authentication required")
         self.quit(EXIT_PASSWORD_REQUIRED)
 
-    def pop_challenge_handler(self, digest):
+    def pop_challenge_handler(self, digest=None):
         #find the challenge handler most suitable for this digest type,
         #otherwise take the first one
-        digest_type = digest.split(":")[0]  #ie: "kerberos:value" -> "kerberos"
+        digest_type = None if digest is None else digest.split(":")[0]  #ie: "kerberos:value" -> "kerberos"
         index = 0
         for i, handler in enumerate(self.challenge_handlers):
             if handler.get_digest()==digest_type:
