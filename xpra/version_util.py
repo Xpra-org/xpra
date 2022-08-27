@@ -56,7 +56,7 @@ def make_revision_str(revision, local_modifications, branch, commit):
     rstr = ""
     try:
         rstr += "r"+revision
-        if local_modifications>0:
+        if isinstance(local_modifications, int) and local_modifications>0:
             rstr += "M"
         if branch=="master" and commit:
             rstr += " (%s)" % commit
