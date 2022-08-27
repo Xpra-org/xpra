@@ -2642,6 +2642,8 @@ cdef class Encoder:
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
                     }
+        if picParams.pictureType==NV_ENC_PIC_TYPE_IDR:
+            client_options["type"] = "IDR"
         if self.lossless:
             client_options["quality"] = 100
         else:
