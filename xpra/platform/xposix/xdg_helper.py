@@ -29,6 +29,16 @@ if PYTHON3:
 else:
     from types import GeneratorType as generator    #@Reimport
 
+def check_xdg():
+    try:
+        from xdg.Menu import Menu, MenuEntry
+        assert Menu and MenuEntry
+        return True
+    except ImportError as e:
+        if first_time("load-xdg"):
+            log.warn("Warning: cannot load menu data")
+            log.warn(f" {e}")
+        return False
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
@@ -270,6 +280,8 @@ def load_xdg_menu_data(force_reload=False):
     return xdg_menu_data
 
 def do_load_xdg_menu_data():
+    if not check_xdg():
+        return {}
     try:
         from xdg.Menu import parse, Menu, ParsingError
     except ImportError:
