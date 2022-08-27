@@ -201,6 +201,8 @@ def ssh_paramiko_connect_to(display_desc):
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
+        def ssh_lookup(key):
+            return safe_lookup(ssh_config, key)
         user_config_file = os.path.expanduser("~/.ssh/config")
         sock = None
         host_config = None
@@ -212,7 +214,7 @@ def ssh_paramiko_connect_to(display_desc):
                 log("%i hosts found", len(ssh_config.get_hostnames()))
             except KeyError:
                 pass
-            host_config = safe_lookup(ssh_config, host)
+            host_config = ssh_lookup(host)
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
                 host = host_config.get("hostname", host)
@@ -245,7 +247,7 @@ def ssh_paramiko_connect_to(display_desc):
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
-                                               host_config or safe_lookup(ssh_config, "*"),
+                                               host_config or ssh_lookup("*"),
                                                proxy_keys,
                                                paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
@@ -273,14 +275,14 @@ def ssh_paramiko_connect_to(display_desc):
                 fail("SSH proxy transport failed to connect to %s:%s" % (proxy_host, proxy_port))
             middle_transport = do_ssh_paramiko_connect(sock, proxy_host,
                                                        proxy_username, proxy_password,
-                                                       safe_lookup(ssh_config, host) or safe_lookup(ssh_config, "*"),
+                                                       ssh_lookup(host) or ssh_lookup("*"),
                                                        proxy_keys,
                                                        paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
             transport = do_ssh_paramiko_connect(chan_to_middle, host,
                                                 username, password,
-                                                host_config or safe_lookup(ssh_config, "*"),
+                                                host_config or ssh_lookup("*"),
                                                 keys,
                                                 paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
@@ -309,7 +311,7 @@ def ssh_paramiko_connect_to(display_desc):
             transport = None
             try:
                 transport = do_ssh_paramiko_connect(sock, host, username, password,
-                                                    host_config or safe_lookup(ssh_config, "*"),
+                                                    host_config or ssh_lookup("*"),
                                                     keys,
                                                     paramiko_config,
                                                     auth_modes)
