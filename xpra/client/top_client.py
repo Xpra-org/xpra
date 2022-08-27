@@ -499,8 +499,9 @@ class TopSessionClient(MonitorXpraClient):
             vstr = caps_to_version(build)
             mode = server_info.strget("mode", "server")
             python_info = typedict(server_info.dictget("python", {}))
-            bits = python_info.intget("bits", 32)
-            server_str = "Xpra %s server version %s %i-bit" % (mode, vstr, bits)
+            bits = python_info.intget("bits", 0)
+            bitsstr = "" if bits==0 else " %i-bit" % bits
+            server_str = "Xpra %s server version %s%s" % (mode, vstr, bitsstr)
             proxy_info = self.slidictget("proxy")
             if proxy_info:
                 proxy_platform_info = typedict(proxy_info.dictget("platform", {}))
