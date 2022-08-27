@@ -4,14 +4,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import numpy
-from pycuda import driver       #@UnresolvedImport
-
 from xpra.os_util import monotonic_time
+from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("cuda", "nvfbc")
+
+with numpy_import_lock:
+    import numpy
+    from pycuda import driver       #@UnresolvedImport
 
 
 class CUDAImageWrapper(ImageWrapper):

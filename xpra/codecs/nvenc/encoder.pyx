@@ -9,12 +9,10 @@ from __future__ import absolute_import
 
 import binascii
 import os
-import numpy
 from collections import deque, OrderedDict
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
-from pycuda import driver
 
 from xpra.os_util import WIN32, LINUX, PYTHON3, strtobytes, bytestostr
 from xpra.make_thread import start_thread
@@ -29,6 +27,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
+    numpy_import_lock
     )
 from xpra.log import Logger
 
@@ -60,6 +59,10 @@ cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
 
+
+with numpy_import_lock:
+    import numpy
+    from pycuda import driver  # @UnresolvedImport
 
 device_lock = Lock()
 

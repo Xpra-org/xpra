@@ -9,8 +9,7 @@ from libc.stdint cimport uintptr_t
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
-from pycuda import driver
-
+from xpra.codecs.nv_util import numpy_import_lock
 from xpra.os_util import bytestostr
 from xpra.codecs.cuda_common.cuda_context import (
     select_device,
@@ -18,6 +17,10 @@ from xpra.codecs.cuda_common.cuda_context import (
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
+
+
+with numpy_import_lock:
+    from pycuda import driver  # @UnresolvedImport
 
 
 DEF NVJPEG_MAX_COMPONENT = 4
