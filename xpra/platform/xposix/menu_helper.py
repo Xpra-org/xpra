@@ -119,6 +119,18 @@ if LOAD_FROM_THEME:
 EXTENSIONS = ("png", "svg", "xpm")
 
 
+def check_xdg():
+    try:
+        from xdg.Menu import Menu, MenuEntry
+        assert Menu and MenuEntry
+        return True
+    except ImportError as e:
+        if first_time("load-xdg"):
+            log.warn("Warning: cannot load menu data")
+            log.warn(f" {e}")
+        return False
+
+
 def clear_cache():
     log("clear_cache() IconTheme=%s", IconTheme)
     if not IconTheme:
@@ -321,6 +333,8 @@ def remove_icons(menu_data):
     return filt
 
 def load_menu():
+    if not check_xdg():
+        return {}
     icon_util.large_icons.clear()
     start = monotonic()
     with IconLoadingContext():
@@ -443,6 +457,8 @@ def load_xdg_menu_data():
 
 
 def load_desktop_sessions():
+    if not check_xdg():
+        return {}
     xsessions_dir = "%s/share/xsessions" % sys.prefix
     if not os.path.exists(xsessions_dir) or not os.path.isdir(xsessions_dir):
         return {}
