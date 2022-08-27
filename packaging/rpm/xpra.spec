@@ -134,6 +134,7 @@ BuildRequires:		pam-devel
 %if 0%{?fedora}
 BuildRequires:		procps-devel
 %endif
+BuildRequires:		lz4-devel
 BuildRequires:		brotli-devel
 BuildRequires:		qrencode-devel
 %if 0%{?run_tests}
@@ -180,6 +181,7 @@ Recommends:			python3-avahi
 Recommends:			python3-zeroconf
 %endif
 %endif
+Recommends:			lz4-libs
 Recommends:			brotli
 Recommends:			python3-dns
 Recommends:			python3-paramiko
