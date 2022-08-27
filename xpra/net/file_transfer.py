@@ -302,7 +302,8 @@ class FileTransferHandler(FileTransferAttributes):
             self.timeout_add(20000, clean_receive_state)
             filename = chunk_state[2]
             try:
-                os.unlink(filename)
+                if os.path.exists(filename):
+                    os.unlink(filename)
             except OSError as e:
                 filelog("os.unlink(%s)", filename, exc_info=True)
                 filelog.error("Error: failed to delete temporary download file")
