@@ -81,7 +81,7 @@ Recommends: python3-dbus
 # packet compression:
         ,liblz4
 # text packet compression:
-        ,brotli
+        ,libbrotli1
 #not available?
         ,python3-zeroconf
         ,python3-netifaces
