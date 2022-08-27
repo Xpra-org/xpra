@@ -71,9 +71,8 @@ def get_proc_driver_version():
     if not p:
         log.warn("unknown NVidia kernel module version")
         return ""
-    v = v[p+len(KSTR):].strip().split(b" ")[0]
-    v = v.split(b".")
-    return v
+    v = bytestostr(v[p+len(KSTR):].strip().split(b" ")[0])
+    return v.split(".")
 
 
 def identify_nvidia_module_version():
