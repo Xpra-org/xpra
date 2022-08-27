@@ -548,7 +548,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     #get XDG_RUNTIME_DIR from env options,
     #which may not be have updated os.environ yet when running as root with "--uid="
-    xrd = os.path.abspath(parse_env(opts.env).get("XDG_RUNTIME_DIR", ""))
+    xrd = parse_env(opts.env).get("XDG_RUNTIME_DIR", "")
+    if OSX and not xrd:
+        xrd = osexpand("~/.xpra", uid=uid, gid=gid)
+        os.environ["XDG_RUNTIME_DIR"] = xrd
+    xrd = os.path.abspath(xrd)
     if ROOT and (uid>0 or gid>0):
         #we're going to chown the directory if we create it,
         #ensure this cannot be abused, only use "safe" paths:
