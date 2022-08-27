@@ -140,9 +140,16 @@ class MenuProvider:
         #as this may take a while and
         #so server startup can complete:
         def load():
-            self.get_menu_data(force_reload)
-            self.get_desktop_sessions()
-            self.clear_cache()
+            try:
+                self.get_menu_data(force_reload)
+                self.get_desktop_sessions()
+            except ImportError as e:
+                log.warn("Warning: cannot load menu data")
+                log.warn(f" {e}")
+            except Exception:
+                log.error("Error loading menu data", exc_info=True)
+            finally:
+                self.clear_cache()
         start_thread(load, "load-menu-data", True)
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
