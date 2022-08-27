@@ -256,6 +256,14 @@ def ssh_paramiko_connect_to(display_desc):
             "host"  : host,
             "port"  : port,
             }
+    def safe_config_lookup(config_obj, host):
+        try:
+            return config_obj.lookup(host)
+        except ImportError as e:
+            log("%s.lookup(%s)", config_obj, host, exc_info=True)
+            log.warn("Warning: unable to load SSH host config for %r:", host)
+            log.warn(" %s", e)
+        return {}
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
@@ -265,7 +273,7 @@ def ssh_paramiko_connect_to(display_desc):
         if os.path.exists(user_config_file):
             with open(user_config_file) as f:
                 ssh_config.parse(f)
-            host_config = ssh_config.lookup(host)
+            host_config = safe_config_lookup(ssh_config, host)
             if host_config:
                 host = host_config.get("hostname", host)
                 username = host_config.get("user", username)
@@ -289,7 +297,7 @@ def ssh_paramiko_connect_to(display_desc):
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
-                                               host_config or ssh_config.lookup("*"),
+                                               host_config or safe_config_lookup(ssh_config, "*"),
                                                keyfiles)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
@@ -320,10 +328,10 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            proxy_host_config = ssh_config.lookup(host)
+            proxy_host_config = safe_config_lookup(ssh_config, host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
-                                       proxy_host_config or ssh_config.lookup("*"),
+                                       proxy_host_config or safe_config_lookup(ssh_config, "*"),
                                        keyfiles)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
@@ -337,7 +345,7 @@ def ssh_paramiko_connect_to(display_desc):
                 raise InitException("SSH negotiation failed: %s" % e)
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
-                                       host_config or ssh_config.lookup("*"),
+                                       host_config or safe_config_lookup(ssh_config, "*"),
                                        keyfiles)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
@@ -367,7 +375,7 @@ def ssh_paramiko_connect_to(display_desc):
             log("start_client()", exc_info=True)
             raise InitException("SSH negotiation failed: %s" % e)
         do_ssh_paramiko_connect_to(transport, host, username, password,
-                                   host_config or ssh_config.lookup("*"),
+                                   host_config or safe_config_lookup(ssh_config, "*"),
                                    keyfiles)
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
@@ -413,7 +421,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
                 log("HostKeys.load(%s)", known_hosts, exc_info=True)
 
         log("host keys=%s", host_keys)
-        keys = host_keys.lookup(host)
+        keys = safe_lookup(host_keys, host)
         known_host_key = (keys or {}).get(host_key.get_name())
         def keyname():
             return host_key.get_name().replace("ssh-", "")
