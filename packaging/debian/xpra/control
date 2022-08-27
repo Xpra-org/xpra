@@ -32,6 +32,7 @@ Build-Depends: debhelper (>= 8)
               ,libsystemd-dev
               ,libpam0g-dev
               ,libprocps-dev
+              ,liblz4-dev
               ,libbrotli-dev
               ,libqrencode-dev
               ,pandoc
@@ -77,6 +78,8 @@ Recommends: python3-dbus
         ,python3-setproctitle
 # packet encoder:
         ,python3-rencode
+# packet compression:
+        ,liblz4
 # text packet compression:
         ,brotli
 #not available?
