@@ -460,7 +460,8 @@ class FileTransferHandler(FileTransferAttributes):
         def delfile():
             if DELETE_PRINTER_FILE:
                 try:
-                    os.unlink(filename)
+                    if os.path.exists(filename):
+                        os.unlink(filename)
                 except (OSError, IOError):
                     printlog("failed to delete print job file '%s'", filename)
         if not printer:
