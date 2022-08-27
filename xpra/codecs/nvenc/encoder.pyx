@@ -25,6 +25,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
+    numpy_import_lock,
     )
 from xpra.log import Logger
 
