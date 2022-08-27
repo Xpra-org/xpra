@@ -323,8 +323,8 @@ def create_sockets(opts, error_cb, retry=0):
             from xpra.log import Logger
             sshlog = Logger("ssh")
             sshlog("import paramiko", exc_info=True)
-            sshlog.error("Error: cannot enable SSH socket upgrades:")
-            sshlog.error(" %s", e)
+            sshlog.warn(f"Warning: cannot enable SSH socket upgrades")
+            sshlog.warn(f" {e}")
             ssh_upgrades = False
     log = get_network_logger()
     #prepare tcp socket definitions:
