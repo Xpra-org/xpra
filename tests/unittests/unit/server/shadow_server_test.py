@@ -48,8 +48,6 @@ class ShadowServerTest(ServerTestUtil):
 		tinfo = typedict(info)
 		idisplay = tinfo.strget("server.display")
 		assert idisplay==display, "expected display '%s' in info, but got '%s'" % (display, idisplay)
-		rd = tinfo.intget("refresh-delay", 0)
-		assert rd==REFRESH_DELAY, "expected refresh-delay=%i, got %i" % (REFRESH_DELAY, rd)
 		dstr = display.lstrip(":")
 		new_delay = 2
 		cmd = [dbus_send, "--session", "--type=method_call",
