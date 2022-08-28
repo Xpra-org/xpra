@@ -172,6 +172,8 @@ Recommends:			python3-avahi
 %else
 %if 0%{?fedora}
 Recommends:			python3-zeroconf
+Requires:			libspng
+BuildRequires:		libspng-devel
 %endif
 %endif
 Recommends:			python3-dns
@@ -259,8 +261,6 @@ Suggests:			sshpass
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
-Requires:			libspng
-BuildRequires:		libspng-devel
 BuildRequires:		zlib-devel
 %endif
 %endif
