@@ -1897,8 +1897,8 @@ class ServerCore:
                 proto.authenticators = self.make_authenticators(socktype, remote, conn)
             except Exception as e:
                 authlog("instantiating authenticator for %s", socktype, exc_info=True)
-                authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
-                authlog.error(" %s", e)
+                authlog.error("Error instantiating authenticators for %s:", proto.socket_type)
+                authlog.error(" %r", e)
                 auth_failed(str(e))
                 return
 
