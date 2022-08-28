@@ -827,25 +827,31 @@ def pollwait(process, timeout=5):
         time.sleep(0.1)
     return v
 
+
+def find_in_PATH(command):
+    path = os.environ.get("PATH", None)
+    if not path:
+        return None
+    paths = path.split(os.pathsep)
+    for p in paths:
+        f = os.path.join(p, command)
+        if os.path.isfile(f):
+            return f
+    return None
+
 def which(command):
     try:
-        from distutils.spawn import find_executable
+        from shutil import which as find_executable
     except ImportError:
-        path = os.environ.get("PATH", None)
-        if not path:
-            return None
-        paths = path.split(os.pathsep)
-        for p in paths:
-            f = os.path.join(p, command)
-            if os.path.isfile(f):
-                return f
-        return None
-    else:
         try:
-            return find_executable(command)
-        except Exception:
-            get_util_logger().debug("find_executable(%s)", command, exc_info=True)
-            return None
+            from distutils.spawn import find_executable
+        except ImportError:
+            find_executable = find_in_PATH
+    try:
+        return find_executable(command)
+    except Exception:
+        get_util_logger().debug("find_executable(%s)", command, exc_info=True)
+        return None
 
 def get_status_output(*args, **kwargs):
     from subprocess import PIPE, Popen

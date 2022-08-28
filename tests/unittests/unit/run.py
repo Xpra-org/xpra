@@ -21,7 +21,10 @@ def main():
         run_cmd = ["coverage", "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
         #make sure we continue to use coverage to run sub-commands:
         def which(command):
-            from distutils.spawn import find_executable
+            try:
+                from shutil import which as find_executable
+            except ImportError:
+                from distutils.spawn import find_executable
             try:
                 return find_executable(command)
             except Exception:
