@@ -105,10 +105,15 @@ class TestMotion(unittest.TestCase):
 		self.do_test_detect_motion(1920, 1080)
 
 	def do_test_detect_motion(self, W, H):
+		try:
+			import numpy as np
+		except ImportError:
+			print("WARNING: numpy not found")
+			print(" the motion detection test has been skipped")
+			return
 		BPP = 4
 		#W, H, BPP = 2, 4, 4
 		LEN = W * H * BPP
-		import numpy as np
 		na1 = np.random.randint(255, size=LEN, dtype="uint8")
 		def tobytes(a):
 			return a.tobytes()
