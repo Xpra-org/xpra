@@ -6,6 +6,7 @@ export XPRA_NOTTY=1
 export XPRA_UTIL_DEBUG=${XPRA_UTIL_DEBUG:-0}
 export XPRA_TEST_DEBUG=${XPRA_TEST_DEBUG:-0}
 export XPRA_HIDE_SUBPROCESS_OUTPUT=${XPRA_HIDE_SUBPROCESS_OUTPUT:-1}
+export PYTHON=${PYTHON:-python3}
 #SAVED_PYTHONPATH=$PYTHONPATH
 
 UNITTESTS_DIR=`dirname $(readlink -f $0)`
@@ -14,7 +15,7 @@ SRC_DIR=`dirname $TESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/dist/python3"
 pushd $SRC_DIR
-python3 ./setup.py install --without-printing  --without-docs --with-scripts --with-cython_tracing --home=$INSTALL_ROOT || die "failed to build"
+$PYTHON ./setup.py install --without-printing  --without-docs --with-scripts --with-cython_tracing --home=$INSTALL_ROOT || die "failed to build"
 popd
 
 if [ `uname` == "Linux" ]; then
