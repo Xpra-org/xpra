@@ -14,7 +14,7 @@ class TestNVUtil(unittest.TestCase):
         v1 = get_nvml_driver_version()
         v2 = get_proc_driver_version()
         if v1 and v2:
-            assert v1==v2
+            assert v1==v2, f"versions differ: {v1} (nvml) and {v2} (proc)"
 
 def main():
     try:
