@@ -194,6 +194,8 @@ Requires:			libwebp
 %if 0%{?fedora}
 Requires:			libavif
 BuildRequires:		libavif-devel
+Requires:			libspng
+BuildRequires:		libspng-devel
 %endif
 BuildRequires:		which
 BuildRequires:		libwebp-devel
@@ -274,8 +276,6 @@ Suggests:			sshpass
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
-Requires:			libspng
-BuildRequires:		libspng-devel
 BuildRequires:		zlib-devel
 %endif
 %endif
