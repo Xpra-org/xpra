@@ -20,8 +20,14 @@ ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,j
 Image.init()
 
 try:
-    from PIL.Image.Palette import ADAPTIVE, WEB
-    from PIL.Image.Resampling import NEAREST, BILINEAR, BICUBIC, LANCZOS
+    from PIL.Image import Palette
+    ADAPTIVE = Palette.ADAPTIVE
+    WEB = Palette.WEB
+    from PIL.Image import Resampling
+    NEAREST = Resampling.NEAREST
+    BILINEAR = Resampling.BILINEAR
+    BICUBIC = Resampling.BICUBIC
+    LANCZOS = Resampling.LANCZOS
 except ImportError:
     #location for older versions:
     from PIL.Image import ADAPTIVE, WEB
