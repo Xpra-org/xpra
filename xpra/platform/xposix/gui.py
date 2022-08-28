@@ -420,7 +420,7 @@ def _get_xresources():
             from xpra.gtk_common.gtk_util import get_default_root_window
             root = get_default_root_window()
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-            log("RESOURCE_MANAGER=%s", value)
+            log(f"RESOURCE_MANAGER={value}")
             if value is None:
                 return None
             #parse the resources into a dict:
@@ -431,12 +431,12 @@ def _get_xresources():
                     continue
                 parts = option.split(":\t", 1)
                 if len(parts)!=2:
-                    log("skipped invalid option: '%s'", option)
+                    log(f"skipped invalid option: {option!r}")
                     continue
                 values[parts[0]] = parts[1]
             return values
         except Exception as e:
-            log("_get_xresources error: %s", e)
+            log(f"_get_xresources error: {e!r}")
     return None
 
 def get_cursor_size():

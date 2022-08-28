@@ -29,6 +29,7 @@ def import_netifaces() -> object:
         except ImportError:
             _netifaces = False
             log.warn("Warning: the python netifaces package is missing")
+            log.warn(" some networking functionality will be unavailable")
     return _netifaces
 
 iface_ipmasks = {}
