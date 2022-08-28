@@ -19,6 +19,14 @@ ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,j
 
 Image.init()
 
+try:
+    from PIL.Image.Palette import ADAPTIVE, WEB
+    from PIL.Image.Resampling import NEAREST, BILINEAR, BICUBIC, LANCZOS
+except ImportError:
+    #location for older versions:
+    from PIL.Image import ADAPTIVE, WEB
+    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS
+
 
 def get_version():
     return PIL.__version__
@@ -134,7 +142,7 @@ def encode(coding : str, image, options=None):
     try:
         if palette:
             im.putpalette(palette)
-            im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
+            im.palette = ImagePalette.ImagePalette("RGB", palette = palette)
         if coding!="png/L" and grayscale:
             if rgb.find("A")>=0 and supports_transparency and coding!="jpeg":
                 im = im.convert("LA")
@@ -156,15 +164,14 @@ def encode(coding : str, image, options=None):
     client_options = {}
     if scaled_width!=w or scaled_height!=h:
         if speed>=95:
-            resample = "NEAREST"
+            resample = NEAREST
         elif speed>80:
-            resample = "BILINEAR"
+            resample = BILINEAR
         elif speed>=30:
-            resample = "BICUBIC"
+            resample = BICUBIC
         else:
-            resample = "LANCZOS"
-        resample_value = getattr(Image, resample, 0)
-        im = im.resize((scaled_width, scaled_height), resample=resample_value)
+            resample = LANCZOS
+        im = im.resize((scaled_width, scaled_height), resample=resample)
         client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:
@@ -203,7 +210,7 @@ def encode(coding : str, image, options=None):
             #no transparency
             mask = None
         if coding=="png/L":
-            im = im.convert("L", palette=Image.ADAPTIVE, colors=255)
+            im = im.convert("L", palette=ADAPTIVE, colors=255)
             bpp = 8
         elif coding=="png/P":
             #convert to 255 indexed colour if:
@@ -213,7 +220,7 @@ def encode(coding : str, image, options=None):
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
-                im = im.convert("P", palette=Image.WEB, colors=255)
+                im = im.convert("P", palette=WEB, colors=255)
             bpp = 8
         kwargs = im.info
         if mask:
