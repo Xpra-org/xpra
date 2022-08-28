@@ -389,7 +389,7 @@ class TestAuth(unittest.TestCase):
             self._init_auth("keycloak")
         except ImportError as e:
             print("Warning: keycloak auth test skipped")
-            print(" %s", e)
+            print(f" {e}")
             return
         def t(digests=None, response=None, **kwargs):
             a = self._init_auth("keycloak", **kwargs)
