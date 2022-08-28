@@ -28,7 +28,7 @@ export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
 coverage erase
-./unit/run.py "$@"
+$PYTHON ./unit/run.py "$@"
 ls -la
 coverage combine
 ls -la
