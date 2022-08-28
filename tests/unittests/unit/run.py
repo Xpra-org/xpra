@@ -33,7 +33,7 @@ def main():
         if xpra_cmd.find("coverage")<0:
             os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[xpra_cmd])
     else:
-        run_cmd = ["python3"]
+        run_cmd = [os.environ.get("PYTHON", "python3")]
 
     paths = []
     #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
