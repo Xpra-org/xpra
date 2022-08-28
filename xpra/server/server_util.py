@@ -60,13 +60,15 @@ def decode_json(out):
 def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     log = Logger("exec")
     cmd = shlex.split(file_to_source_path)
-    filename = which(cmd[0])
-    if not filename:
-        log.error("Error: cannot find command '%s' to execute", cmd[0])
-        log.error(" for sourcing '%s'", file_to_source_path)
-        return {}
+    filename = cmd[0]
     if not os.path.isabs(filename):
-        filename = os.path.abspath(filename)
+        filename = which(filename)
+        if not filename:
+            log.error("Error: cannot find command '%s' to execute", cmd[0])
+            log.error(" for sourcing '%s'", file_to_source_path)
+            return {}
+        if not os.path.isabs(filename):
+            filename = os.path.abspath(filename)
     cmd[0] = filename
     #figure out if this is a script to source,
     #or if we're meant to execute it directly
