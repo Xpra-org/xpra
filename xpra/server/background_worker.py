@@ -22,10 +22,9 @@ class Worker_Thread(Thread):
     __slots__ = ("items", "exit", "daemon_work_items")
 
     def __init__(self):
-        super().__init__(name="Worker_Thread")
+        super().__init__(name="Worker_Thread", daemon=True)
         self.items = Queue()
         self.exit = False
-        self.setDaemon(True)
         self.daemon_work_items = WeakSet()
 
     def __repr__(self):
