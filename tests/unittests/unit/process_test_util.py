@@ -224,7 +224,7 @@ class ProcessTestUtil(unittest.TestCase):
         cmd = get_xpra_command()
         if cmd==["xpra"]:
             cmd = [bytestostr(cls.which("xpra"))]
-        pyexename = "python3"
+        pyexename = os.environ.get("PYTHON", "python3")
         exe = bytestostr(cmd[0])
         if exe.endswith(".exe"):
             exe = exe[:-4]
