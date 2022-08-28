@@ -69,7 +69,7 @@ class Authenticator(SysAuthenticator):
         return self.salt, "keycloak"
 
     def check(self, response_json) -> bool:
-        print("check(%s)" % (response_json,))
+        log(f"check({response_json!r})")
         assert self.challenge_sent
         if not response_json:
             log.error("Error: keycloak authentication failed")
@@ -83,7 +83,7 @@ class Authenticator(SysAuthenticator):
             log.error(" invalid response received from authorization endpoint")
             log("failed to parse json: %r", response_json, exc_info=True)
             return False
-        print("json.loads(%s)=%s", response_json, response)
+        log(f"json.loads({response_json!r})={response!r}")
 
         if not isinstance(response, dict):
             log.error("Error: keycloak authentication failed")
