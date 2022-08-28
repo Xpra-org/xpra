@@ -61,7 +61,13 @@ class TestDBUSHelper(unittest.TestCase):
 def main():
     from xpra.os_util import WIN32
     if not WIN32:
-        unittest.main()
+        try:
+            import dbus
+            assert dbus
+        except ImportError:
+            print("WARNING: python-dbus not found, skipping dbus_helper_test")
+        else:
+            unittest.main()
 
 if __name__ == '__main__':
     main()
