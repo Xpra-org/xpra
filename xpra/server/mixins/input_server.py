@@ -48,8 +48,8 @@ class InputServer(StubServerMixin):
         props = typedict()
         keymap = props.setdefault("keymap", {})
         for option in ("sync", "layout", "layouts", "variant", "variants", "options"):
-            v = getattr(opts, f"keyboard_{option}")
-            if v:
+            v = getattr(opts, f"keyboard_{option}", None)
+            if v is not None:
                 keymap[option] = v
         self.keyboard_config = self.get_keyboard_config(props)
 
