@@ -42,7 +42,7 @@ from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
-    SERVER_UPGRADE, CONNECTION_ERROR,
+    SERVER_UPGRADE, CONNECTION_ERROR, AUTHENTICATION_FAILED,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -50,6 +50,7 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_U
         EXIT_PASSWORD_REQUIRED, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE, EXIT_CONNECTION_FAILED,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
+        EXIT_AUTHENTICATION_FAILED,
         EXIT_STR,
         )
 
@@ -660,7 +661,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn(" %s", reason)
         for x in extra_info:
             log.warn(" %s", x)
-        if reason==CONNECTION_ERROR or not self.completed_startup:
+        if AUTHENTICATION_FAILED in extra_info:
+            self.quit(EXIT_AUTHENTICATION_FAILED)
+        elif CONNECTION_ERROR in extra_info or not self.completed_startup:
             self.quit(EXIT_CONNECTION_FAILED)
         else:
             self.quit(EXIT_FAILURE)
@@ -679,6 +682,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             l(" %s", x)
         if reason==SERVER_UPGRADE:
             return EXIT_UPGRADE
+        if AUTHENTICATION_FAILED in extra_info:
+            return EXIT_AUTHENTICATION_FAILED
         return EXIT_OK
 
 
@@ -774,7 +779,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUi for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code, message, server_message="authentication failed"):
+    def auth_error(self, code, message, server_message=AUTHENTICATION_FAILED):
         authlog.error("Error: authentication failed:")
         authlog.error(" %s", message)
         self.disconnect_and_quit(code, server_message)

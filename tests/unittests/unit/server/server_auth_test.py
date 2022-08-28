@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,10 @@ import os
 import unittest
 
 from xpra.os_util import pollwait, strtobytes, OSX, POSIX
-from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION
+from xpra.exit_codes import (
+    EXIT_OK, EXIT_AUTHENTICATION_FAILED, EXIT_CONNECTION_FAILED,
+    EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION,
+    )
 from unit.server_test_util import ServerTestUtil, estr, log
 
 
@@ -44,7 +47,7 @@ class ServerAuthTest(ServerTestUtil):
             estr(exit_code), estr(r))
 
     def test_fail(self):
-        self._test_auth("fail", "", EXIT_FAILURE)
+        self._test_auth("fail", "", EXIT_CONNECTION_FAILED)
 
     def test_reject(self):
         self._test_auth("reject", "", EXIT_PASSWORD_REQUIRED)
@@ -64,7 +67,7 @@ class ServerAuthTest(ServerTestUtil):
         self._test_auth("file", "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("file:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("file:filename=%s" % f.name, "", EXIT_OK, password)
-        self._test_auth("file:filename=%s" % f.name, "", EXIT_FAILURE, password+"A")
+        self._test_auth("file:filename=%s" % f.name, "", EXIT_AUTHENTICATION_FAILED, password+"A")
         f.close()
 
     def test_multifile(self):
@@ -78,7 +81,7 @@ class ServerAuthTest(ServerTestUtil):
         self._test_auth("multifile", "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("multifile:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("multifile:filename=%s" % f.name, "", EXIT_OK, password)
-        self._test_auth("multifile:filename=%s" % f.name, "", EXIT_FAILURE, password+"A")
+        self._test_auth("multifile:filename=%s" % f.name, "", EXIT_AUTHENTICATION_FAILED, password+"A")
         f.close()
 
 

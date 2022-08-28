@@ -71,7 +71,7 @@ from xpra.util import (
     dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
-    CONNECTION_ERROR,
+    CONNECTION_ERROR, AUTHENTICATION_FAILED,
     )
 from xpra.log import Logger, get_info as get_log_info
 
@@ -1981,7 +1981,7 @@ class ServerCore:
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed("authentication failed")
+                auth_failed(AUTHENTICATION_FAILED)
                 return
         authlog("all authentication modules passed")
         capabilities = packet[1]

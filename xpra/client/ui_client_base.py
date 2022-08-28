@@ -27,9 +27,10 @@ from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
     merge_dicts,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
+    AUTHENTICATION_FAILED,
     )
 from xpra.scripts.config import parse_bool
-from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_CONNECTION_LOST
+from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_CONNECTION_LOST, EXIT_AUTHENTICATION_FAILED
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
 from xpra.log import Logger, get_info as get_log_info
@@ -351,6 +352,9 @@ class UIXpraClient(ClientBaseClass):
     def server_disconnect_warning(self, reason, *info):
         if self.exit_code is None:
             body = "\n".join(info)
+            if AUTHENTICATION_FAILED in info and not self.connection_established:
+                title = "Authentication failed"
+                self.exit_code = EXIT_AUTHENTICATION_FAILED
             if self.connection_established and self.completed_startup:
                 title = "Xpra Session Disconnected: %s" % reason
                 self.exit_code = EXIT_CONNECTION_LOST
