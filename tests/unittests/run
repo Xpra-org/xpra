@@ -13,7 +13,9 @@ UNITTESTS_DIR=`dirname $(readlink -f $0)`
 TESTS_DIR=`dirname $UNITTESTS_DIR`
 SRC_DIR=`dirname $TESTS_DIR`
 
-INSTALL_ROOT="$SRC_DIR/dist/python3"
+PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}`
+
+INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 pushd $SRC_DIR
 $PYTHON ./setup.py install --without-printing  --without-docs --with-scripts --with-cython_tracing --home=$INSTALL_ROOT || die "failed to build"
 popd
