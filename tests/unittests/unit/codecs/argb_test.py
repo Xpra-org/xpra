@@ -18,7 +18,7 @@ def measure_fn(fn, data, *args):
         r = fn(data, *args)
     end = monotonic()
     mps = len(data)*N//4/(end-start)//1024//1024
-    print("%s: %iMPixels/s" % (fn, mps))
+    print("%s: %i MPixels/s" % (fn, mps))
     return r
 
 def cmp(inbytes, outbytes, fn, *args):
