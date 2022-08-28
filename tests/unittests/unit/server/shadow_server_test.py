@@ -47,21 +47,27 @@ class ShadowServerTest(ServerTestUtil):
 		tinfo = typedict(info)
 		idisplay = tinfo.strget("server.display")
 		assert idisplay==display, "expected display '%s' in info, but got '%s'" % (display, idisplay)
-		dstr = display.lstrip(":")
-		new_delay = 2
-		cmd = [dbus_send, "--session", "--type=method_call",
-				"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server",
-				"org.xpra.Server.SetRefreshDelay", "int32:%i" % new_delay]
-		env = self.get_run_env()
-		env["DISPLAY"] = display
-		self.run_command(cmd, env=env).wait(20)
-		#check that the value has changed:
-		info = self.get_server_info(display)
-		assert info
-		tinfo = typedict(info)
-		assert tinfo.strget("server.display")==display
-		rd = tinfo.intget("refresh-delay", 0)
-		assert rd==new_delay, "expected refresh-delay=%i, got %i" % (new_delay, rd)
+		try:
+			import dbus
+			assert dbus
+		except ImportError:
+			print("WARNING: python-dbus not found, the dbus interface cannot be tested")
+		else:
+			dstr = display.lstrip(":")
+			new_delay = 2
+			cmd = [dbus_send, "--session", "--type=method_call",
+					"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server",
+					"org.xpra.Server.SetRefreshDelay", "int32:%i" % new_delay]
+			env = self.get_run_env()
+			env["DISPLAY"] = display
+			self.run_command(cmd, env=env).wait(20)
+			#check that the value has changed:
+			info = self.get_server_info(display)
+			assert info
+			tinfo = typedict(info)
+			assert tinfo.strget("server.display")==display
+			rd = tinfo.intget("refresh-delay", 0)
+			assert rd==new_delay, "expected refresh-delay=%i, got %i" % (new_delay, rd)
 		self.stop_shadow_server(xvfb, server)
 
 
