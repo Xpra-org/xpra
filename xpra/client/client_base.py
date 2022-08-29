@@ -70,6 +70,9 @@ MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
+ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
+                                        "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
+
 
 class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     """
@@ -204,12 +207,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if ch_name=="none":
                 continue
             if ch_name=="all":
-                items = (
-                    "uri", "file", "env",
-                    "kerberos", "gss",
-                    "u2f",
-                    "prompt", "prompt", "prompt", "prompt",
-                    )
+                items = ALL_CHALLENGE_HANDLERS
                 ierror = authlog
             else:
                 items = (ch_name, )
