@@ -6,7 +6,7 @@
 import os
 
 from xpra.util import csv
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("auth")
