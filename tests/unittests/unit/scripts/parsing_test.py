@@ -11,7 +11,7 @@ import unittest
 from xpra.log import add_debug_category, remove_debug_category
 from xpra.os_util import nomodule_context, WIN32
 from xpra.scripts.parsing import (
-    parse_ssh_option, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
+    parse_ssh_option, add_ssh_args, add_ssh_proxy_args, parse_remote_display,
     )
 
 class TestParsing(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestParsing(unittest.TestCase):
             keyfile = os.path.expanduser("~/key")
             targs(["-l", "username", "-p", "2222", "-T", "host", "-i", keyfile],
                   "username", "password", "host", 2222, keyfile)
-        #proxy:
+        #ssh proxy:
         def pargs(e, n, *args, **kwargs):
             r = add_ssh_proxy_args(*args, **kwargs)[:n]
             assert r==e, "expected %s but got %s" % (e, r)
@@ -49,17 +49,16 @@ class TestParsing(unittest.TestCase):
             "username", "password", "host", 222, None, ["ssh"])
         pargs(["-proxycmd"], 1,
               "username", "password", "host", 222, None, ["putty.exe"], is_putty=True)
-        #proxy attributes:
-        assert parse_proxy_attributes("somedisplay")==("somedisplay", {})
-        attr = parse_proxy_attributes("10?proxy=username:password@host:222")[1]
-        assert attr=={"proxy_host" : "host", "proxy_port" : 222, "proxy_username" : "username", "proxy_password" : "password"}
-        def f(s):
-            v = parse_proxy_attributes(s)
-            assert v[1]=={}, "parse_proxy_attributes(%s) should fail" % s
-        f("somedisplay?proxy=")
-        f("somedisplay?proxy=:22")
-        f("somedisplay?proxy=:@host:22")
-        f("somedisplay?proxy=:password@host:22")
+        #remote display attributes:
+        assert parse_remote_display("somedisplay").get("display")=="somedisplay"
+        assert parse_remote_display("10?proxy=username:password@host:222").get("proxy")=="username:password@host:222"
+        def t(s):
+            v = parse_remote_display(s)
+            assert v.get("display")=="somedisplay"
+        t("somedisplay?proxy=")
+        t("somedisplay?proxy=:22")
+        t("somedisplay?proxy=:@host:22")
+        t("somedisplay?proxy=:password@host:22")
 
 
 def main():
