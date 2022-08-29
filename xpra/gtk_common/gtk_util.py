@@ -269,9 +269,9 @@ def get_screen_sizes(xscale=1, yscale=1):
         monitor = display.get_monitor(j)
         geom = monitor.get_geometry()
         manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
-        if manufacturer=="unknown":
+        if manufacturer in ("unknown", None):
             manufacturer = ""
-        if model=="unknown":
+        if model in ("unknown", None):
             model = ""
         if manufacturer and model:
             plug_name = "%s %s" % (manufacturer, model)
@@ -512,6 +512,8 @@ def get_monitors_info(xscale=1, yscale=1):
             getter = getattr(monitor, "get_%s" % attr.replace("-", "_"), None)
             if getter:
                 value = getter()
+                if value is None:
+                    continue
                 if isinstance(value, Gdk.Rectangle):
                     value = (round(xscale*value.x), round(yscale*value.y), round(xscale*value.width), round(yscale*value.height))
                 elif attr=="width-mm":
