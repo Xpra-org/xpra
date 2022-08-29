@@ -274,7 +274,7 @@ class X11ShadowModel(RootWindowModel):
         self.override_redirect = False
         self.transient_for = None
         self.parent = None
-        self.relative_position = None
+        self.relative_position = ()
         try:
             self.xid = root_window.get_xid()
             self.property_names.append("xid")
