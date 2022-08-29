@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.os_util import POSIX
+from xpra.common import FULL_INFO
 from xpra.version_util import version_compat_check, get_host_info, get_version_info, get_platform_info
 
 
@@ -18,9 +19,9 @@ class TestVersionUtilModule(unittest.TestCase):
         self.assertIsNotNone(version_compat_check("0.1"))
 
     def test_get_host_info(self):
-        attrs = ["pid"]
-        if POSIX:
-            attrs += ["uid", "pid"]
+        attrs = []
+        if POSIX and FULL_INFO:
+            attrs += ["uid", "gid"]
         for x in attrs:
             self.assertTrue(x in get_host_info(), "%s not found in host info" % x)
 
