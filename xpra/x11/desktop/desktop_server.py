@@ -9,6 +9,7 @@ from gi.repository import GObject
 from xpra.x11.desktop.desktop_server_base import DesktopServerBase
 from xpra.x11.desktop.desktop_model import ScreenDesktopModel
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
+from xpra.server import server_features
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -38,7 +39,7 @@ class XpraDesktopServer(DesktopServerBase):
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
         screenlog("server_init() randr=%s, initial-resolutions=%s",
                        self.randr, self.initial_resolutions)
-        if not self.randr or self.initial_resolutions==():
+        if not self.randr or self.initial_resolutions==() or not server_features.display:
             return
         res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
         if len(res)>1:
