@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import sys
 import unittest
 from io import BytesIO
 
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
@@ -286,7 +286,7 @@ class SourceMixinsTest(unittest.TestCase):
             assert len(packets)==1    #ack sent
             assert packets[0][0]=="webcam-ack"
             frame_no = 0
-            from PIL import Image
+            from PIL import Image  # @UnresolvedImport
             image = Image.new('RGB', size=(w, h), color=(155, 0, 0))
             buf = BytesIO()
             image.save(buf, "png")

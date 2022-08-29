@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,7 +63,7 @@ class X11ServerTest(ServerTestUtil):
 		self.check_stop_server(server, "stop", display)
 		#the socket may be removed before the vfb is stopped,
 		#so wait a little:
-		for i in range(5):
+		for _ in range(5):
 			if display not in self.find_X11_displays():
 				break
 			time.sleep(1)

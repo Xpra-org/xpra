@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import typedict, AdHocStruct
 from xpra.server.source.stub_source_mixin import StubSourceMixin

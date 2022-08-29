@@ -25,7 +25,7 @@ INVALID_INPUTS = (None, True, 1, 1.2, [1, 2], (1, 2), object())
 class TestBrotli(unittest.TestCase):
 
     def test_libversions(self):
-        from xpra.net.brotli import decompressor, compressor
+        from xpra.net.brotli import decompressor, compressor  # @UnresolvedImport
         for m in (decompressor, compressor):
             v = m.get_version()
             log("%s.get_version()=%s", m, v)
@@ -34,7 +34,7 @@ class TestBrotli(unittest.TestCase):
 
     def td(self, v, match_value=None, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), maxsize))
-        from xpra.net.brotli.decompressor import decompress
+        from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
         value = decompress(v, maxsize)
         if match_value is not None:
             assert value==match_value, "expected %s but got %s" % (match_value, value)
@@ -50,7 +50,7 @@ class TestBrotli(unittest.TestCase):
 
     def tc(self, v, match_value=None, level=2, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), level, maxsize))
-        from xpra.net.brotli.compressor import compress
+        from xpra.net.brotli.compressor import compress  # @UnresolvedImport
         value = compress(v, level)
         if match_value is not None:
             assert value==match_value, "expected %s but got %s" % (match_value, value)

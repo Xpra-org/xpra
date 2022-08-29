@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -106,7 +106,7 @@ class TestMotion(unittest.TestCase):
 
 	def do_test_detect_motion(self, W, H):
 		try:
-			import numpy as np
+			from numpy import random, roll
 		except ImportError:
 			print("WARNING: numpy not found")
 			print(" the motion detection test has been skipped")
@@ -114,7 +114,7 @@ class TestMotion(unittest.TestCase):
 		BPP = 4
 		#W, H, BPP = 2, 4, 4
 		LEN = W * H * BPP
-		na1 = np.random.randint(255, size=LEN, dtype="uint8")
+		na1 = random.randint(255, size=LEN, dtype="uint8")
 		def tobytes(a):
 			return a.tobytes()
 		buf1 = tobytes(na1)
@@ -126,7 +126,7 @@ class TestMotion(unittest.TestCase):
 				break
 			sd.update(buf1, 0, 0, W, H, W*BPP, BPP)
 			log("picture of height %i scrolled by %i", H, N)
-			na2 = np.roll(na1, -N*W*BPP)
+			na2 = roll(na1, -N*W*BPP)
 			buf2 = tobytes(na2)
 			start = monotonic()
 			sd.update(buf2, 0, 0, W, H, W*BPP, BPP)

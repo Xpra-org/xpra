@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 from time import monotonic
 from collections import deque
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 try:
     from xpra.server.window import video_subregion

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -51,7 +51,7 @@ class TestX11Keyboard(ServerTestUtil):
 
     def test_grok_modifier_map(self):
         from xpra.x11.gtk_x11.keys import grok_modifier_map
-        from gi.repository.Gdk import Display
+        from gi.repository.Gdk import Display  # @UnresolvedImport
         display = Display.get_default()
         grok_modifier_map(display, None)
         grok_modifier_map(display, {})

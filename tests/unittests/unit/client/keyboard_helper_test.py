@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,7 +19,7 @@ class KeyboardHelperTest(unittest.TestCase):
 			#print("checkmask(%s, %s)", mask, modifiers)
 			mods = kh.mask_to_names(mask)
 			assert set(mods)==set(modifiers), "expected %s got %s" % (modifiers, mods)
-		from gi.repository import Gdk
+		from gi.repository import Gdk  # @UnresolvedImport
 		checkmask(Gdk.ModifierType.SHIFT_MASK, "shift")
 		checkmask(Gdk.ModifierType.LOCK_MASK, "lock")
 		if getattr(kh.keyboard, "swap_keys", False):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,9 @@ class TestDBUSHelper(unittest.TestCase):
 
     def test_struct(self):
         from xpra.dbus.helper import dbus_to_native
-        import dbus
+        from dbus import Struct, String  # @UnresolvedImport
         thestring = "foo"
-        struct = dbus.Struct((dbus.String(thestring),), signature=None)
+        struct = Struct((String(thestring),), signature=None)
         v = dbus_to_native(struct)
         assert v and isinstance(v, list)
         assert v[0] == thestring
