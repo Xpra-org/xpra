@@ -132,11 +132,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return {"shadow" : True}
 
     def get_info(self, _proto=None):
-        return {
-            "sharing"       : self.sharing,
+        info = {
+            "sharing"       : self.sharing is not False,
             "refresh-delay" : self.refresh_delay,
-            "pointer-last-position" : self.pointer_last_position,
             }
+        if self.pointer_last_position:
+            info["pointer-last-position"] = self.pointer_last_position
+        return info
 
 
     def get_window_position(self, _window):
