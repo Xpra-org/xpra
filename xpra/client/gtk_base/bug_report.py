@@ -7,7 +7,7 @@
 import os.path
 import sys
 import time
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
@@ -16,13 +16,13 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.os_util import hexstr
 from xpra.platform.gui import force_focus
-from xpra.util import nonl, envint, envbool, repr_ellipsized
+from xpra.util import nonl, envint, repr_ellipsized
+from xpra.common import FULL_INFO
 from xpra.log import Logger
 
 log = Logger("util")
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
-OBFUSCATE = envbool("XPRA_OBFUSCATE_BUG_REPORT", True)
 
 
 class BugReport:
@@ -119,7 +119,7 @@ class BugReport:
                     "executable"    : sys.executable,
                     "version"       : get_version_info(),
                     "platform"      : get_platform_info(),
-                    "host"          : get_host_info(OBFUSCATE),
+                    "host"          : get_host_info(FULL_INFO),
                     "paths"         : get_path_info(),
                     "gtk"           : get_gtk_version_info(),
                     "gui"           : get_gui_info(),

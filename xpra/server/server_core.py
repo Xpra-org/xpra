@@ -2308,7 +2308,7 @@ class ServerCore:
                 si["sysconfig"] = get_sysconfig_info()
         else:
             si = self.get_minimal_server_info()
-        si.update(get_host_info(not full))
+        si.update(get_host_info(FULL_INFO or authenticated))
         up("server", si)
         if self.session_name:
             info["session"] = {"name" : self.session_name}

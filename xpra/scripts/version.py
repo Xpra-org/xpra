@@ -23,7 +23,7 @@ def main():
         print_nested_dict(pi)
         print("")
         print("Host:")
-        d = get_host_info()
+        d = get_host_info(2)
         #add os specific version info:
         from xpra.platform.info import get_version_info as pvinfo
         d.update(pvinfo())

@@ -11,7 +11,8 @@ import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.util import envbool, obsc, typedict, get_util_logger
+from xpra.common import FULL_INFO
+from xpra.util import envbool, typedict, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
@@ -100,7 +101,7 @@ def version_compat_check(remote_version : str):
         log.warn(f"Warning: failed to parse remote version {remote_version!r}")
         return None
     try:
-        lv = version_as_numbers(remote_version)
+        lv = version_as_numbers(XPRA_VERSION)
     except ValueError:
         log.warn(f"Warning: failed to parse local version {XPRA_VERSION!r}")
         return None
@@ -119,33 +120,30 @@ def version_compat_check(remote_version : str):
     return None
 
 
-def get_host_info(obfuscate=False) -> dict:
+def get_host_info(full_info=1) -> dict:
     #this function is for non UI thread info
-    info = {
+    info = {}
+    if full_info>1:
+        info.update({
         "byteorder"             : sys.byteorder,
         "python"                : {
             "bits"                  : BITS,
             "full_version"          : sys.version,
             "version"               : ".".join(str(x) for x in sys.version_info[:3]),
             },
-        }
-    try:
-        hostname = socket.gethostname()
-        if obfuscate and hostname.find(".")>0:
-            parts = hostname.split(".")
-            for i, part in enumerate(parts):
-                if i>0:
-                    parts[i] = obsc(part)
-            hostname = ".".join(parts)
-        if hostname:
-            info["hostname"] = hostname
-    except OSError:
-        pass
-    if POSIX:
-        info.update({
-            "uid"   : os.getuid(),
-            "gid"   : os.getgid(),
-            })
+        })
+    if full_info>0:
+        try:
+            hostname = socket.gethostname()
+            if hostname:
+                info["hostname"] = hostname
+        except OSError:
+            pass
+        if POSIX:
+            info.update({
+                "uid"   : os.getuid(),
+                "gid"   : os.getgid(),
+                })
     return info
 
 def get_version_info(full=1) -> dict:
