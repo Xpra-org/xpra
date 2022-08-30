@@ -76,6 +76,7 @@ class SplashTest(ProcessTestUtil):
 
 	def _run_splash(self):
 		env = self.get_run_env()
+		env["XPRA_SPLASH_FOCUS_EXIT"] = "0"
 		if self.display:
 			env["DISPLAY"] = self.display
 		cmd = self.get_xpra_cmd()

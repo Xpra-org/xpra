@@ -10,7 +10,7 @@ from time import sleep, monotonic
 from gi.repository import Gtk, Gdk, GLib, Pango  # @UnresolvedImport
 
 from xpra import __version__
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
 from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
 from xpra.common import SPLASH_EXIT_DELAY
@@ -26,7 +26,8 @@ inject_css_overrides()
 
 TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
 LINES = envint("XPRA_SPLASH_LINES", 4)
-READ_SLEEP = envint("XPRA_READ_SLEEP", 0)
+READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
+FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 
 #PULSE_CHARS = "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
 PULSE_CHARS = "◐◓◑◒"
@@ -127,7 +128,8 @@ class SplashScreen(Gtk.Window):
         had = self.had_top_level_focus
         log(f"_focus_change{args} had={had}, has={has}")
         if had and not has:
-            self.exit()
+            if FOCUS_EXIT:
+                self.exit()
         elif has:
             self.had_top_level_focus = True
 
