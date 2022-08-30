@@ -30,6 +30,7 @@ class DisplayClientTest(ClientMixinTest):
 			opts.desktop_fullscreen = False
 			opts.desktop_scaling = False
 			opts.dpi = 144
+			opts.refresh_rate = "20"
 			with silence_info(display):
 				self._test_mixin_class(_DisplayClient, opts, {
 					"display" : ":999",
