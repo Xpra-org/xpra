@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.util import typedict, noerr, envbool
 from xpra.os_util import SIGNAMES, bytestostr

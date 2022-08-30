@@ -6,8 +6,8 @@
 #pylint: disable=wrong-import-position
 
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.util import (
     MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \

@@ -9,7 +9,7 @@
 
 import math
 import cairo
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.client.spinner import cv
 
@@ -45,7 +45,7 @@ class Example(Gtk.Window):
     def expose(self, widget, _cr):
         cr = widget.window.cairo_create()
         cr.set_line_width(3)
-        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)  # @UndefinedVariable
         w, h = self.get_size()
         cr.translate(w/2, h/2)
         for i in range(cv.NLINES):

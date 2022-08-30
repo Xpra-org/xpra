@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -268,7 +268,7 @@ class WebcamForwarder(StubClientMixin):
             end = monotonic()
             log("webcam frame capture took %ims", (end-start)*1000)
             start = monotonic()
-            from PIL import Image
+            from PIL import Image  # @UnresolvedImport
             from io import BytesIO
             image = Image.fromarray(rgb)
             buf = BytesIO()

@@ -1,17 +1,17 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 import cairo
 from cairo import (  #pylint: disable=no-name-in-module
-    Context, ImageSurface,
-    FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,
-    OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,
+    Context, ImageSurface,  # @UnresolvedImport
+    FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
+    OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport
     )
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk  # @UnresolvedImport
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
@@ -245,7 +245,7 @@ class CairoBackingBase(WindowBackingBase):
         log.warn("nasty_rgb_via_png_paint%s",
                  (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
-        from PIL import Image
+        from PIL import Image  # @UnresolvedImport
         if has_alpha:
             oformat = "RGBA"
         else:

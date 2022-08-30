@@ -17,10 +17,10 @@ import sys
 import traceback
 
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Pango, GLib, Gtk, GdkPixbuf
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -29,7 +29,7 @@ from xpra.gtk_common.gtk_util import (
     choose_file, imagebutton, get_icon_pixbuf,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX, is_X11
+from xpra.os_util import WIN32, OSX
 from xpra.make_thread import start_thread
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (

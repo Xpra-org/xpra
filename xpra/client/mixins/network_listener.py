@@ -203,7 +203,7 @@ class NetworkListener(StubClientMixin):
                 if not fn:
                     hello_reply({"error" : "%s not found" % request})
                 else:
-                    from gi.repository import GLib
+                    from gi.repository import GLib  # @UnresolvedImport
                     GLib.idle_add(fn)
                     hello_reply({})
             elif request=="show-session-info":

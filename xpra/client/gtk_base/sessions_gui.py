@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,10 +10,10 @@ import socket
 import subprocess
 
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Pango, GLib, Gtk, Gio
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import Pango, GLib, Gtk, Gio  # @UnresolvedImport
 
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra

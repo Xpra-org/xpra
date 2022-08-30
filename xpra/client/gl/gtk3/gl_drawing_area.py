@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GLib, Gtk, Gdk
+from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import ellipsizer
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase

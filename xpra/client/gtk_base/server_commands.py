@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 from time import monotonic
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import AdHocStruct, typedict
@@ -117,7 +117,7 @@ class ServerCommandsWindow:
                             icons = tuple(x for x in icons if x is not None)
                             log("icons: %s", icons)
                             if icons:
-                                from PIL import Image
+                                from PIL import Image  # @UnresolvedImport
                                 img = icons[0].resize((24, 24), Image.ANTIALIAS)
                                 has_alpha = img.mode=="RGBA"
                                 width, height = img.size

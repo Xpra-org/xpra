@@ -7,7 +7,7 @@
 import sys
 import signal
 from time import sleep, monotonic
-from gi.repository import Gtk, Gdk, GLib, Pango
+from gi.repository import Gtk, Gdk, GLib, Pango  # @UnresolvedImport
 
 from xpra import __version__
 from xpra.util import envint

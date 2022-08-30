@@ -10,7 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
@@ -24,9 +24,7 @@ from xpra.os_util import (
     )
 from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
-from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.make_thread import start_thread
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
@@ -355,8 +353,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
         import gi
-        gi.require_version("Pango", "1.0")
-        from gi.repository import Pango
+        gi.require_version("Pango", "1.0")  # @UndefinedVariable
+        from gi.repository import Pango  # @UnresolvedImport
         title = Gtk.Label(title)
         title.modify_font(Pango.FontDescription("sans 14"))
         add(title, 16)
@@ -1005,7 +1003,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
             if w<=fw and h<=fh:
                 cursorlog("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
-                from PIL import Image
+                from PIL import Image  # @UnresolvedImport
                 img = Image.frombytes("RGBA", (w, h), pixels, "raw", "BGRA", w*4, 1)
                 target = Image.new("RGBA", (fw, fh))
                 target.paste(img, (0, 0, w, h))

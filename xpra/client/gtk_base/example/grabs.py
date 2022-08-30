@@ -8,9 +8,9 @@ from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING, add_close_accel, get_icon_pixbuf  #pylint: disable=wrong-import-position
 
 import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 def make_grab_window():

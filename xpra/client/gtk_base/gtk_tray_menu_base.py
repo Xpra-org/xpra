@@ -6,7 +6,7 @@
 
 import os
 import re
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util import (
     CLIENT_EXIT,

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@
 
 import os.path
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
 from xpra.platform.paths import get_resources_dir

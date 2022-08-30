@@ -15,7 +15,7 @@ import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
@@ -678,7 +678,7 @@ class WindowClient(StubClientMixin):
     def _window_icon_image(self, wid, width, height, coding, data):
         #convert the data into a pillow image,
         #adding the icon overlay (if enabled)
-        from PIL import Image
+        from PIL import Image  # @UnresolvedImport
         coding = bytestostr(coding)
         iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s",
                 self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)

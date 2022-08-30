@@ -615,7 +615,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def glib_init(self):
         #this will take care of calling threads_init if needed:
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         register_SIGUSR_signals(GLib.idle_add)
 
     def run(self):

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.util import typedict, csv, WORKSPACE_UNSET
 from xpra.os_util import bytestostr
@@ -211,7 +211,6 @@ class WindowInfo(Gtk.Window):
         w = self._window
         if not w:
             return
-        b = w._backing
         self.wid_label.set_text(str(w._id))
         self.title_label.set_text(w.get_title())
         self.bool_icon(self.or_image, w._override_redirect)

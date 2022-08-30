@@ -10,10 +10,10 @@ import os.path
 from time import monotonic
 from urllib.parse import unquote
 from cairo import ( #pylint: disable=no-name-in-module
-    RectangleInt, Region,
-    OPERATOR_OVER, LINE_CAP_ROUND,
+    RectangleInt, Region,  # @UnresolvedImport
+    OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
     )
-from gi.repository import Gtk, Gdk, Gio
+from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
 from xpra.util import (

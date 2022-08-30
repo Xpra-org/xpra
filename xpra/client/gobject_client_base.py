@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,8 +8,7 @@ import os.path
 import sys
 from time import monotonic
 
-from gi.repository import GLib
-from gi.repository import GObject
+from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import (
     u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
