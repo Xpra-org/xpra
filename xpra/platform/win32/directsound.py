@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes import WinDLL, oledll, c_int, c_wchar_p
+from ctypes import WinDLL, oledll, c_int
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
 
 

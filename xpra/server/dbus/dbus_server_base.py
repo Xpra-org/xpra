@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import dbus.service
+import dbus.service  # @UnresolvedImport
+from dbus import PROPERTIES_IFACE  # @UnresolvedImport
+from dbus.exceptions import DBusException  # @UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("dbus", "server")
@@ -41,35 +43,35 @@ class DBUS_Server_Base(dbus.service.Object):
         self.log(".Event(%s, %s)", event, args)
 
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ss', out_signature='v')
+    @dbus.service.method(PROPERTIES_IFACE, in_signature='ss', out_signature='v')
     def Get(self, interface_name, property_name):
         conv = self._properties.get(property_name)
         if conv is None:
-            raise dbus.exceptions.DBusException("invalid property")
+            raise DBusException("invalid property")
         server_property_name, _ = conv
         v = getattr(self.server, server_property_name)
         self.log(".Get(%s, %s)=%s", interface_name, property_name, v)
         return v
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
+    @dbus.service.method(PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
-        if interface_name==dbus.PROPERTIES_IFACE:
+        if interface_name==PROPERTIES_IFACE:
             v = dict((x, self.Get(interface_name, x)) for x in self._properties.keys())
         else:
             v = {}
         self.log(".GetAll(%s)=%s", interface_name, v)
         return v
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ssv')
+    @dbus.service.method(PROPERTIES_IFACE, in_signature='ssv')
     def Set(self, interface_name, property_name, new_value):
         self.log(".Set(%s, %s, %s)", interface_name, property_name, new_value)
         conv = self._properties.get(property_name)
         if conv is None:
-            raise dbus.exceptions.DBusException("invalid property")
+            raise DBusException("invalid property")
         server_property_name, validator = conv
         assert hasattr(self.server, server_property_name)
         setattr(self.server, server_property_name, validator(new_value))
 
-    @dbus.service.signal(dbus.PROPERTIES_IFACE, signature='sa{sv}as')
+    @dbus.service.signal(PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
         pass

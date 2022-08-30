@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-import dbus.service
+import dbus.service  # @UnresolvedImport
+import dbus.types  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
