@@ -26,7 +26,7 @@ class TestLZ4(unittest.TestCase):
 
     def test_libversions(self):
         from xpra.net.lz4 import get_version    # @UnresolvedImport
-        assert get_version()>=(1, 9)
+        assert get_version()>=(1, 8)
 
     def td(self, v, match_value=None, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), maxsize))
