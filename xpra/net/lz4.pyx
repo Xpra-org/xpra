@@ -20,7 +20,7 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-cdef extern from "lz4.h":
+cdef extern from "lz4_compat.h":
     int LZ4_versionNumber()
     int LZ4_MAX_INPUT_SIZE
     
