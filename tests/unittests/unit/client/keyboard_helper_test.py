@@ -31,8 +31,10 @@ class KeyboardHelperTest(unittest.TestCase):
 
 	def test_keymap_properties(self):
 		kh = KeyboardHelper(None)
+		kh.query_xkbmap()
 		p = kh.get_keymap_properties()
-		assert p and len(p)>10
+		assert p, "no keymap properties returned"
+		assert len(p)>=8, "not enough keymap properties (%i): %s" % (len(p), p)
 		kh.cleanup()
 
 	def test_parse_shortcuts(self):
