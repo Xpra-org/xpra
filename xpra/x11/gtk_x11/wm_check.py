@@ -52,7 +52,7 @@ def get_wm_info():
     log("get_wm_info()=%s", info)
     return info
 
-def wm_check(wm_name="xpra", upgrading=False):
+def wm_check(upgrading=False):
     info = get_wm_info()
     display_name = info.get("display")
     name = info.get("wmname")
