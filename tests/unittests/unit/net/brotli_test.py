@@ -95,7 +95,6 @@ class TestBrotli(unittest.TestCase):
         TEST_INPUT = [b"hello", b"*"*1024, b"+"*64*1024]
         #find some real "text" files:
         def addf(path):
-            print("addf(%s)" % path)
             if path and os.path.exists(path):
                 with open(path, "rb") as f:
                     TEST_INPUT.append(f.read())
