@@ -6,6 +6,7 @@
 
 from gi.repository import GObject
 
+from xpra.scripts.config import InitException
 from xpra.x11.desktop.desktop_server_base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.mixins.window_server import WindowsMixin
