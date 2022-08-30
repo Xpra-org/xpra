@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,14 +29,14 @@ def get_wm_info():
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-        ewmh_xid = raw_prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False, raise_xerrors=False)
+        ewmh_xid = raw_prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False)
         if ewmh_xid:
-            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
+            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
             if ewmh_wm:
                 info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
-                info["wmname"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+                info["wmname"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True) or ""
             else:
-                info["wmname"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+                info["wmname"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True) or ""
         for name, prop_name, prop_type in (
             ("xpra-server-pid",     "XPRA_SERVER_PID",              "u32"),
             ("xpra-vfb-pid",        "XPRA_XVFB_PID",                "u32"),
