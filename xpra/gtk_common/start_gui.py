@@ -1013,7 +1013,7 @@ class DisplayWindow(SessionOptions):
                     w, h = size.split("x")
                     size_options["%sx%s" % (w, h)] = "%s x %s" % (w, h)
                 except (TypeError, ValueError, IndexError):
-                     size_options[size] = size
+                    size_options[size] = size
             self.combo(tb, "Screen Size", "resize-display", size_options)
         self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
         self.combo(tb, "DPI", "dpi", {
