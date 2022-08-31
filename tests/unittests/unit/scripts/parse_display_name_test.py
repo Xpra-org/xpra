@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -50,8 +50,7 @@ class TestMain(unittest.TestCase):
         if e:
             for k,v in e.items():
                 actual = r.get(k)
-                assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s, expected %s" % (
-                    v, actual, s, r, e)
+                assert actual==v, f"expected {v} but got {actual} from parse_display_name({s})={r}, expected {e}"
         return r
 
     def test_parse_display_name(self):
@@ -62,7 +61,7 @@ class TestMain(unittest.TestCase):
         else:
             fd = self._test_parse_display_name("socket:///FOO")
             sd = self._test_parse_display_name("/FOO")
-        assert sd==fd, "expected %s but got %s" % (fd, sd)
+        assert sd==fd, f"expected {fd} but got {sd}"
         t = self._test_parse_display_name
         def e(s):
             try:
@@ -70,7 +69,7 @@ class TestMain(unittest.TestCase):
             except Exception:
                 pass
             else:
-                raise Exception("parse_display_name should fail for %s" % s)
+                raise Exception(f"parse_display_name should fail for {s}")
         if POSIX:
             e("ZZZZZZ")
             t("10", {"display_name" : "10", "local" : True, "type" : "unix-domain"})
@@ -98,11 +97,12 @@ class TestMain(unittest.TestCase):
         t("tcp://host/100,key1=value1", {"key1" : "value1"})
         t("tcp://host/key1=value1", {"key1" : "value1"})
         try:
-            from xpra.net.vsock import CID_ANY, PORT_ANY    #@UnresolvedImport
-            t("vsock://any:any/", {"vsock" : (CID_ANY, PORT_ANY)})
-            t("vsock://10:2000/", {"vsock" : (10, 2000)})
+            from xpra.net.vsock import CID_ANY, PORT_ANY    #@UnresolvedImport pylint: disable=import-outside-toplevel
         except ImportError:
             pass
+        else:
+            t("vsock://any:any/", {"vsock" : (CID_ANY, PORT_ANY)})
+            t("vsock://10:2000/", {"vsock" : (10, 2000)})
         t("vnc+ssh://host/0")
 
 
