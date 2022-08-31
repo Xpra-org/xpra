@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ class TestParsing(unittest.TestCase):
             add_debug_category("ssh")
             def pssh(s, e):
                 r = parse_ssh_option(s)[0]
-                assert r==e, "expected %s got %s" % (e, r)
+                assert r==e, f"expected {e} got {r}"
             if WIN32:
                 pssh("auto", "plink.exe")
             else:
@@ -33,7 +33,7 @@ class TestParsing(unittest.TestCase):
         #args:
         def targs(e, *args, **kwargs):
             r = add_ssh_args(*args, **kwargs)
-            assert r==e, "expected %s but got %s" % (e, r)
+            assert r==e, f"expected {e} but got {r}"
         targs([], None, None, None, None, None, is_paramiko=True)
         targs(["-pw", "password", "-l", "username", "-P", "2222", "-T", "host"],
               "username", "password", "host", 2222, None, is_putty=True)
@@ -44,7 +44,7 @@ class TestParsing(unittest.TestCase):
         #ssh proxy:
         def pargs(e, n, *args, **kwargs):
             r = add_ssh_proxy_args(*args, **kwargs)[:n]
-            assert r==e, "expected %s but got %s" % (e, r)
+            assert r==e, f"expected {e} but got {r}"
         pargs(["-o"], 1,
             "username", "password", "host", 222, None, ["ssh"])
         pargs(["-proxycmd"], 1,
