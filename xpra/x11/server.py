@@ -309,7 +309,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def set_screen_size(self, desired_w, desired_h, bigger=True):
         #clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
-            if window.is_tray():
+            if window.is_tray() or window.is_OR():
                 continue
             cg = window.get_property("client-geometry")
             if cg:
@@ -1008,7 +1008,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if not ss:
             return
         #some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = len(packet)>=10 and packet[9]
+        skip_geometry = (len(packet)>=10 and packet[9]) or window.is_OR()
         if not skip_geometry:
             self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=7:
