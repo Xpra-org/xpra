@@ -27,6 +27,19 @@ class TestMain(unittest.TestCase):
         opts.ssh = "ssh -v "
         opts.remote_xpra = "run-xpra"
         opts.password_file = None
+        opts.ssl_server_hostname = ""
+        opts.ssl_cert = ""
+        opts.ssl_key = ""
+        opts.ssl_ca_certs = "default"
+        opts.ssl_ca_data = ""
+        opts.ssl_ciphers = "DEFAULT"
+        opts.ssl_protocol = "TLSv1_2"
+        opts.ssl_client_verify_mode = "optional"
+        opts.ssl_server_verify_mode = "required"
+        opts.ssl_verify_flags = "X509_STRICT"
+        opts.ssl_check_hostname = True
+        opts.ssl_server_hostname = ""
+        opts.ssl_options = "ALL,NO_COMPRESSION"
         return opts
 
     def _test_parse_display_name(self, s, e=None):
