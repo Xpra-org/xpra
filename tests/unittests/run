@@ -6,6 +6,7 @@ export XPRA_NOTTY=1
 export XPRA_UTIL_DEBUG=${XPRA_UTIL_DEBUG:-0}
 export XPRA_TEST_DEBUG=${XPRA_TEST_DEBUG:-0}
 export XPRA_HIDE_SUBPROCESS_OUTPUT=${XPRA_HIDE_SUBPROCESS_OUTPUT:-1}
+export XPRA_TEST_COVERAGE=${XPRA_TEST_COVERAGE:-1}
 export PYTHON=${PYTHON:-python3}
 #SAVED_PYTHONPATH=$PYTHONPATH
 
@@ -33,13 +34,19 @@ export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
 export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
-coverage erase
+if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
+	coverage erase
+fi
+
 $PYTHON ./unit/run.py "$@"
-ls -la
-coverage combine
-ls -la
-coverage report -m
-ls -la
-coverage html
-xdg-open ./htmlcov/index.html
+
+if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
+	ls -la
+	coverage combine
+	ls -la
+	coverage report -m
+	ls -la
+	coverage html
+	xdg-open ./htmlcov/index.html
+fi
 popd
