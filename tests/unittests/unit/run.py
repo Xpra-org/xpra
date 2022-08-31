@@ -14,6 +14,7 @@ COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1")=="1"
 
 def main():
     if COVERAGE:
+        # pylint: disable=import-outside-toplevel
         #only include xpra in the report,
         #and to do that, we need the path to the module (weird):
         import xpra
@@ -24,7 +25,7 @@ def main():
             try:
                 from shutil import which as find_executable
             except ImportError:
-                from distutils.spawn import find_executable
+                from distutils.spawn import find_executable  # pylint: disable=deprecated-module
             try:
                 return find_executable(command)
             except Exception:
@@ -48,27 +49,27 @@ def main():
     sys.path.append(unittests_dir)
     #now look for tests to run
     def write(msg):
-        sys.stdout.write("%s\n" % msg)
+        sys.stdout.write(f"{msg}\n")
         sys.stdout.flush()
     def run_file(p):
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
         if not (p.startswith(unittests_dir) and p.endswith("test.py")):
-            write("invalid file skipped: %s" % p)
+            write(f"invalid file skipped: {p}")
             return 0
         #ie: "unit.version_util_test"
         name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
-        write("running %s\n" % name)
+        write(f"running {name}\n")
         cmd = run_cmd + [p]
         try:
-            proc = subprocess.Popen(cmd)
+            with subprocess.Popen(cmd) as proc:
+                v = proc.wait()
+            if v!=0:
+                write(f"failure on {name}, exit code={v}")
+                return v
+            return 0
         except OSError as e:
-            write("failed to execute %s using %s: %s" % (p, cmd, e))
+            write(f"failed to execute {p} using {cmd}: {e}")
             return 1
-        v = proc.wait()
-        if v!=0:
-            write("failure on %s, exit code=%s" % (name, v))
-            return v
-        return 0
     def add_recursive(d):
         paths = os.listdir(d)
         for path in paths:
@@ -83,7 +84,7 @@ def main():
                 return v
         return 0
     write("************************************************************")
-    write("running all the tests in %s" % paths)
+    write(f"running all the tests in {paths}")
     for x in paths:
         if os.path.isdir(x):
             r = add_recursive(x)
