@@ -949,26 +949,27 @@ def get_monitors_info(xscale=1, yscale=1):
 
 TaskbarLib = None
 def getTaskbar():
+    # pylint: disable=import-outside-toplevel
     global TaskbarLib
     if TaskbarLib is None:
         try:
-            from xpra.platform.paths import get_app_dir
-            TLB_FILENAME = "TaskbarLib.tlb"
-            tlb_file = None
-            for d in (get_app_dir(), os.getcwd()):
-                tlb_file = os.path.abspath(os.path.join(d, TLB_FILENAME)).replace("/", "\\")
-                if os.path.exists(tlb_file):
-                    break
-            from xpra.platform.win32.comtypes_util import QuietenLogging
+            from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init
+            taskbar_tlb = find_tlb_file("TaskbarLib.tlb")
+            if not taskbar_tlb:
+                log.warn("Warning: 'TaskbarLib.tlb' was not found")
+                log.warn(" taskbar integration cannot be enabled")
+                TaskbarLib = False
+                return None
+            comtypes_init()
             with QuietenLogging():
                 import comtypes.client as cc  # @UnresolvedImport
-                cc.GetModule(tlb_file)
+                cc.GetModule(taskbar_tlb)
                 import comtypes.gen.TaskbarLib as tbl  # @UnresolvedImport
                 TaskbarLib = tbl
-                log(f"loaded {tlb_file}")
+                log(f"loaded {taskbar_tlb!r}: {TaskbarLib}")
         except Exception as e:
             log("getTaskbar()", exc_info=True)
-            log.error(f"Error: failed to load taskbar library from {tlb_file!r}")
+            log.error(f"Error: failed to load taskbar library from {taskbar_tlb!r}")
             log.estr(e)
             TaskbarLib = False
     if not TaskbarLib:
