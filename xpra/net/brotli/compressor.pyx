@@ -104,5 +104,4 @@ def compress(data, int quality=1):
         PyBuffer_Release(&in_buf)
     if not r:
         raise ValueError("brotli compression failed: %i" % r)
-    slice = out[:out_size]
-    return slice
+    return out[:out_size]
