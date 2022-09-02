@@ -74,7 +74,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.finish = super().finish
 
     def do_GET(self):
-        log("do_GET() path=%s, headers=%s", self.path, self.headers)
+        log(f"do_GET() path={self.path!r}, headers={self.headers!r}")
         upgrade_requested = (self.headers.get('upgrade') or "").lower() == 'websocket'
         if self.only_upgrade or upgrade_requested:
             if not upgrade_requested:
@@ -85,8 +85,8 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             except Exception as e:
                 log("do_GET()", exc_info=True)
                 log.error("Error: cannot handle websocket upgrade:")
-                log.error(" %s", e)
-                self.send_error(403, "failed to handle websocket: %s" % e)
+                log.estr(e)
+                self.send_error(403, f"failed to handle websocket: {e}")
             return
         if self.headers.get("Upgrade-Insecure-Requests", "")=="1" and self.redirect_https:
             self.do_redirect_https()
@@ -124,6 +124,6 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def finish(self):
         super().finish()
-        log("finish() close_connection=%s, connection=%s", self.close_connection, self.connection)
+        log(f"finish() close_connection={self.close_connection}, connection={self.connection}")
         if self.close_connection:
             self.connection.close()

@@ -32,16 +32,16 @@ def get_headers(host, port):
         try:
             header_module = __import__(f"xpra.net.websockets.headers.{mod_name}", {}, {}, ["get_headers"])
             v = header_module.get_headers(host, port)
-            log("%s.get_headers(%s, %s)=%s", mod_name, host, port, v)
+            log(f"{mod_name}.get_headers({host}, {port})={v}")
             headers.update(v)
         except ImportError as e:
             log("import %s", mod_name, exc_info=True)
-            log.error("Error: websocket header module %s not available", mod_name)
+            log.error(f"Error: websocket header module {mod_name!r} not available")
             log.error(" %s", e)
         except Exception as e:
             log("get_headers %s", mod_name, exc_info=True)
-            log.error("Error: cannot get headers from '%s'", mod_name)
-            log.error(" %s", e)
+            log.error(f"Error: cannot get headers from module {mod_name!r}")
+            log.estr(e)
     return headers
 
 
@@ -55,7 +55,7 @@ def client_upgrade(read, write, host, port, path=""):
 
 def get_client_upgrade_request(host, port, path, key):
     request = f"GET /{path} HTTP/1.1"
-    log("client_upgrade: http request: %s", request)
+    log(f"client websocket upgrade request: {request!r}")
     lines = [request.encode("latin1")]
     headers = get_headers(host, port)
     headers[b"Sec-WebSocket-Key"] = key
@@ -95,7 +95,7 @@ def parse_response_header(response):
     return headers
 
 def verify_response_headers(headers, key):
-    log("verify_response_headers(%s)", headers)
+    log(f"verify_response_headers({headers!r})")
     if not headers:
         raise Exception("no http headers found in response")
     if headers.get("www-authenticate"):

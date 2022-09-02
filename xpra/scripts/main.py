@@ -97,7 +97,7 @@ def main(script_file, cmdline):
 
     if sys.flags.optimize>0:    # pragma: no cover
         sys.stderr.write("************************************************************\n")
-        sys.stderr.write("Warning: the python optimize flag is set to %i\n" % sys.flags.optimize)
+        sys.stderr.write(f"Warning: the python optimize flag is set to {sys.flags.optimize}\n")
         sys.stderr.write(" xpra is very likely to crash\n")
         sys.stderr.write("************************************************************\n")
         time.sleep(5)
@@ -140,25 +140,25 @@ def main(script_file, cmdline):
         def err(*args):
             raise InitException(*args)
         return run_mode(script_file, cmdline, err, options, args, mode, defaults)
-    except SystemExit as e:
+    except SystemExit:
         debug_exc()
         raise
     except InitExit as e:
         debug_exc()
         if str(e) and e.args and (e.args[0] or len(e.args)>1):
-            command_info("%s" % e)
+            command_info(str(e))
         return e.status
     except InitInfo as e:
         debug_exc()
-        command_info("%s" % e)
+        command_info(str(e))
         return 0
     except InitException as e:
         debug_exc()
-        command_error("xpra initialization error:\n %s" % e)
+        command_error(f"xpra initialization error:\n {e}")
         return 1
     except AssertionError as e:
         debug_exc()
-        command_error("xpra initialization error:\n %s" % e)
+        command_error(f"xpra initialization error:\n {e}")
         traceback.print_tb(sys.exc_info()[2])
         return 1
     except Exception:
@@ -287,7 +287,7 @@ def systemd_run_wrap(mode, args, systemd_run_args=None, **kwargs):
     stderr = sys.stderr
     LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
     if LOG_SYSTEMD_WRAP:
-        noerr(stderr.write, "using systemd-run to wrap '%s' server command\n" % mode)
+        noerr(stderr.write, f"using systemd-run to wrap {mode!r} server command\n")
     LOG_SYSTEMD_WRAP_COMMAND = envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False)
     if LOG_SYSTEMD_WRAP_COMMAND:
         noerr(stderr.write, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
@@ -302,7 +302,7 @@ def isdisplaytype(args, *dtypes) -> bool:
     if not args:
         return False
     d = args[0]
-    return any((d.startswith("%s/" % dtype) or d.startswith("%s:" % dtype) for dtype in dtypes))
+    return any((d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes))
 
 def check_gtk():
     import gi
@@ -396,14 +396,14 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
         xrd = "/run/user/%i" % getuid()
         if os.path.exists(xrd):
-            warn("Warning: using '%s' as XDG_RUNTIME_DIR" % xrd)
+            warn(f"Warning: using {xrd!r} as XDG_RUNTIME_DIR")
             os.environ["XDG_RUNTIME_DIR"] = xrd
         else:
             warn("Warning: XDG_RUNTIME_DIR is not defined")
-            warn(" and '%s' does not exist" % xrd)
+            warn(f" and {xrd!r} does not exist")
             if os.path.exists("/tmp") and os.path.isdir("/tmp"):
                 xrd = "/tmp"
-                warn(" using '%s'" % xrd)
+                warn(f" using {xrd!r}")
                 os.environ["XDG_RUNTIME_DIR"] = xrd
 
     if not mode.startswith("_sound_"):
@@ -435,7 +435,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     try:
         return do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults)
     except KeyboardInterrupt as e:
-        info("\ncaught %s, exiting" % repr(e))
+        info(f"\ncaught {e!r}, exiting")
         return 128+signal.SIGINT
 
 
@@ -469,7 +469,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "shadow", "proxy",
         ):
         return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
-    elif mode in (
+    if mode in (
         "attach", "listen", "detach",
         "screenshot", "version", "info", "id",
         "control", "_monitor", "shell", "print",
@@ -570,7 +570,6 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         from xpra.scripts.pinentry_wrapper import input_pass
         password = input_pass((args+["password"])[0])
-        get_util_logger().log(f"password={password}")
         return len(password or "")>0
     elif mode=="_dialog":
         check_gtk()
@@ -598,7 +597,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode=="encoding":
         from xpra.codecs import loader
         return loader.main(args)
-    elif mode=="applications-menu" or mode=="sessions-menu":
+    elif mode in ("applications-menu", "sessions-menu"):
         from xpra.server.menu_provider import MenuProvider
         if mode=="applications-menu":
             data = MenuProvider().get_menu_data(remove_icons=True)
@@ -740,7 +739,7 @@ def display_desc_to_uri(display_desc):
             uri += ":%i" % port
     elif dtype=="vsock":
         cid, iport = display_desc["vsock"]
-        uri += "%s:%s" % (cid, iport)
+        uri += f"{cid}:{iport}"
     else:
         raise NotImplementedError("%s is not implemented yet" % dtype)
     uri += "/"
@@ -781,7 +780,7 @@ def pick_display(error_cb, opts, extra_args, cmdline=()):
         N = 100
         from xpra.net.socket_util import socket_connect
         for i in range(N):
-            if not os.path.exists("%s/X%i" % (X11_SOCKET_DIR, i)):
+            if not os.path.exists(f"{X11_SOCKET_DIR}/X{i}"):
                 #no X11 socket, assume no VNC server
                 continue
             port = 5900+i
@@ -881,7 +880,7 @@ def connect_or_fail(display_desc, opts):
         raise
     except Exception as e:
         Logger("network").debug("failed to connect", exc_info=True)
-        raise InitException("connection failed: %s" % e) from None
+        raise InitException(f"connection failed: {e}") from None
 
 def proxy_connect(options):
     #if is_debug_enabled("proxy"):
@@ -926,11 +925,11 @@ def retry_socket_connect(options):
         if monotonic()-start>=timeout:
             break
         if retry==0:
-            werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, timeout))
+            werr(f"failed to connect to {host}:{port}, retrying for {timeout} seconds")
         retry += 1
         time.sleep(1)
     dtype = options["type"]
-    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s socket %s:%s" % (dtype, host, port))
+    raise InitExit(EXIT_CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
     dtype = display_desc["type"]
@@ -946,13 +945,13 @@ def get_host_target_string(display_desc, port_key="port", prefix=""):
     return host_target_string(dtype, username, host, port, display)
 
 def host_target_string(dtype, username, host, port, display):
-    target = "%s://" % dtype
+    target = f"{dtype}://"
     if username:
-        target += "%s@" % username
+        target += f"{username}@"
     target += host
     default_port = DEFAULT_PORTS.get(dtype, 0)
     if port and port!=default_port:
-        target += ":%i" % port
+        target += f":{port}"
     if display and display.startswith(":"):
         display = display[1:]
     target += "/%s" % (display or "")
@@ -1016,10 +1015,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         except Exception as e:
             try:
                 if e.args[0]==errno.ENOENT:
-                    raise InitException("the named pipe '%s' does not exist: %s" % (pipe_name, e)) from None
+                    raise InitException(f"the named pipe {pipe_name!r} does not exist: {e}") from None
             except AttributeError:
                 pass
-            raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e)) from None
+            raise InitException(f"failed to connect to the named pipe {pipe_name}:\n {e}") from None
         conn = NamedPipeConnection(pipe_name, pipe_handle, {})
         conn.timeout = SOCKET_TIMEOUT
         conn.target = "namedpipe://%s/" % pipe_name
@@ -1055,7 +1054,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
             sock = ssl_wrap_socket(sock, **ssl_options)
             sock = ssl_handshake(sock)
-            assert sock, "failed to wrap socket %s" % sock
+            assert sock, f"failed to wrap socket {sock}"
             conn._socket = sock
             conn.timeout = SOCKET_TIMEOUT
 
@@ -1067,13 +1066,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             try:
                 from xpra.net.websockets.common import client_upgrade
             except ImportError as e:    # pragma: no cover
-                raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e) from None
+                raise InitExit(EXIT_UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
             else:
                 display = display_desc.get("display", "")
                 client_upgrade(conn.read, conn.write, host, port, display)
         conn.target = get_host_target_string(display_desc)
         return conn
-    raise InitException("unsupported display type: %s" % dtype)
+    raise InitException(f"unsupported display type: {dtype}")
 
 
 
@@ -1090,11 +1089,11 @@ def run_send_file(extra_args):
     if not sockpath:
         display = os.environ.get("DISPLAY")
         if display:
-            uri = "%s" % display
+            uri = display
         else:
             raise InitException("cannot find xpra server to use")
     else:
-        uri = "socket://%s" % sockpath
+        uri = f"socket://{sockpath}"
     if extra_args:
         files = extra_args
     else:
@@ -1107,23 +1106,28 @@ def run_send_file(extra_args):
     xpra_cmd = get_xpra_command()
     errors = 0
     for f in files:
-        filelog("run_send_file(%s) sending '%s'", extra_args, f)
+        filelog(f"run_send_file({extra_args}) sending {f!r}")
         if not os.path.isabs(f):
             f = os.path.abspath(f)
         #xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
         cmd = xpra_cmd + ["control", uri, "send-file", f]
-        filelog("cmd=%s", cmd)
+        filelog(f"cmd={cmd}")
         proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         if proc.returncode:
-            filelog.error("Error: failed to send file '%s'", f)
-            if stdout:
-                filelog.error(" %s", stdout.decode())
-            if stderr:
-                filelog.error(" %s", stderr)
+            filelog.error(f"Error: failed to send file {f!r}")
+            def logfdoutput(v):
+                if v:
+                    try:
+                        v = v.decode()
+                    except UnicodeDecodeError:
+                        pass
+                    filelog.error(f" {v!r}")
+            logfdoutput(stdout)
+            logfdoutput(stderr)
             errors += 1
         else:
-            filelog.info("sent '%s'", f)
+            filelog.info(f"sent {f!r}")
     if errors:
         return EXIT_FAILURE
     return 0
@@ -1161,15 +1165,15 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                 #this could be a server starting up,
                 #so give it a bit of time:
                 if state==DotXpra.UNKNOWN:
-                    werr("server socket for display %s is in %s state" % (display, DotXpra.UNKNOWN))
+                    werr(f"server socket for display {display} is in {DotXpra.UNKNOWN} state")
                 else:
-                    werr("server socket for display %s not found" % display)
-                werr(" waiting up to %i seconds" % timeout)
+                    werr(f"server socket for display {display} not found")
+                werr(f" waiting up to {timeout} seconds")
                 start = monotonic()
                 log = Logger("network")
                 while monotonic()-start<timeout:
                     state = dotxpra.get_display_state(display)
-                    log("get_display_state(%s)=%s", display, state)
+                    log(f"get_display_state({display})={state}")
                     if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
                         #found a final state
                         break
@@ -1225,13 +1229,13 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
             if not os.path.exists(script_file):
                 #perhaps the extension is missing?
                 if not os.path.splitext(script_file)[1]:
-                    log("script file '%s' not found, retrying with %PATHEXT%", script_file)
+                    log(f"script file {script_file!r} not found, retrying with %PATHEXT%")
                     for ext in os.environ.get("PATHEXT", ".COM;.EXE").split(os.path.pathsep):
                         tmp = script_file+ext
                         if os.path.exists(tmp):
                             script_file = tmp
             cmdline[0] = script_file
-            log("Popen(args=%s, executable=%s)", cmdline, script_file)
+            log(f"Popen(args={cmdline}, executable={script_file}")
             Popen(args=cmdline, executable=script_file)
             #we can't keep re-spawning ourselves without freeing memory,
             #so exit the current process with "no error":
@@ -1372,7 +1376,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
     elif request_mode and opts.attach is not True:
         from xpra.client.gobject_client_base import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
-        extra_args = ["socket:%s" % opts.system_proxy_socket]
+        extra_args = [f"socket:{opts.system_proxy_socket}"]
         app = RequestStartClient(opts)
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
@@ -1385,7 +1389,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
             #try to guess the server intended:
             server_socket = os.environ.get("XPRA_SERVER_SOCKET")
             if server_socket:
-                extra_args = ["socket://%s" % server_socket]
+                extra_args = [f"socket://{server_socket}"]
         display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
         if len(extra_args)==1 and opts.password:
             uri = extra_args[0]
@@ -1418,7 +1422,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
             err = opts.encoding and (opts.encoding not in app.get_encodings())
             einfo = ""
             if err and opts.encoding!="help":
-                einfo = "invalid encoding: %s\n" % opts.encoding
+                einfo = f"invalid encoding: {opts.encoding}\n"
             if opts.encoding=="help" or err:
                 from xpra.codecs.loader import encodings_help
                 encodings = ["auto"] + app.get_encodings()
@@ -1441,7 +1445,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
         app.init_ui(opts)
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
-            extra_args = ["socket:%s" % opts.system_proxy_socket]
+            extra_args = [f"socket:{opts.system_proxy_socket}"]
             app.hello_extra = {
                 "start-new-session" : sns,
                 "connect"           : True,
@@ -1478,20 +1482,20 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
                 netlog("new_connection%s", (socktype, sock, handle))
                 conn = accept_connection(socktype, sock)
                 #start a thread so we can sleep in peek_connection:
-                start_thread(handle_new_connection, "handle new connection: %s" % conn, daemon=True, args=(conn, ))
+                start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn, ))
                 return True
             def handle_new_connection(conn):
                 #see if this is a redirection:
                 netlog = get_network_logger()
                 line1 = peek_connection(conn)[1]
-                netlog("handle_new_connection(%s) line1=%s", conn, line1)
+                netlog(f"handle_new_connection({conn}) line1={line1!r}")
                 if line1:
                     from xpra.net.common import SOCKET_TYPES
                     uri = bytestostr(line1)
                     for socktype in SOCKET_TYPES:
-                        if uri.startswith("%s://" % socktype):
+                        if uri.startswith(f"{socktype}://"):
                             run_socket_cleanups()
-                            netlog.info("connecting to %s", uri)
+                            netlog.info(f"connecting to {uri}")
                             extra_args[:] = [uri, ]
                             display_desc = pick_display(error_cb, opts, [uri, ])
                             connect_to_server(app, display_desc, opts)
@@ -1521,7 +1525,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
             app.show_progress(90, "ready")
             return app
     except Exception as e:
-        app.show_progress(100, "failure: %s" % e)
+        app.show_progress(100, f"failure: {e}")
         may_notify = getattr(app, "may_notify", None)
         if callable(may_notify):
             from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
