@@ -8,6 +8,7 @@ import uuid
 from time import monotonic
 from hashlib import sha1
 from base64 import b64encode
+from urllib.parse import quote
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
@@ -54,7 +55,8 @@ def client_upgrade(read, write, host, port, path=""):
     log("client_upgrade: done")
 
 def get_client_upgrade_request(host, port, path, key):
-    request = f"GET /{path} HTTP/1.1"
+    url_path = quote(path)
+    request = f"GET /{url_path} HTTP/1.1"
     log(f"client websocket upgrade request: {request!r}")
     lines = [request.encode("latin1")]
     headers = get_headers(host, port)

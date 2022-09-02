@@ -742,7 +742,11 @@ def display_desc_to_uri(display_desc):
         uri += f"{cid}:{iport}"
     else:
         raise NotImplementedError("%s is not implemented yet" % dtype)
-    uri += "/"
+    uri += "/" + display_desc_to_display_path(display_desc)
+    return uri
+
+def display_desc_to_display_path(display_desc):
+    uri = ""
     display = display_desc.get("display")
     if display:
         uri += display.lstrip(":")
@@ -1068,8 +1072,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             except ImportError as e:    # pragma: no cover
                 raise InitExit(EXIT_UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
             else:
-                display = display_desc.get("display", "")
-                client_upgrade(conn.read, conn.write, host, port, display)
+                display_path = display_desc_to_display_path(display_desc)
+                client_upgrade(conn.read, conn.write, host, port, display_path)
         conn.target = get_host_target_string(display_desc)
         return conn
     raise InitException(f"unsupported display type: {dtype}")
