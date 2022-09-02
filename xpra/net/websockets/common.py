@@ -10,7 +10,6 @@ from hashlib import sha1
 from base64 import b64encode
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import u
 from xpra.log import Logger
 
 log = Logger("websocket")
