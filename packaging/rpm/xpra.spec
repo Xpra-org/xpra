@@ -642,8 +642,68 @@ fi
 
 
 %changelog
-* Fri Aug 05 2022 Antoine Martin <antoine@xpra.org> 4.4-10
-- TODO
+* Fri Sep 02 2022 Antoine Martin <antoine@xpra.org> 4.4-10
+- Platforms, build and packaging:
+   Native LZ4 bindings
+   Safer native brotli bindings
+   Native qrencode bindings
+   openSUSE build tweaks
+   Debian finally moved to `libexec`
+   MS Windows taskbar integration
+- Server:
+   Configurable vertical refresh rate
+   Virtual Monitors
+   Multi-monitor desktop mode
+   Expand an existing desktop
+   Exit with windows
+   Full shadow keyboard mapping
+   xwait subcommand
+   guess content-type from parent pid
+   cups print backend status report
+   Override sockets on upgrade
+   Allow additional options to X server invocation
+   Control commands for modifying command environment and read only flag
+   Start new commands via a proxy server's SSH listener
+- Shadow server:
+   Geometry restrictions
+   Shadow specific applications
+- Client:
+   Automatic keyboard grabs
+   Pointer confinement
+   Faster window initial data
+   Improved DPI detection on MS Windows
+   Show all current keyboard shortcuts
+   Preserve all options when reconnecting
+   Option to accept SSL mismatched host permanently
+   Forward all command line options
+   Smooth scrolling options
+   Per-window scaling - experimental
+- Security and authentication:
+   Configurable information disclosure
+   Keycloak authentication
+   Capability based authentication
+   Authentication for web server scripts
+   OTP authentication
+   Workaround paramiko `No existing session` error
+- Encodings and latency:
+   Option to cap picture quality
+   Expose scaling quality
+   NVJPEG decoder
+   AVIF encoding
+   selective `scroll` encoding detection
+- Network:
+   SOCKS proxy connection support
+   SSH agent forwarding
+   proxy network performance improvement
+- Misc:
+   easier xpra subcommand invocation
+- Refactoring and preparation for the next LTS release:
+   Feature deprecation
+   Remove "app menus" support
+   Remove ancient complicated code
+   Simplify the build file
+   More robust info handlers
+   f-strings
 
 * Wed Dec 08 2021 Antoine Martin <antoine@xpra.org> 4.3-10
 - Platforms, build and packaging:

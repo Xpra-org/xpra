@@ -1,7 +1,67 @@
 # Changelog
 
-## [4.4] 2022-08-05
-* TODO
+## [4.4] 2022-09-02
+* Platforms, build and packaging:
+    * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
+    * Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
+    * [Native qrencode bindings](https://github.com/Xpra-org/xpra/issues/3578)
+    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597)
+    * [Debian finally moved to `libexec`](https://github.com/Xpra-org/xpra/issues/3493)
+    * [MS Windows taskbar integration](https://github.com/Xpra-org/xpra/issues/508)
+* Server:
+    * [Configurable vertical refresh rate](https://github.com/Xpra-org/xpra/issues/3600)
+    * [Virtual Monitors](https://github.com/Xpra-org/xpra/issues/56)
+    * [Multi-monitor desktop mode](https://github.com/Xpra-org/xpra/issues/3524)
+    * [Expand an existing desktop](https://github.com/Xpra-org/xpra/issues/3390)
+    * [Exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
+    * [Full shadow keyboard mapping](https://github.com/Xpra-org/xpra/issues/2630)
+    * [xwait subcommand](https://github.com/Xpra-org/xpra/issues/3386)
+    * [guess content-type from parent pid](https://github.com/Xpra-org/xpra/issues/2753)
+    * [cups print backend status report](https://github.com/Xpra-org/xpra/issues/1228)
+    * [Override sockets on upgrade](https://github.com/Xpra-org/xpra/issues/3568)
+    * [Allow additional options to X server invocation](https://github.com/Xpra-org/xpra/issues/3553)
+    * Control commands for [modifying command environment](https://github.com/Xpra-org/xpra/issues/3502), and [read only flag](https://github.com/Xpra-org/xpra/issues/3466)
+    * [Start new commands via a proxy server's SSH listener](https://github.com/Xpra-org/xpra/issues/2898)
+* Shadow server:
+    * [Geometry restrictions](https://github.com/Xpra-org/xpra/issues/3384)
+    * [Shadow specific applications](https://github.com/Xpra-org/xpra/issues/3476)
+* Client:
+    * [Automatic keyboard grabs](https://github.com/Xpra-org/xpra/issues/3059)
+    * [Pointer confinement](https://github.com/Xpra-org/xpra/issues/3059)
+    * [Faster window initial data](https://github.com/Xpra-org/xpra/issues/3473)
+    * [Improved DPI detection on MS Windows](https://github.com/Xpra-org/xpra/issues/1526)
+    * [Show all current keyboard shortcuts](https://github.com/Xpra-org/xpra/issues/2779)
+    * [Preserve all options when reconnecting](https://github.com/Xpra-org/xpra/issues/3207)
+    * [Option to accept SSL mismatched host permanently](https://github.com/Xpra-org/xpra/issues/3305)
+    * [Forward all command line options](https://github.com/Xpra-org/xpra/issues/3566)
+    * [Smooth scrolling options](https://github.com/Xpra-org/xpra/issues/3127)
+    * [Per-window scaling](https://github.com/Xpra-org/xpra/issues/3454) - experimental
+* Security and authentication:
+    * [Configurable information disclosure](https://github.com/Xpra-org/xpra/issues/3582)
+    * [Keycloak authentication](https://github.com/Xpra-org/xpra/issues/3486)
+    * [Capability based authentication](https://github.com/Xpra-org/xpra/issues/3575)
+    * [Authentication for web server scripts](https://github.com/Xpra-org/xpra/issues/3100)
+    * [OTP authentication](https://github.com/Xpra-org/xpra/issues/2906)
+    * [Workaround paramiko `No existing session` error](https://github.com/Xpra-org/xpra/issues/3223)
+* Encodings and latency:
+    * [Option to cap picture quality](https://github.com/Xpra-org/xpra/issues/3420)
+    * [Expose scaling quality](https://github.com/Xpra-org/xpra/issues/3598)
+    * [NVJPEG decoder](https://github.com/Xpra-org/xpra/issues/3504) (WIP - leaks memory)
+    * [AVIF encoding](https://github.com/Xpra-org/xpra/issues/3457)
+    * [selective `scroll` encoding detection](https://github.com/Xpra-org/xpra/issues/3519)
+* Network:
+    * [SOCKS proxy connection support](https://github.com/Xpra-org/xpra/issues/2105)
+    * [SSH agent forwarding](https://github.com/Xpra-org/xpra/issues/2303)
+    * [proxy network performance improvement](https://github.com/Xpra-org/xpra/issues/2976)
+* Misc:
+    * [easier xpra subcommand invocation](https://github.com/Xpra-org/xpra/issues/3371)
+* Refactoring and preparation for the next LTS release:
+    * [Feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
+    * [Remove "app menus" support](https://github.com/Xpra-org/xpra/issues/2163)
+    * [Remove ancient complicated code](https://github.com/Xpra-org/xpra/issues/3537)
+    * [Simplify the build file](https://github.com/Xpra-org/xpra/issues/3577)
+    * [More robust info handlers](https://github.com/Xpra-org/xpra/issues/3509)
+    * [f-strings](https://github.com/Xpra-org/xpra/issues/3579)
 
 
 ## [4.3] 2021-12-05
