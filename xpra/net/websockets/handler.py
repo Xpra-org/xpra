@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -41,13 +41,13 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.new_websocket_client, self.request, type(self.request))
         log("headers:")
         for k,v in self.headers.items():
-            log(" %s=%s", k, v)
-        ver = self.headers.get('Sec-WebSocket-Version')
+            log(f" {k}={v}")
+        ver = self.headers.get("Sec-WebSocket-Version")
         if ver is None:
             raise Exception("Missing Sec-WebSocket-Version header")
 
         if ver not in SUPPORT_HyBi_PROTOCOLS:
-            raise Exception("Unsupported protocol version %s" % ver)
+            raise Exception(f"Unsupported protocol version {ver}")
 
         protocols = self.headers.get("Sec-WebSocket-Protocol", "").split(",")
         if "binary" not in protocols:
@@ -56,11 +56,13 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         key = self.headers.get("Sec-WebSocket-Key")
         if key is None:
             raise Exception("Missing Sec-WebSocket-Key header")
+        accept = make_websocket_accept_hash(key)
+        log(f"websocket hash for key {key!r} = {accept!r}")
         for upgrade_string in (
             b"HTTP/1.1 101 Switching Protocols",
             b"Upgrade: websocket",
             b"Connection: Upgrade",
-            b"Sec-WebSocket-Accept: %s" % make_websocket_accept_hash(key),
+            b"Sec-WebSocket-Accept: %s" % accept,
             b"Sec-WebSocket-Protocol: %s" % b"binary",
             b"",
             ):

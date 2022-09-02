@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,7 +30,7 @@ def get_headers(host, port):
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
-            header_module = __import__("xpra.net.websockets.headers.%s" % mod_name, {}, {}, ["get_headers"])
+            header_module = __import__(f"xpra.net.websockets.headers.{mod_name}", {}, {}, ["get_headers"])
             v = header_module.get_headers(host, port)
             log("%s.get_headers(%s, %s)=%s", mod_name, host, port, v)
             headers.update(v)
@@ -46,31 +46,42 @@ def get_headers(host, port):
 
 
 def client_upgrade(read, write, host, port, path=""):
-    request = "GET /%s HTTP/1.1" % path
+    key = b64encode(uuid.uuid4().bytes)
+    request = get_client_upgrade_request(host, port, path, key)
+    write_request(write, request)
+    headers = read_server_upgrade(read)
+    verify_response_headers(headers, key)
+    log("client_upgrade: done")
+
+def get_client_upgrade_request(host, port, path, key):
+    request = f"GET /{path} HTTP/1.1"
     log("client_upgrade: http request: %s", request)
     lines = [request.encode("latin1")]
-    key = b64encode(uuid.uuid4().bytes)
     headers = get_headers(host, port)
     headers[b"Sec-WebSocket-Key"] = key
     for k,v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
     lines.append(b"")
-    http_request = b"\r\n".join(lines)
-    log("client_upgrade: sending http headers: %s", headers)
+    return b"\r\n".join(lines)
+
+def write_request(write, http_request):
     now = monotonic()
-    while http_request and monotonic()-now<MAX_WRITE_TIME:
+    while http_request:
+        elasped = monotonic()-now
+        if elasped>=MAX_WRITE_TIME:
+            raise Exception(f"http write timeout, took more {elasped:.1f} seconds")
         w = write(http_request)
         http_request = http_request[w:]
+
+def read_server_upgrade(read):
     now = monotonic()
     response = b""
     def hasheader(k):
         return k in parse_response_header(response)
     while monotonic()-now<MAX_READ_TIME and not (hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
         response += read(READ_CHUNK_SIZE)
-    headers = parse_response_header(response)
-    verify_response_headers(headers, key)
-    log("client_upgrade: done")
+    return parse_response_header(response)
 
 def parse_response_header(response):
     #parse response:
@@ -93,13 +104,14 @@ def verify_response_headers(headers, key):
     if not upgrade:
         raise Exception("http connection was not upgraded to websocket")
     if upgrade!="websocket":
-        raise Exception("invalid http upgrade: '%s'" % upgrade)
+        raise Exception(f"invalid http upgrade: {upgrade!r}")
     protocol = headers.get("sec-websocket-protocol")
     if protocol!="binary":
-        raise Exception("invalid websocket protocol: '%s'" % protocol)
+        raise Exception(f"invalid websocket protocol: {protocol!r}")
     accept_key = headers.get("sec-websocket-accept")
     if not accept_key:
         raise Exception("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
-    if bytestostr(accept_key)!=expected_key:
+    if bytestostr(accept_key)!=bytestostr(expected_key):
+        log(f"expected {expected_key!r}, received {accept_key!r}")
         raise Exception("websocket accept key is invalid")
