@@ -655,12 +655,11 @@ class BaseWindowModel(CoreX11WindowModel):
             log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
             #TODO: we should validate the indexes instead of copying them blindly!
             #TODO: keep track of source indication so we can forward that to the client
-            m1, m2, m3, m4 = event.data[0], event.data[1], event.data[2], event.data[3]
             N = 16      #FIXME: arbitrary limit
-            if m1<0 or m1>=N or m2<0 or m2>=N or m3<0 or m3>=N or m4<0 or m4>=N:
-                log.warn("invalid list of _NET_WM_FULLSCREEN_MONITORS - ignored")
+            if any((event.data[i]<0 or event.data[i]>=N) for i in range(4)):
+                log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data[:4])
                 return False
-            monitors = [m1, m2, m3, m4]
+            monitors = list(event.data[:4])
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
             prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
             return True
