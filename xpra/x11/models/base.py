@@ -658,7 +658,7 @@ class BaseWindowModel(CoreX11WindowModel):
             N = 16      #FIXME: arbitrary limit
             monitors = list(event.data[:4])
             if not all(0 <= x < N for x in monitors):
-                log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data[:4])
+                log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data)
                 return False
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
             prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
