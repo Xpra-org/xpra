@@ -127,7 +127,7 @@ def set_settings(d):
             x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
             if setting_type==XSettingsTypeInteger:
-                assert isinstance(value, int), "invalid value type (int or long wanted): %s" % type(value)
+                assert isinstance(value, int), f"invalid value type: integer wanted, not {type(value)}"
                 x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
                 value = strtobytes(value)
