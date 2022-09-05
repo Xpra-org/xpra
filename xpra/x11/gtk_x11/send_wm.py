@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.gtk3.gdk_bindings import get_server_time
 from xpra.log import Logger
 
 log = Logger("x11", "focus")
@@ -16,11 +17,11 @@ SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
-def send_wm_take_focus(target, timestamp):
+def send_wm_take_focus(target, timestamp=CurrentTime):
     xid = target.get_xid()
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, int(timestamp or 0))
     if timestamp<0:
-        timestamp = CurrentTime    #better than nothing...
+        timestamp = get_server_time(target) #better than nothing...
     elif timestamp>0xFFFFFFFF:
         raise OverflowError(f"invalid time: {timestamp:x}")
     elif timestamp>0x7FFFFFFF:
@@ -39,16 +40,25 @@ def send_wm_delete_window(target):
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
-                      CurrentTime)
+                      get_server_time(target))
+
+def send_wm_ping(target, timestamp=1):
+    log.warn("sending ping")
+    xid = target.get_xid()
+    log("sending _NET_WM_PING to %#x", xid)
+    X11Window.sendClientMessage(xid, xid, False, 0,
+                      "WM_PROTOCOLS",
+                      "_NET_WM_PING",
+                      timestamp, xid)
 
 def send_wm_workspace(root, win, workspace=0):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root.get_xid(), win.get_xid(), False, event_mask,
                       "_NET_WM_DESKTOP",
-                      workspace, CurrentTime)
+                      workspace, get_server_time(win))
 
 def send_wm_request_frame_extents(root, win):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root.get_xid(), win.get_xid(), False, event_mask,
               "_NET_REQUEST_FRAME_EXTENTS",
-              0, CurrentTime)
+              0, get_server_time(win))
