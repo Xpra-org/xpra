@@ -984,16 +984,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XUngrabKey(self.display, AnyKey, AnyModifier, root_window)
 
 
-    cdef Atom get_xatom(self, str_or_int):
-        """Returns the X atom corresponding to the given Python string or Python
-        integer (assumed to already be an X atom)."""
-        self.context_check("get_xatom")
-        if isinstance(str_or_int, (int, long)):
-            return <Atom> str_or_int
-        bstr = strtobytes(str_or_int)
-        cdef char* string = bstr
-        return XInternAtom(self.display, string, False)
-
     def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name):
         self.context_check("device_bell")
         if not self.hasXkb():
