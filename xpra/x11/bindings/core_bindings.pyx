@@ -78,7 +78,7 @@ cdef class X11CoreBindingsInstance:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         self.context_check("xatom")
-        if isinstance(str_or_int, int):
+        if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
         bstr = strtobytes(str_or_int)
         cdef char* string = bstr
