@@ -23,13 +23,13 @@ def send_wm_take_focus(target, timestamp):
     if timestamp<0:
         timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
-        raise OverflowError("invalid time: %#x" % timestamp)
+        raise OverflowError(f"invalid time: {timestamp:x}")
     elif timestamp>0x7FFFFFFF:
         timestamp = int(0x100000000-timestamp)
         if timestamp<0x80000000:
-            return -timestamp
+            timestamp = -timestamp
         else:
-            return -0x80000000
+            timestamp -= 0x80000000
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_TAKE_FOCUS", timestamp)
