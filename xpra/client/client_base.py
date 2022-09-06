@@ -69,6 +69,7 @@ LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
+SKIP_UI = envbool("XPRA_SKIP_UI", False)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
@@ -760,6 +761,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     #and overriden in UI client to provide a GUI dialog
     def do_process_challenge_prompt(self, prompt="password"):
         authlog(f"do_process_challenge_prompt({prompt}) use_gui_prompt={use_gui_prompt()}")
+        if SKIP_UI:
+            return None
         # pylint: disable=import-outside-toplevel
         if not use_gui_prompt():
             import getpass

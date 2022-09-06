@@ -2,7 +2,10 @@
 
 die() { echo "$*" 1>&2 ; exit 1; }
 
+#don't use tty prompts:
 export XPRA_NOTTY=1
+#don't use GUI dialogs (ie: password prompts):
+export XPRA_SKIP_UI=1
 export XPRA_UTIL_DEBUG=${XPRA_UTIL_DEBUG:-0}
 export XPRA_TEST_DEBUG=${XPRA_TEST_DEBUG:-0}
 export XPRA_HIDE_SUBPROCESS_OUTPUT=${XPRA_HIDE_SUBPROCESS_OUTPUT:-1}
