@@ -427,7 +427,7 @@ class Logger:
             }
 
     def __repr__(self):
-        return "Logger(%s)" % ", ".join(self.categories)
+        return f"Logger{self.categories}"
 
     def is_debug_enabled(self) -> bool:
         return self.debug_enabled
@@ -463,7 +463,8 @@ class Logger:
     def error(self, msg : str, *args, **kwargs):
         self.log(logging.ERROR, msg, *args, **kwargs)
     def estr(self, e, **kwargs):
-        self.error(" %s" % (str(e) or type(e), ), **kwargs)
+        einfo = str(e) or type(e)
+        self.error(f" {einfo}", **kwargs)
 
 
 class CaptureHandler(logging.Handler):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,6 @@ import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.common import FULL_INFO
 from xpra.util import envbool, typedict, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
@@ -34,8 +33,8 @@ def warn(msg, *args, **kwargs):
     get_util_logger().warn(msg, *args, **kwargs)
 
 
-def vparts(version_str, n=1):
-    return ".".join(version_str.split(".")[:n])
+def vparts(vstr, n=1):
+    return ".".join(vstr.split(".")[:n])
 
 
 def version_str() -> str:
@@ -45,7 +44,7 @@ def version_str() -> str:
 def full_version_str() -> str:
     rstr = version_str()
     try:
-        from xpra.src_info import BRANCH
+        from xpra.src_info import BRANCH  # pylint: disable=import-outside-toplevel
     except ImportError:
         pass
     else:
@@ -98,25 +97,25 @@ def version_compat_check(remote_version : str):
     try:
         rv = version_as_numbers(remote_version)
     except ValueError:
-        log.warn(f"Warning: failed to parse remote version {remote_version!r}")
+        warn(f"Warning: failed to parse remote version {remote_version!r}")
         return None
     try:
         lv = version_as_numbers(XPRA_VERSION)
     except ValueError:
-        log.warn(f"Warning: failed to parse local version {XPRA_VERSION!r}")
+        warn(f"Warning: failed to parse local version {XPRA_VERSION!r}")
         return None
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return None
     if rv[0:2]<[3, 0]:
         #this is the oldest version we support
-        msg = "remote version %s is too old, sorry" % str(rv[:2])
+        msg = f"remote version {rv[:2]} is too old, sorry"
         log(msg)
         return msg
     if rv[0]>0:
-        log("newer remote version %s may work, we'll see..", remote_version)
+        log(f"newer remote version {remote_version} should work, we'll see..")
         return None
-    log("local version %s should be compatible with remote version: %s", XPRA_VERSION, remote_version)
+    log(f"local version {XPRA_VERSION!r} should be compatible with remote version {remote_version!r}")
     return None
 
 
@@ -150,6 +149,7 @@ def get_version_info(full=1) -> dict:
     props = {"version" : vparts(XPRA_VERSION, full+1)}
     if full>0:
         try:
+            # pylint: disable=import-outside-toplevel
             from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
             for k,v in {
                 "version"               : XPRA_VERSION,
@@ -167,7 +167,7 @@ def get_version_info(full=1) -> dict:
 def get_version_info_full() -> dict:
     props = get_version_info()
     try:
-        from xpra import build_info
+        from xpra import build_info  # pylint: disable=import-outside-toplevel
         #rename these build info properties:
         for k,bk in {
                     "date"                 : "BUILD_DATE",
@@ -192,6 +192,7 @@ def get_version_info_full() -> dict:
     return props
 
 def do_get_platform_info() -> dict:
+    # pylint: disable=import-outside-toplevel
     from xpra.os_util import platform_name, platform_release
     pp = sys.modules.get("platform", platform)
     def get_processor_name():
@@ -200,10 +201,10 @@ def do_get_platform_info() -> dict:
         if pp.system() == "Darwin":
             os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
             command = ["sysctl", "-n", "machdep.cpu.brand_string"]
-            import subprocess
-            return subprocess.check_output(command).strip()
+            from subprocess import check_output
+            return check_output(command).strip()
         if pp.system() == "Linux":
-            with open("/proc/cpuinfo") as f:
+            with open("/proc/cpuinfo", "r") as f:
                 data = f.read()
             import re
             for line in data.split("\n"):
@@ -262,7 +263,7 @@ def get_version_from_url(url):
 
 def version_update_check():
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
-    CURRENT_VERSION_URL = "%s://xpra.org/CURRENT_VERSION" % ("https" if CHECK_SSL else "http")
+    CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
     PLATFORM_FRIENDLY_NAMES = {
         "linux2"    : "LINUX",
         "win"       : "WINDOWS",
@@ -273,9 +274,9 @@ def version_update_check():
     arch = get_platform_info().get("machine")
     latest_version_no = None
     for url in (
-        "%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, XPRA_VERSION),
-        "%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, XPRA_VERSION),
-        "%s?%s" % (CURRENT_VERSION_URL, XPRA_VERSION),
+        f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
+        f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
+        f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
         ):
         latest_version_no = get_version_from_url(url)
         if latest_version_no:
@@ -284,8 +285,8 @@ def version_update_check():
         log("version_update_check() failed to contact version server")
         return None
     if latest_version_no>our_version_no or FAKE_NEW_VERSION:
-        log("version_update_check() newer version found! local version is %s and the latest version available is %s",
-            our_version_no, latest_version_no)
+        log("version_update_check() newer version found")
+        log(" local version is {our_version_no} and the latest version available is {latest_version_no}")
         #latest_version = ".".join([str(x) for x in latest_version_no])
         return latest_version_no
     return False

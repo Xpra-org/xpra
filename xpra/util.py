@@ -982,7 +982,6 @@ def envfloat(name : str, d=0):
 #give warning message just once per key then ignore:
 _once_only = set()
 def first_time(key):
-    global _once_only
     if key not in _once_only:
         _once_only.add(key)
         return True

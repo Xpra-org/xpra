@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,12 +9,14 @@ import re
 import os
 import sys
 import stat
-import signal
 import uuid
 import time
+import signal
+import socket
 import struct
 import binascii
 import threading
+from subprocess import PIPE, Popen
 
 SIGNAMES = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
@@ -280,9 +282,9 @@ def get_user_uuid() -> str:
         u.update(ustr.encode("utf-8"))
     uupdate(get_machine_id())
     if POSIX:
-        uupdate(u"/")
+        uupdate("/")
         uupdate(str(os.getuid()))
-        uupdate(u"/")
+        uupdate("/")
         uupdate(str(os.getgid()))
     uupdate(os.path.expanduser("~/"))
     return u.hexdigest()
@@ -420,10 +422,9 @@ def get_linux_distribution():
     if LINUX and not _linux_distribution:
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
         #so use our own code first:
-        import subprocess
         cmd = ["lsb_release", "-a"]
         try:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE)
             out = p.communicate()[0]
             assert p.returncode==0 and out
         except Exception:
@@ -648,20 +649,21 @@ def path_permission_info(filename, ftype=None):
         return []
     info = []
     try:
-        import stat
         stat_info = os.stat(filename)
         if not ftype:
             ftype = "file"
             if os.path.isdir(filename):
                 ftype = "directory"
-        info.append("permissions on %s %s: %s" % (ftype, filename, oct(stat.S_IMODE(stat_info.st_mode))))
+        operm = oct(stat.S_IMODE(stat_info.st_mode))
+        info.append(f"permissions on {ftype} {filename}: {operm}")
+        # pylint: disable=import-outside-toplevel
         import pwd
         import grp      #@UnresolvedImport
         user = pwd.getpwuid(stat_info.st_uid)[0]
         group = grp.getgrgid(stat_info.st_gid)[0]
-        info.append("ownership %s:%s" % (user, group))
+        info.append(f"ownership {user}:{group}")
     except Exception as e:
-        info.append("failed to query path information for '%s': %s" % (filename, e))
+        info.append(f"failed to query path information for {filename!r}: {e}")
     return info
 
 
@@ -844,7 +846,7 @@ def which(command):
         from shutil import which as find_executable
     except ImportError:
         try:
-            from distutils.spawn import find_executable
+            from distutils.spawn import find_executable  # pylint: disable=deprecated-module
         except ImportError:
             find_executable = find_in_PATH
     try:
@@ -854,7 +856,6 @@ def which(command):
         return None
 
 def get_status_output(*args, **kwargs):
-    from subprocess import PIPE, Popen
     kwargs.update({
         "stdout"    : PIPE,
         "stderr"    : PIPE,
@@ -911,7 +912,7 @@ def setuidgid(uid, gid):
         if os.getgid()==0:
             #don't run as root!
             raise
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" continuing with gid=%i", os.getgid())
     try:
         if os.getuid()!=uid:
@@ -921,7 +922,7 @@ def setuidgid(uid, gid):
         if os.getuid()==0:
             #don't run as root!
             raise
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" continuing with uid=%i", os.getuid())
     log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
@@ -930,7 +931,6 @@ def get_peercred(sock):
         SO_PEERCRED = 17
         log = get_util_logger()
         try:
-            import socket
             creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))
             pid, uid, gid = struct.unpack(b'3i',creds)
             log("peer: %s", (pid, uid, gid))
