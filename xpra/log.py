@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import weakref
+import itertools
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
@@ -22,9 +23,8 @@ logging.root.setLevel(logging.INFO)
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
-all_loggers = dict()
+all_loggers = {}
 def add_logger(categories, logger):
-    global all_loggers
     categories = list(categories)
     categories.append("all")
     l = weakref.ref(logger)
@@ -32,7 +32,6 @@ def add_logger(categories, logger):
         all_loggers.setdefault(cat, set()).add(l)
 
 def get_all_loggers():
-    global all_loggers
     a = set()
     for loggers in all_loggers.values():
         for logger in list(loggers):
@@ -58,7 +57,6 @@ def get_debug_args():
 class FullDebugContext:
     __slots__ = ("debug_enabled_categories", "enabled")
     def __enter__(self):
-        global debug_enabled_categories
         self.debug_enabled_categories = debug_enabled_categories
         debug_enabled_categories.clear()
         debug_enabled_categories.add("all")
@@ -71,7 +69,6 @@ class FullDebugContext:
     def __exit__(self, *_args):
         for x in self.enabled:
             x.disable_debug()
-        global debug_enabled_categories
         debug_enabled_categories.clear()
         debug_enabled_categories.add(self.debug_enabled_categories)
 
@@ -166,6 +163,7 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
         #on win32 sys.stdout can be a "Blackhole",
         #which does not have a fileno
         return
+    # pylint: disable=import-outside-toplevel
     #python3 stdout and stderr have a buffer attribute,
     #which we must use if we want to be able to write bytes:
     try:
@@ -383,7 +381,6 @@ class Logger:
     """
     __slots__ = ("categories", "level_override", "logger", "debug_enabled", "__weakref__")
     def __init__(self, *categories):
-        global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
         try:
             caller = sys._getframe(1).f_globals["__name__"] #pylint: disable=protected-access
@@ -407,7 +404,6 @@ class Logger:
             if len(categories)>1:
                 #try all string permutations of those categories:
                 # "keyboard", "events" -> "keyboard+events" or "events+keyboard"
-                import itertools
                 for cats in itertools.permutations(categories):
                     cstr = "+".join(cats)
                     if cstr in debug_disabled_categories:
@@ -450,7 +446,6 @@ class Logger:
             ei = sys.exc_info()
             if ei!=(None, None, None):
                 kwargs["exc_info"] = ei
-        global global_logging_handler
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
         global_logging_handler(self.logger.log, self.level_override or level, msg, *args, **kwargs)
