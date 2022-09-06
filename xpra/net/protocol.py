@@ -138,6 +138,7 @@ class Protocol:
         self.hangup_delay = 1000
         self._conn = conn
         if FAKE_JITTER>0:   # pragma: no cover
+            # pylint: disable=import-outside-toplevel
             from xpra.net.fake_jitter import FakeJitter
             fj = FakeJitter(self.timeout_add, process_packet_cb, FAKE_JITTER)
             self._process_packet_cb =  fj.process_packet_cb
@@ -204,7 +205,7 @@ class Protocol:
     def restore_state(self, state):
         assert state is not None
         for x in Protocol.STATE_FIELDS:
-            assert x in state, "field %s is missing" % x
+            assert x in state, f"field {x!r} is missing"
             setattr(self, x, state[x])
         #special handling for compressor / encoder which are named objects:
         self.enable_compressor(self.compressor)
@@ -256,7 +257,7 @@ class Protocol:
 
 
     def __repr__(self):
-        return "Protocol(%s)" % self._conn
+        return f"Protocol({self._conn})"
 
     def get_threads(self):
         return tuple(x for x in (
@@ -344,7 +345,7 @@ class Protocol:
             return
         log("send_now(%s ...)", packet[0])
         if self._get_packet_cb:
-            raise Exception("cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb)
+            raise Exception(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
         def packet_cb():
             self._get_packet_cb = None
@@ -382,7 +383,9 @@ class Protocol:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False, wait_for_more=False):
+    def _add_packet_to_queue(self, packet,
+                             start_send_cb=None, end_send_cb=None, fail_cb=None,
+                             synchronous=True, has_more=False, wait_for_more=False):
         if not has_more:
             shm = self._source_has_more
             if shm:
@@ -402,7 +405,9 @@ class Protocol:
                 log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, packet_type, chunks, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, more=False):
+    def _add_chunks_to_queue(self, packet_type, chunks,
+                             start_send_cb=None, end_send_cb=None,
+                             fail_cb=None, synchronous=True, more=False):
         """ the write_lock must be held when calling this function """
         items = []
         for proto_flags,index,level,data in chunks:
@@ -993,14 +998,14 @@ class Protocol:
                         return
                     except Exception as e:
                         ctype = compression.get_compression_type(compression_level)
-                        log("%s packet decompression failed", ctype, exc_info=True)
-                        msg = "%s packet decompression failed" % ctype
+                        msg = f"{ctype} packet decompression failed"
+                        log(msg, exc_info=True)
                         if self.cipher_in:
                             msg += " (invalid encryption key?)"
                         else:
                             #only include the exception text when not using encryption
                             #as this may leak crypto information:
-                            msg += " %s" % e
+                            msg += f" {e}"
                         del e
                         self.gibberish(msg, data)
                         return
@@ -1042,7 +1047,7 @@ class Protocol:
                     log(" data: %s", repr_ellipsized(data_str))
                     log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
                     log(" full data: %s", hexstr(data_str))
-                    self.gibberish("failed to parse %s packet" % etype, data)
+                    self.gibberish(f"failed to parse {etype} packet", data)
                     return
 
                 if self._closed:
@@ -1185,6 +1190,7 @@ class Protocol:
                     #no data sent or received, skip logging of stats:
                     self._log_stats = False
                 if self._log_stats:
+                    # pylint: disable=import-outside-toplevel
                     from xpra.simple_stats import std_unit, std_unit_dec
                     log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
                          std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),

@@ -25,6 +25,8 @@ COMPRESSION = {}
 
 
 def init_lz4():
+    #pylint: disable=import-outside-toplevel
+    #pylint: disable=redefined-outer-name
     from xpra.net.lz4 import compress, decompress, get_version  # @UnresolvedImport
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
@@ -34,6 +36,8 @@ def init_lz4():
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
 
 def init_brotli():
+    #pylint: disable=import-outside-toplevel
+    #pylint: disable=redefined-outer-name
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
     from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
     brotli_decompress = decompress
@@ -50,6 +54,7 @@ def init_brotli():
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
 def init_zlib():
+    #pylint: disable=import-outside-toplevel
     import zlib
     def zlib_compress(packet, level):
         level = min(9, max(1, level))
@@ -216,6 +221,7 @@ def decompress_by_name(data, algo):
 
 
 def main(): # pragma: no cover
+    #pylint: disable=import-outside-toplevel
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):

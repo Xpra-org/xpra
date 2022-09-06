@@ -207,7 +207,7 @@ def ssh_paramiko_connect_to(display_desc):
         sock = None
         host_config = None
         if os.path.exists(user_config_file):
-            with open(user_config_file) as f:
+            with open(user_config_file, "r") as f:
                 ssh_config.parse(f)
             log("parsed user config '%s'", user_config_file)
             try:
@@ -600,8 +600,9 @@ keymd5(host_key),
                     break
             if not try_key_formats:
                 try_key_formats = ("RSA", "DSS", "ECDSA", "Ed25519")
+            pkey_classname = None
             for pkey_classname in try_key_formats:
-                pkey_class = getattr(paramiko, "%sKey" % pkey_classname, None)
+                pkey_class = getattr(paramiko, f"{pkey_classname}Key", None)
                 if pkey_class is None:
                     log("no %s key type", pkey_classname)
                     continue
@@ -609,26 +610,26 @@ keymd5(host_key),
                 key = None
                 try:
                     key = pkey_class.from_private_key_file(keyfile_path)
-                    log.info("loaded %s private key from '%s'", pkey_classname, keyfile_path)
+                    log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
                     break
                 except PasswordRequiredException as e:
-                    log("%s keyfile requires a passphrase; %s", keyfile_path, e)
-                    passphrase = input_pass("please enter the passphrase for %s:" % (keyfile_path,))
+                    log(f"{keyfile_path!r} keyfile requires a passphrase: {e}")
+                    passphrase = input_pass(f"please enter the passphrase for {keyfile_path!r}")
                     if passphrase:
                         try:
                             key = pkey_class.from_private_key_file(keyfile_path, passphrase)
-                            log.info("loaded %s private key from '%s'", pkey_classname, keyfile_path)
-                        except SSHException as e:
+                            log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
+                        except SSHException as ke:
                             log("from_private_key_file", exc_info=True)
-                            log.info("cannot load key from file '%s':", keyfile_path)
-                            for emsg in str(e).split(". "):
+                            log.info(f"cannot load key from file {keyfile_path}:")
+                            for emsg in str(ke).split(". "):
                                 log.info(" %s.", emsg)
                     break
-                except Exception as e:
+                except Exception:
                     log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
                     key_data = load_binary_file(keyfile_path)
                     if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0 and paramiko.__version__<"2.7":
-                        log.warn("Warning: private key '%s'", keyfile_path)
+                        log.warn(f"Warning: private key {keyfile_path!r}")
                         log.warn(" this file seems to be using OpenSSH's own format")
                         log.warn(" please convert it to something more standard (ie: PEM)")
                         log.warn(" so it can be used with the paramiko backend")
@@ -645,8 +646,8 @@ keymd5(host_key),
                 except SSHException as e:
                     auth_errors.setdefault("key", []).append(str(e))
                     log("key '%s' rejected", keyfile_path, exc_info=True)
-                    log.info("SSH authentication using key '%s' failed:", keyfile_path)
-                    log.info(" %s", e)
+                    log.info(f"SSH authentication using key {keyfile_path!r} failed:")
+                    log.info(f" {e}")
                     if str(e)==PARAMIKO_SESSION_LOST:
                         #no point in trying more keys
                         break
@@ -654,7 +655,7 @@ keymd5(host_key),
                     if transport.is_authenticated():
                         break
             else:
-                log.error("Error: cannot load private key '%s'", keyfile_path)
+                log.error(f"Error: cannot load private key {keyfile_path!r}")
 
     def auth_none():
         log("trying none authentication")
