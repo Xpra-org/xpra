@@ -73,6 +73,28 @@ def force_flush_queue(q):
     except Exception:
         log("force_flush_queue(%s)", q, exc_info=True)
 
+def find_xpra_header(data, index=0, max_data_size=2**16):
+    pos = data.find(b"P")
+    while pos>=0:
+        if len(data)<pos+8:
+            #not enough data to try to parse this potential header
+            return -1
+        pchar, pflags, compress, packet_index, data_size = unpack_header(data[pos:pos+8])
+        log("find_xpra_header candidate at index %i: %s", pos, (pchar, pflags, compress, packet_index, data_size))
+        if pchar==b"P" and packet_index==index and data_size<max_data_size:
+            #validate flags:
+            if compress==0 or (compress & 0xf)>0:
+                # pylint: disable=import-outside-toplevel
+                from xpra.net.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML
+                encoder_flag = pflags & (FLAGS_RENCODE | FLAGS_YAML | FLAGS_RENCODEPLUS)
+                n_flags_set = sum(1 for flag in (FLAGS_RENCODE, FLAGS_YAML, FLAGS_RENCODEPLUS) if encoder_flag & flag)
+                if encoder_flag==0 or n_flags_set==1:
+                    return pos
+        #skip to the next potential header:
+        pos = data.find(b"P", pos+1)
+        log("checking again from pos=%s", pos)
+    return -1
+
 
 def verify_packet(packet):
     """ look for None values which may have caused the packet to fail encoding """
@@ -190,6 +212,7 @@ class Protocol:
         self._write_format_thread = None        #started when needed
         self._source_has_more = Event()
         self.receive_pending = False
+        self.wait_for_header = False
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
@@ -868,6 +891,21 @@ class Protocol:
                 return
 
             read_buffers.append(buf)
+            if self.wait_for_header:
+                #we're waiting to see the first xpra packet header
+                #which may come after some random characters
+                #(ie: when connecting over ssh, the channel may contain some unexpected output)
+                #for this to work, we have to assume that the initial packet is smaller than 64KB:
+                joined = b"".join(read_buffers)
+                pos = find_xpra_header(joined)
+                if pos<0:
+                    #wait some more:
+                    read_buffers = [joined]
+                    continue
+                #found it, so proceed:
+                read_buffers = [joined[pos:]]
+                self.wait_for_header = False
+
             while read_buffers:
                 #have we read the header yet?
                 if payload_size<0:
