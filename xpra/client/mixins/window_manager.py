@@ -491,7 +491,7 @@ class WindowClient(StubClientMixin):
             new_cursor = packet[1]
         else:
             if len(packet)<9:
-                raise Exception("invalid cursor packet: %s items" % len(packet))
+                raise Exception(f"invalid cursor packet: {len(packet)} items")
             #trim packet-type:
             new_cursor = packet[1:]
             encoding = u(new_cursor[0])
@@ -500,7 +500,7 @@ class WindowClient(StubClientMixin):
                 pixels = new_cursor[8]
                 if SAVE_CURSORS:
                     serial = new_cursor[7]
-                    with open("raw-cursor-%#x.png" % serial, 'wb') as f:
+                    with open(f"raw-cursor-{serial:x}.png", "wb") as f:
                         f.write(pixels)
                 from xpra.codecs.pillow.decoder import open_only  #pylint: disable=import-outside-toplevel
                 img = open_only(pixels, ("png",))
@@ -508,7 +508,7 @@ class WindowClient(StubClientMixin):
                 cursorlog("used PIL to convert png cursor to raw")
                 new_cursor[0] = "raw"
             elif encoding!="raw":
-                cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
+                cursorlog.warn(f"Warning: invalid cursor encoding: {encoding}")
                 return
         self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 

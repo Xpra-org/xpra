@@ -209,8 +209,8 @@ def init_server_mmap(mmap_filename, mmap_size=0):
         try:
             f = open(mmap_filename, "r+b")
         except Exception as e:
-            log.error("Error: cannot access mmap file '%s':", mmap_filename)
-            log.error("  %s", e)
+            log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
+            log.estr(e)
             log.error(" see mmap-group option?")
             return None, 0
 

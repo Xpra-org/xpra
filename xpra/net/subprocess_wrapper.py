@@ -163,16 +163,16 @@ class subprocess_callee:
         #figure out where we read from and write to:
         if self.input_filename=="-":
             #disable stdin buffering:
-            self._input = os.fdopen(sys.stdin.fileno(), 'rb', 0)
+            self._input = os.fdopen(sys.stdin.fileno(), "rb", 0)
             setbinarymode(self._input.fileno())
         else:
-            self._input = open(self.input_filename, 'rb')
+            self._input = open(self.input_filename, "rb")
         if self.output_filename=="-":
             #disable stdout buffering:
-            self._output = os.fdopen(sys.stdout.fileno(), 'wb', 0)
+            self._output = os.fdopen(sys.stdout.fileno(), "wb", 0)
             setbinarymode(self._output.fileno())
         else:
-            self._output = open(self.output_filename, 'wb')
+            self._output = open(self.output_filename, "wb")
         #stdin and stdout wrapper:
         conn = TwoFileConnection(self._output, self._input,
                                  abort_test=None, target=self.name,

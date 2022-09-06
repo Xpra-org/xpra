@@ -73,14 +73,14 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     #figure out if this is a script to source,
     #or if we're meant to execute it directly
     try:
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             first_line = f.readline()
     except OSError as e:
-        log.error("Error: failed to read from '%s'", filename)
-        log.error(" %s", e)
+        log.error(f"Error: failed to read from {filename!r}")
+        log.estr(e)
         first_line = b""
     else:
-        log("first line of '%s': %r", filename, first_line)
+        log(f"first line of {filename!r}: {first_line!r}")
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
         decode = decode_dict
     else:
@@ -92,6 +92,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         sh = which("bash") or "/bin/sh"
         cmd = [sh, '-c', '%s 1>&2 && %s' % (source, dump)]
         decode = decode_json
+    out = err = ""
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -101,16 +102,17 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     except OSError as e:
         log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
         log(f" stdout={out} ({type(out)})")
+        log(f" stderr={err} ({type(err)})")
         log.error(f"Error {proc.returncode} running source script {file_to_source_path!r}")
         log.error(f" {e}")
         return {}
-    log("stdout(%s)=%r", filename, out)
-    log("stderr(%s)=%r", filename, err)
+    log(f"stdout({filename})={out}")
+    log(f"stderr({filename})={err}")
     def proc_str(b, fdname="stdout"):
         try:
             return (b or b"").decode()
         except UnicodeDecodeError:
-            log.error("Error decoding %s from '%s'", fdname, filename, exc_info=True)
+            log.error(f"Error decoding {fdname} from {filename!r}", exc_info=True)
         return ""
     env = {}
     env.update(decode(proc_str(out, "stdout")))

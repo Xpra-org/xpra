@@ -137,7 +137,7 @@ class Keyboard(KeyboardBase):
             except ImportError:
                 log("cannot parse xml", exc_info=True)
             else:
-                with open(repository) as f:
+                with open(repository, "r", encoding="latin1") as f:
                     tree = lxml.etree.parse(f)  #pylint: disable=c-extension-no-member
                 x11_layouts = {}
                 for layout in tree.xpath("//layout"):

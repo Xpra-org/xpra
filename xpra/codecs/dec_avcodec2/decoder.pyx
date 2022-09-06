@@ -785,9 +785,9 @@ cdef class Decoder:
         #register this decoder in the global dictionary:
         log("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
         if SAVE_TO_FILE:
-            filename = "./%s.%s" % (monotonic(), self.encoding)
-            self.file = open(filename, 'wb')
-            log.info("saving %s stream to %s", self.encoding, filename)
+            filename = f"./{monotonic()}.{self.encoding}"
+            self.file = open(filename, "wb")
+            log.info(f"saving {self.encoding} stream to {filename}")
         return True
 
     def clean(self):

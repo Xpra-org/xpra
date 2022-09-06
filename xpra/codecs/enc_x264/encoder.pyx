@@ -535,8 +535,8 @@ cdef class Encoder:
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
             filename = SAVE_TO_FILE+"x264-"+str(gen)+".%s" % encoding
-            self.file = open(filename, 'wb')
-            log.info("saving %s stream to %s", encoding, filename)
+            self.file = open(filename, "wb")
+            log.info(f"saving {encoding} stream to {filename!r}")
         if BLANK_VIDEO:
             self.blank_buffer = b"\0" * (self.width * self.height * 4)
         self.ready = 1

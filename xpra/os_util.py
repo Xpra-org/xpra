@@ -213,8 +213,8 @@ def platform_release(release):
         except Exception as e:
             get_util_logger().debug("platform_release(%s)", release, exc_info=True)
             get_util_logger().warn("Warning: failed to get release information")
-            get_util_logger().warn(" from '%s':", SYSTEMVERSION_PLIST)
-            get_util_logger().warn(" %s", e)
+            get_util_logger().warn(f" from {SYSTEMVERSION_PLIST}:")
+            get_util_logger().warn(f" {e}")
     return release
 
 

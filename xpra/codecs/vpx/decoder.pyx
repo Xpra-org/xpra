@@ -202,8 +202,8 @@ cdef class Decoder:
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
             raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
         if SAVE_TO_FILE:
-            filename = "./%s.%s" % (monotonic(), self.encoding)
-            self.file = open(filename, 'wb')
+            filename = f"./{monotonic()}.{self.encoding}"
+            self.file = open(filename, "wb")
             log.info("saving %s stream to %s", self.encoding, filename)
         log("vpx_codec_dec_init_ver for %s succeeded with ABI version %s", encoding, VPX_DECODER_ABI_VERSION)
 

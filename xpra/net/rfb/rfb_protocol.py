@@ -182,7 +182,7 @@ class RFBProtocol:
                 from xpra.simple_stats import std_unit  #pylint: disable=import-outside-toplevel
                 log("send(%s bytes: %s..)", std_unit(len(packet)), hexstr(packet[:16]))
         if self.log:
-            self.log.write("send: %s\n" % hexstr(packet))
+            self.log.write(f"send: {hexstr(packet)}\n")
         if self._write_thread is None:
             self.start_write_thread()
         self._write_queue.put(packet)
@@ -246,7 +246,7 @@ class RFBProtocol:
             self.timeout_add(1000, self.close)
             return False
         if self.log:
-            self.log.write("receive: %s\n" % hexstr(buf))
+            self.log.write(f"receive: {hexstr(buf)}\n")
         self.input_raw_packetcount += 1
         self._buffer += buf
         #log("calling %s(%s)", self._packet_parser, repr_ellipsized(self._buffer))

@@ -437,9 +437,9 @@ cdef class Encoder:
         self.do_set_encoding_quality(self.quality)
         self.generation = generation.increase()
         if SAVE_TO_FILE is not None:
-            filename = SAVE_TO_FILE+"vpx-"+str(self.generation)+".%s" % encoding
-            self.file = open(filename, 'wb')
-            log.info("saving %s stream to %s", encoding, filename)
+            filename = SAVE_TO_FILE+f"vpx-{self.generation}.{encoding}"
+            self.file = open(filename, "wb")
+            log.info(f"saving {encoding} stream to {filename!r}")
 
     def codec_error_str(self):
         return vpx_codec_error(self.context).decode("latin1")

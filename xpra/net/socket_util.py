@@ -1174,7 +1174,7 @@ def load_ssl_options(server_hostname, port):
     options = {}
     if f:
         try:
-            with open(f, "r") as fd:
+            with open(f, "r", encoding="utf8") as fd:
                 for line in fd.readlines():
                     line = line.rstrip("\n\r")
                     if not line or line.startswith("#"):
@@ -1225,7 +1225,7 @@ def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", fileinf
     ssllog = Logger("ssl")
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
+    host_dirname = std(server_hostname, extras="-.:#_")+f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     #if there is an existing host config dir, try to use it:
     for d in [x for x in host_dirs if os.path.exists(x)]:
@@ -1233,10 +1233,10 @@ def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", fileinf
             f = os.path.join(d, filename)
             with open(f, "wb") as fd:
                 fd.write(filedata)
-            ssllog.info("saved SSL %s to %r", fileinfo, f)
+            ssllog.info(f"saved SSL {fileinfo} to {f!r}")
             return f
         except OSError:
-            ssllog("failed to save SSL %s to %r", fileinfo, f, exc_info=True)
+            ssllog(f"failed to save SSL {fileinfo} to {f!r}", exc_info=True)
     #try to create a host config dir:
     for d in host_dirs:
         folders = os.path.normpath(d).split(os.sep)
@@ -1255,10 +1255,10 @@ def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", fileinf
             f = os.path.join(d, filename)
             with open(filename, "wb") as fd:
                 fd.write(filedata)
-            ssllog.info("saved SSL certificate to %s", f)
+            ssllog.info(f"saved SSL certificate to {f!r}")
             return f
         except OSError:
-            ssllog("failed to save cert data to %r", d, exc_info=True)
+            ssllog(f"failed to save cert data to {d!r}", exc_info=True)
     return None
 
 def socket_connect(host, port, timeout=SOCKET_TIMEOUT):

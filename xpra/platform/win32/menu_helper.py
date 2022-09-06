@@ -38,7 +38,7 @@ def parse_link(content):
 
 def read_link(path):
     try:
-        with open(path, 'rb') as stream:
+        with open(path, "rb") as stream:
             content = stream.read()
         return parse_link(content)
     except Exception as e:

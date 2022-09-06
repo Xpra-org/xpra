@@ -591,7 +591,7 @@ def get_icon_from_file(filename):
         if not os.path.exists(filename):
             log.warn("Warning: cannot load icon, '%s' does not exist", filename)
             return None
-        with open(filename, mode='rb') as f:
+        with open(filename, mode="rb") as f:
             data = f.read()
         loader = GdkPixbuf.PixbufLoader()
         loader.write(data)

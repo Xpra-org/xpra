@@ -2274,7 +2274,7 @@ def start_macos_shadow(cmd, env, cwd):
             warn("Error: shadow may not start,\n"
                  +" the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
     argfile = os.path.expanduser("~/.xpra/shadow-args")
-    with open(argfile, "w") as f:
+    with open(argfile, "w", encoding="utf8") as f:
         f.write('["Xpra", "--no-daemon"')
         for x in cmd[1:]:
             f.write(', "%s"' % x)
@@ -3214,7 +3214,7 @@ def run_clean_displays(args):
         inodes = []
         sockpath = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(":"))
         PROC_NET_UNIX = "/proc/net/unix"
-        with open(PROC_NET_UNIX, "r") as f:
+        with open(PROC_NET_UNIX, "r", encoding="latin1") as f:
             for line in f:
                 parts = line.rstrip("\n\r").split(" ")
                 if not parts or len(parts)<8:
@@ -3263,7 +3263,7 @@ def run_clean_displays(args):
                         cmd = ""
                         try:
                             cmdline = os.path.join(procpath, "cmdline")
-                            cmd = open(cmdline, "r").read()
+                            cmd = open(cmdline, "r", encoding="utf8").read()
                             cmd = shlex.join(cmd.split("\0"))
                         except Exception:
                             pass

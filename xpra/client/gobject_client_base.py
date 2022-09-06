@@ -259,7 +259,8 @@ class ScreenshotXpraClient(CommandConnectClient):
         assert bytestostr(encoding)=="png", "expected png screenshot data but got %s" % bytestostr(encoding)
         if not img_data:
             self.warn_and_quit(EXIT_OK,
-                               "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
+                               "screenshot is empty and has not been saved"+
+                               " (maybe there are no windows or they are not currently shown)")
             return
         if self.screenshot_filename=="-":
             output = os.fdopen(sys.stdout.fileno(), "wb", closefd=False)
@@ -268,7 +269,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         with output:
             output.write(img_data)
             output.flush()
-        self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
+        self.warn_and_quit(EXIT_OK, f"screenshot {w}x{h} saved to: {self.screenshot_filename!r}")
 
     def init_packet_handlers(self):
         super().init_packet_handlers()
@@ -292,7 +293,7 @@ class InfoXpraClient(CommandConnectClient):
 
     def do_command(self, caps : typedict):
         def print_fn(s):
-            sys.stdout.write("%s\n" % (s,))
+            sys.stdout.write(f"{s}\n")
         if not caps:
             self.quit(EXIT_NO_DATA)
             return
@@ -318,7 +319,7 @@ class InfoXpraClient(CommandConnectClient):
                         return w
                     v = fixvalue(v)
                     k = fixvalue(k)
-                    print_fn("%s=%s" % (k, nonl(v)))
+                    print_fn(f"{k}={nonl(v)}")
             else:
                 print_nested_dict(caps, print_fn=print_fn)
         except OSError:
@@ -670,7 +671,7 @@ class PrintClient(SendCommandConnectClient):
             #replace with filename proposed
             self.filename = command[2]
             #read file from stdin
-            with open(sys.stdin.fileno(), mode='rb', closefd=False) as stdin_binary:
+            with open(sys.stdin.fileno(), mode="rb", closefd=False) as stdin_binary:
                 self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:

@@ -77,7 +77,8 @@ def get_virtual_video_devices(capture_only=True) -> dict:
                 continue
             dev_name = os.path.join(dev_dir, "name")
             try:
-                name = open(dev_name).read().replace("\n", "")
+                with open(dev_name, "r", encoding="latin1") as df:
+                    name = df.read().replace("\n", "")
                 info["card"] = name
             except OSError:
                 pass

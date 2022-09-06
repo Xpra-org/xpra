@@ -35,7 +35,7 @@ def getprop(window, prop):
 def _load_dict_file(filename, parser) -> dict:
     #filter out comments and remove line endings
     lines = []
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf8") as f:
         for line in f:
             line = line.rstrip("\n\r")
             if line.startswith("#") or not line.strip():

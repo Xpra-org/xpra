@@ -1304,7 +1304,7 @@ cdef class Encoder:
                     filename = SAVE_TO_FILE+"-"+self.encoding+"-"+str(gen)+".%s" % self.muxer_format
                 else:
                     filename = SAVE_TO_FILE+"-"+str(gen)+"."+self.encoding
-                self.file = open(filename, 'wb')
+                self.file = open(filename, "wb")
                 log.info("saving %s stream to %s", self.encoding, filename)
         except Exception:
             log("init_encoder(%i, %i, %s) failed", quality, speed, options, exc_info=True)

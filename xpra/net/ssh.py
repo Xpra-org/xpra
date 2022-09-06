@@ -207,7 +207,7 @@ def ssh_paramiko_connect_to(display_desc):
         sock = None
         host_config = None
         if os.path.exists(user_config_file):
-            with open(user_config_file, "r") as f:
+            with open(user_config_file, "r", encoding="utf8") as f:
                 ssh_config.parse(f)
             log("parsed user config '%s'", user_config_file)
             try:
@@ -546,7 +546,7 @@ keymd5(host_key),
                         if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
                             log("creating known host file '%s'", host_keys_filename)
                             with umask_context(0o133):
-                                with open(host_keys_filename, 'a+'):
+                                with open(host_keys_filename, "a+"):
                                     pass
                     host_keys.add(host, host_key.get_name(), host_key)
                     host_keys.save(host_keys_filename)

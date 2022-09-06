@@ -66,9 +66,9 @@ class FileAuthenticatorBase(SysAuthenticator):
                 self.password_filetime = None
                 self.password_filedata = None
                 try:
-                    with open(self.password_filename, mode='rb') as f:
+                    with open(self.password_filename, mode="rb") as f:
                         data = f.read()
-                    log("loaded %s bytes from '%s'", len(data), self.password_filename)
+                    log(f"loaded {len(data)} bytes from {self.password_filename!r}")
                     self.password_filedata = self.parse_filedata(data)
                     self.password_filetime = ptime
                 except Exception as e:

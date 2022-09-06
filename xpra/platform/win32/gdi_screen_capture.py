@@ -242,6 +242,7 @@ class GDICapture:
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     import sys
     import os.path
     if "-v" in sys.argv or "--verbose" in sys.argv:
@@ -253,7 +254,7 @@ def main():
         image = capture.take_screenshot()
         from xpra.platform.paths import get_download_dir
         filename = os.path.join(get_download_dir(), "gdi-screenshot-%i.png" % time.time())
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(image[4])
         capture.clean()
 

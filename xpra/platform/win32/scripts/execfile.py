@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,13 +21,14 @@ if len(sys.argv)<2:
     ret(1)
 filename = sys.argv[1]
 if not os.path.exists(filename):
-    print("script file '%s' not found" % filename)
+    print(f"script file {filename!r} not found")
     ret(1)
 
 cwd = os.getcwd()
 if cwd not in sys.path:
     sys.path.append(cwd)
-fdata = open(filename, 'rb').read()
+with open(filename, "rb") as f:
+    fdata = f.read()
 if filename.endswith(".pyc"):
     from importlib.util import MAGIC_NUMBER
     assert fdata.startswith(MAGIC_NUMBER), "not a python compiled file, or version mismatch"

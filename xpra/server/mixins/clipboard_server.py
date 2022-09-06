@@ -107,7 +107,7 @@ class ClipboardServer(StubServerMixin):
                           self.clipboard_filter_file)
                 return
             try:
-                with open(self.clipboard_filter_file, "r" ) as f:
+                with open(self.clipboard_filter_file, "r", encoding="utf8") as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
                     log("loaded %s regular expressions from clipboard filter file %s",

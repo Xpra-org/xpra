@@ -172,10 +172,10 @@ def watch_print_job_status():
 def main():
     global JOBS_INFO, EXIT
     if len(sys.argv) not in (2, 3, 4):
-        print("usage: %s /path/to/document.pdf [printer-name] [document-title]" % sys.argv[0])
+        print(f"usage: {sys.argv[0]} /path/to/document.pdf [printer-name] [document-title]")
         return -3
     filename = sys.argv[1]
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         pdf_data = f.read()
 
     if len(sys.argv)==2:

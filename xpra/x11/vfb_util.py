@@ -124,20 +124,20 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
 #create individual device files:
 def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid):
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
-    product_name = "Xpra Virtual %s %s" % (upper_dev_type, bytestostr(device_uuid))
-    identifier = "xpra-virtual-%s" % dev_type
-    conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
-    with open(conf_file, "wb") as f:
-        f.write(strtobytes("""Section "InputClass"
-Identifier "%s"
-MatchProduct "%s"
+    product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
+    identifier = f"xpra-virtual-{dev_type}"
+    conf_file = os.path.join(xorg_conf_dir, f"{i:02}-{dev_type}.conf")
+    with open(conf_file, "w", encoding="utf8") as f:
+        f.write(f"""Section "InputClass"
+Identifier "{identifier}"
+MatchProduct "{product_name}"
 MatchUSBID "ffff:ffff"
-MatchIs%s "True"
+MatchIs{upper_dev_type} "True"
 Driver "libinput"
 Option "AccelProfile" "flat"
 Option "Ignore" "False"
 EndSection
-""" % (identifier, product_name, upper_dev_type)))
+""")
         os.fchown(f.fileno(), uid, gid)
     #Option "AccelerationProfile" "-1"
     #Option "AccelerationScheme" "none"

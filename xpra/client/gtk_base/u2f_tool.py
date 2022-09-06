@@ -88,7 +88,7 @@ def main():
         #save to files:
         key_handle_filename = osexpand(key_handle_filenames[0])
         with open(key_handle_filename, "wb") as f:
-            f.write(hexstr(key_handle).encode())
+            f.write(hexstr(key_handle).encode("latin1"))
         #find a filename we can use for this public key:
         i = 1
         while True:
@@ -99,7 +99,7 @@ def main():
             if not os.path.exists(public_key_filename):
                 break
         with open(public_key_filename, "wb") as f:
-            f.write(hexstr(pubkey).encode())
+            f.write(hexstr(pubkey).encode("latin1"))
         #info("key handle: %s" % csv(hex40(key_handle)),
         #     "saved to file '%s'" % key_handle_filename,
         #     "public key: %s" % csv(hex40(pubkey)),
@@ -107,9 +107,9 @@ def main():
         #     )
         info(
             "key handle saved to file:",
-            "'%s'" % key_handle_filename,
+            f"{key_handle_filename!r}",
             "public key saved to file:",
-            "'%s'" % public_key_filename,
+            f"{public_key_filename!r}",
             )
         return 0
 

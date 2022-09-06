@@ -116,9 +116,9 @@ class SSHServer(paramiko.ServerInterface):
             return paramiko.AUTH_FAILED
         fingerprint = key.get_fingerprint()
         hex_fingerprint = binascii.hexlify(fingerprint)
-        log("looking for key fingerprint '%s' in '%s'", hex_fingerprint, authorized_keys_filename)
+        log(f"looking for key fingerprint {hex_fingerprint} in {authorized_keys_filename!r}")
         count = 0
-        with open(authorized_keys_filename, "rb") as f:
+        with open(authorized_keys_filename, "r", encoding="latin1") as f:
             for line in f:
                 if line.startswith("#"):
                     continue
@@ -126,7 +126,7 @@ class SSHServer(paramiko.ServerInterface):
                 try:
                     key = base64.b64decode(line.strip().split()[1].encode('ascii'))
                 except Exception as e:
-                    log("ignoring line '%s': %s", line, e)
+                    log(f"ignoring line {line}: {e}")
                     continue
                 for hash_algo in AUTHORIZED_KEYS_HASHES:
                     hash_instance = None
@@ -136,15 +136,15 @@ class SSHServer(paramiko.ServerInterface):
                     except ValueError:
                         hash_instance = None
                     if not hash_instance:
-                        if first_time("hash-%s-missing" % hash_algo):
-                            log.warn("Warning: unsupported hash '%s'", hash_algo)
+                        if first_time(f"hash-{hash_algo}-missing"):
+                            log.warn(f"Warning: unsupported hash {hash_algo!r}")
                         continue
                     fp_plain = hash_instance.hexdigest()
-                    log("%s(%s)=%s", hash_algo, line, fp_plain)
+                    log(f"{hash_algo}({line})={fp_plain}")
                     if fp_plain==hex_fingerprint:
                         return paramiko.OPEN_SUCCEEDED
                 count += 1
-        log("no match in %i keys from '%s'", count, authorized_keys_filename)
+        log(f"no match in {count} keys from {authorized_keys_filename!r}")
         return paramiko.AUTH_FAILED
 
     def check_auth_gssapi_keyex(self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):

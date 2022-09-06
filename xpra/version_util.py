@@ -204,7 +204,7 @@ def do_get_platform_info() -> dict:
             from subprocess import check_output
             return check_output(command).strip()
         if pp.system() == "Linux":
-            with open("/proc/cpuinfo", "r") as f:
+            with open("/proc/cpuinfo", "r", encoding="latin1") as f:
                 data = f.read()
             import re
             for line in data.split("\n"):
