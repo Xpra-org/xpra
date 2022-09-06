@@ -758,8 +758,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     #utility method used by some authentication handlers,
     #and overriden in UI client to provide a GUI dialog
-    def do_process_challenge_prompt(self, packet, prompt="password"):
-        authlog("do_process_challenge_prompt() use_gui_prompt=%s", use_gui_prompt())
+    def do_process_challenge_prompt(self, prompt="password"):
+        authlog(f"do_process_challenge_prompt({prompt}) use_gui_prompt={use_gui_prompt()}")
+        # pylint: disable=import-outside-toplevel
         if not use_gui_prompt():
             import getpass
             authlog("stdin isatty, using password prompt")
