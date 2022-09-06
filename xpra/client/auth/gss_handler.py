@@ -30,12 +30,13 @@ class Handler:
             log("%s is not a gss challenge", digest)
             return None
         try:
+            #pylint: disable=import-outside-toplevel
             import gssapi       #@UnresolvedImport
             self.gssapi = gssapi
             if OSX:
                 #this is a workaround for py2app,
                 #to ensure it includes all the modules we need:
-                from gssapi.raw import (cython_converters, cython_types, oids)  # @UnresolvedImport
+                from gssapi.raw import cython_converters, cython_types, oids    # @UnresolvedImport
                 assert cython_converters and cython_types and oids
         except ImportError as e:
             log.warn("Warning: cannot use gss authentication handler")
