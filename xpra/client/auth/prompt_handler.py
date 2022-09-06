@@ -16,6 +16,7 @@ class Handler:
         return None
 
     def handle(self, challenge, digest, prompt : str = "password") -> bool:
-        if not prompt and (digest.startswith("gss:") or digest.startswith("kerberos:")):
-            prompt = "%s token" % (digest.split(":", 1)[0])
+        digest_type = digest.split(":", 1)[0]
+        if not prompt and digest_type in ("gss", "kerberos"):
+            prompt = f"{digest_type} token"
         return self.client.do_process_challenge_prompt(prompt)
