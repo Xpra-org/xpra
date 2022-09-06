@@ -122,7 +122,7 @@ class X11ClientTest(X11ClientTestUtil):
 
 
 def main():
-    if False and POSIX and not OSX:
+    if POSIX and not OSX:
         unittest.main()
 
 
