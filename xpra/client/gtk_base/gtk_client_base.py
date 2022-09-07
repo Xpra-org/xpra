@@ -24,7 +24,7 @@ from xpra.os_util import (
     )
 from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
@@ -35,6 +35,7 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow,
     GRAB_STATUS_STRING,
     )
+from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -319,11 +320,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 q += f"\n at {endpoint}"
         title = self.get_server_authentication_string()
         values = []
+        errs = []
         def rec(value=None):
             values.append(value)
+        def err(value=None):
+            errs.append(value)
         from xpra.scripts.pinentry_wrapper import pinentry_getpin
-        pinentry_getpin(proc, title, q, rec, rec)
+        pinentry_getpin(proc, title, q, rec, err)
         if not values:
+            if errs and errs[0].startswith("ERR 83886179"):
+                #ie 'ERR 83886179 Operation cancelled <Pinentry>'
+                raise InitExit(EXIT_PASSWORD_REQUIRED, errs[0][len("ERR 83886179"):])
             return None
         return values[0]
 

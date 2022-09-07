@@ -110,18 +110,20 @@ def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
             return None
         return messages.pop(0)
     def process_output(message, output):
+        #log(f"process_output({message}, {output})")
         if message=="GETPIN":
             if output.startswith(b"S "):
                 log("getpin message: %s", bytestostr(output[2:]))
                 #ie: 'S PASSWORD_FROM_CACHE'
                 return True     #read more data
             if output.startswith(b"D "):
-                pin_value = output[2:].rstrip(b"\n\r").decode()
+                pin_value = output[2:].decode().rstrip("\n\r")
                 from urllib.parse import unquote
-                decoded = unquote(pin_value).replace("\\", "\\")
+                decoded = unquote(pin_value)
                 pin_cb(decoded)
             else:
-                err_cb()
+                err_cb(output.decode().rstrip("\n\r"))
+        return False
     do_run_pinentry(pinentry_proc, get_input, process_output)
     return True
 
@@ -132,8 +134,10 @@ def run_pinentry_getpin(pinentry_cmd, title, description):
     values = []
     def rec(value=None):
         values.append(value)
+    def err(value=None):
+        pass
     try:
-        pinentry_getpin(proc, title, description, rec, rec)
+        pinentry_getpin(proc, title, description, rec, err)
     finally:
         noerr(proc.terminate)
     if not values:

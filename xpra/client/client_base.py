@@ -739,6 +739,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     self.send_challenge_reply(packet, value)
                     #stop since we have sent the reply
                     return
+            except InitExit as e:
+                #the handler is telling us to give up
+                #(ie: pinentry was cancelled by the user)
+                authlog(f"{handler.handle}({packet}) raised {e!r}")
+                log.info(f"exiting: {e!r}")
+                self.idle_add(self.disconnect_and_quit, e.status, str(e))
+                return
             except Exception as e:
                 authlog(f"{handler.handle}({packet})", exc_info=True)
                 authlog.error(f"Error in {handler} challenge handler:")
