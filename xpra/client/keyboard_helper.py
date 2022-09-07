@@ -165,8 +165,8 @@ class KeyboardHelper:
             method(*args)
             log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s",
                 window, key_name, modifiers, depressed, method)
-        except Exception as e:
-            log.error("key_handled_as_shortcut(%s,%s,%s,%s)", window, key_name, modifiers, depressed)
+        except Exception:
+            log.error("Error: key_handled_as_shortcut(%s,%s,%s,%s)", window, key_name, modifiers, depressed)
             log.error(" failed to execute shortcut=%s", shortcut)
             log.error("", exc_info=True)
         return  True
