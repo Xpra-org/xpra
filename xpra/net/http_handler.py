@@ -181,9 +181,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     continue
                 log("may_reload_headers() loading from '%s'", header_file)
                 h = {}
-                with open(header_file, "r") as hf:
+                with open(header_file, "r", encoding="latin1") as hf:
                     for line in hf:
-                        sline = line.strip().rstrip('\r\n').strip()
+                        sline = line.strip().rstrip("\r\n").strip()
                         if sline.startswith("#") or not sline:
                             continue
                         parts = sline.split("=", 1)
@@ -192,10 +192,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                         if len(parts)!=2:
                             continue
                         h[parts[0].strip()] = parts[1].strip()
-                log("may_reload_headers() '%s'=%s", header_file, h)
+                log(f"may_reload_headers() {header_file}={h!r}")
                 headers.update(h)
             cls.http_headers_time[d] = mtime
-        log("may_reload_headers() headers=%s, mtime=%s", headers, mtimes)
+        log(f"may_reload_headers() headers={headers!r}, mtime={mtimes}")
         cls.http_headers_cache = headers
         return headers.copy()
 
@@ -322,7 +322,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             # Always read in binary mode. Opening files in text mode may cause
             # newline translations, making the actual size of the content
             # transmitted *less* than the content-length!
-            f = open(path, 'rb')
+            f = open(path, "rb")
             fs = os.fstat(f.fileno())
             content_length = fs[6]
             content_type = EXTENSION_TO_MIMETYPE.get(ext)
@@ -343,26 +343,26 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 #find a matching pre-compressed file:
                 if enc not in accept:
                     continue
-                compressed_path = "%s.%s" % (path, enc)     #ie: "/path/to/index.html.br"
+                compressed_path = f"{path}.{enc}"       #ie: "/path/to/index.html.br"
                 if not os.path.exists(compressed_path):
                     continue
                 if not os.path.isfile(compressed_path):
-                    log.warn("Warning: '%s' is not a file!", compressed_path)
+                    log.warn(f"Warning: {compressed_path!r} is not a file!")
                     continue
                 if not os.access(compressed_path, os.R_OK):
-                    log.warn("Warning: '%s' is not readable", compressed_path)
+                    log.warn(f"Warning: {compressed_path!r} is not readable")
                     continue
                 st = os.stat(compressed_path)
                 if st.st_size==0:
-                    log.warn("Warning: '%s' is empty", compressed_path)
+                    log.warn(f"Warning: {compressed_path!r} is empty")
                     continue
                 log("sending pre-compressed file '%s'", compressed_path)
                 #read pre-gzipped file:
                 f.close()
                 f = None
-                f = open(compressed_path, 'rb')
+                f = open(compressed_path, "rb")
                 content = f.read()
-                assert content, "no data in %s" % compressed_path
+                assert content, f"no data in {compressed_path!r}"
                 self.extra_headers["Content-Encoding"] = enc
                 break
             if not content:
