@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,7 +28,7 @@ PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 
 
 def get_pinentry_command(setting="yes"):
-    log("get_pinentry_command(%s)", setting)
+    log(f"get_pinentry_command({setting})")
     if setting.lower() in FALSE_OPTIONS:
         return None
     def find_pinentry_bin():
@@ -54,9 +54,9 @@ def popen_pinentry(pinentry_cmd):
             cmd.append("--debug")
         return Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     except OSError as e:
-        log("popen_pinentry(%s) failed", pinentry_cmd, exc_info=True)
-        log.error("Error: failed to run '%s'", pinentry_cmd)
-        log.error(" %s", e)
+        log(f"popen_pinentry({pinentry_cmd}) failed", exc_info=True)
+        log.error(f"Error: failed to run {pinentry_cmd!r}")
+        log.estr(e)
         return None
 
 def run_pinentry(extra_args):
@@ -67,10 +67,10 @@ def run_pinentry(extra_args):
         return messages.pop(0)
     def process_output(message, line):
         if line.startswith(b"ERR "):
-            log.error("Error: pinentry responded to '%s' with:", message)
+            log.error(f"Error: pinentry responded to {message!r} with:")
             log.error(" %s", line.rstrip(b"\n\r").decode())
         else:
-            log("pinentry sent %r", line)
+            log(f"pinentry sent {line!r}")
     pinentry_cmd = get_pinentry_command() or "pinentry"
     proc = popen_pinentry(pinentry_cmd)
     if not proc:
@@ -87,22 +87,22 @@ def do_run_pinentry(proc, get_input, process_output):
             message = get_input()
             if message is None:
                 break
-            log("sending %r", message)
-            r = proc.stdin.write(("%s\n" % message).encode())
+            log(f"sending {message!r}")
+            r = proc.stdin.write(f"{message}\n".encode())
             proc.stdin.flush()
-            log("write returned: %s", r)
+            log(f"write returned: {r}")
         except OSError:
             log("error running pinentry", exc_info=True)
             break
     if proc.poll() is None:
         proc.terminate()
-    log("pinentry ended: %s" % proc.poll())
+    log(f"pinentry ended: {proc.poll()}")
 
 def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
     from urllib.parse import quote
     messages = [
-        "SETPROMPT %s" % quote(title),
-        "SETDESC %s:" % quote(description),
+        f"SETPROMPT {quote(title)}",
+        f"SETDESC {quote(description)}:",
         "GETPIN",
         ]
     def get_input():
@@ -151,8 +151,8 @@ def run_pinentry_confirm(pinentry_cmd, title, prompt):
         #"GETINFO pid",
         ]
     messages += [
-        "SETPROMPT %s" % title,
-        "SETDESC %s" % prompt,
+        f"SETPROMPT {title}",
+        f"SETDESC {prompt}",
         #"SETKEYINFO %c/%s"
         ]
     messages.append("CONFIRM")
@@ -266,10 +266,10 @@ def input_pass(prompt) -> str:
     if PINENTRY or use_gui_prompt():
         from xpra.platform.paths import get_icon_filename
         icon = get_icon_filename("authentication", "png") or ""
-        log("input_pass(%s) using dialog", prompt)
+        log(f"input_pass({prompt}) using dialog")
         return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass
-    log("input_pass(%s) using getpass", prompt)
+    log(f"input_pass({prompt}) using getpass")
     try:
         return getpass(prompt)
     except KeyboardInterrupt:

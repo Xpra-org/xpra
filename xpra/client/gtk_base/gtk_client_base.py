@@ -290,16 +290,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def get_server_authentication_string(self):
         p = self._protocol
+        server_type = ""
         if p:
             server_type = {
                 "xpra"  : "Xpra ",
                 "rfb"   : "VNC ",
                 }.get(p.TYPE, p.TYPE)
-        else:
-            server_type = ""
-        return "%sServer Authentication:" % server_type
+        return f"{server_type}Server Authentication:"
 
     def handle_challenge_with_pinentry(self, prompt="password", cmd="pinentry"):
+        # pylint: disable=import-outside-toplevel
         authlog = Logger("auth")
         authlog("handle_challenge_with_pinentry%s", (prompt, cmd))
         try:
@@ -308,7 +308,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             authlog("pinentry failed", exc_info=True)
             return self.process_challenge_prompt_dialog(prompt)
         self.pinentry_proc = proc
-        q = "Enter %s" % prompt
+        q = f"Enter {prompt}"
         p = self._protocol
         if p:
             conn = getattr(p, "_conn", None)
@@ -316,7 +316,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 from xpra.net.bytestreams import pretty_socket
                 cinfo = conn.get_info()
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
-                q += "\n at %s" % endpoint
+                q += f"\n at {endpoint}"
         title = self.get_server_authentication_string()
         values = []
         def rec(value=None):
@@ -340,6 +340,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return values[0]
 
     def do_process_challenge_prompt_dialog(self, values : list, wait : Event, prompt="password"):
+        # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title,
                None,
