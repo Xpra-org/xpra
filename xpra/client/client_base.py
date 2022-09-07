@@ -783,7 +783,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             password = out.decode()
             return password
         except Exception:
-            log("Error: failed to show GUi for password prompt", exc_info=True)
+            log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
     def auth_error(self, code, message, server_message=AUTHENTICATION_FAILED):
