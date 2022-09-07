@@ -745,7 +745,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 authlog.estr(e)
                 continue
         authlog.warn("Warning: failed to connect, authentication required")
-        self.quit(EXIT_PASSWORD_REQUIRED)
+        self.idle_add(self.disconnect_and_quit, EXIT_PASSWORD_REQUIRED, "authentication required")
 
     def pop_challenge_handler(self, digest=None):
         #find the challenge handler most suitable for this digest type,
