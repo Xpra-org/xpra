@@ -104,7 +104,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         getChildReaper()
         log("XpraClientBase.defaults_init() os.environ:")
         for k,v in os.environ.items():
-            log(" %s=%r", k, v)
+            log(f" {k}={v!r}")
         #client state:
         self.exit_code = None
         self.exit_on_signal = False
@@ -175,14 +175,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def show_progress(self, pct, text=""):
         log(f"progress({pct}, {text!r})")
         if SPLASH_LOG:
-            log.info("%3i %s", pct, text)
+            log.info(f"{pct:3} {text}")
         pp = self.progress_process
         if not pp:
             return
         if pp.poll():
             self.progress_process = None
             return
-        noerr(pp.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
+        noerr(pp.stdin.write, f"{pct}:{text}\n".encode("latin1"))
         noerr(pp.stdin.flush)
         if pct==100:
             #it should exit on its own, but just in case:
@@ -230,7 +230,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         kwargs = {}
         if len(parts)==2:
             kwargs = parse_simple_dict(parts[1])
-        auth_mod_name = "xpra.client.auth.%s_handler" % mod_name
+        auth_mod_name = f"xpra.client.auth.{mod_name}_handler"
         authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
         try:
             auth_module = __import__(auth_mod_name, {}, {}, ["Handler"])
@@ -455,14 +455,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if mid:
             capabilities["machine_id"] = mid
         encryption = self.get_encryption()
-        cryptolog("encryption=%s", encryption)
+        cryptolog(f"encryption={encryption}")
         if encryption:
             crypto_backend_init()
             enc, mode = (encryption+"-").split("-")[:2]
             if not mode:
                 mode = DEFAULT_MODE
-            assert enc in ENCRYPTION_CIPHERS, "invalid encryption '%s', options: %s" % (enc, csv(ENCRYPTION_CIPHERS))
-            assert mode in MODES, "invalid encryption mode '%s', options: %s" % (mode, csv(MODES))
+            if enc not in ENCRYPTION_CIPHERS:
+                raise ValueError(f"invalid encryption {enc!r}, options: {csv(ENCRYPTION_CIPHERS)}")
+            if mode not in MODES:
+                raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(MODES)}")
             iv = get_iv()
             key_salt = get_salt()
             iterations = get_iterations()
@@ -479,7 +481,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "padding"               : padding,
                 "padding.options"       : PADDING_OPTIONS,
                 }
-            cryptolog("cipher_caps=%s", cipher_caps)
+            cryptolog(f"cipher_caps={cipher_caps}")
             up("cipher", cipher_caps)
             key = self.get_encryption_key()
             self._protocol.set_cipher_in(encryption, iv, key,
@@ -518,7 +520,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 #the compressed version is smaller, use it:
                 return cw
         #we can't compress, so at least avoid warnings in the protocol layer:
-        return compression.Compressed("raw %s" % datatype, data, can_inline=True)
+        return compression.Compressed(f"raw {datatype}", data, can_inline=True)
 
 
     def send(self, *parts):
@@ -660,9 +662,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def server_disconnect_warning(self, reason, *extra_info):
         log.warn("Warning: server connection failure:")
-        log.warn(" %s", reason)
+        log.warn(f" {reason}")
         for x in extra_info:
-            log.warn(" %s", x)
+            log.warn(f" {x}")
         if AUTHENTICATION_FAILED in extra_info:
             self.quit(EXIT_AUTHENTICATION_FAILED)
         elif CONNECTION_ERROR in extra_info or not self.completed_startup:
@@ -714,7 +716,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     ########################################
     # Authentication
     def _process_challenge(self, packet):
-        authlog("processing challenge: %s", packet[1:])
+        authlog(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
             return
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet, ))
@@ -730,17 +732,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 prompt = "password"
                 if len(packet)>=6:
                     prompt = std(bytestostr(packet[5]), extras="-,./: '")
-                authlog("calling challenge handler %s", handler)
+                authlog(f"calling challenge handler {handler}")
                 value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
-                authlog("%s(%s)=%s", handler.handle, packet, value)
+                authlog(f"{handler.handle}({packet})={obsc(value)}")
                 if value:
                     self.send_challenge_reply(packet, value)
                     #stop since we have sent the reply
                     return
             except Exception as e:
-                authlog("%s(%s)", handler.handle, packet, exc_info=True)
-                authlog.error("Error in %r challenge handler:", handler)
-                authlog.error(" %s", str(e) or type(e))
+                authlog(f"{handler.handle}({packet})", exc_info=True)
+                authlog.error(f"Error in {handler} challenge handler:")
+                authlog.estr(e)
                 continue
         authlog.warn("Warning: failed to connect, authentication required")
         self.quit(EXIT_PASSWORD_REQUIRED)
@@ -786,7 +788,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def auth_error(self, code, message, server_message=AUTHENTICATION_FAILED):
         authlog.error("Error: authentication failed:")
-        authlog.error(" %s", message)
+        authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)
 
     def validate_challenge_packet(self, packet):
@@ -798,12 +800,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if digest in ("xor", "des"):
             encrypted = p.is_sending_encrypted()
             local = self.display_desc.get("local", False)
-            authlog("%s challenge, encrypted=%s, local=%s", digest, encrypted, local)
+            authlog(f"{digest} challenge, encrypted={encrypted}, local={local}")
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
             if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.auth_error(EXIT_ENCRYPTION,
-                                "server requested '%s' digest, cowardly refusing to use it without encryption" % digest,
+                                f"server requested {digest!r} digest, cowardly refusing to use it without encryption",
                                 "invalid digest")
                 return False
         salt_digest = "xor"
@@ -811,19 +813,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             salt_digest = bytestostr(packet[4])
         if salt_digest in ("xor", "des"):
             if not LEGACY_SALT_DIGEST:
-                self.auth_error(EXIT_INCOMPATIBLE_VERSION, "server uses legacy salt digest '%s'" % salt_digest)
+                self.auth_error(EXIT_INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
                 return False
-            log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
+            log.warn(f"Warning: server using legacy support for {salt_digest!r} salt digest")
         return True
 
     def get_challenge_prompt(self, prompt="password"):
-        text = "Please enter the %s" % (prompt,)
+        text = f"Please enter the {prompt}"
         try:
             from xpra.net.bytestreams import pretty_socket
             conn = self._protocol._conn
-            text += ",\n connecting to %s server %s" % (
-                conn.socktype, pretty_socket(conn.remote),
-                )
+            text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
         except Exception:
             pass
         return text
@@ -861,22 +861,22 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 salt_digest = bytestostr(packet[4])
             if salt_digest=="xor":
                 #with xor, we have to match the size
-                assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
-                assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+                assert l>=16, f"server salt is too short: only {l} bytes, minimum is 16"
+                assert l<=256, f"server salt is too long: {l} bytes, maximum is 256"
             else:
                 #other digest, 32 random bytes is enough:
                 l = 32
             client_salt = get_salt(l)
             salt = gendigest(salt_digest, client_salt, server_salt)
-            authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
+            authlog(f"combined {salt_digest} salt({hexstr(server_salt)}, {hexstr(client_salt)})={hexstr(salt)}")
 
         challenge_response = gendigest(actual_digest, password, salt)
         if not challenge_response:
-            log("invalid digest module '%s': %s", actual_digest)
+            log(f"invalid digest module {actual_digest!r}")
             self.auth_error(EXIT_UNSUPPORTED,
-                            "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
+                            f"server requested {actual_digest} digest but it is not supported", "invalid digest")
             return
-        authlog("%s(%s, %s)=%s", actual_digest, obsc(password), repr(salt), obsc(challenge_response))
+        authlog(f"{actual_digest}({obsc(password)!r}, {salt!r})={obsc(challenge_response)!r}")
         self.do_send_challenge_reply(challenge_response, client_salt)
 
     def do_send_challenge_reply(self, challenge_response, client_salt):
@@ -906,18 +906,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(EXIT_ENCRYPTION, msg)
             return False
         if key_stretch!="PBKDF2":
-            return fail("unsupported key stretching %s" % key_stretch)
+            return fail(f"unsupported key stretching {key_stretch}")
         if not cipher or not cipher_iv:
             return fail("the server does not use or support encryption/password, cannot continue")
         if cipher not in ENCRYPTION_CIPHERS:
-            return fail("unsupported server cipher: %s, allowed ciphers: %s" % (
-                cipher, csv(ENCRYPTION_CIPHERS)))
+            return fail(f"unsupported server cipher: {cipher}, allowed ciphers: {csv(ENCRYPTION_CIPHERS)}")
         if padding not in ALL_PADDING_OPTIONS:
-            return fail("unsupported server cipher padding: %s, allowed ciphers: %s" % (
-                padding, csv(ALL_PADDING_OPTIONS)))
+            return fail(f"unsupported server cipher padding: {padding}, allowed paddings: {csv(ALL_PADDING_OPTIONS)}")
         if key_hash not in KEY_HASHES:
-            return fail("unsupported key hashing: %s, allowed algorithms: %s" % (
-                key_hash, csv(KEY_HASHES)))
+            return fail(f"unsupported key hashing: {key_hash}, allowed algorithms: {csv(KEY_HASHES)}")
         p = self._protocol
         if not p:
             return False
@@ -933,20 +930,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         conn = p._conn
         #prefer the socket option, fallback to "--encryption=" option:
         encryption = conn.options.get("encryption", self.encryption)
-        cryptolog("get_encryption() connection options encryption=%s", encryption)
+        cryptolog(f"get_encryption() connection options encryption={encryption!r}")
         #specifying keyfile or keydata is enough:
         if not encryption and any(conn.options.get(x) for x in ("encryption-keyfile", "keyfile", "keydata")):
-            encryption = "AES-%s" % DEFAULT_MODE
-            cryptolog("found keyfile or keydata attribute, enabling '%s' encryption" % encryption)
+            encryption = f"AES-{DEFAULT_MODE}"
+            cryptolog(f"found keyfile or keydata attribute, enabling {encryption!r} encryption")
         if not encryption and os.environ.get("XPRA_ENCRYPTION_KEY"):
-            encryption = "AES-%s" % DEFAULT_MODE
-            cryptolog("found encryption key environment variable, enabling '%s' encryption" % encryption)
+            encryption = f"AES-{DEFAULT_MODE}"
+            cryptolog("found encryption key environment variable, enabling {encryption!r} encryption")
         return encryption
 
     def get_encryption_key(self):
         conn = self._protocol._conn
         keydata = parse_encoded_bin_data(conn.options.get("keydata", None))
-        cryptolog("get_encryption_key() connection options keydata=%s", ellipsizer(keydata))
+        cryptolog(f"get_encryption_key() connection options keydata={ellipsizer(keydata)}")
         if keydata:
             return keydata
         keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
@@ -959,14 +956,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     cryptolog("get_encryption_key() loaded %i bytes from '%s'",
                           len(key or ""), keyfile)
                     return key
-                else:
-                    cryptolog("get_encryption_key() keyfile '%s' is empty", keyfile)
+                cryptolog(f"get_encryption_key() keyfile {keyfile!r} is empty")
             else:
-                cryptolog("get_encryption_key() file '%s' does not exist", keyfile)
+                cryptolog(f"get_encryption_key() file {keyfile!r} does not exist")
         XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
         key = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
-        cryptolog("get_encryption_key() got %i bytes from '%s' environment variable",
-                  len(key or ""), XPRA_ENCRYPTION_KEY)
+        cryptolog(f"get_encryption_key() got %i bytes from {XPRA_ENCRYPTION_KEY!r} environment variable",
+                  len(key or ""))
         if key:
             return key.strip(b"\n\r")
         raise InitExit(EXIT_ENCRYPTION, "no encryption key")
@@ -990,7 +986,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 self.connection_established = True
         except Exception as e:
             netlog.info("error in hello packet", exc_info=True)
-            self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
+            self.warn_and_quit(EXIT_FAILURE, f"error processing hello packet from server: {e}")
 
 
     def server_connection_established(self, caps : typedict) -> bool:
@@ -1012,7 +1008,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def parse_server_capabilities(self, c : typedict) -> bool:
         for bc in XpraClientBase.__bases__:
             if not bc.parse_server_capabilities(self, c):
-                log.info("server capabilities rejected by %s", bc)
+                log.info(f"server capabilities rejected by {bc}")
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
         self.server_compressors = c.strtupleget("compressors", ("zlib",))
@@ -1070,11 +1066,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if packet_type=="xpra":
             netlog.error(" xpra server bug or mangled packet")
         if packet_type and packet_type!="xpra":
-            netlog.error(" this is a '%s' packet,", packet_type)
+            netlog.error(f" this is a {packet_type!r} packet,")
             netlog.error(" not from an xpra server?")
         else:
             parts = message.split(" read buffer=", 1)
-            netlog.error(" received uninterpretable nonsense: %r", parts[0])
+            netlog.error(f" received uninterpretable nonsense: {parts[0]}")
             if len(parts)==2:
                 text = bytestostr(parts[1])
                 netlog.error(" %s", text)
@@ -1085,14 +1081,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 for x in data.split("\n"):
                     netlog.error("  %r", x.split("\0")[0])
             else:
-                netlog.error(" data: %r", data)
+                netlog.error(f" data: {data!r}")
         else:
-            netlog.error(" packet no %i data: %s", pcount, repr_ellipsized(data))
+            netlog.error(f" packet no {pcount} data: {repr_ellipsized(data)}")
         self.quit(exit_code)
 
     def _process_invalid(self, packet):
         message, data = packet[1:3]
-        netlog.info("Received invalid packet: %s", message)
+        netlog.info(f"Received invalid packet: {message}")
         netlog(" data: %s", ellipsizer(data))
         p = self._protocol
         exit_code = EXIT_PACKET_FAILURE
