@@ -194,7 +194,11 @@ class ServerCore:
         self.exec_cwd = os.getcwd()
         self.pidfile = None
         self.pidinode = 0
-        self.session_files = ["cmdline", "server.env", "config", "server.log*"]
+        self.session_files = [
+            "cmdline", "server.env", "config", "server.log*",
+            #notifications may use a TMP dir:
+            "tmp/*", "tmp",
+            ]
         self.splash_process = None
 
         self.session_name = ""
