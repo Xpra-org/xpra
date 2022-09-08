@@ -841,6 +841,8 @@ def do_parse_cmdline(cmdline, defaults):
     #we support remote start, so we need those even if we don't have server support:
     def nonedefault(v):
         return repr(v) if v else "none"
+    def autodefault(v):
+        return "auto" if v is None else repr(v)
     def dcsv(v):
         return csv(v or ["none"])
     group.add_option("--start", action="append",
@@ -1557,7 +1559,7 @@ When unspecified, all the available codecs are allowed and the first one is used
                       dest="sync_xvfb", default=defaults.sync_xvfb,
                       help="How often to synchronize the virtual framebuffer used for X11 seamless servers "
                       +"(0 to disable)."
-                      +" Default: %s." % defaults.sync_xvfb)
+                      +" Default: %s." % autodefault(defaults.sync_xvfb))
     group.add_option("--client-socket-dirs", action="store",
                       dest="client_socket_dirs", default=defaults.client_socket_dirs,
                       help="Directories where the clients create their control socket."
@@ -1790,6 +1792,8 @@ When unspecified, all the available codecs are allowed and the first one is used
             s = getattr(options, x, None)
             if x=="sync_xvfb" and (s or "").lower() in FALSE_OPTIONS:
                 v = 0
+            elif x=="sync_xvfb" and (s or "").lower()=="auto":
+                v = None
             else:
                 v = int(s)
             setattr(options, x, v)

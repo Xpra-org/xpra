@@ -1029,7 +1029,7 @@ def get_defaults():
                     "file-size-limit"   : "100M",
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
-                    "sync-xvfb"         : 0,
+                    "sync-xvfb"         : None,
                     "pixel-depth"       : 0,
                     "uid"               : getuid(),
                     "gid"               : getgid(),

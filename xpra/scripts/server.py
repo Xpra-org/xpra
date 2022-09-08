@@ -1095,10 +1095,9 @@ def _do_run_server(script_file, cmdline,
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    if start_vfb and opts.xvfb.find("Xephyr")>=0 and opts.sync_xvfb<=0:
-        warn("Warning: using Xephyr as vfb")
-        warn(" you should also enable the sync-xvfb option")
-        warn(" to keep the Xephyr window updated")
+    if start_vfb and opts.sync_xvfb is None and any(opts.xvfb.find(x)>=0 for x in ("Xephyr", "Xnest")):
+        #automatically enable sync-xvfb for Xephyr and Xnest:
+        opts.sync_xvfb = 50
 
     if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
         opts.rfb_upgrade = 0
