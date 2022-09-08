@@ -24,7 +24,8 @@ input-method=auto
 # (repaint delay in milliseconds, 0 to disable)
 # sync-xvfb = 200
 # sync-xvfb = 50
-sync-xvfb = 0
+# sync-xvfb = 0
+sync-xvfb = auto
 
 # Fake Xinerama:
 #fake-xinerama=no
