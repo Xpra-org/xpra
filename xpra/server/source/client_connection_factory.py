@@ -134,7 +134,7 @@ def get_client_connection_class(caps):
 
         def parse_hello(self, c : typedict):
             self.ui_client = c.boolget("ui_client", True)
-            self.wants = list(c.strtupleget("wants"), self.wants)
+            self.wants = list(c.strtupleget("wants", self.wants))
             for x, default_value in {
                 "encodings" : self.ui_client,
                 "display"   : self.ui_client,
