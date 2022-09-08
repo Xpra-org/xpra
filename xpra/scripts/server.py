@@ -72,11 +72,11 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False):
     try:
         pixel_depth = int(pixel_depth)
     except ValueError:
-        raise InitException("invalid value '%s' for pixel depth, must be a number" % pixel_depth) from None
+        raise InitException(f"invalid value {pixel_depth} for pixel depth, must be a number") from None
     if pixel_depth==0:
         pixel_depth = 24
     if pixel_depth not in (8, 16, 24, 30):
-        raise InitException("invalid pixel depth: %s" % pixel_depth)
+        raise InitException(f"invalid pixel depth: {pixel_depth}")
     if not starting_desktop and pixel_depth==8:
         raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
     return pixel_depth
@@ -91,12 +91,12 @@ def display_name_check(display_name):
     try:
         dno = int(n)
     except (ValueError, TypeError):
-        raise InitException("invalid display number %r" % n) from None
+        raise InitException(f"invalid display number {n}") from None
     else:
         if 0<=dno<10:
-            warn("WARNING: low display number: %s" % dno)
+            warn(f"WARNING: low display number: {dno}")
             warn(" You are attempting to run the xpra server")
-            warn(" against a low X11 display number: '%s'." % (display_name,))
+            warn(f" against a low X11 display number: {display_name!r}")
             warn(" This is generally not what you want.")
             warn(" You should probably use a higher display number")
             warn(" just to avoid any confusion and this warning message.")
@@ -107,7 +107,7 @@ def print_DE_warnings():
     if not de:
         return
     log = get_util_logger()
-    log.warn("Warning: xpra start from an existing '%s' desktop session", de)
+    log.warn(f"Warning: xpra start from an existing {de!r} desktop session")
     log.warn(" without using dbus-launch,")
     log.warn(" notifications forwarding may not work")
     log.warn(" try using a clean environment, a dedicated user,")
@@ -157,11 +157,11 @@ def configure_imsettings_env(input_method):
         pass
     elif im in ("xim", "ibus", "scim", "uim"):
         #ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
-        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=%s" % im.lower())
+        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im="+im.lower())
     else:
-        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=%s" % im.lower())
-        warn("using input method settings: %s" % str(v))
-        warn("unknown input method specified: %s" % input_method)
+        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im="+im.lower())
+        warn(f"using input method settings: {v}")
+        warn(f"unknown input method specified: {input_method}")
         warn(" if it is correct, you may want to file a bug to get it recognized")
     return im
 
@@ -255,7 +255,7 @@ def show_encoding_help(opts):
     EncodingServer.threaded_setup(sb)
     from xpra.codecs.loader import encoding_help
     for e in (x for x in HELP_ORDER if x in sb.encodings):
-        print(" * %s" % encoding_help(e))
+        print(" * "+encoding_help(e))
     return 0
 
 
@@ -268,12 +268,12 @@ def set_server_features(opts):
     def impcheck(*modules):
         for mod in modules:
             try:
-                __import__("xpra.%s" % mod, {}, {}, [])
+                __import__(f"xpra.{mod}", {}, {}, [])
             except ImportError:
                 if mod not in impwarned:
                     impwarned.append(mod)
                     log = get_util_logger()
-                    log.warn("Warning: missing %s module", mod)
+                    log.warn(f"Warning: missing {mod} module")
                 return False
         return True
     server_features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
@@ -345,7 +345,7 @@ def write_displayfd(display_name, fd):
         display_no = display_name[1:]
         #ensure it is a string containing the number:
         display_no = str(int(display_no))
-        log("writing display_no='%s' to displayfd=%i", display_no, fd)
+        log(f"writing display_no={display_no} to displayfd={fd}")
         assert displayfd.write_displayfd(fd, display_no), "timeout"
     except Exception as e:
         log.error("write_displayfd failed", exc_info=True)
@@ -482,7 +482,7 @@ def rm_session_dir(warn=True):
     if session_files:
         if warn:
             log.info(f"session directory {session_dir!r} was not removed")
-            log.info(f" because it still contains some files:")
+            log.info(" because it still contains some files:")
             for f in session_files:
                 extra = " (directory)" if os.path.isdir(os.path.join(session_dir, f)) else ""
                 log.info(f" {f!r}{extra}")
@@ -547,9 +547,9 @@ def get_options_file_contents(opts, mode="seamless"):
     fixup_defaults(defaults)
     fixup_options(defaults)
     diff_contents = [
-        "# xpra server %s" % __version__,
+        f"# xpra server {__version__}",
         "",
-        "mode=%s" % mode,
+        f"mode={mode}",
         ]
     for attr, dtype in OPTION_TYPES.items():
         if attr in CLIENT_ONLY_OPTIONS:
@@ -562,12 +562,12 @@ def get_options_file_contents(opts, mode="seamless"):
         if dval!=cval:
             if dtype is bool:
                 BOOL_STR = {True : "yes", False : "no", None : "auto"}
-                diff_contents.append("%s=%s" % (attr, BOOL_STR.get(cval, cval)))
+                diff_contents.append(f"{attr}="+BOOL_STR.get(cval, cval))
             elif dtype in (tuple, list):
                 for x in cval or ():
-                    diff_contents.append("%s=%s" % (attr, x))
+                    diff_contents.append(f"{attr}={x}")
             else:
-                diff_contents.append("%s=%s" % (attr, cval))
+                diff_contents.append(f"{attr}={cval}")
     diff_contents.append("")
     return "\n".join(diff_contents)
 
@@ -700,7 +700,7 @@ def request_exit(uri):
         p.wait()
     except OSError as e:
         noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
-        noerr(sys.stderr.write, " %s\n" % e)
+        noerr(sys.stderr.write, f" {e}\n")
         return False
     return p.poll() in (EXIT_OK, EXIT_UPGRADE)
 
@@ -730,7 +730,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         def show_progress(pct, text=""):
             if splash_process.poll() is not None:
                 return
-            noerr(splash_process.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
+            noerr(splash_process.stdin.write, f"{pct}:{text}\n".encode("latin1"))
             noerr(splash_process.stdin.flush)
             if pct==100:
                 #it should exit on its own, but just in case:
@@ -748,7 +748,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
                               error_cb, opts, extra_args, mode, display_name, defaults,
                               splash_process, progress)
     except Exception as e:
-        progress(100, "error: %s" % e)
+        progress(100, f"error: {e}")
         raise
 
 def _do_run_server(script_file, cmdline,
@@ -759,7 +759,7 @@ def _do_run_server(script_file, cmdline,
         cwd = os.getcwd()
     except OSError:
         cwd = os.path.expanduser("~")
-        warn("current working directory does not exist, using '%s'\n" % cwd)
+        warn(f"current working directory does not exist, using {cwd!r}\n")
 
     #remove anything pointing to dbus from the current env
     #(so we only detect a dbus instance started by pam,
@@ -819,7 +819,7 @@ def _do_run_server(script_file, cmdline,
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
-            error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
+            error_cb(f"too many extra arguments ({len(extra_args)}): only expected a display number")
         if len(extra_args) == 1:
             display_name = extra_args[0]
             #look for display options:
@@ -837,7 +837,7 @@ def _do_run_server(script_file, cmdline,
                 displays = [v[1] for v in all_displays]
                 display_name = None
                 for x in range(1000, 20000):
-                    v = ":%s" % x
+                    v = f":{x}"
                     if v not in displays:
                         display_name = v
                         break
@@ -862,7 +862,7 @@ def _do_run_server(script_file, cmdline,
         session = sessions.get(display_name)
         if session:
             socket_path = session.get("socket-path")
-            uri = ("socket://%s" % socket_path) if socket_path else display_name
+            uri = (f"socket://{socket_path}") if socket_path else display_name
             if request_exit(uri):
                 #the server has terminated as we had requested
                 use_display = True
@@ -872,7 +872,7 @@ def _do_run_server(script_file, cmdline,
                 import time
                 time.sleep(1)
             else:
-                warn("server for %s is not exiting" % display_name)
+                warn(f"server for {display_name} is not exiting")
 
     if not (shadowing or proxying or upgrading) and opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
@@ -939,8 +939,8 @@ def _do_run_server(script_file, cmdline,
         try:
             displayfd = int(opts.displayfd)
         except ValueError as e:
-            stderr.write("Error: invalid displayfd '%s':\n" % opts.displayfd)
-            stderr.write(" %s\n" % e)
+            stderr.write(f"Error: invalid displayfd {opts.displayfd!r}:\n")
+            stderr.write(f" {e}\n")
             del e
 
     clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
@@ -957,7 +957,7 @@ def _do_run_server(script_file, cmdline,
             from xpra.server.pam import pam_session #@UnresolvedImport
         except ImportError as e:
             stderr.write("Error: failed to import pam module\n")
-            stderr.write(" %s" % e)
+            stderr.write(f" {e}\n")
             del e
             PAM_OPEN = False
     if PAM_OPEN:
@@ -996,7 +996,7 @@ def _do_run_server(script_file, cmdline,
     if ROOT and (uid>0 or gid>0):
         #we're going to chown the directory if we create it,
         #ensure this cannot be abused, only use "safe" paths:
-        if xrd=="/run/user/%i" % uid:
+        if xrd==f"/run/user/{uid}":
             pass    #OK!
         elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
             xrd = ""
@@ -1079,12 +1079,12 @@ def _do_run_server(script_file, cmdline,
                 try:
                     os.fchown(logfd, uid, gid)
                 except OSError as e:
-                    noerr(stderr.write, "failed to chown the log file '%s'\n" % log_filename0)
+                    noerr(stderr.write, f"failed to chown the log file {log_filename0!r}\n")
                     noerr(stderr.flush)
         stdout, stderr = redirect_std_to_log(logfd)
         noerr(stderr.write, "Entering daemon mode; "
                      + "any further errors will be reported to:\n"
-                     + ("  %s\n" % log_filename0))
+                     + f"  {log_filename0!r}\n")
         noerr(stderr.flush)
         os.environ["XPRA_SERVER_LOG"] = log_filename0
     else:
@@ -1103,7 +1103,7 @@ def _do_run_server(script_file, cmdline,
     if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
-            get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
+            get_util_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
             opts.bind_rfb = []
 
     progress(30, "creating sockets")
@@ -1179,10 +1179,10 @@ def _do_run_server(script_file, cmdline,
                 progress(40, "connecting to the display")
                 display_no = int(display_name[1:])
                 stat = stat_X11_display(display_no)
-                log("stat_X11_display(%i)=%s", display_no, stat)
+                log(f"stat_X11_display({display_no})={stat}")
                 if not stat:
                     if upgrading:
-                        error_cb("cannot access display '%s'" % (display_name,))
+                        error_cb(f"cannot access display {display_name!r}")
                     #no X11 socket to connect to, so we have to start one:
                     start_vfb = True
                 elif verify_display(None, display_name, log_errors=False, timeout=1)==0:
@@ -1199,7 +1199,7 @@ def _do_run_server(script_file, cmdline,
                             pam.set_items({"XAUTHDATA" : xauth_data})
                     xauth_add(xauthority, display_name, xauth_data, uid, gid)
                     if verify_display(None, display_name, log_errors=False, timeout=1)!=0:
-                        warn("display %s is not accessible" % (display_name,))
+                        warn(f"display {display_name!r} is not accessible")
                     else:
                         #now OK!
                         start_vfb = False
@@ -1250,8 +1250,8 @@ def _do_run_server(script_file, cmdline,
                                 os.rename(session_dir, new_session_dir)
                         except OSError as e:
                             log.error("Error moving the session directory")
-                            log.error(" from '%s' to '%s'", session_dir, new_session_dir)
-                            log.error(" %s", e)
+                            log.error(f" from {session_dir!r} to {new_session_dir!r}")
+                            log.error(f" {e}")
                         session_dir = new_session_dir
                         #update session dir if needed:
                         if not opts.log_dir or opts.log_dir.lower()=="auto":
@@ -1286,7 +1286,7 @@ def _do_run_server(script_file, cmdline,
     if opts.daemon:
         if odisplay_name!=display_name:
             #this may be used by scripts, let's try not to change it:
-            noerr(stderr.write, "Actual display used: %s\n" % display_name)
+            noerr(stderr.write, f"Actual display used: {display_name}\n")
             noerr(stderr.flush)
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
@@ -1302,7 +1302,7 @@ def _do_run_server(script_file, cmdline,
                 except (OSError, IOError):
                     pass
             os.environ["XPRA_SERVER_LOG"] = log_filename1
-            noerr(stderr.write, "Actual log file name is now: %s\n" % log_filename1)
+            noerr(stderr.write, f"Actual log file name is now: {log_filename1!r}\n")
             noerr(stderr.flush)
         noerr(stdout.close)
         noerr(stderr.close)
@@ -1332,7 +1332,7 @@ def _do_run_server(script_file, cmdline,
         configure_env(opts.env)
 
     if opts.chdir:
-        log("chdir(%s)", opts.chdir)
+        log(f"chdir({opts.chdir})")
         os.chdir(opts.chdir)
 
     dbus_pid, dbus_env = 0, {}
@@ -1343,7 +1343,7 @@ def _do_run_server(script_file, cmdline,
             no_gtk()
             if not (starting or starting_desktop or starting_monitor or proxying):
                 dbuslog.warn("Warning: failed to reload the dbus session attributes")
-                dbuslog.warn(" for mode %r", mode)
+                dbuslog.warn(f" for mode {mode}")
                 dbuslog.warn(" a new dbus instance will be started")
                 dbuslog.warn(" which may conflict with the previous one if it exists")
             try:
@@ -1353,8 +1353,8 @@ def _do_run_server(script_file, cmdline,
             else:
                 dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
                 if dbus_env:
-                    dbuslog("started new dbus instance: %s", dbus_env)
-                    write_session_file("dbus.pid", "%s" % dbus_pid)
+                    dbuslog(f"started new dbus instance: {dbus_env}")
+                    write_session_file("dbus.pid", f"{dbus_pid}")
                     dbus_env_data = b"\n".join(b"%s=%s" % (k, v) for k,v in dbus_env.items())+b"\n"
                     write_session_file("dbus.env", dbus_env_data)
         if dbus_env:
@@ -1368,7 +1368,7 @@ def _do_run_server(script_file, cmdline,
             protected_env["SSH_AUTH_SOCK"] = ssh_auth_sock
         except Exception as e:
             log.error("Error setting up ssh agent forwarding", exc_info=True)
-            progress(50, "error setting up ssh agent forwarding: %s" % e)
+            progress(50, f"error setting up ssh agent forwarding: {e}")
 
     if not proxying:
         if POSIX and not OSX:
@@ -1391,7 +1391,7 @@ def _do_run_server(script_file, cmdline,
                                             display_name, clobber,
                                             opts.mmap_group, opts.socket_permissions,
                                             username, uid, gid)
-        netlog("setting up local sockets: %s", local_sockets)
+        netlog(f"setting up local sockets: {local_sockets}")
         sockets.update(local_sockets)
         if POSIX and (starting or upgrading or starting_desktop):
             #all unix domain sockets:
@@ -1537,14 +1537,14 @@ def attach_client(options, defaults):
             d = getattr(defaults, f)
             c = getattr(options, f)
         except Exception as e:
-            print("error on %s: %s" % (f, e))
+            warn(f"error on {f}: {e}")
             continue
         if c!=d:
             if OPTION_TYPES.get(x)==list:
                 v = ",".join(str(i) for i in c)
             else:
                 v = str(c)
-            cmd.append("--%s=%s" % (x, v))
+            cmd.append(f"--{x}={v}")
     env = get_saved_env()
     proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
