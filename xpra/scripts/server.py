@@ -1156,7 +1156,7 @@ def _do_run_server(script_file, cmdline,
             if not os.path.exists(xauthority):
                 log("creating XAUTHORITY file '%s'", xauthority)
                 try:
-                    with open(xauthority, "a") as f:
+                    with open(xauthority, "ab") as f:
                         os.fchmod(f.fileno(), 0o640)
                         if ROOT and (uid!=0 or gid!=0):
                             os.fchown(f.fileno(), uid, gid)
