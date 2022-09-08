@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import shlex
+import signal
 import os.path
 from time import monotonic
 
@@ -163,7 +164,7 @@ class ChildCommandServer(StubServerMixin):
         if ss.is_closed():
             return
         xdg_menu = self._get_xdg_menu_data() or {}
-        log("%i entries sent in initial data", len(xdg_menu))
+        log(f"{len(xdg_menu)} entries sent in initial data")
         ss.send_setting_change("xdg-menu", xdg_menu)
 
     def send_updated_menu(self, xdg_menu):
@@ -292,7 +293,7 @@ class ChildCommandServer(StubServerMixin):
         return proc is not None and proc.poll() is None
 
     def reaper_exit_check(self):
-        log("reaper_exit_check() exit_with_children=%s", self.exit_with_children)
+        log(f"reaper_exit_check() exit_with_children={self.exit_with_children}")
         if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
@@ -300,7 +301,7 @@ class ChildCommandServer(StubServerMixin):
     def terminate_children_processes(self):
         cl = tuple(self.children_started)
         self.children_started = []
-        log("terminate_children_processes() children=%s", cl)
+        log(f"terminate_children_processes() children={cl}")
         if not cl:
             return
         wait_for = []
@@ -310,28 +311,28 @@ class ChildCommandServer(StubServerMixin):
             name = procinfo.name
             if self.is_child_alive(proc):
                 wait_for.append(procinfo)
-                log("child command '%s' is still alive, calling terminate on %s", name, proc)
+                log(f"child command {name!r} is still alive, calling terminate on {proc}")
                 try:
                     proc.terminate()
                 except Exception as e:
-                    log("failed to terminate %s: %s", proc, e)
+                    log(f"failed to terminate {proc}: {e}")
                     del e
         if not wait_for:
             return
-        log("waiting for child commands to exit: %s", wait_for)
+        log(f"waiting for child commands to exit: {wait_for}")
         start = monotonic()
         while monotonic()-start<TERMINATE_DELAY and wait_for:
             self.child_reaper.poll()
             #this is called from the UI thread, we cannot sleep
             #sleep(1)
             wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
-            log("still not terminated: %s", wait_for)
+            log(f"still not terminated: {wait_for}")
         log("done waiting for child commands")
 
     def guess_session_name(self, procs=None):
         if not procs:
             return
-        from xpra.scripts.server import IBUS_DAEMON_COMMAND
+        from xpra.scripts.server import IBUS_DAEMON_COMMAND  # pylint: disable=import-outside-toplevel
         ibus_daemon_cmd = shlex.split(IBUS_DAEMON_COMMAND)[0] or "ibus-daemon"
         #use the commands to define the session name:
         self.child_reaper.poll()
@@ -353,7 +354,7 @@ class ChildCommandServer(StubServerMixin):
             bcmd = os.path.basename(cmd[0])
             if bcmd not in cmd_names:
                 cmd_names.append(bcmd)
-        log("guess_session_name() commands=%s", cmd_names)
+        log(f"guess_session_name() commands={cmd_names}")
         if cmd_names:
             new_name = csv(cmd_names)
             if self.session_name!=new_name:
@@ -362,7 +363,7 @@ class ChildCommandServer(StubServerMixin):
 
 
     def _process_start_command(self, proto, packet):
-        log("start new command: %s", packet)
+        log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
             log.warn(" but the feature is currently disabled")
@@ -378,9 +379,9 @@ class ChildCommandServer(StubServerMixin):
             if proc and not shared:
                 ss = self.get_server_source(proto)
                 assert ss
-                log("adding filter: pid=%s for %s", proc.pid, proto)
+                log(f"adding filter: pid={proc.pid} for {proto}")
                 ss.add_window_filter("window", "pid", "=", proc.pid)
-        log("process_start_command: proc=%s", proc)
+        log(f"process_start_command: proc={proc}")
 
     def _process_command_signal(self, _proto, packet):
         pid = packet[1]
@@ -395,17 +396,16 @@ class ChildCommandServer(StubServerMixin):
         if procinfo.returncode is not None:
             log.warn("Warning: command for pid %i has already terminated", pid)
             return
-        import signal
         sigval = getattr(signal, signame, None)
         if not sigval:
-            log.error("Error: signal '%s' not found!", signame)
+            log.error(f"Error: signal {signame!r} not found!")
             return
-        log.info("sending signal %s to pid %i", signame, pid)
+        log.info(f"sending signal {signame!r} to pid {pid}")
         try:
             os.kill(pid, sigval)
         except Exception as e:
-            log.error("Error sending signal '%s' to pid %i", signame, pid)
-            log.error(" %s", e)
+            log.error(f"Error sending signal {signame!r} to pid {pid}")
+            log.estr(e)
 
 
     def init_packet_handlers(self):
