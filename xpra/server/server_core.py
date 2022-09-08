@@ -527,12 +527,12 @@ class ServerCore:
         try:
             os.kill(self.dbus_pid, signal.SIGINT)
             self.do_clean_session_files("dbus.pid", "dbus.env")
-        except ProcessLookupError as e:
+        except ProcessLookupError:
             dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            dbuslog.warn("Warning: dbus process not found (pid=%i)", self.dbus_pid)
+            dbuslog.warn(f"Warning: dbus process not found (pid={self.dbus_pid})")
         except Exception as e:
             dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
+            dbuslog.warn(f"Warning: error trying to stop dbus with pid {self.dbus_pid}:")
             dbuslog.warn(" %s", e)
 
     def init_dbus_server(self):
@@ -554,13 +554,13 @@ class ServerCore:
 
     def cleanup_dbus_server(self):
         ds = self.dbus_server
-        netlog("cleanup_dbus_server() dbus_server=%s", ds)
+        netlog(f"cleanup_dbus_server() dbus_server={ds}")
         if ds:
             ds.cleanup()
             self.dbus_server = None
 
     def make_dbus_server(self):     #pylint: disable=useless-return
-        dbuslog("make_dbus_server() no dbus server for %s", self)
+        dbuslog(f"make_dbus_server() no dbus server for {self}")
         return None
 
 
@@ -570,7 +570,7 @@ class ServerCore:
         if not self.uuid:
             self.uuid = bytestostr(get_hex_uuid())
             self.save_uuid()
-        log("server uuid is %s", self.uuid)
+        log(f"server uuid is {self.uuid}")
 
     def get_uuid(self):
         return  None
@@ -680,12 +680,12 @@ class ServerCore:
         else:
             self.auth_classes["unix-domain"] = auth
         for x in SOCKET_TYPES:
-            opts_value = getattr(opts, "%s_auth" % x)
+            opts_value = getattr(opts, f"{x}_auth")
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog("init_auth(..) auth=%s", self.auth_classes)
 
     def get_auth_modules(self, socket_type, auth_strs):
-        authlog("get_auth_modules(%s, %s, {..})", socket_type, auth_strs)
+        authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return None
         return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
@@ -722,24 +722,25 @@ class ServerCore:
         name = args[0]
         try:
             command = self.control_commands.get(name) or self.control_commands.get("*")
-            commandlog("process_control_command control_commands[%s]=%s", name, command)
+            commandlog(f"process_control_command control_commands[{name}]={command}")
             if not command:
-                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, csv(self.control_commands))
+                commandlog.warn(f"Warning: invalid command: {name!r}")
+                commandlog.warn(f" must be one of: {csv(self.control_commands)}")
                 return 6, "invalid command"
-            commandlog("process_control_command calling %s%s", command.run, args[1:])
+            commandlog(f"process_control_command calling {command.run}({args[1:]})")
             v = command.run(*args[1:])
             return 0, v
         except ControlError as e:
-            commandlog.error("error %s processing control command '%s'", e.code, name)
-            msgs = [" %s" % e]
+            commandlog.error(f"error {e.code} processing control command {name}")
+            msgs = [f" {e}"]
             if e.help:
-                msgs.append(" '%s': %s" % (name, e.help))
+                msgs.append(f" {name!r}: {e.help}")
             for msg in msgs:
                 commandlog.error(msg)
             return e.code, "\n".join(msgs)
         except Exception as e:
-            commandlog.error("error processing control command '%s'", name, exc_info=True)
-            return 127, "error processing control command: %s" % e
+            commandlog.error(f"error processing control command {name!r}", exc_info=True)
+            return 127, f"error processing control command: {e}"
 
 
     def print_run_info(self):
@@ -783,8 +784,8 @@ class ServerCore:
             extra = ""
             bit_depth = self.get_display_bit_depth()
             if bit_depth:
-                extra = " with %i bit colors" % bit_depth
-            log.info(" connected to X11 display %s%s", display, extra)
+                extra = f" with {bit_depth} bit colors"
+            log.info(f" connected to X11 display {display}{extra}")
 
 
     ######################################################################
