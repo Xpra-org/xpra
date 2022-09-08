@@ -441,11 +441,11 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    if mode in ("start", "start-desktop", "shadow") and display_is_remote:
+    if mode in ("start", "start-desktop", "start-monitor", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
         return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
-    if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
+    if mode in ("start", "start-desktop", "start-monitor") and args and parse_bool("attach", options.attach) is True:
         assert not display_is_remote
         #maybe the server is already running
         #and we don't need to bother trying to start it:
@@ -550,11 +550,13 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_docs()
     elif mode == "html5":
         return run_html5()
-    elif (
-        mode=="_proxy" or
-        mode in ("_proxy_start", "_proxy_start_desktop") or
-        mode=="_proxy_shadow_start"
-        ):
+    elif mode in (
+            "_proxy",
+            "_proxy_start",
+            "_proxy_start_desktop", "_proxy_start_monitor",
+            "_proxy_shadow",
+            "_proxy_shadow_start",
+            ):
         nox()
         return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
     elif mode in ("_sound_record", "_sound_play", "_sound_query"):
@@ -1922,11 +1924,12 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         opts.start = []
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
-        proxy_command = {
-            "shadow"         : "_proxy_shadow_start",
-            "start"          : "_proxy_start",
-            "start-desktop"  : "_proxy_start_desktop",
-            }.get(mode)
+        if mode=="shadow":
+            #this should also be switched to the generic syntax below in v6:
+            proxy_command = "_proxy_shadow_start"
+        else:
+            #ie: "_proxy_start_desktop"
+            proxy_command = f"_proxy_{mode.replace('-', '_')}"
         params["proxy_command"] = [proxy_command]
     else:
         #tcp, ssl or vsock:
@@ -2350,8 +2353,9 @@ def start_server_subprocess(script_file, args, mode, opts,
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
-    assert mode in ("start", "start-desktop", "shadow")
-    if mode in ("start", "start-desktop"):
+    if mode not in ("start", "start-desktop", "start-monitor", "shadow"):
+        raise ValueError(f"invalid mode {mode!r}")
+    if mode in ("start", "start-desktop", "start-monitor"):
         if len(args)==1:
             display_name = args[0]
         elif len(args)==0:
@@ -2595,7 +2599,16 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
     display = None
-    if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
+    if mode in (
+        "_proxy_start", "_proxy_start_seamless",
+        "_proxy_start_desktop", "_proxy_start_monitor",
+        "_proxy_shadow", "_proxy_shadow_start",
+        ):
+        if mode=="_proxy_shadow_start":
+            server_mode = "shadow"
+        else:
+            #generic new way:
+            server_mode = mode[len("_proxy_"):].replace("_", "-")
         attach = parse_bool("attach", opts.attach)
         state = None
         if attach is not False:
@@ -2617,11 +2630,6 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
                 if state!=DotXpra.DEAD:
                     sys.stderr.write("found existing display %s : %s\n" % (display_name, state))
         if state!=DotXpra.LIVE:
-            server_mode = {
-                           "_proxy_start"           : "start",
-                           "_proxy_start_desktop"   : "start-desktop",
-                           "_proxy_shadow_start"    : "shadow",
-                           }[mode]
             #strip defaults, only keep extra ones:
             for x in ("start", "start-child",
                       "start-after-connect", "start-child-after-connect",

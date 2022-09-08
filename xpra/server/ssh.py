@@ -208,11 +208,15 @@ class SSHServer(paramiko.ServerInterface):
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log("ssh xpra subcommand: %s", subcommand)
-            if subcommand in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
+            if subcommand in (
+                "_proxy_start",
+                "_proxy_start_desktop", "_proxy_start_monitor",
+                "_proxy_shadow",
+                "_proxy_shadow_start"):
                 proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
                 if not proxy_start:
                     log.warn(f"Warning: received a {subcommand!r} session request")
-                    log.warn(" this feature is not yet implemented with the builtin ssh server")
+                    log.warn(" this feature is not enabled with the builtin ssh server")
                     return fail()
                 self.proxy_start(channel, subcommand, cmd[2:])
             elif subcommand=="_proxy":
@@ -296,13 +300,13 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
     def proxy_start(self, channel, subcommand, args):
-        log("ssh proxy-start(%s, %s, %s)", channel, subcommand, args)
-        server_mode = {
-                       "_proxy_start"           : "seamless",
-                       "_proxy_start_desktop"   : "desktop",
-                       "_proxy_shadow_start"    : "shadow",
-                       }.get(subcommand, subcommand.replace("_proxy_", ""))
-        log.info("ssh channel starting proxy %s session", server_mode)
+        log(f"ssh proxy-start({channel}, {subcommand}, {args})")
+        if subcommand=="_proxy_shadow_start":
+            server_mode = "shadow"
+        else:
+            #ie: "_proxy_start_desktop" -> "start-desktop"
+            server_mode = subcommand.replace("_proxy_", "").replace("_", "-")
+        log.info(f"ssh channel starting proxy {server_mode} session")
         cmd = get_xpra_command()+[subcommand]+args
         try:
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
