@@ -138,11 +138,13 @@ class CommandConnectClient(GObjectXpraClient):
         self.printing = False
         self.command_timeout = None
         #don't bother with many of these things for one-off commands:
-        for x in ("ui_client", "wants_aliases", "wants_encodings",
-                  "wants_versions", "wants_features", "wants_sound", "windows",
-                  "webcam", "keyboard", "mouse", "network-state",
+        for x in ("ui_client",
+                  "wants_aliases", "wants_encodings", "wants_versions", "wants_features", "wants_sound",
+                  "windows", "webcam", "keyboard", "mouse", "network-state",
                   ):
             self.hello_extra[x] = False
+            #for newer versions, it is easier:
+            self.hello_extra["wants"] = []
 
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
@@ -391,8 +393,9 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def __init__(self, opts):
         super().__init__(opts)
-        for x in ("wants_features", "wants_events", "event_request"):
-            self.hello_extra[x] = True
+        for x in ("features", "events", "request"):
+            self.hello_extra[f"wants_{x}"] = True
+            self.hello_extra.setdefault("wants", []).append(x)
         self.hello_extra["request"] = "event"
         self.hello_extra["info-namespace"] = True
 
@@ -709,6 +712,7 @@ class PrintClient(SendCommandConnectClient):
 
     def make_hello(self):
         capabilities = super().make_hello()
+        capabilities.setdefault("wants", []).append("features")
         capabilities["wants_features"] = True   #so we know if printing is supported or not
         capabilities["print_request"] = True    #marker to skip full setup
         capabilities["request"] = "print"

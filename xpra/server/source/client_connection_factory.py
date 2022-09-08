@@ -12,6 +12,7 @@ log = Logger("server")
 
 
 def get_client_connection_class(caps):
+    # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo_mixin import ClientInfoMixin
     CC = [ClientInfoMixin]
     if server_features.notifications:
@@ -133,13 +134,18 @@ def get_client_connection_class(caps):
 
         def parse_hello(self, c : typedict):
             self.ui_client = c.boolget("ui_client", True)
-            self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
-            self.wants_display = c.boolget("wants_display", self.ui_client)
-            self.wants_events = c.boolget("wants_events", False)
-            self.wants_aliases = c.boolget("wants_aliases", True)
-            self.wants_versions = c.boolget("wants_versions", True)
-            self.wants_features = c.boolget("wants_features", True)
-            self.wants_default_cursor = c.boolget("wants_default_cursor", False)
+            self.wants = list(c.strtupleget("wants"), self.wants)
+            for x, default_value in {
+                "encodings" : self.ui_client,
+                "display"   : self.ui_client,
+                "events"    : False,
+                "aliases"   : True,
+                "versions"  : True,
+                "features"  : True,
+                "default_cursor"    : False,
+                }.items():
+                if c.boolget(f"wants_{x}", default_value):
+                    self.wants.append(x)
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)

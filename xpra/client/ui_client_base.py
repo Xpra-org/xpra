@@ -403,6 +403,7 @@ class UIXpraClient(ClientBaseClass):
             "xdg-menu-update", "mouse",
             ):
             caps[x] = True
+        caps.setdefault("wants", []).append("events")
         caps.update({
             #generic server flags:
             "share"                     : self.client_supports_sharing,

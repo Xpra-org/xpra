@@ -39,9 +39,6 @@ class EncodingsMixin(StubSourceMixin):
         return bool(caps.strtupleget("encodings"))
 
     def init_state(self):
-        self.wants_encodings = False
-        self.wants_features = False
-
         #contains default values, some of which may be supplied by the client:
         self.default_batch_config = batch_config.DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
@@ -113,9 +110,9 @@ class EncodingsMixin(StubSourceMixin):
 
     def get_caps(self) -> dict:
         caps = {}
-        if self.wants_encodings and self.encoding:
+        if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
-        if self.wants_features:
+        if "features" in self.wants:
             caps.update({
                 "auto_refresh_delay"   : self.auto_refresh_delay,
                 })

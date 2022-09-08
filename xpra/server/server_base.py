@@ -510,12 +510,12 @@ class ServerBase(ServerBaseClass):
             if c!=ServerCore:
                 merge_dicts(capabilities, c.get_caps(self, source))
         capabilities["server_type"] = "base"
-        if source.wants_display:
+        if "display" in source.wants:
             capabilities.update({
                  "max_desktop_size"             : self.get_max_screen_size(),
                  "display"                      : os.environ.get("DISPLAY", "Main"),
                  })
-        if source.wants_features:
+        if "features" in source.wants:
             capabilities.update({
                  "client-shutdown"              : self.client_shutdown,
                  "sharing"                      : self.sharing is not False,
@@ -535,7 +535,7 @@ class ServerBase(ServerBaseClass):
 
     def send_hello(self, server_source, root_w, root_h, server_cipher):
         capabilities = self.make_hello(server_source)
-        if server_source.wants_encodings and server_features.windows:
+        if "encodings" in server_source.wants and server_features.windows:
             try:
                 from xpra.codecs.loader import codec_versions
             except ImportError:
@@ -564,12 +564,12 @@ class ServerBase(ServerBaseClass):
                 #check for mmap:
                 if getattr(self, "mmap_size", 0)==0:
                     self.after_threaded_init(server_source.print_encoding_info)
-        if server_source.wants_display:
+        if "display" in server_source.wants:
             capabilities.update({
                          "actual_desktop_size"  : (root_w, root_h),
                          "root_window_size"     : (root_w, root_h),
                          })
-        if self._aliases and server_source.wants_aliases:
+        if "aliases" in self._aliases and server_source.wants:
             reverse_aliases = {}
             for i, packet_type in self._aliases.items():
                 reverse_aliases[packet_type] = i

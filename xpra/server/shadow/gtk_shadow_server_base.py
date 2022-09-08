@@ -100,7 +100,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def make_hello(self, source):
         caps = ShadowServerBase.make_hello(self, source)
         caps.update(GTKServerBase.make_hello(self, source))
-        if source.wants_features:
+        if "features" in source.wants:
             caps["screen_sizes"] = get_screen_sizes()
         return caps
 

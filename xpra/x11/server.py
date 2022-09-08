@@ -90,7 +90,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def init(self, opts):
         self.wm_name = opts.wm_name
-        self.sync_xvfb = int(opts.sync_xvfb)
+        self.sync_xvfb = int(opts.sync_xvfb or 0)
         self.system_tray = opts.system_tray
         self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
@@ -249,7 +249,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
-        if source.wants_features:
+        if "features" in source.wants:
             capabilities["pointer.grabs"] = True
             updict(capabilities, "window", {
                 "decorations"            : True,        #v4 clients assume this is enabled

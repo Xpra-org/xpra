@@ -57,7 +57,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
-        if source.wants_features:
+        if "features" in source.wants:
             capabilities.update({
                                  "monitor"          : True,
                                  "multi-monitors"   : True,

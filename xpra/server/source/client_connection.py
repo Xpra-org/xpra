@@ -113,13 +113,8 @@ class ClientConnection(StubSourceMixin):
         self.ssh_auth_sock = ""
         #what we send back in hello packet:
         self.ui_client = True
-        self.wants_aliases = True
-        self.wants_encodings = False
-        self.wants_versions = True
-        self.wants_features = True
-        self.wants_display = True
-        self.wants_events = False
-        self.wants_default_cursor = False
+        #default 'wants' is not including "events" or "default_cursor":
+        self.wants = ["aliases", "encodings", "versions", "features", "display"]
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
@@ -395,7 +390,7 @@ class ClientConnection(StubSourceMixin):
 
 
     def send_server_event(self, *args):
-        if self.wants_events:
+        if "events" in self.wants:
             self.send_more("server-event", *args)
 
 

@@ -2160,7 +2160,7 @@ class ServerCore:
     def make_hello(self, source=None):
         now = time()
         capabilities = flatten_dict(get_network_caps(FULL_INFO))
-        if source is None or source.wants_versions:
+        if source is None or "versions" in source.wants:
             capabilities.update(flatten_dict(self.get_minimal_server_info()))
         capabilities.update({
                         "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
@@ -2171,13 +2171,13 @@ class ServerCore:
                         "server.mode"           : self.get_server_mode(),
                         "hostname"              : socket.gethostname(),
                         })
-        if source is None or source.wants_features:
+        if source is None or "features" in source.wants:
             capabilities.update({
                 "readonly-server"   : True,
                 "readonly"          : self.readonly,
                 "server-log"        : os.environ.get("XPRA_SERVER_LOG", ""),
                 })
-        if source is None or source.wants_versions:
+        if source is None or "versions" in source.wants:
             capabilities["uuid"] = get_user_uuid()
             mid = get_machine_id()
             if mid:

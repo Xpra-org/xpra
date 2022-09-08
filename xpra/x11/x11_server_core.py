@@ -335,7 +335,7 @@ class X11ServerCore(GTKServerBase):
     def make_hello(self, source):
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
-        if source.wants_features:
+        if "features" in source.wants:
             capabilities.update({
                     "resize_screen"             : self.randr,
                     "resize_exact"              : self.randr_exact_size,
@@ -349,7 +349,7 @@ class X11ServerCore(GTKServerBase):
                 sizes = self.get_all_screen_sizes()
                 if len(sizes)>1:
                     capabilities["screen-sizes"] = sizes
-            if self.default_cursor_image and source.wants_default_cursor:
+            if self.default_cursor_image and "default_cursor" in source.wants:
                 capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
@@ -502,16 +502,17 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             return X11Keyboard.get_cursor_image()
 
-    def get_cursor_data(self):
+    def get_cursor_data(self, skip_default=True):
         #must be called from the UI thread!
         cursor_image = self.get_cursor_image()
         if cursor_image is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
-        self.last_cursor_image = cursor_image
+        self.last_cursor_image = list(cursor_image)
         pixels = self.last_cursor_image[7]
         cursorlog("get_cursor_image() cursor=%s", cursor_image[:7]+["%s bytes" % len(pixels)]+cursor_image[8:])
-        if self.default_cursor_image is not None and str(pixels)==str(self.default_cursor_image[7]):
+        is_default = self.default_cursor_image is not None and str(pixels)==str(self.default_cursor_image[7])
+        if skip_default and is_default:
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
         cursor_sizes = self.get_cursor_sizes()

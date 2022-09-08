@@ -248,7 +248,16 @@ class WindowsMixin(StubSourceMixin):
         gbc = self.global_batch_config
         if not self.cursor_timer and gbc:
             delay = max(10, int(gbc.delay/4))
-            self.cursor_timer = self.timeout_add(delay, self.do_send_cursor, delay)
+            def do_send_cursor():
+                self.cursor_timer = None
+                cd = self.get_cursor_data_cb()
+                if not cd or not cd[0]:
+                    self.send_empty_cursor()
+                    return
+                cursor_data = list(cd[0])
+                cursor_sizes = cd[1]
+                self.do_send_cursor(delay, cursor_data, cursor_sizes)
+            self.cursor_timer = self.timeout_add(delay, do_send_cursor)
 
     def cancel_cursor_timer(self):
         ct = self.cursor_timer
@@ -256,14 +265,7 @@ class WindowsMixin(StubSourceMixin):
             self.cursor_timer = None
             self.source_remove(ct)
 
-    def do_send_cursor(self, delay):
-        self.cursor_timer = None
-        cd = self.get_cursor_data_cb()
-        if not cd or not cd[0]:
-            self.send_empty_cursor()
-            return
-        cursor_data = list(cd[0])
-        cursor_sizes = cd[1]
+    def do_send_cursor(self, delay, cursor_data, cursor_sizes):
         #skip first two fields (if present) as those are coordinates:
         if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
             cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")

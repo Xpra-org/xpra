@@ -132,7 +132,7 @@ class GTKServerBase(ServerBase):
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
-        if source.wants_display:
+        if "display" in source.wants:
             display = Gdk.Display.get_default()
             max_size = tuple(display.get_maximal_cursor_size())
             capabilities.update({
@@ -140,7 +140,7 @@ class GTKServerBase(ServerBase):
                 "cursor.default_size"   : display.get_default_cursor_size(),
                 "cursor.max_size"       : max_size,
                 })
-        if source.wants_versions and FULL_INFO>2:
+        if "versions" in source.wants and FULL_INFO>2:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 

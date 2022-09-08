@@ -110,7 +110,7 @@ class XpraDesktopServer(DesktopServerBase):
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
-        if source.wants_features:
+        if "features" in source.wants:
             capabilities.update({
                                  "desktop"          : True,
                                  })
