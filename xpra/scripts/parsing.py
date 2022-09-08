@@ -98,7 +98,7 @@ def fixup_defaults(defaults):
         if "help" in v:
             if not envbool("XPRA_SKIP_UI", False):
                 #skip-ui: we're running in subprocess, don't bother spamming stderr
-                warn(("Warning: invalid 'help' option found in '%s' configuration\n" % k) +
+                warn(f"Warning: invalid 'help' option found in {k!r} configuration\n" +
                              " this should only be used as a command line argument\n")
             if k in ("encoding", "debug", "sound-source"):
                 setattr(defaults, fn, "")
@@ -109,25 +109,25 @@ def do_replace_option(cmdline, oldoption, newoption):
     for i, x in enumerate(cmdline):
         if x==oldoption:
             cmdline[i] = newoption
-        elif newoption.find("=")<0 and x.startswith("%s=" % oldoption):
-            cmdline[i] = "%s=%s" % (newoption, x.split("=", 1)[1])
+        elif newoption.find("=")<0 and x.startswith(f"{oldoption}="):
+            cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
 def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
     #find --no-XYZ or --XYZ
     #and replace it with --XYZ=yes|no
-    no = "--no-%s" % optionname
-    yes = "--%s" % optionname
+    no = f"--no-{optionname}"
+    yes = f"--{optionname}"
     if newoptionname is None:
         newoptionname = optionname
-    do_replace_option(cmdline, no, "--%s=no" % optionname)
-    do_replace_option(cmdline, yes, "--%s=yes" % optionname)
+    do_replace_option(cmdline, no, f"--{optionname}=no")
+    do_replace_option(cmdline, yes, f"--{optionname}=yes")
 
 def ignore_options(args, options):
     for x in options:
-        o = "--%s" % x      #ie: --use-display
+        o = f"--{x}"      #ie: --use-display
         while o in args:
             args.remove(o)
-        o = "--%s=" % x     #ie: --bind-tcp=....
+        o = f"--{x}="     #ie: --bind-tcp=....
         remove = []
         #find all command line arguments starting with this option:
         for v in args:
@@ -147,12 +147,12 @@ def parse_env(env) -> dict:
                 continue
             v = ev.split("=", 1)
             if len(v)!=2:
-                warn("Warning: invalid environment option '%s'" % ev)
+                warn(f"Warning: invalid environment option string {ev!r}")
                 continue
             d[v[0]] = os.path.expandvars(v[1])
         except Exception as e:
-            warn("Warning: cannot parse environment option '%s':" % ev)
-            warn(" %s" % e)
+            warn(f"Warning: cannot parse environment option {ev!r}:")
+            warn(f" {e}")
     return d
 
 
@@ -176,7 +176,7 @@ def parse_URL(url):
     if scheme.startswith("xpra+"):
         scheme = scheme[len("xpra+"):]
     if scheme in ("tcp", "ssl", "ssh", "ws", "wss"):
-        address = "%s://%s" % (scheme, address)
+        address = f"{scheme}://{address}"
     return address, options
 
 
@@ -199,7 +199,7 @@ def auto_proxy(scheme, host):
         warn(f" {e}")
         return {}
     p = ProxyFactory()
-    proxies = p.getProxies("%s://%s" % (scheme, host))
+    proxies = p.getProxies(f"{scheme}://{host}")
     if not proxies or proxies[0]=="direct://":
         return {}
     #for the time being, just try the first one:
@@ -270,7 +270,7 @@ def parse_remote_display(s):
         d = parse_simple_dict(options_str, attr_sep)
         for k,v in d.items():
             if k in desc:
-                warn("Warning: cannot override '%s' with URI" % k)
+                warn(f"Warning: cannot override {k!r} with URI")
             else:
                 desc[k] = v
     return desc
@@ -322,7 +322,7 @@ def parse_host_string(host, default_port=DEFAULT_PORT):
             if len(devsep)==2:
                 parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
                 if len(parts)==2:
-                    host = "%s%%%s" % (devsep[0], parts[0])
+                    host = f"{devsep[0]}%%{parts[0]}"
                     port_str = parts[1]     #ie: "14500"
             else:
                 parts = host.split(":")
@@ -339,11 +339,11 @@ def parse_host_string(host, default_port=DEFAULT_PORT):
         try:
             port = int(port_str)
         except ValueError:
-            raise ValueError("invalid port number specified: %s" % port_str) from None
+            raise ValueError(f"invalid port number specified: {port_str!r}") from None
     else:
         port = default_port
     if port<=0 or port>=2**16:
-        raise ValueError("invalid port number: %s" % port)
+        raise ValueError(f"invalid port number: {port}")
     desc.update({
         "host"  : host or "127.0.0.1",
         "port"  : port,
@@ -355,14 +355,14 @@ def load_password_file(password_file):
     if not password_file:
         return None
     if not os.path.exists(password_file):
-        warn("Error: password file '%s' does not exist:\n" % password_file)
+        warn(f"Error: password file {password_file!r} does not exist:\n")
         return None
     try:
         with open(password_file, "r", encoding="utf8") as f:
             return f.read()
     except Exception as e:
-        warn("Error: failed to read the password file '%s':\n" % password_file)
-        warn(" %s\n" % e)
+        warn(f"Error: failed to read the password file {password_file!r}:\n")
+        warn(f" {e}\n")
     return None
 
 
@@ -403,7 +403,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     #display_name may have been updated, re-parse it:
     pos = _sep_pos(display_name)
     if pos<0:
-        error_cb("unknown format for display name: %s" % display_name)
+        error_cb(f"unknown format for display name: {display_name!r}")
     protocol = display_name[:pos]
     #the separator between the protocol and the rest can be ":", "/" or "://"
     #but the separator value we use thereafter can only be ":" or "/"
@@ -426,7 +426,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     elif protocol=="rfb":
         protocol = "vnc"
     if psep not in (":", "/", "://"):
-        error_cb("unknown format for protocol separator '%s' in display name: %s" % (psep, display_name))
+        error_cb(f"unknown format for protocol separator {psep!r} in display name: {display_name!r}")
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
     separator = psep[-1]                    #ie: "/"
     parts = afterproto.split(separator, 1)     #ie: "host:port", "DISPLAY"
@@ -486,7 +486,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
                     except ValueError:
                         vnc_uri += "/"
                     else:
-                        vnc_uri += ":%i/" % vnc_port
+                        vnc_uri += f":{vnc_port}/"
                 desc["display_as_args"] = [vnc_uri]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_option(opts.ssh)
@@ -590,8 +590,8 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
         desc["type"] = protocol
         if len(parts) not in (1, 2, 3):
-            error_cb("invalid %s connection string,\n" % protocol
-                     +" use %s://[username[:password]@]host[:port][/display]\n" % protocol)
+            error_cb(f"invalid {protocol} connection string,\n"
+                     +f" use {protocol}://[username[:password]@]host[:port][/display]\n")
         #display (optional):
         if separator=="/" and len(parts)==2:
             _parse_remote_display(parts[-1])
@@ -608,10 +608,10 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             ssl_options = load_ssl_options(ssl_host, port)
             #only override these options via the command line and not configuration files:
             for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
-                x = "ssl-%s" % k
+                x = f"ssl-{k}"
                 incmdline = (
-                    ("--%s" % x) in cmdline or ("--no-%s" % x) in cmdline or
-                    any(c.startswith("--%s=" % x) for c in cmdline)
+                    (f"--{x}") in cmdline or (f"--no-{x}") in cmdline or
+                    any(c.startswith(f"--{x}=") for c in cmdline)
                 )
                 if incmdline or k not in ssl_options:
                     ssl_options[k] = v
@@ -1709,9 +1709,9 @@ When unspecified, all the available codecs are allowed and the first one is used
                 h = []
                 from xpra.log import STRUCT_KNOWN_FILTERS
                 for category, d in STRUCT_KNOWN_FILTERS.items():
-                    h.append("%s:" % category)
+                    h.append(f"{category}:")
                     for k,v in d.items():
-                        h.append(" * %-16s: %s" % (k,v))
+                        h.append(f" * {k:<16}: {v}")
                 raise InitInfo("known logging filters: \n%s" % "\n".join(h))
     if options.sound_source=="help":
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
@@ -1722,7 +1722,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         except Exception as e:
             raise InitInfo(e) from None
         if source_plugins:
-            raise InitInfo("The following audio capture plugins may be used (default: %s):\n" % source_default+
+            raise InitInfo(f"The following audio capture plugins may be used (default: {source_default}):\n"+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No audio capture plugins found!")
 
@@ -1760,9 +1760,9 @@ When unspecified, all the available codecs are allowed and the first one is used
             }
         for prefix, mode in URL_MODES.items():
             url = args[1]
-            fullprefix = "%s://" % prefix
+            fullprefix = f"{prefix}://"
             if url.startswith(fullprefix):
-                url = "%s://%s" % (mode, url[len(fullprefix):])
+                url = f"{mode}://" + url[len(fullprefix):]
                 address, params = parse_URL(url)
                 for k,v in validate_config(params).items():
                     setattr(options, k.replace("-", "_"), v)
@@ -1794,11 +1794,11 @@ When unspecified, all the available codecs are allowed and the first one is used
                 v = int(s)
             setattr(options, x, v)
         except Exception as e:
-            raise InitException("invalid value for %s: '%s': %s" % (x, s, e)) from None
+            raise InitException(f"invalid value for {x}: {s!r} {e}") from None
 
     def parse_window_size(v, attribute="max-size"):
         def pws_fail():
-            raise InitException("invalid %s: %s" % (attribute, v))
+            raise InitException(f"invalid {attribute}: {v}")
         try:
             #split on "," or "x":
             pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
@@ -1811,15 +1811,15 @@ When unspecified, all the available codecs are allowed and the first one is used
             pws_fail()
         return w, h
     if options.min_size:
-        options.min_size = "%sx%s" % parse_window_size(options.min_size, "min-size")
+        options.min_size = "x".join(parse_window_size(options.min_size, "min-size"))
     if options.max_size:
-        options.max_size = "%sx%s" % parse_window_size(options.max_size, "max-size")
+        options.max_size = "x".join(parse_window_size(options.max_size, "max-size"))
     if options.encryption_keyfile and not options.encryption:
         from xpra.net.crypto import DEFAULT_MODE
-        options.encryption = "AES-%s" % DEFAULT_MODE
+        options.encryption = f"AES-{DEFAULT_MODE}" 
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
         from xpra.net.crypto import DEFAULT_MODE  # @Reimport
-        options.tcp_encryption = "AES-%s" % DEFAULT_MODE
+        options.tcp_encryption = f"AES-{DEFAULT_MODE}"
     return options, args
 
 def validated_encodings(encodings):
@@ -1848,22 +1848,23 @@ def do_validate_encryption(auth, tcp_auth,
     pass_key = os.environ.get("XPRA_PASSWORD")
     from xpra.net.crypto import ENCRYPTION_CIPHERS, MODES, DEFAULT_MODE
     if not ENCRYPTION_CIPHERS:
-        raise InitException("cannot use encryption: no ciphers available (the python-cryptography library must be installed)")
+        raise InitException("cannot use encryption: no ciphers available"+
+                            " (the python-cryptography library must be installed)")
     if encryption=="help" or tcp_encryption=="help":
-        raise InitInfo("the following encryption ciphers are available: %s" % csv(ENCRYPTION_CIPHERS))
+        raise InitInfo(f"the following encryption ciphers are available: {csv(ENCRYPTION_CIPHERS)}")
     enc, mode = ((encryption or tcp_encryption)+"-").split("-")[:2]
     if not mode:
         mode = DEFAULT_MODE
     if enc:
         if enc not in ENCRYPTION_CIPHERS:
-            raise InitException("encryption %s is not supported, try: %s" % (enc, csv(ENCRYPTION_CIPHERS)))
+            raise InitException(f"encryption {enc} is not supported, try: "+csv(ENCRYPTION_CIPHERS))
         if mode not in MODES:
-            raise InitException("encryption mode %s is not supported, try: %s" % (mode, csv(MODES)))
+            raise InitException(f"encryption mode {mode} is not supported, try: " + csv(MODES))
         if encryption and not encryption_keyfile and not env_key and not auth:
-            raise InitException("encryption %s cannot be used without an authentication module or keyfile"
-                                +" (see --encryption-keyfile option)" % encryption)
+            raise InitException(f"encryption {encryption} cannot be used without an authentication module or keyfile"
+                                +" (see --encryption-keyfile option)")
         if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
-            raise InitException("tcp-encryption %s cannot be used " % tcp_encryption+
+            raise InitException(f"tcp-encryption {tcp_encryption} cannot be used "+
                                 "without a tcp authentication module or keyfile "
                                 +" (see --tcp-encryption-keyfile option)")
     if pass_key and env_key and pass_key==env_key:
@@ -1887,25 +1888,25 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
-        codec_help.append("speaker codecs available: %s" % csv(all_speaker_codecs))
+        codec_help.append("speaker codecs available: "+csv(all_speaker_codecs))
     elif invalid_sc:
-        codec_help.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
+        codec_help.append("WARNING: some of the specified speaker codecs are not available: "+csv(invalid_sc))
 
     all_microphone_codecs = props.strtupleget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
-        codec_help.append("microphone codecs available: %s" % csv(all_microphone_codecs))
+        codec_help.append("microphone codecs available: "+csv(all_microphone_codecs))
     elif invalid_mc:
         codec_help.append("WARNING: some of the specified microphone codecs are not available:"
-                          +" %s" % csv(invalid_mc))
+                          +" "+csv(invalid_mc))
     return codec_help
 
 
 def parse_vsock(vsock_str):
     from xpra.net.vsock import STR_TO_CID, CID_ANY, PORT_ANY    #@UnresolvedImport pylint: disable=import-outside-toplevel
     if not vsock_str.find(":")>=0:
-        raise InitException("invalid vsocket format '%s'" % vsock_str)
+        raise InitException(f"invalid vsocket format {vsock_str!r}")
     cid_str, port_str = vsock_str.split(":", 1)
     if cid_str.lower() in ("auto", "any"):
         cid = CID_ANY
@@ -1915,14 +1916,14 @@ def parse_vsock(vsock_str):
         except ValueError:
             cid = STR_TO_CID.get(cid_str.upper())  # @UndefinedVariable
             if cid is None:
-                raise InitException("invalid vsock cid '%s'" % cid_str) from None
+                raise InitException(f"invalid vsock cid {cid_str!r}") from None
     if port_str.lower() in ("auto", "any"):
         iport = PORT_ANY
     else:
         try:
             iport = int(port_str)
         except ValueError:
-            raise InitException("invalid vsock port '%s'" % port_str) from None
+            raise InitException(f"invalid vsock port {port_str}") from None
     return cid, iport
 
 
