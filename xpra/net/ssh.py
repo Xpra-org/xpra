@@ -163,8 +163,8 @@ def safe_lookup(config_obj, host):
         return config_obj.lookup(host)
     except ImportError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
-        log.warn("Warning: unable to load SSH host config for %r:", host)
-        log.warn(" %s", e)
+        log.warn(f"Warning: unable to load SSH host config for {host!r}:")
+        log.warn(f" {e}")
     return {}
 
 def ssh_paramiko_connect_to(display_desc):
@@ -209,14 +209,14 @@ def ssh_paramiko_connect_to(display_desc):
         if os.path.exists(user_config_file):
             with open(user_config_file, "r", encoding="utf8") as f:
                 ssh_config.parse(f)
-            log("parsed user config '%s'", user_config_file)
+            log(f"parsed user config {user_config_file!r}")
             try:
                 log("%i hosts found", len(ssh_config.get_hostnames()))
             except KeyError:
                 pass
             host_config = ssh_lookup(host)
             if host_config:
-                log("got host config for '%s': %s", host, host_config)
+                log(f"got host config for {host!r}: {host_config}")
                 host = host_config.get("hostname", host)
                 if "username" not in display_desc:
                     username = host_config.get("user", username)
@@ -225,20 +225,20 @@ def ssh_paramiko_connect_to(display_desc):
                     try:
                         port = int(port)
                     except (TypeError, ValueError):
-                        raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port) from None
+                        raise InitExit(EXIT_SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
-                    log("found proxycommand='%s' for host '%s'", proxycommand, host)
+                    log(f"found proxycommand={proxycommand!r} for host {host!r}")
                     sock = ProxyCommand(proxycommand)
-                    log("ProxyCommand(%s)=%s", proxycommand, sock)
+                    log(f"ProxyCommand({proxycommand})={sock}")
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
                     def proxycommand_ended(proc):
-                        log("proxycommand_ended(%s) exit code=%s", proc, proc.poll())
+                        log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
                                                  callback=proxycommand_ended)
                     proxy_keys = get_keyfiles(host_config, "proxy_key")
-                    log("proxy keys=%s", proxy_keys)
+                    log(f"proxy keys={proxy_keys}")
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
@@ -272,14 +272,14 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_keys = get_keyfiles(host_config, "proxy_key")
             sock = socket_connect(proxy_host, proxy_port)
             if not sock:
-                fail("SSH proxy transport failed to connect to %s:%s" % (proxy_host, proxy_port))
+                fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
             middle_transport = do_ssh_paramiko_connect(sock, proxy_host,
                                                        proxy_username, proxy_password,
                                                        ssh_lookup(host) or ssh_lookup("*"),
                                                        proxy_keys,
                                                        paramiko_config)
             log("Opening proxy channel")
-            chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
+            chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
             transport = do_ssh_paramiko_connect(chan_to_middle, host,
                                                 username, password,
                                                 host_config or ssh_lookup("*"),
@@ -288,10 +288,9 @@ def ssh_paramiko_connect_to(display_desc):
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-            conn.target = "%s via %s" % (
-                host_target_string("ssh", username, host, port, display),
-                host_target_string("ssh", proxy_username, proxy_host, proxy_port, None),
-                )
+            conn.target = host_target_string("ssh", username, host, port, display) \
+                            + " via " + \
+                            host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
             conn.timeout = SOCKET_TIMEOUT
             conn.start_stderr_reader()
             return conn
@@ -299,15 +298,15 @@ def ssh_paramiko_connect_to(display_desc):
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
         auth_modes = get_auth_modes(paramiko_config, host_config, password)
-        log("authentication modes=%s", auth_modes)
+        log(f"authentication modes={auth_modes}")
         sock = None
         while True:
             sock = socket_connect(host, port)
             if not sock:
-                fail("SSH failed to connect to %s:%s" % (host, port))
+                fail(f"SSH failed to connect to {host}:{port}")
             sockname = sock.getsockname()
             peername = sock.getpeername()
-            log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
+            log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
             transport = None
             try:
                 transport = do_ssh_paramiko_connect(sock, host, username, password,
@@ -316,7 +315,8 @@ def ssh_paramiko_connect_to(display_desc):
                                                     paramiko_config,
                                                     auth_modes)
             except SSHAuthenticationError as e:
-                log("paramiko authentication errors on socket %s with modes %s: %s", sock, auth_modes, e.errors, exc_info=True)
+                log(f"paramiko authentication errors on socket {sock} with modes {auth_modes}: {e.errors}",
+                    exc_info=True)
                 pw_errors = []
                 for errs in e.errors.values():
                     pw_errors += errs
@@ -328,7 +328,7 @@ def ssh_paramiko_connect_to(display_desc):
                             auth_modes.remove(m)
                         except KeyError:
                             pass
-                    log.info("retrying SSH authentication with modes %s", auth_modes)
+                    log.info(f"retrying SSH authentication with modes {auth_modes}")
                     continue
                 raise
             else:
@@ -345,9 +345,10 @@ def ssh_paramiko_connect_to(display_desc):
             #we want to connect directly to a remote port,
             #we don't need to run a command
             chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
-            log("direct channel to remote port %i : %s", remote_port, chan)
+            log(f"direct channel to remote port {remote_port} : {chan}")
         else:
-            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
+            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra,
+                                            socket_dir, display_as_args, paramiko_config)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
         conn.timeout = SOCKET_TIMEOUT
@@ -492,7 +493,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password,
 "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
 "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
 "It is also possible that a host key has just been changed.",
-"The fingerprint for the %s key sent by the remote host is" % keyname(),
+f"The fingerprint for the {keyname()} key sent by the remote host is",
 keymd5(host_key),
 ]
                 adddnscheckinfo(qinfo)
@@ -502,8 +503,8 @@ keymd5(host_key),
                     qinfo += [
                         "Please contact your system administrator.",
                         "Add correct host key in %s to get rid of this message.",
-                        "Offending %s key in %s" % (keyname(), host_keys_filename),
-                        "ECDSA host key for %s has changed and you have requested strict checking." % keyname(),
+                        f"Offending {keyname()} key in {host_keys_filename}",
+                        f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
                         ]
                     sys.stderr.write(os.linesep.join(qinfo))
                     transport.close()
@@ -519,14 +520,14 @@ keymd5(host_key),
                 else:
                     log.warn("Warning: unknown %s SSH host key", keyname())
                 qinfo = [
-                    "The authenticity of host '%s' can't be established." % (host,),
-                    "%s key fingerprint is" % keyname(),
+                    f"The authenticity of host {host!r} can't be established.",
+                    f"{keyname()} key fingerprint is",
                     keymd5(host_key),
                     ]
                 adddnscheckinfo(qinfo)
                 if not confirm(qinfo):
                     transport.close()
-                    raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
+                    raise InitExit(EXIT_SSH_KEY_FAILURE, f"Unknown SSH host {host!r}")
                 log.info("host key confirmed")
             if configbool("addkey", ADD_KEY):
                 try:
@@ -534,26 +535,26 @@ keymd5(host_key),
                         #the first one is the default,
                         #ie: ~/.ssh/known_hosts on posix
                         host_keys_filename = os.path.expanduser(KNOWN_HOSTS[0])
-                    log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
+                    log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
                     if not os.path.exists(host_keys_filename):
                         keys_dir = os.path.dirname(host_keys_filename)
                         if not os.path.exists(keys_dir):
-                            log("creating keys directory '%s'", keys_dir)
+                            log(f"creating keys directory {keys_dir!r}")
                             os.mkdir(keys_dir, 0o700)
                         elif not os.path.isdir(keys_dir):
-                            log.warn("Warning: '%s' is not a directory")
+                            log.warn(f"Warning: {keys_dir!r} is not a directory")
                             log.warn(" key not saved")
                         if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
-                            log("creating known host file '%s'", host_keys_filename)
+                            log(f"creating known host file {host_keys_filename!r}")
                             with umask_context(0o133):
-                                with open(host_keys_filename, "a+"):
+                                with open(host_keys_filename, "ab+"):
                                     pass
                     host_keys.add(host, host_key.get_name(), host_key)
                     host_keys.save(host_keys_filename)
                 except OSError as e:
-                    log("failed to add key to '%s'", host_keys_filename)
-                    log.error("Error adding key to '%s'", host_keys_filename)
-                    log.error(" %s", e)
+                    log(f"failed to add key to {host_keys_filename!r}")
+                    log.error(f"Error adding key to {host_keys_filename!r}")
+                    log.error(f" {e}")
                 except Exception as e:
                     log.error("cannot add key", exc_info=True)
     else:
@@ -585,12 +586,12 @@ keymd5(host_key),
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
     def auth_publickey():
-        log("trying public key authentication using %s", keyfiles)
+        log(f"trying public key authentication using {keyfiles}")
         for keyfile_path in keyfiles:
             if not os.path.exists(keyfile_path):
-                log("no keyfile at '%s'", keyfile_path)
+                log(f"no keyfile at {keyfile_path!r}")
                 continue
-            log("trying '%s'", keyfile_path)
+            log(f"trying {keyfile_path!r}")
             key = None
             import paramiko
             try_key_formats = ()
@@ -604,9 +605,9 @@ keymd5(host_key),
             for pkey_classname in try_key_formats:
                 pkey_class = getattr(paramiko, f"{pkey_classname}Key", None)
                 if pkey_class is None:
-                    log("no %s key type", pkey_classname)
+                    log(f"no {pkey_classname} key type")
                     continue
-                log("trying to load as %s", pkey_classname)
+                log(f"trying to load as {pkey_classname}")
                 key = None
                 try:
                     key = pkey_class.from_private_key_file(keyfile_path)
@@ -626,7 +627,7 @@ keymd5(host_key),
                                 log.info(" %s.", emsg)
                     break
                 except Exception:
-                    log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
+                    log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
                     key_data = load_binary_file(keyfile_path)
                     if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0 and paramiko.__version__<"2.7":
                         log.warn(f"Warning: private key {keyfile_path!r}")
@@ -640,12 +641,12 @@ keymd5(host_key),
                             log.warn(" or switch to the OpenSSH backend with:")
                             log.warn(" '--ssh=ssh'")
             if key:
-                log("auth_publickey using %s as %s: %s", keyfile_path, pkey_classname, keymd5(key))
+                log(f"auth_publickey using {keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
                 try:
                     transport.auth_publickey(username, key)
                 except SSHException as e:
                     auth_errors.setdefault("key", []).append(str(e))
-                    log("key '%s' rejected", keyfile_path, exc_info=True)
+                    log(f"key {keyfile_path!r} rejected", exc_info=True)
                     log.info(f"SSH authentication using key {keyfile_path!r} failed:")
                     log.info(f" {e}")
                     if str(e)==PARAMIKO_SESSION_LOST:
@@ -678,9 +679,9 @@ keymd5(host_key),
         if not transport.is_authenticated():
             log.info("SSH password authentication failed:")
             for emsg in emsgs:
-                log.info(" %s", emsg)
+                log.info(f" {emsg}")
             if log.is_debug_enabled() and LOG_FAILED_CREDENTIALS:
-                log.info(" invalid username or passwod: %r - %r", username, password)
+                log.info(f" invalid username {username!r} or password {password!r}")
 
     def auth_interactive():
         log("trying interactive authentication")
@@ -696,7 +697,7 @@ keymd5(host_key),
                     else:
                         p.append(input_pass(pent[0]))
                     self.authcount += 1
-                log("handle_request(..) returning %i values", len(p))
+                log(f"handle_request(..) returning {len(p)} values")
                 return p
         try:
             myiauthhandler = iauthhandler()
@@ -706,15 +707,15 @@ keymd5(host_key),
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
             for emsg in getattr(e, "message", str(e)).split(";"):
-                log.info(" %s", emsg)
+                log.info(f" {emsg}")
 
     banner = transport.get_banner()
     if banner:
         log.info("SSH server banner:")
         for x in banner.splitlines():
-            log.info(" %s", x)
+            log.info(f" {x}")
 
-    log("starting authentication, authentication methods: %s", auth_modes)
+    log(f"starting authentication, authentication methods: {auth_modes}")
     auth = list(auth_modes)
     # per the RFC we probably should do none first always and read off the supported
     # methods, however, the current code seems to work fine with OpenSSH
@@ -735,14 +736,14 @@ keymd5(host_key),
                 else:
                     tries = configint("numberofpasswordprompts", PASSWORD_RETRY)
                     for _ in range(tries):
-                        password = input_pass("please enter the SSH password for %s@%s:" % (username, host))
+                        password = input_pass("please enter the SSH password for {username}@{host}")
                         if not password:
                             break
                         auth_password()
                         if transport.is_authenticated():
                             break
         else:
-            log.warn("Warning: invalid authentication mechanism %r", a)
+            log.warn(f"Warning: invalid authentication mechanism {a}")
         #detect session-lost problems:
         #(no point in continuing without a session)
         if auth_errors and not transport.is_authenticated():
@@ -751,7 +752,7 @@ keymd5(host_key),
                     raise SSHAuthenticationError(host, auth_errors)
     if not transport.is_authenticated():
         transport.close()
-        log("authentication errors: %s", auth_errors)
+        log(f"authentication errors: {auth_errors}")
         raise SSHAuthenticationError(host, auth_errors)
     return transport
 
@@ -762,7 +763,7 @@ class SSHAuthenticationError(InitExit):
 
 def paramiko_run_test_command(transport, cmd):
     from paramiko import SSHException
-    log("paramiko_run_test_command(transport, %r)", cmd)
+    log(f"paramiko_run_test_command(transport, {cmd})")
     try:
         chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
         chan.set_name("find %s" % cmd)
@@ -775,24 +776,24 @@ def paramiko_run_test_command(transport, cmd):
     while not chan.exit_status_ready():
         if monotonic()-start>TEST_COMMAND_TIMEOUT:
             chan.close()
-            raise InitException("SSH test command '%s' timed out" % cmd)
+            raise InitException(f"SSH test command {cmd!r} timed out")
         log("exit status is not ready yet, sleeping")
         sleep(0.01)
     code = chan.recv_exit_status()
-    log("exec_command('%s')=%s", cmd, code)
+    log(f"exec_command({cmd!r})={code}")
     def chan_read(read_fn):
         try:
             return read_fn()
         except socket.error:
-            log("chan_read(%s)", read_fn, exc_info=True)
+            log(f"chan_read({read_fn})", exc_info=True)
             return b""
     #don't wait too long for the data:
     chan.settimeout(EXEC_STDOUT_TIMEOUT)
     out = chan_read(chan.makefile().readline)
-    log("exec_command out=%r", out)
+    log(f"exec_command out={out!r}")
     chan.settimeout(EXEC_STDERR_TIMEOUT)
     err = chan_read(chan.makefile_stderr().readline)
-    log("exec_command err=%r", err)
+    log(f"exec_command err={err!r}")
     chan.close()
     return out, err, code
 
@@ -800,7 +801,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                              socket_dir=None, display_as_args=None, paramiko_config=None):
     from paramiko import SSHException
     assert remote_xpra
-    log("will try to run xpra from: %s", remote_xpra)
+    log(f"will try to run xpra from: {remote_xpra}")
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
     tried = set()
@@ -816,14 +817,14 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 #found in registry:
                 lines = r[0].splitlines()
                 installpath = bytestostr(lines[-1])
-                xpra_cmd = "%s\\%s" % (installpath, xpra_cmd)
+                xpra_cmd = f"{installpath}\\{xpra_cmd}"
                 xpra_cmd = xpra_cmd.replace("\\", "\\\\")
         elif xpra_cmd.endswith(".exe"):
             #assume this path exists
             pass
         else:
             #assume POSIX and find that command:
-            r = rtc("command -v %s" % xpra_cmd)
+            r = rtc(f"command -v {xpra_cmd}")
             if r[2]!=0:
                 continue
             out = r[0]
@@ -836,24 +837,24 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 except Exception as e:
                     log("cannot get command from %r: %s", xpra_cmd, e)
                 else:
-                    if xpra_cmd.startswith("alias %s=" % xpra_cmd):
+                    if xpra_cmd.startswith(f"alias {xpra_cmd}="):
                         #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
                         xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
-        log("adding xpra_cmd='%s'", xpra_cmd)
+        log(f"adding xpra_cmd={xpra_cmd!r}")
         if xpra_cmd in tried:
             continue
         tried.add(xpra_cmd)
         cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
         if socket_dir:
-            cmd += " \"--socket-dir=%s\"" % socket_dir
+            cmd += f" \"--socket-dir={socket_dir}\""
         if display_as_args:
             cmd += " "
             cmd += " ".join(shellquote(x) for x in display_as_args)
-        log("cmd(%s, %s)=%s", xpra_proxy_command, display_as_args, cmd)
+        log(f"cmd({xpra_proxy_command}, {display_as_args})={cmd}")
 
         #see https://github.com/paramiko/paramiko/issues/175
         #WINDOW_SIZE = 2097152
-        log("trying to open SSH session, window-size=%i, timeout=%i", WINDOW_SIZE, TIMEOUT)
+        log(f"trying to open SSH session, window-size={WINDOW_SIZE}, timeout={TIMEOUT}")
         try:
             chan = transport.open_session(window_size=WINDOW_SIZE, max_packet_size=0, timeout=TIMEOUT)
             chan.set_name("run-xpra")
@@ -862,12 +863,12 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
         else:
             agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
-            log("paramiko agent_option=%s", agent_option)
+            log(f"paramiko agent_option={agent_option}")
             if agent_option.lower() in TRUE_OPTIONS:
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
-            log("channel exec_command(%s)" % cmd)
+            log(f"channel exec_command({cmd}")
             chan.exec_command(cmd)
             return chan
     raise Exception("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
@@ -922,12 +923,12 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 check = "elif"
             if x=="xpra":
                 #no absolute path, so use "command -v" to check that the command exists:
-                pc = ['%s command -v "%s" > /dev/null 2>&1; then' % (check, x)]
+                pc = [f'{check} command -v "{x}" > /dev/null 2>&1; then']
             else:
-                pc = ['%s [ -x %s ]; then' % (check, x)]
+                pc = [f'{check} [ -x {x} ]; then']
             pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
             if socket_dir:
-                pc.append("--socket-dir=%s" % socket_dir)
+                pc.append(f"--socket-dir={socket_dir}")
             remote_cmd += " ".join(pc)+";"
         remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
         if INITENV_COMMAND:
@@ -939,15 +940,15 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             for _ in range(nssh):
                 remote_cmd = shlex.quote(remote_cmd)
         else:
-            remote_cmd = "'%s'" % remote_cmd
-        cmd.append("sh -c %s" % remote_cmd)
+            remote_cmd = f"'{remote_cmd}'"
+        cmd.append(f"sh -c {remote_cmd}")
         if debug_cb:
-            debug_cb("starting %s tunnel" % str(cmd[0]))
+            debug_cb(f"starting {cmd[0]} tunnel")
         #non-string arguments can make Popen choke,
         #instead of lazily converting everything to a string, we validate the command:
         for x in cmd:
             if not isinstance(x, str):
-                raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
+                raise InitException(f"argument is not a string: {x} ({type(x)}), found in command: {cmd}")
         password = display_desc.get("password")
         if password and not display_desc.get("is_putty", False):
             from xpra.platform.paths import get_sshpass_command
@@ -967,19 +968,19 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         kwargs["env"] = restore_script_env(env)
 
         if is_debug_enabled("ssh"):
-            log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
+            log.info("executing ssh command: " + " ".join(f"\"{x}\"" for x in cmd))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
-        cmd_info = " ".join("%r" % x for x in cmd)
+        cmd_info = " ".join(repr(x) for x in cmd)
         raise InitExit(EXIT_SSH_FAILURE,
-                       "Error running ssh command '%s': %s" % (cmd_info, e)) from None
+                       f"Error running ssh command {cmd_info!r}: {e}") from None
     def abort_test(action):
         """ if ssh dies, we don't need to try to read/write from its sockets """
         e = child.poll()
         if e is not None:
             had_connected = conn.input_bytecount>0 or conn.output_bytecount>0
             if had_connected:
-                error_message = "cannot %s using SSH" % action
+                error_message = f"cannot {action} using SSH"
             else:
                 error_message = "SSH connection failure"
             sshpass_error = None
@@ -993,7 +994,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                                  6  : "Host public key is unknown. sshpass exits without confirming the new key.",
                                  }.get(e)
                 if sshpass_error:
-                    error_message += ": %s" % sshpass_error
+                    error_message += f": {sshpass_error}"
             if debug_cb:
                 debug_cb(error_message)
             if ssh_fail_cb:
@@ -1003,16 +1004,16 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 if not had_connected:
                     log.error("Error: SSH connection to the xpra server failed")
                     if sshpass_error:
-                        log.error(" %s", sshpass_error)
+                        log.error(f" {sshpass_error}")
                     else:
                         log.error(" check your username, hostname, display number, firewall, etc")
                     display_name = display_desc["display_name"]
-                    log.error(" for server: %s", display_name)
+                    log.error(f" for server: {display_name}")
                 else:
-                    log.error("The SSH process has terminated with exit code %s", e)
+                    log.error(f"The SSH process has terminated with exit code {e}")
                 cmd_info = " ".join(display_desc["full_ssh"])
                 log.error(" the command line used was:")
-                log.error(" %s", cmd_info)
+                log.error(f" {cmd_info}")
             raise ConnectionClosedException(error_message) from None
     def stop_tunnel():
         if POSIX:
@@ -1028,7 +1029,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                     if fd:
                         fd.close()
                 except Exception as e:
-                    print("error closing ssh tunnel %s: %s" % (name, e))
+                    log.error(f"Error closing ssh tunnel {name}: {e}")
             if not display_desc.get("exit_ssh", False):
                 #leave it running
                 return
@@ -1036,7 +1037,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             if child.poll() is None:
                 child.terminate()
         except Exception as e:
-            print("error trying to stop ssh tunnel process: %s" % e)
+            log.error(f"Error trying to stop ssh tunnel process: {e}")
     host = display_desc["host"]
     port = display_desc.get("port", 22)
     username = display_desc.get("username")
@@ -1062,7 +1063,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                     log("stderr_reader()", exc_info=True)
                     break
                 if not v:
-                    log("SSH EOF on stderr of %s", cmd)
+                    log(f"SSH EOF on stderr of {cmd}")
                     break
                 s = bytestostr(v.rstrip(b"\n\r"))
                 if s:
@@ -1070,6 +1071,6 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             if errs:
                 log.warn("remote SSH stderr:")
                 for e in errs:
-                    log.warn(" %s", e)
+                    log.warn(f" {e}")
         start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
     return conn
