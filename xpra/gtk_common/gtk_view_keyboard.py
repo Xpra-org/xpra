@@ -17,6 +17,8 @@ gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Pango, Gtk, Gdk
 
 from xpra.gtk_common.gtk_util import get_icon_pixbuf
+from xpra.log import enable_color, Logger
+log = Logger("gtk", "keyboard")
 
 
 class KeyboardStateInfoWindow:
@@ -104,7 +106,7 @@ class KeyboardStateInfoWindow:
         return  names
 
     def keymap_changed(self, *args):
-        print("keymap_changed%s" % (args,))
+        log.info("keymap_changed%s" % (args,))
         if not self.keymap_change_timer:
             self.keymap_change_timer = GLib.timeout_add(500, self.show_keymap)
 
@@ -125,8 +127,8 @@ class KeyboardStateInfoWindow:
                 if isinstance(v, (list, tuple)):
                     v = csv(bytestostr(x) for x in v)
                 self.add_event_text("%16s: %s" % (k, bytestostr(v)))
-        print("do_keymap_changed: %s" % (msg,))
-        print("do_keymap_changed: %s" % ((layout, layouts, variant, variants, options),))
+        log.info("do_keymap_changed: %s" % (msg,))
+        log.info("do_keymap_changed: %s" % ((layout, layouts, variant, variants, options),))
 
     def key_press(self, _, event):
         self.add_key_event("down", event)
@@ -162,7 +164,6 @@ class KeyboardStateInfoWindow:
 
 
 def main():
-    from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
     from xpra.gtk_common.gtk_util import init_display_source
     with program_context("Keyboard-Test", "Keyboard Test Tool"):

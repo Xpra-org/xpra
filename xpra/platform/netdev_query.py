@@ -29,7 +29,7 @@ def print_address(iface, addr, defs):
                 socket.AF_INET  : "IPv4",
                 socket.AF_INET6 : "IPv6",
                 }[addr]
-            print(" * %s:     %s" % (stype, ip))
+            print(f" * {stype}:     {ip}")
             if POSIX:
                 from xpra.net.socket_util import create_tcp_socket
                 try:
@@ -52,9 +52,10 @@ def print_iface(iface):
     if not POSIX:
         info = get_interface_info(0, iface)
         if info:
-            print("  %s" % info)
+            print(f"  {info}")
 
 def main():
+    # pylint: disable=import-outside-toplevel
     import sys
     from xpra.net.net_util import get_interfaces, if_nametoindex
     from xpra.platform import program_context
@@ -73,7 +74,7 @@ def main():
             if if_nametoindex:
                 print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
             else:
-                print("* %s" % iface)
+                print(f"* {iface}")
             print_iface(iface)
 
 

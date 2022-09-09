@@ -10,12 +10,12 @@ import os
 import sys
 import stat
 import uuid
-import time
 import signal
 import socket
 import struct
 import binascii
 import threading
+from time import monotonic, sleep
 from subprocess import PIPE, Popen
 
 SIGNAMES = {}
@@ -463,7 +463,7 @@ def get_loaded_kernel_modules(*modlist):
     loaded = []
     if LINUX and os.path.exists("/sys/module"):
         for mod in modlist:
-            if os.path.exists("/sys/module/%s" % mod):  # pragma: no cover
+            if os.path.exists(f"/sys/module/{mod}"):  # pragma: no cover
                 loaded.append(mod)
     return loaded
 
@@ -497,7 +497,7 @@ def do_get_generic_os_name() -> str:
 def filedata_nocrlf(filename) -> str:
     v = load_binary_file(filename)
     if v is None:
-        get_util_logger().error("failed to load '%s'", filename)
+        get_util_logger().error(f"failed to load {filename!r}")
         return None
     return v.strip(b"\n\r")
 
@@ -508,15 +508,15 @@ def load_binary_file(filename) -> bytes:
         with open(filename, "rb") as f:
             return f.read()
     except Exception as e:  # pragma: no cover
-        get_util_logger().debug("load_binary_file(%s)", filename, exc_info=True)
-        get_util_logger().warn("Warning: failed to load '%s':", filename)
-        get_util_logger().warn(" %s", e)
+        get_util_logger().debug(f"load_binary_file({filename})", exc_info=True)
+        get_util_logger().warn(f"Warning: failed to load {filename!r}")
+        get_util_logger().warn(f" {e}")
         return None
 
 def get_proc_cmdline(pid):
     if pid and LINUX:
         #try to find the command via /proc:
-        proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
+        proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
         if os.path.exists(proc_cmd_line):
             return load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
     return None
@@ -599,14 +599,13 @@ def shellsub(s, subs=None):
         for var,value in subs.items():
             try:
                 if isinstance(s, bytes):
-                    s = s.replace(("$%s" % var).encode(), str(value).encode())
+                    s = s.replace(f"${var}".encode(), str(value).encode())
                     s = s.replace(("${%s}" % var).encode(), str(value).encode())
                 else:
-                    s = s.replace("$%s" % var, str(value))
+                    s = s.replace(f"${var}", str(value))
                     s = s.replace("${%s}" % var, str(value))
             except (TypeError, ValueError):
-                raise Exception("failed to substitute '%s' with value '%s' (%s) in '%s'" % (
-                    var, value, type(value), s)) from None
+                raise Exception(f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}") from None
     return s
 
 
@@ -744,7 +743,7 @@ class nomodule_context:
             else:
                 sys.modules[self.module_name] = self.saved_module
     def __repr__(self):
-        return "nomodule_context(%s)" % self.module_name
+        return f"nomodule_context({self.module_name})"
 
 class umask_context:
     __slots__ = ("umask", "orig_umask")
@@ -755,7 +754,7 @@ class umask_context:
     def __exit__(self, *_args):
         os.umask(self.orig_umask)
     def __repr__(self):
-        return "umask_context(%s)" % self.umask
+        return f"umask_context({self.umask})"
 
 
 def disable_stdout_buffering():
@@ -792,7 +791,7 @@ def find_lib_ldconfig(libname):
             ldconfig = t
             break
     import subprocess
-    p = subprocess.Popen("%s -p" % ldconfig, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     data = bytestostr(p.communicate()[0])
 
     libpath = re.search(pattern, data, re.MULTILINE)        #@UndefinedVariable
@@ -820,13 +819,13 @@ def find_lib(libname):
 
 
 def pollwait(process, timeout=5):
-    start = time.monotonic()
+    start = monotonic()
     v = None
-    while time.monotonic()-start<timeout:
+    while monotonic()-start<timeout:
         v = process.poll()
         if v is not None:
             break
-        time.sleep(0.1)
+        sleep(0.1)
     return v
 
 
@@ -852,7 +851,7 @@ def which(command):
     try:
         return find_executable(command)
     except Exception:
-        get_util_logger().debug("find_executable(%s)", command, exc_info=True)
+        get_util_logger().debug(f"find_executable({command})", exc_info=True)
         return None
 
 def get_status_output(*args, **kwargs):
@@ -864,7 +863,9 @@ def get_status_output(*args, **kwargs):
     try:
         p = Popen(*args, **kwargs)
     except Exception as e:
-        print("error running %s,%s: %s" % (args, kwargs, e))
+        from xpra.log import Logger
+        log = Logger("util")
+        log.error(f"Error running {args},{kwargs}: {e}")
         return -1, "", ""
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
@@ -895,7 +896,7 @@ def setuidgid(uid, gid):
         try:
             username = getpwuid(uid).pw_name
         except KeyError:
-            raise Exception("uid %i not found" % uid) from None
+            raise Exception(f"uid {uid} not found") from None
         #set the groups:
         if hasattr(os, "initgroups"):   # python >= 2.7
             os.initgroups(username, gid)
@@ -908,23 +909,23 @@ def setuidgid(uid, gid):
         if os.getgid()!=gid:
             os.setgid(gid)
     except OSError as e:
-        log.error("Error: cannot change gid to %i:", gid)
+        log.error(f"Error: cannot change gid to {gid}")
         if os.getgid()==0:
             #don't run as root!
             raise
         log.estr(e)
-        log.error(" continuing with gid=%i", os.getgid())
+        log.error(" continuing with gid={os.getgid()}")
     try:
         if os.getuid()!=uid:
             os.setuid(uid)
     except OSError as e:
-        log.error("Error: cannot change uid to %i:", uid)
+        log.error(f"Error: cannot change uid to {uid}")
         if os.getuid()==0:
             #don't run as root!
             raise
         log.estr(e)
-        log.error(" continuing with uid=%i", os.getuid())
-    log("new uid=%s, gid=%s", os.getuid(), os.getgid())
+        log.error(f" continuing with uid={os.getuid()}")
+    log(f"new uid={os.getuid()}, gid={os.getgid()}")
 
 def get_peercred(sock):
     if LINUX:
@@ -937,7 +938,7 @@ def get_peercred(sock):
             return pid, uid, gid
         except IOError as  e:
             log("getsockopt", exc_info=True)
-            log.error("Error getting peer credentials: %s", e)
+            log.error(f"Error getting peer credentials: {e}")
             return None
     elif FREEBSD:
         log.warn("Warning: peercred is not yet implemented for FreeBSD")

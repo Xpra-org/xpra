@@ -182,10 +182,10 @@ def run_sound(mode, error_cb, options, args):
             for k,v in d.items():
                 if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)
-                print("%s=%s" % (k, v))
+                log(f"{k}={v}")
             return 0
         else:
-            log.error("unknown mode: %s" % mode)
+            log.error(f"Error: unknown mode {mode!r}")
             return 1
         assert len(args)>=6, "not enough arguments"
 
@@ -209,10 +209,10 @@ def run_sound(mode, error_cb, options, args):
             ss.start()
             return 0
         except InitExit as e:
-            log.error("%s: %s", info, e)
+            log.error(f"{info}: {e}")
             return e.status
         except InitException as e:
-            log.error("%s: %s", info, e)
+            log.error(f"{info}: {e}")
             return 1
         except Exception:
             log.error("run_sound%s error", (mode, error_cb, options, args), exc_info=True)

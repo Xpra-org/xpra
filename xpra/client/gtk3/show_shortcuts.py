@@ -9,6 +9,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, GLib, Pango  # @UnresolvedImport
 
 from xpra.os_util import SIGNAMES
+from xpra.scripts.config import InitException
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
@@ -98,8 +99,9 @@ def main(_args):
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
                 init_posix_display_source()
             except Exception as e:
-                print("failed to connect to the X11 server:")
-                print(" %s" % e)
+                log("init_posix_display_source failure", exc_info=True)
+                log.warn("Warning: failed to connect to the X11 server")
+                log.warn(f" {e}")
                 #hope for the best..
 
         keyboard = Keyboard()  #pylint: disable=not-callable
