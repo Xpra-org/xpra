@@ -766,7 +766,7 @@ def paramiko_run_test_command(transport, cmd):
     log(f"paramiko_run_test_command(transport, {cmd})")
     try:
         chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
-        chan.set_name("find %s" % cmd)
+        chan.set_name(f"find {cmd}")
     except SSHException as e:
         log("open_session", exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
@@ -789,10 +789,10 @@ def paramiko_run_test_command(transport, cmd):
             return b""
     #don't wait too long for the data:
     chan.settimeout(EXEC_STDOUT_TIMEOUT)
-    out = chan_read(chan.makefile().readline)
+    out = chan_read(chan.makefile().readlines)
     log(f"exec_command out={out!r}")
     chan.settimeout(EXEC_STDERR_TIMEOUT)
-    err = chan_read(chan.makefile_stderr().readline)
+    err = chan_read(chan.makefile_stderr().readlines)
     log(f"exec_command err={err!r}")
     chan.close()
     return out, err, code
@@ -816,8 +816,8 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath`) DO (echo %A %B)")  #pylint: disable=line-too-long
             if r[2]==0:
                 #found in registry:
-                lines = r[0].splitlines()
-                installpath = bytestostr(lines[-1])
+                out = r[0]
+                installpath = out[-1].rstrip("\n\r")
                 xpra_cmd = f"{installpath}\\{xpra_cmd}"
                 xpra_cmd = xpra_cmd.replace("\\", "\\\\")
         elif xpra_cmd.endswith(".exe"):
@@ -836,12 +836,10 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             out = r[0]
             if out:
                 #use the actual path returned by 'command -v':
-                if not isinstance(out, str):
-                    out = bytestostr(out)
                 try:
-                    xpra_cmd = out.splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
+                    xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
                 except Exception as e:
-                    log("cannot get command from %r: %s", xpra_cmd, e)
+                    log(f"cannot get command from {xpra_cmd}: {e}")
                 else:
                     if xpra_cmd.startswith(f"alias {xpra_cmd}="):
                         #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
