@@ -805,6 +805,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
     tried = set()
+    find_command = None
     for xpra_cmd in remote_xpra:
         if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
             #win32 mode, quick and dirty platform test first:
@@ -823,8 +824,13 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             #assume this path exists
             pass
         else:
+            if not find_command:
+                if rtc("command")[2]==0:
+                    find_command = "command -v"
+                else:
+                    find_command = "which"
             #assume POSIX and find that command:
-            r = rtc(f"command -v {xpra_cmd}")
+            r = rtc(f"{find_command} {xpra_cmd}")
             if r[2]!=0:
                 continue
             out = r[0]
