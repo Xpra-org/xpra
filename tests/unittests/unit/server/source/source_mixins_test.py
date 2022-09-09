@@ -37,7 +37,7 @@ class SourceMixinsTest(unittest.TestCase):
         if len(mixin_classes)==1:
             mixin_class = mixin_classes[0]
         else:
-            mixin_class = type("Mixin-%s" % (mixin_classes,), mixin_classes, {})
+            mixin_class = type(f"Mixin-{mixin_classes}", mixin_classes, {})
         #test the instance:
         #fake server object:
         server = AdHocStruct()
@@ -50,6 +50,7 @@ class SourceMixinsTest(unittest.TestCase):
             for k,v in client_caps.items():
                 d[k] = v
         m = mixin_class()
+        m.wants = ["aliases", "encodings", "versions", "features", "display"]
         m.source_remove = GLib.source_remove
         m.idle_add = GLib.idle_add
         m.timeout_add = GLib.timeout_add
@@ -64,7 +65,7 @@ class SourceMixinsTest(unittest.TestCase):
             try:
                 c.init_from(m, m.protocol, server)
             except Exception:
-                print("failed to initialize from %s" % (server,))
+                print(f"failed to initialize from {server}")
                 raise
         for c in mixin_classes:
             c.init_state(m)
