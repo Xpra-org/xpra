@@ -1,16 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32.
 #pylint: disable=bare-except
+#pylint: disable=import-outside-toplevel
 
 import sys
-if not sys.platform.startswith("win"):
-    raise ImportError("not to be used on %s" % sys.platform)
-
 import errno
 import os.path
 import ctypes
@@ -25,6 +23,9 @@ from xpra.platform.win32.common import (
     MessageBoxA, GetLastError, kernel32,
     )
 
+
+if not sys.platform.startswith("win"):
+    raise ImportError("not to be used on %s" % sys.platform)
 
 STD_INPUT_HANDLE = DWORD(-10)
 STD_OUTPUT_HANDLE = DWORD(-11)
@@ -299,10 +300,13 @@ def get_console_position(handle):
             #we could also re-use the code above from "not_a_console()"
             pass
         else:
+            from xpra.log import Logger
+            log = Logger("win32")
             try:
-                print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
+                log.error("Error accessing console %s: %s" % (
+                    errno.errorcode.get(e.errno, e.errno), e))
             except Exception:
-                print("error accessing console: %s" % e)
+                log.error(f"Error accessing console: {e}")
         return -1, -1
 
 _wait_for_input = False
@@ -363,7 +367,7 @@ def do_init():
             if not os.path.exists(data_dir):
                 os.mkdir(data_dir)
             log_filename = os.path.join(data_dir, (get_prgname() or "Xpra")+".log")
-        sys.stdout = open(log_filename, "a")
+        sys.stdout = open(log_filename, "a", encoding="utf8")
         sys.stderr = sys.stdout
         os.environ["XPRA_LOG_FILENAME"] = log_filename
 
@@ -372,17 +376,18 @@ MB_ICONEXCLAMATION  = 0x00000030
 MB_ICONINFORMATION  = 0x00000040
 MB_SYSTEMMODAL      = 0x00001000
 def _show_message(message, uType):
-    global prg_name
     #TODO: detect cx_freeze equivallent
     SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", REDIRECT_OUTPUT)
+    from xpra.log import Logger
+    log = Logger("win32")
     if SHOW_MESSAGEBOX:
         #try to use an alert box since no console output will be shown:
         try:
             MessageBoxA(0, message.encode(), prg_name.encode(), uType)
             return
         except Exception as e:
-            print("Error: cannot show alert box: %s" % (e,))
-    print(message)
+            log.error(f"Error: cannot show alert box: {e}")
+    log.info(message)
 
 def command_info(message):
     _show_message(message, MB_ICONINFORMATION | MB_SYSTEMMODAL)
@@ -392,7 +397,6 @@ def command_error(message):
 
 
 def do_clean():
-    global _wait_for_input
     if _wait_for_input:
         print("\nPress Enter to close")
         try:
