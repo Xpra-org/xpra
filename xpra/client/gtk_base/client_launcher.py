@@ -20,7 +20,8 @@ import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Pango, GLib, Gtk, GdkPixbuf  # @UnresolvedImport
+# @UnresolvedImport pylint: disable=wrong-import-position
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -127,11 +128,16 @@ def noop(*args):
     log("noop%s", args)
 
 
+# pylint: disable=import-outside-toplevel
+
+
 class ApplicationWindow:
 
     def __init__(self):
         # Default connection options
-        self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
+        self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS,
+                                           extras_types=LAUNCHER_OPTION_TYPES,
+                                           extras_validation=self.get_launcher_validation())
         self.parse_ssh()
         #TODO: the fixup does not belong here?
         from xpra.scripts.main import fixup_options
@@ -161,7 +167,7 @@ class ApplicationWindow:
         try:
             from xpra.net.crypto import MODES
             for mode in MODES:
-                modes.append("tcp + aes-%s" % mode.lower())
+                modes.append(f"tcp + aes-{mode.lower()}")
         except ImportError:
             pass
         modes.append(MODE_TCP)
@@ -175,7 +181,7 @@ class ApplicationWindow:
         def validate_in_list(x, options):
             if x in options:
                 return None
-            return "must be in %s" % csv(options)
+            return "must be in "+csv(options)
         modes = self.get_connection_modes()
         return {"mode"              : lambda x : validate_in_list(x, modes)}
 
@@ -427,7 +433,7 @@ class ApplicationWindow:
         except Exception:
             pixbuf = None
         if not pixbuf:
-            pixbuf = get_icon_pixbuf("%s.png" % icon_name)
+            pixbuf = get_icon_pixbuf(f"{icon_name}.png")
             if pixbuf:
                 for size in (16, 32, 48):
                     scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
@@ -517,7 +523,7 @@ class ApplicationWindow:
             self.set_widget_bg_color(w, e)
             if e:
                 err_text.append(text)
-        log("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
+        log(f"validate({args}) err_text={err_text}, errs={errs}")
         self.set_info_text(csv(err_text))
         self.set_info_color(len(err_text)>0)
         self.connect_btn.set_sensitive(len(err_text)==0)
@@ -563,7 +569,7 @@ class ApplicationWindow:
             self.password_entry.set_tooltip_text("Session Password (optional)")
             self.username_entry.set_tooltip_text("Session Username (optional)")
             if self.config.port>0:
-                self.port_entry.set_text("%s" % self.config.port)
+                self.port_entry.set_text(str(self.config.port))
         can_use_password = True
         sshpass = False
         if ssh or sshtossh:
@@ -646,7 +652,7 @@ class ApplicationWindow:
         self.choose_pkey_file("Choose SSH private key", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, do_choose)
 
     def connect_clicked(self, *args):
-        log("connect_clicked%s", args)
+        log(f"connect_clicked({args})")
         self.update_options_from_gui()
         self.do_connect()
 
@@ -662,7 +668,7 @@ class ApplicationWindow:
 
 
     def handle_exception(self, e):
-        log("handle_exception(%s)", e)
+        log(f"handle_exception({e})")
         t = str(e)
         log("handle_exception: %s", traceback.format_exc())
         if self.config.debug:
@@ -683,7 +689,7 @@ class ApplicationWindow:
         try:
             self.connect_builtin()
         except Exception as e:
-            log.error("cannot connect:", exc_info=True)
+            log.error("Error: cannot connect", exc_info=True)
             self.handle_exception(e)
 
     def connect_builtin(self):
@@ -693,7 +699,7 @@ class ApplicationWindow:
             "type"      : self.config.mode,
             "username"  : username,
             }
-        if self.config.mode==MODE_SSH or self.config.mode==MODE_NESTED_SSH:
+        if self.config.mode in (MODE_SSH, MODE_NESTED_SSH):
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
             params["remote_xpra"] = self.config.remote_xpra
@@ -745,16 +751,17 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["full_ssh"] = full_ssh
             params["password"] = password
-            params["display_name"] = "ssh:%s:%s" % (self.config.host, self.config.port)
+            params["display_name"] = f"ssh://{self.config.host}:{self.config.port}"
         elif self.config.mode=="unix-domain":
-            params["display"] = ":%s" % self.config.port
-            params["display_name"] = "unix-domain:%s" % self.config.port
+            params["display"] = f":{self.config.port}"
+            params["display_name"] = f"unix-domain:{self.config.port}"
         else:
-            assert self.config.mode in (MODE_TCP, MODE_SSL, MODE_WS, MODE_WSS), "invalid / unsupported mode %s" % self.config.mode
+            if self.config.mode not in (MODE_TCP, MODE_SSL, MODE_WS, MODE_WSS):
+                raise ValueError(f"invalid / unsupported mode {self.config.mode}")
             params["host"] = self.config.host
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
-            params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
+            params["display_name"] = f"{self.config.mode}://{self.config.host}:{self.config.port}"
             if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
@@ -784,21 +791,23 @@ class ApplicationWindow:
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
     def ssh_failed(self, message):
-        log("ssh_failed(%s)", message)
+        log(f"ssh_failed({message})")
         if not self.current_error:
             self.current_error = message
             self.set_info_text(message)
             self.set_info_color(True)
 
     def do_connect_builtin(self, display_desc):
-        log("do_connect_builtin(%s)", display_desc)
+        log(f"do_connect_builtin({display_desc})")
         self.exit_code = None
         self.current_error = None
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
-            log("calling %s%s", connect_to, (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
-            conn = connect_to(display_desc, opts=self.config, client=self.client, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
+            log("calling %s%s", connect_to,
+                (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
+            conn = connect_to(display_desc, opts=self.config,
+                              debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log("do_connect_builtin(%s) failed to connect", display_desc, exc_info=True)
             self.handle_exception(e)
@@ -810,7 +819,7 @@ class ApplicationWindow:
         try:
             self.do_start_XpraClient(conn, display_desc)
         except Exception as e:
-            log.error("failed to start client", exc_info=True)
+            log.error("Error: failed to start client", exc_info=True)
             self.handle_exception(e)
 
     def do_start_XpraClient(self, conn, display_desc):
@@ -957,7 +966,8 @@ class ApplicationWindow:
             self.config.mode = mode_enc
             self.config.encryption = ""
         log("update_options_from_gui() %s",
-            (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port))
+            (self.config.username, self.config.password, self.config.mode, self.config.encryption,
+             self.config.host, self.config.port, self.config.ssh_port))
 
     def update_gui_from_config(self):
         #mode:
@@ -1040,7 +1050,9 @@ class ApplicationWindow:
     def _apply_props(self, props):
         #we rely on "ssh_port" being defined on the config object
         #so try to load it from file, and define it if not present:
-        options = validate_config(props, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
+        options = validate_config(props,
+                                  extras_types=LAUNCHER_OPTION_TYPES,
+                                  extras_validation=self.get_launcher_validation())
         for k,v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
@@ -1073,7 +1085,8 @@ class ApplicationWindow:
 #on some platforms like win32, we don't have stdout
 #and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title):
-    md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
+    md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                           Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
     def close_dialog(*_args):
@@ -1129,7 +1142,7 @@ def do_main(argv):
                 client.cleanup()
             else:
                 Gtk.main_quit()
-            GLib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+            GLib.timeout_add(1000, app.set_info_text, "got signal " + SIGNAMES.get(signum, signum))
             GLib.timeout_add(1000, app.set_info_color, True)
         register_os_signals(handle_signal, "Client Launcher")
         has_file = len(args) == 1
