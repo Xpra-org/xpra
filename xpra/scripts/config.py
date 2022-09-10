@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import sys
 import os
+import shlex
 
 from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
@@ -46,6 +48,9 @@ else: # pragma: no cover
 DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32: # pragma: no cover
     DEFAULT_PULSEAUDIO = False
+
+
+# pylint: disable=import-outside-toplevel
 
 
 _has_sound_support = None
@@ -94,7 +99,9 @@ def get_Xdummy_confdir():
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
-def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_SESSION_DIR}", xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"):
+def get_Xdummy_command(xorg_cmd="Xorg",
+                       log_dir="${XPRA_SESSION_DIR}",
+                       xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"):
     return [
         #ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
@@ -104,18 +111,18 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_SESSION_DIR}", xorg_conf
         "+extension", "RANDR",
         "+extension", "RENDER",
         "-auth", "$XAUTHORITY",
-        "-logfile", "%s/Xorg.log" % log_dir,
+        "-logfile", f"{log_dir}/Xorg.log",
         #must be specified with some Xorg versions (ie: arch linux)
         #this directory can store xorg config files, it does not need to be created:
-        "-configdir", '"%s"' % get_Xdummy_confdir(),
-        "-config", '"%s"' % xorg_conf,
+        "-configdir", f'"{get_Xdummy_confdir()}"',
+        "-config", f'"{xorg_conf}"',
         ]
 
 def get_Xvfb_command(width=8192, height=4096, dpi=96):
     cmd = ["Xvfb",
            "+extension", "GLX",
            "+extension", "Composite",
-           "-screen", "0", "%ix%ix24+32" % (width, height),
+           "-screen", "0", f"{width}x{height}x24+32",
            #better than leaving to vfb after a resize?
            "-nolisten", "tcp",
            "-noreset",
@@ -138,7 +145,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         return get_Xvfb_command()
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
         if warn_fn:
-            warn_fn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
+            warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return get_Xvfb_command()
     #if is_arm():
         #arm used to struggle to launch Xdummy because of
@@ -180,9 +187,9 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir=None,
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
             if (xorg_stat.st_mode & stat.S_IROTH)==0:
                 if warn_fn:
-                    warn_fn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                    warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
                 return get_Xvfb_command()
-            debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+            debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
             use_wrapper = True
         else:
             use_wrapper = False
@@ -237,13 +244,8 @@ def is_VirtualBox() -> str:
         except (ImportError, OSError):
             pass
         try:
-            try:
-                f = None
-                f = open("\\\\.\\VBoxMiniRdrDN", "r")
+            with open("\\\\.\\VBoxMiniRdrDN", "rb"):
                 return "VirtualBox is present (VBoxMiniRdrDN)"
-            finally:
-                if f:
-                    f.close()
         except Exception as e:
             import errno
             if e.args[0]==errno.EACCES:
@@ -255,43 +257,43 @@ def get_build_info():
     info = []
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT #@UnresolvedImport
-        info.append("revision %s" % REVISION)
+        info.append(f"revision {REVISION}")
         if COMMIT:
-            info.append("commit %s from %s branch" % (COMMIT, BRANCH))
+            info.append(f"commit {COMMIT} from {BRANCH} branch")
         try:
             mods = int(LOCAL_MODIFICATIONS)
-            info.append("with %s local changes" % (mods))
+            info.append(f"with {mods} local changes")
         except ValueError:
             pass
     except Exception as e:
-        warn("Error: could not find the source information: %s" % e)
+        warn(f"Error: could not find the source information: {e}")
     try:
         from xpra.build_info import (
             BUILD_DATE, BUILD_TIME, BUILD_BIT,
             CYTHON_VERSION, COMPILER_VERSION,
             )
         info.insert(0, "")
-        einfo = "Python %i.%i" % sys.version_info[:2]
+        einfo = "Python " + ".".join(sys.version_info[:2])
         if BUILD_BIT:
             einfo += ", "+BUILD_BIT
         info.insert(0, einfo)
         try:
             from xpra.build_info import BUILT_BY, BUILT_ON
-            info.append("built on %s by %s" % (BUILT_ON, BUILT_BY))
+            info.append(f"built on {BUILT_ON} by {BUILT_BY}")
         except ImportError:
             #reproducible builds dropped this info
             pass
         if BUILD_DATE and BUILD_TIME:
-            info.append("%s %s" % (BUILD_DATE, BUILD_TIME))
+            info.append(f"{BUILD_DATE} {BUILD_TIME}")
         if CYTHON_VERSION!="unknown" or COMPILER_VERSION!="unknown":
             info.append("")
         if CYTHON_VERSION!="unknown":
-            info.append("using Cython %s" % CYTHON_VERSION)
+            info.append(f"using Cython {CYTHON_VERSION}")
         if COMPILER_VERSION!="unknown":
             cv = COMPILER_VERSION.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
             info += cv.splitlines()
     except Exception as e:
-        warn("Error: could not find the build information: %s" % e)
+        warn(f"Error: could not find the build information: {e}")
     return info
 
 
@@ -299,17 +301,18 @@ def name_to_field(name):
     return name.replace("-", "_")
 
 def save_config(conf_file, config, keys, extras_types=None):
-    with open(conf_file, "w") as f:
+    with open(conf_file, "w", encoding="utf8") as f:
         option_types = OPTION_TYPES.copy()
         if extras_types:
             option_types.update(extras_types)
         saved = {}
         for key in keys:
-            assert key in option_types, "invalid configuration key: %s" % key
+            if key not in option_types:
+                raise ValueError(f"invalid configuration key {key!r}")
             v = getattr(config, name_to_field(key))
             saved[key] = v
-            f.write("%s=%s%s" % (key, v, os.linesep))
-        debug("save_config: saved %s to %s", saved, conf_file)
+            f.write(f"{key}={v}{os.linesep}")
+        debug(f"save_config: saved {saved} to {conf_file!r}")
 
 def read_config(conf_file):
     """
@@ -321,7 +324,7 @@ def read_config(conf_file):
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file or does not exist", conf_file)
         return d
-    with open(conf_file, "r") as f:
+    with open(conf_file, "r", encoding="utf8") as f:
         lines = []
         no = 0
         for line in f:
@@ -353,7 +356,7 @@ def read_config(conf_file):
     #parse name=value pairs:
     for sline in agg_lines:
         if sline.find("=")<=0:
-            debug("skipping line which is missing an equal sign: %s", sline)
+            debug(f"skipping line which is missing an equal sign: {sline!r}")
             continue
         props = sline.split("=", 1)
         assert len(props)==2
@@ -370,7 +373,7 @@ def read_config(conf_file):
             debug("assigned (new): %s='%s'", name, value)
             d[name] = value
         if name in DEBUG_CONFIG_PROPERTIES:
-            from xpra.log import Logger  # pylint: disable=import-outside-toplevel
+            from xpra.log import Logger
             log = Logger("util")
             log.info(f"{name}={d[name]} (was {current_value}), from {conf_file!r}")
     return  d
@@ -384,7 +387,7 @@ def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     d = []
     cdir = os.path.expanduser(conf_dir)
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
-        debug("invalid config directory: %s", cdir)
+        debug(f"invalid config directory: {cdir!r}")
         return d
     #look for conf.d subdirectory:
     conf_d_dir = os.path.join(cdir, "conf.d")
@@ -396,7 +399,7 @@ def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
                     d.append(conf_file)
     conf_file = os.path.join(cdir, xpra_conf_filename)
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
-        debug("config file does not exist: %s", conf_file)
+        debug(f"config file does not exist: {conf_file!r}")
     else:
         d.append(conf_file)
     return d
@@ -407,11 +410,11 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         returns a dict with values as strings and arrays of strings.
     """
     files = conf_files(conf_dir, xpra_conf_filename)
-    debug("read_xpra_conf(%s,%s) conf files: %s" % (conf_dir, xpra_conf_filename, files))
+    debug(f"read_xpra_conf({conf_dir}, {xpra_conf_filename}) conf files: {files}")
     d = {}
     for f in files:
         cd = read_config(f)
-        debug("config(%s)=%s" % (f, cd))
+        debug(f"config({f})={cd}")
         d.update(cd)
     return d
 
@@ -427,7 +430,7 @@ def read_xpra_defaults(username=None, uid=None, gid=None):
     defaults = {}
     for d in dirs:
         defaults.update(read_xpra_conf(d))
-        debug("read_xpra_defaults: updated defaults with %s", d)
+        debug(f"read_xpra_defaults: updated defaults with {d}")
     may_create_user_config()
     return defaults
 
@@ -451,7 +454,7 @@ def get_xpra_defaults_dirs(username=None, uid=None, gid=None):
             continue
         ad = osexpand(d, actual_username=username, uid=uid, gid=gid)
         if not os.path.exists(ad):
-            debug("read_xpra_defaults: skipping %s", ad)
+            debug(f"read_xpra_defaults: skipping {ad!r}")
             continue
         defaults_dirs.append(ad)
     return defaults_dirs
@@ -474,24 +477,24 @@ def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
                 try:
                     if not os.path.exists(ad):
                         os.makedirs(ad, int('700', 8))
-                    with open(conf_file, 'w') as f:
-                        f.write("# xpra user configuration file\n")
-                        f.write("# place your custom settings in this file\n")
-                        f.write("# they will take precedence over the system default ones.\n")
-                        f.write("\n")
-                        f.write("# Examples:\n")
-                        f.write("# speaker=off\n")
-                        f.write("# dpi=144\n")
-                        f.write("\n")
-                        f.write("# For more information on the file format,\n")
-                        f.write("# see the xpra manual at:\n")
-                        f.write("# https://github.com/Xpra-org/xpra/tree/master/docs/\n")
-                        f.write("\n")
+                    with open(conf_file, 'w', encoding="utf8") as f:
+                        f.write("""# xpra user configuration file
+# place your custom settings in this file
+# they will take precedence over the system default ones.
+
+# Examples:
+# speaker=off
+# dpi=144
+
+# For more information on the file format,
+# see the xpra manual at:
+# https://github.com/Xpra-org/xpra/tree/master/docs/
+""")
                         f.flush()
-                    debug("created default config in "+d)
+                    debug(f"created default config in {d!r}")
                     break
                 except Exception as e:
-                    debug("failed to create default config in '%s': %s" % (conf_file, e))
+                    debug(f"failed to create default config in {conf_file!r}: {e}")
 
 
 OPTIONS_VALIDATION = {}
@@ -1155,7 +1158,7 @@ def parse_bool(k, v, auto=None):
     try:
         return bool(int(v))
     except ValueError:
-        warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+        warn(f"Warning: cannot parse value {v!r} for {k!r} as a boolean")
         return None
 
 def print_bool(k, v, true_str='yes', false_str='no'):
@@ -1165,7 +1168,7 @@ def print_bool(k, v, true_str='yes', false_str='no'):
         if v:
             return true_str
         return false_str
-    warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
+    warn(f"Warning: cannot print value {v!r} for {k!r} as a boolean")
     return ""
 
 def parse_bool_or_int(k, v):
@@ -1188,7 +1191,7 @@ def parse_number(numtype, k, v, auto=0):
     try:
         return numtype(v)
     except (ValueError, TypeError) as e:
-        warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
+        warn(f"Warning: cannot parse value {v!r} for {k} as a type {numtype}: {e}")
         return None
 
 def print_number(i, auto_value=0):
@@ -1202,7 +1205,6 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
     #special case for bandwidth-limit, which can be specified using units:
     try:
         v = str(v).lower().strip()
-        import re
         if not v or v in FALSE_OPTIONS:
             return 0
         if v=="auto":
@@ -1225,7 +1227,7 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
             assert f>=min_value, "value is too low"
         return int(f)
     except Exception as e:
-        raise InitException("invalid value for %s '%s': %s" % (numtype, v, e)) from None
+        raise InitException(f"invalid value for {numtype} {v!r}: {e}") from None
 
 
 def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None):
@@ -1245,15 +1247,15 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     nd = {}
     for k, v in d.items():
         if k in discard:
-            warn("Warning: option '%s' is not allowed in configuration files" % k)
+            warn(f"Warning: option {k!r} is not allowed in configuration files")
             continue
         vt = option_types.get(k)
         if vt is None:
-            warn("Warning: invalid option: '%s'" % k)
+            warn(f"Warning: invalid option: {k!r}")
             continue
         if vt==str:
             if not isinstance(v, str):
-                warn("invalid value for '%s': %s (string required)" % (k, type(v)))
+                warn(f"invalid value for {k!r}: {type(v)} (string required)")
                 continue
         elif vt==int:
             v = parse_bool_or_number(int, k, v)
@@ -1275,24 +1277,27 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
                 #ok so far..
                 pass
             else:
-                warn("Warning: invalid value for '%s': %s (a string or list of strings is required)" % (k, type(v)))
+                warn(f"Warning: invalid value for {k!r}: {type(v)} (a string or list of strings is required)")
                 continue
         else:
-            warn("Error: unknown option type for '%s': %s" % (k, vt))
+            warn(f"Error: unknown option type for {k!r}: {vt}")
         validation = validations.get(k)
         if validation and v is not None:
             msg = validation(v)
             if msg:
-                warn("Warning: invalid value for '%s': %s, %s" % (k, v, msg))
+                warn(f"Warning: invalid value for {k!r}: {v}, {msg}")
                 continue
         nd[k] = v
     return nd
 
 
-def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validation=None, username="", uid=getuid(), gid=getgid()):
-    return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {}, username, uid, gid)
+def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validation=None,
+                         username="", uid=getuid(), gid=getgid()):
+    return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {},
+                                   username, uid, gid)
 
-def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict, username:str, uid:int, gid:int):
+def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict,
+                            username:str, uid:int, gid:int):
     #populate config with default values:
     if not username and uid:
         username = get_username_for_uid(uid)
@@ -1320,7 +1325,7 @@ def dict_to_config(options):
 
 class XpraConfig:
     def __repr__(self):
-        return "XpraConfig(%s)" % self.__dict__
+        return f"XpraConfig({self.__dict__})"
 
     def clone(self):
         c = XpraConfig()
@@ -1345,7 +1350,7 @@ def _csvstr(value):
         return ",".join(str(x).lower().strip() for x in value if x)
     if isinstance(value, str):
         return value.strip().lower()
-    raise Exception("don't know how to convert %s to a csv list!" % type(value))
+    raise Exception(f"don't know how to convert {type(value)} to a csv list!")
 
 def _nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
@@ -1365,14 +1370,14 @@ def fixup_video_all_or_none(options, defaults=None):
         if strarg=="none":
             v = []
         elif strarg=="all":
-            from xpra.codecs import video_helper    #pylint: disable=import-outside-toplevel
+            from xpra.codecs import video_helper
             v = getattr(video_helper, all_list_name)
         else:
             v = [x for x in _nodupes(strarg) if x]
         if "help" in v:
-            from xpra.codecs import video_helper    #@Reimport pylint: disable=import-outside-toplevel
-            raise InitInfo("the following %s may be available: %s" %
-                           (help_txt, csv(getattr(video_helper, all_list_name))))
+            from xpra.codecs import video_helper    #@Reimport
+            raise InitInfo(f"the following {help_txt} may be available: " +
+                           csv(getattr(video_helper, all_list_name)))
         return v
     vestr = _csvstr(options.video_encoders)
     if not vestr and defaults:
@@ -1440,10 +1445,10 @@ def fixup_encodings(options):
         if "rgb32" not in encodings:
             encodings.append("rgb32")
     encodings = remove_dupes(encodings)
-    invalid = tuple(e.lstrip("-") for e in encodings if (e.lstrip("-") not in PREFERRED_ENCODING_ORDER))
+    invalid = tuple(e.lstrip("-") for e in encodings if e.lstrip("-") not in PREFERRED_ENCODING_ORDER)
     if invalid:
-        from xpra.exit_codes import EXIT_UNSUPPORTED  #pylint: disable=import-outside-toplevel
-        raise InitExit(EXIT_UNSUPPORTED, "invalid encodings specified: %s" % csv(invalid))
+        from xpra.exit_codes import EXIT_UNSUPPORTED
+        raise InitExit(EXIT_UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
     #now we have a list of encodings, but some of them may be prefixed with "-"
     for rm in tuple(e for e in encodings if e.startswith("-")):
         while True:
@@ -1470,7 +1475,7 @@ def fixup_compression(options):
         compressors = _nodupes(cstr)
         unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)
         if unknown:
-            warn("warning: invalid compressor(s) specified: %s" % csv(unknown))
+            warn("Warning: invalid compressor(s) specified: " + csv(unknown))
     options.compressors = list(compressors)
 
 def fixup_packetencoding(options):
@@ -1483,7 +1488,7 @@ def fixup_packetencoding(options):
         packet_encoders = _nodupes(pestr)
         unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
         if unknown:
-            warn("warning: invalid packet encoder(s) specified: %s" % csv(unknown))
+            warn("Warning: invalid packet encoder(s) specified: " + csv(unknown))
     options.packet_encoders = packet_encoders
 
 def fixup_keyboard(options):
@@ -1512,14 +1517,13 @@ def fixup_clipboard(options):
     elif cd in ("disabled", "none"):
         options.clipboard_direction = "disabled"
     else:
-        warn("Warning: invalid value for clipboard-direction: '%s'" % options.clipboard_direction)
+        warn(f"Warning: invalid value for clipboard-direction: {options.clipboard_direction!r}")
         warn(" specify 'to-server', 'to-client' or 'both'")
         options.clipboard_direction = "disabled"
 
 def abs_paths(options):
     ew = options.exec_wrapper
     if ew:
-        import shlex
         ewp = shlex.split(ew)
         if ewp and not os.path.isabs(ewp[0]):
             abscmd = which(ewp[0])
@@ -1604,7 +1608,7 @@ def main():
         if args:
             for filename in args:
                 print("")
-                print("Configuration file '%s':" % filename)
+                print(f"Configuration file {filename!r}")
                 if not os.path.exists(filename):
                     print(" Error: file not found")
                     continue
