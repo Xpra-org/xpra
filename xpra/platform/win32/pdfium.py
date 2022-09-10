@@ -87,7 +87,6 @@ FPDF_RENDER_NO_SMOOTHPATH = 0x4000
 FPDF_REVERSE_BYTE_ORDER = 0x10
 
 def get_error():
-    global ERROR_STR
     v = FPDF_GetLastError()
     return ERROR_STR.get(v, v)
 
@@ -150,7 +149,6 @@ def print_pdf(printer_name, title, pdf_data):
 EXIT = False
 JOBS_INFO = {}
 def watch_print_job_status():
-    global JOBS_INFO, EXIT
     from xpra.log import Logger
     log = Logger("printing", "win32")
     log("wait_for_print_job_end()")
@@ -170,7 +168,7 @@ def watch_print_job_status():
 
 
 def main():
-    global JOBS_INFO, EXIT
+    # pylint: disable=import-outside-toplevel
     if len(sys.argv) not in (2, 3, 4):
         print(f"usage: {sys.argv[0]} /path/to/document.pdf [printer-name] [document-title]")
         return -3
@@ -214,6 +212,7 @@ def main():
             log.info("print job status: %s", csv(v))
             job_status = v
             if "OFFLINE" in job_status or "DELETING" in job_status:
+                global EXIT
                 EXIT = True
                 break
         time.sleep(1.0)

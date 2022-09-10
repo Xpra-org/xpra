@@ -12,6 +12,9 @@ import traceback
 import threading
 from itertools import chain
 
+# this is imported in a lot of places,
+# so don't import too much at the top:
+# pylint: disable=import-outside-toplevel
 
 XPRA_APP_ID = 0
 
@@ -228,7 +231,7 @@ def make_instance(class_options, *args):
             continue
         try:
             v = c(*args)
-            log("make_instance(..) %s()=%s", c, v)
+            log(f"make_instance(..) {c}()={v}")
             if v:
                 return v
         except Exception:
@@ -265,7 +268,7 @@ class AtomicInteger:
         return str(self.counter)
 
     def __repr__(self):
-        return "AtomicInteger(%s)" % self.counter
+        return f"AtomicInteger({self.counter})"
 
 
     def __int__(self):
@@ -304,7 +307,7 @@ class MutableInteger(object):
         return str(self.counter)
 
     def __repr__(self):
-        return "MutableInteger(%s)" % self.counter
+        return f"MutableInteger({self.counter})"
 
 
     def __int__(self):
@@ -488,7 +491,7 @@ def parse_scaling_value(v):
     values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
-        assert x>0, "invalid scaling value %s" % x
+        assert x>0, f"invalid scaling value {x}"
     if len(values)==1:
         ret = 1, values[0]
     else:
@@ -502,9 +505,9 @@ def from0to100(v):
 def intrangevalidator(v, min_value=None, max_value=None):
     v = int(v)
     if min_value is not None and v<min_value:
-        raise ValueError("value must be greater than %i" % min_value)
+        raise ValueError(f"value must be greater than {min_value}")
     if max_value is not None and v>max_value:
-        raise ValueError("value must be lower than %i" % max_value)
+        raise ValueError(f"value must be lower than {max_value}")
     return v
 
 
