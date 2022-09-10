@@ -386,14 +386,15 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             #maybe this is just the display number without the ":" prefix?
             try:
                 if pos>0:
-                    display_name = ":%i" % int(display_name[:pos])
+                    dno = int(display_name[:pos])
                 else:
-                    display_name = ":%i" % int(display_name)
+                    dno = int(display_name)
+                display_name = f":{dno}"
                 match = True
             except ValueError:
                 pass
         elif WIN32: # pragma: no cover
-            display_name = "named-pipe://%s%s" % (PIPE_PREFIX, display_name)
+            display_name = f"named-pipe://{PIPE_PREFIX}{display_name}"
             match = True
         if find_session_by_name and not match:
             #try to find a session whose "session-name" matches:
@@ -647,7 +648,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         else:
             pipe_name = afterproto
         if not pipe_name.startswith(PIPE_PREFIX):
-            pipe_name = "%s%s" % (PIPE_PREFIX, pipe_name)
+            pipe_name = f"{PIPE_PREFIX}{pipe_name}"
         desc.update({
                      "type"             : "named-pipe",
                      "local"            : True,
@@ -657,7 +658,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         opts.display = display_name
         return desc
 
-    error_cb("unknown format for display name: %s" % display_name)
+    error_cb(f"unknown format for display name: {display_name!r}")
 
 
 def parse_ssh_option(ssh_setting):
@@ -675,7 +676,7 @@ def parse_ssh_option(ssh_setting):
                 Logger("ssh").info("using paramiko ssh backend")
         except ImportError as e:
             if is_debug_enabled("ssh"):
-                Logger("ssh").info("no paramiko: %s" % e)
+                Logger("ssh").info(f"no paramiko: {e}")
             from xpra.platform.features import DEFAULT_SSH_COMMAND
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
@@ -807,6 +808,7 @@ def parse_cmdline(cmdline):
     return do_parse_cmdline(cmdline, defaults)
 
 def do_parse_cmdline(cmdline, defaults):
+    # pylint: disable=consider-using-f-string
     #################################################################
     ## NOTE NOTE NOTE
     ##
@@ -850,7 +852,8 @@ def do_parse_cmdline(cmdline, defaults):
                       help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
     group.add_option("--start-late", action="append",
                       dest="start_late", metavar="CMD", default=list(defaults.start_late or []),
-                      help="program to spawn in server once initialization is complete (may be repeated). Default: %s." % dcsv(defaults.start_late))
+                      help="program to spawn in server once initialization is complete (may be repeated)."
+                      +" Default: %s." % dcsv(defaults.start_late))
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                       help="program to spawn in server,"
@@ -1331,11 +1334,13 @@ When unspecified, all the available codecs are allowed and the first one is used
     legacy_bool_parse("splash")
     group.add_option("--splash", action="store", metavar="yes|no|auto",
                       dest="splash", default=defaults.splash,
-                      help="Show a splash screen whilst loading the client. Default: %s." % enabled_or_auto(defaults.splash))
+                      help="Show a splash screen whilst loading the client."
+                      +" Default: %s." % enabled_or_auto(defaults.splash))
     legacy_bool_parse("headerbar")
     group.add_option("--headerbar", action="store", metavar="auto|no|force",
                       dest="headerbar", default=defaults.headerbar,
-                      help="Add a headerbar with menu to decorated windows. Default: %s." % defaults.headerbar)
+                      help="Add a headerbar with menu to decorated windows."
+                      +" Default: %s." % defaults.headerbar)
     legacy_bool_parse("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                       dest="windows", default=defaults.windows,
@@ -1351,7 +1356,8 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--max-size", action="store",
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
-                      help="The maximum size for normal windows, ie: 800x600. Default: %s." % nonedefault(defaults.max_size))
+                      help="The maximum size for normal windows, ie: 800x600."
+                      +" Default: %s." % nonedefault(defaults.max_size))
     group.add_option("--refresh-rate", action="store",
                       dest="refresh_rate", default=defaults.refresh_rate,
                       metavar="VREFRESH",
@@ -1595,34 +1601,44 @@ When unspecified, all the available codecs are allowed and the first one is used
     legacy_bool_parse("exit-ssh")
     group.add_option("--exit-ssh", action="store", metavar="yes|no|auto",
                       dest="exit_ssh", default=defaults.exit_ssh,
-                      help="Terminate SSH when disconnecting. Default: %default.")
+                      help="Terminate SSH when disconnecting."
+                      +" Default: %default.")
     group.add_option("--username", action="store",
                       dest="username", default=defaults.username,
-                      help="The username supplied by the client for authentication. Default: '%default'.")
+                      help="The username supplied by the client for authentication."
+                      +" Default: '%default'.")
     group.add_option("--auth", action="append",
                       dest="auth", default=list(defaults.auth or []),
-                      help="The authentication module to use (default: %s)" % dcsv(defaults.auth))
+                      help="The authentication module to use"
+                      +" (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
                       dest="tcp_auth", default=list(defaults.tcp_auth or []),
-                      help="The authentication module to use for TCP sockets (default: %s)" % dcsv(defaults.tcp_auth))
+                      help="The authentication module to use for TCP sockets"
+                      +" (default: %s)" % dcsv(defaults.tcp_auth))
     group.add_option("--ws-auth", action="append",
                       dest="ws_auth", default=list(defaults.ws_auth or []),
-                      help="The authentication module to use for Websockets (default: %s)" % dcsv(defaults.ws_auth))
+                      help="The authentication module to use for Websockets"
+                      +" (default: %s)" % dcsv(defaults.ws_auth))
     group.add_option("--wss-auth", action="append",
                       dest="wss_auth", default=list(defaults.wss_auth or []),
-                      help="The authentication module to use for Secure Websockets (default: %s)" % dcsv(defaults.wss_auth))
+                      help="The authentication module to use for Secure Websockets"
+                      +" (default: %s)" % dcsv(defaults.wss_auth))
     group.add_option("--ssl-auth", action="append",
                       dest="ssl_auth", default=list(defaults.ssl_auth or []),
-                      help="The authentication module to use for SSL sockets (default: %s)" % dcsv(defaults.ssl_auth))
+                      help="The authentication module to use for SSL sockets"
+                      +" (default: %s)" % dcsv(defaults.ssl_auth))
     group.add_option("--ssh-auth", action="append",
                       dest="ssh_auth", default=list(defaults.ssh_auth or []),
-                      help="The authentication module to use for SSH sockets (default: %s)" % dcsv(defaults.ssh_auth))
+                      help="The authentication module to use for SSH sockets"
+                      +" (default: %s)" % dcsv(defaults.ssh_auth))
     group.add_option("--rfb-auth", action="append",
                       dest="rfb_auth", default=list(defaults.rfb_auth or []),
-                      help="The authentication module to use for RFB sockets (default: %s)" % dcsv(defaults.rfb_auth))
+                      help="The authentication module to use for RFB sockets"
+                      +" (default: %s)" % dcsv(defaults.rfb_auth))
     group.add_option("--vsock-auth", action="append",
                      dest="vsock_auth", default=list(defaults.vsock_auth or []),
-                     help="The authentication module to use for vsock sockets (default: '%s')" % dcsv(defaults.vsock_auth))
+                     help="The authentication module to use for vsock sockets"
+                     +" (default: '%s')" % dcsv(defaults.vsock_auth))
     group.add_option("--min-port", action="store",
                       dest="min_port", default=defaults.min_port,
                       help="The minimum port number allowed when creating TCP sockets (default: '%default')")
