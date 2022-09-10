@@ -63,23 +63,7 @@ Newer SDK versions may not support keys, or just not the same set of keys, in wh
 * download and install the [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
 * install [PyCuda](http://wiki.tiker.net/PyCuda/Installation/Linux) - it is included in the [official repositories](https://github.com/Xpra-org/xpra/wiki/Download) for Fedora and RHEL
 * download the [NVENC SDK](https://developer.nvidia.com/nvidia-video-codec-sdk), aka "NVIDIA VIDEO CODEC SDK" and install it somewhere (ie: just unzip into `/opt/`)
-* create a `pkgconfig` file matching your SDK version and location, ie:
-```shell
-cat > /usr/lib64/pkgconfig/nvenc.pc
-prefix=/usr/local/nvenc
-exec_prefix=${prefix}
-includedir=${prefix}/Interface
-libdir=/usr/lib64/nvidia
-
-Name: nvenc
-Description: NVENC
-Version: 10
-Requires:
-Conflicts:
-Libs: -L${libdir} -lnvidia-encode
-Cflags: -I${includedir}
-END
-```
+* create a `pkgconfig` file matching your SDK version and location, you can use [nvenc.pc](https://github.com/Xpra-org/xpra/blob/master/fs/lib/pkgconfig/nvenc.pc) as template.
 * when building xpra, nvenc support should be auto-detected, but you can try forcing it to verify, ie:
 ```shell
 ./setup.py build --with-nvenc
