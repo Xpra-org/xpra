@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,6 @@
 import os
 import sys
 import tempfile
-import gi
 from time import monotonic
 
 from xpra.util import envbool
@@ -23,12 +22,13 @@ from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
+import gi
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+
 log = Logger("tray", "posix")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
-
-gi.require_version('AppIndicator3', '0.1')
-from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
@@ -80,8 +80,9 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_label(tooltip or "Xpra")
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
-        self.clean_last_tmp_icon()
         #use a temporary file (yuk)
+        self.clean_last_tmp_icon()
+        # pylint: disable=import-outside-toplevel
         from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_pixbuf_from_data
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         png_data = pixbuf_save_to_memory(tray_icon)
@@ -92,12 +93,12 @@ class AppindicatorTray(TrayBase):
         try:
             fd, self.tmp_filename = tempfile.mkstemp(prefix="tray", suffix=".png", dir=tmp_dir)
             log("set_icon_from_data%s using temporary file %s",
-                ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), self.tmp_filename)
+                (f"{len(pixels)} pixels", has_alpha, w, h, rowstride), self.tmp_filename)
             os.write(fd, png_data)
         except OSError as e:
             log("error saving temporary file", exc_info=True)
             log.error("Error saving icon data to temporary file")
-            log.error(" %s", e)
+            log.estr(e)
             return
         finally:
             if fd:
@@ -112,11 +113,11 @@ class AppindicatorTray(TrayBase):
             return
         head, icon_name = os.path.split(filename)
         if head:
-            log("do_set_icon_from_file(%s) setting icon theme path=%s", filename, head)
+            log(f"do_set_icon_from_file({filename!r}) setting icon theme path={head!r}")
             self.tray_widget.set_icon_theme_path(head)
         #remove extension (wtf?)
         noext = os.path.splitext(icon_name)[0]
-        log("do_set_icon_from_file(%s) setting icon=%s", filename, noext)
+        log(f"do_set_icon_from_file({filename!r}) setting icon={noext}")
         try:
             self.tray_widget.set_icon_full(noext, self.tooltip)
         except AttributeError:
@@ -138,6 +139,7 @@ class AppindicatorTray(TrayBase):
 
 
 def main(): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("AppIndicator-Test", "AppIndicator Test"):
         if "-v" in sys.argv:
