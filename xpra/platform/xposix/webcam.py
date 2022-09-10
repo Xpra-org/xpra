@@ -25,13 +25,12 @@ def _can_capture_video(dev_file, dev_info):
     if "DEVICE_CAPS" in caps:
         caps = dev_info.get("device_caps", [])
     if not "VIDEO_CAPTURE" in caps:
-        log("device %s does not support video capture, capabilities=%s", dev_file, caps)
+        log(f"device {dev_file!r} does not support video capture, capabilities={caps}")
         return False
     return True
 
 v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
 def check_virtual_dir(warn=True):
-    global v4l2_virtual_dir
     if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
         if warn:
             log.warn("Warning: webcam forwarding is disabled")
@@ -43,14 +42,16 @@ def check_virtual_dir(warn=True):
 
 def query_video_device(device):
     try:
+        # pylint: disable=import-outside-toplevel
         from xpra.codecs.v4l2.pusher import query_video_device as v4l_query_video_device
         return v4l_query_video_device(device)
-    except ImportError:
+    except ImportError as e:
+        log(f"query_video_device({device}) no v4l2 module: {e}")
         return {}
 
 
 def get_virtual_video_devices(capture_only=True) -> dict:
-    log("get_virtual_video_devices(%s) CHECK_VIRTUAL_CAPTURE=%s", capture_only, CHECK_VIRTUAL_CAPTURE)
+    log(f"get_virtual_video_devices({capture_only}) CHECK_VIRTUAL_CAPTURE={CHECK_VIRTUAL_CAPTURE}")
     if not check_virtual_dir(False):
         return {}
     contents = os.listdir(v4l2_virtual_dir)
@@ -64,7 +65,7 @@ def get_virtual_video_devices(capture_only=True) -> dict:
             assert no>=0
         except (TypeError, ValueError, AssertionError):
             continue
-        dev_file = "/dev/%s" % f
+        dev_file = f"/dev/{f}"
         dev_info = query_video_device(dev_file)
         if CHECK_VIRTUAL_CAPTURE and capture_only and not _can_capture_video(dev_file, dev_info):
             continue
@@ -83,8 +84,8 @@ def get_virtual_video_devices(capture_only=True) -> dict:
             except OSError:
                 pass
         devices[no] = info
-    log("devices: %s", devices)
-    log("found %i virtual video device%s", len(devices), engs(devices))
+    log(f"devices: {devices}")
+    log(f"found {len(devices)} virtual video devices")
     return devices
 
 def get_all_video_devices(capture_only=True):
@@ -94,7 +95,7 @@ def get_all_video_devices(capture_only=True):
     for f in contents:
         if not f.startswith("video"):
             continue
-        dev_file = "/dev/%s" % f
+        dev_file = f"/dev/{f}"
         try:
             dev_file = os.readlink(dev_file)
         except OSError:
@@ -126,15 +127,16 @@ def _video_device_file_filter(event):
 
 
 def add_video_device_change_callback(callback):
+    # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
     global _watch_manager, _notifier
     try:
         import pyinotify
     except ImportError as e:
         log.error("Error: cannot watch for video device changes without pyinotify:")
-        log.error(" %s", e)
+        log.estr(e)
         return
-    log("add_video_device_change_callback(%s) pyinotify=%s", callback, pyinotify)
+    log(f"add_video_device_change_callback({callback}) pyinotify={pyinotify}")
 
     if not _watch_manager:
         class EventHandler(pyinotify.ProcessEvent):
@@ -151,13 +153,14 @@ def add_video_device_change_callback(callback):
         _notifier.setDaemon(True)
         wdd = _watch_manager.add_watch('/dev', mask)
         log("watching for video device changes in /dev")
-        log("notifier=%s, watch=%s", _notifier, wdd)
+        log(f"notifier={_notifier}, watch={wdd}")
         _notifier.start()
     _video_device_change_callbacks.append(callback)
     #for running standalone:
     #notifier.loop()
 
 def remove_video_device_change_callback(callback):
+    # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks
     global _watch_manager, _notifier
     if not _watch_manager:
@@ -166,7 +169,7 @@ def remove_video_device_change_callback(callback):
     if callback not in _video_device_change_callbacks:
         log.error("Error: video device change callback not found, cannot remove it!")
         return
-    log("remove_video_device_change_callback(%s)", callback)
+    log(f"remove_video_device_change_callback({callback})")
     _video_device_change_callbacks.remove(callback)
     if not _video_device_change_callbacks:
         log("last video device change callback removed, closing the watch manager")
