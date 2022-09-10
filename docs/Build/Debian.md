@@ -16,7 +16,7 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-
 ```
 GTK3 for the server and GUI client:
 ```shell
-apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3 
+apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3
 ```
 Also install some X11 utilities if not installed already:
 ```shell

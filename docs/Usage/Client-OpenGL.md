@@ -33,10 +33,10 @@ For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.ex
 
 Because it doesn't work very well.
 See:
-* [#1367 enable more opengl chipsets](https://github.com/Xpra-org/xpra/issues/1367) 
+* [#1367 enable more opengl chipsets](https://github.com/Xpra-org/xpra/issues/1367)
 * [#1233 whitelist some more intel chipsets](https://github.com/Xpra-org/xpra/issues/1233)
 * [#1364 painting random window as solid white upon connection](https://github.com/Xpra-org/xpra/issues/1364)
-* window resizing problems: [#1469](https://github.com/Xpra-org/xpra/issues/1469) / [#1468](../issues/1468) - 
+* window resizing problems: [#1469](https://github.com/Xpra-org/xpra/issues/1469) / [#1468](../issues/1468)
 * [#1050 fullscreen crash on win32](https://github.com/Xpra-org/xpra/issues/1050)
 * [#1024 `glTexParameteri` error](https://github.com/Xpra-org/xpra/issues/1024)
 * [#968 rendering dimensions](https://github.com/Xpra-org/xpra/issues/968)

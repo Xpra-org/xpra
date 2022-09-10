@@ -16,7 +16,7 @@ You may also refer to the more generic list of [dependencies](./Dependencies.md)
 ## Extra dependencies
 <details>
   <summary>Vfb command</summary>
-  
+
 To use [Xdummy](../Usage/Xdummy.md):
 ```shell
 dnf install xorg-x11-server-Xorg xorg-x11-drv-dummy xorg-x11-xauth xorg-x11-xkb-utils

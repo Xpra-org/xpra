@@ -19,7 +19,7 @@ The downside of using `Xdummy` is its incomplete `RandR` support: the resolution
 ## Usage
 <details>
   <summary>Xdummy standlone</summary>
-  
+
 You can start a new display using the dummy driver without needing any special privileges (no root, no suid), you should specify your own log and config files:
 ```shell
 Xorg -noreset +extension GLX +extension RANDR +extension RENDER \

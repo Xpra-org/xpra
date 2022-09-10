@@ -12,7 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.codecs.codec_debug import may_save_image
 from xpra.codecs.spng.spng cimport (
     SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH,
-    SPNG_CTX_ENCODER, 
+    SPNG_CTX_ENCODER,
     SPNG_INTERLACE_NONE,
     SPNG_ENCODE_FINALIZE,
     SPNG_FILTER_CHOICE, SPNG_FILTER_CHOICE_NONE, SPNG_FILTER_CHOICE_SUB,

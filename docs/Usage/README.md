@@ -101,7 +101,7 @@ xpra shadow --clipboard=yes --printing=no --windows=no --speaker=no ssh://SERVER
 
 ## [Printer](../Features/Printing.md) forwarder
 ```shell
-xpra shadow --printing=yes --windows=no --speaker=no ssh://SERVERHOST/ 
+xpra shadow --printing=yes --windows=no --speaker=no ssh://SERVERHOST/
 ```
 The local printers should be virtualized on the server.
 

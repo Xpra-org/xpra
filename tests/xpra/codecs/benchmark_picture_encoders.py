@@ -71,7 +71,7 @@ def main(fmt="png", files=()):
                     encoding, enc.get_type(), w*h*N/(end-start)/1024/1024, size*N/1024, ratio))
                 #verify that the png data is valid using pillow:
                 if encoding not in ("rgb24", "rgb32", "avif"):
-                    from io import BytesIO 
+                    from io import BytesIO
                     buf = BytesIO(cdata.data)
                     img = Image.open(buf)
                     #img.show()

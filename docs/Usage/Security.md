@@ -99,7 +99,7 @@ Debugging tools and diagnostics can sometimes be at odds with good security prac
 The extensive [debug logging](./Logging.md) capabilities normally obfuscate sensitive information like passwords and keys,
 but it may still be possible to glean enough data to be present a real risk. A good preventative measure is to disable remote logging and turn off the server's control channel (#3573).  
 The xpra shell is a very powerful debugging feature which allows full access to all the data structures held in the client and server. It is disabled by default.  
-  
+
 ### Malicious clients and servers
 Servers should be using authentication, so tipically this means that malicious clients have had their authentication credentials compromised or perhaps the whole clients is compromised.  
 Clients should be using SSL certificates or SSH host keys to verify the identity of a server. A malicious server would be one that has been compromised or which is running a compromised application (ie: a browser).  

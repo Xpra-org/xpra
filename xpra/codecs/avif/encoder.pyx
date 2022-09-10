@@ -149,7 +149,7 @@ def encode(coding, image, options=None):
             r = avifImageRGBToYUV(avif_image, &rgb)
             log("avifImageRGBToYUV()=%i for %s", r, AVIF_PIXEL_FORMAT.get(avif_image.yuvFormat))
             check(r, "Failed to convert to YUV(A)")
-    
+
             encoder = avifEncoderCreate()
             log("avifEncoderCreate()=%#x", <uintptr_t> encoder)
             if encoder==NULL:
@@ -171,11 +171,11 @@ def encode(coding, image, options=None):
             r = avifEncoderAddImage(encoder, avif_image, 1, AVIF_ADD_IMAGE_FLAG_SINGLE)
             log("avifEncoderAddImage()=%i", r)
             check(r, "Failed to add image to encoder")
-    
+
             r = avifEncoderFinish(encoder, &avifOutput)
             log("avifEncoderFinish()=%i", r)
             check(r, "Failed to finish encode")
-    
+
             cdata = avifOutput.data[:avifOutput.size]
             log("avif: got %i bytes", avifOutput.size)
             may_save_image("avif", cdata)

@@ -76,7 +76,7 @@ These modules are used for:
 * converting the pixel data received by the xpra server into a pixel format that can be consumed by the video encoders
 * converting the pixel data from the video decoders into a pixel format that can be used to paint the client's window (different windows may have different capabilities)
 * up / down scaling the pixel data when needed
- 
+
 |Codename |Colorspaces supported|Notes|
 |---------|---------------------|-----|
 |`cython` |`r210`, `BGR48`, `GBRP10`, `YUV444P10`|slow but useful for some high bit depth modes|

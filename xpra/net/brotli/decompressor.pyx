@@ -45,7 +45,7 @@ cdef extern from "brotli/decode.h":
 
     # Decompresses the input stream to the output stream
     BrotliDecoderResult BrotliDecoderDecompressStream(BrotliDecoderState * state,
-                                                      size_t * available_in, const uint8_t ** next_in, 
+                                                      size_t * available_in, const uint8_t ** next_in,
                                                       size_t * available_out, uint8_t ** next_out,
                                                       size_t * total_out) nogil
 

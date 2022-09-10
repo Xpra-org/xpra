@@ -20,7 +20,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 Here is the full list:
 <details>
   <summary>list of modules</summary>
-  
+
 |Module|Result|Purpose|
 |------|------|-------|
 |[allow](../../xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
@@ -100,7 +100,7 @@ The username can be specified:
 * in the client connection string
 <details>
   <summary>tcp example</summary>
-  
+
 ```shell
 xpra attach tcp://username:password@host:port/
 ```

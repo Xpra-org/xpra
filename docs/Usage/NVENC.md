@@ -74,7 +74,7 @@ libdir=/usr/lib64/nvidia
 Name: nvenc
 Description: NVENC
 Version: 10
-Requires: 
+Requires:
 Conflicts:
 Libs: -L${libdir} -lnvidia-encode
 Cflags: -I${includedir}

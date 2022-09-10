@@ -1820,7 +1820,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         options.max_size = "x".join(parse_window_size(options.max_size, "max-size"))
     if options.encryption_keyfile and not options.encryption:
         from xpra.net.crypto import DEFAULT_MODE
-        options.encryption = f"AES-{DEFAULT_MODE}" 
+        options.encryption = f"AES-{DEFAULT_MODE}"
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
         from xpra.net.crypto import DEFAULT_MODE  # @Reimport
         options.tcp_encryption = f"AES-{DEFAULT_MODE}"

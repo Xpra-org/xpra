@@ -23,7 +23,7 @@ cdef extern from "Python.h":
 cdef extern from "lz4_compat.h":
     int LZ4_versionNumber()
     int LZ4_MAX_INPUT_SIZE
-    
+
     ctypedef struct LZ4_stream_t:
         pass
 

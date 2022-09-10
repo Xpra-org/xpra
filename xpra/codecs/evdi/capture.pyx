@@ -233,7 +233,7 @@ cdef class EvdiDevice:
         self.dpms_mode = dpms_mode
         self.unregister_buffers()
         self.may_start()
-    
+
     def may_start(self):
         if self.dpms_mode==DRM_MODE_DPMS_ON and self.mode.width>0 and self.mode.height>0:
             buf_id = 1
@@ -241,7 +241,7 @@ cdef class EvdiDevice:
                 self.register_buffer(buf_id)
             if self.request_update(buf_id):
                 self.update_ready_handler(buf_id)
-    
+
     cdef void mode_changed_handler(self, evdi_mode mode):
         log.info("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
@@ -273,20 +273,18 @@ cdef class EvdiDevice:
                 if w>0 and h>0:
                     sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
                     sub.save("%s-%i.png" % (monotonic(), i), "PNG")
-                    
-                        
         #TODO: save areas to test png files
 
 
     cdef void crtc_state_handler(self, int state):
         log.info("crtc_state_handler(%i)", state)
-    
+
     cdef void cursor_set_handler(self, evdi_cursor_set cursor_set):
         log.info("cursor_set_handler(%ix%i)", cursor_set.width, cursor_set.height)
-    
+
     cdef void cursor_move_handler(self, evdi_cursor_move cursor_move):
         log.info("cursor_move_handler(%ix%i)", cursor_move.x, cursor_move.y)
-    
+
     cdef void ddcci_data_handler(self, evdi_ddcci_data ddcci_data):
         log.info("ddcci_data_handler(%#x)", ddcci_data.address)
 

@@ -54,7 +54,7 @@ You will need to adapt it to your hardware.
    - Open Administrator CMD prompt
    - `wsl --install -d Ubuntu-20.04`
    - Restart Windows, WSL 2 setup continues automatically after restart.
-   - `sudo apt update; sudo apt upgrade` 
+   - `sudo apt update; sudo apt upgrade`
    - Shutdown WSL 2 with `wsl --shutdown`
    - Start WSL 2 again with `bash`
    - `sudo apt install gedit mesa-utils`

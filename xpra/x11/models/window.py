@@ -476,7 +476,7 @@ class WindowModel(BaseWindowModel):
             #try to honour initial size and position requests during setup:
             w, h = self.get_property("requested-size")
             x, y = self.get_property("requested-position")
-            geometry = x, y, w, h 
+            geometry = x, y, w, h
             geomlog("_update_client_geometry: using initial geometry=%s", geometry)
         else:
             geometry = self.get_property("geometry")

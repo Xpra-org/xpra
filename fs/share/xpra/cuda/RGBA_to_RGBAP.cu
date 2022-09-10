@@ -10,7 +10,7 @@
 extern "C" __global__ void RGBA_to_RGBAP(int src_w, int src_h,
                              int srcPitch, uint8_t *srcImage,
                              int dst_w, int dst_h,
-                             int dstPitch, 
+                             int dstPitch,
                              uint8_t *R, uint8_t *G, uint8_t *B, uint8_t *A)
 {
     const uint32_t gx = blockIdx.x * blockDim.x + threadIdx.x;

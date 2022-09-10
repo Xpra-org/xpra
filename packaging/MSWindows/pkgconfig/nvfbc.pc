@@ -3,7 +3,7 @@ sdk_path=E:/NVIDIA-Capture-SDK
 Name: nvfbc
 Description: NVFBC
 Version: 6.0
-Requires: 
+Requires:
 Conflicts:
-Libs.private: 
+Libs.private:
 Cflags: -I${sdk_path}/inc/ -Wno-endif-labels -Wno-endif-labels -Wno-error=address

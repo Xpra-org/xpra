@@ -2,17 +2,17 @@
 ###############################################################################
 # libproxy - A library for proxy configuration
 # Copyright (C) 2006 Nathaniel McCallum <nathaniel@natemccallum.com>
-# 
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
@@ -45,7 +45,7 @@ _libproxy.px_proxy_factory_free_proxies.argtypes = [ctypes.POINTER(ctypes.c_void
 class ProxyFactory(object):
     """A ProxyFactory object is used to provide potential proxies to use
     in order to reach a given URL (via 'getProxies(url)').
- 
+
     This instance should be kept around as long as possible as it contains
     cached data to increase performance.  Memory usage should be minimal (cache
     is small) and the cache lifespan is handled automatically.
@@ -61,9 +61,9 @@ class ProxyFactory(object):
                     # Fetch URL using an HTTP proxy
                 elif proxy.startswith("socks://"):
                     # Fetch URL using a SOCKS proxy
-                
+
                 if fetchSucceeded:
-                    break    
+                    break
     """
 
     class ProxyResolutionError(RuntimeError):
@@ -73,31 +73,31 @@ class ProxyFactory(object):
 
     def __init__(self):
         self._pf = _libproxy.px_proxy_factory_new()
-        
+
     def getProxies(self, url):
         """Given a URL, returns a list of proxies in priority order to be used
         to reach that URL.
 
-        A list of proxy strings is returned.  If the first proxy fails, the 
+        A list of proxy strings is returned.  If the first proxy fails, the
         second should be tried, etc... In all cases, at least one entry in the
         list will be returned. There are no error conditions.
 
         Regarding performance: this method always blocks and may be called
         in a separate thread (is thread-safe).  In most cases, the time
         required to complete this function call is simply the time required
-        to read the configuration (e.g  from GConf, Kconfig, etc).  
+        to read the configuration (e.g  from GConf, Kconfig, etc).
 
         In the case of PAC, if no valid PAC is found in the cache (i.e.
-        configuration has changed, cache is invalid, etc), the PAC file is 
+        configuration has changed, cache is invalid, etc), the PAC file is
         downloaded and inserted into the cache. This is the most expensive
         operation as the PAC is retrieved over the network. Once a PAC exists
         in the cache, it is merely a JavaScript invocation to evaluate the PAC.
-        One should note that DNS can be called from within a PAC during 
+        One should note that DNS can be called from within a PAC during
         JavaScript invocation.
 
         In the case of WPAD, WPAD is used to automatically locate a PAC on the
         network.  Currently, we only use DNS for this, but other methods may
-        be implemented in the future.  Once the PAC is located, normal PAC 
+        be implemented in the future.  Once the PAC is located, normal PAC
         performance (described above) applies.
 
         """
@@ -119,7 +119,7 @@ class ProxyFactory(object):
 
         proxies = []
         array = _libproxy.px_proxy_factory_get_proxies(self._pf, url_bytes)
-    
+
         if not bool(array):
             raise ProxyFactory.ProxyResolutionError(
                     "Can't resolve proxy for '%s'" % url)
@@ -136,10 +136,10 @@ class ProxyFactory(object):
             i += 1
 
         _libproxy.px_proxy_factory_free_proxies(array)
-        
+
         return proxies
-        
+
     def __del__(self):
         if _libproxy:
             _libproxy.px_proxy_factory_free(self._pf)
-    
+

@@ -33,7 +33,7 @@ Name: "{commonappdata}\SSH"; Permissions: users-readexec admins-full; Attribs: n
 
 [Files]
 Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
-Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; 
+Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall;
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\lib\*.py*"

@@ -93,7 +93,7 @@ def decompress(data, options=None, yuv=False):
             data_buf = <const uint8_t*> (<uintptr_t> int(bc))
             r = avifDecoderSetIOMemory(decoder, data_buf, data_len)
             check(r, "Cannot set IO on avifDecoder")
-    
+
             r = avifDecoderParse(decoder)
             check(r, "Failed to decode image")
 

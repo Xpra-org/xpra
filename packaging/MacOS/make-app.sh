@@ -22,7 +22,7 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
 else
 	if [ ! -e "${JHBUILD_PREFIX}/share/xpra/www/" ]; then
-		echo "the xpra html5 client must be installed in ${JHBUILD_PREFIX}/share/xpra/www/" 
+		echo "the xpra html5 client must be installed in ${JHBUILD_PREFIX}/share/xpra/www/"
 		exit 1
 	fi
 fi

@@ -29,7 +29,7 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent,
-    XSelectionEvent, 
+    XSelectionEvent,
     XFree, XGetErrorText,
     XQueryExtension, XQueryTree,
     NoSymbol,
