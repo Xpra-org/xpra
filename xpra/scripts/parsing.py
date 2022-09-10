@@ -322,7 +322,7 @@ def parse_host_string(host, default_port=DEFAULT_PORT):
             if len(devsep)==2:
                 parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
                 if len(parts)==2:
-                    host = f"{devsep[0]}%%{parts[0]}"
+                    host = f"{devsep[0]}%{parts[0]}"
                     port_str = parts[1]     #ie: "14500"
             else:
                 parts = host.split(":")
