@@ -370,7 +370,9 @@ def read_config(conf_file):
             debug("assigned (new): %s='%s'", name, value)
             d[name] = value
         if name in DEBUG_CONFIG_PROPERTIES:
-            print("%s=%s (was %s), from %s" % (name, d[name], current_value, conf_file))
+            from xpra.log import Logger  # pylint: disable=import-outside-toplevel
+            log = Logger("util")
+            log.info(f"{name}={d[name]} (was {current_value}), from {conf_file!r}")
     return  d
 
 
