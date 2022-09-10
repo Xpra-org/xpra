@@ -381,8 +381,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             password = dialog.password_input.get_text()
             dialog.hide()
             dialog.destroy()
+            response_str = dict((getattr(Gtk.ResponseType, k, ""), k) for k in (
+                "ACCEPT", "APPLY", "CANCEL", "CLOSE", "DELETE_EVENT", "HELP", "NO", "NONE", "OK", "REJECT", "YES"))
+            log(f"handle_response({dialog}, {response}) response={response_str.get(response)}")
             if response!=Gtk.ResponseType.ACCEPT or not password:
                 values.append(None)
+                #for those responses, we assume that the user wants to abort authentication:
+                if response in (Gtk.ResponseType.CLOSE, Gtk.ResponseType.REJECT, Gtk.ResponseType.DELETE_EVENT):
+                    self.disconnect_and_quit(EXIT_PASSWORD_REQUIRED, "password entry was cancelled")
             else:
                 values.append(password)
             wait.set()
