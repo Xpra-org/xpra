@@ -50,7 +50,7 @@ class TestMain(unittest.TestCase):
         if e:
             for k,v in e.items():
                 actual = r.get(k)
-                assert actual==v, f"expected {v} but got {actual} from parse_display_name({s})={r}, expected {e}"
+                assert actual==v, f"expected {v!r} but got {actual!r} from parse_display_name({s})={r}, expected {e}"
         return r
 
     def test_parse_display_name(self):
