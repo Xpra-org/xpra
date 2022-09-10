@@ -49,8 +49,8 @@ class KeyboardBase:
             #ie: a=('CapsLock'), b=0
             self._do_add_modifier_mapping(a, 0, modifier)
         else:
-            log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
-            log.warn(" values: %s, %s", a, b)
+            log.warn(f"Warning: unexpected key definition: {type(a)}, {type(b)}")
+            log.warn(f" values: {a}, {b}")
 
     def _do_add_modifier_mapping(self, keynames, keycode, modifier):
         for keyname in keynames:
@@ -62,7 +62,7 @@ class KeyboardBase:
                     keycodes.append(keycode)
 
     def set_modifier_mappings(self, mappings):
-        log("set_modifier_mappings(%s)", mappings)
+        log("set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
         self.modifier_keys = {}
         self.modifier_names = {}
@@ -70,9 +70,9 @@ class KeyboardBase:
         for modifier, keys in mappings.items():
             for a, b in keys:
                 self._add_modifier_mapping(a, b, modifier)
-        log("modifier_keys=%s", self.modifier_keys)
-        log("modifier_names=%s", self.modifier_names)
-        log("modifier_keycodes=%s", self.modifier_keycodes)
+        log(f"modifier_keys={self.modifier_keys}")
+        log(f"modifier_names={self.modifier_names}")
+        log(f"modifier_keycodes={self.modifier_keycodes}")
 
     def mask_to_names(self, mask):
         return mask_to_names(mask, self.modifier_map)
@@ -96,8 +96,8 @@ class KeyboardBase:
     def get_keyboard_repeat(self):
         return None
 
-    def update_modifier_map(self, display, xkbmap_mod_meanings):
-        log("update_modifier_map%s", (display, xkbmap_mod_meanings))
+    def update_modifier_map(self, display, mod_meanings):
+        log(f"update_modifier_map({display}, {mod_meanings})")
         self.modifier_map = MODIFIER_MAP
 
 

@@ -118,6 +118,7 @@ class Keyboard(KeyboardBase):
         if not is_X11():
             return ""
         xkb_rules_names = ""
+        # pylint: disable=import-outside-toplevel
         from xpra.platform.xposix.gui import _get_X11_root_property
         prop = _get_X11_root_property("_XKB_RULES_NAMES", "STRING")
         log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
@@ -212,6 +213,7 @@ class Keyboard(KeyboardBase):
 
     def update_modifier_map(self, display, mod_meanings):
         try:
+            # pylint: disable=import-outside-toplevel
             from xpra.x11.gtk_x11.keys import grok_modifier_map
             self.modifier_map = grok_modifier_map(display, mod_meanings)
         except ImportError:
