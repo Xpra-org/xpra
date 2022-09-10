@@ -8,7 +8,8 @@
 
 """ client_launcher.py
 
-This is a simple GUI for starting the xpra client.
+This was meant to be a simple GUI for starting the xpra client.
+Then it morphed into something quite messy. Sorry.
 
 """
 
@@ -57,7 +58,8 @@ SAVED_FIELDS = [
     "username", "password", "host", "port", "mode", "ssh_port",
     "encoding", "quality", "min-quality", "speed", "min-speed",
     "proxy_port", "proxy_username", "proxy_key", "proxy_password",
-    "proxy_host"
+    "proxy_host",
+    "autoconnect",
     ]
 
 #options not normally found in xpra config file
@@ -115,6 +117,7 @@ def set_history_from_active(optionmenu):
 
 def has_mdns():
     try:
+        # pylint: disable=import-outside-toplevel
         from xpra.net.mdns import get_listener_class
         lc = get_listener_class()
         log("mdns listener class: %s", lc)
@@ -390,6 +393,15 @@ class ApplicationWindow:
         self.nostrict_host_check.set_active(False)
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.nostrict_host_check)
+        hbox.pack_start(al)
+        vbox.pack_start(hbox)
+
+        #auto-connect
+        hbox = Gtk.HBox(False, 5)
+        self.autoconnect = Gtk.CheckButton("Auto-connect")
+        self.autoconnect.set_active(False)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(self.autoconnect)
         hbox.pack_start(al)
         vbox.pack_start(hbox)
 
@@ -732,7 +744,8 @@ class ApplicationWindow:
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
             self.is_paramiko = ssh_cmd_0 =="paramiko"
             full_ssh = ssh_cmd[:]
-            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port, None, self.is_putty, self.is_paramiko)
+            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port,
+                                     None, self.is_putty, self.is_paramiko)
             if username:
                 params["username"] = username
             if self.nostrict_host_check.get_active():
@@ -949,6 +962,7 @@ class ApplicationWindow:
         self.config.port = pint(self.port_entry.get_text())
         self.config.username = self.username_entry.get_text()
         self.config.password = self.password_entry.get_text()
+        self.config.autoconnect = self.autoconnect.get_active()
 
         self.config.proxy_host = self.proxy_host_entry.get_text()
         self.config.proxy_port = pint(self.proxy_port_entry.get_text())
