@@ -101,7 +101,8 @@ cdef extern from "evdi_lib.h":
     void evdi_close(evdi_handle handle)
     void evdi_connect(evdi_handle handle, const unsigned char *edid,
           const unsigned int edid_length,
-          const uint32_t sku_area_limit)
+          const uint32_t pixel_area_limit,
+          const uint32_t pixel_per_second_limit)
     void evdi_disconnect(evdi_handle handle)
     void evdi_enable_cursor_events(evdi_handle handle, bint enable)
 
@@ -292,9 +293,12 @@ cdef class EvdiDevice:
         b = strtobytes(edid)
         cdef const unsigned char *edid_bin = b
         cdef unsigned int edid_length = len(b)
-        cdef uint32_t sku_area_limit = 4096*4096*4
+        cdef uint32_t pixel_area_limit = 4096*2160*2
+        cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
         log("connect with edid %s (length=%i)", <uintptr_t> edid_bin, edid_length)
-        evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length, <const uint32_t> sku_area_limit)
+        evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length,
+                     <const uint32_t> pixel_area_limit,
+                     <const uint32_t> pixel_per_second_limit)
 
     def handle_events(self):
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
