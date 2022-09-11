@@ -155,43 +155,43 @@ def catpure_logging():
 
 
 cdef void dpms_handler(int dpms_mode, void *user_data):
-    log.info("dpms_handler(%i, %#x)", dpms_mode, <uintptr_t> user_data)
+    log("dpms_handler(%i, %#x)", dpms_mode, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.dpms_handler(dpms_mode)
 
 cdef void mode_changed_handler(evdi_mode mode, void *user_data):
-    log.info("mode_changed_handler(%ix%i-%i@%i, %#x)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate, <uintptr_t> user_data)
+    log("mode_changed_handler(%ix%i-%i@%i, %#x)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.mode_changed_handler(mode)
 
 cdef void update_ready_handler(int buffer_to_be_updated, void *user_data):
-    log.info("update_ready_handler(%i, %#x)", buffer_to_be_updated, <uintptr_t> user_data)
+    log("update_ready_handler(%i, %#x)", buffer_to_be_updated, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.update_ready_handler(buffer_to_be_updated)
 
 cdef void crtc_state_handler(int state, void *user_data):
-    log.info("crtc_state_handler(%i, %#x)", state, <uintptr_t> user_data)
+    log("crtc_state_handler(%i, %#x)", state, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.crtc_state_handler(state)
 
 cdef void cursor_set_handler(evdi_cursor_set cursor_set, void *user_data):
-    log.info("cursor_set_handler(%ix%i, %#x)", cursor_set.width, cursor_set.height, <uintptr_t> user_data)
+    log("cursor_set_handler(%ix%i, %#x)", cursor_set.width, cursor_set.height, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_set_handler(cursor_set)
 
 cdef void cursor_move_handler(evdi_cursor_move cursor_move, void *user_data):
-    log.info("cursor_move_handler(%ix%i, %#x)", cursor_move.x, cursor_move.y, <uintptr_t> user_data)
+    log("cursor_move_handler(%ix%i, %#x)", cursor_move.x, cursor_move.y, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_move_handler(cursor_move)
 
 cdef void ddcci_data_handler(evdi_ddcci_data ddcci_data, void *user_data):
-    log.info("ddcci_data_handler(%#x, %#x)", ddcci_data.address, <uintptr_t> user_data)
+    log("ddcci_data_handler(%#x, %#x)", ddcci_data.address, <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.ddcci_data_handler(ddcci_data)
@@ -229,7 +229,7 @@ cdef class EvdiDevice:
         devices[device] = self
 
     cdef void dpms_handler(self, int dpms_mode):
-        log.info("dpms_handler(%i) %s", dpms_mode, MODE_STR.get(dpms_mode, "INVALID"))
+        log("dpms_handler(%i) %s", dpms_mode, MODE_STR.get(dpms_mode, "INVALID"))
         self.dpms_mode = dpms_mode
         self.unregister_buffers()
         self.may_start()
@@ -243,13 +243,13 @@ cdef class EvdiDevice:
                 self.update_ready_handler(buf_id)
 
     cdef void mode_changed_handler(self, evdi_mode mode):
-        log.info("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
+        log("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
         self.unregister_buffers()
         self.may_start()
 
     cdef void update_ready_handler(self, int buffer_to_be_updated):
-        log.info("update_ready_handler(%i)", buffer_to_be_updated)
+        log("update_ready_handler(%i)", buffer_to_be_updated)
         self.grab_pixels(buffer_to_be_updated)
 
     def grab_pixels(self, buf_id):
@@ -277,16 +277,16 @@ cdef class EvdiDevice:
 
 
     cdef void crtc_state_handler(self, int state):
-        log.info("crtc_state_handler(%i)", state)
+        log("crtc_state_handler(%i)", state)
 
     cdef void cursor_set_handler(self, evdi_cursor_set cursor_set):
-        log.info("cursor_set_handler(%ix%i)", cursor_set.width, cursor_set.height)
+        log("cursor_set_handler(%ix%i)", cursor_set.width, cursor_set.height)
 
     cdef void cursor_move_handler(self, evdi_cursor_move cursor_move):
-        log.info("cursor_move_handler(%ix%i)", cursor_move.x, cursor_move.y)
+        log("cursor_move_handler(%ix%i)", cursor_move.x, cursor_move.y)
 
     cdef void ddcci_data_handler(self, evdi_ddcci_data ddcci_data):
-        log.info("ddcci_data_handler(%#x)", ddcci_data.address)
+        log("ddcci_data_handler(%#x)", ddcci_data.address)
 
     def connect(self, edid):
         b = strtobytes(edid)
@@ -332,7 +332,7 @@ cdef class EvdiDevice:
         #pybuf = getbuf(8192)
         #cdef evdi_rect *rects = <evdi_rect *> pybuf.get_mem()
         evdi_register_buffer(self.handle, buf)
-        log.info("register_buffer(%i) pybuf=%s", buf_id, pybuf)
+        log("register_buffer(%i) pybuf=%s", buf_id, pybuf)
         self.buffers[buf_id] = pybuf
 
     def request_update(self, buf_id):
