@@ -164,9 +164,7 @@ Conflicts:			xpra-codecs-freeworld
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
 Requires:			x264-xpra
-%if 0%{?fedora}<36
 Requires:			ffmpeg-xpra
-%endif
 Requires:			turbojpeg
 Requires:			python3-cryptography
 Requires:			python3-gobject
@@ -212,9 +210,7 @@ BuildRequires:		pygobject3-devel
 BuildRequires:		python3-cairo-devel
 BuildRequires:		libvpx-devel
 BuildRequires:		x264-xpra-devel
-%if 0%{?fedora}<36
 BuildRequires:		ffmpeg-xpra-devel
-%endif
 BuildRequires:		libyuv-devel
 BuildRequires:		gtk3-devel
 BuildRequires:		gobject-introspection-devel
