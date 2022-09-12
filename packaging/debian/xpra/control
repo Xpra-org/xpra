@@ -14,6 +14,10 @@ Build-Depends: debhelper (>= 8)
               ,libxkbfile-dev
               ,libxres-dev
               ,libnvidia-fbc1 [amd64]
+              ,libdrm-dev
+# even unstable ships an oudated version!
+# (hopefully this can be updated some day)
+              ,libevdi0-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev

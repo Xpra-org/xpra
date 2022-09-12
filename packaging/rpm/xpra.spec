@@ -159,6 +159,9 @@ Requires:			python3-pillow
 Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
+Requires:			libdrm-devel
+#not available yet:
+#Requires:			libevdi-devel
 #this is a downstream package with the codecs separated - it should not be installed:
 Conflicts:			xpra-codecs-freeworld
 Conflicts:			libvpx-xpra
