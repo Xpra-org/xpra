@@ -213,7 +213,8 @@ webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
-evdi_ENABLED            = DEFAULT and POSIX and pkg_config_version("1.10", "evdi")
+evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.12", "evdi")
+evdi_drm_ENABLED        = DEFAULT and LINUX and pkg_config_version("2.4", "drm")
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
@@ -248,7 +249,7 @@ CODEC_SWITCHES = [
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
     "nvjpeg", "avif", "argb",
-    "v4l2", "evdi",
+    "v4l2", "evdi", "evdi_drm",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
     ]
@@ -1053,6 +1054,7 @@ def clean():
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/evdi/capture.cpp",
+                   "xpra/codecs/evdi/drm.c",
                    "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encoder.c",
                    "xpra/codecs/webp/decoder.c",
@@ -2177,6 +2179,7 @@ toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 tace(evdi_ENABLED, "xpra.codecs.evdi.capture", "evdi", language="c++")
+tace(evdi_drm_ENABLED, "xpra.codecs.evdi.drm", "libdrm")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 tace(enc_x264_ENABLED, "xpra.codecs.enc_x264.encoder", "x264")
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
