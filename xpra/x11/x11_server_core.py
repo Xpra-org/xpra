@@ -23,7 +23,7 @@ from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
-from xpra.common import MAX_WINDOW_SIZE
+from xpra.common import MAX_WINDOW_SIZE, FULL_INFO
 from xpra.os_util import strtobytes
 from xpra.util import typedict, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
@@ -363,6 +363,13 @@ class X11ServerCore(GTKServerBase):
             "fakeXinerama"          : bool(self.libfakeXinerama_so),
             "libfakeXinerama"       : self.libfakeXinerama_so or "",
             })
+        if FULL_INFO>1:
+            try:
+                from xpra.codecs.evdi.drm import query
+            except ImportError as e:
+                log(f"no drm query: {e}")
+            else:
+                sinfo["drm"] = query()
         log("X11ServerCore.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
