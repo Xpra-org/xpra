@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -30,6 +30,7 @@ SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def root_prop_set(prop_name, prop_type, value):
+    # pylint: disable=import-outside-toplevel
     from xpra.gtk_common.gtk_util import get_default_root_window
     from xpra.x11.gtk_x11.prop import prop_set
     prop_set(get_default_root_window(), prop_name, prop_type, value)
@@ -166,6 +167,7 @@ class X11ServerBase(X11ServerCore):
         super().last_client_exited()
 
     def init_virtual_devices(self, devices):
+        # pylint: disable=import-outside-toplevel
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
@@ -299,12 +301,14 @@ class X11ServerBase(X11ServerCore):
 
     def update_server_settings(self, settings=None, reset=False):
         self.do_update_server_settings(settings or self._settings, reset,
-                                self.dpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
+                                self.dpi, self.double_click_time, self.double_click_distance,
+                                self.antialias, self.cursor_size)
 
     def do_update_server_settings(self, settings, reset=False,
-                                  dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias=None, cursor_size=-1):
+                                  dpi=0, double_click_time=0, double_click_distance=(-1, -1),
+                                  antialias=None, cursor_size=-1):
         if not self._xsettings_enabled:
-            log("ignoring xsettings update: %s", settings)
+            log(f"ignoring xsettings update: {settings}")
             return
         if reset:
             #FIXME: preserve serial? (what happens when we change values which had the same serial?)
@@ -316,14 +320,15 @@ class X11ServerBase(X11ServerCore):
                     for _, prop_name, value, _ in self._default_xsettings[1]:
                         self._settings[prop_name] = value
                 except Exception as e:
-                    log("failed to parse %s", self._default_xsettings)
+                    log(f"failed to parse {self._default_xsettings}")
                     log.warn("Warning: failed to parse default XSettings:")
-                    log.warn(" %s", e)
+                    log.warn(f" {e}")
         old_settings = dict(self._settings)
         log("server_settings: old=%r, updating with=%r", old_settings, settings)
-        log("overrides: dpi=%s, double click time=%s, double click distance=%s",
-            dpi, double_click_time, double_click_distance)
-        log("overrides: antialias=%s", antialias)
+        log("overrides: ")
+        log(f" dpi={dpi}")
+        log(f" double click time={double_click_time}, double click distance={double_click_distance}")
+        log(f" antialias={antialias}")
         #older versions may send keys as "bytes":
         settings = dict((bytestostr(k), v) for k,v in settings.items())
         self._settings.update(settings)
@@ -339,10 +344,10 @@ class X11ServerBase(X11ServerCore):
                         continue
                     parts = option.split(":\t", 1)
                     if len(parts)!=2:
-                        log("skipped invalid option: '%s'", option)
+                        log(f"skipped invalid option: {option!r}")
                         continue
                     if parts[0] in BLACKLISTED_XSETTINGS:
-                        log("skipped blacklisted option: '%s'", option)
+                        log(f"skipped blacklisted option: {option!r}")
                         continue
                     values[parts[0]] = parts[1]
                 if cursor_size>0:
@@ -368,11 +373,11 @@ class X11ServerBase(X11ServerCore):
                                    "Xft.hinting"    : ad.intget("hinting", -1),
                                    "Xft.rgba"       : subpixel_order,
                                    "Xft.hintstyle"  : _get_antialias_hintstyle(ad)})
-                log("server_settings: resource-manager values=%r", values)
+                log(f"server_settings: resource-manager values={values}")
                 #convert the dict back into a resource string:
                 value = ''
                 for vk, vv in values.items():
-                    value += "%s:\t%s\n" % (vk, vv)
+                    value += f"{vk}:\t{vv}\n"
                 #record the actual value used
                 self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
@@ -411,7 +416,8 @@ class X11ServerBase(X11ServerCore):
                     ad = typedict(antialias)
                     v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
                     v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
-                    v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, ad.strget("orientation", "none").lower())
+                    orientation = ad.strget("orientation", "none").lower()
+                    v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, orientation)
                     v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, _get_antialias_hintstyle(ad))
                 if double_click_distance!=(-1, -1):
                     #some platforms give us a value for each axis,
@@ -430,7 +436,7 @@ class X11ServerBase(X11ServerCore):
                     self.set_xsettings(v)
                 elif k == "resource-manager":
                     p = "RESOURCE_MANAGER"
-                    log("server_settings: setting %s to %r", p, v)
+                    log(f"server_settings: setting {p} to {v}")
                     root_prop_set(p, "latin1", strtobytes(v).decode("latin1"))
                 else:
-                    log.warn("Warning: unexpected setting '%s'", bytestostr(k))
+                    log.warn(f"Warning: unexpected setting {bytestostr(k)}")

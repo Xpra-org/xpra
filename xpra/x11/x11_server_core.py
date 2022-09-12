@@ -28,6 +28,7 @@ from xpra.os_util import strtobytes
 from xpra.util import typedict, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
+from xpra.server import server_features
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
@@ -101,7 +102,6 @@ class X11ServerCore(GTKServerBase):
 
     def server_init(self):
         self.x11_init()
-        from xpra.server import server_features
         if server_features.windows:
             from xpra.x11.x11_window_filters import init_x11_window_filters
             init_x11_window_filters()
@@ -365,7 +365,7 @@ class X11ServerCore(GTKServerBase):
             })
         if FULL_INFO>1:
             try:
-                from xpra.codecs.evdi.drm import query
+                from xpra.codecs.evdi.drm import query  # pylint: disable=import-outside-toplevel
             except ImportError as e:
                 log(f"no drm query: {e}")
             else:
@@ -896,7 +896,6 @@ class X11ServerCore(GTKServerBase):
 
 
     def setup_input_devices(self):
-        from xpra.server import server_features
         xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
         if not server_features.input_devices:
             return
