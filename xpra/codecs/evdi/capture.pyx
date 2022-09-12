@@ -57,7 +57,6 @@ cdef extern from "evdi_lib.h":
         evdi_rect *rects
         int rect_count
 
-
     ctypedef struct evdi_cursor_set:
         int32_t hot_x
         int32_t hot_y
@@ -138,10 +137,6 @@ def get_version():
     return (version.version_major, version.version_minor, version.version_patchlevel)
 
 
-cdef class Capture:
-    pass
-
-
 cdef void evdi_logging_function(void *user_data, const char *fmt, ...):
     s = bytestostr(fmt)
     log("evdi: %s", s)
@@ -215,7 +210,7 @@ cdef class EvdiDevice:
         self.handle = evdi_open(device)
         self.dpms_mode = -1
         if not self.handle:
-            raise ValueError("cannot open %i" % device)
+            raise ValueError(f"cannot open {device}")
 
         memset(&self.mode, 0, sizeof(evdi_mode))
         self.event_context.dpms_handler = &dpms_handler
@@ -250,13 +245,13 @@ cdef class EvdiDevice:
         self.may_start()
 
     cdef void update_ready_handler(self, int buffer_to_be_updated):
-        log("update_ready_handler(%i)", buffer_to_be_updated)
+        log(f"update_ready_handler({buffer_to_be_updated})")
         self.grab_pixels(buffer_to_be_updated)
 
     def grab_pixels(self, buf_id):
         buf = self.buffers.get(buf_id)
         if not buf:
-            raise ValueError("unknown buffer %i" % buf_id)
+            raise ValueError(f"unknown buffer {buf_id}")
         cdef int nrects = 16
         cdef MemBuf pyrects = getbuf(16*sizeof(evdi_rect))
         cdef evdi_rect *rects = <evdi_rect *>pyrects.get_mem()
@@ -360,7 +355,7 @@ cdef class EvdiDevice:
 
 
 cdef test_device(int device):
-    log("opening card %i", device)
+    log(f"opening card {device}")
     cdef EvdiDevice d = EvdiDevice(device)
     import binascii
     #xrandr --addmode DVI-I-1-1 1280x720
@@ -384,7 +379,7 @@ def selftest(full=False):
     format_string = LOG_FORMAT
     log.enable_debug()
     enable_color(format_string=format_string)
-    log.info("evdi version %s", ".".join(str(x) for x in get_version()))
+    log.info("evdi version " + ".".join(str(x) for x in get_version()))
     #catpure_logging()
     log.enable_debug()
     for f in sorted(os.listdir("/dev/dri")):
