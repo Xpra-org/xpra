@@ -18,20 +18,12 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.gtk_x11.prop import prop_get
-from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
-from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
 from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")
-
-XImage = XImageBindings()
-XRes = ResBindings()
-if not XRes.check_xres():
-    XRes = None
-wb = X11WindowBindings()
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
@@ -56,6 +48,7 @@ def window_matches(wspec, model_class):
         skip_children = False
     else:
         skip_children = True
+    wb = X11WindowBindings()
     with xsync:
         allw = [wxid for wxid in wb.get_all_x11_windows() if
                 not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
@@ -110,10 +103,17 @@ def window_matches(wspec, model_class):
                 xids.append(xid)
             elif m.startswith("pid="):
                 pid = i(m[4:])
-                if XRes and pid:
-                    for xid in names.keys():
-                        if XRes.get_pid(xid)==pid:
-                            xids.append(xid)
+                if pid:
+                    try:
+                        from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport pylint: disable=import-outside-toplevel
+                    except ImportError:
+                        XRes = None
+                    else:
+                        XRes = ResBindings()
+                    if XRes and XRes.check_xres():
+                        for xid in names:
+                            if XRes.get_pid(xid)==pid:
+                                xids.append(xid)
             elif m.startswith("command="):
                 command = m[len("command="):]
                 xids += matchre(command, commands)
@@ -158,7 +158,7 @@ def window_matches(wspec, model_class):
                     parent = wb.getParent(parent)
                     rel_parent = models.get(parent)
                     if rel_parent:
-                        log.warn("%s is the parent of %s", rel_parent, model)
+                        log.warn(f"Warning: {rel_parent} is the parent of {model}")
                         break
             model.parent = rel_parent
             #"class-instance", "client-machine", "window-type",
@@ -173,18 +173,20 @@ def window_matches(wspec, model_class):
 
 
 class XImageCapture:
-    __slots__ = ("xshm", "xwindow")
+    __slots__ = ("xshm", "xwindow", "XImage")
     def __init__(self, xwindow):
         log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow
-        assert USE_XSHM and XImage.has_XShm(), "no XShm support"
+        from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
+        self.XImage = XImageBindings()
+        assert USE_XSHM and self.XImage.has_XShm(), "no XShm support"
         if is_Wayland():
             log.warn("Warning: shadow servers do not support Wayland")
             log.warn(" please switch to X11 for shadow support")
 
     def __repr__(self):
-        return "XImageCapture(%#x)" % self.xwindow
+        return f"XImageCapture({self.xwindow:x})"
 
     def clean(self):
         self.close_xshm()
@@ -212,7 +214,7 @@ class XImageCapture:
         try:
             with xsync:
                 log("%s.refresh() xshm=%s", self, self.xshm)
-                self.xshm = XImage.get_XShmWrapper(self.xwindow)
+                self.xshm = self.XImage.get_XShmWrapper(self.xwindow)
                 self.xshm.setup()
         except Exception as e:
             self.xshm = None
@@ -224,8 +226,8 @@ class XImageCapture:
         if self.xshm is None:
             log("no xshm, cannot get image")
             return None
+        start = monotonic()
         try:
-            start = monotonic()
             with xsync:
                 log("X11 shadow get_image, xshm=%s", self.xshm)
                 image = self.xshm.get_image(self.xwindow, x, y, width, height)
@@ -257,8 +259,15 @@ def setup_capture(window):
             log("get_image() NvFBC test failed", exc_info=True)
             log("not using %s: %s", capture, e)
             capture = None
-    if not capture and XImage.has_XShm() and USE_XSHM:
-        capture = XImageCapture(window.get_xid())
+    if not capture and USE_XSHM:
+        try:
+            from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
+            XImage = XImageBindings()
+        except ImportError:
+            pass
+        else:
+            if XImage.has_XShm():
+                capture = XImageCapture(window.get_xid())
     if not capture:
         capture = GTKImageCapture(window)
     log("setup_capture(%s)=%s", window, capture)
@@ -392,7 +401,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             if title and body:
                 ss.may_notify(nid, title, body, icon_name="server")
         except Exception as e:
-            ss.may_notify(nid, "Shadow Error", "Error shadowing the display:\n%s" % e, icon_name="bugs")
+            ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
 
     def make_hello(self, source):
@@ -428,7 +437,7 @@ def snapshot(filename):
     from PIL import Image
     fmt = image.get_pixel_format().replace("X", "A")
     pixels = memoryview_to_bytes(image.get_pixels())
-    log("converting %i bytes in format %s to RGBA", len(pixels), fmt)
+    log(f"converting {len(pixels)} bytes in format {fmt} to RGBA")
     if len(fmt)==3:
         target = "RGB"
     else:
@@ -457,14 +466,15 @@ def main(*args):
     from xpra.x11.gtk3 import gdk_display_source  #pylint: disable=import-outside-toplevel, no-name-in-module
     gdk_display_source.init_gdk_display_source()
     for w in window_matches(args, cb):
-        print("%s"  % (w,))
+        print(f"{w}")
 
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv)==1:
-        print("usage: %s filename.png" % sys.argv[0])
-        print("usage: %s windowname|windowpid" % sys.argv[0])
+        cmd = sys.argv[0]
+        print(f"usage: {cmd} filename.png")
+        print(f"usage: {cmd} windowname|windowpid")
         r = 1
     else:
         r = main(*sys.argv[1:])
