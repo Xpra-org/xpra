@@ -374,24 +374,29 @@ cdef test_device(int device):
     d.cleanup()
     return True
 
+def find_evdi_devices():
+    import os
+    devices = []
+    for f in sorted(os.listdir("/dev/dri")):
+        if not f.startswith("card"):
+            continue
+        try:
+            device = int(f[len("card"):])
+            r = evdi_check_device(device)
+            if r==AVAILABLE:
+                devices.append(device)
+        except ValueError:
+            pass
+    return devices
+
 
 def selftest(full=False):
-    import os
     from xpra.log import LOG_FORMAT, enable_color
     format_string = LOG_FORMAT
     log.enable_debug()
     enable_color(format_string=format_string)
     log.info("evdi version " + ".".join(str(x) for x in get_version()))
-    #catpure_logging()
-    log.enable_debug()
-    for f in sorted(os.listdir("/dev/dri")):
-        if f.startswith("card"):
-            try:
-                device = int(f[4:])
-                r = evdi_check_device(device)
-                log.info("%2i: %s", device, STATUS_STR.get(r, r))
-                if r==AVAILABLE:
-                    if test_device(device):
-                        break
-            except ValueError:
-                pass
+    devices = find_evdi_devices()
+    if devices:
+        for device in devices:
+            test_device(device)
