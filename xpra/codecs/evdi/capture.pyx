@@ -208,11 +208,11 @@ cdef class EvdiDevice:
     def __init__(self, int device):
         self.device = device
         self.handle = evdi_open(device)
-        self.dpms_mode = -1
         if not self.handle:
             raise ValueError(f"cannot open {device}")
-
+        self.dpms_mode = DRM_MODE_DPMS_OFF
         memset(&self.mode, 0, sizeof(evdi_mode))
+        memset(&self.event_context, 0, sizeof(evdi_event_context))
         self.event_context.dpms_handler = &dpms_handler
         self.event_context.mode_changed_handler = &mode_changed_handler
         self.event_context.update_ready_handler = &update_ready_handler
@@ -226,14 +226,21 @@ cdef class EvdiDevice:
 
     cdef void dpms_handler(self, int dpms_mode):
         log("dpms_handler(%i) %s", dpms_mode, MODE_STR.get(dpms_mode, "INVALID"))
+        if self.dpms_mode==dpms_mode:
+            #unchanged
+            return
         self.dpms_mode = dpms_mode
-        self.unregister_buffers()
-        self.may_start()
+        if dpms_mode!=DRM_MODE_DPMS_ON:
+            self.unregister_buffers()
+        else:
+            self.may_start()
 
     def may_start(self):
+        log(f"may_start() dpms_mode={self.dpms_mode}")
         if self.dpms_mode==DRM_MODE_DPMS_ON and self.mode.width>0 and self.mode.height>0:
             buf_id = 1
-            if not self.buffers:
+            log(f"may_start() using buffer {buf_id}")
+            if buf_id not in self.buffers:
                 self.register_buffer(buf_id)
             if self.request_update(buf_id):
                 self.update_ready_handler(buf_id)
@@ -242,7 +249,8 @@ cdef class EvdiDevice:
         log("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
         self.unregister_buffers()
-        self.may_start()
+        self.dpms_mode = DRM_MODE_DPMS_OFF
+        #self.may_start()
 
     cdef void update_ready_handler(self, int buffer_to_be_updated):
         log(f"update_ready_handler({buffer_to_be_updated})")
@@ -252,8 +260,8 @@ cdef class EvdiDevice:
         buf = self.buffers.get(buf_id)
         if not buf:
             raise ValueError(f"unknown buffer {buf_id}")
-        cdef int nrects = 16
-        cdef MemBuf pyrects = getbuf(16*sizeof(evdi_rect))
+        cdef int nrects = 128
+        cdef MemBuf pyrects = getbuf(128*sizeof(evdi_rect))
         cdef evdi_rect *rects = <evdi_rect *>pyrects.get_mem()
         evdi_grab_pixels(self.handle, rects, &nrects)
         log("evdi_grab_pixels(%#x, %#x, %i)", <uintptr_t> self.handle, <uintptr_t> rects, nrects)
@@ -262,6 +270,7 @@ cdef class EvdiDevice:
             pixels = memoryview_to_bytes(memoryview(buf))
             rowstride = self.mode.width*4
             pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
+            pil_image.save("%s.png" % monotonic(), "PNG")
             for i in range(nrects):
                 log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
                 w = rects[i].x2 - rects[i].x1
@@ -269,8 +278,6 @@ cdef class EvdiDevice:
                 if w>0 and h>0:
                     sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
                     sub.save("%s-%i.png" % (monotonic(), i), "PNG")
-        #TODO: save areas to test png files
-
 
     cdef void crtc_state_handler(self, int state):
         log("crtc_state_handler(%i)", state)
@@ -298,38 +305,33 @@ cdef class EvdiDevice:
     def handle_events(self):
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
         log("handle_events() fd=%i", fd)
+        evdi_enable_cursor_events(self.handle, 1)
         import select
         count = 0
-        while count<100:
-            log("will wait for events")
+        start = monotonic()
+        while monotonic()-start<100:
+            log("waiting for events")
             r = select.select([fd], [], [], 1)
             log("select(..)=%s", r)
             if fd in r[0]:
                 evdi_handle_events(self.handle, &self.event_context)
-            else:
-                count += 1
-                if count%10==0 and self.buffers:
-                    self.may_start()
+            count += 1
+            if self.buffers:
+                buf_id = 1
+                if self.request_update(buf_id):
+                    self.update_ready_handler(buf_id)
+            #        self.may_start()
 
     def register_buffer(self, int buf_id):
         cdef evdi_buffer buf
         buf.id = buf_id
         buf.width = self.mode.width
         buf.height = self.mode.height
-        buf.stride = buf.width*4
+        buf.stride = buf.width*self.mode.bits_per_pixel//8
         buf.rect_count = 0
         buf.rects = NULL
-        buf.rect_count = 0
         cdef MemBuf pybuf = getbuf(self.mode.width*self.mode.height*4)
         buf.buffer = <void *>pybuf.get_mem()
-        #cdef int nrects = 0
-        #pybuf = getbuf(w*h*4)
-        #buf.buffer = <void *>pybuf.get_mem()
-        #pybuf = getbuf(8192)
-        #buf.rects = <evdi_rect *> pybuf.get_mem()
-        #buf.rect_count = 128
-        #pybuf = getbuf(8192)
-        #cdef evdi_rect *rects = <evdi_rect *> pybuf.get_mem()
         evdi_register_buffer(self.handle, buf)
         log("register_buffer(%i) pybuf=%s", buf_id, pybuf)
         self.buffers[buf_id] = pybuf
@@ -346,6 +348,7 @@ cdef class EvdiDevice:
         for buf_id in self.buffers.keys():
             log("unregister_buffer %i", buf_id)
             evdi_unregister_buffer(self.handle, buf_id)
+            #TODO: free rects
         self.buffers = {}
 
     def cleanup(self):

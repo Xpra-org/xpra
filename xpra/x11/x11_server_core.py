@@ -365,7 +365,7 @@ class X11ServerCore(GTKServerBase):
             })
         if FULL_INFO>1:
             try:
-                from xpra.codecs.evdi.drm import query  # pylint: disable=import-outside-toplevel
+                from xpra.codecs.drm.drm import query  # pylint: disable=import-outside-toplevel
             except ImportError as e:
                 log(f"no drm query: {e}")
             else:
