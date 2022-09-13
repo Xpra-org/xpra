@@ -305,7 +305,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         X11ServerCore.__init__(self)
-        self.session_type = "shadow"
+        self.session_type = "X11 shadow"
         self.modify_keymap = False
 
     def init(self, opts):
@@ -407,7 +407,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def make_hello(self, source):
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
-        capabilities["server_type"] = "Python/gtk2/x11-shadow"
+        capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
     def get_info(self, proto, *_args):
