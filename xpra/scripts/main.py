@@ -670,13 +670,13 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     else:
         from xpra.scripts.parsing import get_usage
         if mode!="help":
-            print("Invalid subcommand '%s'" % (mode,))
+            print(f"Invalid subcommand {mode!r}")
         print("Usage:")
         if not POSIX or OSX:
             print("(this xpra installation does not support starting local servers)")
         cmd = os.path.basename(script_file)
         for x in get_usage():
-            print("\t%s %s" % (cmd, x))
+            print(f"\t{cmd} {x}")
         print()
         print("see 'man xpra' or 'xpra --help' for more details")
         return 1
@@ -690,7 +690,7 @@ def find_session_by_name(opts, session_name):
         return None
     id_sessions = {}
     for socket_path in socket_paths:
-        cmd = get_nodock_command()+["id", "socket://%s" % socket_path]
+        cmd = get_nodock_command()+["id", f"socket://{socket_path}"]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         id_sessions[socket_path] = proc
     now = monotonic()
@@ -714,7 +714,7 @@ def find_session_by_name(opts, session_name):
     if not session_uuid_to_path:
         return None
     if len(session_uuid_to_path)>1:
-        raise InitException("more than one session found matching '%s'" % session_name)
+        raise InitException(f"more than one session found matching {session_name!r}")
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
 
@@ -722,7 +722,7 @@ def display_desc_to_uri(display_desc):
     dtype = display_desc.get("type")
     if not dtype:
         raise InitException("missing display type")
-    uri = "%s://" % dtype
+    uri = f"{dtype}://"
     username = display_desc.get("username")
     if username is not None:
         uri += username
@@ -739,7 +739,7 @@ def display_desc_to_uri(display_desc):
         uri += host
         port = display_desc.get("port")
         if port and port!=DEFAULT_PORTS.get(dtype):
-            uri += ":%i" % port
+            uri += f":{port:d}"
     elif dtype=="vsock":
         cid, iport = display_desc["vsock"]
         uri += f"{cid}:{iport}"
@@ -755,7 +755,7 @@ def display_desc_to_display_path(display_desc):
         uri += display.lstrip(":")
     options_str = display_desc.get("options_str")
     if options_str:
-        uri += "?%s" % options_str
+        uri += f"?{options_str}"
     return uri
 
 
@@ -768,7 +768,7 @@ def pick_vnc_display(error_cb, opts, extra_args):
             pass
         else:
             return {
-                "display"   : ":%i" % display_no,
+                "display"   : f":{display_no}",
                 "display_name" : display,
                 "host"      : "localhost",
                 "port"      : 5900+display_no,
@@ -798,8 +798,8 @@ def pick_display(error_cb, opts, extra_args, cmdline=()):
                     "local"         : True,
                     "host"          : "localhost",
                     "port"          : port,
-                    "display"       : ":%i" % i,
-                    "display_name"  : ":%i" % i,
+                    "display"       : f":{i}",
+                    "display_name"  : f":{i}",
                     }
         #if not, then fall through and hope that the xpra server supports vnc:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -878,7 +878,7 @@ def connect_or_fail(display_desc, opts):
     try:
         return connect_to(display_desc, opts)
     except ConnectionClosedException as e:
-        raise InitExit(EXIT_CONNECTION_FAILED, "%s" % e) from None
+        raise InitExit(EXIT_CONNECTION_FAILED, str(e)) from None
     except InitException:
         raise
     except InitExit:
@@ -895,7 +895,7 @@ def proxy_connect(options):
     try:
         import socks
     except ImportError as e:
-        raise ValueError("cannot connect via a proxy: %s" % e) from None
+        raise ValueError(f"cannot connect via a proxy: {e}") from None
     to = typedict(options)
     ptype = to.strget("proxy-type")
     proxy_type = {
@@ -992,15 +992,16 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         try:
             sock.connect(sockpath)
         except Exception as e:
-            get_util_logger().debug("failed to connect using %s%s", sock.connect, sockpath, exc_info=True)
+            get_util_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
             noerr(sock.close)
-            raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to '%s':\n %s" % (sockpath, e)) from None
+            raise InitExit(EXIT_CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
         target = "socket://"
-        if display_desc.get("username"):
-            target += "%s@" % display_desc.get("username")
+        username = display_desc.get("username")
+        if username:
+            target += f"{username}@"
         target += sockpath
         conn.target = target
         return conn
@@ -1834,7 +1835,7 @@ def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
     try:
         from xpra import client  #pylint: disable=import-outside-toplevel
         assert client
-    except ImportError as e:
+    except ImportError:
         if start_via_proxy is True:
             error_cb("cannot start-via-proxy: xpra client is not installed")
         return
@@ -3300,7 +3301,7 @@ def get_display_info(display):
         return display_info
     wminfo = exec_wminfo(display)
     if wminfo:
-        log("wminfo(%s)=%s", display, wminfo)
+        log(f"wminfo({display})={wminfo}")
         display_info.update(wminfo)
         mode = wminfo.get("xpra-server-mode", "")
         #seamless servers and non-xpra servers should have a window manager:
@@ -3328,7 +3329,7 @@ def get_displays(dotxpra=None, display_names=None):
         xpra_sessions = get_xpra_sessions(dotxpra)
     displays = {}
     for k, v in find_X11_displays().items():
-        display = ":%s" % k
+        display = f":{k}"
         if display in xpra_sessions:
             continue
         if display_names and display not in display_names:
@@ -3343,7 +3344,7 @@ def run_list_sessions(args, options):
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
     sessions = get_xpra_sessions(dotxpra)
-    print("Found %i xpra sessions:" % len(sessions))
+    print(f"Found {len(sessions)} xpra sessions:")
     for display, attrs in sessions.items():
         print("%4s    %-8s    %-12s    %-16s    %s" % (
             display,
@@ -3376,7 +3377,7 @@ def run_xwait(args):
 
 def run_wminfo(args):
     for k,v in display_wm_info(args).items():
-        print("%s=%s" % (k, v))
+        print(f"{k}={v}")
     return 0
 
 def run_wmname(args):
@@ -3396,8 +3397,8 @@ def exec_wminfo(display):
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
         out = proc.communicate(None, 5)[0]
     except Exception as e:
-        log("exec_wminfo(%s)", display, exc_info=True)
-        log.error("Error querying wminfo for display '%s': %s", display, e)
+        log(f"exec_wminfo({display})", exc_info=True)
+        log.error(f"Error querying wminfo for display {display!r}: {e}")
         return {}
     #parse wminfo output:
     if proc.returncode!=0 or not out:
@@ -3464,7 +3465,7 @@ def run_list(error_cb, opts, extra_args, clean=True):
     sys.stdout.write("Found the following xpra sessions:\n")
     unknown = []
     for socket_dir, values in results.items():
-        sys.stdout.write("%s:\n" % socket_dir)
+        sys.stdout.write(f"{socket_dir}:\n")
         for state, display, sockpath in values:
             if clean:
                 may_cleanup_socket(state, display, sockpath)
@@ -3598,7 +3599,7 @@ def run_list_windows(error_cb, opts, extra_args):
                             break
                     wstrs.append(wstr)
                 windows = csv(wstrs)
-        sys.stdout.write("%s\n" % (windows, ))
+        sys.stdout.write(f"{windows}\n")
         sys.stdout.flush()
 
 def run_auth(_options, args):
@@ -3610,7 +3611,7 @@ def run_auth(_options, args):
     #see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)
     if not main_fn:
-        raise InitExit(EXIT_UNSUPPORTED, "no command line utility for '%s' authentication module" % auth)
+        raise InitExit(EXIT_UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__]+args[1:]
     return main_fn(argv)
 
@@ -3628,7 +3629,7 @@ def run_showconfig(options, args):
                 pdef = get_printer_definition(mimetype)
                 if pdef:
                     #ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
-                    setattr(d, "%s_printer" % mimetype, pdef)
+                    setattr(d, f"{mimetype}_printer", pdef)
         except Exception:
             pass
     VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)
@@ -3705,7 +3706,7 @@ def run_showsetting(args):
     for arg in args:
         otype = OPTION_TYPES.get(arg)
         if not otype:
-            log.warn("'%s' is not a valid setting", arg)
+            log.warn(f"{arg!r} is not a valid setting")
         else:
             settings.append(arg)
 
@@ -3724,7 +3725,7 @@ def run_showsetting(args):
     for d in dirs:
         config.clear()
         config.update(read_xpra_conf(d))
-        log.info("* '%s':", d)
+        log.info(f"* {d!r}:")
         show_settings()
     return 0
 
