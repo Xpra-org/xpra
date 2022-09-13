@@ -6,6 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
+from xpra.util import envbool
 from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes
 
 from xpra.log import Logger
@@ -19,6 +20,9 @@ DEF DRM_MODE_DPMS_ON = 0
 DEF DRM_MODE_DPMS_STANDBY = 1
 DEF DRM_MODE_DPMS_SUSPEND = 2
 DEF DRM_MODE_DPMS_OFF = 3
+
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+
 
 cdef extern from "evdi_lib.h":
     ctypedef struct evdi_lib_version:
@@ -232,8 +236,6 @@ cdef class EvdiDevice:
         self.dpms_mode = dpms_mode
         if dpms_mode!=DRM_MODE_DPMS_ON:
             self.unregister_buffers()
-        else:
-            self.may_start()
 
     def may_start(self):
         log(f"may_start() dpms_mode={self.dpms_mode}")
@@ -249,8 +251,7 @@ cdef class EvdiDevice:
         log("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
         self.unregister_buffers()
-        self.dpms_mode = DRM_MODE_DPMS_OFF
-        #self.may_start()
+        self.may_start()
 
     cdef void update_ready_handler(self, int buffer_to_be_updated):
         log(f"update_ready_handler({buffer_to_be_updated})")
@@ -261,23 +262,25 @@ cdef class EvdiDevice:
         if not buf:
             raise ValueError(f"unknown buffer {buf_id}")
         cdef int nrects = 128
-        cdef MemBuf pyrects = getbuf(128*sizeof(evdi_rect))
-        cdef evdi_rect *rects = <evdi_rect *>pyrects.get_mem()
+        cdef evdi_rect[128] rects
         evdi_grab_pixels(self.handle, rects, &nrects)
         log("evdi_grab_pixels(%#x, %#x, %i)", <uintptr_t> self.handle, <uintptr_t> rects, nrects)
-        if nrects:
+        if SAVE_TO_FILE:
             from PIL import Image
             pixels = memoryview_to_bytes(memoryview(buf))
             rowstride = self.mode.width*4
             pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
             pil_image.save("%s.png" % monotonic(), "PNG")
-            for i in range(nrects):
-                log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
-                w = rects[i].x2 - rects[i].x1
-                h = rects[i].y2 - rects[i].y1
-                if w>0 and h>0:
-                    sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
-                    sub.save("%s-%i.png" % (monotonic(), i), "PNG")
+            if nrects:
+                for i in range(nrects):
+                    log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
+                    w = rects[i].x2 - rects[i].x1
+                    h = rects[i].y2 - rects[i].y1
+                    if w>0 and h>0 and (w<self.mode.width or h<self.mode.height):
+                        sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
+                        sub.save("%s-%i.png" % (monotonic(), i), "PNG")
+        return tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
+
 
     cdef void crtc_state_handler(self, int state):
         log("crtc_state_handler(%i)", state)
@@ -311,7 +314,7 @@ cdef class EvdiDevice:
         start = monotonic()
         while monotonic()-start<100:
             log("waiting for events")
-            r = select.select([fd], [], [], 1)
+            r = select.select([fd], [], [], 0.1)
             log("select(..)=%s", r)
             if fd in r[0]:
                 evdi_handle_events(self.handle, &self.event_context)
@@ -320,7 +323,6 @@ cdef class EvdiDevice:
                 buf_id = 1
                 if self.request_update(buf_id):
                     self.update_ready_handler(buf_id)
-            #        self.may_start()
 
     def register_buffer(self, int buf_id):
         cdef evdi_buffer buf
@@ -340,9 +342,6 @@ cdef class EvdiDevice:
         cdef bint update = evdi_request_update(self.handle, buf_id)
         log("evdi_request_update(%#x, %i)=%s", <uintptr_t> self.handle, buf_id, update)
         return update
-        #if update:
-        #    evdi_grab_pixels(handle, rects, &nrects)
-        #    log("evdi_grab_pixels(%#x, %#x, %i)", <uintptr_t> handle, <uintptr_t> buf.rects, nrects)
 
     def unregister_buffers(self):
         for buf_id in self.buffers.keys():
