@@ -26,9 +26,11 @@ from xpra.scripts.config import (
 
 
 MODE_ALIAS = {
-    "seamless"  : "start",
-    "desktop"   : "start-desktop",
-    "monitor"   : "start-monitor",
+    "start"             : "seamless",
+    "start-seamless"    : "seamless",
+    "start-desktop"     : "desktop",
+    "start-monitor"     : "monitor",
+    "start-shadow"      : "shadow",
     }
 
 def enabled_str(v, true_str="yes", false_str="no") -> str:
@@ -1791,9 +1793,10 @@ When unspecified, all the available codecs are allowed and the first one is used
 
     NEED_ENCODING_MODES = (
         "attach",
-        "start", "seamless",
-        "start-desktop", "desktop",
-        "start-monitor", "monitor",
+        "seamless",
+        "desktop",
+        "monitor",
+        "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
         "shadow", "proxy",

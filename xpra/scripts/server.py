@@ -675,9 +675,9 @@ def is_splash_enabled(mode, daemon, splash, display):
     return False
 
 MODE_TO_NAME = {
-    "start"             : "Seamless",
-    "start-desktop"     : "Desktop",
-    "start-monitor"     : "Monitor",
+    "seamless"          : "Seamless",
+    "desktop"           : "Desktop",
+    "monitor"           : "Monitor",
     "upgrade"           : "Upgrade",
     "upgrade-seamless"  : "Seamless Upgrade",
     "upgrade-desktop"   : "Desktop Upgrade",
@@ -706,9 +706,9 @@ def request_exit(uri):
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
-        "start", "start-desktop", "start-monitor",
+        "seamless", "desktop", "monitor", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-        "shadow", "proxy",
+        "proxy",
         )
     validate_encryption(opts)
     if opts.encoding=="help" or "help" in opts.encodings:
@@ -769,9 +769,9 @@ def _do_run_server(script_file, cmdline,
             del os.environ[k]
 
     use_display = parse_bool("use-display", opts.use_display)
-    starting  = mode == "start"
-    starting_desktop = mode=="start-desktop"
-    starting_monitor = mode=="start-monitor"
+    starting  = mode == "seamless"
+    starting_desktop = mode=="desktop"
+    starting_monitor = mode=="monitor"
     upgrading = mode.startswith("upgrade")
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
@@ -945,9 +945,7 @@ def _do_run_server(script_file, cmdline,
 
     clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
     start_vfb = not (shadowing or proxying or clobber)
-    xauth_data = None
-    if start_vfb:
-        xauth_data = get_hex_uuid()
+    xauth_data = get_hex_uuid() if start_vfb else None
 
     # if pam is present, try to create a new session:
     pam = None

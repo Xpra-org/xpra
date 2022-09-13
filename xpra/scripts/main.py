@@ -202,10 +202,10 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "start", "start-desktop", "start-monitor",
+        "seamless", "desktop", "monitor", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "recover",
-        "attach", "listen", "shadow", "proxy",
+        "attach", "listen", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
         "request-start", "request-start-desktop", "request-shadow",
@@ -356,11 +356,11 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     if POSIX and getuid()==0 and options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
+    mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in (
-        "start", "start-desktop",
+        "seamless", "desktop", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
-        "shadow",
         ) and not display_is_remote and use_systemd_run(options.systemd_run):
         #make sure we run via the same interpreter,
         #inject it into the command line if we have to:
@@ -417,16 +417,16 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         #"attach" does it when it received the session name from the server
         if mode not in (
             "attach", "listen",
-            "start", "start-desktop",
+            "seamless", "desktop", "shadow",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
-            "proxy", "shadow",
+            "proxy",
             ):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
-        "start", "start-desktop",
-        "shadow", "attach", "listen",
+        "seamless", "desktop", "shadow",
+        "attach", "listen",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
         "request-start", "request-start-desktop", "request-shadow",
@@ -440,12 +440,13 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
 
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
+    mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    if mode in ("start", "start-desktop", "start-monitor", "shadow") and display_is_remote:
+    if mode in ("seamless", "desktop", "monitor", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
         return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
-    if mode in ("start", "start-desktop", "start-monitor") and args and parse_bool("attach", options.attach) is True:
+    if mode in ("seamless", "desktop", "monitor") and args and parse_bool("attach", options.attach) is True:
         assert not display_is_remote
         #maybe the server is already running
         #and we don't need to bother trying to start it:
@@ -463,10 +464,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in (
-        "start", "start-desktop",
-        "monitor", "start-monitor",
+        "seamless", "desktop", "monitor", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
-        "shadow", "start-shadow",
         "proxy",
         ):
         return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
@@ -1769,16 +1768,16 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     if mode in (
-        "start", "start-desktop", "start-monitor",
+        "seamless", "desktop", "monitor",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         ) and (OSX or WIN32):
         raise InitException(f"{mode} is not supported on this platform")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     if mode in (
-        "start",
-        "start-desktop",
-        "start-monitor",
+        "seamless",
+        "desktop",
+        "monitor",
         ) and parse_bool("attach", options.attach) is True:
         if args and not display_is_remote:
             #maybe the server is already running for the display specified
@@ -2023,12 +2022,12 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
         for x in os.listdir(X11_SOCKET_DIR):
             if not x.startswith("X"):
-                warn("path '%s' does not look like an X11 socket" % x)
+                warn(f"path {x!r} does not look like an X11 socket")
                 continue
             try:
                 display_no = int(x[1:])
             except ValueError:
-                warn("'%s' does not parse as a display number" % x)
+                warn(f"{x} does not parse as a display number")
                 continue
             #arbitrary: only shadow automatically displays below 10..
             if max_display_no and display_no>max_display_no:
@@ -2055,7 +2054,7 @@ def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
         sstat = os.stat(socket_path)
         is_socket = stat.S_ISSOCK(sstat.st_mode)
         if not is_socket:
-            warn("display path '%s' is not a socket!" % socket_path)
+            warn(f"display path {socket_path!r} is not a socket!")
             return {}
         try:
             if timeout>0:
@@ -2073,7 +2072,7 @@ def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
     except FileNotFoundError:
         pass
     except Exception as e:
-        warn("failure on %s: %s" % (socket_path, e))
+        warn(f"failure on {socket_path}: {e}")
     return {}
 
 
@@ -2127,7 +2126,7 @@ def no_gtk():
 def run_autostart(script_file, args):
     def err(msg):
         print(msg)
-        print("Usage: %s enable|disable|status" % (script_file,))
+        print(f"Usage: {script_file!r} enable|disable|status")
         return 1
     if len(args)!=1:
         return err("invalid number of arguments")
