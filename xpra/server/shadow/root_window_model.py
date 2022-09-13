@@ -17,6 +17,25 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
+def get_os_icons():
+    try:
+        icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
+        from PIL import Image  # pylint: disable=import-outside-toplevel
+        img = Image.open(icon_name)
+        log("Image(%s)=%s", icon_name, img)
+        if img:
+            icon_data = load_binary_file(icon_name)
+            assert icon_data
+            w, h = img.size
+            img.close()
+            icon = (w, h, "png", icon_data)
+            icons = (icon,)
+            return icons
+    except Exception:   # pragma: no cover
+        log("failed to return window icon")
+    return ()
+
+
 class RootWindowModel:
     __slots__ = ("window", "title", "geometry", "capture",
                  "property_names", "dynamic_property_names", "internal_property_names",
@@ -37,7 +56,7 @@ class RootWindowModel:
         self.signal_listeners = {}
 
     def __repr__(self):
-        return "RootWindowModel(%s : %24s)" % (self.capture, self.geometry)
+        return f"RootWindowModel({self.capture} : {self.geometry:24})"
 
     def get_info(self) -> dict:
         info = {}
@@ -144,25 +163,10 @@ class RootWindowModel:
                     pass
             return ("xpra-%s" % osn.lower(), "Xpra %s" % osn.replace("-", " "))
         if prop=="icons":
-            try:
-                icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
-                from PIL import Image
-                img = Image.open(icon_name)
-                log("Image(%s)=%s", icon_name, img)
-                if img:
-                    icon_data = load_binary_file(icon_name)
-                    assert icon_data
-                    w, h = img.size
-                    img.close()
-                    icon = (w, h, "png", icon_data)
-                    icons = (icon,)
-                    return icons
-            except Exception:   # pragma: no cover
-                log("failed to return window icon")
-                return ()
+            return get_os_icons()
         if prop=="content-type":
             return "desktop"
-        raise ValueError("invalid property: %s" % prop)
+        raise ValueError(f"invalid property {prop!r}")
 
     def get(self, name, default_value=None):
         try:
@@ -173,7 +177,7 @@ class RootWindowModel:
 
     def notify(self, prop):
         if prop not in self.dynamic_property_names:
-            log.warn("ignoring notify for: %s", prop)
+            log.warn(f"Warning: ignoring notify for {prop!r}")
             return
         PSpec = namedtuple("PSpec", "name")
         pspec = PSpec(name=prop)
@@ -190,9 +194,9 @@ class RootWindowModel:
     def connect(self, signal, *args):           # pragma: no cover
         prop = signal.split(":")[-1]        #notify::geometry
         if prop not in self.dynamic_property_names:
-            log.warn("ignoring signal connect request: %s", args)
+            log.warn(f"Warning: ignoring signal connect request: {args}")
             return
         self.signal_listeners.setdefault(prop, []).append(args)
 
     def disconnect(self, *args):        # pragma: no cover
-        log.warn("ignoring signal disconnect request: %s", args)
+        log.warn(f"Warning: ignoring signal disconnect request: {args}")
