@@ -466,7 +466,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "start", "start-desktop",
         "monitor", "start-monitor",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
-        "shadow", "proxy",
+        "shadow", "start-shadow",
+        "proxy",
         ):
         return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
     if mode in (
@@ -1766,9 +1767,18 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 
 def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
+    if mode in (
+        "start", "start-desktop", "start-monitor",
+        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
+        ) and (OSX or WIN32):
+        raise InitException(f"{mode} is not supported on this platform")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
-    if mode in ("start", "start-desktop", "start-monitor") and parse_bool("attach", options.attach) is True:
+    if mode in (
+        "start",
+        "start-desktop",
+        "start-monitor",
+        ) and parse_bool("attach", options.attach) is True:
         if args and not display_is_remote:
             #maybe the server is already running for the display specified
             #then we don't even need to bother trying to start it:
@@ -1796,36 +1806,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
             #but don't bother if scaling is involved:
             if scaling==(1, 1):
-                options.resize_display = "%ix%i" % (root_w, root_h)
-
-    if mode in (
-        "start", "start-desktop", "start-monitor",
-        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-        ) and (OSX or WIN32):
-        raise InitException("%s is not supported on this platform" % mode)
-
-    if (
-        mode in ("start", "start-desktop", "start-monitor",
-                 "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor") and (OSX or WIN32)
-        ):
-        raise InitException("%s is not supported by this build of xpra" % mode)
-
-    if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
-        assert not display_is_remote
-        #maybe the server is already running
-        #and we don't need to bother trying to start it:
-        try:
-            display = pick_display(error_cb, options, args, cmdline)
-        except Exception:
-            pass
-        else:
-            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
-            if display_name:
-                state = dotxpra.get_display_state(display_name)
-                if state==DotXpra.LIVE:
-                    noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
+                options.resize_display = f"{root_w}x{root_h}"
 
     r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode)
     if isinstance(r, int):
