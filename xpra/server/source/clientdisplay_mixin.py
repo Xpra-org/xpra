@@ -105,7 +105,7 @@ class ClientDisplayMixin(StubSourceMixin):
         def dpi(size_pixels, size_mm):
             if size_mm==0:
                 return 0
-            return int(size_pixels * 254 / size_mm / 10)
+            return round(size_pixels * 25.4 / size_mm)
         for i,screen in enumerate(list(screen_sizes)):
             if len(screen)<10:
                 continue
@@ -118,8 +118,8 @@ class ClientDisplayMixin(StubSourceMixin):
                     log.warn("Warning: ignoring invalid screen size %ix%i mm", wmm, hmm)
                 if monitors:
                     #[plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-                    wmm = sum(monitor[5] for monitor in monitors)
-                    hmm = sum(monitor[6] for monitor in monitors)
+                    wmm = round(sum(monitor[5] for monitor in monitors))
+                    hmm = round(sum(monitor[6] for monitor in monitors))
                     xdpi = dpi(sw, wmm)
                     ydpi = dpi(sh, hmm)
                 if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
@@ -129,6 +129,9 @@ class ClientDisplayMixin(StubSourceMixin):
                 if warn:
                     log.warn(" using %ix%i mm", wmm, hmm)
                 screen = list(screen)
+                #make sure values are integers:
+                for j in range(4):
+                    screen[j] = round(screen[j])
                 screen[3] = wmm
                 screen[4] = hmm
                 self.screen_sizes[i] = tuple(screen)
