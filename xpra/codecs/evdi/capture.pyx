@@ -143,7 +143,7 @@ def get_version():
 
 cdef void evdi_logging_function(void *user_data, const char *fmt, ...):
     s = bytestostr(fmt)
-    log("evdi: %s", s)
+    log(f"evdi: {s}")
 
 
 def catpure_logging():
@@ -153,52 +153,51 @@ def catpure_logging():
     evdi_set_logging(log_config)
 
 
+#maps device numbers to our device object:
+devices = {}
 
 cdef void dpms_handler(int dpms_mode, void *user_data):
-    log("dpms_handler(%i, %#x)", dpms_mode, <uintptr_t> user_data)
+    log(f"dpms_handler({dpms_mode}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.dpms_handler(dpms_mode)
 
 cdef void mode_changed_handler(evdi_mode mode, void *user_data):
-    log("mode_changed_handler(%ix%i-%i@%i, %#x)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate, <uintptr_t> user_data)
+    log(f"mode_changed_handler({mode.width}x{mode.height}-{mode.bits_per_pixel}@{mode.refresh_rate}, %#x)",
+        <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.mode_changed_handler(mode)
 
 cdef void update_ready_handler(int buffer_to_be_updated, void *user_data):
-    log("update_ready_handler(%i, %#x)", buffer_to_be_updated, <uintptr_t> user_data)
+    log(f"update_ready_handler({buffer_to_be_updated}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.update_ready_handler(buffer_to_be_updated)
 
 cdef void crtc_state_handler(int state, void *user_data):
-    log("crtc_state_handler(%i, %#x)", state, <uintptr_t> user_data)
+    log(f"crtc_state_handler({state}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.crtc_state_handler(state)
 
 cdef void cursor_set_handler(evdi_cursor_set cursor_set, void *user_data):
-    log("cursor_set_handler(%ix%i, %#x)", cursor_set.width, cursor_set.height, <uintptr_t> user_data)
+    log(f"cursor_set_handler({cursor_set.width}x{cursor_set.height}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_set_handler(cursor_set)
 
 cdef void cursor_move_handler(evdi_cursor_move cursor_move, void *user_data):
-    log("cursor_move_handler(%ix%i, %#x)", cursor_move.x, cursor_move.y, <uintptr_t> user_data)
+    log(f"cursor_move_handler({cursor_move.x}x{cursor_move.y}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_move_handler(cursor_move)
 
 cdef void ddcci_data_handler(evdi_ddcci_data ddcci_data, void *user_data):
-    log("ddcci_data_handler(%#x, %#x)", ddcci_data.address, <uintptr_t> user_data)
+    log(f"ddcci_data_handler({ddcci_data.address:x}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.ddcci_data_handler(ddcci_data)
-
-
-#maps device numbers to our device object:
-devices = {}
 
 
 cdef class EvdiDevice:
@@ -229,7 +228,7 @@ cdef class EvdiDevice:
         devices[device] = self
 
     cdef void dpms_handler(self, int dpms_mode):
-        log("dpms_handler(%i) %s", dpms_mode, MODE_STR.get(dpms_mode, "INVALID"))
+        log(f"dpms_handler({dpms_mode}) %s", MODE_STR.get(dpms_mode, "INVALID"))
         if self.dpms_mode==dpms_mode:
             #unchanged
             return
@@ -248,7 +247,7 @@ cdef class EvdiDevice:
                 self.update_ready_handler(buf_id)
 
     cdef void mode_changed_handler(self, evdi_mode mode):
-        log("mode_changed_handler(%ix%i-%i@%i)", mode.width, mode.height, mode.bits_per_pixel, mode.refresh_rate)
+        log(f"mode_changed_handler({mode.width}x{mode.height}-{mode.bits_per_pixel}@{mode.refresh_rate}")
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
         self.unregister_buffers()
         self.may_start()
@@ -264,13 +263,13 @@ cdef class EvdiDevice:
         cdef int nrects = 128
         cdef evdi_rect[128] rects
         evdi_grab_pixels(self.handle, rects, &nrects)
-        log("evdi_grab_pixels(%#x, %#x, %i)", <uintptr_t> self.handle, <uintptr_t> rects, nrects)
+        log(f"evdi_grab_pixels(%#x, %#x, {nrects})", <uintptr_t> self.handle, <uintptr_t> rects)
         if SAVE_TO_FILE:
             from PIL import Image
             pixels = memoryview_to_bytes(memoryview(buf))
             rowstride = self.mode.width*4
             pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
-            pil_image.save("%s.png" % monotonic(), "PNG")
+            pil_image.save(f"{monotonic()}.png", "PNG")
             if nrects:
                 for i in range(nrects):
                     log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
@@ -278,18 +277,18 @@ cdef class EvdiDevice:
                     h = rects[i].y2 - rects[i].y1
                     if w>0 and h>0 and (w<self.mode.width or h<self.mode.height):
                         sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
-                        sub.save("%s-%i.png" % (monotonic(), i), "PNG")
+                        sub.save(f"{monotonic()}-{i}.png", "PNG")
         return tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
 
 
     cdef void crtc_state_handler(self, int state):
-        log("crtc_state_handler(%i)", state)
+        log(f"crtc_state_handler({state})")
 
     cdef void cursor_set_handler(self, evdi_cursor_set cursor_set):
-        log("cursor_set_handler(%ix%i)", cursor_set.width, cursor_set.height)
+        log(f"cursor_set_handler({cursor_set.width}x{cursor_set.height})")
 
     cdef void cursor_move_handler(self, evdi_cursor_move cursor_move):
-        log("cursor_move_handler(%ix%i)", cursor_move.x, cursor_move.y)
+        log(f"cursor_move_handler({cursor_move.x}x{cursor_move.y})")
 
     cdef void ddcci_data_handler(self, evdi_ddcci_data ddcci_data):
         log("ddcci_data_handler(%#x)", ddcci_data.address)
@@ -300,14 +299,14 @@ cdef class EvdiDevice:
         cdef unsigned int edid_length = len(b)
         cdef uint32_t pixel_area_limit = 4096*2160*2
         cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
-        log("connect with edid %s (length=%i)", <uintptr_t> edid_bin, edid_length)
+        log(f"connect with edid %s (length={edid_length})", <uintptr_t> edid_bin)
         evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length,
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
 
     def handle_events(self):
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
-        log("handle_events() fd=%i", fd)
+        log(f"handle_events() fd={fd}")
         evdi_enable_cursor_events(self.handle, 1)
         import select
         count = 0
@@ -315,7 +314,7 @@ cdef class EvdiDevice:
         while monotonic()-start<100:
             log("waiting for events")
             r = select.select([fd], [], [], 0.1)
-            log("select(..)=%s", r)
+            log(f"select(..)={r}")
             if fd in r[0]:
                 evdi_handle_events(self.handle, &self.event_context)
             count += 1
@@ -335,17 +334,17 @@ cdef class EvdiDevice:
         cdef MemBuf pybuf = getbuf(self.mode.width*self.mode.height*4)
         buf.buffer = <void *>pybuf.get_mem()
         evdi_register_buffer(self.handle, buf)
-        log("register_buffer(%i) pybuf=%s", buf_id, pybuf)
+        log(f"register_buffer({buf_id}) pybuf={pybuf}")
         self.buffers[buf_id] = pybuf
 
     def request_update(self, buf_id):
         cdef bint update = evdi_request_update(self.handle, buf_id)
-        log("evdi_request_update(%#x, %i)=%s", <uintptr_t> self.handle, buf_id, update)
+        log(f"evdi_request_update(%#x, {buf_id})={update}", <uintptr_t> self.handle)
         return update
 
     def unregister_buffers(self):
         for buf_id in self.buffers.keys():
-            log("unregister_buffer %i", buf_id)
+            log(f"unregister_buffer {buf_id}")
             evdi_unregister_buffer(self.handle, buf_id)
             #TODO: free rects
         self.buffers = {}
@@ -387,6 +386,7 @@ def find_evdi_devices():
                 devices.append(device)
         except ValueError:
             pass
+    log(f"find_evdi_devices()={devices}")
     return devices
 
 
