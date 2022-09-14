@@ -15,7 +15,7 @@ from xpra.log import Logger
 
 log = Logger("encoder", "util")
 
-MIN_VERSION = 375
+MIN_VERSION = 466
 
 
 numpy_import_lock = RLock()
