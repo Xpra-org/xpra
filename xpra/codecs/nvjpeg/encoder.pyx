@@ -33,6 +33,7 @@ log = Logger("encoder", "nvjpeg")
 #we can import pycuda safely here,
 #because importing cuda_context will have imported it with the lock
 from pycuda import driver  # @UnresolvedImport
+from numpy import int32
 
 
 DEF NVJPEG_MAX_COMPONENT = 4
@@ -361,10 +362,10 @@ cdef class Encoder:
                 for buf in buffers:
                     buf.free()
             args = [
-                numpy.int32(width), numpy.int32(height),
-                numpy.int32(src_stride), upload_buffer,
-                numpy.int32(self.encoder_width), numpy.int32(self.encoder_height),
-                numpy.int32(dst_stride),
+                int32(width), int32(height),
+                int32(src_stride), upload_buffer,
+                int32(self.encoder_width), int32(self.encoder_height),
+                int32(dst_stride),
                 ]
             for i in range(nchannels):
                 args.append(buffers[i])
