@@ -18,6 +18,8 @@ from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_licens
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
 
+#we can import pycuda safely here,
+#because importing CUDAImageWrapper will have imported pycuda with the lock
 try:
     from pycuda import driver
     from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info

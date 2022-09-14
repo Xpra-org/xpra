@@ -1074,7 +1074,9 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_nvjpeg(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         with self.assign_cuda_context(True):
-            from pycuda.driver import Stream  # @UnresolvedImport
+            #we can import pycuda safely here,
+            #because `self.assign_cuda_context` will have imported it with the lock:
+            from pycuda.driver import Stream  # @UnresolvedImport pylint: disable=import-outside-toplevel
             stream = Stream()
             options["stream"] = stream
             img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)

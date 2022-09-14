@@ -22,7 +22,6 @@ from xpra.codecs.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
     )
-from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.codec_debug import may_save_image
 from xpra.codecs.cuda_common.cuda_context import get_CUDA_function
 from xpra.net.compression import Compressed
@@ -31,9 +30,9 @@ from xpra.util import typedict
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
-with numpy_import_lock:
-    import numpy
-    from pycuda import driver  # @UnresolvedImport
+#we can import pycuda safely here,
+#because importing cuda_context will have imported it with the lock
+from pycuda import driver  # @UnresolvedImport
 
 
 DEF NVJPEG_MAX_COMPONENT = 4

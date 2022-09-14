@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 
 from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
@@ -30,6 +29,10 @@ from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_cont
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
+
+#we can import pycuda safely here,
+#because importing cuda_context will have imported it with the lock
+from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 
 
 DEF NVJPEG_MAX_COMPONENT = 4

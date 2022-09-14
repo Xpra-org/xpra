@@ -25,11 +25,14 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
-    numpy_import_lock,
     )
 from xpra.log import Logger
-
 log = Logger("encoder", "nvenc")
+
+#we can import pycuda safely here,
+#because importing cuda_context will have imported it with the lock
+from pycuda import driver  # @UnresolvedImport
+
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t  #pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
@@ -55,11 +58,6 @@ cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
-
-
-with numpy_import_lock:
-    import numpy
-    from pycuda import driver  # @UnresolvedImport
 
 device_lock = Lock()
 
