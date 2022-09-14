@@ -502,7 +502,8 @@ class ProxyInstance:
             if len(packet)>=8:
                 self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
-            self._packet_recompress(packet, 5, "icon")
+            if not isinstance(packet[5], str):
+                self._packet_recompress(packet, 5, "icon")
         elif packet_type=="send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
