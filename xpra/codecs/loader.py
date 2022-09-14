@@ -137,7 +137,6 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
             v = getattr(module, f)
             if fieldname.endswith("()") and v:
                 v = v()
-            global codec_versions
             codec_versions[name] = v
             #optional info:
             if hasattr(module, "get_info"):

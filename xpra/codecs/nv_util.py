@@ -8,8 +8,9 @@ import sys
 import os
 from threading import RLock
 
-from xpra.util import pver, print_nested_dict, engs, envbool, csv
-from xpra.os_util import bytestostr, strtobytes, POSIX
+from xpra.util import pver, print_nested_dict, envbool, csv
+from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
+from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
 from xpra.log import Logger
 
 log = Logger("encoder", "util")
@@ -36,6 +37,7 @@ def wrap_nvml_init(nvmlInit) -> bool:
 
 def get_nvml_driver_version():
     try:
+        # pylint: disable=import-outside-toplevel
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
     except ImportError as e:
         log("cannot use nvml to query the kernel module version:")
@@ -47,7 +49,7 @@ def get_nvml_driver_version():
                     v = nvmlSystemGetDriverVersion()
                 finally:
                     nvmlShutdown()
-                log("nvmlSystemGetDriverVersion=%s", bytestostr(v))
+                log(f"nvmlSystemGetDriverVersion={bytestostr(v)}")
                 return bytestostr(v).split(".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
@@ -59,12 +61,11 @@ def get_nvml_driver_version():
 def get_proc_driver_version():
     if not POSIX:
         return ()
-    from xpra.os_util import load_binary_file
     proc_file = "/proc/driver/nvidia/version"
     v = load_binary_file(proc_file)
     if not v:
         log.warn("Warning: NVidia kernel module not installed?")
-        log.warn(" cannot open '%s'", proc_file)
+        log.warn(f" cannot open {proc_file!r}")
         return ()
     KSTR = b"Kernel Module"
     p = v.find(KSTR)
@@ -90,7 +91,7 @@ def identify_nvidia_module_version():
             log.info("NVidia driver version %s", pver(numver))
             return tuple(numver)
     except Exception as e:
-        log.warn("failed to parse Nvidia driver version '%s': %s", v, e)
+        log.warn(f"failed to parse Nvidia driver version {v!r}: {e}")
     return ()
 
 nvidia_module_version = None
@@ -104,6 +105,7 @@ def get_nvidia_module_version(probe=True):
 def identify_cards():
     devices = {}
     try:
+        # pylint: disable=import-outside-toplevel
         import pynvml
         from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex
         deviceCount = None
@@ -111,10 +113,10 @@ def identify_cards():
             if not wrap_nvml_init(nvmlInit):
                 return devices
             deviceCount = nvmlDeviceGetCount()
-            log("identify_cards() will probe %i cards", deviceCount)
+            log(f"identify_cards() will probe {deviceCount} cards")
             for i in range(deviceCount):
                 handle = nvmlDeviceGetHandleByIndex(i)
-                log("identify_cards() handle(%i)=%s", i, handle)
+                log(f"identify_cards() handle({i})={handle}")
                 props = {}
                 def meminfo(memory):
                     return {
@@ -175,7 +177,7 @@ def identify_cards():
                         log("identify_cards() cannot query %s using %s on device %i with handle %s: %s",
                             prop, fn, i, handle, e)
                         continue
-                log("identify_cards() [%i]=%s", i, props)
+                log(f"identify_cards() [{i}]={props}")
                 devices[i] = props
             #unitCount = nvmlUnitGetCount()
             #log.info("unitCount=%s", unitCount)
@@ -221,8 +223,8 @@ def validate_driver_yuv444lossless():
     else:
         bl = is_blacklisted()
     if bl is True:
-        raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
-    elif bl is None:
+        raise Exception(f"NVidia driver version {pver(v)} is blacklisted, it does not work with NVENC")
+    if bl is None:
         global _version_warning
         if _version_warning:
             l = log
@@ -230,8 +232,8 @@ def validate_driver_yuv444lossless():
             l = log.warn
             _version_warning = True
         if v:
-            l("Warning: NVidia driver version %s is untested with NVENC", pver(v))
-            l(" (this encoder has been tested with versions %s.x and later only)", MIN_VERSION)
+            l(f"Warning: NVidia driver version {pver(v)} is untested with NVENC")
+            l(f" (this encoder has been tested with versions {MIN_VERSION}.x and later only)")
         if not envbool("XPRA_NVENC_YUV444P", False):
             l(" disabling YUV444P and lossless mode")
             l(" use XPRA_NVENC_YUV444P=1 to force enable")
@@ -245,28 +247,26 @@ def parse_nvfbc_hex_key(s):
     #ie: 0102030405060708090A0B0C0D0E0F10
     #start by removing spaces and 0x:
     hexstr = s.replace("0x", "").replace(",", "").replace(" ", "")
-    import binascii
+    import binascii # pylint: disable=import-outside-toplevel
     return binascii.unhexlify(hexstr)
 
 
 license_keys = {}
 def get_license_keys(version=0, basefilename="nvenc"):
-    global license_keys
-    filename = "%s%s.keys" % (basefilename, version or "")
+    filename = f"{basefilename}%s.keys" % (version or "")
     keys = license_keys.get(filename)
     if keys is not None:
         return keys
-    env_name = "XPRA_%s_CLIENT_KEY" % basefilename.upper()
+    env_name = f"XPRA_{basefilename.upper()}_CLIENT_KEY"
     env_keys = os.environ.get(env_name, "")
     if env_keys:
         keys = [x.strip() for x in env_keys.split(",")]
-        log("using %s keys from environment variable %s: %s", basefilename, env_name, csv(keys))
+        log(f"using {basefilename} keys from environment variable {env_name} : {csv(keys)}")
     else:
         #try to load the license file
         keys = []
         try:
             #see read_xpra_defaults for an explanation of paths
-            from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
             dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
             for d in dirs:
                 if not d:
@@ -274,9 +274,9 @@ def get_license_keys(version=0, basefilename="nvenc"):
                 keys_file = os.path.join(d, filename)
                 keys_file = os.path.expanduser(keys_file)
                 if not os.path.exists(keys_file):
-                    log("get_license_keys(%s, %s) '%s' does not exist", basefilename, version, keys_file)
+                    log(f"get_license_keys({basefilename}, {version}) {keys_file!r} does not exist")
                     continue
-                log("loading %s version %s keys from %s", basefilename, version, keys_file)
+                log(f"loading {basefilename} version {version} keys from {keys_file!r}")
                 with open(keys_file, "rb") as f:
                     fkeys = []
                     for line in f:
@@ -288,13 +288,13 @@ def get_license_keys(version=0, basefilename="nvenc"):
                             log("skipping comments")
                             continue
                         fkeys.append(sline)
-                        log("added key: %s", sline)
-                    log("added %i key%s from %s", len(fkeys), engs(fkeys), keys_file)
+                        log(f"added key: {sline}")
+                    log(f"added {len(fkeys)} keys from {keys_file}")
                     keys += fkeys
         except Exception:
-            log.error("Error loading %s license keys", basefilename, exc_info=True)
+            log.error(f"Error loading {basefilename} license keys", exc_info=True)
     license_keys[filename] = keys
-    log("get_nvenc_license_keys(%s)=%s", version, keys)
+    log(f"get_nvenc_license_keys({version})={keys}")
     return keys
 
 
@@ -302,6 +302,7 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):
         #this will log the version number:
@@ -311,9 +312,9 @@ def main():
         log.info("NVENC license keys:")
         for v in (0, 8):
             keys = get_license_keys(v)
-            log.info("* version %s: %s key(s)", v or "common", len(keys))
+            log.info(f"* version %s: {len(keys)} keys", v or "common")
             for k in keys:
-                log.info("  %s", k)
+                log.info(f"  {k}")
         try:
             import pynvml
             assert pynvml
@@ -324,7 +325,7 @@ def main():
             cards = get_cards()
             if cards:
                 log.info("")
-                log.info("%i card%s:", len(cards), engs(cards))
+                log.info(f"{len(cards)} cards:")
                 print_nested_dict(cards, print_fn=log.info)
 
 

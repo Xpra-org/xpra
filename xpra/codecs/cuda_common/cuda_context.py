@@ -14,6 +14,10 @@ from threading import RLock
 from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
+from xpra.platform.paths import (
+    get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
+    get_resources_dir,
+    )
 from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
@@ -29,18 +33,16 @@ MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 DEVICE_STATE = {}
 
 def record_device_failure(device_id):
-    global DEVICE_STATE
     DEVICE_STATE[device_id] = False
 
 def record_device_success(device_id):
-    global DEVICE_STATE
     DEVICE_STATE[device_id] = True
 
 
 def device_info(d):
     if not d:
         return "None"
-    return "%s @ %s" % (d.name(), d.pci_bus_id())
+    return f"{d.name()} @ {d.pci_bus_id()}"
 
 def pci_bus_id(d):
     if not d:
@@ -85,11 +87,9 @@ def get_cuda_info():
 
 DEVICE_INFO = {}
 def get_device_info(i):
-    global DEVICE_INFO
     return DEVICE_INFO.get(i, None)
 DEVICE_NAME = {}
 def get_device_name(i):
-    global DEVICE_NAME
     return DEVICE_NAME.get(i, None)
 
 
@@ -98,16 +98,15 @@ def get_prefs():
     global PREFS
     if PREFS is None:
         PREFS = {}
-        from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
         dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
-        log("get_prefs() will try to load cuda.conf from: %s", dirs)
+        log(f"get_prefs() will try to load cuda.conf from: {dirs}")
         for d in dirs:
             conf_file = os.path.join(os.path.expanduser(d), "cuda.conf")
             if not os.path.exists(conf_file):
-                log("get_prefs() '%s' does not exist!", conf_file)
+                log(f"get_prefs() {conf_file!r} does not exist!")
                 continue
             if not os.path.isfile(conf_file):
-                log("get_prefs() '%s' is not a file!", conf_file)
+                log(f"get_prefs() {conf_file!r} is not a file!")
                 continue
             try:
                 c_prefs = {}
@@ -125,16 +124,16 @@ def get_prefs():
                         elif name in ("device-id", "device-name", "load-balancing"):
                             c_prefs[name] = value
             except Exception as e:
-                log.error("Error: cannot read cuda configuration file '%s':", conf_file)
-                log.error(" %s", e)
-            log("get_prefs() '%s' : %s", conf_file, c_prefs)
+                log.error(f"Error: cannot read cuda configuration file {conf_file!r}")
+                log.estr(e)
+            log(f"get_prefs() {conf_file!r} : {c_prefs}")
             PREFS.update(c_prefs)
     return PREFS
 
 def get_pref(name):
     assert name in ("device-id", "device-name", "enabled-devices", "disabled-devices", "load-balancing")
     #ie: env_name("device-id")="XPRA_CUDA_DEVICE_ID"
-    env_name = "XPRA_CUDA_%s" % str(name).upper().replace("-", "_")
+    env_name = "XPRA_CUDA_" + str(name).upper().replace("-", "_")
     env_value = os.environ.get(env_name)
     if env_value is not None:
         if name in ("enabled-devices", "disabled-devices"):
@@ -144,7 +143,7 @@ def get_pref(name):
 
 def get_gpu_list(list_type):
     v = get_pref(list_type)
-    log("get_gpu_list(%s) pref=%s", list_type, v)
+    log(f"get_gpu_list({list_type}) pref={v}")
     if not v:
         return None
     if "all" in v:
@@ -159,8 +158,8 @@ def get_gpu_list(list_type):
     try:
         return [dev(x) for x in v]
     except ValueError:
-        log("get_gpu_list(%s)", list_type, exc_info=True)
-        log.error("Error: invalid value for '%s' CUDA preference", list_type)
+        log(f"get_gpu_list({list_type})", exc_info=True)
+        log.error(f"Error: invalid value for {list_type!r} CUDA preference")
         return None
 
 driver_init_done = None
@@ -171,22 +170,22 @@ def driver_init():
         try:
             driver.init()
             driver_init_done = True
-            log("CUDA driver version=%s", driver.get_driver_version())
+            log(f"CUDA driver version={driver.get_driver_version()}")
             ngpus = driver.Device.count()
             if ngpus==0:
-                log.info("CUDA %s / PyCUDA %s, no devices found",
-                         ".".join(str(x) for x in driver.get_version()), pycuda.VERSION_TEXT)
+                cuda_v = ".".join(str(x) for x in driver.get_version())
+                log.info(f"CUDA {cuda_v} / PyCUDA {pycuda.VERSION_TEXT}, no devices found")
             driver_init_done = True
         except Exception as e:
             log.error("Error: cannot initialize CUDA")
-            log.error(" %s", e)
+            log.estr(e)
             driver_init_done = False
     return driver_init_done
 
 
 DEVICES = None
 def init_all_devices():
-    global DEVICES, DEVICE_INFO, DEVICE_NAME
+    global DEVICES, DEVICE_INFO
     if DEVICES is not None:
         return DEVICES
     DEVICES = []
@@ -196,20 +195,20 @@ def init_all_devices():
     if disabled_gpus is True or enabled_gpus==[]:
         log("all devices are disabled!")
         return DEVICES
-    log("init_all_devices() enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus) or "none")
+    log(f"init_all_devices() enabled: {csv(enabled_gpus)}, disabled: %s", csv(disabled_gpus) or "none")
     if not driver_init():
         return DEVICES
     ngpus = driver.Device.count()
-    log("init_all_devices() ngpus=%s", ngpus)
+    log(f"init_all_devices() ngpus={ngpus}")
     if ngpus==0:
         return DEVICES
     for i in range(ngpus):
         #shortcut if this GPU number is disabled:
         if disabled_gpus is not None and i in disabled_gpus:
-            log("device %i is in the list of disabled gpus, skipped", i)
+            log(f"device {i} is in the list of disabled gpus, skipped")
             continue
         device = None
-        devinfo = "gpu %i" % i
+        devinfo = f"gpu {i}"
         try:
             device = driver.Device(i)
             devinfo = device_info(device)
@@ -288,7 +287,6 @@ def check_device(i, device, min_compute=0):
 
 
 def get_devices():
-    global DEVICES
     return DEVICES
 
 def check_devices():
@@ -357,7 +355,6 @@ def select_best_free_memory(min_compute=0):
     #load preferences:
     preferred_device_name = get_pref("device-name")
     devices = init_all_devices()
-    global DEVICE_STATE
     free_pct = 0
     #split device list according to device state:
     ok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is True]
@@ -409,21 +406,21 @@ def load_device(device_id):
     return None
 
 def make_device_context(device_id):
-    log("make_device_context(%i)", device_id)
+    log(f"make_device_context({device_id}")
     device = load_device(device_id)
     if not device:
         return None
-    log("make_device_context(%i) device_info=%s", device_id, device_info(device))
+    log(f"make_device_context({device_id}) device_info={device_info(device)}")
     cf = driver.ctx_flags
     flags = cf.SCHED_YIELD | cf.MAP_HOST
     try:
         context = device.make_context(flags=flags)
     except Exception as e:
-        log("%s.make_context(%s)", device, flags, exc_info=True)
-        log.error("Error: cannot create CUDA context for device %s", device_id)
-        log.error(" %s", e)
+        log(f"{device}.make_context({flags:x})", exc_info=True)
+        log.error(f"Error: cannot create CUDA context for device {device_id}")
+        log.estr(e)
         return None
-    log("created context=%s", context)
+    log(f"created context={context}")
     free, total = driver.mem_get_info()
     log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
     tpct = 100*free//total
@@ -463,8 +460,9 @@ class cuda_device_context:
         start = monotonic()
         cf = driver.ctx_flags
         if self.opengl:
-            from pycuda import gl  # @UnresolvedImport
-            self.context = gl.make_context(self.device)
+            with numpy_import_lock:
+                from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
+                self.context = gl.make_context(self.device)
         else:
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
         end = monotonic()
@@ -490,7 +488,7 @@ class cuda_device_context:
 
 
     def __repr__(self):
-        return "cuda_device_context(%i - %s)" % (self.device_id, self.lock._is_owned())
+        return f"cuda_device_context({self.device_id} - {self.lock._is_owned()})"
 
     def get_info(self):
         info = {
@@ -593,39 +591,38 @@ def get_CUDA_function(function_name):
         Returns the compiled kernel for the given device
         and kernel key.
     """
-    global KERNELS
     data = KERNELS.get(function_name)
     if data is None:
-        from xpra.platform.paths import get_resources_dir
-        cubin_file = os.path.join(get_resources_dir(), "cuda", "%s.fatbin" % function_name)
-        log("get_CUDA_function(%s) cubin file=%s", function_name, cubin_file)
+        cubin_file = os.path.join(get_resources_dir(), "cuda", f"{function_name}.fatbin")
+        log(f"get_CUDA_function({function_name}) cubin file={cubin_file!r}")
         data = load_binary_file(cubin_file)
         if not data:
-            log.error("Error: failed to load CUDA bin file '%s'", cubin_file)
+            log.error(f"Error: failed to load CUDA bin file {cubin_file!r}")
             return None
-        log(" loaded %s bytes", len(data))
+        log(f" loaded {len(data)} bytes")
         KERNELS[function_name] = data
     #now load from cubin:
     start = monotonic()
     try:
         mod = driver.module_from_buffer(data)
     except Exception as e:
-        log("module_from_buffer(%s)", data, exc_info=True)
-        log.error("Error: failed to load module from buffer for '%s'", function_name)
-        log.error(" %s", e)
+        log(f"module_from_buffer({data})", exc_info=True)
+        log.error(f"Error: failed to load module from buffer for {function_name!r}")
+        log.estr(e)
         return None
-    log("get_CUDA_function(%s) module=%s", function_name, mod)
+    log(f"get_CUDA_function({function_name}) module={mod}")
     try:
         fn = function_name
         CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
-        raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e)) from None
+        raise Exception(f"failed to load {function_name!r} from {mod}: {e}") from None
     end = monotonic()
-    log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
+    log(f"loading function {function_name!r} from pre-compiled cubin took %.1fms", 1000.0*(end-start))
     return CUDA_function
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
