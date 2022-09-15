@@ -5,6 +5,8 @@
 
 #cython: wraparound=False
 
+import select
+import binascii
 from time import monotonic
 from xpra.util import envbool
 from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes
@@ -22,6 +24,13 @@ DEF DRM_MODE_DPMS_SUSPEND = 2
 DEF DRM_MODE_DPMS_OFF = 3
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+
+#https://github.com/linuxhw/EDID/tree/master/
+#EDIDv2_1280x720:
+#edid_hex = b"00ffffffffffff004e845d00010000000115010380311c782a0dc9a05747982712484c20000001010101010101010101010101010101011d007251d01e2046285500e812110000188c0ad08a20e02d10103e9600e81211000018000000fc0048444d492054560a2020202020000000fd00313d0f2e08000a202020202020018e02031d714701020384111213230907078301000068030c001000b82d00011d007251d01e206e285500e8121100001e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000039"
+#edid_hex = b"00ffffffffffff0005b4380001010101020d0103801e17782a80f8a3554799240d4d50bfee00614c310a0101010101010101010181c064190040410026301888360030e410000018000000fd00324b1e3e08000a202020202020000000ff003233363233303230303037340a000000fc004c322d313530542b202020200a00ef"
+#800x600:
+DEFAULT_EDID = binascii.unhexlify(b"00ffffffffffff0031d8000000000000051601036d1b1478ea5ec0a4594a982520505401000045400101010101010101010101010101a00f200031581c202880140015d01000001e000000ff004c696e75782023300a20202020000000fd003b3d242605000a202020202020000000fc004c696e757820535647410a202000c2")
 
 
 cdef extern from "evdi_lib.h":
@@ -207,12 +216,13 @@ cdef class EvdiDevice:
     cdef object buffers
     cdef evdi_mode mode
     cdef int dpms_mode
+    cdef object edid
 
     def __init__(self, int device):
         self.device = device
-        self.handle = evdi_open(device)
-        if not self.handle:
-            raise ValueError(f"cannot open {device}")
+        self.handle = NULL
+        self.buffers = {}
+        self.edid = None
         self.dpms_mode = DRM_MODE_DPMS_OFF
         memset(&self.mode, 0, sizeof(evdi_mode))
         memset(&self.event_context, 0, sizeof(evdi_event_context))
@@ -223,9 +233,22 @@ cdef class EvdiDevice:
         self.event_context.cursor_set_handler = &cursor_set_handler
         self.event_context.cursor_move_handler = &cursor_move_handler
         self.event_context.ddcci_data_handler = &ddcci_data_handler
-        self.event_context.user_data = <void *> ((<uintptr_t> device) & 0xFFFF)
-        self.buffers = {}
+        self.event_context.user_data = <void *> (<uintptr_t> device)
         devices[device] = self
+
+    def open(self):
+        if self.handle:
+            raise RuntimeError("this evdi device is already open")
+        self.handle = evdi_open(self.device)
+        if not self.handle:
+            raise ValueError(f"cannot open {self.device}")
+
+    def close(self):
+        h = self.handle
+        if h:
+            self.handle = NULL
+            evdi_close(h)
+
 
     cdef void dpms_handler(self, int dpms_mode):
         log(f"dpms_handler({dpms_mode}) %s", MODE_STR.get(dpms_mode, "INVALID"))
@@ -236,27 +259,26 @@ cdef class EvdiDevice:
         if dpms_mode!=DRM_MODE_DPMS_ON:
             self.unregister_buffers()
 
-    def may_start(self):
-        log(f"may_start() dpms_mode={self.dpms_mode}")
-        if self.dpms_mode==DRM_MODE_DPMS_ON and self.mode.width>0 and self.mode.height>0:
-            buf_id = 1
-            log(f"may_start() using buffer {buf_id}")
-            if buf_id not in self.buffers:
-                self.register_buffer(buf_id)
-            if self.request_update(buf_id):
-                self.update_ready_handler(buf_id)
-
     cdef void mode_changed_handler(self, evdi_mode mode):
         log(f"mode_changed_handler({mode.width}x{mode.height}-{mode.bits_per_pixel}@{mode.refresh_rate}")
         memcpy(&self.mode, &mode, sizeof(evdi_mode))
         self.unregister_buffers()
-        self.may_start()
+        log(f"mode_changed_handler dpms_mode={MODE_STR.get(self.dpms_mode, self.dpms_mode)}")
+        if self.dpms_mode==DRM_MODE_DPMS_ON and self.mode.width>0 and self.mode.height>0:
+            buf_id = 1
+            log(f"using buffer {buf_id}")
+            if buf_id not in self.buffers:
+                self.register_buffer(buf_id)
+            if self.request_update(buf_id):
+                self.grab_pixels(buf_id)
 
     cdef void update_ready_handler(self, int buffer_to_be_updated):
         log(f"update_ready_handler({buffer_to_be_updated})")
         self.grab_pixels(buffer_to_be_updated)
 
     def grab_pixels(self, buf_id):
+        if not self.handle:
+            raise RuntimeError("no device handle")
         buf = self.buffers.get(buf_id)
         if not buf:
             raise ValueError(f"unknown buffer {buf_id}")
@@ -265,20 +287,30 @@ cdef class EvdiDevice:
         evdi_grab_pixels(self.handle, rects, &nrects)
         log(f"evdi_grab_pixels(%#x, %#x, {nrects})", <uintptr_t> self.handle, <uintptr_t> rects)
         if SAVE_TO_FILE:
-            from PIL import Image
-            pixels = memoryview_to_bytes(memoryview(buf))
-            rowstride = self.mode.width*4
-            pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
-            pil_image = pil_image.convert("RGB")
-            pil_image.save(f"{monotonic()}.jpg", "JPEG")
-            if nrects:
-                for i in range(nrects):
-                    log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
-                    w = rects[i].x2 - rects[i].x1
-                    h = rects[i].y2 - rects[i].y1
-                    if w>0 and h>0 and (w<self.mode.width or h<self.mode.height):
-                        sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
-                        sub.save(f"{monotonic()}-{i}.png", "PNG")
+            try:
+                from PIL import Image
+                pixels = memoryview_to_bytes(memoryview(buf))
+                rowstride = self.mode.width*4
+                pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
+                pil_image = pil_image.convert("RGB")
+                filename = f"{monotonic()}.jpg"
+                pil_image.save(filename, "JPEG")
+                log(f"saved to {filename}")
+                if nrects:
+                    for i in range(nrects):
+                        log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
+                        w = rects[i].x2 - rects[i].x1
+                        h = rects[i].y2 - rects[i].y1
+                        if w>0 and h>0 and (w<self.mode.width or h<self.mode.height):
+                            sub = pil_image.crop((rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2))
+                            sub.save(f"{monotonic()}-{i}.jpg", "JPEG")
+            except KeyboardInterrupt as e:
+                log(f"{e}")
+                self.cleanup()
+                return ()
+            except Exception:
+                self.cleanup()
+                return ()
         return tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
 
 
@@ -294,10 +326,18 @@ cdef class EvdiDevice:
     cdef void ddcci_data_handler(self, evdi_ddcci_data ddcci_data):
         log("ddcci_data_handler(%#x)", ddcci_data.address)
 
-    def connect(self, edid):
-        b = strtobytes(edid)
-        cdef const unsigned char *edid_bin = b
-        cdef unsigned int edid_length = len(b)
+    def enable_cursor_events(self, enable=True):
+        evdi_enable_cursor_events(self.handle, 1)
+
+
+    def connect(self, edid=DEFAULT_EDID):
+        if not self.handle:
+            raise RuntimeError("no device handle")
+        if self.edid:
+            raise RuntimeError("device is already connected")
+        self.edid = strtobytes(edid)
+        cdef const unsigned char *edid_bin = self.edid
+        cdef unsigned int edid_length = len(self.edid)
         cdef uint32_t pixel_area_limit = 4096*2160*2
         cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
         log(f"connect with edid %s (length={edid_length})", <uintptr_t> edid_bin)
@@ -305,24 +345,54 @@ cdef class EvdiDevice:
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
 
+    def disconnect(self):
+        e = self.edid
+        if e:
+            self.edid = None
+            evdi_disconnect(self.handle)
+
+    def get_event_fd(self):
+        return evdi_get_event_ready(self.handle)
+
+
     def handle_events(self):
+        if not self.handle:
+            raise RuntimeError("no device handle")
+        if not self.edid:
+            raise RuntimeError("device is not connected")
+        evdi_handle_events(self.handle, &self.event_context)
+
+    def handle_all_events(self):
+        if not self.handle:
+            raise RuntimeError("no device handle")
+        if not self.edid:
+            raise RuntimeError("device is not connected")
+        cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
+        log(f"handle_all_events() fd={fd}")
+        while self.handle!=NULL and self.edid:
+            r = select.select([fd], [], [], 0)
+            log(f"handle_all_events() select(..)={r}")
+            if fd not in r[0]:
+                break
+            evdi_handle_events(self.handle, &self.event_context)
+
+    def event_loop(self, run_time=20):
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
         log(f"handle_events() fd={fd}")
-        evdi_enable_cursor_events(self.handle, 1)
-        import select
-        count = 0
         start = monotonic()
-        while monotonic()-start<20:
+        while monotonic()-start<run_time and self.handle!=NULL and self.edid:
             log("waiting for events")
-            r = select.select([fd], [], [], 0.1)
+            r = select.select([fd], [], [], 0.020)
             log(f"select(..)={r}")
+            if self.handle==NULL or not self.edid:
+                break
             if fd in r[0]:
                 evdi_handle_events(self.handle, &self.event_context)
-            count += 1
             if self.buffers:
                 buf_id = 1
-                if self.request_update(buf_id):
-                    self.update_ready_handler(buf_id)
+                r = self.request_update(buf_id)
+                if r:
+                    self.grab_pixels(buf_id)
 
     def register_buffer(self, int buf_id):
         cdef evdi_buffer buf
@@ -347,32 +417,27 @@ cdef class EvdiDevice:
         for buf_id in self.buffers.keys():
             log(f"unregister_buffer {buf_id}")
             evdi_unregister_buffer(self.handle, buf_id)
-            #TODO: free rects
         self.buffers = {}
 
     def cleanup(self):
         self.unregister_buffers()
-        evdi_disconnect(self.handle)
-        evdi_close(self.handle)
+        self.disconnect()
+        self.close()
+
+    def __del__(self):
+        self.cleanup()
 
 
 cdef test_device(int device):
     log(f"opening card {device}")
     cdef EvdiDevice d = EvdiDevice(device)
-    import binascii
-    #xrandr --addmode DVI-I-1-1 1280x720
-    #xrandr --output DVI-I-1-1 --mode 1280x720 --right-of  DP-2
-    #https://github.com/linuxhw/EDID/tree/master/
-    #EDIDv2_1280x720:
-    #edid_hex = b"00ffffffffffff004e845d00010000000115010380311c782a0dc9a05747982712484c20000001010101010101010101010101010101011d007251d01e2046285500e812110000188c0ad08a20e02d10103e9600e81211000018000000fc0048444d492054560a2020202020000000fd00313d0f2e08000a202020202020018e02031d714701020384111213230907078301000068030c001000b82d00011d007251d01e206e285500e8121100001e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000039"
-    #edid_hex = b"00ffffffffffff0005b4380001010101020d0103801e17782a80f8a3554799240d4d50bfee00614c310a0101010101010101010181c064190040410026301888360030e410000018000000fd00324b1e3e08000a202020202020000000ff003233363233303230303037340a000000fc004c322d313530542b202020200a00ef"
-    #800x600:
-    edid_hex = b"00ffffffffffff0031d8000000000000051601036d1b1478ea5ec0a4594a982520505401000045400101010101010101010101010101a00f200031581c202880140015d01000001e000000ff004c696e75782023300a20202020000000fd003b3d242605000a202020202020000000fc004c696e757820535647410a202000c2"
-    edid = binascii.unhexlify(edid_hex)
-    d.connect(edid)
-    d.handle_events()
+    d.open()
+    d.connect(DEFAULT_EDID)
+    d.enable_cursor_events()
+    d.event_loop()
     d.cleanup()
     return True
+
 
 def find_evdi_devices():
     import os
@@ -383,6 +448,7 @@ def find_evdi_devices():
         try:
             device = int(f[len("card"):])
             r = evdi_check_device(device)
+            log(f"find_evdi_devices() evdi_check_device({device})={r}")
             if r==AVAILABLE:
                 devices.append(device)
         except ValueError:
