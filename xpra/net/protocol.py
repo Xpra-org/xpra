@@ -953,7 +953,8 @@ class Protocol:
                         #no cipher, no padding:
                         padding_size = 0
                         payload_size = data_size
-                    assert payload_size>0, "invalid payload size: %i" % payload_size
+                    if payload_size<=0:
+                        raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
 
                     if payload_size>self.max_packet_size:
                         #this packet is seemingly too big, but check again from the main UI thread
