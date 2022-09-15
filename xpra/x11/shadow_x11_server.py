@@ -214,7 +214,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def make_hello(self, source):
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
-        capabilities["server_type"] = "Python/gtk2/x11-shadow"
+        capabilities["server_type"] = "Python/gtk3/x11-shadow"
         return capabilities
 
     def get_info(self, proto, *_args):
