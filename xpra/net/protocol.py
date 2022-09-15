@@ -100,8 +100,9 @@ def verify_packet(packet):
     """ look for None values which may have caused the packet to fail encoding """
     if not isinstance(packet, list):
         return False
-    assert packet, "invalid packet: %s" % packet
-    tree = ["'%s' packet" % packet[0]]
+    if not packet:
+        raise ValueError(f"invalid packet: {packet} ({type(packet)})")
+    tree = [f"{packet[0]!r} packet"]
     return do_verify_packet(tree, packet)
 
 def do_verify_packet(tree, packet):
@@ -117,18 +118,18 @@ def do_verify_packet(tree, packet):
     r = True
     if isinstance(packet, (list, tuple)):
         for i, x in enumerate(packet):
-            if not do_verify_packet(new_tree("[%s]" % i), x):
+            if not do_verify_packet(new_tree(f"[{i}]"), x):
                 r = False
     elif isinstance(packet, dict):
         for k,v in packet.items():
-            if not do_verify_packet(new_tree("key for value='%s'" % str(v)), k):
+            if not do_verify_packet(new_tree(f"key for value={v!r}"), k):
                 r = False
-            if not do_verify_packet(new_tree("value for key='%s'" % str(k)), v):
+            if not do_verify_packet(new_tree(f"value for key={k!r}"), v):
                 r = False
     elif isinstance(packet, (int, bool, str, bytes)):
         pass
     else:
-        err("unsupported type: %s" % type(packet))
+        err(f"unsupported type: {type(packet)}")
         r = False
     return r
 
@@ -422,7 +423,9 @@ class Protocol:
             if self._closed:
                 return
             try:
-                self._add_chunks_to_queue(packet_type, chunks, start_send_cb, end_send_cb, fail_cb, synchronous, has_more or wait_for_more)
+                self._add_chunks_to_queue(packet_type, chunks,
+                                          start_send_cb, end_send_cb, fail_cb,
+                                          synchronous, has_more or wait_for_more)
             except:
                 log.error("Error: failed to queue '%s' packet", packet[0])
                 log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb, fail_cb), exc_info=True)
@@ -449,9 +452,11 @@ class Protocol:
                     # pad byte value is number of padding bytes added
                     padded = memoryview_to_bytes(data) + pad(self.cipher_out_padding, padding_size)
                     actual_size += padding_size
-                assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
+                if len(padded)!=actual_size:
+                    raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
                 data = self.cipher_out.encrypt(padded)
-                assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
+                if len(data)!=actual_size:
+                    raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %s bytes %s encrypted with %s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
@@ -512,19 +517,19 @@ class Protocol:
 
     def enable_encoder_from_caps(self, caps):
         opts = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
-        log("enable_encoder_from_caps(..) options=%s", opts)
+        log(f"enable_encoder_from_caps(..) options={opts}")
         for e in opts:
             if caps.boolget(e, e=="bencode"):
                 self.enable_encoder(e)
                 return True
-            log("client does not support %s", e)
+            log(f"client does not support {e}")
         log.error("no matching packet encoder found!")
         return False
 
     def enable_encoder(self, e):
         self._encoder = packet_encoding.get_encoder(e)
         self.encoder = e
-        log("enable_encoder(%s): %s", e, self._encoder)
+        log(f"enable_encoder({e}): {self._encoder}")
 
 
     def enable_default_compressor(self):
@@ -540,23 +545,23 @@ class Protocol:
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         compressors = caps.strtupleget("compressors")
-        log("enable_compressor_from_caps(..) options=%s, compressors from caps=%s", opts, compressors)
+        log(f"enable_compressor_from_caps(..) options={opts}, compressors from caps={compressors}")
         for c in opts:      #ie: [zlib, lz4]
             if c=="none":
                 continue
             if c in compressors or caps.boolget(c):
                 self.enable_compressor(c)
                 return
-            log("client does not support %s", c)
+            log(f"client does not support {c}")
         log.warn("Warning: compression disabled, no matching compressor found")
-        log.warn(" capabilities: %s", csv(compressors))
-        log.warn(" enabled compressors: %s", csv(opts))
+        log.warn(f" capabilities: {csv(compressors)}")
+        log.warn(f" enabled compressors: {csv(opts)}")
         self.enable_compressor("none")
 
     def enable_compressor(self, compressor):
         self._compress = compression.get_compressor(compressor)
         self.compressor = compressor
-        log("enable_compressor(%s): %s", compressor, self._compress)
+        log(f"enable_compressor({compressor}): {self._compress}")
 
 
     def encode(self, packet_in):
@@ -581,14 +586,14 @@ class Protocol:
         for i in range(1, len(packet)):
             item = packet[i]
             if item is None:
-                raise TypeError("invalid None value in %s packet at index %s" % (packet[0], i))
+                raise TypeError(f"invalid None value in {packet[0]} packet at index {i}")
             ti = type(item)
             if ti in (int, bool, dict, list, tuple):
                 continue
             try:
                 l = len(item)
             except TypeError as e:
-                raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e)) from None
+                raise TypeError(f"invalid type {ti} in {packet[0]} packet at index {i}: {e}") from None
             if issubclass(ti, Compressible):
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
@@ -617,15 +622,15 @@ class Protocol:
                     size_check += l
             elif ti==bytes and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
-                log.warn(" in packet '%s' at position %i: %s bytes", packet[0], i, len(item))
+                log.warn(f" in packet {packet[0]!r} at position {i}: {len(item)} bytes")
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
                 packets.append((0, i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti not in (str, bytes):
-                log.warn("Warning: unexpected data type %s", ti)
-                log.warn(" in '%s' packet at position %i: %s", packet[0], i, repr_ellipsized(item))
+                log.warn(f"Warning: unexpected data type {ti}")
+                log.warn(f" in {packet[0]!r} packet at position {i}: {repr_ellipsized(item)}")
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
@@ -641,24 +646,24 @@ class Protocol:
         except Exception:
             if self._closed:
                 return [], 0
-            log.error("Error: failed to encode packet: %s", packet, exc_info=True)
+            log.error(f"Error: failed to encode packet: {packet}", exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
             verify_packet(packet)
             raise
         if len(main_packet)>size_check and bytestostr(packet_in[0]) not in self.large_packets:
             log.warn("Warning: found large packet")
-            log.warn(" '%s' packet is %s bytes: ", packet_type, len(main_packet))
+            log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
-            log.warn(" packet: %s", repr_ellipsized(packet))
+            log.warn(f" packet: {repr_ellipsized(packet)}")
         #compress, but don't bother for small packets:
         if level>0 and len(main_packet)>min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
             except Exception as e:
-                log.error("Error compressing '%s' packet", packet_type)
-                log.error(" %s", e)
+                log.error(f"Error compressing {packet_type} packet")
+                log.estr(e)
                 raise
             packets.append((proto_flags, 0, cl, cdata))
         else:
@@ -668,28 +673,29 @@ class Protocol:
 
     def set_compression_level(self, level : int):
         #this may be used next time encode() is called
-        assert 0<=level<=10, "invalid compression level: %s (must be between 0 and 10" % level
+        if level<0 or level>10:
+            raise ValueError(f"invalid compression level: {level} (must be between 0 and 10")
         self.compression_level = level
 
 
     def _io_thread_loop(self, name, callback):
         try:
-            log("io_thread_loop(%s, %s) loop starting", name, callback)
+            log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
                 pass
-            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
+            log(f"io_thread_loop({name}, {callback}) loop ended, closed={self._closed}")
         except ConnectionClosedException as e:
-            log("%s closed in %s loop", self._conn, name, exc_info=True)
+            log(f"{self._conn} closed in {name} loop", exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
                 self._connection_lost(str(e))
         except (OSError, socket_error) as e:
             if not self._closed:
-                self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
+                self._internal_error(f"{name} connection {e} reset", exc_info=e.args[0] not in ABORT)
         except Exception as e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
-                log.error("Error: %s on %s failed: %s", name, self._conn, type(e), exc_info=True)
+                log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
 
 
@@ -722,7 +728,7 @@ class Protocol:
                 start_cb(conn.output_bytecount)
             except Exception:
                 if not self._closed:
-                    log.error("Error on write start callback %s", start_cb, exc_info=True)
+                    log.error(f"Error on write start callback {start_cb}", exc_info=True)
         self.write_buffers(buf_data, fail_cb, synchronous)
         try:
             if len(buf_data)>1:
@@ -738,7 +744,7 @@ class Protocol:
                 end_cb(self._conn.output_bytecount)
             except Exception:
                 if not self._closed:
-                    log.error("Error on write end callback %s", end_cb, exc_info=True)
+                    log.error(f"Error on write end callback {end_cb}", exc_info=True)
         return True
 
     def write_buffers(self, buf_data, _fail_cb, _synchronous):
@@ -792,14 +798,14 @@ class Protocol:
         ei = exc_info
         if exc:
             ei = None   #log it separately below
-        log.error("Error: %s", message, exc_info=ei)
+        log.error(f"Error: {message}", exc_info=ei)
         if exc:
-            log.error(" %s", exc, exc_info=exc_info)
+            log.error(f" {exc}", exc_info=exc_info)
             exc = None
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False):
-        log("connection lost: %s", message, exc_info=exc_info)
+        log(f"connection lost: {message}", exc_info=exc_info)
         self.close(message)
         return False
 
@@ -825,7 +831,7 @@ class Protocol:
                proto, len(data or ""), msg, ellipsizer(data))
         guess = guess_packet_type(data)
         if guess:
-            err = "invalid packet format: %s" % guess
+            err = f"invalid packet format: {guess}"
         else:
             err = "%s: 0x%s" % (msg, hexstr(data[:HEADER_SIZE]))
             if len(data)>1:
@@ -934,7 +940,7 @@ class Protocol:
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
-                        self.invalid_header(self, header, "invalid size in packet header: %s" % data_size)
+                        self.invalid_header(self, header, f"invalid size in packet header: {data_size}")
                         return
 
                     if protocol_flags & FLAGS_CIPHER:
@@ -965,8 +971,8 @@ class Protocol:
                             log("check_packet_size(%#x, %s) max=%#x",
                                 size_to_check, hexstr(packet_header), self.max_packet_size)
                             if size_to_check>self.max_packet_size:
-                                msg = "packet size requested is %s but maximum allowed is %s" % \
-                                              (size_to_check, self.max_packet_size)
+                                # pylint: disable=line-too-long
+                                msg = f"packet size requested is {size_to_check} but maximum allowed is {self.max_packet_size}"
                                 self.invalid(msg, packet_header)
                             return False
                         self.timeout_add(1000, check_packet_size, payload_size, header)
@@ -1025,7 +1031,7 @@ class Protocol:
                                       len(actual_padding), debug_str(actual_padding), type(data))
                             cryptolog(" decrypted data (%i bytes): %r..", len(data), data[:128])
                             cryptolog(" decrypted data (hex): %s..", debug_str(data[:128]))
-                            self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
+                            self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
                             return
                         data = data[:-padding_size]
                 #uncompress if needed:
@@ -1033,7 +1039,7 @@ class Protocol:
                     try:
                         data = decompress(data, compression_level)
                     except InvalidCompressionException as e:
-                        self.invalid("invalid compression: %s" % e, data)
+                        self.invalid(f"invalid compression: {e}", data)
                         return
                     except Exception as e:
                         ctype = compression.get_compression_type(compression_level)
@@ -1057,13 +1063,13 @@ class Protocol:
                 header = b""
                 if packet_index>0:
                     if packet_index in raw_packets:
-                        self.invalid("duplicate raw packet at index %i", packet_index)
+                        self.invalid(f"duplicate raw packet at index {packet_index}", data)
                         return
                     #raw packet, store it and continue:
                     raw_packets[packet_index] = data
                     payload_size = -1
                     if len(raw_packets)>=4:
-                        self.invalid("too many raw packets: %s" % len(raw_packets), data)
+                        self.invalid(f"too many raw packets: {len(raw_packets)}", data)
                         return
                     #we know for sure that another packet should follow immediately
                     #the one with packet_index=0 for this raw packet
@@ -1073,18 +1079,18 @@ class Protocol:
                 try:
                     packet = list(decode(data, protocol_flags))
                 except InvalidPacketEncodingException as e:
-                    self.invalid("invalid packet encoding: %s" % e, data)
+                    self.invalid(f"invalid packet encoding: {e}", data)
                     return
                 except (ValueError, TypeError, IndexError) as e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
-                    log.error("Error parsing %s packet:", etype)
-                    log.error(" %s", e)
+                    log.error(f"Error parsing {etype} packet:")
+                    log.estr(e)
                     if self._closed:
                         return
-                    log("failed to parse %s packet: %s", etype, hexstr(data[:128]), exc_info=True)
+                    log(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
                     data_str = memoryview_to_bytes(data)
                     log(" data: %s", repr_ellipsized(data_str))
-                    log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
+                    log(f" packet index={packet_index}, packet size={payload_size}, buffer size={bl}")
                     log(" full data: %s", hexstr(data_str))
                     self.gibberish(f"failed to parse {etype} packet", data)
                     return
@@ -1106,7 +1112,7 @@ class Protocol:
                         packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE:
-                    log("%s: %i bytes", packet_type, HEADER_SIZE + payload_size)
+                    log(f"{packet_type}: %i bytes", HEADER_SIZE + payload_size)
 
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
