@@ -126,8 +126,8 @@ def encode(coding : str, image, options=None):
             palette.append((b>>8) & 0xFF)
         bpp = 8
     else:
-        assert pixel_format in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"), \
-            "invalid pixel format '%s'" % pixel_format
+        if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
+            raise ValueError(f"invalid pixel format {pixel_format}")
     try:
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
