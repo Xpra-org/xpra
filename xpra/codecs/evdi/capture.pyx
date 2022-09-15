@@ -155,9 +155,15 @@ cdef void evdi_logging_function(void *user_data, const char *fmt, ...):
     log(f"evdi: {s}")
 
 
-def catpure_logging():
+def capture_logging():
     cdef evdi_logging log_config
     log_config.function = &evdi_logging_function
+    log_config.user_data = NULL
+    evdi_set_logging(log_config)
+
+def reset_logging():
+    cdef evdi_logging log_config
+    log_config.function = NULL
     log_config.user_data = NULL
     evdi_set_logging(log_config)
 
@@ -376,7 +382,7 @@ cdef class EvdiDevice:
                 break
             evdi_handle_events(self.handle, &self.event_context)
 
-    def event_loop(self, run_time=20):
+    def event_loop(self, run_time=10):
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
         log(f"handle_events() fd={fd}")
         start = monotonic()
@@ -463,7 +469,9 @@ def selftest(full=False):
     log.enable_debug()
     enable_color(format_string=format_string)
     log.info("evdi version " + ".".join(str(x) for x in get_version()))
+    #capture_logging()
     devices = find_evdi_devices()
     if devices:
         for device in devices:
             test_device(device)
+    #reset_logging()
