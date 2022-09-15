@@ -269,7 +269,8 @@ cdef class EvdiDevice:
             pixels = memoryview_to_bytes(memoryview(buf))
             rowstride = self.mode.width*4
             pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
-            pil_image.save(f"{monotonic()}.png", "PNG")
+            pil_image = pil_image.convert("RGB")
+            pil_image.save(f"{monotonic()}.jpg", "JPEG")
             if nrects:
                 for i in range(nrects):
                     log(" %i : %i,%i to %i,%i", i, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2)
@@ -311,7 +312,7 @@ cdef class EvdiDevice:
         import select
         count = 0
         start = monotonic()
-        while monotonic()-start<100:
+        while monotonic()-start<20:
             log("waiting for events")
             r = select.select([fd], [], [], 0.1)
             log(f"select(..)={r}")
