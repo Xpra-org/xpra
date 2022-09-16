@@ -1,11 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk3.gdk_bindings import get_server_time
+from xpra.x11.gtk3.gdk_bindings import get_server_time  # @UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("x11", "focus")
