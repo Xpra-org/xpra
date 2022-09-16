@@ -89,6 +89,12 @@ class DotXpra:
             try:
                 st_mode = os.stat(d).st_mode
                 if st_mode&0o777!=mode:
+                    #perhaps this directory lives in $XDG_RUNTIME_DIR
+                    #ie: /run/user/$UID/xpra or /run/user/$UID/xpra/100
+                    xrd = os.environ.get("XDG_RUNTIME_DIR")
+                    if xrd and d.startswith(xrd) and os.stat(xrd).st_mode & 0o777==0o700:
+                        #$XDG_RUNTIME_DIR has the correct permissions
+                        return
                     log = get_util_logger()
                     log.warn("Warning: socket directory '%s'", d)
                     log.warn(" expected permissions %s but found %s", oct(mode), oct(st_mode&0o777))
