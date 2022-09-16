@@ -60,8 +60,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi-cairo
 # for opengl support:
         ,python3-opengl
-# not *strictly* required, but too important to miss:
-        ,python3-numpy
 # for PNG and JPEG support:
         ,python3-pil
 # ssl (generate cert), wss:
