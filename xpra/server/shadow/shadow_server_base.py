@@ -242,9 +242,12 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("start_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
         if wid not in self.mapped:
             self.mapped.append(wid)
+        self.start_refresh_timer()
+        self.start_poll_pointer()
+
+    def start_refresh_timer(self):
         if not self.refresh_timer:
             self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
-        self.start_poll_pointer()
 
     def set_refresh_delay(self, v):
         assert 0<v<10000
