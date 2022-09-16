@@ -161,7 +161,7 @@ class RootWindowModel:
                     osn += "-"+get_linux_distribution()[0].replace(" ", "-")
                 except Exception:   # pragma: no cover
                     pass
-            return ("xpra-%s" % osn.lower(), "Xpra %s" % osn.replace("-", " "))
+            return f"xpra-{osn.lower()}", f"Xpra {osn.replace('-', ' ')}"
         if prop=="icons":
             return get_os_icons()
         if prop=="content-type":
@@ -186,7 +186,7 @@ class RootWindowModel:
             try:
                 listener(self, pspec, *args)
             except Exception:
-                log.error("Error on %s signal listener %s", prop, listener, exc_info=True)
+                log.error(f"Error on {prop!r} signal listener {listener}", exc_info=True)
 
     def managed_connect(self, signal, *args):   # pragma: no cover
         self.connect(signal, *args)
