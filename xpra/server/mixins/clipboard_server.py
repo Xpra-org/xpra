@@ -237,7 +237,7 @@ class ClipboardServer(StubServerMixin):
             log(" owner is %s", self._clipboard_client)
             return
         if not clipboard_enabled:
-            ch.enable_selections([])
+            ch.enable_selections(None)
 
     def clipboard_progress(self, local_requests, _remote_requests):
         assert self.clipboard
