@@ -512,7 +512,7 @@ class ClipboardProtocolHelperCore:
 class ClipboardProxyCore:
     def __init__(self, selection):
         self._selection = selection
-        self._enabled = True
+        self._enabled = False
         self._have_token = False
         #enabled later during setup
         self._can_send = False
