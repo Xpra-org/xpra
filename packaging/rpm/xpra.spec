@@ -151,7 +151,6 @@ Requires:			xpra-common = %{version}-%{release}
 Requires:			python3
 Requires:			python3-lz4
 Requires:			python3-pillow
-Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
 #this is a downstream package with the codecs separated - it should not be installed:
