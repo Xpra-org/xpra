@@ -24,6 +24,9 @@ class DotXpra:
     def __init__(self, sockdir=None, sockdirs=(), actual_username="", *_args, **_kwargs):
         self.username = actual_username
 
+    def __repr__(self):
+        return f"DotXpra({self.username})"
+
     def osexpand(self, v):
         return osexpand(v, self.username)
 

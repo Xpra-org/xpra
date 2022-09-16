@@ -51,7 +51,7 @@ class DotXpra:
         return osexpand(v, self.username, self.uid, self.gid)
 
     def __repr__(self):
-        return "DotXpra(%s, %s - %i:%i - %s)" % (self._sockdir, self._sockdirs, self.uid, self.gid, self.username)
+        return f"DotXpra({self._sockdir}, {self._sockdirs} - {self.uid}:{self.gid} - {self.username})"
 
     def mksockdir(self, d, mode=0o700, uid=None, gid=None):
         if not d:
