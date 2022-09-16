@@ -93,7 +93,7 @@ class DotXpra:
                     log.warn("Warning: socket directory '%s'", d)
                     log.warn(" expected permissions %s but found %s", oct(mode), oct(st_mode&0o777))
             except OSError:
-                get_util_logger().log("mksockdir%s", (d, mode, uid, gid), exc_info=True)
+                get_util_logger().error("Error: mksockdir%s", (d, mode, uid, gid), exc_info=True)
 
     def socket_expand(self, path):
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
