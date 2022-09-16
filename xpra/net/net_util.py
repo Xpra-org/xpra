@@ -108,7 +108,6 @@ def get_bind_IPs():
     return bind_IPs
 
 def do_get_bind_IPs():
-    global iface_ipmasks
     ips = []
     netifaces = import_netifaces()
     assert netifaces
@@ -179,7 +178,7 @@ def get_iface(ip) -> str:
             assert len(v)>0
         except Exception as e:
             log("socket.getaddrinfo(%s, None)", ip, exc_info=True)
-            log.error("Error: cannot revolve '%s'", ip)
+            log.error(f"Error revolving {ip!r}: {e}")
             return None
         for i, x in enumerate(v):
             family, socktype, proto, canonname, sockaddr = x
