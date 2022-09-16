@@ -27,11 +27,15 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     constants, PropertyError,                   #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
+from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.os_util import bytestostr, strtobytes
 from xpra.util import csv, repr_ellipsized, ellipsizer, first_time
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
+XRes = ResBindings()
+if not XRes.check_xres():
+    XRes = None
 
 log = Logger("x11", "clipboard")
 
@@ -335,17 +339,25 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         return None
 
     def get_wininfo(self, xid):
+        wininfo = [f"xid={xid:x}"]
+        if XRes:
+            with xswallow:
+                pid = XRes.get_pid(xid)
+                if pid:
+                    wininfo.append(f"pid={pid}")
         with xswallow:
             title = self.get_wintitle(xid)
             if title:
-                return "'%s'" % title
+                wininfo.insert(0, title)
+                return wininfo
         with xswallow:
             while xid:
                 title = self.get_wintitle(xid)
                 if title:
-                    return "child of '%s'" % title
+                    wininfo.append(f"child of {title!r}")
+                    return wininfo
                 xid = X11Window.getParent(xid)
-        return hex(xid)
+        return wininfo
 
     ############################################################################
     # forward local requests to the remote clipboard:
@@ -360,8 +372,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         wininfo = self.get_wininfo(requestor.get_xid())
         prop = event.property
         target = str(event.target)
-        log("clipboard request for %s from window %#x: %s, target=%s, prop=%s",
-            self._selection, requestor.get_xid(), wininfo, target, prop)
+        log("clipboard request for %s from window %s, target=%s, prop=%s",
+            self._selection, wininfo, target, prop)
         if not target:
             log.warn("Warning: ignoring clipboard request without a TARGET")
             log.warn(" coming from %s", wininfo)
@@ -375,9 +387,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._enabled:
             nodata()
             return
-        if wininfo and wininfo.strip("'") in BLACKLISTED_CLIPBOARD_CLIENTS:
-            if first_time("clipboard-blacklisted:%s" % wininfo.strip("'")):
-                log.warn("receiving clipboard requests from blacklisted client %s", wininfo)
+        blacklisted = tuple(client for client in BLACKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
+        if blacklisted:
+            if first_time(f"clipboard-blacklisted:{blacklisted}"):
+                log.warn(f"receiving clipboard requests from blacklisted client {csv(wininfo)}")
                 log.warn(" all requests will be silently ignored")
             log("responding with nodata for blacklisted client '%s'", wininfo)
             return
