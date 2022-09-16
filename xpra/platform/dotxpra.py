@@ -70,11 +70,11 @@ class DotXpra:
                 os.lchown(d, uid, gid)
         elif d!="/tmp":
             try:
-                st_mode = os.stat(d).st_mode
-                if st_mode&0o777!=mode:
+                st_mode = os.stat(d).st_mode & 0o777
+                if st_mode!=mode:
                     log = get_util_logger()
-                    log.warn("Warning: socket directory '%s'", d)
-                    log.warn(" expected permissions %s but found %s", oct(mode), oct(st_mode&0o777))
+                    log.warn(f"Warning: socket directory {d!r}")
+                    log.warn(f" expected permissions {mode:o} but found {st_mode:o}")
             except OSError:
                 get_util_logger().error("Error: mksockdir%s", (d, mode, uid, gid), exc_info=True)
 
@@ -101,7 +101,7 @@ class DotXpra:
             sock.connect(sockpath)
             return DotXpra.LIVE
         except socket.error as e:
-            debug("get_server_state: connect(%s)=%s (timeout=%s)", sockpath, e, timeout)
+            debug(f"get_server_state: connect({sockpath!r})={e} (timeout={timeout}")
             err = e.args[0]
             if err==errno.EACCES:
                 return DotXpra.INACCESSIBLE
@@ -155,7 +155,7 @@ class DotXpra:
                     continue
                 seen.add(real_dir)
             if not os.path.exists(real_dir):
-                debug("socket_details: directory '%s' does not exist", real_dir)
+                debug(f"socket_details: directory {real_dir!r} does not exist")
                 continue
             yield real_dir
 
