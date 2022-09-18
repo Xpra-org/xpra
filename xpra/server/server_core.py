@@ -1686,7 +1686,7 @@ class ServerCore:
             conn = getattr(protocol, "_conn", None)
             log.error("Error: connection timed out: %s", conn or protocol)
             elapsed = monotonic()-protocol.start_time
-            log.error(f" after {elapsed} seconds")
+            log.error(f" after {round(elapsed)} seconds")
             if conn:
                 log.error(f" sent {conn.output_bytecount} bytes")
                 log.error(f" received {conn.input_bytecount} bytes")
