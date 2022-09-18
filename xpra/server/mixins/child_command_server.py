@@ -65,8 +65,13 @@ class ChildCommandServer(StubServerMixin):
         if not hasattr(self, "session_name"):
             self.session_name = ""
         self.menu_provider = None
-        #wait for main loop to run:
-        self.idle_add(self.late_start)
+        #wait for main loop to run
+        #and ensure that we don't run `late_start()` more than once,
+        #even if __init__ is called multiple times:
+        if not getattr(self, "late_start_requested", False):
+            self.late_start_requested = True
+            GLib.idle_add(self.late_start)
+
 
     def late_start(self):
         def do_late_start():
