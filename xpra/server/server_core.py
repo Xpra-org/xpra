@@ -1481,7 +1481,7 @@ class ServerCore:
             req_info = "%s %s" % (http_proto, parts[0])
         else:
             httplog("New %s connection received from %s", http_proto, frominfo)
-            req_info = "ws"+["","s"][int(is_ssl)]
+            req_info = "wss" if is_ssl else "ws"
             tname = "%s-proxy" % req_info
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
@@ -1499,7 +1499,7 @@ class ServerCore:
             def new_websocket_client(wsh):
                 from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
-                newsocktype = "ws%s" % ["","s"][int(is_ssl)]
+                newsocktype = "wss" if is_ssl else "ws"
                 self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
@@ -1570,7 +1570,7 @@ class ServerCore:
             event.wait()
             icon_data, icon_type = icon
         if icon_type in ("png", "jpeg", "svg", "webp"):
-            mime_type = "image/%s" % icon_type
+            mime_type = "image/"+icon_type
         else:
             mime_type = "application/octet-stream"
         return self.send_http_response(handler, icon_data, mime_type)
@@ -1686,19 +1686,20 @@ class ServerCore:
             conn = getattr(protocol, "_conn", None)
             log.error("Error: connection timed out: %s", conn or protocol)
             elapsed = monotonic()-protocol.start_time
-            log.error(" after %i seconds", elapsed)
+            log.error(f" after {elapsed} seconds")
             if conn:
-                log.error(" received %i bytes", conn.input_bytecount)
+                log.error(f" sent {conn.output_bytecount} bytes")
+                log.error(f" received {conn.input_bytecount} bytes")
                 if conn.input_bytecount==0:
                     try:
                         data = conn.peek(200)
                     except Exception:
                         data = b""
                     if data:
-                        log.error(" read buffer=%r", data)
+                        log.error(f" read buffer={data!r}")
                         packet_type = guess_packet_type(data)
                         if packet_type:
-                            log.error(" looks like '%s' ", packet_type)
+                            log.error(f" looks like {packet_type!r}")
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol):
@@ -1866,7 +1867,7 @@ class ServerCore:
                 try:
                     for o in ("self", ):
                         if o in opts:
-                            raise Exception("illegal authentication module options '%s'" % o)
+                            raise Exception(f"illegal authentication module options {o!r}")
                     authlog("%s : %s(%s)", auth_name, aclass, opts)
                     authenticator = aclass(**opts)
                 except Exception:
@@ -1971,18 +1972,18 @@ class ServerCore:
                 countinfo = ""
                 if len(proto.authenticators)>1:
                     countinfo += " (%i of %i)" % (index+1, len(proto.authenticators))
-                authlog.info("Authentication required by %s authenticator module%s", authenticator, countinfo)
-                authlog.info(" sending challenge using %s digest over %s connection", actual_digest, conn.socktype_wrapped)
+                authlog.info(f"Authentication required by {authenticator} authenticator module%s", countinfo)
+                authlog.info(f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
                 if actual_digest not in digest_modes:
-                    auth_failed("cannot proceed without %s digest support" % actual_digest)
+                    auth_failed(f"cannot proceed without {actual_digest!r} digest support")
                     return
                 salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):
                     if not LEGACY_SALT_DIGEST:
-                        auth_failed("insecure salt digest '%s' rejected" % salt_digest)
+                        auth_failed(f"insecure salt digest {salt_digest!r} rejected")
                         return
-                    log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
-                authlog("sending challenge: %r", authenticator.prompt)
+                    log.warn(f"Warning: using legacy support for {salt_digest!r} salt digest")
+                authlog(f"sending challenge {authenticator.prompt!r}")
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
@@ -2047,14 +2048,14 @@ class ServerCore:
                     authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
                 return auth_failed("unsupported cipher")
             if key_stretch!="PBKDF2":
-                return auth_failed("unsupported key stretching %s" % key_stretch)
+                return auth_failed(f"unsupported key stretching {key_stretch!r}")
             encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
             if encryption_key is None:
                 return auth_failed("encryption key is missing")
             if padding not in ALL_PADDING_OPTIONS:
-                return auth_failed("unsupported padding: %s" % padding)
+                return auth_failed(f"unsupported padding {padding!r}")
             if key_hash not in KEY_HASHES:
-                return auth_failed("unsupported key hash algorithm: %s" % key_hash)
+                return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
             cryptolog("setting output cipher using %s-%s encryption key '%s'",
                       cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
             key_size = c.intget("cipher.key_size", DEFAULT_KEYSIZE)
@@ -2073,13 +2074,13 @@ class ServerCore:
         #if we have a keyfile specified, use that:
         authlog("get_encryption_key(%s, %s)", authenticators, keyfile)
         if keyfile:
-            authlog("loading encryption key from keyfile: %s", keyfile)
+            authlog(f"loading encryption key from keyfile {keyfile!r}")
             v = filedata_nocrlf(keyfile)
             if v:
                 return v
-        v = os.environ.get('XPRA_ENCRYPTION_KEY')
+        v = os.environ.get("XPRA_ENCRYPTION_KEY")
         if v:
-            authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
+            authlog("using encryption key from %s environment variable", "XPRA_ENCRYPTION_KEY")
             return v
         if authenticators:
             for authenticator in authenticators:
@@ -2098,7 +2099,7 @@ class ServerCore:
             log("call_hello_oked(%s, %s, %s)", proto, ellipsizer(c), auth_caps, exc_info=True)
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
-            log.error(" %s", e)
+            log.estr(e)
             self.disconnect_client(proto, CONNECTION_ERROR, str(e))
         except Exception as e:
             #log exception but don't disclose internal details to the client
