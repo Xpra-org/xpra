@@ -19,20 +19,25 @@ log = Logger("shadow")
 
 def get_os_icons():
     try:
-        icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
         from PIL import Image  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return ()
+    icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
+    try:
         img = Image.open(icon_name)
-        log("Image(%s)=%s", icon_name, img)
+        log(f"Image({icon_name})={img}")
         if img:
             icon_data = load_binary_file(icon_name)
-            assert icon_data
+            if not icon_data:
+                log(f"icon {icon_name} not found")
+                return ()
             w, h = img.size
             img.close()
             icon = (w, h, "png", icon_data)
             icons = (icon,)
             return icons
     except Exception:   # pragma: no cover
-        log("failed to return window icon")
+        log.error(f"Error: failed to load window icon {icon_name!r}", exc_info=True)
     return ()
 
 
