@@ -217,19 +217,23 @@ cdef void ddcci_data_handler(evdi_ddcci_data ddcci_data, void *user_data):
 
 cdef class EvdiDevice:
     cdef int device
+    cdef object damage_cb
     cdef evdi_handle handle
     cdef evdi_event_context event_context
     cdef object buffers
     cdef evdi_mode mode
     cdef int dpms_mode
     cdef object edid
+    cdef int export_buffer
 
-    def __init__(self, int device):
+    def __init__(self, int device, damage_cb=None):
         self.device = device
+        self.damage_cb = damage_cb
         self.handle = NULL
         self.buffers = {}
         self.edid = None
         self.dpms_mode = DRM_MODE_DPMS_OFF
+        self.export_buffer = 0
         memset(&self.mode, 0, sizeof(evdi_mode))
         memset(&self.event_context, 0, sizeof(evdi_event_context))
         self.event_context.dpms_handler = &dpms_handler
@@ -241,6 +245,9 @@ cdef class EvdiDevice:
         self.event_context.ddcci_data_handler = &ddcci_data_handler
         self.event_context.user_data = <void *> (<uintptr_t> device)
         devices[device] = self
+
+    def __repr__(self):
+        return f"EvdiDevice({self.device} - {self.mode.width}x{self.mode.height})"
 
     def open(self):
         if self.handle:
@@ -271,10 +278,12 @@ cdef class EvdiDevice:
         self.unregister_buffers()
         log(f"mode_changed_handler dpms_mode={MODE_STR.get(self.dpms_mode, self.dpms_mode)}")
         if self.dpms_mode==DRM_MODE_DPMS_ON and self.mode.width>0 and self.mode.height>0:
+            for buf_id in (1, 2):
+                if buf_id not in self.buffers:
+                    self.register_buffer(buf_id)
             buf_id = 1
+            self.export_buffer = buf_id
             log(f"using buffer {buf_id}")
-            if buf_id not in self.buffers:
-                self.register_buffer(buf_id)
             if self.request_update(buf_id):
                 self.grab_pixels(buf_id)
 
@@ -291,12 +300,12 @@ cdef class EvdiDevice:
         cdef int nrects = 128
         cdef evdi_rect[128] rects
         evdi_grab_pixels(self.handle, rects, &nrects)
+        cdef int rowstride = self.mode.width*4
         log(f"evdi_grab_pixels(%#x, %#x, {nrects})", <uintptr_t> self.handle, <uintptr_t> rects)
         if SAVE_TO_FILE:
             try:
                 from PIL import Image
                 pixels = memoryview_to_bytes(memoryview(buf))
-                rowstride = self.mode.width*4
                 pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
                 pil_image = pil_image.convert("RGB")
                 filename = f"{monotonic()}.jpg"
@@ -313,11 +322,20 @@ cdef class EvdiDevice:
             except KeyboardInterrupt as e:
                 log(f"{e}")
                 self.cleanup()
-                return ()
+                return
             except Exception:
                 self.cleanup()
-                return ()
-        return tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
+                return
+        areas = tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
+        log(f"evdi_grab_pixels areas={areas}")
+        cdef int buf_size = rowstride * self.mode.height
+        buf_slice = memoryview(buf)[:buf_size]
+        damage_cb = self.damage_cb
+        if damage_cb:
+            self.damage_cb(self.mode.width, self.mode.height, buf_slice, areas)
+        #toggle buffer:
+        self.export_buffer = 2-self.export_buffer
+        return self.mode.width, self.mode.height, buf_slice, areas
 
 
     cdef void crtc_state_handler(self, int state):
@@ -333,7 +351,7 @@ cdef class EvdiDevice:
         log("ddcci_data_handler(%#x)", ddcci_data.address)
 
     def enable_cursor_events(self, enable=True):
-        evdi_enable_cursor_events(self.handle, 1)
+        evdi_enable_cursor_events(self.handle, int(enable))
 
 
     def connect(self, edid=DEFAULT_EDID):
@@ -346,7 +364,7 @@ cdef class EvdiDevice:
         cdef unsigned int edid_length = len(self.edid)
         cdef uint32_t pixel_area_limit = 4096*2160*2
         cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
-        log(f"connect with edid %s (length={edid_length})", <uintptr_t> edid_bin)
+        log(f"connect with edid {edid!r} (length={edid_length})")
         evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length,
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
@@ -394,11 +412,17 @@ cdef class EvdiDevice:
                 break
             if fd in r[0]:
                 evdi_handle_events(self.handle, &self.event_context)
-            if self.buffers:
-                buf_id = 1
-                r = self.request_update(buf_id)
-                if r:
-                    self.grab_pixels(buf_id)
+            if self.buffers and self.export_buffer:
+                self.refresh()
+
+    def refresh(self):
+        buf_id = self.export_buffer
+        log.info(f"refresh() export_buffer={buf_id}")
+        if buf_id in (1, 2):
+            r = self.request_update(buf_id)
+            if r:
+                return self.grab_pixels(buf_id)
+        return None
 
     def register_buffer(self, int buf_id):
         cdef evdi_buffer buf
@@ -424,6 +448,7 @@ cdef class EvdiDevice:
             log(f"unregister_buffer {buf_id}")
             evdi_unregister_buffer(self.handle, buf_id)
         self.buffers = {}
+        self.export_buffer = 0
 
     def cleanup(self):
         self.unregister_buffers()
