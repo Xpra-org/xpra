@@ -112,7 +112,6 @@ cdef extern from "evdi_lib.h":
 
     void evdi_close(evdi_handle handle)
     void evdi_disconnect(evdi_handle handle)
-    void evdi_enable_cursor_events(evdi_handle handle, bint enable)
 
     void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
     void evdi_register_buffer(evdi_handle handle, evdi_buffer buffer)
@@ -130,6 +129,7 @@ cdef extern from "evdi_compat.c":
           const unsigned int edid_length,
           const uint32_t pixel_area_limit,
           const uint32_t pixel_per_second_limit)
+    void evdi_enable_cursor_events_compat(evdi_handle handle, bint enable)
 
 
 
@@ -354,7 +354,7 @@ cdef class EvdiDevice:
         log("ddcci_data_handler(%#x)", ddcci_data.address)
 
     def enable_cursor_events(self, enable=True):
-        evdi_enable_cursor_events(self.handle, int(enable))
+        evdi_enable_cursor_events_compat(self.handle, int(enable))
 
 
     def connect(self, edid=DEFAULT_EDID):

@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include "evdi_lib.h"
 
-#ifndef EVDI_CONNECT_COMPAT
 void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
           const unsigned int edid_length,
           const uint32_t pixel_area_limit,
@@ -19,4 +18,14 @@ void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
 	return evdi_connect(handle, edid, edid_length, pixel_per_second_limit);
 #endif
 }
+
+void evdi_enable_cursor_events_compat(evdi_handle handle, int enable) {
+#if LIBEVDI_VERSION_MAJOR>1 || LIBEVDI_VERSION_MINOR>11
+	evdi_enable_cursor_events(handle, enable);
+#else
+	//cannot be disabled with older API versions!
+	if (enable) {
+		evdi_enable_cursor_events(handle);
+	}
 #endif
+}
