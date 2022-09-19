@@ -20,7 +20,7 @@ void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
 }
 
 void evdi_enable_cursor_events_compat(evdi_handle handle, int enable) {
-#if LIBEVDI_VERSION_MAJOR>1 || LIBEVDI_VERSION_MINOR>11
+#if LIBEVDI_VERSION_MAJOR>1 || LIBEVDI_VERSION_MINOR>9 || (LIBEVDI_VERSION_MINOR==9 && LIBEVDI_VERSION_PATCH>0)
 	evdi_enable_cursor_events(handle, enable);
 #else
 	//cannot be disabled with older API versions!

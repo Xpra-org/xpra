@@ -213,7 +213,7 @@ webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
-evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.12", "evdi")
+evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.9", "evdi")
 drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdrm")
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
