@@ -201,7 +201,12 @@ def ssh_paramiko_connect_to(display_desc):
         host_config = None
         if os.path.exists(user_config_file):
             with open(user_config_file) as f:
-                ssh_config.parse(f)
+                try:
+                    ssh_config.parse(f)
+                except Exception as e:
+                    log(f"parse({user_config_file})", exc_info=True)
+                    log.error("Error parsing '%s':", user_config_file)
+                    log.error(f" %s", e)
             log("parsed user config '%s'", user_config_file)
             try:
                 log("%i hosts found", len(ssh_config.get_hostnames()))
