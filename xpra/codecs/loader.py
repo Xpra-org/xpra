@@ -197,10 +197,11 @@ CODEC_OPTIONS = {
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
     #sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
-    "evdi"          : ("evdi source",       "evdi",         "capture", "Capture"),
+    "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     }
 
 def load_codec(name):
+    log("load_codec(%s)", name)
     if not has_codec(name):
         try:
             option = CODEC_OPTIONS[name]

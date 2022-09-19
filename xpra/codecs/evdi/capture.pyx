@@ -111,10 +111,6 @@ cdef extern from "evdi_lib.h":
     int evdi_add_device()
 
     void evdi_close(evdi_handle handle)
-    void evdi_connect(evdi_handle handle, const unsigned char *edid,
-          const unsigned int edid_length,
-          const uint32_t pixel_area_limit,
-          const uint32_t pixel_per_second_limit)
     void evdi_disconnect(evdi_handle handle)
     void evdi_enable_cursor_events(evdi_handle handle, bint enable)
 
@@ -128,6 +124,13 @@ cdef extern from "evdi_lib.h":
     void evdi_handle_events(evdi_handle handle, evdi_event_context *evtctx)
     evdi_selectable evdi_get_event_ready(evdi_handle handle)
     void evdi_set_logging(evdi_logging evdi_logging)
+
+cdef extern from "evdi_compat.c":
+    void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
+          const unsigned int edid_length,
+          const uint32_t pixel_area_limit,
+          const uint32_t pixel_per_second_limit)
+
 
 
 STATUS_STR = {
@@ -365,7 +368,7 @@ cdef class EvdiDevice:
         cdef uint32_t pixel_area_limit = 4096*2160*2
         cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
         log(f"connect with edid {edid!r} (length={edid_length})")
-        evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length,
+        evdi_connect_compat(self.handle, edid_bin, <const unsigned int> edid_length,
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
 
@@ -494,9 +497,10 @@ def selftest(full=False):
     log.enable_debug()
     enable_color(format_string=format_string)
     log.info("evdi version " + ".".join(str(x) for x in get_version()))
-    #capture_logging()
-    devices = find_evdi_devices()
-    if devices:
-        for device in devices:
-            test_device(device)
-    #reset_logging()
+    if full:
+        #capture_logging()
+        devices = find_evdi_devices()
+        if devices:
+            for device in devices:
+                test_device(device)
+        #reset_logging()
