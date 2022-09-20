@@ -10,8 +10,6 @@ import signal
 import os.path
 from time import monotonic
 
-from gi.repository import GLib
-
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
@@ -73,7 +71,7 @@ class ChildCommandServer(StubServerMixin):
         #even if __init__ is called multiple times:
         if not getattr(self, "late_start_requested", False):
             self.late_start_requested = True
-            GLib.idle_add(self.late_start)
+            self.idle_add(self.late_start)
 
     def late_start(self):
         def do_late_start():
