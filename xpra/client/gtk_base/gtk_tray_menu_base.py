@@ -139,7 +139,9 @@ class GTKTrayMenuBase(MenuHelper):
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
         if SHOW_QR:
-            menu.append(self.make_qrmenuitem())
+            qrmenuitem = self.make_qrmenuitem()
+            if qrmenuitem:
+                menu.append(qrmenuitem)
         if SHOW_VERSION_CHECK:
             menu.append(self.make_updatecheckmenuitem())
         menu.append(self.make_bugreportmenuitem())
