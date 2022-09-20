@@ -136,17 +136,18 @@ class GTKTrayMenuBase(MenuHelper):
         info_menu_item = self.menuitem("Information", "information.png")
         menu = Gtk.Menu()
         info_menu_item.set_submenu(menu)
-        menu.append(self.make_aboutmenuitem())
-        menu.append(self.make_sessioninfomenuitem())
+        def add(menuitem):
+            if menuitem:
+                menu.append(menuitem)
+        add(self.make_aboutmenuitem())
+        add(self.make_sessioninfomenuitem())
         if SHOW_QR:
-            qrmenuitem = self.make_qrmenuitem()
-            if qrmenuitem:
-                menu.append(qrmenuitem)
+            add(self.make_qrmenuitem())
         if SHOW_VERSION_CHECK:
-            menu.append(self.make_updatecheckmenuitem())
-        menu.append(self.make_bugreportmenuitem())
-        menu.append(self.make_docsmenuitem())
-        menu.append(self.make_html5menuitem())
+            add(self.make_updatecheckmenuitem())
+        add(self.make_bugreportmenuitem())
+        add(self.make_docsmenuitem())
+        add(self.make_html5menuitem())
         info_menu_item.show_all()
         return info_menu_item
 
