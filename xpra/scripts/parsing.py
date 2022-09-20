@@ -20,7 +20,7 @@ from xpra.scripts.config import (
     OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
-    make_defaults_struct, parse_bool, print_number,
+    make_defaults_struct, parse_bool, parse_number, print_number,
     validate_config, name_to_field,
     )
 
@@ -1806,18 +1806,8 @@ When unspecified, all the available codecs are allowed and the first one is used
     fixup_options(options, defaults, skip_encodings=len(args)==0 or
                   MODE_ALIAS.get(args[0], args[0]) not in NEED_ENCODING_MODES)
 
-    for x in ("dpi", "sync_xvfb"):
-        try:
-            s = getattr(options, x, None)
-            if x=="sync_xvfb" and (s or "").lower() in FALSE_OPTIONS:
-                v = 0
-            elif x=="sync_xvfb" and (s or "").lower()=="auto":
-                v = None
-            else:
-                v = int(s)
-            setattr(options, x, v)
-        except Exception as e:
-            raise InitException(f"invalid value for {x}: {s!r} {e}") from None
+    options.sync_xvfb = parse_bool("sync-xvfb", options.sync_xvfb)
+    options.dpi = parse_number(int, "dpi", options.dpi, 96)
 
     def parse_window_size(v, attribute="max-size"):
         def pws_fail():
