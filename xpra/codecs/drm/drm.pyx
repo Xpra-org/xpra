@@ -58,6 +58,10 @@ cdef extern from "xf86drmMode.h":
     #drmModeResPtr drmModeGetResources(int fd)
     int drmIsKMS(int fd)
 
+
+def get_version():
+    return 4, 4
+
 def query():
     info = {}
     cdef int count = drmGetDevices(NULL, 16)
