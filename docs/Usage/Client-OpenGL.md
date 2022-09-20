@@ -7,6 +7,7 @@ This is in no way related to the [OpenGL capabilities of the server](./OpenGL.md
 
 # Configuration
 This feature normally enabled by default if all the required components are installed correctly, which should be the case with the official packages.
+This acceleration is not currently supported with Wayland clients.
 
 During startup, the client will probe the operating system's OpenGL capabilities to ensure that this acceleration can be enabled safely.\
 This check may take a few seconds to complete. It can be skipped using the `opengl=yes` option, alternatively acceleration can be disabled completely with `opengl=no`.
