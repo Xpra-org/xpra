@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,7 +37,7 @@ class TrayBase:
         self.icon_timestamp = 0
 
     def __repr__(self):
-        return "Tray(%i:%s)" % (self.app_id, self.tooltip)
+        return f"Tray({self.app_id}:{self.tooltip})"
 
     def cleanup(self):
         if self.tray_widget:
@@ -86,18 +86,18 @@ class TrayBase:
         name = basename or self.default_icon_filename
         f = get_icon_filename(name, self.default_icon_extension)
         if not f:
-            log.error("Error: cannot find icon '%s'", name)
+            log.error(f"Error: cannot find icon {name!r}")
         return f
 
     def set_icon(self, basename=None):
         filename = self.get_icon_filename(basename)
         if not filename:
             return
-        log("set_icon(%s) using filename=%s", basename, filename)
+        log(f"set_icon({basename}) using filename={filename!r}")
         self.set_icon_from_file(filename)
 
     def set_icon_from_file(self, filename):
-        log("set_icon_from_file(%s) tray_widget=%s", filename, self.tray_widget)
+        log(f"set_icon_from_file({filename}) tray_widget={self.tray_widget}")
         if not self.tray_widget:
             return
         self.do_set_icon_from_file(filename)
