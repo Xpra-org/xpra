@@ -70,7 +70,7 @@ class ChildCommandServer(StubServerMixin):
         #even if __init__ is called multiple times:
         if not getattr(self, "late_start_requested", False):
             self.late_start_requested = True
-            GLib.idle_add(self.late_start)
+            self.idle_add(self.late_start)
 
 
     def late_start(self):
