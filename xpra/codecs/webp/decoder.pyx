@@ -345,4 +345,5 @@ def selftest(full=False):
         b, iw, ih, _, ia, _ = decompress(bdata, has_alpha)
         assert iw==w and ih==h and ia==has_alpha
         assert len(b.get_pixels())>0
+        b.free()
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
