@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -106,7 +106,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24):
     def err(e):
         log("failed to load icon", exc_info=True)
         log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" data=%s", repr_ellipsized(icondata))
     if not pixbuf and icondata:
         #gtk pixbuf loader:
@@ -197,7 +197,7 @@ def make_min_auto_menu(title, min_options, options,
     submenu.set_min_value_cb = set_min_value_cb
     submenu.set_value_cb = set_value_cb
     fstitle = Gtk.MenuItem()
-    fstitle.set_label("Fixed %s:" % title)
+    fstitle.set_label(f"Fixed {title}")
     set_sensitive(fstitle, False)
     submenu.append(fstitle)
     submenu.menu_items = {}
@@ -206,7 +206,7 @@ def make_min_auto_menu(title, min_options, options,
         found_match = False
         items = {}
         if value and value>0 and value not in options:
-            options[value] = "%s%%" % value
+            options[value] = f"{value}%%"
         for s in sorted(options.keys()):
             t = options.get(s)
             qi = Gtk.CheckMenuItem(label=t)
@@ -216,7 +216,7 @@ def make_min_auto_menu(title, min_options, options,
             found_match |= candidate_match
             qi.connect('activate', set_fn, submenu)
             if s>0:
-                qi.set_tooltip_text("%s%%" % s)
+                qi.set_tooltip_text(f"{s}%%")
             submenu.append(qi)
             items[s] = qi
         return items
@@ -243,7 +243,7 @@ def make_min_auto_menu(title, min_options, options,
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
     submenu.append(Gtk.SeparatorMenuItem())
     mstitle = Gtk.MenuItem()
-    mstitle.set_label("Minimum %s:" % title)
+    mstitle.set_label(f"Minimum {title}:")
     set_sensitive(mstitle, False)
     submenu.append(mstitle)
     def set_min_value(item, ss):
@@ -256,7 +256,7 @@ def make_min_auto_menu(title, min_options, options,
                 s = ts
                 break
         if s>=0 and s!=ss.get_current_min_value():
-            log("setting min-%s to %s", title, s)
+            log(f"setting min-{title} to {s}")
             ss.set_min_value_cb(s)
             #deselect other min items:
             for x in ss.min_menu_items.values():
@@ -330,6 +330,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.show_all()
 
 
+# pylint: disable=import-outside-toplevel
 class MenuHelper:
 
     def __init__(self, client):
@@ -345,7 +346,7 @@ class MenuHelper:
             except Exception as e:
                 log("build()", exc_info=True)
                 log.error("Error: failed to setup menu")
-                log.error(" %s", e)
+                log.estr(e)
         return self.menu
 
     def show_shortcuts(self, *args):
