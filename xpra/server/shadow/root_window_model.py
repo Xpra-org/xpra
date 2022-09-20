@@ -22,7 +22,11 @@ def get_os_icons():
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
         return ()
-    icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
+    filename = (get_generic_os_name() or "").lower()+".png"
+    icon_name = get_icon_filename(filename)
+    if not icon_name:
+        log(f"get_os_icons() no icon matching {filename!r}")
+        return ()
     try:
         img = Image.open(icon_name)
         log(f"Image({icon_name})={img}")
