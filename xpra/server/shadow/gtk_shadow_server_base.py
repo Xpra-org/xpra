@@ -130,9 +130,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 log.warn(" %s", e)
                 self.recreate_window_models()
                 return False
+        self.refresh_windows()
+        return True
+
+    def refresh_windows(self):
         for window in self._id_to_window.values():
             self.refresh_window(window)
-        return True
 
 
     ############################################################################

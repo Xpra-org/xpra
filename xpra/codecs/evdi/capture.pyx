@@ -31,6 +31,7 @@ SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 #edid_hex = b"00ffffffffffff0005b4380001010101020d0103801e17782a80f8a3554799240d4d50bfee00614c310a0101010101010101010181c064190040410026301888360030e410000018000000fd00324b1e3e08000a202020202020000000ff003233363233303230303037340a000000fc004c322d313530542b202020200a00ef"
 #800x600:
 DEFAULT_EDID = binascii.unhexlify(b"00ffffffffffff0031d8000000000000051601036d1b1478ea5ec0a4594a982520505401000045400101010101010101010101010101a00f200031581c202880140015d01000001e000000ff004c696e75782023300a20202020000000fd003b3d242605000a202020202020000000fc004c696e757820535647410a202000c2")
+DEFAULT_SIZE = 800*600
 
 
 cdef extern from "evdi_lib.h":
@@ -304,7 +305,6 @@ cdef class EvdiDevice:
         cdef evdi_rect[128] rects
         evdi_grab_pixels(self.handle, rects, &nrects)
         cdef int rowstride = self.mode.width*4
-        log(f"evdi_grab_pixels(%#x, %#x, {nrects})", <uintptr_t> self.handle, <uintptr_t> rects)
         if SAVE_TO_FILE:
             try:
                 from PIL import Image
@@ -330,14 +330,14 @@ cdef class EvdiDevice:
                 self.cleanup()
                 return
         areas = tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
-        log(f"evdi_grab_pixels areas={areas}")
+        log(f"evdi_grab_pixels(%#x, %#x, {nrects}) areas={areas}", <uintptr_t> self.handle, <uintptr_t> rects)
         cdef int buf_size = rowstride * self.mode.height
         buf_slice = memoryview(buf)[:buf_size]
         damage_cb = self.damage_cb
         if damage_cb:
             self.damage_cb(self.mode.width, self.mode.height, buf_slice, areas)
         #toggle buffer:
-        self.export_buffer = 2-self.export_buffer
+        self.export_buffer = 3-self.export_buffer
         return self.mode.width, self.mode.height, buf_slice, areas
 
 
@@ -363,10 +363,33 @@ cdef class EvdiDevice:
         if self.edid:
             raise RuntimeError("device is already connected")
         self.edid = strtobytes(edid)
+        cdef uint32_t pixel_area_limit = 1920*1080
+        if edid==DEFAULT_EDID:
+            pixel_area_limit = DEFAULT_SIZE
+        cdef int Hz = 60
+        try:
+            from pyedid import parse_edid
+            edid_data = parse_edid(self.edid)._asdict()
+            log.error(f"edid: f{edid_data}")
+        except ImportError as e:
+            log.warn("Warning: cannot parse EDID")
+            log.warn(f" {e}")
+        except ValueError as e:
+            log.warn("Warning: invalid EDID data")
+            log.warn(f" {e}")
+        else:
+            log.info(f"evdi using monitor edid: {edid_data}")
+            pixel_area_limit = DEFAULT_SIZE
+            maxw = 800
+            maxh = 600
+            for w, h, hz in edid_data.get("resolutions", ()):
+                maxw = max(w, maxw)
+                maxh = max(h, maxh)
+                Hz = max(Hz, round(hz))
+            pixel_area_limit = maxw*maxh
         cdef const unsigned char *edid_bin = self.edid
         cdef unsigned int edid_length = len(self.edid)
-        cdef uint32_t pixel_area_limit = 4096*2160*2
-        cdef uint32_t pixel_per_second_limit = 4096*2160*2*60
+        cdef uint32_t pixel_per_second_limit = pixel_area_limit*Hz
         log(f"connect with edid {edid!r} (length={edid_length})")
         evdi_connect_compat(self.handle, edid_bin, <const unsigned int> edid_length,
                      <const uint32_t> pixel_area_limit,
@@ -420,7 +443,7 @@ cdef class EvdiDevice:
 
     def refresh(self):
         buf_id = self.export_buffer
-        log.info(f"refresh() export_buffer={buf_id}")
+        #log(f"refresh() export_buffer={buf_id}")
         if buf_id in (1, 2):
             r = self.request_update(buf_id)
             if r:
@@ -462,7 +485,7 @@ cdef class EvdiDevice:
         self.cleanup()
 
 
-cdef test_device(int device):
+def test_device(int device):
     log(f"opening card {device}")
     cdef EvdiDevice d = EvdiDevice(device)
     d.open()

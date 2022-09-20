@@ -202,7 +202,7 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "seamless", "desktop", "monitor", "shadow",
+        "seamless", "desktop", "monitor", "expand", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "recover",
         "attach", "listen", "proxy",
@@ -359,7 +359,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in (
-        "seamless", "desktop", "shadow",
+        "seamless", "desktop", "shadow", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         ) and not display_is_remote and use_systemd_run(options.systemd_run):
         #make sure we run via the same interpreter,
@@ -417,7 +417,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         #"attach" does it when it received the session name from the server
         if mode not in (
             "attach", "listen",
-            "seamless", "desktop", "shadow",
+            "seamless", "desktop", "shadow", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
             "proxy",
             ):
@@ -425,7 +425,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
-        "seamless", "desktop", "shadow",
+        "seamless", "desktop", "shadow", "expand",
         "attach", "listen",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
@@ -442,7 +442,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    if mode in ("seamless", "desktop", "monitor", "shadow") and display_is_remote:
+    if mode in ("seamless", "desktop", "monitor", "expand", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
         return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
@@ -464,7 +464,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in (
-        "seamless", "desktop", "monitor", "shadow",
+        "seamless", "desktop", "monitor", "expand", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "proxy",
         ):
@@ -1768,7 +1768,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     if mode in (
-        "seamless", "desktop", "monitor",
+        "seamless", "desktop", "monitor", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         ) and (OSX or WIN32):
         raise InitException(f"{mode} is not supported on this platform")
@@ -1778,6 +1778,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
         "seamless",
         "desktop",
         "monitor",
+        "expand",
         ) and parse_bool("attach", options.attach) is True:
         if args and not display_is_remote:
             #maybe the server is already running for the display specified

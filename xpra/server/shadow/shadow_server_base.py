@@ -265,8 +265,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         except KeyError:
             pass
         if not self.mapped:
-            self.cancel_refresh_timer()
-            self.cancel_poll_pointer()
+            self.no_windows()
+
+    def no_windows(self):
+        self.cancel_refresh_timer()
+        self.cancel_poll_pointer()
 
     def cancel_refresh_timer(self):
         t = self.refresh_timer

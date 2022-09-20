@@ -30,6 +30,7 @@ MODE_ALIAS = {
     "start-seamless"    : "seamless",
     "start-desktop"     : "desktop",
     "start-monitor"     : "monitor",
+    "start-expand"      : "expand",
     "start-shadow"      : "shadow",
     }
 

@@ -316,6 +316,10 @@ def make_proxy_server():
     from xpra.platform.proxy_server import ProxyServer
     return ProxyServer()
 
+def make_expand_server():
+    from xpra.x11.expand_server import ExpandServer
+    return ExpandServer()
+
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
     #check that we can access the X11 display:
@@ -678,6 +682,7 @@ MODE_TO_NAME = {
     "seamless"          : "Seamless",
     "desktop"           : "Desktop",
     "monitor"           : "Monitor",
+    "expand"            : "Expand",
     "upgrade"           : "Upgrade",
     "upgrade-seamless"  : "Seamless Upgrade",
     "upgrade-desktop"   : "Desktop Upgrade",
@@ -706,7 +711,7 @@ def request_exit(uri):
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
-        "seamless", "desktop", "monitor", "shadow",
+        "seamless", "desktop", "monitor", "expand", "shadow",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
         )
@@ -772,6 +777,7 @@ def _do_run_server(script_file, cmdline,
     starting  = mode == "seamless"
     starting_desktop = mode=="desktop"
     starting_monitor = mode=="monitor"
+    expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
@@ -807,7 +813,7 @@ def _do_run_server(script_file, cmdline,
 
     display_options = ""
     #get the display name:
-    if shadowing and not extra_args:
+    if (shadowing or expanding) and not extra_args:
         if WIN32 or OSX:
             #just a virtual name for the only display available:
             display_name = "Main"
@@ -944,7 +950,7 @@ def _do_run_server(script_file, cmdline,
             del e
 
     clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
-    start_vfb = not (shadowing or proxying or clobber)
+    start_vfb = not (shadowing or proxying or clobber or expanding)
     xauth_data = get_hex_uuid() if start_vfb else None
 
     # if pam is present, try to create a new session:
@@ -1432,6 +1438,8 @@ def _do_run_server(script_file, cmdline,
         app = make_shadow_server()
     elif proxying:
         app = make_proxy_server()
+    elif expanding:
+        app = make_expand_server()
     else:
         if starting or upgrading_seamless:
             app = make_server(clobber)
@@ -1466,7 +1474,7 @@ def _do_run_server(script_file, cmdline,
         init_local_sockets()
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
-        if not shadowing and not proxying:
+        if not shadowing and not proxying and not expanding:
             app.init_display_pid(xvfb_pid)
             app.save_pid()
         app.original_desktop_display = desktop_display
