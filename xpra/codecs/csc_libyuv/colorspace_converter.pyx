@@ -113,7 +113,7 @@ def cleanup_module():
 def get_type() -> str:
     return "libyuv"
 
-def get_version() -> int:
+def get_version() -> tuple:
     return (1, 0)
 
 #hardcoded for now:
