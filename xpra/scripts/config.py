@@ -1159,7 +1159,7 @@ def parse_bool(k, v, auto=None):
         return bool(int(v))
     except ValueError:
         warn(f"Warning: cannot parse value {v!r} for {k!r} as a boolean")
-        return None
+        return auto
 
 def print_bool(k, v, true_str='yes', false_str='no'):
     if v is None:
@@ -1192,7 +1192,7 @@ def parse_number(numtype, k, v, auto=0):
         return numtype(v)
     except (ValueError, TypeError) as e:
         warn(f"Warning: cannot parse value {v!r} for {k} as a type {numtype}: {e}")
-        return None
+        return auto
 
 def print_number(i, auto_value=0):
     if i==auto_value:
