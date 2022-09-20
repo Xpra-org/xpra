@@ -10,7 +10,6 @@ import os.path
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from gi.repository import GLib
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
@@ -343,8 +342,8 @@ class AudioServer(StubServerMixin):
         #query_pulseaudio_properties may access X11,
         #do this from the main thread:
         if bool(self.sound_properties):
-            GLib.idle_add(self.query_pulseaudio_properties)
-        GLib.idle_add(self.log_sound_properties)
+            self.idle_add(self.query_pulseaudio_properties)
+        self.idle_add(self.log_sound_properties)
         self.audio_init_done.set()
 
     def query_pulseaudio_properties(self):
