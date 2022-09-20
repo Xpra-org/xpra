@@ -88,12 +88,15 @@ class GTKTrayMenuBase(MenuHelper):
     def do_setup_menu(self, show_close):
         log("setup_menu(%s)", show_close)
         menu = Gtk.Menu()
+        def add(menuitem):
+            if menuitem:
+                menu.append(menuitem)
         title_item = None
         if SHOW_TITLE_ITEM:
             title_item = Gtk.MenuItem()
             title_item.set_label(self.client.session_name or "Xpra")
             set_sensitive(title_item, False)
-            menu.append(title_item)
+            add(title_item)
             def set_menu_title(*_args):
                 #set the real name when available:
                 try:
@@ -102,30 +105,29 @@ class GTKTrayMenuBase(MenuHelper):
                     title = self.client.session_name or "Xpra"
                 title_item.set_label(title)
             self.client.after_handshake(set_menu_title)
-
-        menu.append(self.make_infomenuitem())
-        menu.append(self.make_featuresmenuitem())
+        add(self.make_infomenuitem())
+        add(self.make_featuresmenuitem())
         if mixin_features.windows and self.client.keyboard_helper:
-            menu.append(self.make_keyboardmenuitem())
+            add(self.make_keyboardmenuitem())
         if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
-            menu.append(self.make_clipboardmenuitem())
+            add(self.make_clipboardmenuitem())
         if mixin_features.windows:
-            menu.append(self.make_picturemenuitem())
+            add(self.make_picturemenuitem())
         if mixin_features.audio and STARTSTOP_SOUND_MENU:
-            menu.append(self.make_audiomenuitem())
+            add(self.make_audiomenuitem())
         if mixin_features.webcam and WEBCAM_MENU:
-            menu.append(self.make_webcammenuitem())
+            add(self.make_webcammenuitem())
         if mixin_features.display and MONITORS_MENU:
-            menu.append(self.make_monitorsmenuitem())
+            add(self.make_monitorsmenuitem())
         if mixin_features.windows and WINDOWS_MENU:
-            menu.append(self.make_windowsmenuitem())
+            add(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
-            menu.append(self.make_servermenuitem())
+            add(self.make_servermenuitem())
         if mixin_features.windows and START_MENU:
-            menu.append(self.make_startmenuitem())
-        menu.append(self.make_disconnectmenuitem())
+            add(self.make_startmenuitem())
+        add(self.make_disconnectmenuitem())
         if show_close:
-            menu.append(self.make_closemenuitem())
+            add(self.make_closemenuitem())
         menu.connect("deactivate", self.menu_deactivated)
         menu.show_all()
         log("setup_menu(%s) done", show_close)
