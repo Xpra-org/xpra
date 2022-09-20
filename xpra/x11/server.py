@@ -575,7 +575,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             sources = tuple(filter(lambda source : getattr(source, "window_pre_map", False), self._server_sources.values()))
             if sources:
                 wid = self._window_to_id.get(window)
-                log("pre-mapping window %i for %s", wid, sources)
+                log("pre-mapping window %i for %s at %s", wid, sources, geometry)
+                geometry = self.clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
                 window.show()
                 for s in sources:
@@ -949,7 +950,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if self.ui_driver==ss.uuid or not window.get_property("shown"):
             if len(packet)>=8:
                 self._set_window_state(proto, wid, window, packet[7])
-            geometry = self._clamp_window(proto, wid, window, x, y, w, h)
+            geometry = self.client_clamp_window(proto, wid, window, x, y, w, h)
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
@@ -982,21 +983,38 @@ class XpraServer(GObject.GObject, X11ServerBase):
             window.hide()
             self.repaint_root_overlay()
 
-    def _clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
+    def clamp_window(self, x, y, w, h):
         if not CLAMP_WINDOW_TO_ROOT:
-            return x, y, w, h
+            return False, (x, y, w, h)
         rw, rh = self.get_root_window_size()
         #clamp to root window size
-        if x>=rw or y>=rh:
-            log("clamping window position %ix%i to root window size %ix%i", x, y, rw, rh)
+        mod = False
+        if x+w<0:
+            x = 0
+            mod = True
+        elif x>=rw:
             x = max(0, min(x, rw-w))
+            mod = True
+        if y+h<0:
+            y = 0
+            mod = True
+        elif y>=rh:
             y = max(0, min(y, rh-h))
+            mod = True
+        return mod, (x, y, w, h)
+
+    def client_clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
+        if not CLAMP_WINDOW_TO_ROOT:
+            return x, y, w, h
+        mod, geom = self.clamp_window(x, y, w, h)
+        if mod:
             #tell this client to honour the new location
             ss = self.get_server_source(proto)
             if ss:
                 resize_counter = max(resize_counter, window.get_property("resize-counter"))
+                x, y, w, h = geom
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
-        return x, y, w, h
+        return geom
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
@@ -1064,7 +1082,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     if len(packet)>=8:
                         resize_counter = packet[7]
                     geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], cg)
-                    geometry = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
+                    geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                     self.client_configure_window(window, geometry, resize_counter)
                     ax, ay, aw, ah = geometry
                     resized = False
