@@ -590,6 +590,10 @@ class Protocol:
             ti = type(item)
             if ti in (int, bool, dict, list, tuple):
                 continue
+            if ti==memoryview:
+                if self.encoder!="rencodeplus":
+                    packet[i] = packet[i].tobytes()
+                continue
             try:
                 l = len(item)
             except TypeError as e:
