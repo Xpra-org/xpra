@@ -8,6 +8,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
+# pylint: disable=wrong-import-position
 from gi.repository import GLib, Pango, Gtk
 
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
@@ -24,9 +25,10 @@ class AuthDialog(Gtk.Window):
         self.timeout = timeout
         self.exit_code = 1
         self.set_title(title)
-        self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
+        # pylint: disable=no-member
+        self.set_border_width(20)
         icon = get_icon_pixbuf("authentication.png")
         if icon:
             self.set_icon(icon)
@@ -68,6 +70,7 @@ class AuthDialog(Gtk.Window):
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
         if stock_icon:
+            # pylint: disable=no-member
             image = Gtk.Image.new_from_stock(stock_icon, Gtk.IconSize.BUTTON)
             if image:
                 btn.set_image(image)
@@ -78,7 +81,7 @@ class AuthDialog(Gtk.Window):
             self.exit_code = 2
             self.quit()
             return False
-        self.timeout_label.set_text("This request will timeout in %i seconds" % self.timeout)
+        self.timeout_label.set_text(f"This request will timeout in {self.timeout} seconds")
         self.timeout -= 1
         return True
 
@@ -105,12 +108,13 @@ class AuthDialog(Gtk.Window):
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Session Access"):
         from xpra.platform.gui import init as gui_init
         gui_init()
         if len(sys.argv)<2:
-            sys.stderr.write("usage: %s 'message' [timeout-in-seconds]\n" % sys.argv[0])
+            sys.stderr.write(f"usage: {sys.argv[0]} 'message' [timeout-in-seconds]\n")
             sys.exit(4)
         info = sys.argv[1]
         if len(sys.argv)>=3:

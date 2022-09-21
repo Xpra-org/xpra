@@ -787,16 +787,16 @@ class WindowModel(BaseWindowModel):
         wmclass_name = c_i[0]
         if not wmclass_name:
             return None
-        it = Gtk.IconTheme.get_default()
+        it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
         pixbuf = None
         iconlog("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
         for icon_name in (
-            "%s-color" % wmclass_name,
+            f"{wmclass_name}-color",
             wmclass_name,
-            "%s_%ix%i" % (wmclass_name, size, size),
-            "application-x-%s" % wmclass_name,
-            "%s-symbolic" % wmclass_name,
-            "%s.symbolic" % wmclass_name,
+            f"{wmclass_name}_{size}x{size}",
+            f"application-x-{wmclass_name}",
+            f"{wmclass_name}-symbolic",
+            f"{wmclass_name}.symbolic",
             ):
             i = it.lookup_icon(icon_name, size, 0)
             iconlog("lookup_icon(%s)=%s", icon_name, i)

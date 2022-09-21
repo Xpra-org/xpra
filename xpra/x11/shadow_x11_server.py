@@ -421,6 +421,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
+        # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressed
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
 
