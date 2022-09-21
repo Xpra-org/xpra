@@ -149,13 +149,13 @@ def run_sound(mode, error_cb, options, args):
         return 1
     info = mode.replace("_sound_", "")  #ie: "_sound_record" -> "record"
     from xpra.platform import program_context
-    with program_context("Xpra-Audio-%s" % info, "Xpra Audio %s" % info):
+    with program_context(f"Xpra-Audio-{info}", f"Xpra Audio {info}"):
         log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
-        if mode=="_sound_record":
+        if info=="record":
             subproc = sound_record
-        elif mode=="_sound_play":
+        elif info=="play":
             subproc = sound_play
-        elif mode=="_sound_query":
+        elif info=="query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
             sinks = [x for x in get_sink_plugins() if x in plugins]
@@ -182,7 +182,7 @@ def run_sound(mode, error_cb, options, args):
             for k,v in d.items():
                 if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)
-                log(f"{k}={v}")
+                print(f"{k}={v}")
             return 0
         else:
             log.error(f"Error: unknown mode {mode!r}")
@@ -340,7 +340,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
                 return "source_subprocess_wrapper(%s)" % proc.pid
             except AttributeError:
                 pass
-        return "source_subprocess_wrapper(%s)" % proc
+        return f"source_subprocess_wrapper({proc})"
 
 
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
