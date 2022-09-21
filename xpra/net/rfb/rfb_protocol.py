@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,7 @@ from queue import Queue
 from xpra.os_util import hexstr
 from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
+from xpra.simple_stats import std_unit
 from xpra.net.protocol import force_flush_queue, exit_queue, INVALID, CONNECTION_LOST
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
@@ -51,7 +52,8 @@ class RFBProtocol:
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
         self.log = None
         if RFB_LOG:
-            self.log = open(RFB_LOG, "w")
+            # pylint: disable=consider-using-with
+            self.log = open(RFB_LOG, "w", encoding="utf8")
 
 
     def is_closed(self):
@@ -68,7 +70,7 @@ class RFBProtocol:
         return len(packet)
 
     def _parse_protocol_handshake(self, packet):
-        log("parse_protocol_handshake(%r)", packet)
+        log(f"parse_protocol_handshake({packet})")
         if len(packet)<12:
             return 0
         if not packet.startswith(b'RFB '):
@@ -78,7 +80,7 @@ class RFBProtocol:
         protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
         if protocol_version!=PROTOCOL_VERSION:
             msg = "unsupported protocol version"
-            log.error("Error: %s", msg)
+            log.error(f"Error: {msg}")
             self.send(struct.pack(b"!BI", 0, len(msg))+msg)
             self.invalid(msg, packet)
             return 0
@@ -104,11 +106,11 @@ class RFBProtocol:
             ptype = packet[0]
         packet_type = CLIENT_PACKET_TYPE_STR.get(ptype)
         if not packet_type:
-            self.invalid("unknown RFB packet type: %#x" % ptype, packet)
+            self.invalid(f"unknown RFB packet type: {ptype:x}", packet)
             return 0
         s = PACKET_STRUCT.get(ptype)     #ie: Struct("!BBBB")
         if not s:
-            self.invalid("RFB packet type '%s' is not supported" % packet_type, packet)
+            self.invalid(f"RFB packet type {packet_type!r} is not supported", packet)
             return 0
         if len(packet)<s.size:
             return 0
@@ -132,7 +134,7 @@ class RFBProtocol:
             text = packet[s.size:size]
             values.append(text)
         self.input_packetcount += 1
-        log("RFB packet: %s: %s", packet_type, values[1:])
+        log(f"RFB packet: {packet_type}: {values[1:]}")
         #now trigger the callback:
         self._process_packet_cb(self, values)
         #return part of packet not consumed:
@@ -140,7 +142,7 @@ class RFBProtocol:
 
 
     def __repr__(self):
-        return "RFBProtocol(%s)" % self._conn
+        return f"RFBProtocol({self._conn})"
 
     def get_threads(self):
         return tuple(x for x in (
@@ -176,11 +178,9 @@ class RFBProtocol:
             log("connection is closed already, not sending packet")
             return
         if log.is_debug_enabled():
-            if len(packet)<=16:
-                log("send(%i bytes: %s)", len(packet), hexstr(packet))
-            else:
-                from xpra.simple_stats import std_unit  #pylint: disable=import-outside-toplevel
-                log("send(%s bytes: %s..)", std_unit(len(packet)), hexstr(packet[:16]))
+            l = len(packet)
+            lstr = str(l) if l<=16 else std_unit(l)
+            log(f"send({lstr} bytes: %s..)", hexstr(packet[:16]))
         if self.log:
             self.log.write(f"send: {hexstr(packet)}\n")
         if self._write_thread is None:
@@ -193,22 +193,22 @@ class RFBProtocol:
 
     def _io_thread_loop(self, name, callback):
         try:
-            log("io_thread_loop(%s, %s) loop starting", name, callback)
+            log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
                 pass
-            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
-        except ConnectionClosedException as e:
-            log("%s closed", self._conn, exc_info=True)
+            log(f"io_thread_loop({name}, {callback}) loop ended, closed={self._closed}")
+        except ConnectionClosedException:
+            log(f"{self._conn} closed", exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
-                self._connection_lost("%s connection %s closed" % (name, self._conn))
+                self._connection_lost(f"{name} connection {self._conn} closed")
         except (OSError, socket_error) as e:
             if not self._closed:
-                self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
+                self._internal_error(f"{name} connection {self._conn} reset", e, exc_info=e.args[0] not in ABORT)
         except Exception as e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
-                log.error("Error: %s on %s failed: %s", name, self._conn, type(e), exc_info=True)
+                log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
 
     def _write_thread_loop(self):
@@ -264,13 +264,13 @@ class RFBProtocol:
         ei = exc_info
         if exc:
             ei = None   #log it separately below
-        log.error("Error: %s", message, exc_info=ei)
+        log.error(f"Error: {message}", exc_info=ei)
         if exc:
-            log.error(" %s", exc, exc_info=exc_info)
+            log.error(f" {exc}", exc_info=exc_info)
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False):
-        log("connection lost: %s", message, exc_info=exc_info)
+        log(f"connection lost: {message}", exc_info=exc_info)
         self.close()
         return False
 
@@ -290,38 +290,39 @@ class RFBProtocol:
 
     def _invalid_header(self, _proto, data, msg="invalid packet header"):
         self._packet_parser = self._parse_invalid
-        err = "%s: '%s'" % (msg, hexstr(data[:8]))
+        err = f"{msg}: {hexstr(data[:8])!r}"
         if len(data)>1:
-            err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
+            err += f" read buffer={repr_ellipsized(data)} ({len(data)} bytes)"
         self.invalid(err, data)
 
 
     def gibberish(self, msg, data):
-        log("gibberish(%s, %r)", msg, data)
+        log(f"gibberish({msg}, {data!r})")
         self.close()
 
 
     def close(self):
-        log("RFBProtocol.close() closed=%s, connection=%s", self._closed, self._conn)
+        c = self._conn
+        log(f"RFBProtocol.close() closed={self._closed}, connection={self._conn}")
         if self._closed:
             return
         self._closed = True
         #self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
-        c = self._conn
         if c:
             try:
-                log("RFBProtocol.close() calling %s", c.close)
+                log(f"RFBProtocol.close() calling {c.close}")
                 c.close()
             except IOError:
-                log.error("Error closing %s", self._conn, exc_info=True)
+                log.error(f"Error closing {c}", exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
         #log.error("sending connection-lost")
         self._process_packet_cb(self, [CONNECTION_LOST])
         self.idle_add(self.clean)
-        if self.log:
-            self.log.close()
+        l = self.log
+        if l:
             self.log = None
+            l.close()
         log("RFBProtocol.close() done")
 
     def clean(self):
