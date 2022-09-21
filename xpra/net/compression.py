@@ -80,17 +80,18 @@ def init_none():
 
 def init_compressors(*names):
     for x in names:
-        if not envbool("XPRA_%s" % (x.upper()), True):
+        if not envbool("XPRA_"+x.upper(), True):
             continue
-        fn = globals().get("init_%s" % x)
+        fn = globals().get(f"init_{x}")
         try:
             c = fn()
             assert c
             COMPRESSION[x] = c
         except (TypeError, ImportError, AttributeError):
+            # pylint: disable=import-outside-toplevel
             from xpra.log import Logger
             logger = Logger("network", "protocol")
-            logger("no %s", x, exc_info=True)
+            logger(f"no {x}", exc_info=True)
 
 def init_all():
     init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
@@ -118,7 +119,8 @@ def get_enabled_compressors(order=ALL_COMPRESSORS):
 
 def get_compressor(name):
     c = COMPRESSION.get(name)
-    assert c is not None, "'%s' compression is not supported" % name
+    if c is None:
+        raise ValueError(f"{name!r} compression is not supported")
     return c.compress
 
 
@@ -132,7 +134,7 @@ class Compressed:
     def __len__(self):
         return len(self.data)
     def __repr__(self):
-        return  "Compressed(%s: %i bytes)" % (self.datatype, len(self.data))
+        return f"Compressed({self.datatype}: {len(self.data)} bytes)"
 
 
 class LevelCompressed(Compressed):
@@ -142,7 +144,7 @@ class LevelCompressed(Compressed):
         self.level = level
         self.algorithm = algo
     def __repr__(self):
-        return  "LevelCompressed(%s: %i bytes as %s/%i)" % (self.datatype, len(self.data), self.algorithm, self.level)
+        return f"LevelCompressed({self.datatype}: {len(self.data)} bytes as {self.algorithm}/{self.level}"
 
 
 class LargeStructure:
@@ -153,35 +155,35 @@ class LargeStructure:
     def __len__(self):
         return len(self.data)
     def __repr__(self):
-        return  "LargeStructure(%s: %i bytes)" % (self.datatype, len(self.data))
+        return f"LargeStructure({self.datatype}: {len(self.data)} bytes)"
 
 class Compressible(LargeStructure):
     __slots__ = ()
     #wrapper for data that should be compressed at some point,
     #to use this class, you must override compress()
     def __repr__(self):
-        return  "Compressible(%s: %i bytes)" % (self.datatype, len(self.data))
+        return f"Compressible({self.datatype}: {len(self.data)} bytes)"
     def compress(self):
-        raise Exception("compress() not defined on %s" % self)
+        raise NotImplementedError(f"compress() function is not defined on {self} ({type(self)})")
 
 
 def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
     size = len(data)
     def no():
-        return Compressed("raw %s" % datatype, data, can_inline=can_inline)
+        return Compressed(f"raw {datatype}", data, can_inline=can_inline)
     if size<=MIN_COMPRESS_SIZE:
         #don't bother
         return no()
     if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
-        raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
+        raise Exception(f"uncompressed data is too large: {sizemb}MB, limit is {maxmb}MB")
     try:
         algo = next(x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION)
     except StopIteration:
         return no()
         #raise InvalidCompressionException("no compressors available")
-    #TODO: smarter selection of algo based on datatype
+    #should use a smarter selection of algo based on datatype
     #ie: 'text' -> brotli
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
@@ -216,7 +218,7 @@ def decompress(data, level):
 def decompress_by_name(data, algo):
     c = COMPRESSION.get(algo)
     if c is None:
-        raise InvalidCompressionException("%s is not available" % algo)
+        raise InvalidCompressionException(f"{algo} is not available")
     return c.decompress(data)
 
 

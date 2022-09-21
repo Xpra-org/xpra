@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -49,7 +49,8 @@ def init_bencode():
         return bencode(v), FLAGS_BENCODE
     def do_bdecode(data):
         packet, l = bdecode(data)
-        assert len(data)==l, "expected %i bytes, but got %i" % (l, len(data))
+        if len(data)!=l:
+            raise RuntimeError(f"expected {l} bytes, but got {len(data)}")
         return packet
     return Encoding("bencode", FLAGS_BENCODE, __version__, do_bencode, do_bdecode)
 
@@ -78,9 +79,9 @@ def init_encoders(*names):
             logger = Logger("network", "protocol")
             logger.warn("Warning: invalid encoder '%s'", x)
             continue
-        if not envbool("XPRA_%s" % (x.upper()), True):
+        if not envbool("XPRA_"+x.upper(), True):
             continue
-        fn = globals().get("init_%s" % x)
+        fn = globals().get(f"init_{x}")
         try:
             e = fn()
             assert e
@@ -110,8 +111,10 @@ def get_enabled_encoders(order=ALL_ENCODERS):
 
 
 def get_encoder(e):
-    assert e in ALL_ENCODERS, "invalid encoder name: %s" % e
-    assert e in ENCODERS, "%s is not available" % e
+    if e not in ALL_ENCODERS:
+        raise ValueError(f"invalid encoder name {e!r}")
+    if e not in ENCODERS:
+        raise ValueError(f"{e!r} is not available")
     return ENCODERS[e].encode
 
 def get_packet_encoding_type(protocol_flags) -> str:
@@ -144,7 +147,7 @@ def decode(data, protocol_flags):
     e = ENCODERS.get(ptype)
     if e:
         return e.decode(data)
-    raise InvalidPacketEncodingException("%r decoder is not available" % ptype)
+    raise InvalidPacketEncodingException(f"{ptype!r} decoder is not available")
 
 
 def main(): # pragma: no cover
