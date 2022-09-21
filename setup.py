@@ -659,6 +659,12 @@ def get_gcc_version():
                 print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
                 break
             GCC_VERSION = tuple(tmp_version)
+            if GCC_VERSION<(7, 5):
+                print("gcc versions older than 7.5 are not supported!")
+                from time import sleep
+                for _ in range(5):
+                    sleep(1)
+                    print(".")
     return GCC_VERSION
 
 def get_dummy_driver_version():
@@ -767,7 +773,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 #cython adds rpath to the compilation command??
                 #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
                 )
-        elif get_gcc_version()>=(4, 4):
+        else:
             if not hascflag("-Wno-error"):
                 addcflags("-Werror")
             if NETBSD:
@@ -780,7 +786,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         addcflags("-fPIC")
     if debug_ENABLED:
         addcflags("-g", "-ggdb")
-        if get_gcc_version()>=(4, 8) and not WIN32:
+        if not WIN32:
             addcflags("-fsanitize=address")
             addldflags("-fsanitize=address")
     if rpath and kw.get("libraries"):
@@ -2108,13 +2114,13 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                    '-fatbin',
                    "-c", cuda_src,
                    "-o", cuda_bin]
-            #GCC 8.1 has compatibility issues with CUDA 9.2,
-            #so revert to C++03:
             gcc_version = get_gcc_version()
             if (8,1)<=gcc_version<(9, ):
+                #GCC 8.1 has compatibility issues with CUDA 9.2,
+                #so revert to C++03:
                 cmd.append("-std=c++03")
             #GCC 6 uses C++11 by default:
-            elif gcc_version>=(6, 0):
+            else:
                 cmd.append("-std=c++11")
             if gcc_version>=(12, 0):
                 cmd.append("--allow-unsupported-compiler")
