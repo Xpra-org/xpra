@@ -48,6 +48,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         ShadowX11Server.__init__(self)
         self.session_type = "expand"
         self.evdi_device = None
+        self.evdi_channel = None
         self.fd_source = None
         self.fd_watch = None
         self.last_damage = None
