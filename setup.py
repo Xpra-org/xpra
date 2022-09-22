@@ -219,7 +219,8 @@ drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdr
 dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
-nvjpeg_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
+nvjpeg_encoder_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
+nvjpeg_decoder_ENABLED = False
 nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
 nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
@@ -248,7 +249,7 @@ CODEC_SWITCHES = [
     "vpx", "webp", "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
-    "nvjpeg", "avif", "argb",
+    "nvjpeg_encoder", "nvjpeg_decoder", "avif", "argb",
     "v4l2", "evdi", "drm",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
@@ -2033,7 +2034,7 @@ toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
 CUDA_BIN = "%s/cuda" % share_xpra
-if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
+if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
     #find nvcc:
     from xpra.util import sorted_nicely
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
@@ -2088,7 +2089,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             print(" using version %s from %s" % (nvcc_version, nvcc))
     else:
         nvcc_version = nvcc = None
-    if ((nvenc_ENABLED or nvjpeg_ENABLED) and cuda_kernels_ENABLED):
+    if ((nvenc_ENABLED or nvjpeg_encoder_ENABLED) and cuda_kernels_ENABLED):
         assert nvcc_versions, "cannot find nvcc compiler!"
         #first compile the cuda kernels
         #(using the same cuda SDK for both nvenc modules for now..)
@@ -2098,7 +2099,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         kernels = []
         if nvenc_ENABLED:
             kernels += ["XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444"]
-        if nvjpeg_ENABLED:
+        if nvjpeg_encoder_ENABLED:
             kernels += ["BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP"]
         nvcc_commands = []
         for kernel in kernels:
@@ -2199,10 +2200,10 @@ tace(webp_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
 toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
-toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
-tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
-tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
-tace(nvjpeg_ENABLED, "xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
+toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg")
+tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
+tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
+tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
 toggle_packages(jpeg_decoder_ENABLED or jpeg_encoder_ENABLED, "xpra.codecs.jpeg")
 tace(jpeg_encoder_ENABLED, "xpra.codecs.jpeg.encoder", "libturbojpeg")
 tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
