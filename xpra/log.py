@@ -265,6 +265,7 @@ STRUCT_KNOWN_FILTERS = {
                 "avif"          : "libavif encoder and decoder",
                 "webcam"        : "webcam access",
                 "evdi"          : "evdi virtual monitor",
+                "drm"           : "direct rendering manager",
                 },
     "Pointer" : {
                 "mouse"         : "Mouse motion",

@@ -8,7 +8,7 @@
 from xpra.os_util import bytestostr
 
 from xpra.log import Logger
-log = Logger("encoder", "evdi")
+log = Logger("drm")
 
 cdef extern from "drm/drm.h":
     ctypedef unsigned int __kernel_size_t
@@ -102,3 +102,8 @@ def query():
                 #drmModeGetResources
     drmFreeDevices(devices, count)
     return info
+
+
+def selftest(full=False):
+    info = query()
+    log(f"query()={info}")

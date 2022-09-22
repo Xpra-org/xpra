@@ -12,7 +12,7 @@ from xpra.util import envbool
 from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes
 
 from xpra.log import Logger
-log = Logger("encoder", "evdi")
+log = Logger("evdi")
 
 from libc.string cimport memset, memcpy
 from xpra.buffers.membuf cimport getbuf, MemBuf
