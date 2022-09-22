@@ -185,16 +185,15 @@ def selftest(_full=False):
         if encoding not in ENCODINGS:
             #removed already
             continue
-        for hexdata in testimages:
+        for cdata in testimages:
             try:
-                cdata = binascii.unhexlify(hexdata)
                 buf = BytesIO(cdata)
                 img = PIL.Image.open(buf)
                 assert img, "failed to open image data"
                 raw_data = img.tobytes("raw", img.mode)
                 assert raw_data
                 #now try with junk:
-                cdata = binascii.unhexlify("ABCD"+hexdata)
+                cdata = binascii.unhexlify(b"ABCD"+cdata)
                 buf = BytesIO(cdata)
                 try:
                     img = PIL.Image.open(buf)
@@ -204,7 +203,7 @@ def selftest(_full=False):
             except Exception as e:
                 log("selftest:", exc_info=True)
                 log.error("Pillow error decoding %s with data:", encoding)
-                log.error(" %r", hexdata)
+                log.error(" %r", cdata)
                 log.error(" %s", e, exc_info=True)
                 ENCODINGS = tuple(x for x in ENCODINGS if x!=encoding)
 

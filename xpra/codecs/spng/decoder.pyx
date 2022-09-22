@@ -137,6 +137,5 @@ def selftest(full=False):
     log("spng version %s selftest" % (get_version(),))
     import binascii
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
-    for hexdata in TEST_PICTURES["png"]:
-        cdata = binascii.unhexlify(hexdata)
+    for cdata in TEST_PICTURES["png"]:
         assert decompress(cdata)

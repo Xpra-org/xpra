@@ -251,7 +251,5 @@ def get_default_device():
 def selftest(full=False):
     from xpra.codecs.codec_checks import TEST_PICTURES
     #options = {"cuda-device-context" : get_device_context()}
-    for hexdata in TEST_PICTURES["jpeg"]:
-        import binascii
-        bdata = binascii.unhexlify(hexdata)
+    for bdata in TEST_PICTURES["jpeg"]:
         decompress("RGB", bdata)
