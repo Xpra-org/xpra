@@ -87,8 +87,11 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
                 log("json loads(%r)=%s", out, env)
                 return env
             except json.decoder.JSONDecodeError:
+                log("decoding json output from sourcing script '%s': %r",
+                          file_to_source_path, out, exc_info=True)
                 log.error("Error decoding json output from sourcing script '%s'",
-                          file_to_source_path, exc_info=True)
+                          file_to_source_path)
+                log.error(" %s", e)
                 return {}
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
