@@ -178,7 +178,6 @@ def decompress(coding, img_data, options):
 
 def selftest(_full=False):
     global ENCODINGS
-    import binascii
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
     #test data generated using the encoder:
     for encoding, testimages in TEST_PICTURES.items():
