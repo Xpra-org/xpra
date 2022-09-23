@@ -2950,6 +2950,9 @@ cdef class Encoder:
 
 _init_message = False
 def init_module():
+    from xpra.codecs.nv_util import has_nvidia_hardware
+    if not has_nvidia_hardware():
+        raise ImportError("no nvidia GPU device found")
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
     if NVENCAPI_MAJOR_VERSION<0x7:
@@ -3139,7 +3142,11 @@ def cleanup_module():
     log("nvenc.cleanup_module()")
     reset_state()
 
+
 def selftest(full=False):
+    from xpra.codecs.nv_util import has_nvidia_hardware
+    if not has_nvidia_hardware():
+        raise ImportError("no nvidia GPU device found")
     v = get_nvidia_module_version(True)
     assert NVENCAPI_MAJOR_VERSION>=7, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
     if v:

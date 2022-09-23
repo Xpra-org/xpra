@@ -177,6 +177,7 @@ def driver_init():
                 log.info(f"CUDA {cuda_v} / PyCUDA {pycuda.VERSION_TEXT}, no devices found")
             driver_init_done = True
         except Exception as e:
+            log("driver_init()", exc_info=True)
             log.error("Error: cannot initialize CUDA")
             log.estr(e)
             driver_init_done = False

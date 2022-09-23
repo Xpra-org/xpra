@@ -20,16 +20,77 @@ MIN_VERSION = 466
 
 numpy_import_lock = RLock()
 
+NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
+NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
+
+
+nvidia_hardware = None
+def has_nvidia_hardware():
+    global nvidia_hardware
+    if nvidia_hardware is None:
+        nvidia_hardware = _has_nvidia_hardware()
+    log(f"has_nvidia_hardware()={nvidia_hardware}")
+    return nvidia_hardware
+
+def _has_nvidia_hardware():
+    if NVIDIA_HARDWARE:
+        return True
+    #first, check for the kernel module file, this should be very quick:
+    try:
+        if os.path.exists(NVIDIA_PROC_FILE):
+            log(f"has_nvidia_hardware() found kernel module proc file {NVIDIA_PROC_FILE!r}")
+            return True
+    except OSError:
+        log(f"failed to query {NVIDIA_PROC_FILE!r}", exc_info=True)
+    # pylint: disable=import-outside-toplevel
+    #the drm module should also be quick:
+    try:
+        from xpra.codecs.drm import drm
+        info = drm.query()
+        for dev_info in info.values():
+            dev_name = dev_info.get("name", "").lower()
+            if dev_name.find("nouveau")>=0:
+                continue
+            if dev_name.find("nvidia")>=0:
+                log(f"has_nvidia_hardware() found nvidia drm device: {dev_info}")
+                return True
+    except ImportError as e:
+        log(f"has_nvidia_hardware() cannot use drm module: {e}")
+    try:
+        import pynvml
+        assert pynvml
+        from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, NVMLError_DriverNotLoaded
+    except ImportError as e:
+        log(f"has_nvidia_hardware() cannot use pynvml module: {e}")
+    else:
+        count = None
+        try:
+            if nvmlInit():
+                count = nvmlDeviceGetCount()
+                log(f"has_nvidia_hardware() pynvml found {count} devices")
+                return count>0
+        except NVMLError_DriverNotLoaded as e:
+            log(f"has_nvidia_hardware() pynvml: {e}")
+            return False
+        except Exception:
+            log(f"has_nvidia_hardware() pynvml: {e}")
+        finally:
+            if count is not None:
+                nvmlShutdown()
+    #hope for the best
+    log("has_nvidia_hardware() unable to ascertain, returning True")
+    return True
+
 
 nvml_init_warned = False
-def wrap_nvml_init(nvmlInit) -> bool:
+def wrap_nvml_init(nvmlInit, warn=True) -> bool:
     try:
         nvmlInit()
         return True
     except Exception as e:
         log("get_nvml_driver_version() pynvml error", exc_info=True)
         global nvml_init_warned
-        if not nvml_init_warned:
+        if not nvml_init_warned and warn:
             log.warn("Warning: failed to initialize NVML:")
             log.warn(" %s", e)
             nvml_init_warned = True
@@ -61,11 +122,10 @@ def get_nvml_driver_version():
 def get_proc_driver_version():
     if not POSIX:
         return ()
-    proc_file = "/proc/driver/nvidia/version"
-    v = load_binary_file(proc_file)
+    v = load_binary_file(NVIDIA_PROC_FILE)
     if not v:
         log.warn("Warning: NVidia kernel module not installed?")
-        log.warn(f" cannot open {proc_file!r}")
+        log.warn(f" cannot open {NVIDIA_PROC_FILE!r}")
         return ()
     KSTR = b"Kernel Module"
     p = v.find(KSTR)

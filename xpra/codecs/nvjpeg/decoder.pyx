@@ -255,6 +255,9 @@ def get_default_device():
 
 
 def selftest(full=False):
+    from xpra.codecs.nv_util import has_nvidia_hardware
+    if not has_nvidia_hardware():
+        raise ImportError("no nvidia GPU device found")
     from xpra.codecs.codec_checks import TEST_PICTURES
     #options = {"cuda-device-context" : get_device_context()}
     for bdata in TEST_PICTURES["jpeg"]:

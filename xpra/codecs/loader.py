@@ -92,10 +92,11 @@ def codec_import_check(name, description, top_module, class_module, classnames):
                     try:
                         selftest(FULL_SELFTEST)
                     except Exception as e:
-                        log.warn("Warning: %s failed its self test", name)
-                        for x in str(e).splitlines():
-                            log.warn(" %s", x)
                         log("%s failed", selftest, exc_info=True)
+                        if not isinstance(e, ImportError):
+                            log.warn("Warning: %s failed its self test", name)
+                            for x in str(e).splitlines():
+                                log.warn(" %s", x)
                         return None
             finally:
                 cleanup_module = getattr(ic, "cleanup_module", None)

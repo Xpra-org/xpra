@@ -529,7 +529,9 @@ def encode(coding, image, options=None):
 
 
 def selftest(full=False):
-    #this is expensive, so don't run it unless "full" is set:
+    from xpra.codecs.nv_util import has_nvidia_hardware
+    if not has_nvidia_hardware():
+        raise ImportError("no nvidia GPU device found")
     from xpra.codecs.codec_checks import make_test_image
     options = {
         "cuda-device-context"   : get_device_context(),
