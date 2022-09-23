@@ -85,7 +85,10 @@ def download_from_gpu(buf, size_t size):
 def decompress(rgb_format, img_data, options=None):
     #decompress using the default device,
     #and download the pixel data from the GPU:
-    with default_device as cuda_context:
+    dev = get_default_device()
+    if not dev:
+        raise RuntimeError("no device found")
+    with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
         return decompress_and_download(rgb_format, img_data, options)
 
@@ -243,8 +246,11 @@ def get_device_context():
     log("device init took %.1fms", 1000*(end-start))
     return cuda_context
 
-default_device = get_device_context()
+default_device = None
 def get_default_device():
+    global default_device
+    if default_device is None:
+        default_device = get_device_context()
     return default_device
 
 
