@@ -21,10 +21,9 @@ Those are required by almost every component.
 See [Network](../Network/README.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
-|[rencode](https://github.com/aresch/rencode)|https://pypi.python.org/pypi/rencode/|[packet encoding](./PacketEncoding)|both |Recommended|
+|[rencode](https://github.com/aresch/rencode)|https://pypi.python.org/pypi/rencode/|[packet encoding](./PacketEncoding)|both |(deprecated in 4.4)|
 |[pyyaml](http://pyyaml.org/)|https://pypi.python.org/pypi/PyYAML/|alternative packet encoder|both |optional (usually unused)|
-|[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Recommended|
-|[python-lz4](https://pypi.python.org/pypi/lz4)|https://github.com/python-lz4/python-lz4|python wrapper for lz4|both|Recommended|
+|[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Strongly recommended|
 |[python-cryptography](https://cryptography.io/en/latest/)|https://pypi.python.org/pypi/cryptography|[Encryption](./Encryption)|both||
 |[python-zeroconf](https://github.com/jstasiak/python-zeroconf)|https://pypi.org/project/zeroconf/|[Multicast DNS](./Multicast-DNS) session publishing|server||
 |[python-netifaces](http://alastairs-place.net/projects/netifaces/)|https://pypi.python.org/pypi/netifaces|[Multicast DNS](./Multicast-DNS) session publishing|server||
@@ -56,11 +55,6 @@ See [authentication modules](../Usage/Authentication.md)
 |[python-ipaddress](https://github.com/phihag/ipaddress)|https://pypi.org/project/ipaddress/|unspecified: r11859|
 |[python-idna](https://github.com/kjd/idna)|https://pypi.org/project/idna/|unspecified: r11860|
 |[python-decorator](https://github.com/micheles/decorator)|https://pypi.org/project/decorator/|required by gssapi: r18781|
-|[pytest-runner](https://github.com/pytest-dev/pytest-runner)|https://pypi.org/project/pytest-runner/|required by python-lz4: r17864|
-|[python-deprecation](http://deprecation.readthedocs.io/)|https://pypi.org/project/deprecation/|required by python-lz4: r17749|
-|[python-pkgconfig](https://github.com/matze/pkgconfig)|https://pypi.org/project/pkgconfig/|required by python-lz4: r17748|
-|[python-setuptools-scm](https://github.com/pypa/setuptools_scm/)|https://pypi.org/project/setuptools-scm/|required by python-lz4: r15282|
-|[nose](https://nose.readthedocs.io/en/latest/)|https://pypi.org/project/nose/|required by python-lz4: r8676|
 |[pyasn1](https://github.com/etingof/pyasn1)|https://pypi.org/project/pyasn1/|unspecified: r5829|
 |[asn1crypto](https://github.com/wbond/asn1crypto)|https://pypi.org/project/asn1crypto/|required by python-cryptography: r17856|
 |[python-packaging](https://github.com/pypa/packaging)|https://pypi.org/project/packaging/|required by python-cryptography: r15310|
