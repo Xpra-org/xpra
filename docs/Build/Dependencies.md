@@ -100,8 +100,8 @@ See [audio forwarding](../Features/Audio.md)
 |[Speex](http://www.speex.org/)|http://downloads.xiph.org/releases/speex/|speex codec|
 |[Vorbis](http://www.vorbis.com/)|http://downloads.xiph.org/releases/vorbis/|vorbis codec|
 |[wavpack](http://www.wavpack.com/)|http://www.wavpack.com/downloads.html|wavpack codec|
-|[faac](http://faac.sourceforge.net/)|http://faac.sourceforge.net/|aac encoder|
-|[faad](http://faac.sourceforge.net/)|http://faac.sourceforge.net/|aac decoder|
+|[faac](https://github.com/knik0/faac)|https://github.com/knik0/faac/releases|aac encoder|
+|[faad](https://github.com/knik0/faad2)|https://github.com/knik0/faad2/releases|aac decoder|
 |[lame](http://lame.sourceforge.net/)|http://sourceforge.net/projects/lame/files/lame/|MP3 encoder|
 |[TwoLame](http://www.twolame.org/)|http://sourceforge.net/projects/twolame/files/twolame/|MP3 encoder|
 </details>
