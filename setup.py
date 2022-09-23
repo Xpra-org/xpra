@@ -1914,7 +1914,6 @@ if dbus_ENABLED and server_ENABLED:
 tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_glue.m",
      ("gtk+-3.0", "pygobject-3.0"), language="objc", extra_compile_args=(
                 "-ObjC",
-                "-framework", "AppKit",
                 "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
                 "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
      )
