@@ -86,20 +86,23 @@ def query():
         path = devices[i].nodes[DRM_NODE_PRIMARY]
         log(f"{i} at {path}")
         dev_info["path"] = bytestostr(path)
-        with open(path, "rb") as drm_device:
-            fd = drm_device.fileno()
-            kms = bool(drmIsKMS(fd))
-            dev_info["kms"] = kms
-            version = drmGetVersion(fd)
-            if version:
-                dev_info.update({
-                    "version"   : (version.version_major, version.version_minor, version.version_patchlevel),
-                    "name"      : bytestostr(version.name[:version.name_len]),
-                    "date"      : bytestostr(version.date[:version.date_len]),
-                    "desc"      : bytestostr(version.desc[:version.desc_len]),
-                    })
-                drmFreeVersion(version)
-                #drmModeGetResources
+        try:
+            with open(path, "rb") as drm_device:
+                fd = drm_device.fileno()
+                kms = bool(drmIsKMS(fd))
+                dev_info["kms"] = kms
+                version = drmGetVersion(fd)
+                if version:
+                    dev_info.update({
+                        "version"   : (version.version_major, version.version_minor, version.version_patchlevel),
+                        "name"      : bytestostr(version.name[:version.name_len]),
+                        "date"      : bytestostr(version.date[:version.date_len]),
+                        "desc"      : bytestostr(version.desc[:version.desc_len]),
+                        })
+                    drmFreeVersion(version)
+                    #drmModeGetResources
+        except OSError as e:
+            dev_info["error"] = str(e)
     drmFreeDevices(devices, count)
     return info
 
