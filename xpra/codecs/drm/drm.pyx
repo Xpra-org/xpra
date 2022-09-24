@@ -10,7 +10,7 @@ from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("drm")
 
-cdef extern from "drm/drm.h":
+cdef extern from "drm.h":
     ctypedef unsigned int __kernel_size_t
     ctypedef struct drm_version:
         int version_major
