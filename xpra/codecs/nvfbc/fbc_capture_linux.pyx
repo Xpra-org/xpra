@@ -766,4 +766,6 @@ def cleanup_module():
     unload_library()
 
 def selftest(full=False):
-    pass
+    from xpra.codecs.nv_util import has_nvidia_hardware
+    if not has_nvidia_hardware():
+        raise ImportError("no nvidia GPU device found")
