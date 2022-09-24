@@ -72,7 +72,7 @@ def _has_nvidia_hardware():
         except NVMLError_DriverNotLoaded as e:
             log(f"has_nvidia_hardware() pynvml: {e}")
             return False
-        except Exception:
+        except Exception as e:
             log(f"has_nvidia_hardware() pynvml: {e}")
         finally:
             if count is not None:
