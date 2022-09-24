@@ -1022,7 +1022,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             raise InitException(f"failed to connect to the named pipe {pipe_name}:\n {e}") from None
         conn = NamedPipeConnection(pipe_name, pipe_handle, {})
         conn.timeout = SOCKET_TIMEOUT
-        conn.target = "namedpipe://%s/" % pipe_name
+        conn.target = f"namedpipe://{pipe_name}/"
         return conn
 
     if dtype == "vsock":
@@ -1181,7 +1181,7 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                     time.sleep(0.1)
                 dir_servers = socket_details()
         sockpath = single_display_match(dir_servers, error_cb,
-                                        nomatch="cannot find live server for display %s" % display)[-1]
+                                        nomatch=f"cannot find live server for display {display}")[-1]
     return sockpath
 
 def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
@@ -1617,7 +1617,7 @@ def run_opengl_probe():
         err = props.get("error", "")
         msg = props.get("message", "")
         if err:
-            return "error:%s" % (err or msg)
+            return f"error:{err}"
         if r==1:
             return "crash"
         if r is None:
@@ -1693,17 +1693,17 @@ def make_client(error_cb, opts):
                     safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
                     opts.opengl = ["off", "on"][safe]
                 else:
-                    opts.opengl = "probe-%s" % probe
+                    opts.opengl = f"probe-{probe}"
                 r = probe   #ie: "success"
                 if info:
                     renderer = glinfo.get("renderer")
                     if renderer:
-                        r += " (%s)" % renderer
-                app.show_progress(20, "validating OpenGL: %s" % r)
+                        r += f" ({renderer})"
+                app.show_progress(20, f"validating OpenGL: {r}")
                 if probe=="error":
                     message = glinfo.get("message")
                     if message:
-                        app.show_progress(21, " %s" % message)
+                        app.show_progress(21, f" {message}")
     except Exception:
         if progress_process:
             try:
@@ -2075,7 +2075,7 @@ def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
 
 
 def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
-    displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
+    displays = [f":{x}" for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
     if current_display and current_display not in displays:
         displays.append(current_display)
     if len(displays)!=1:
@@ -2166,7 +2166,7 @@ def do_run_glcheck(opts, show=False) -> dict:
     #suspend all logging:
     saved_level = None
     log = Logger("opengl")
-    log("do_run_glcheck(.., %s)" % show)
+    log(f"do_run_glcheck(.., {show})")
     if not is_debug_enabled("opengl") or not use_tty():
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
@@ -2246,7 +2246,7 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
 def start_macos_shadow(cmd, env, cwd):
     #launch the shadow server via launchctl so it will have GUI access:
     LAUNCH_AGENT = "org.xpra.Agent"
-    LAUNCH_AGENT_FILE = "/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
+    LAUNCH_AGENT_FILE = f"/Library/LaunchAgents/{LAUNCH_AGENT}.plist"
     try:
         os.stat(LAUNCH_AGENT_FILE)
     except Exception as e:
@@ -2254,12 +2254,12 @@ def start_macos_shadow(cmd, env, cwd):
         import errno
         if e.args[0]!=errno.EACCES:
             warn("Error: shadow may not start,\n"
-                 +" the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
+                 +f" the launch agent file {LAUNCH_AGENT_FILE!r} seems to be missing:{e}.\n")
     argfile = os.path.expanduser("~/.xpra/shadow-args")
     with open(argfile, "w", encoding="utf8") as f:
         f.write('["Xpra", "--no-daemon"')
         for x in cmd[1:]:
-            f.write(', "%s"' % x)
+            f.write(f', "{x}"')
         f.write(']')
     launch_commands = [
                        ["launchctl", "unload", LAUNCH_AGENT_FILE],
@@ -2368,7 +2368,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
                                             matching_state=dotxpra.LIVE,
                                             matching_display=matching_display))
-    log("start_server_subprocess: existing_sockets=%s", existing_sockets)
+    log(f"start_server_subprocess: existing_sockets={existing_sockets}")
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts, uid, gid)      #ie: ["--exit-with-children", "--start-child=xterm"]
@@ -2422,9 +2422,13 @@ def start_server_subprocess(script_file, args, mode, opts,
                 log.error(f" {msg}")
             n = parse_displayfd(buf, displayfd_err)
             if n is not None:
-                matching_display = ":%s" % n
+                matching_display = f":{n}"
                 log(f"displayfd={matching_display}")
-    socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
+    socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,
+                                               matching_display,
+                                               new_server_uuid,
+                                               display_name,
+                                               uid)
     return proc, socket_path, display
 
 def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()):
@@ -2759,7 +2763,7 @@ def run_stopexit(mode, error_cb, opts, extra_args, cmdline):
 
 
 def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)):
-    sys.stdout.write("\t%s session at %s" % (state, display))
+    sys.stdout.write(f"\t{state} session at {display}")
     if state in clean_states:
         try:
             stat_info = os.stat(sockpath)
@@ -2767,7 +2771,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)):
                 os.unlink(sockpath)
                 sys.stdout.write(" (cleaned up)")
         except OSError as e:
-            sys.stdout.write(" (delete failed: %s)" % e)
+            sys.stdout.write(f" (delete failed: {e})")
     sys.stdout.write("\n")
 
 
@@ -2921,7 +2925,7 @@ def run_list_mdns(error_cb, extra_args):
                 dstr = ""
                 if display.startswith(":"):
                     dstr = display[1:]
-                uri = "%s/%s@%s:%s/%s" % (mode, username, address, port, dstr)
+                uri = "%s://%s@%s:%s/%s" % (mode, username, address, port, dstr)
                 print("   \"%s\"" % uri)
             shown.add(uq)
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
@@ -2945,7 +2949,7 @@ def run_list_mdns(error_cb, extra_args):
     if not found:
         print("no services found")
     else:
-        print("%i service%s found" % (len(found), engs(found)))
+        print(f"{len(found)} services found")
 
 
 def run_clean(opts, args):
@@ -2960,7 +2964,7 @@ def run_clean(opts, args):
         for display in args:
             session_dir = get_session_dir(None, opts.sessions_dir, display, uid)
             if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
-                print("session %s not found" % (display,))
+                print(f"session {display} not found")
             else:
                 clean[display] = session_dir
         #the user specified the sessions to clean,
@@ -2969,7 +2973,7 @@ def run_clean(opts, args):
     else:
         session_dir = osexpand(opts.sessions_dir)
         if not os.path.exists(session_dir):
-            raise ValueError("cannot find sessions directory %r" % opts.sessions_dir)
+            raise ValueError(f"cannot find sessions directory {opts.sessions_dir}")
         #try to find all the session directories:
         for x in os.listdir(session_dir):
             d = os.path.join(session_dir, x)
@@ -2997,14 +3001,14 @@ def run_clean(opts, args):
             with open(pid_file, "rb") as f:
                 return int(f.read().rstrip(b"\n\r"))
         except (ValueError, OSError) as e:
-            error("failed to read %r: %s" % (pid_file, e))
+            error(f"failed to read {pid_file!r}: {e}")
             return 0
 
     #also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display, session_dir in clean.items():
         if not os.path.exists(session_dir):
-            print("session %s not found" % (display,))
+            print(f"session {display} not found")
             continue
         sockpath = os.path.join(session_dir, "socket")
         state = dotxpra.is_socket_match(sockpath, check_uid=uid)
@@ -3012,13 +3016,13 @@ def run_clean(opts, args):
             #this session is still active
             #do not try to clean it!
             if args:
-                print("session %s is %s" % (display, state))
-                print(" the session directory %r has not been removed" % session_dir)
+                print(f"session {display} is {state}")
+                print(f" the session directory {session_dir} has not been removed")
             continue
         server_pid = load_pid(session_dir, "server.pid")
-        if server_pid and POSIX and not OSX and os.path.exists("/proc/%i" % server_pid):
-            print("server process for session %s is still running with pid %i" % (display, server_pid))
-            print(" the session directory %r has not been removed" % session_dir)
+        if server_pid and POSIX and not OSX and os.path.exists(f"/proc/{server_pid}"):
+            print(f"server process for session {display} is still running with pid {server_pid}")
+            print(f" the session directory {session_dir!r} has not been removed")
             continue
         try:
             dno = int(display.lstrip(":"))
@@ -3033,7 +3037,7 @@ def run_clean(opts, args):
                 if xvfb_pid and kill_displays:
                     kill_pid(xvfb_pid)
                 else:
-                    print("X11 server :%i is still running " % (dno,))
+                    print(f"X11 server :{dno} is still running ")
                     if xvfb_pid:
                         print(" run clean-displays to terminate it")
                     else:
@@ -3046,7 +3050,7 @@ def run_clean(opts, args):
         try:
             session_files = os.listdir(session_dir)
         except OSError as e:
-            error("Error listing session files in %r: %s" % (session_dir, e))
+            error(f"Error listing session files in {session_dir}: {e}")
             continue
         #files we can remove safely:
         KNOWN_SERVER_FILES = [
@@ -3064,8 +3068,8 @@ def run_clean(opts, args):
         unknown_files = [x for x in session_files if x not in ALL_KNOWN]
         if unknown_files:
             error("Error: found some unexpected session files:")
-            error(" %s" % csv(unknown_files))
-            error(" the session directory %r has not been removed" % session_dir)
+            error(" "+csv(unknown_files))
+            error(f" the session directory {session_dir!r} has not been removed")
             continue
         for x in session_files:
             try:
@@ -3077,11 +3081,11 @@ def run_clean(opts, args):
                     import shutil
                     shutil.rmtree(pathname)
             except OSError as e:
-                error("Error removing %r: %s" % (pathname, e))
+                error(f"Error removing {pathname!r}: {e}")
         try:
             os.rmdir(session_dir)
         except OSError:
-            error("Error session directory %r: %s" % (session_dir, e))
+            error(f"Error session directory {session_dir!r}: {e}")
             continue
         #remove the other sockets:
         socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
@@ -3089,7 +3093,7 @@ def run_clean(opts, args):
             try:
                 os.unlink(filename)
             except OSError as e:
-                error("Error removing socket %r: %s" % (filename, e))
+                error(f"Error removing socket {filename!r}: {e}")
 
 
 def run_clean_sockets(opts, args):
@@ -3105,7 +3109,7 @@ def run_clean_sockets(opts, args):
                                      matching_state=DotXpra.UNKNOWN,
                                      matching_display=matching_display)
     if matching_display and not results:
-        raise InitInfo("no UNKNOWN socket for display '%s'" % (matching_display,))
+        raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
     return clean_sockets(dotxpra, results)
 
 
