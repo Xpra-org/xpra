@@ -17,7 +17,7 @@ from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
-    OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
+    OPTION_TYPES, TRUE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
     make_defaults_struct, parse_bool, parse_number, print_number,
