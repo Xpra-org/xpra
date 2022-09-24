@@ -2246,7 +2246,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
             return proc, "named-pipe://%s" % display_name, display_name
         log("get_display_state(%s)=%s (waiting)", display_name, state)
         if proc.poll() not in (None, 0):
-            raise Exception("shadow subprocess command returned %s", proc.returncode)
+            raise Exception("shadow subprocess command returned %s" % proc.returncode)
         time.sleep(0.10)
         elapsed = monotonic()-start
     proc.terminate()
