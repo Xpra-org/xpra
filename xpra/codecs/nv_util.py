@@ -91,6 +91,7 @@ def wrap_nvml_init(nvmlInit, warn=True) -> bool:
         log("get_nvml_driver_version() pynvml error", exc_info=True)
         global nvml_init_warned
         if not nvml_init_warned and warn:
+            log(f"{nvmlInit}()", exc_info=True)
             log.warn("Warning: failed to initialize NVML:")
             log.warn(" %s", e)
             nvml_init_warned = True
