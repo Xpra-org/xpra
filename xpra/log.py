@@ -387,7 +387,7 @@ class Logger:
             caller = sys._getframe(1).f_globals["__name__"] #pylint: disable=protected-access
         except AttributeError:
             caller = None
-        if caller not in ("__main__", None):
+        if caller not in ("__main__", None, "importlib._bootstrap"):
             self.categories.insert(0, caller)
         self.level_override = 0
         self.logger = logging.getLogger(".".join(self.categories))
