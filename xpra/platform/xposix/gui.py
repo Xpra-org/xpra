@@ -961,10 +961,12 @@ class ClientExtras(object):
 
 
     def _get_xsettings(self):
-        try:
-            return self._xsettings_watcher.get_settings()
-        except:
-            log.error("failed to get XSETTINGS", exc_info=True)
+        xw = self._xsettings_watcher
+        if xw:
+            try:
+                return self._xsettings_watcher.get_settings()
+            except:
+                log.error("failed to get XSETTINGS", exc_info=True)
         return None
 
     def _handle_xsettings_changed(self, *_args):
