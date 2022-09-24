@@ -557,7 +557,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "${DO_SIGN}" == "1" ]; then
 		SIGNTOOL_LOG="packaging/MSWindows/signtool.log"
 		echo "* Signing EXE"
-		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
+		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.digicert.com" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
 			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
 			cat ${SIGNTOOL_LOG}
