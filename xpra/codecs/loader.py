@@ -16,7 +16,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "enc_nvjpeg", "enc_x265", "enc_ffmpeg"]
+NOWARN = ["nvenc", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
