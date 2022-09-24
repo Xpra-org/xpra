@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import sys
 import os.path
 
 from xpra.util import envbool, csv
-from xpra.os_util import OSX
+from xpra.os_util import OSX, LINUX
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
@@ -39,7 +39,7 @@ ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg
 ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
 DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
-SOURCES = filt("v4l2", "evdi", "drm")
+SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES))
 
@@ -166,6 +166,7 @@ def xpra_codec_import(name, description, top_module, class_module, classname):
             version_name = name[4:]
         add_codec_version(version_name, xpra_class_module)
 
+osname = "linux" if LINUX else os.name.rstrip("0123456789")
 
 CODEC_OPTIONS = {
     #encoders:
@@ -200,6 +201,7 @@ CODEC_OPTIONS = {
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
+    "nvfbc"         : ("NVIDIA Capture SDK","nvfbc",        f"fbc_capture_{osname}", "NvFBC_SysCapture"),
     }
 
 def load_codec(name):
@@ -355,7 +357,7 @@ def main(args):
             list_codecs = ALL_CODECS
             #not really a codec, but gets used by codecs, so include version info:
             add_codec_version("numpy", "numpy")
-        print("codecs and csc modules found:")
+        print("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
             mod = codecs.get(name, "")
