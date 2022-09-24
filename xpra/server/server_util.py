@@ -34,8 +34,9 @@ def source_env(source=()) -> dict:
             continue
         try:
             e = env_from_sourcing(f)
-        except Exception:
-            log.error("Error sourcing %r", f, exc_info=True)
+        except Exception as e:
+            log(f"env_from_sourcing({f})", exc_info=True)
+            log.error(f"Error sourcing {f!r}: {e}")
         else:
             log("source_env %s=%s", f, e)
             env.update(e)
