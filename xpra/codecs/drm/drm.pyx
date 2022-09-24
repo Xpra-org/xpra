@@ -83,7 +83,7 @@ def query():
             continue
         dev_info = info.setdefault(i, {})
         path = devices[i].nodes[DRM_NODE_PRIMARY]
-        log(f"{i} at {path}")
+        log(f"{i} at {bytestostr(path)}")
         dev_info["path"] = bytestostr(path)
         try:
             with open(path, "rb") as drm_device:
