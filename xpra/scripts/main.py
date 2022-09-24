@@ -2589,6 +2589,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         "_proxy"                : "seamless",
         "_proxy_shadow_start"   : "shadow",
         }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
+    server_mode = MODE_ALIAS.get(server_mode, server_mode)
     if server_mode in ("seamless", "desktop", "monitor", "shadow", "expand"):
         attach = parse_bool("attach", opts.attach)
         state = None
