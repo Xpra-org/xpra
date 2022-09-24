@@ -8,7 +8,7 @@ import sys
 import os.path
 
 from xpra.util import envbool, csv
-from xpra.os_util import OSX, LINUX
+from xpra.os_util import OSX, LINUX, WIN32
 from xpra.codecs.codec_constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -211,6 +211,17 @@ CODEC_OPTIONS = {
     "nvfbc"         : ("NVIDIA Capture SDK","nvfbc",        f"fbc_capture_{osname}", "NvFBC_SysCapture"),
     }
 
+NOLOAD = []
+if OSX:
+    #none of the nvidia codecs are available on MacOS,
+    #so don't bother trying:
+    NOLOAD += ["nvenc", "enc_nvjpeg", "dec_nvjpeg", "nvfbc"]
+if OSX or WIN32:
+    #these sources can only be used on Linux
+    #(and maybe on some BSDs?)
+    NOLOAD += ["v4l2", "evdi", "drm"]
+
+
 def load_codec(name):
     log("load_codec(%s)", name)
     if not has_codec(name):
@@ -233,6 +244,9 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     def load(*names):
         for name in names:
             if has_codec(name):
+                continue
+            if name in NOLOAD:
+                log(f"{name} is in the NOLOAD list for this platform: {NOLOAD}")
                 continue
             load_codec(name)
             if has_codec(name) and name not in loaded:
@@ -378,6 +392,9 @@ def main(args):
                     f = f[len(os.getcwd()):]
                     if f.startswith(os.path.sep):
                         f = f[1:]
+            if name in NOLOAD and not f:
+                #don't show codecs from the NOLOAD list
+                continue
             print(f"* {name.ljust(20)} : {f}")
             if mod and verbose:
                 try:

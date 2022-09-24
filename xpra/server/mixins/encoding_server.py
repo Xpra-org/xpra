@@ -6,7 +6,7 @@
 #pylint: disable-msg=E1101
 
 from xpra.scripts.config import parse_bool_or_int
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, OSX
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
@@ -76,7 +76,7 @@ class EncodingServer(StubServerMixin):
 
     def threaded_setup(self):
         #load the slower codecs
-        if "jpeg" in self.allowed_encodings:
+        if "jpeg" in self.allowed_encodings and not OSX:
             load_codec("enc_nvjpeg")
         #load video codecs:
         getVideoHelper().init()
