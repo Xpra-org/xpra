@@ -9,6 +9,7 @@ import os.path
 
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, LINUX
+from xpra.codecs.codec_constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
@@ -41,16 +42,22 @@ DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvj
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
 SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
 
-ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES))
+ALL_CODECS = filt(*set(
+    CSC_CODECS +
+    ENCODER_CODECS +
+    ENCODER_VIDEO_CODECS +
+    DECODER_CODECS +
+    DECODER_VIDEO_CODECS +
+    SOURCES))
 
 
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, classnames):
-    log("%s:", name)
+    log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     if any(name.find(s)>=0 for s in SKIP_LIST):
-        log(" skipped from list: %s", csv(SKIP_LIST))
+        log(f" skipped from list: {csv(SKIP_LIST)}")
         return None
     try:
         try:
@@ -58,53 +65,53 @@ def codec_import_check(name, description, top_module, class_module, classnames):
                 raise ImportError("codec found in fail import list")
             __import__(top_module, {}, {}, [])
         except ImportError as e:
-            log("failed to import %s (%s)", description, name)
+            log(f"failed to import {name} ({description})")
             log("", exc_info=True)
             codec_errors[name] = str(e)
             return None
     except Exception as e:
-        log.warn(" cannot load %s (%s):", name, description, exc_info=True)
+        log.warn(f" cannot load {name} ({description}):", exc_info=True)
         codec_errors[name] = str(e)
         return None
     classname = None
     try:
         #module is present
         try:
-            log(" %s found, will check for %s in %s", top_module, classnames, class_module)
+            log(f" {top_module} found, will check for {classnames} in {class_module}")
             ic =  __import__(class_module, {}, {}, classnames)
             try:
                 #run init_module?
                 init_module = getattr(ic, "init_module", None)
-                log("%s: init_module=%s", class_module, init_module)
+                log(f"{class_module}.init_module={init_module}")
                 if init_module:
                     init_module()
 
                 if classnames:
                     for classname in classnames:
                         clazz = getattr(ic, classname)
-                        log("%s: %s=%s", class_module, classname, clazz)
+                        log(f"{class_module}.{classname}={clazz}")
 
                 selftest = getattr(ic, "selftest", None)
-                log("%s.selftest=%s", name, selftest)
+                log(f"{name}.selftest={selftest}")
                 if SELFTEST and selftest:
                     if name in CODEC_FAIL_SELFTEST:
                         raise ImportError("codec found in fail selftest list")
                     try:
                         selftest(FULL_SELFTEST)
                     except Exception as e:
-                        log("%s failed", selftest, exc_info=True)
+                        log(f"{selftest} failed", exc_info=True)
                         if not isinstance(e, ImportError):
-                            log.warn("Warning: %s failed its self test", name)
+                            log.warn(f"Warning: {name} failed its self test")
                             for x in str(e).splitlines():
-                                log.warn(" %s", x)
+                                log.warn(f" {x}")
                         return None
             finally:
                 cleanup_module = getattr(ic, "cleanup_module", None)
-                log("%s: cleanup_module=%s", class_module, cleanup_module)
+                log(f"{class_module} cleanup_module={cleanup_module}")
                 if cleanup_module:
                     cleanup_module()
             #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
-            log(" found %s : %s", name, ic)
+            log(f" found {name} : {ic}")
             codecs[name] = ic
             return ic
         except ImportError as e:
@@ -112,8 +119,8 @@ def codec_import_check(name, description, top_module, class_module, classnames):
             l = log.error
             if name in NOWARN:
                 l = log.debug
-            l("Error importing %s (%s)", description, name)
-            l(" %s", e)
+            l(f"Error importing {name} ({description})")
+            l(f" {e}")
             log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = str(e)
@@ -142,15 +149,15 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
-                log(" %s %s.%s=%s", name, top_module, info, info())
+                log(f" {name} {top_module}.{info}={info()}")
             return v
         if name in codecs:
-            log.warn(" cannot find %s in %s", " or ".join(fieldnames), module)
+            log.warn(f" cannot find %s in {module}", " or ".join(fieldnames))
         else:
-            log(" no version information for missing codec %s", name)
+            log(f" no version information for missing codec {name}")
     except ImportError as e:
         #not present
-        log(" cannot import %s: %s", name, e)
+        log(f" cannot import {name}: {e}")
         log("", exc_info=True)
     except Exception as e:
         log.warn("error during codec import: %s", e)
@@ -158,8 +165,8 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
     return None
 
 def xpra_codec_import(name, description, top_module, class_module, classname):
-    xpra_top_module = "xpra.codecs.%s" % top_module
-    xpra_class_module = "%s.%s" % (xpra_top_module, class_module)
+    xpra_top_module = f"xpra.codecs.{top_module}"
+    xpra_class_module = f"{xpra_top_module}.{class_module}"
     if codec_import_check(name, description, xpra_top_module, xpra_class_module, classname):
         version_name = name
         if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
@@ -249,11 +256,11 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
 def show_codecs(show=None):
     #print("codec_status=%s" % codecs)
     for name in sorted(show or ALL_CODECS):
-        log("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
+        log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
     log("codecs versions:")
     for name in (show or codec_versions.keys()):
         version = codec_versions.get(name, "")
-        log("* %s : %s" % (name.ljust(20), version))
+        log(f"* {name.ljust(20)} : {version}")
 
 
 def get_codec_error(name):
@@ -270,6 +277,7 @@ def has_codec(name) -> bool:
 
 
 def get_rgb_compression_options():
+    # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
     compressors = [x for x in compressors if x!="brotli"]
@@ -298,9 +306,11 @@ def get_encoding_name(encoding):
     return ENCODINGS_TO_NAME.get(encoding, encoding)
 
 def get_encoding_help(encoding):
+    # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
     compressors = [x for x in compressors if x!="brotli"]
+    compressors_str = " or ".join(compressors)
     return {
           "auto"    : "automatic mode (recommended)",
           "grayscale" : "same as 'auto' but in grayscale mode",
@@ -316,13 +326,12 @@ def get_encoding_help(encoding):
           "jpeg"    : "JPEG lossy compression",
           "avif"    : "AVIF",
           "rgb"     : "Raw RGB pixels, lossless,"
-                      +" compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
+                      +f" compressed using {compressors_str} (24bpp or 32bpp for transparency)",
           "scroll"  : "motion vectors, supplemented with picture codecs",
           }.get(encoding)
 
 
 def encodings_help(encodings):
-    from xpra.codecs.codec_constants import HELP_ORDER
     h = []
     for e in HELP_ORDER:
         if e in encodings:
@@ -336,6 +345,7 @@ def encoding_help(encoding):
 
 
 def main(args):
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
     from xpra.util import print_nested_dict, pver
@@ -368,25 +378,25 @@ def main(args):
                     f = f[len(os.getcwd()):]
                     if f.startswith(os.path.sep):
                         f = f[1:]
-            print("* %s : %s" % (name.ljust(20), f))
+            print(f"* {name.ljust(20)} : {f}")
             if mod and verbose:
                 try:
                     if name.find("csc")>=0:
                         cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))
-                        print("                         colorspaces: %s" % csv(list(set(cs))))
+                        print(f"                         colorspaces: {csv(list(set(cs)))}")
                     elif name.find("enc")>=0 or name.find("dec")>=0:
                         encodings = mod.get_encodings()
-                        print("                         encodings: %s" % csv(encodings))
+                        print(f"                         encodings: {csv(encodings)}")
                     try:
                         i = mod.get_info()
                         for k,v in sorted(i.items()):
-                            print("                         %s = %s" % (k,v))
+                            print(f"                         {k} = {v}")
                     except Exception:
                         pass
                 except Exception as e:
-                    print("error getting extra information on %s: %s" % (name, e))
+                    print(f"error getting extra information on {name}: {e}")
         print("")
         print("codecs versions:")
         def forcever(v):
