@@ -517,9 +517,8 @@ def find_evdi_devices():
 def selftest(full=False):
     from xpra.log import LOG_FORMAT, enable_color
     format_string = LOG_FORMAT
-    log.enable_debug()
     enable_color(format_string=format_string)
-    log.info("evdi version " + ".".join(str(x) for x in get_version()))
+    log("evdi version " + ".".join(str(x) for x in get_version()))
     if full:
         #capture_logging()
         devices = find_evdi_devices()
