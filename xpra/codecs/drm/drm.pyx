@@ -54,9 +54,8 @@ cdef extern from "xf86drm.h":
     int drmGetDevices(drmDevicePtr devices[], int max_devices)
     void drmFreeDevices(drmDevicePtr devices[], int count)
 
-cdef extern from "xf86drmMode.h":
-    #drmModeResPtr drmModeGetResources(int fd)
-    int drmIsKMS(int fd)
+#cdef extern from "xf86drmMode.h":
+#    int drmIsKMS(int fd)
 
 
 def get_version():
@@ -89,8 +88,8 @@ def query():
         try:
             with open(path, "rb") as drm_device:
                 fd = drm_device.fileno()
-                kms = bool(drmIsKMS(fd))
-                dev_info["kms"] = kms
+                #kms = bool(drmIsKMS(fd))
+                #dev_info["kms"] = kms
                 version = drmGetVersion(fd)
                 if version:
                     dev_info.update({
