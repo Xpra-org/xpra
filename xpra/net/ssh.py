@@ -741,7 +741,7 @@ keymd5(host_key),
                 else:
                     tries = configint("numberofpasswordprompts", PASSWORD_RETRY)
                     for _ in range(tries):
-                        password = input_pass("please enter the SSH password for {username}@{host}")
+                        password = input_pass(f"please enter the SSH password for {username}@{host}")
                         if not password:
                             break
                         auth_password()
@@ -763,7 +763,7 @@ keymd5(host_key),
 
 class SSHAuthenticationError(InitExit):
     def __init__(self, host, errors):
-        super().__init__(EXIT_CONNECTION_FAILED, "SSH Authentication failed for %r" % host)
+        super().__init__(EXIT_CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
 def paramiko_run_test_command(transport, cmd):
@@ -774,7 +774,7 @@ def paramiko_run_test_command(transport, cmd):
         chan.set_name(f"find {cmd}")
     except SSHException as e:
         log("open_session", exc_info=True)
-        raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
+        raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
     chan.exec_command(cmd)
     log("exec_command returned")
     start = monotonic()
@@ -869,7 +869,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
+            raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
         else:
             agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
             log(f"paramiko agent_option={agent_option}")
