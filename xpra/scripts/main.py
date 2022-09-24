@@ -550,13 +550,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_docs()
     elif mode == "html5":
         return run_html5()
-    elif mode in (
-            "_proxy",
-            "_proxy_start",
-            "_proxy_start_desktop", "_proxy_start_monitor",
-            "_proxy_shadow",
-            "_proxy_shadow_start",
-            ):
+    elif mode=="_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
     elif mode in ("_sound_record", "_sound_play", "_sound_query"):
@@ -1872,11 +1866,11 @@ def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
         log("failed to start via proxy", exc_info=True)
         err = str(e)
     if start_via_proxy is True:
-        error_cb("failed to start-via-proxy: %s" % (err,))
+        error_cb(f"failed to start-via-proxy: {err}")
         return
     #warn and fall through to regular server start:
-    warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
-    warn(" %s" % (err,))
+    warn(f"Warning: cannot use the system proxy for {mode!r} subcommand,")
+    warn(f" {err}")
     warn(" more information may be available in your system log")
 
 
@@ -1897,7 +1891,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             geometry = params.get("geometry")
             display = params["display"]
             if mode=="shadow" and geometry:
-                display += ",%s" % (geometry, )
+                display += f",{geometry}"
             proxy_args.append(display)
         for x in get_start_server_args(opts, compat=True, cmdline=cmdline):
             proxy_args.append(x)
@@ -1906,7 +1900,10 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         opts.start = []
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
-        if mode=="shadow":
+        if mode=="seamless":
+            #this should also be switched to the generic syntax below in v6:
+            proxy_command = "_proxy_start"
+        elif mode=="shadow":
             #this should also be switched to the generic syntax below in v6:
             proxy_command = "_proxy_shadow_start"
         else:
@@ -1962,12 +1959,12 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
                 mods = ssl_retry(e, opts.ssl_ca_certs)
                 if mods:
                     for k, v in mods.items():
-                        setattr(opts, "ssl_%s" % k, v)
+                        setattr(opts, f"ssl_{k}", v)
                     continue
                 raise
     except Exception as e:
         if app:
-            app.show_progress(100, "failure: %s" % e)
+            app.show_progress(100, f"failure: {e}")
         raise
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
@@ -1977,7 +1974,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         try:
             mode_pos = args.index(mode)
         except ValueError:
-            raise InitException("mode '%s' not found in command line arguments" % mode) from None
+            raise InitException(f"mode {mode!r} not found in command line arguments") from None
         args[mode_pos] = "attach"
         if params.get("display") is None:
             #try to find which display was used,
@@ -2049,7 +2046,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     return displays
 
 def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
-    socket_path = os.path.join(X11_SOCKET_DIR, "X%i" % display_no)
+    socket_path = os.path.join(X11_SOCKET_DIR, f"X{display_no}")
     try:
         #check that this is a socket
         sstat = os.stat(socket_path)
@@ -2083,10 +2080,10 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         displays.append(current_display)
     if len(displays)!=1:
         #try without uid match:
-        displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_gid=gid)]
+        displays = [f":{x}" for x in find_X11_displays(max_display_no=10, match_gid=gid)]
         if len(displays)!=1:
             #try without gid match:
-            displays = [":%s" % x for x in find_X11_displays(max_display_no=10)]
+            displays = [f":{x}" for x in find_X11_displays(max_display_no=10)]
     if not displays:
         raise InitExit(1, "could not detect any live X11 displays")
     if len(displays)>1:
@@ -2098,11 +2095,11 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         displays = list(set(displays)-set(xpra_displays))
         if not displays:
             raise InitExit(1, "could not detect any live plain X11 displays,\n"
-                           +" only multiple xpra displays: %s" % csv(xpra_displays))
+                           +" only multiple xpra displays: "+csv(xpra_displays))
     if current_display:
         return current_display
     if len(displays)!=1:
-        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(sorted_nicely(displays)))
+        raise InitExit(1, "too many live X11 displays to choose from: "+csv(sorted_nicely(displays)))
     return displays[0]
 
 
@@ -2133,7 +2130,7 @@ def run_autostart(script_file, args):
         return err("invalid number of arguments")
     arg = args[0].lower()
     if arg not in ("enable", "disable", "status"):
-        return err("invalid argument '%s'" % arg)
+        return err(f"invalid argument {arg!r}")
     from xpra.platform.features import AUTOSTART
     if not AUTOSTART:
         print("autostart is not supported on this platform")
@@ -2308,8 +2305,8 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     if debug_args is None:
         debug_args = ",".join(get_debug_args())
     if debug_args:
-        cmd.append("--debug=%s" % debug_args)
-    log("proxy shadow start command: %s", cmd)
+        cmd.append(f"--debug={debug_args}")
+    log(f"proxy shadow start command: {cmd}")
     proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
     start = monotonic()
     elapsed = 0
@@ -2320,14 +2317,14 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
             #give it a bit of time:
             #FIXME: poll until the server is ready instead
             time.sleep(1)
-            return proc, "named-pipe://%s" % display_name, display_name
-        log("get_display_state(%s)=%s (waiting)", display_name, state)
+            return proc, f"named-pipe://{display_name}", display_name
+        log(f"get_display_state({display_name})={state} (waiting)")
         if proc.poll() not in (None, 0):
-            raise Exception("shadow subprocess command returned %s", proc.returncode)
+            raise Exception(f"shadow subprocess command returned {proc.returncode}")
         time.sleep(0.10)
         elapsed = monotonic()-start
     proc.terminate()
-    raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
+    raise Exception(f"timeout: failed to identify the new shadow server {display_name!r}")
 
 def start_server_subprocess(script_file, args, mode, opts,
                             username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
@@ -2335,19 +2332,20 @@ def start_server_subprocess(script_file, args, mode, opts,
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
-    if mode not in ("start", "start-desktop", "start-monitor", "shadow"):
+    mode = MODE_ALIAS.get(mode, mode)
+    if mode not in ("seamless", "desktop", "monitor", "expand", "shadow"):
         raise ValueError(f"invalid mode {mode!r}")
-    if mode in ("start", "start-desktop", "start-monitor"):
+    if len(args) not in (0, 1):
+        raise InitException(f"{mode}: expected 0 or 1 arguments but got {len(args)}: {args}")
+    if mode in ("seamless", "desktop", "monitor"):
         if len(args)==1:
             display_name = args[0]
-        elif len(args)==0:
+        else:
+            assert len(args)==0
             #let the server get one from Xorg via displayfd:
             display_name = 'S' + str(os.getpid())
-        else:
-            raise InitException("%s: expected 0 or 1 arguments but got %s: %s" % (mode, len(args), args))
     else:
-        assert mode=="shadow"
-        assert len(args) in (0, 1), "starting shadow server: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
+        assert mode in ("shadow", "expand")
         display_name = pick_shadow_display(dotxpra, args, uid, gid)
         #we now know the display name, so add it:
         args = [display_name]
@@ -2378,7 +2376,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     if debug_args is None:
         debug_args = ",".join(get_debug_args())
     if debug_args:
-        cmd.append("--debug=%s" % debug_args)
+        cmd.append(f"--debug={debug_args}")
     #when starting via the system proxy server,
     #we may already have a XPRA_PROXY_START_UUID,
     #specified by the proxy-start command:
@@ -2387,7 +2385,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         #generate one now:
         from xpra.os_util import get_hex_uuid
         new_server_uuid = get_hex_uuid()
-        cmd.append("--env=XPRA_PROXY_START_UUID=%s" % new_server_uuid)
+        cmd.append(f"--env=XPRA_PROXY_START_UUID={new_server_uuid}")
     if mode=="shadow" and OSX:
         start_macos_shadow(cmd, env, cwd)
         proc = None
@@ -2402,17 +2400,17 @@ def start_server_subprocess(script_file, args, mode, opts,
             cmd.append("--daemon=yes")
             cmd.append("--systemd-run=no")
             if getuid()==0 and (uid!=0 or gid!=0):
-                cmd.append("--uid=%i" % uid)
-                cmd.append("--gid=%i" % gid)
+                cmd.append(f"--uid={uid}")
+                cmd.append(f"--gid={gid}")
             if not OSX and not matching_display:
                 #use "--displayfd" switch to tell us which display was chosen:
                 r_pipe, w_pipe = os.pipe()
                 log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
-                cmd.append("--displayfd=%s" % w_pipe)
+                cmd.append(f"--displayfd={w_pipe}")
                 pass_fds = (w_pipe, )
-        log("start_server_subprocess: command=%s", csv("%r" % x for x in cmd))
+        log("start_server_subprocess: command="+csv(repr(x) for x in cmd))
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
-        log("proc=%s", proc)
+        log(f"proc={proc}")
         add_process(proc, "server", cmd, ignore=True, forget=True)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd  #pylint: disable=import-outside-toplevel
@@ -2421,11 +2419,11 @@ def start_server_subprocess(script_file, args, mode, opts,
             noerr(os.close, w_pipe)
             def displayfd_err(msg):
                 log.error("Error: displayfd failed")
-                log.error(" %s", msg)
+                log.error(f" {msg}")
             n = parse_displayfd(buf, displayfd_err)
             if n is not None:
                 matching_display = ":%s" % n
-                log("displayfd=%s", matching_display)
+                log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
@@ -2444,8 +2442,8 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
         dv = getattr(defaults, fn)
         fv = getattr(fdefaults, fn)
         incmdline = (
-            ("--%s" % x) in cmdline or ("--no-%s" % x) in cmdline or
-            any(c.startswith("--%s=" % x) for c in cmdline)
+            f"--{x}" in cmdline or f"--no-{x}" in cmdline or
+            any(c.startswith(f"--{x}=") for c in cmdline)
             )
         if not incmdline:
             #we may skip this option if the value is the same as the default:
@@ -2455,7 +2453,7 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
                     continue
             if ov in (dv, fv):
                 continue    #same as the default
-        argname = "--%s=" % x
+        argname = f"--{x}="
         if compat:
             argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
         #lists are special cased depending on how OptionParse will be parsing them:
@@ -2469,22 +2467,22 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
                      ]:
                 #individual arguments (ie: "--start=xterm" "--start=gedit" ..)
                 for e in ov:
-                    args.append("%s%s" % (argname, e))
+                    args.append(f"{argname}{e}")
             else:
                 #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
-                args.append("%s%s" % (argname, ",".join(str(v) for v in ov)))
+                args.append(f"{argname}"+",".join(str(v) for v in ov))
         elif ftype==bool:
             if compat and x in ("exit-with-children", "mmap-group"):
                 #older servers don't take a bool value for those options,
                 #it is disabled unless specified:
                 if ov:
-                    args.append("--%s" % x)
+                    args.append(f"--{x}")
             else:
-                args.append("%s%s" % (argname, ["no", "yes"][int(ov)]))
+                args.append(f"{argname}" + ["no", "yes"][int(ov)])
         elif ftype in (int, float, str):
-            args.append("%s%s" % (argname, ov))
+            args.append(f"{argname}{ov}")
         else:
-            raise InitException("unknown option type '%s' for '%s'" % (ftype, x))
+            raise InitException(f"unknown option type {ftype!r} for {x!r}")
     return args
 
 
@@ -2498,15 +2496,17 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     DISPLAY_PREFIX = "display="
     from xpra.platform.paths import get_nodock_command
     while monotonic()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
-        sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
+        sockets = set(dotxpra.socket_paths(check_uid=matching_uid,
+                                           matching_state=dotxpra.LIVE,
+                                           matching_display=matching_display))
         #sort because we prefer a socket in /run/* to one in /home/*:
         new_sockets = tuple(reversed(tuple(sockets-existing_sockets)))
-        log("identify_new_socket new_sockets=%s", new_sockets)
+        log(f"identify_new_socket new_sockets={new_sockets}")
         for socket_path in new_sockets:
             #verify that this is the right server:
             try:
                 #we must use a subprocess to avoid messing things up - yuk
-                cmd = get_nodock_command()+["id", "socket:%s" % socket_path]
+                cmd = get_nodock_command()+["id", f"socket://{socket_path}"]
                 p = Popen(cmd, stdout=PIPE, stderr=PIPE)
                 stdout, _ = p.communicate()
                 if p.returncode==0:
@@ -2518,7 +2518,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                         except Exception:
                             out = bytestostr(stdout)
                     lines = out.splitlines()
-                    log("id(%s): %s", socket_path, csv(lines))
+                    log(f"id({socket_path}): "+csv(lines))
                     found = False
                     display = matching_display
                     for line in lines:
@@ -2532,10 +2532,10 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                                 found = True
                     if found:
                         assert display, "display value not found in id output"
-                        log("identify_new_socket found match: path=%s, display=%s", socket_path, display)
+                        log(f"identify_new_socket found match: path={socket_path!r}, display={display}")
                         return socket_path, display
             except Exception as e:
-                warn("error during server process detection: %s" % e)
+                warn(f"error during server process detection: {e}")
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
@@ -2581,23 +2581,18 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
     display = None
-    if mode in (
-        "_proxy_start", "_proxy_start_seamless",
-        "_proxy_start_desktop", "_proxy_start_monitor",
-        "_proxy_shadow", "_proxy_shadow_start",
-        ):
-        if mode=="_proxy_shadow_start":
-            server_mode = "shadow"
-        else:
-            #generic new way:
-            server_mode = mode[len("_proxy_"):].replace("_", "-")
+    server_mode = {
+        "_proxy"                : "seamless",
+        "_proxy_shadow_start"   : "shadow",
+        }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
+    if server_mode in ("seamless", "desktop", "monitor", "shadow", "expand"):
         attach = parse_bool("attach", opts.attach)
         state = None
         if attach is not False:
             #maybe this server already exists?
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             display_name = None
-            if not args and mode=="_proxy_shadow_start":
+            if not args and server_mode in ("shadow", "expand"):
                 try:
                     display_name = pick_shadow_display(dotxpra, args)
                     args = [display_name]
@@ -2610,7 +2605,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
             if display_name:
                 state = dotxpra.get_display_state(display_name)
                 if state!=DotXpra.DEAD:
-                    sys.stderr.write("found existing display %s : %s\n" % (display_name, state))
+                    sys.stderr.write(f"found existing display {display_name} : {state}\n")
         if state!=DotXpra.LIVE:
             #strip defaults, only keep extra ones:
             for x in ("start", "start-child",
@@ -2627,9 +2622,9 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
                 #if we return non-zero, we will try the next run-xpra script in the list..
                 return 0
             if WIN32:
-                uri = "named-pipe://%s" % display_name
+                uri = f"named-pipe://{display_name}"
             else:
-                uri = "socket://%s" % socket_path
+                uri = f"socket://{socket_path}"
             display = parse_display_name(error_cb, opts, uri, cmdline)
             if proc and proc.poll() is None:
                 #start a thread just to reap server startup process (yuk)
@@ -2639,7 +2634,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     if not display:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args, cmdline)
-    if display and mode.find("shadow")<0:
+    if display and server_mode!="shadow":
         display_name = display.get("display_name")
         try:
             from xpra.scripts.server import get_session_dir
@@ -2691,26 +2686,26 @@ def run_stopexit(mode, error_cb, opts, extra_args, cmdline):
                     break
                 time.sleep(1)
         if final_state is DotXpra.DEAD:
-            print("xpra at %s has exited." % display)
+            print(f"xpra at {display} has exited.")
             return 0
         if final_state is DotXpra.UNKNOWN:
-            print("How odd... I'm not sure what's going on with xpra at %s" % display)
+            print(f"How odd... I'm not sure what's going on with xpra at {display}")
             return 1
         if final_state is DotXpra.LIVE:
-            print("Failed to shutdown xpra at %s" % display)
+            print(f"Failed to shutdown xpra at {display}")
             return 1
-        raise Exception("invalid state: %s" % final_state)
+        raise Exception(f"invalid state: {final_state}")
 
     def multimode(displays):
-        sys.stdout.write("Trying to %s %i displays:\n" % (mode, len(displays)))
+        sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
         #["xpra", "stop", ..]
         from xpra.platform.paths import get_nodock_command
-        cmd = get_nodock_command()+[mode, "--socket-dir=%s" % opts.socket_dir]
+        cmd = get_nodock_command()+[mode, f"--socket-dir={opts.socket_dir}"]
         for x in opts.socket_dirs:
             if x:
-                cmd.append("--socket-dirs=%s" % x)
+                cmd.append(f"--socket-dirs={x}")
         #use a subprocess per display:
         for display in displays:
             dcmd = cmd + [display]
@@ -2759,7 +2754,7 @@ def run_stopexit(mode, error_cb, opts, extra_args, cmdline):
         if display_desc["local"] and display_desc.get("display"):
             show_final_state(display_desc)
         else:
-            print("Sent %s command" % mode)
+            print(f"Sent {mode} command")
     return e
 
 
