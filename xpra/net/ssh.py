@@ -30,7 +30,7 @@ from xpra.os_util import (
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, envfloat, engs, noerr
+from xpra.util import envint, envbool, envfloat, engs, noerr, csv
 from xpra.log import Logger, is_debug_enabled
 
 #pylint: disable=import-outside-toplevel
@@ -333,7 +333,7 @@ def ssh_paramiko_connect_to(display_desc):
                             auth_modes.remove(m)
                         except KeyError:
                             pass
-                    log.info(f"retrying SSH authentication with modes {auth_modes}")
+                    log.info(f"retrying SSH authentication with modes {csv(auth_modes)}")
                     continue
                 raise
             else:
@@ -809,15 +809,33 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     log(f"will try to run xpra from: {remote_xpra}")
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
+    def detectosname():
+        #first, try a syntax that should work with any ssh server:
+        r = rtc("echo %OS%")
+        if r[2]==0:
+            name = r[0][-1].rstrip("\n\r")
+            log(f"echo %OS%={name}")
+            if name!="%OS%":
+                #MS Windows OS will return "Windows_NT" here
+                return name
+        #this should work on all other OSes:
+        r = rtc("echo $OSTYPE")
+        if r[2]==0:
+            name = r[0][-1].rstrip("\n\r")
+            log(f"$OSTYPE={name}")
+            return name
+        return "unknown"
     tried = set()
+    osname = None
     find_command = None
     for xpra_cmd in remote_xpra:
         if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
-            #win32 mode, quick and dirty platform test first:
-            r = rtc("ver")
-            if r[2]!=0:
+            if osname is None:
+                osname = detectosname()
+            if not osname.startswith("Windows"):
+                log(f"not an MS Windows OS, skipping {xpra_cmd!r}")
                 continue
-            #let's find where xpra is installed:
+            #let's find where xpra is actually installed:
             r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath`) DO (echo %A %B)")  #pylint: disable=line-too-long
             if r[2]==0:
                 #found in registry:
@@ -830,25 +848,31 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             pass
         else:
             if not find_command:
+                if osname is None:
+                    osname = detectosname()
+                if osname.startswith("Windows"):
+                    continue
+                #assume POSIX and find that command,
+                #either with "command -v" or with "which":
                 if rtc("command")[2]==0:
                     find_command = "command -v"
                 else:
                     find_command = "which"
-            #assume POSIX and find that command:
-            r = rtc(f"{find_command} {xpra_cmd}")
-            if r[2]!=0:
-                continue
-            out = r[0]
-            if out:
-                #use the actual path returned by 'command -v':
-                try:
-                    xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
-                except Exception as e:
-                    log(f"cannot get command from {xpra_cmd}: {e}")
-                else:
-                    if xpra_cmd.startswith(f"alias {xpra_cmd}="):
-                        #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
-                        xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
+            if find_command:
+                r = rtc(f"{find_command} {xpra_cmd}")
+                if r[2]!=0:
+                    continue
+                out = r[0]
+                if out:
+                    #use the actual path returned by 'command -v':
+                    try:
+                        xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
+                    except Exception as e:
+                        log(f"cannot get command from {xpra_cmd}: {e}")
+                    else:
+                        if xpra_cmd.startswith(f"alias {xpra_cmd}="):
+                            #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
+                            xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
         log(f"adding xpra_cmd={xpra_cmd!r}")
         if xpra_cmd in tried:
             continue
