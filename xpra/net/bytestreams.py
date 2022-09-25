@@ -349,11 +349,7 @@ class SocketConnection(Connection):
 
     def close(self):
         s = self._socket
-        try:
-            i = self.get_socket_info()
-        except IOError:
-            i = s
-        log("%s.close() for socket=%s", self, i)
+        log(f"{self}.close() socket={s}")
         super().close()
         try:
             s.settimeout(0)
