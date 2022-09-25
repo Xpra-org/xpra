@@ -44,7 +44,7 @@ def chan_send(send_fn, data, timeout=5):
             break
         data = data[sent:]
     if data:
-        raise Exception("failed to send all the data using %s" % send_fn)
+        raise Exception(f"failed to send all the data using {send_fn}")
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -79,6 +79,7 @@ class SSHServer(paramiko.ServerInterface):
     def check_channel_forward_agent_request(self, channel):
         log(f"check_channel_forward_agent_request({channel}) SSH_AGENT_DISPATCH={SSH_AGENT_DISPATCH}")
         if SSH_AGENT_DISPATCH:
+            # pylint: disable=import-outside-toplevel
             from paramiko.agent import AgentServerProxy
             self.agent = AgentServerProxy(self.transport)
             ssh_auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
@@ -103,12 +104,13 @@ class SSHServer(paramiko.ServerInterface):
         if not self.pubkey_auth:
             return paramiko.AUTH_FAILED
         if not POSIX or getuid()!=0:
+            # pylint: disable=import-outside-toplevel
             import getpass
             sysusername = getpass.getuser()
             if sysusername!=username:
                 log.warn("Warning: ssh password authentication failed,")
                 log.warn(" username does not match:")
-                log.warn(" expected '%s', got '%s'", sysusername, username)
+                log.warn(f" expected {sysusername!r}, got {username!r}")
                 return paramiko.AUTH_FAILED
         authorized_keys_filename = osexpand(AUTHORIZED_KEYS)
         if not os.path.exists(authorized_keys_filename) or not os.path.isfile(authorized_keys_filename):
@@ -156,7 +158,7 @@ class SSHServer(paramiko.ServerInterface):
         return paramiko.AUTH_FAILED
 
     def check_channel_shell_request(self, channel):
-        log("check_channel_shell_request(%s)", channel)
+        log(f"check_channel_shell_request({channel})")
         return False
 
     def check_channel_exec_request(self, channel, command):
@@ -169,11 +171,12 @@ class SSHServer(paramiko.ServerInterface):
                 auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
                 log(f"paramiko agent socket={auth_sock!r}")
                 if auth_sock:
+                    # pylint: disable=import-outside-toplevel
                     from xpra.scripts.main import setup_proxy_ssh_socket
                     setup_proxy_ssh_socket(cmd, auth_sock)
-        log("check_channel_exec_request(%s, %s)", channel, command)
+        log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
-        log("check_channel_exec_request: cmd=%s", cmd)
+        log(f"check_channel_exec_request: cmd={cmd}")
         # not sure if this is the best way to handle this, 'command -v xpra' has len=3
         if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
@@ -186,7 +189,7 @@ class SSHServer(paramiko.ServerInterface):
                     chan_send(channel.send, "xpra is xpra")
                     channel.send_exit_status(0)
                 else:
-                    chan_send(channel.send_stderr, "type: %s: not found" % xpra_cmd)
+                    chan_send(channel.send_stderr, f"type: {xpra_cmd!r}: not found")
                     channel.send_exit_status(1)
                 return True
             #we don't want to use a shell,
@@ -196,7 +199,7 @@ class SSHServer(paramiko.ServerInterface):
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
                 out, err = proc.communicate()
             except Exception as e:
-                log("check_channel_exec_request(%s, %s)", channel, command, exc_info=True)
+                log(f"check_channel_exec_request({channel}, {command})", exc_info=True)
                 chan_send(channel.send_stderr, f"failed to execute command: {e}")
                 channel.send_exit_status(1)
             else:
@@ -249,7 +252,7 @@ class SSHServer(paramiko.ServerInterface):
             #  elif [ -x /usr/local/bin/xpra ]; then /usr/local/bin/xpra _proxy;\
             #  else echo "no run-xpra command found"; exit 1; fi']
             #if .* ; then .*/run-xpra _proxy;
-            log("parse cmd=%s (len=%i)", cmd, len(cmd))
+            log(f"parse cmd={cmd} (len={len(cmd)})")
             if len(cmd)==1:         #ie: 'thelongcommand'
                 parse_cmd = cmd[0]
             elif len(cmd)==3 and cmd[:2]==["sh", "-c"]:     #ie: 'sh' '-c' 'thelongcommand'
@@ -262,6 +265,7 @@ class SSHServer(paramiko.ServerInterface):
             for s in parse_cmd.split("if "):
                 if (s.startswith("type \"xpra\"") or
                     s.startswith("which \"xpra\"") or
+                    s.startswith("command -v \"xpra\"") or
                     s.startswith("[ -x")
                     ) and s.find("then ")>0:
                     then_str = s.split("then ", 1)[1]
@@ -272,14 +276,14 @@ class SSHServer(paramiko.ServerInterface):
                     if len(parts)>=2:
                         subcommand = parts[1]       #ie: "_proxy"
                         subcommands[subcommand] = parts
-            log("subcommands=%s", subcommands)
+            log(f"subcommands={subcommands}")
             proxy_cmd = subcommands.get("_proxy")
             if proxy_cmd:
                 setup_agent(proxy_cmd)
                 self._run_proxy(channel)
             else:
                 log.warn("Warning: unsupported ssh command:")
-                log.warn(f" `{cmd}`")
+                log.warn(f" {cmd!r}")
                 return fail()
         return True
 
@@ -315,6 +319,7 @@ class SSHServer(paramiko.ServerInterface):
             log.error(f"Error starting proxy subcommand `{subcommand}`", exc_info=True)
             log.error(f" with args={args}")
             return
+        # pylint: disable=import-outside-toplevel
         from xpra.child_reaper import getChildReaper
         def proxy_ended(*args):
             log("proxy_ended(%s)", args)
@@ -355,9 +360,9 @@ class SSHServer(paramiko.ServerInterface):
                 stdin.write(r)
                 stdin.flush()
         tname = subcommand.replace("_proxy_", "proxy-")
-        start_thread(stderr_reader, "%s-stderr" % tname, True)
-        start_thread(stdout_reader, "%s-stdout" % tname, True)
-        start_thread(stdin_reader, "%s-stdin" % tname, True)
+        start_thread(stderr_reader, f"{tname}-stderr", True)
+        start_thread(stdout_reader, f"{tname}-stdout", True)
+        start_thread(stdin_reader, f"{tname}-stdin", True)
         channel.proxy_process = proc
 
 
@@ -408,12 +413,12 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
                     host_keys[host_key] = ff
                     t.add_server_key(host_key)
                     return True
-            except IOError as e:
-                log("cannot add host key '%s'", ff, exc_info=True)
+            except IOError:
+                log(f"cannot add host key {ff!r}", exc_info=True)
             except paramiko.SSHException as e:
-                log("error adding host key '%s'", ff, exc_info=True)
-                log.error("Error: cannot add %s host key '%s':", keytype, ff)
-                log.error(" %s", e)
+                log(f"error adding host key {ff!r}", exc_info=True)
+                log.error(f"Error: cannot add {keytype} host key {ff!r}:")
+                log.estr(e)
             return False
         host_key = socket_options.get("ssh-host-key")
         if host_key:
@@ -421,17 +426,17 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             if f.startswith(PREFIX) and f.endswith(SUFFIX):
                 add_host_key(d, f)
             if not host_keys:
-                log.error("Error: failed to load host key '%s'", host_key)
+                log.error(f"Error: failed to load host key {host_key!r}")
                 close()
                 return None
         else:
             ssh_key_dirs = get_ssh_conf_dirs()
-            log("trying to load ssh host keys from: %s", csv(ssh_key_dirs))
+            log("trying to load ssh host keys from: "+csv(ssh_key_dirs))
             for d in ssh_key_dirs:
                 fd = osexpand(d)
-                log("osexpand(%s)=%s", d, fd)
+                log(f"osexpand({d})={fd}")
                 if not os.path.exists(fd) or not os.path.isdir(fd):
-                    log("ssh host key directory '%s' is invalid", fd)
+                    log(f"ssh host key directory {fd!r} is invalid")
                     continue
                 for f in os.listdir(fd):
                     if f.startswith(PREFIX) and f.endswith(SUFFIX):
@@ -439,7 +444,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             if not host_keys:
                 log.error("Error: cannot start SSH server,")
                 log.error(" no readable SSH host keys found in:")
-                log.error(" %s", csv(ssh_key_dirs))
+                log.error(" "+csv(ssh_key_dirs))
                 close()
                 return None
         log("loaded host keys: %s", tuple(host_keys.values()))
@@ -447,7 +452,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
     except (paramiko.SSHException, EOFError) as e:
         log("failed to start ssh server", exc_info=True)
         log.error("Error handling SSH connection:")
-        log.error(" %s", e)
+        log.estr(e)
         close()
         return None
     try:
@@ -461,23 +466,23 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
     except paramiko.SSHException as e:
         log("failed to open ssh channel", exc_info=True)
         log.error("Error opening channel:")
-        log.error(" %s", e)
+        log.estr(e)
         close()
         return None
-    log("client authenticated, channel=%s", chan)
+    log(f"client authenticated, channel={chan}")
     timedout = not ssh_server.event.wait(SERVER_WAIT)
     proxy_channel = ssh_server.proxy_channel
-    log("proxy channel=%s, timedout=%s", proxy_channel, timedout)
+    log(f"proxy channel={proxy_channel}, timedout={timedout}")
     if not ssh_server.event.is_set() or not proxy_channel:
         if timedout:
             log.warn("Warning: timeout waiting for xpra SSH subcommand,")
-            log.warn(" closing connection from %s", pretty_socket(conn.target))
+            log.warn(" closing connection from "+pretty_socket(conn.target))
         close()
         return None
     if getattr(proxy_channel, "proxy_process", None):
         log("proxy channel is handled using a subprocess")
         return None
-    log("client authenticated, channel=%s", chan)
+    log(f"client authenticated, channel={chan}")
     return SSHSocketConnection(proxy_channel, sock,
                                conn.local, conn.endpoint, conn.target,
                                socket_options=socket_options)
