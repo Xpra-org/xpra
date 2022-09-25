@@ -213,12 +213,8 @@ class SSHServer(paramiko.ServerInterface):
                 channel.send_exit_status(proc.returncode)
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
-            log("ssh xpra subcommand: %s", subcommand)
-            if subcommand in (
-                "_proxy_start",
-                "_proxy_start_desktop", "_proxy_start_monitor",
-                "_proxy_shadow",
-                "_proxy_shadow_start"):
+            log(f"ssh xpra subcommand: {subcommand}")
+            if subcommand.startswith("_proxy_"):
                 proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
                 if not proxy_start:
                     log.warn(f"Warning: received a {subcommand!r} session request")
@@ -316,6 +312,7 @@ class SSHServer(paramiko.ServerInterface):
         log.info(f"ssh channel starting proxy {server_mode} session")
         cmd = get_xpra_command()+[subcommand]+args
         try:
+            # pylint: disable=consider-using-with
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
             proc.poll()
         except OSError:
