@@ -880,7 +880,8 @@ def connect_or_fail(display_desc, opts):
         raise
     except Exception as e:
         Logger("network").debug("failed to connect", exc_info=True)
-        raise InitException(f"connection failed: {e}") from None
+        einfo = str(e) or type(e)
+        raise InitException(f"connection failed: {einfo}") from None
 
 def proxy_connect(options):
     #if is_debug_enabled("proxy"):
