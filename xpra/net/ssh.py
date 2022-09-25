@@ -771,12 +771,12 @@ def paramiko_run_test_command(transport, cmd):
     log(f"paramiko_run_test_command(transport, {cmd})")
     try:
         chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
-        chan.set_name(f"find {cmd}")
+        chan.set_name(f"run-test:{cmd}")
     except SSHException as e:
         log("open_session", exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
     chan.exec_command(cmd)
-    log("exec_command returned")
+    log(f"exec_command({cmd}) returned")
     start = monotonic()
     while not chan.exit_status_ready():
         if monotonic()-start>TEST_COMMAND_TIMEOUT:
@@ -814,7 +814,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
         r = rtc("echo %OS%")
         if r[2]==0:
             name = r[0][-1].rstrip("\n\r")
-            log(f"echo %OS%={name}")
+            log(f"echo %OS%={name!r}")
             if name!="%OS%":
                 #MS Windows OS will return "Windows_NT" here
                 return name
@@ -822,7 +822,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
         r = rtc("echo $OSTYPE")
         if r[2]==0:
             name = r[0][-1].rstrip("\n\r")
-            log(f"$OSTYPE={name}")
+            log(f"OSTYPE={name!r}")
             return name
         return "unknown"
     tried = set()
