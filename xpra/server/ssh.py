@@ -178,6 +178,9 @@ class SSHServer(paramiko.ServerInterface):
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
         # not sure if this is the best way to handle this, 'command -v xpra' has len=3
+        if cmd[0]=="command" and len(cmd)==1:
+            channel.send_exit_status(0)
+            return True
         if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
