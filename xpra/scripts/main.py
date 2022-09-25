@@ -2345,7 +2345,8 @@ def start_server_subprocess(script_file, args, mode, opts,
             #let the server get one from Xorg via displayfd:
             display_name = 'S' + str(os.getpid())
     else:
-        assert mode in ("shadow", "expand")
+        if mode not in ("expand", "shadow"):
+            raise ValueError(f"invalid mode {mode!r}")
         display_name = pick_shadow_display(dotxpra, args, uid, gid)
         #we now know the display name, so add it:
         args = [display_name]
@@ -2361,7 +2362,8 @@ def start_server_subprocess(script_file, args, mode, opts,
         else:
             matching_display = display_name
     if WIN32:
-        assert mode=="shadow"
+        if mode!="shadow":
+            raise ValueError(f"invalid mode {mode!r} for MS Windows")
         assert display_name
         return proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name)
 
@@ -2590,7 +2592,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         "_proxy_shadow_start"   : "shadow",
         }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
     server_mode = MODE_ALIAS.get(server_mode, server_mode)
-    if server_mode in ("seamless", "desktop", "monitor", "shadow", "expand"):
+    if mode!="_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "expand"):
         attach = parse_bool("attach", opts.attach)
         state = None
         if attach is not False:
