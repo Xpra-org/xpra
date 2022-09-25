@@ -812,7 +812,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     def detectosname():
         #first, try a syntax that should work with any ssh server:
         r = rtc("echo %OS%")
-        if r[2]==0:
+        if r[2]==0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"echo %OS%={name!r}")
             if name!="%OS%":
@@ -820,7 +820,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 return name
         #this should work on all other OSes:
         r = rtc("echo $OSTYPE")
-        if r[2]==0:
+        if r[2]==0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"OSTYPE={name!r}")
             return name
