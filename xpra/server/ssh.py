@@ -44,7 +44,7 @@ def chan_send(send_fn, data, timeout=5):
             break
         data = data[sent:]
     if data:
-        raise Exception(f"failed to send all the data using {send_fn}")
+        raise Exception(f"failed to send all the data using {send_fn}, timedout after {timeout} seconds")
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -177,7 +177,6 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
-        # not sure if this is the best way to handle this, 'command -v xpra' has len=3
         if cmd[0]=="command" and len(cmd)==1:
             channel.send_exit_status(0)
             return True
@@ -232,7 +231,7 @@ class SSHServer(paramiko.ServerInterface):
                     log.warn(f"Warning: the display requested {display!r}")
                     log.warn(f" does not match the current display {display_name!r}")
                     return fail()
-                log(f"ssh 'xpra _proxy' subcommand: display_name={display_name!r}, agent={self.agent}")
+                log(f"ssh 'xpra {subcommand}' subcommand: display_name={display_name!r}, agent={self.agent}")
                 setup_agent(cmd)
             else:
                 log.warn(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
@@ -296,6 +295,7 @@ class SSHServer(paramiko.ServerInterface):
 
     def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
         log("check_channel_pty_request%s", (channel, term, width, height, pixelwidth, pixelheight, modes))
+        #refusing to open a pty:
         return False
 
     def enable_auth_gssapi(self):
@@ -359,7 +359,7 @@ class SSHServer(paramiko.ServerInterface):
                 #log("stdin_reader() %i bytes: %s", len(r or b""), ellipsizer(r))
                 stdin.write(r)
                 stdin.flush()
-        tname = subcommand.replace("_proxy_", "proxy-")
+        tname = subcommand.replace("_proxy_", "proxy-").replace("_", "-")
         start_thread(stderr_reader, f"{tname}-stderr", True)
         start_thread(stdout_reader, f"{tname}-stdout", True)
         start_thread(stdin_reader, f"{tname}-stdin", True)
