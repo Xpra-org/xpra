@@ -57,6 +57,49 @@ def get_keyclass(keytype):
     #Ed25519Key
     return getattr(paramiko, keytype[:1].upper()+keytype[1:]+"Key", None)
 
+def detect_ssh_stanza(cmd):
+    #plain 'ssh' clients execute a long command with if+else statements,
+    #try to detect it and extract the actual command the client is trying to run.
+    #ie:
+    #['sh', '-c',
+    # ': run-xpra _proxy;xpra initenv;\
+    #  if [ -x $XDG_RUNTIME_DIR/xpra/run-xpra ]; then $XDG_RUNTIME_DIR/xpra/run-xpra _proxy;\
+    #  elif [ -x ~/.xpra/run-xpra ]; then ~/.xpra/run-xpra _proxy;\
+    #  elif type "xpra" > /dev/null 2>&1; then xpra _proxy;\
+    #  elif [ -x /usr/local/bin/xpra ]; then /usr/local/bin/xpra _proxy;\
+    #  else echo "no run-xpra command found"; exit 1; fi']
+    #if .* ; then .*/run-xpra _proxy;
+    log(f"parse cmd={cmd} (len={len(cmd)})")
+    if len(cmd)==1:         #ie: 'thelongcommand'
+        parse_cmd = cmd[0]
+    elif len(cmd)==3 and cmd[:2]==["sh", "-c"]:     #ie: 'sh' '-c' 'thelongcommand'
+        parse_cmd = cmd[2]
+    else:
+        return None
+    #for older clients, try to parse the long command
+    #and identify the subcommands from there
+    subcommands = {}
+    ifparts = parse_cmd.split("if ")
+    log(f"ifparts={ifparts}")
+    for s in ifparts:
+        if (s.startswith("type \"xpra\"") or
+            s.startswith("which \"xpra\"") or
+            s.startswith("command -v \"xpra\"") or
+            s.startswith("[ -x ")
+            ) and s.find("then ")>0:
+            then_str = s.split("then ", 1)[1]
+            #ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
+            if then_str.find(";")>0:
+                then_str = then_str.split(";")[0]
+            parts = shlex.split(then_str)
+            log(f"parts({then_str})={parts}")
+            if len(parts)>=2:
+                subcommand = parts[1]       #ie: "_proxy"
+                if subcommand not in subcommands:
+                    subcommands[subcommand] = parts
+    log(f"subcommands={subcommands}")
+    return subcommands.get("_proxy")
+
 
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None):
@@ -281,43 +324,7 @@ class SSHServer(paramiko.ServerInterface):
             #we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
             return True
-        #plain 'ssh' clients execute a long command with if+else statements,
-        #try to detect it and extract the actual command the client is trying to run.
-        #ie:
-        #['sh', '-c',
-        # ': run-xpra _proxy;xpra initenv;\
-        #  if [ -x $XDG_RUNTIME_DIR/xpra/run-xpra ]; then $XDG_RUNTIME_DIR/xpra/run-xpra _proxy;\
-        #  elif [ -x ~/.xpra/run-xpra ]; then ~/.xpra/run-xpra _proxy;\
-        #  elif type "xpra" > /dev/null 2>&1; then xpra _proxy;\
-        #  elif [ -x /usr/local/bin/xpra ]; then /usr/local/bin/xpra _proxy;\
-        #  else echo "no run-xpra command found"; exit 1; fi']
-        #if .* ; then .*/run-xpra _proxy;
-        log(f"parse cmd={cmd} (len={len(cmd)})")
-        if len(cmd)==1:         #ie: 'thelongcommand'
-            parse_cmd = cmd[0]
-        elif len(cmd)==3 and cmd[:2]==["sh", "-c"]:     #ie: 'sh' '-c' 'thelongcommand'
-            parse_cmd = cmd[2]
-        else:
-            parse_cmd = ""
-        #for older clients, try to parse the long command
-        #and identify the subcommands from there
-        subcommands = {}
-        for s in parse_cmd.split("if "):
-            if (s.startswith("type \"xpra\"") or
-                s.startswith("which \"xpra\"") or
-                s.startswith("command -v \"xpra\"") or
-                s.startswith("[ -x")
-                ) and s.find("then ")>0:
-                then_str = s.split("then ", 1)[1]
-                #ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
-                if then_str.find(";")>0:
-                    then_str = then_str.split(";")[0]
-                parts = shlex.split(then_str)
-                if len(parts)>=2:
-                    subcommand = parts[1]       #ie: "_proxy"
-                    subcommands[subcommand] = parts
-        log(f"subcommands={subcommands}")
-        proxy_cmd = subcommands.get("_proxy")
+        proxy_cmd = detect_ssh_stanza(cmd)
         if proxy_cmd:
             setup_agent(proxy_cmd)
             self._run_proxy(channel)
