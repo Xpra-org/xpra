@@ -100,6 +100,40 @@ def detect_ssh_stanza(cmd):
     log(f"subcommands={subcommands}")
     return subcommands.get("_proxy")
 
+def find_fingerprint(filename, fingerprint):
+    hex_fingerprint = binascii.hexlify(fingerprint)
+    log(f"looking for key fingerprint {hex_fingerprint} in {filename!r}")
+    count = 0
+    with open(filename, "r", encoding="latin1") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            line = line.strip("\n\r")
+            try:
+                key = base64.b64decode(line.strip().split()[1].encode('ascii'))
+            except Exception as e:
+                log(f"ignoring line {line}: {e}")
+                continue
+            for hash_algo in AUTHORIZED_KEYS_HASHES:
+                hash_instance = None
+                try:
+                    hash_class = getattr(hashlib, hash_algo) #ie: hashlib.md5
+                    hash_instance = hash_class(key)     #can raise ValueError (ie: on FIPS compliant systems)
+                except ValueError:
+                    hash_instance = None
+                if not hash_instance:
+                    if first_time(f"hash-{hash_algo}-missing"):
+                        log.warn(f"Warning: unsupported hash {hash_algo!r}")
+                        log.warn(f" in {filename!r}")
+                    continue
+                fp_plain = hash_instance.hexdigest()
+                log(f"{hash_algo}({line})={fp_plain}")
+                if fp_plain==hex_fingerprint:
+                    return True
+            count += 1
+    log(f"no match in {count} keys from {filename!r}")
+    return False
+
 
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None):
@@ -174,36 +208,8 @@ class SSHServer(paramiko.ServerInterface):
             log("file '%s' does not exist", authorized_keys_filename)
             return paramiko.AUTH_FAILED
         fingerprint = key.get_fingerprint()
-        hex_fingerprint = binascii.hexlify(fingerprint)
-        log(f"looking for key fingerprint {hex_fingerprint} in {authorized_keys_filename!r}")
-        count = 0
-        with open(authorized_keys_filename, "r", encoding="latin1") as f:
-            for line in f:
-                if line.startswith("#"):
-                    continue
-                line = line.strip("\n\r")
-                try:
-                    key = base64.b64decode(line.strip().split()[1].encode('ascii'))
-                except Exception as e:
-                    log(f"ignoring line {line}: {e}")
-                    continue
-                for hash_algo in AUTHORIZED_KEYS_HASHES:
-                    hash_instance = None
-                    try:
-                        hash_class = getattr(hashlib, hash_algo) #ie: hashlib.md5
-                        hash_instance = hash_class(key)     #can raise ValueError (ie: on FIPS compliant systems)
-                    except ValueError:
-                        hash_instance = None
-                    if not hash_instance:
-                        if first_time(f"hash-{hash_algo}-missing"):
-                            log.warn(f"Warning: unsupported hash {hash_algo!r}")
-                        continue
-                    fp_plain = hash_instance.hexdigest()
-                    log(f"{hash_algo}({line})={fp_plain}")
-                    if fp_plain==hex_fingerprint:
-                        return paramiko.OPEN_SUCCEEDED
-                count += 1
-        log(f"no match in {count} keys from {authorized_keys_filename!r}")
+        if find_fingerprint(authorized_keys_filename, fingerprint):
+            return paramiko.OPEN_SUCCEEDED
         return paramiko.AUTH_FAILED
 
     def check_auth_gssapi_keyex(self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
