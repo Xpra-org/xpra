@@ -901,7 +901,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
-            log(f"channel exec_command({cmd}")
+            log(f"channel exec_command({cmd})")
             chan.exec_command(cmd)
             return chan
     raise Exception("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
