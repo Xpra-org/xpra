@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import shlex
 import socket
 import base64
@@ -26,6 +27,7 @@ from xpra.log import Logger
 
 log = Logger("network", "ssh")
 
+BANNER = os.environ.get("XPRA_SSH_BANNER", "Xpra SSH Server")
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
 AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
@@ -46,6 +48,15 @@ def chan_send(send_fn, data, timeout=5):
     if data:
         raise Exception(f"failed to send all the data using {send_fn}, timedout after {timeout} seconds")
 
+def get_keyclass(keytype):
+    if not keytype:
+        return None
+    keyclass = getattr(paramiko, keytype.upper()+"Key", None)
+    if keyclass:
+        return keyclass
+    #Ed25519Key
+    return getattr(paramiko, keytype[:1].upper()+keytype[1:]+"Key", None)
+
 
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None):
@@ -57,6 +68,9 @@ class SSHServer(paramiko.ServerInterface):
         self.options = options or {}
         self.agent = None
         self.transport = None
+
+    def get_banner(self):
+        return f"{BANNER}\n\r", "EN"
 
     def get_allowed_auths(self, username):
         #return "gssapi-keyex,gssapi-with-mic,password,publickey"
@@ -162,7 +176,9 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
     def check_channel_exec_request(self, channel, command):
-        def fail():
+        def fail(*messages):
+            for m in messages:
+                log.warn(m)
             self.event.set()
             channel.close()
             return False
@@ -174,12 +190,47 @@ class SSHServer(paramiko.ServerInterface):
                     # pylint: disable=import-outside-toplevel
                     from xpra.scripts.main import setup_proxy_ssh_socket
                     setup_proxy_ssh_socket(cmd, auth_sock)
+        def csend(exit_status=0, out=None, err=None):
+            if out:
+                chan_send(channel.send, out)
+            if err:
+                chan_send(channel.send_stderr, err)
+            channel.send_exit_status(exit_status)
+            self.event.set()
+            return True
         log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
         if cmd[0]=="command" and len(cmd)==1:
-            channel.send_exit_status(0)
-            return True
+            return csend()
+        if cmd[0]=="ver" and len(cmd)==1:
+            if WIN32:
+                return csend(out="Microsoft Windows")
+            return csend(1, err=f"{cmd[0]}: not found")
+        if cmd[0]=="echo" and len(cmd)==2:
+            #echo can be used to detect the platform,
+            #so emulate a basic echo command,
+            #just enough for the os detection to work:
+            echo = cmd[1]
+            if WIN32:
+                if echo.startswith("%") and echo.endswith("%"):
+                    envname = echo[1:-1]
+                    if envname in ("OS", "windir"):
+                        echo = os.environ.get(envname, "")
+                    else:
+                        echo = ""
+                echo += "\r\n"
+            else:
+                if echo.startswith("$"):
+                    envname = echo[1:]
+                    if envname in ("OSTYPE", ):
+                        echo = sys.platform
+                    else:
+                        echo = ""
+                echo += "\n"
+            log(f"exec request {cmd} returning: {echo!r}")
+            return csend(out=echo)
+        # not sure if this is the best way to handle this, 'command -v xpra' has len=3
         if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
@@ -188,37 +239,29 @@ class SSHServer(paramiko.ServerInterface):
                 #so we just answer as best we can
                 #and only accept "xpra" as argument:
                 if xpra_cmd.strip('"').strip("'")=="xpra":
-                    chan_send(channel.send, "xpra is xpra")
-                    channel.send_exit_status(0)
-                else:
-                    chan_send(channel.send_stderr, f"type: {xpra_cmd!r}: not found")
-                    channel.send_exit_status(1)
-                return True
+                    return csend(out="xpra is xpra")
+                return csend(1, err=f"type: {xpra_cmd!r}: not found")
             #we don't want to use a shell,
             #but we need to expand the file argument:
             cmd[-1] = osexpand(xpra_cmd)
             try:
+                # pylint: disable=consider-using-with
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
                 out, err = proc.communicate()
             except Exception as e:
                 log(f"check_channel_exec_request({channel}, {command})", exc_info=True)
-                chan_send(channel.send_stderr, f"failed to execute command: {e}")
-                channel.send_exit_status(1)
-            else:
-                log(f"check_channel_exec_request: out(`{cmd}`)={out!r}")
-                log(f"check_channel_exec_request: err(`{cmd}`)={err!r}")
-                chan_send(channel.send, out)
-                chan_send(channel.send_stderr, err)
-                channel.send_exit_status(proc.returncode)
-        elif cmd[0].endswith("xpra") and len(cmd)>=2:
+                return csend(1, err=f"failed to execute command: {e}")
+            log(f"check_channel_exec_request: out(`{cmd}`)={out!r}")
+            log(f"check_channel_exec_request: err(`{cmd}`)={err!r}")
+            return csend(proc.returncode, out, err)
+        if cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
             if subcommand.startswith("_proxy_"):
                 proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
                 if not proxy_start:
-                    log.warn(f"Warning: received a {subcommand!r} session request")
-                    log.warn(" this feature is not enabled with the builtin ssh server")
-                    return fail()
+                    return fail(f"Warning: received a {subcommand!r} session request",
+                                " this feature is not enabled with the builtin ssh server")
                 self.proxy_start(channel, subcommand, cmd[2:])
             elif subcommand=="_proxy":
                 display_name = getattr(self, "display_name", "")
@@ -228,14 +271,12 @@ class SSHServer(paramiko.ServerInterface):
                     if not arg.startswith("--"):
                         display = arg
                 if display and display_name!=display:
-                    log.warn(f"Warning: the display requested {display!r}")
-                    log.warn(f" does not match the current display {display_name!r}")
-                    return fail()
+                    return fail(f"Warning: the display requested {display!r}",
+                                f" does not match the current display {display_name!r}")
                 log(f"ssh 'xpra {subcommand}' subcommand: display_name={display_name!r}, agent={self.agent}")
                 setup_agent(cmd)
             else:
-                log.warn(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
-                return fail()
+                return fail(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
             #we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
         else:
@@ -280,13 +321,13 @@ class SSHServer(paramiko.ServerInterface):
                 setup_agent(proxy_cmd)
                 self._run_proxy(channel)
             else:
-                log.warn("Warning: unsupported ssh command:")
-                log.warn(f" {cmd!r}")
-                return fail()
+                return fail("Warning: unsupported ssh command:",
+                            f" {cmd!r}")
         return True
 
     def _run_proxy(self, channel):
         pc = self.proxy_channel
+        log(f"run_proxy({channel}) proxy-channel={pc}")
         if pc:
             self.proxy_channel = None
             pc.close()
@@ -396,15 +437,10 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
         def add_host_key(fd, f):
             ff = os.path.join(fd, f)
             keytype = f[len(PREFIX):-len(SUFFIX)]
+            keyclass = get_keyclass(keytype)
             if not keytype:
                 log.warn(f"Warning: unknown host key format '{f}'")
-                return False
-            keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
-            if keyclass is None:
-                #Ed25519Key
-                keyclass = getattr(paramiko, "%s%sKey" % (keytype[:1].upper(), keytype[1:]), None)
-            if keyclass is None:
-                log(f"key type {keytype} is not supported, cannot load {ff!r}")
+                log(f"key type {f!r} is not supported, cannot load {ff!r}")
                 return False
             log(f"loading {keytype} key from {ff!r} using {keyclass}")
             try:
