@@ -1033,6 +1033,7 @@ def clean():
                    "xpra/platform/xposix/proc.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
+                   "xpra/net/brotli/compressor.c",
                    "xpra/net/brotli/decompressor.c",
                    "xpra/net/qrencode.c",
                    "xpra/net/websockets/mask.c",
