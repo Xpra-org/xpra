@@ -328,7 +328,7 @@ def check_display():
         raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
 
 def use_systemd_run(s):
-    if not SYSTEMD_RUN or not POSIX:
+    if not SYSTEMD_RUN or not POSIX or OSX:
         return False    # pragma: no cover
     systemd_run = parse_bool("systemd-run", s)
     if systemd_run in (True, False):
