@@ -388,7 +388,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 log.warn("Warning: shadowing your own display can be quite confusing")
                 clipboard = self._clipboard_helper and c.boolget("clipboard", True)
                 if clipboard:
-                    log.warn("clipboard sharing cannot be enabled! (consider using the --no-clipboard option)")
+                    log.warn("Warning: clipboard sharing cannot be enabled!")
+                    log.warn(" consider using the --no-clipboard option")
                     c["clipboard"] = False
             else:
                 log.warn("This client is running within the Xpra server %s", server_uuid)

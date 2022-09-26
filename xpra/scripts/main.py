@@ -1020,7 +1020,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                     raise InitException(f"the named pipe {pipe_name!r} does not exist: {e}") from None
             except AttributeError:
                 pass
-            raise InitException(f"failed to connect to the named pipe {pipe_name}:\n {e}") from None
+            raise InitException(f"failed to connect to the named pipe {pipe_name!r}:\n {e}") from None
         conn = NamedPipeConnection(pipe_name, pipe_handle, {})
         conn.timeout = SOCKET_TIMEOUT
         conn.target = f"namedpipe://{pipe_name}/"
