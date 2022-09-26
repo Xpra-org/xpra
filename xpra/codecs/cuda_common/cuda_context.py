@@ -178,8 +178,8 @@ def driver_init():
             driver_init_done = True
         except Exception as e:
             log("driver_init()", exc_info=True)
-            log.error("Error: cannot initialize CUDA")
-            log.estr(e)
+            log.warn("Warning: cannot initialize CUDA")
+            log.warn(f" {e}")
             driver_init_done = False
     return driver_init_done
 
