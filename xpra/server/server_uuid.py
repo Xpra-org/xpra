@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.gtk_common.gtk_util import get_default_root_window
 
 
@@ -19,3 +19,6 @@ def save_mode(mode):
 
 def get_mode():
     return prop_get(get_default_root_window(), "XPRA_SERVER_MODE", "latin1", ignore_errors=True)
+
+def del_mode():
+    prop_del(get_default_root_window(), "XPRA_SERVER_MODE")

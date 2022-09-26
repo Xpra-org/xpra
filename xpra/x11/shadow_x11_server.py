@@ -17,6 +17,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.server_uuid import del_mode
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
 from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
@@ -332,6 +333,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)     #@UndefinedVariable
+        try:
+            del_mode()
+        except Exception:
+            log("cleanup() failed to remove X11 mode attribute", exc_info=True)
 
 
     def setup_capture(self):
