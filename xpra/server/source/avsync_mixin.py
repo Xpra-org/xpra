@@ -55,7 +55,8 @@ class AVSyncMixin(StubSourceMixin):
         if isinstance(av_sync, dict):
             av_sync = typedict(av_sync)
             enabled = av_sync.boolget("enabled")
-            delay = typedict(av_sync.dictget("delay", {})).get("default", DEFAULT_AV_SYNC_DELAY)
+            default_delay = av_sync.intget("delay.default", DEFAULT_AV_SYNC_DELAY)
+            delay = av_sync.intget("delay", default_delay)
         else:
             enabled = bool(av_sync)
             delay = c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY)
