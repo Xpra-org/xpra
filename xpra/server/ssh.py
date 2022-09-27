@@ -418,7 +418,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             ff = os.path.join(fd, f)
             keytype = f[len(PREFIX):-len(SUFFIX)]
             keyclass = get_keyclass(keytype)
-            if not keytype:
+            if not keyclass:
                 log.warn(f"Warning: unknown host key format '{f}'")
                 log(f"key type {f!r} is not supported, cannot load {ff!r}")
                 return False
