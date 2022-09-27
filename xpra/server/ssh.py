@@ -34,20 +34,6 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
                                         "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
-def chan_send(send_fn, data, timeout=5):
-    if not data:
-        return
-    size = len(data)
-    start = monotonic()
-    while data and monotonic()-start<timeout:
-        sent = send_fn(data)
-        log("chan_send: sent %i bytes out of %i using %s", sent, size, send_fn)
-        if not sent:
-            break
-        data = data[sent:]
-    if data:
-        raise Exception(f"failed to send all the data using {send_fn}, timedout after {timeout} seconds")
-
 def get_keyclass(keytype):
     if not keytype:
         return None
@@ -241,9 +227,9 @@ class SSHServer(paramiko.ServerInterface):
                     setup_proxy_ssh_socket(cmd, auth_sock)
         def csend(exit_status=0, out=None, err=None):
             if out:
-                chan_send(channel.send, out)
+                channel.sendall(out)
             if err:
-                chan_send(channel.send_stderr, err)
+                channel.sendall_stderr(err)
             channel.send_exit_status(exit_status)
             #self.event.set()
             #channel.close()
@@ -387,17 +373,17 @@ class SSHServer(paramiko.ServerInterface):
                 try:
                     r = read(4096)
                 except paramiko.buffered_pipe.PipeTimeout:
-                    log("proc_to_channel(%s, %s)", read, send, exc_info=True)
+                    log(f"proc_to_channel({read}, {send})", exc_info=True)
                     close()
-                    break
+                    return
                 #log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
                 if r:
                     try:
-                        chan_send(send, r)
+                        channel.sendall(r)
                     except OSError:
-                        log("proc_to_channel(%s, %s)", read, send, exc_info=True)
+                        log(f"proc_to_channel({read}, {send})", exc_info=True)
                         close()
-                        break
+                        return
         #forward to/from the process and the channel:
         def stderr_reader():
             proc_to_channel(proc.stderr.read, channel.send_stderr)
