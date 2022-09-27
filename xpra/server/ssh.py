@@ -268,7 +268,12 @@ class SSHServer(paramiko.ServerInterface):
             echo += "\r\n"
             log(f"exec request {cmd} returning: {echo!r}")
             return csend(out=echo)
-        # not sure if this is the best way to handle this, 'command -v xpra' has len=3
+        if WIN32 and cmd[:2]==["FOR", "/F"] and str(cmd).find(r"HKEY_LOCAL_MACHINE\\Software\\Xpra")>0:
+            #this batch command is used to detect the xpra.exe installation path
+            #(see xpra/net/ssh.py)
+            # pylint: disable=import-outside-toplevel
+            from xpra.platform.paths import get_app_dir
+            return csend(out=f"{get_app_dir}\r\n")
         if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             #only allow '*xpra' commands:
@@ -277,7 +282,7 @@ class SSHServer(paramiko.ServerInterface):
                 #so just reply that it exists:
                 return csend(out="xpra\r\n")
             return csend(1, err=f"type: {xpra_cmd!r}: not found\r\n")
-        if cmd[0].endswith("xpra") and len(cmd)>=2:
+        if (cmd[0].endswith("xpra") or cmd[0].endswith("Xpra_cmd.exe")) and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
             if subcommand.startswith("_proxy_"):
