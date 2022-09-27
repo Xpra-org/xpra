@@ -241,7 +241,8 @@ class SSHServer(paramiko.ServerInterface):
             else:
                 log.warn("Warning: unsupported ssh command:")
                 log.warn(" %s", cmd)
-                return False
+                channel.send_exit_status(1)
+                return True
         return True
 
     def _run_proxy(self, channel):
