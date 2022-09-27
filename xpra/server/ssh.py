@@ -12,7 +12,6 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from time import monotonic
 import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
@@ -226,23 +225,21 @@ class SSHServer(paramiko.ServerInterface):
                     from xpra.scripts.main import setup_proxy_ssh_socket
                     setup_proxy_ssh_socket(cmd, auth_sock)
         def csend(exit_status=0, out=None, err=None):
-            if out:
-                channel.sendall(out)
-            if err:
-                channel.sendall_stderr(err)
-            channel.send_exit_status(exit_status)
-            #self.event.set()
-            #channel.close()
+            channel.exec_response = (exit_status, out, err)
+            self.event.set()
             return True
         log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
         if cmd[0]=="command" and len(cmd)==1:
-            return csend()
+            return csend(out="\r\n")
+        if cmd==["command", "-v", "xpra"]:
+            return csend(out="xpra\r\n")
         if cmd[0]=="ver" and len(cmd)==1:
+            #older xpra versions run this command to detect win32:
             if WIN32:
                 return csend(out="Microsoft Windows")
-            return csend(1, err=f"{cmd[0]}: not found")
+            return csend(1, err=f"{cmd[0]}: not found\r\n")
         if cmd[0]=="echo" and len(cmd)==2:
             #echo can be used to detect the platform,
             #so emulate a basic echo command,
@@ -255,7 +252,6 @@ class SSHServer(paramiko.ServerInterface):
                         echo = os.environ.get(envname, "")
                     else:
                         echo = ""
-                echo += "\r\n"
             else:
                 if echo.startswith("$"):
                     envname = echo[1:]
@@ -263,33 +259,18 @@ class SSHServer(paramiko.ServerInterface):
                         echo = sys.platform
                     else:
                         echo = ""
-                echo += "\n"
+            echo += "\r\n"
             log(f"exec request {cmd} returning: {echo!r}")
             return csend(out=echo)
         # not sure if this is the best way to handle this, 'command -v xpra' has len=3
-        if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):
+        if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
-            if not POSIX:
-                assert WIN32
-                #we can't execute "type" or "which" on win32,
-                #so we just answer as best we can
-                #and only accept "xpra" as argument:
-                if xpra_cmd.strip('"').strip("'")=="xpra":
-                    return csend(out="xpra is xpra")
-                return csend(1, err=f"type: {xpra_cmd!r}: not found")
-            #we don't want to use a shell,
-            #but we need to expand the file argument:
-            cmd[-1] = osexpand(xpra_cmd)
-            try:
-                # pylint: disable=consider-using-with
-                proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
-                out, err = proc.communicate()
-            except Exception as e:
-                log(f"check_channel_exec_request({channel}, {command})", exc_info=True)
-                return csend(1, err=f"failed to execute command: {e}")
-            log(f"check_channel_exec_request: out(`{cmd}`)={out!r}")
-            log(f"check_channel_exec_request: err(`{cmd}`)={err!r}")
-            return csend(proc.returncode, out, err)
+            #only allow '*xpra' commands:
+            if any(xpra_cmd.lower().endswith(x) for x in ("xpra", "run-xpra", "xpra_cmd.exe", "xpra.exe")):
+                #we don't really allow the xpra command to be executed anyway,
+                #so just reply that it exists:
+                return csend(out="xpra\r\n")
+            return csend(1, err=f"type: {xpra_cmd!r}: not found\r\n")
         if cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
@@ -490,34 +471,47 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
         log.estr(e)
         close()
         return None
-    try:
-        chan = t.accept(SERVER_WAIT)
-        if chan is None:
-            log.warn("Warning: SSH channel setup failed")
-            #prevent errors trying to access this connection, now likely dead:
-            conn.set_active(False)
+    while t.is_active():
+        try:
+            chan = t.accept(SERVER_WAIT)
+            if chan is None:
+                log.warn("Warning: SSH channel setup failed")
+                #prevent errors trying to access this connection, now likely dead:
+                conn.set_active(False)
+                close()
+                return None
+        except paramiko.SSHException as e:
+            log("failed to open ssh channel", exc_info=True)
+            log.error("Error opening channel:")
+            log.estr(e)
             close()
             return None
-    except paramiko.SSHException as e:
-        log("failed to open ssh channel", exc_info=True)
-        log.error("Error opening channel:")
-        log.estr(e)
-        close()
-        return None
-    log(f"client authenticated, channel={chan}")
-    timedout = not ssh_server.event.wait(SERVER_WAIT)
-    proxy_channel = ssh_server.proxy_channel
-    log(f"proxy channel={proxy_channel}, timedout={timedout}")
-    if not ssh_server.event.is_set() or not proxy_channel:
+        log(f"client authenticated, accepted channel={chan}")
+        timedout = not ssh_server.event.wait(SERVER_WAIT)
         if timedout:
             log.warn("Warning: timeout waiting for xpra SSH subcommand,")
             log.warn(" closing connection from "+pretty_socket(conn.target))
-        close()
-        return None
-    if getattr(proxy_channel, "proxy_process", None):
-        log("proxy channel is handled using a subprocess")
-        return None
-    log(f"client authenticated, channel={chan}")
-    return SSHSocketConnection(proxy_channel, sock,
-                               conn.local, conn.endpoint, conn.target,
-                               socket_options=socket_options)
+            close()
+            return None
+        proxy_channel = ssh_server.proxy_channel
+        if proxy_channel:
+            if getattr(proxy_channel, "proxy_process", None):
+                log("proxy channel is handled using a subprocess")
+                return None
+            return SSHSocketConnection(proxy_channel, sock,
+                                       conn.local, conn.endpoint, conn.target,
+                                       socket_options=socket_options)
+        exec_response = getattr(chan, "exec_response", None)
+        log(f"proxy channel={proxy_channel}, timedout={timedout}, exec_response={exec_response}")
+        if exec_response:
+            exit_status, out, err = exec_response
+            if out:
+                chan.sendall(out)
+            if err:
+                chan.sendall_stderr(err)
+            chan.send_exit_status(exit_status)
+            chan.close()
+            #the client may now make another request on a new channel:
+            ssh_server.event.clear()
+            continue
+    return None
