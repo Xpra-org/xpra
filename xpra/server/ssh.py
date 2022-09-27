@@ -294,7 +294,10 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             if not keytype:
                 log.warn("Warning: unknown host key format '%s'", f)
                 return False
-            keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
+            if keytype=="dsa" and hasattr(paramiko, "DSSKey"):
+                keyclass = paramiko.DSSKey
+            else:
+                keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
             if keyclass is None:
                 #Ed25519Key
                 keyclass = getattr(paramiko, "%s%sKey" % (keytype[:1].upper(), keytype[1:]), None)
