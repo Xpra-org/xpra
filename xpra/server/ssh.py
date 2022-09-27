@@ -36,6 +36,12 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
 def get_keyclass(keytype):
     if not keytype:
         return None
+    #'dsa' -> 'DSS'
+    if keytype=="dsa" and hasattr(paramiko, "DSSKey"):
+        return paramiko.DSSKey
+    keyclass = getattr(paramiko, keytype.upper()+"Key", None)
+    if keyclass:
+        return keyclass
     keyclass = getattr(paramiko, keytype.upper()+"Key", None)
     if keyclass:
         return keyclass
