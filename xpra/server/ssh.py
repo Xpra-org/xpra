@@ -268,7 +268,7 @@ class SSHServer(paramiko.ServerInterface):
             echo += "\r\n"
             log(f"exec request {cmd} returning: {echo!r}")
             return csend(out=echo)
-        if WIN32 and cmd[:2]==["FOR", "/F"] and str(cmd).find(r"HKEY_LOCAL_MACHINE\\Software\\Xpra")>0:
+        if WIN32 and str(cmd).find("REG QUERY")>=0 and str(cmd).find(r"HKEY_LOCAL_MACHINE\\Software\\Xpra")>0:
             #this batch command is used to detect the xpra.exe installation path
             #(see xpra/net/ssh.py)
             # pylint: disable=import-outside-toplevel
