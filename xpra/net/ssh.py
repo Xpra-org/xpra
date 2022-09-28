@@ -5,6 +5,7 @@
 
 import sys
 import os
+import re
 import shlex
 import socket
 from time import sleep, monotonic
@@ -802,6 +803,7 @@ def paramiko_run_test_command(transport, cmd):
     chan.close()
     return out, err, code
 
+
 def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                              socket_dir=None, display_as_args=None, paramiko_config=None):
     from paramiko import SSHException
@@ -817,27 +819,43 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             log(f"echo %OS%={name!r}")
             if name!="%OS%":
                 #MS Windows OS will return "Windows_NT" here
+                log.info(f"ssh server OS is {name!r}")
                 return name
         #this should work on all other OSes:
         r = rtc("echo $OSTYPE")
         if r[2]==0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"OSTYPE={name!r}")
+            log.info(f"ssh server OS is {name!r}")
             return name
         return "unknown"
     tried = set()
     osname = None
     find_command = None
+    WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
     for xpra_cmd in remote_xpra:
         if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
             if osname is None:
                 osname = detectosname()
-            if not osname.startswith("Windows"):
+            if osname=="msys":
+                r = rtc(WIN32_REGISTRY_QUERY.replace("/", "//"))
+                if r[2]==0:
+                    installpath = None
+                    for line in r[0]:
+                        match = re.search(r"InstallPath\s*\w*\s*(.*)", line)
+                        if match:
+                            installpath = match.group(1)
+                            xpra_cmd = f"{installpath}\\{xpra_cmd}"
+                            xpra_cmd = xpra_cmd.replace("\\", "\\\\")
+                            break
+            elif not osname.startswith("Windows"):
                 log(f"not an MS Windows OS, skipping {xpra_cmd!r}")
                 continue
-            #let's find where xpra is actually installed:
-            r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath`) DO (echo %A %B)")  #pylint: disable=line-too-long
-            if r[2]==0:
+            else:
+                #let's find where xpra is actually installed:
+                r = rtc(f"FOR /F \"usebackq tokens=3*\" %A IN (`{WIN32_REGISTRY_QUERY}`) DO (echo %A %B)")  #pylint: disable=line-too-long
+                if r[2]!=0:
+                    continue
                 #found in registry:
                 out = r[0]
                 installpath = out[-1].rstrip("\n\r")
@@ -852,6 +870,8 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                     osname = detectosname()
                 if osname.startswith("Windows"):
                     continue
+                #if osname=="cygwin":
+                #    not sure what we can do with this
                 #assume POSIX and find that command,
                 #either with "command -v" or with "which":
                 if rtc("command")[2]==0:
@@ -861,7 +881,14 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             if find_command:
                 r = rtc(f"{find_command} {xpra_cmd}")
                 if r[2]!=0:
-                    continue
+                    #not found!
+                    if osname=="msys":
+                        #MSYS2: try the default path
+                        r = rtc("command -v '/mingw64/bin/xpra'")
+                        if r[2]!=0:
+                            continue
+                    else:
+                        continue
                 out = r[0]
                 if out:
                     #use the actual path returned by 'command -v':
