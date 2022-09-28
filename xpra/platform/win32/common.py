@@ -189,6 +189,9 @@ def GetMonitorInfo(hmonitor):
 kernel32 = WinDLL("kernel32", use_last_error=True)
 LocalFree = kernel32.LocalFree
 FormatMessageW = kernel32.FormatMessageW
+GetCurrentThreadId = kernel32.GetCurrentThreadId
+GetCurrentThreadId.restype = DWORD
+GetCurrentThreadId.argtypes = []
 SetConsoleTitleA = kernel32.SetConsoleTitleA
 SetConsoleTitleA.restype = INT
 SetConsoleTitleA.argtypes = [LPCTSTR]
@@ -465,6 +468,9 @@ DESKTOPENUMPROCA = WINFUNCTYPE(BOOL, LPCSTR, LPARAM)
 EnumDesktopsA = user32.EnumDesktopsA
 EnumDesktopsA.restype = BOOL
 EnumDesktopsA.argtypes = [HWINSTA, DESKTOPENUMPROCA, LPARAM]
+GetThreadDesktop = user32.GetThreadDesktop
+GetThreadDesktop.restype = HDESK
+GetThreadDesktop.argtypes = [DWORD]
 GetUserObjectInformationA = user32.GetUserObjectInformationA
 GetUserObjectInformationA.restype = BOOL
 GetUserObjectInformationA.argtypes = [HANDLE, INT, LPVOID, DWORD, LPDWORD]
