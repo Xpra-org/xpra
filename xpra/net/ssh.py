@@ -63,6 +63,7 @@ TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
 EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
 EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 
+MSYS_DEFAULT_PATH = os.environ.get("XPRA_MSYS_DEFAULT_PATH", "/mingw64/bin/xpra")
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
@@ -809,6 +810,9 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     from paramiko import SSHException
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
+    tried = set()
+    osname = None
+    find_command = None
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
     def detectosname():
@@ -829,80 +833,63 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             log.info(f"ssh server OS is {name!r}")
             return name
         return "unknown"
-    tried = set()
-    osname = None
-    find_command = None
     WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
+    def getexeinstallpath():
+        cmd = WIN32_REGISTRY_QUERY
+        if osname=="msys":
+            #escape for msys shell:
+            cmd = cmd.replace("/", "//")
+        r = rtc(cmd)
+        if r[2]!=0:
+            return None
+        for line in r[0]:
+            qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
+            if qmatch:
+                return qmatch.group(1)
+        return None
     for xpra_cmd in remote_xpra:
-        if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
+        if not find_command:
             if osname is None:
                 osname = detectosname()
-            if osname=="msys":
-                r = rtc(WIN32_REGISTRY_QUERY.replace("/", "//"))
-                if r[2]==0:
-                    installpath = None
-                    for line in r[0]:
-                        match = re.search(r"InstallPath\s*\w*\s*(.*)", line)
-                        if match:
-                            installpath = match.group(1)
-                            xpra_cmd = f"{installpath}\\{xpra_cmd}"
-                            xpra_cmd = xpra_cmd.replace("\\", "\\\\")
-                            break
-            elif not osname.startswith("Windows"):
-                log(f"not an MS Windows OS, skipping {xpra_cmd!r}")
-                continue
-            else:
-                #let's find where xpra is actually installed:
-                r = rtc(f"FOR /F \"usebackq tokens=3*\" %A IN (`{WIN32_REGISTRY_QUERY}`) DO (echo %A %B)")  #pylint: disable=line-too-long
-                if r[2]!=0:
-                    continue
-                #found in registry:
-                out = r[0]
-                installpath = out[-1].rstrip("\n\r")
-                xpra_cmd = f"{installpath}\\{xpra_cmd}"
-                xpra_cmd = xpra_cmd.replace("\\", "\\\\")
-        elif xpra_cmd.endswith(".exe"):
-            #assume this path exists
-            pass
-        else:
-            if not find_command:
-                if osname is None:
-                    osname = detectosname()
-                if osname.startswith("Windows"):
-                    continue
-                #if osname=="cygwin":
-                #    not sure what we can do with this
-                #assume POSIX and find that command,
-                #either with "command -v" or with "which":
+            if not osname.startswith("Windows"):
                 if rtc("command")[2]==0:
                     find_command = "command -v"
                 else:
                     find_command = "which"
-            if find_command:
-                r = rtc(f"{find_command} {xpra_cmd}")
-                if r[2]!=0:
-                    #not found!
-                    if osname=="msys":
-                        #MSYS2: try the default path
-                        r = rtc("command -v '/mingw64/bin/xpra'")
-                        if r[2]!=0:
-                            continue
-                    else:
-                        continue
-                out = r[0]
-                if out:
-                    #use the actual path returned by 'command -v':
-                    try:
-                        xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
-                    except Exception as e:
-                        log(f"cannot get command from {xpra_cmd}: {e}")
-                    else:
-                        if xpra_cmd.startswith(f"alias {xpra_cmd}="):
-                            #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
-                            xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
-        log(f"adding xpra_cmd={xpra_cmd!r}")
-        if xpra_cmd in tried:
+        #if osname=="cygwin":
+        #    not sure what we can do with this
+        #assume POSIX and find that command,
+        #either with "command -v" or with "which":
+        found = False
+        if find_command:
+            r = rtc(f"{find_command} {xpra_cmd}")
+            out = r[0]
+            if r[2]==0 and out:
+                #use the actual path returned by 'command -v' or 'which':
+                try:
+                    xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
+                except Exception as e:
+                    log(f"cannot get command from {xpra_cmd}: {e}")
+                else:
+                    if xpra_cmd.startswith(f"alias {xpra_cmd}="):
+                        #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
+                        xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
+                    found = bool(xpra_cmd)
+        if not found and (osname.startswith("Windows") or osname=="msys"):
+            if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
+                installpath = getexeinstallpath()
+                if installpath:
+                    xpra_cmd = f"{installpath}\\{xpra_cmd}".replace("\\", "\\\\")
+                    found = True
+            elif xpra_cmd=="xpra" and osname=="msys" and MSYS_DEFAULT_PATH:
+                #MSYS: try the default system installation path
+                r = rtc(f"command -v '{MSYS_DEFAULT_PATH}'")
+                if r[2]==0:
+                    xpra_cmd = MSYS_DEFAULT_PATH   #ie: "/mingw64/bin/xpra"
+                    found = True
+        if not found or xpra_cmd in tried:
             continue
+        log(f"adding xpra_cmd={xpra_cmd!r}")
         tried.add(xpra_cmd)
         cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
         if socket_dir:
