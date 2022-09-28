@@ -273,7 +273,7 @@ class SSHServer(paramiko.ServerInterface):
             #(see xpra/net/ssh.py)
             # pylint: disable=import-outside-toplevel
             from xpra.platform.paths import get_app_dir
-            return csend(out=f"{get_app_dir}\r\n")
+            return csend(out=f"{get_app_dir()}\r\n")
         if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             #only allow '*xpra' commands:
