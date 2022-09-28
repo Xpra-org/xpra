@@ -358,6 +358,20 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
+    if mode=="shadow" and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
+        #are we started from a non-interactive context?
+        from xpra.platform.win32.gui import get_desktop_name
+        if get_desktop_name() is None:
+            argv = list(cmdline)
+            if argv[0]=="Xpra_cmd.exe":
+                #we have to use the interactive version:
+                argv[0] = "Xpra.exe"
+            cmd = ["paexec", "-i" , "1", "-s"] + argv
+            try:
+                with Popen(cmd) as p:
+                    return p.wait()
+            except KeyboardInterrupt:
+                return 128+signal.SIGINT
     if mode in (
         "seamless", "desktop", "shadow", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
