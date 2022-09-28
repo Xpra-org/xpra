@@ -121,6 +121,7 @@ def load_menu():
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("menu-helper", "Menu Helper"):
         menu = load_menu()
