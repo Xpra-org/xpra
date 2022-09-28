@@ -39,10 +39,8 @@ class XpraProxy:
         self._server_conn = server_conn
         self._quit_cb = quit_cb or self.do_quit
         self._closed = False
-        self._to_client = threading.Thread(target=self._to_client_loop)
-        self._to_client.setDaemon(True)
-        self._to_server = threading.Thread(target=self._to_server_loop)
-        self._to_server.setDaemon(True)
+        self._to_client = threading.Thread(target=self._to_client_loop, daemon=True)
+        self._to_server = threading.Thread(target=self._to_server_loop, daemon=True)
         self.exit_code = 0
         signal.signal(signal.SIGINT, self.signal_quit)
         signal.signal(signal.SIGTERM, self.signal_quit)

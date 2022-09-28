@@ -150,7 +150,7 @@ def add_video_device_change_callback(callback):
         mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable
         handler = EventHandler(pevent=_video_device_file_filter)
         _notifier = pyinotify.ThreadedNotifier(_watch_manager, handler)
-        _notifier.setDaemon(True)
+        _notifier.daemon = True
         wdd = _watch_manager.add_watch('/dev', mask)
         log("watching for video device changes in /dev")
         log(f"notifier={_notifier}, watch={wdd}")

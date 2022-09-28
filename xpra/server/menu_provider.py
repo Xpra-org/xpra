@@ -87,6 +87,7 @@ class MenuProvider:
             #already setup
             return
         try:
+            # pylint: disable=import-outside-toplevel
             import pyinotify
         except ImportError as e:
             log("setup_menu_watcher() cannot import pyinotify", exc_info=True)
@@ -105,7 +106,7 @@ class MenuProvider:
         mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
-        self.watch_notifier.setDaemon(True)
+        self.watch_notifier.daemon = True
         data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
         watched = []
         for data_dir in data_dirs:
