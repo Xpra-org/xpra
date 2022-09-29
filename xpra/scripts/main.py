@@ -1713,6 +1713,10 @@ def make_client(error_cb, opts):
                 if info:
                     renderer = glinfo.get("renderer")
                     if renderer:
+                        #ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
+                        parts = renderer.split("(")
+                        if len(parts)>1 and len(parts[0])>10:
+                            renderer = parts[0]
                         r += f" ({renderer})"
                 app.show_progress(20, f"validating OpenGL: {r}")
                 if probe=="error":
