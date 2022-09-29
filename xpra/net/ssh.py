@@ -405,6 +405,24 @@ def get_auth_modes(paramiko_config, host_config, password):
     return auth
 
 
+class iauthhandler:
+    def __init__(self, password):
+        self.authcount = 0
+        self.password = password
+    def handle_request(self, title, instructions, prompt_list):
+        log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
+        p = []
+        for pent in prompt_list:
+            if self.password:
+                p.append(self.password)
+                self.password = None
+            else:
+                p.append(input_pass(pent[0]))
+        self.authcount += 1
+        log(f"handle_request(..) returning {len(p)} values")
+        return p
+
+
 def do_ssh_paramiko_connect(chan, host, username, password,
                             host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException
@@ -692,22 +710,8 @@ keymd5(host_key),
 
     def auth_interactive():
         log("trying interactive authentication")
-        class iauthhandler:
-            def __init__(self):
-                self.authcount = 0
-            def handle_request(self, title, instructions, prompt_list):
-                log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
-                p = []
-                for pent in prompt_list:
-                    if self.authcount==0 and password:
-                        p.append(password)
-                    else:
-                        p.append(input_pass(pent[0]))
-                    self.authcount += 1
-                log(f"handle_request(..) returning {len(p)} values")
-                return p
         try:
-            myiauthhandler = iauthhandler()
+            myiauthhandler = iauthhandler(password)
             transport.auth_interactive(username, myiauthhandler.handle_request, "")
         except SSHException as e:
             auth_errors.setdefault("interactive", []).append(str(e))
@@ -715,6 +719,8 @@ keymd5(host_key),
             log.info("SSH password authentication failed:")
             for emsg in getattr(e, "message", str(e)).split(";"):
                 log.info(f" {emsg}")
+        finally:
+            del myiauthhandler
 
     banner = transport.get_banner()
     if banner:
