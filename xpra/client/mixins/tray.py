@@ -24,21 +24,17 @@ class TrayClient(StubClientMixin):
     def __init__(self):
         super().__init__()
         #settings:
-        self.tray_enabled = False
-        self.delay_tray = False
         self.tray_icon = None
         #state:
         self.tray = None
         self.menu_helper = None
 
     def init(self, opts):
-        self.tray_enabled = opts.tray
-        self.delay_tray = opts.delay_tray
-        self.tray_icon = opts.tray_icon
-        if not self.tray_enabled:
+        if not opts.tray:
             return
+        self.tray_icon = opts.tray_icon
         self.menu_helper = self.make_tray_menu_helper()
-        if self.delay_tray:
+        if opts.delay_tray:
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
             #show shortly after the main loop starts running:
