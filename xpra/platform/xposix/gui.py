@@ -132,7 +132,7 @@ def get_native_tray_classes():
             traylog.warn("Warning: appindicator library not found")
             traylog.warn(" you may want to install libappindicator")
             traylog.warn(" to enable the system tray.")
-            if get_saved_env_var("XDG_CURRENT_DESKTOP")=="GNOME":
+            if get_saved_env_var("XDG_CURRENT_DESKTOP", "").upper().find("GNOME")>=0:
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
