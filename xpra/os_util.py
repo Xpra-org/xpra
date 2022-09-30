@@ -18,6 +18,11 @@ import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
 
+# only mininal imports go at the top
+# so that this file can be included everywhere
+# without too many side-effects
+# pylint: disable=import-outside-toplevel
+
 SIGNAMES = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     SIGNAMES[getattr(signal, signame)] = signame
@@ -70,7 +75,7 @@ def get_frame_info(ignore_threads=()):
             #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
             sanestack = []
             for e in stack:
-                sanestack.append(tuple([nn(x) for x in e]))
+                sanestack.append(tuple(nn(x) for x in e))
             info[i] = {
                 ""          : tident,
                 "stack"     : sanestack,
@@ -98,7 +103,7 @@ def get_sysconfig_info():
         "config-vars",
         "paths",
         ):
-        fn = "get_%s" % attr.replace("-", "_")
+        fn = "get_"+attr.replace("-", "_")
         getter = getattr(sysconfig, fn, None)
         if getter:
             try:
