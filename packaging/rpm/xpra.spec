@@ -25,7 +25,7 @@
 %if 0%{?with_cuda}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
-%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg
+%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg_encoder  --without-nvjpeg_decoder
 %endif
 %if 0%{?el9}
 #no pandoc!
