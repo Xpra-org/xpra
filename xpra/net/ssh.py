@@ -64,6 +64,8 @@ EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
 EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 
 MSYS_DEFAULT_PATH = os.environ.get("XPRA_MSYS_DEFAULT_PATH", "/mingw64/bin/xpra")
+CYGWIN_DEFAULT_PATH = os.environ.get("XPRA_CYGWIN_DEFAULT_PATH", "/cygdrive/c/Program Files/Xpra/Xpra_cmd.exe")
+DEFAULT_WIN32_INSTALL_PATH = "C:\\Program Files\\Xpra"
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
@@ -784,7 +786,7 @@ def paramiko_run_test_command(transport, cmd):
         log("open_session", exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
     chan.exec_command(cmd)
-    log(f"exec_command({cmd}) returned")
+    log(f"exec_command({cmd!r}) returned")
     start = monotonic()
     while not chan.exit_status_ready():
         if monotonic()-start>TEST_COMMAND_TIMEOUT:
@@ -816,9 +818,6 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     from paramiko import SSHException
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
-    tried = set()
-    osname = None
-    find_command = None
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
     def detectosname():
@@ -842,7 +841,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
     def getexeinstallpath():
         cmd = WIN32_REGISTRY_QUERY
-        if osname in ("msys", "cygwin"):
+        if osname=="msys":
             #escape for msys shell:
             cmd = cmd.replace("/", "//")
         r = rtc(cmd)
@@ -851,23 +850,39 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
         for line in r[0]:
             qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
             if qmatch:
-                return qmatch.group(1)
+                return qmatch.group(1).rstrip("\n\r")
         return None
+    osname = detectosname()
+    tried = set()
+    find_command = None
     for xpra_cmd in remote_xpra:
-        if not find_command:
-            if osname is None:
-                osname = detectosname()
-            if not osname.startswith("Windows"):
-                if rtc("command")[2]==0:
-                    find_command = "command -v"
-                else:
-                    find_command = "which"
-        #if osname=="cygwin":
-        #    not sure what we can do with this
-        #assume POSIX and find that command,
-        #either with "command -v" or with "which":
         found = False
-        if find_command:
+        if osname.startswith("Windows") or osname in ("msys", "cygwin"):
+            #on MS Windows,
+            #always prefer the application path found in the registry:
+            def winpath(p):
+                if osname=="msys":
+                    return p.replace("\\", "\\\\")
+                if osname=="cygwin":
+                    return "/cygdrive/"+p.replace(":\\", "/").replace("\\", "/")
+                return p
+            installpath = getexeinstallpath()
+            if installpath:
+                xpra_cmd = winpath(f"{installpath}\\Xpra_cmd.exe")
+                found = True
+            elif xpra_cmd.find("/")<0 and xpra_cmd.find("\\")<0:
+                test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
+                cmd = f'dir "{test_path}"'
+                r = rtc(cmd)
+                if r[2]==0:
+                    xpra_cmd = test_path
+                    found = True
+        if not found and not find_command and not osname.startswith("Windows"):
+            if rtc("command")[2]==0:
+                find_command = "command -v"
+            else:
+                find_command = "which"
+        if not found and find_command:
             r = rtc(f"{find_command} {xpra_cmd}")
             out = r[0]
             if r[2]==0 and out:
@@ -881,18 +896,14 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                         #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
                         xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
                     found = bool(xpra_cmd)
-        if not found and (osname.startswith("Windows") or osname in ("msys", "cygwin")):
-            if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
-                installpath = getexeinstallpath()
-                if installpath:
-                    xpra_cmd = f"{installpath}\\{xpra_cmd}".replace("\\", "\\\\")
-                    found = True
-            elif xpra_cmd=="xpra" and osname in ("msys", "cygwin") and MSYS_DEFAULT_PATH:
-                #MSYS: try the default system installation path
-                r = rtc(f"command -v '{MSYS_DEFAULT_PATH}'")
-                if r[2]==0:
-                    xpra_cmd = MSYS_DEFAULT_PATH   #ie: "/mingw64/bin/xpra"
-                    found = True
+            elif xpra_cmd=="xpra" and osname in ("msys", "cygwin"):
+                default_path = CYGWIN_DEFAULT_PATH if osname=="cygwin" else MSYS_DEFAULT_PATH
+                if default_path:
+                    #try the default system installation path
+                    r = rtc(f"command -v '{default_path}'")
+                    if r[2]==0:
+                        xpra_cmd = default_path     #ie: "/mingw64/bin/xpra"
+                        found = True
         if not found or xpra_cmd in tried:
             continue
         log(f"adding xpra_cmd={xpra_cmd!r}")
@@ -921,7 +932,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
-            log(f"channel exec_command({cmd})")
+            log(f"channel exec_command({cmd!r})")
             chan.exec_command(cmd)
             return chan
     raise Exception("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
