@@ -11,7 +11,7 @@ from gi.repository import GLib
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import (
-    OSX, POSIX,
+    OSX, POSIX, WIN32,
     osexpand,
     )
 from xpra.util import envint, envbool
@@ -81,7 +81,7 @@ class MenuProvider:
             log.error(" %s", e)
 
     def do_setup_menu_watcher(self):
-        if self.watch_manager:
+        if self.watch_manager or OSX or WIN32:
             #already setup
             return
         try:
