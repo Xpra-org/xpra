@@ -842,7 +842,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
     def getexeinstallpath():
         cmd = WIN32_REGISTRY_QUERY
-        if osname=="msys":
+        if osname in ("msys", "cygwin"):
             #escape for msys shell:
             cmd = cmd.replace("/", "//")
         r = rtc(cmd)
@@ -881,13 +881,13 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                         #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
                         xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
                     found = bool(xpra_cmd)
-        if not found and (osname.startswith("Windows") or osname=="msys"):
+        if not found and (osname.startswith("Windows") or osname in ("msys", "cygwin")):
             if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
                 installpath = getexeinstallpath()
                 if installpath:
                     xpra_cmd = f"{installpath}\\{xpra_cmd}".replace("\\", "\\\\")
                     found = True
-            elif xpra_cmd=="xpra" and osname=="msys" and MSYS_DEFAULT_PATH:
+            elif xpra_cmd=="xpra" and osname in ("msys", "cygwin") and MSYS_DEFAULT_PATH:
                 #MSYS: try the default system installation path
                 r = rtc(f"command -v '{MSYS_DEFAULT_PATH}'")
                 if r[2]==0:
