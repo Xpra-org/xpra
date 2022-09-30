@@ -273,7 +273,7 @@ def get_build_info():
             CYTHON_VERSION, COMPILER_VERSION,
             )
         info.insert(0, "")
-        einfo = "Python " + ".".join(sys.version_info[:2])
+        einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
         if BUILD_BIT:
             einfo += ", "+BUILD_BIT
         info.insert(0, einfo)
