@@ -1254,7 +1254,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
             self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims",
                                                               (self.gl_texture_size_limit, self.gl_texture_size_limit))
-            driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
+            renderer = self.opengl_props.get("renderer", "unknown")
+            parts = renderer.split("(")
+            if len(parts)>1 and len(parts[0])>10:
+                renderer = parts[0].strip()
+            driver_info = renderer or self.opengl_props.get("vendor") or "unknown card"
             def disablewarn(msg):
                 opengllog.warn("Warning: OpenGL is disabled:")
                 opengllog.warn(" %s", msg)
@@ -1281,7 +1285,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     l = opengllog.warn
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
                   self.gl_texture_size_limit, self.gl_texture_size_limit)
-                l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
+                glver = pver(self.opengl_props.get("opengl", ""))
+                l(f" for OpenGL {glver} renderer {renderer!r}")
             if self.opengl_enabled and enable_opengl!="probe-success" and not self.opengl_force:
                 draw_result = test_gl_client_window(self.GLClientWindowClass, max_window_size=self.max_window_size, pixel_depth=self.pixel_depth)
                 if not draw_result.get("success", False):
@@ -1289,12 +1294,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     return
                 log("OpenGL test rendering succeeded")
             if self.opengl_enabled:
-                opengllog.info("OpenGL enabled with %s", driver_info)
+                opengllog.info(f"OpenGL enabled on {driver_info!r}")
                 #don't try to handle video dimensions bigger than this:
                 mvs = min(8192, self.gl_texture_size_limit)
                 self.video_max_size = (mvs, mvs)
             elif self.client_supports_opengl:
-                opengllog("OpenGL supported with %s, but not enabled", driver_info)
+                opengllog(f"OpenGL supported on {driver_info!r}, but not enabled")
             self.opengl_props["enabled"] = self.opengl_enabled
             if self.opengl_enabled and not warnings and OSX:
                 #non-opengl is slow on MacOS:
