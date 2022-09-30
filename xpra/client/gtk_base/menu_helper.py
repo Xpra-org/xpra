@@ -394,13 +394,17 @@ class MenuHelper:
         self.menu_shown = True
 
 
+    def after_handshake(self, cb, *args):
+        self.client.after_handshake(cb, *args)
+
+
     def handshake_menuitem(self, *args, **kwargs):
         """ Same as menuitem() but this one will be disabled until we complete the server handshake """
         mi = self.menuitem(*args, **kwargs)
         set_sensitive(mi, False)
         def enable_menuitem(*_args):
             set_sensitive(mi, True)
-        self.client.after_handshake(enable_menuitem)
+        self.after_handshake(enable_menuitem)
         return mi
 
 
@@ -457,7 +461,7 @@ class MenuHelper:
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
                     set_sensitive(self.qr_menuitem, False)
                     self.qr_menuitem.set_tooltip_text("server uri is not shareable")
-            self.client.after_handshake(with_connection)
+            self.after_handshake(with_connection)
         else:
             set_sensitive(self.qr_menuitem, False)
             self.qr_menuitem.set_tooltip_text("qrencode library is missing")

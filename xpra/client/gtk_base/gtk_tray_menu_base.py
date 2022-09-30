@@ -104,7 +104,7 @@ class GTKTrayMenuBase(MenuHelper):
                 except Exception:
                     title = self.client.session_name or "Xpra"
                 title_item.set_label(title)
-            self.client.after_handshake(set_menu_title)
+            self.after_handshake(set_menu_title)
         add(self.make_infomenuitem())
         add(self.make_featuresmenuitem())
         if mixin_features.windows and self.client.keyboard_helper:
@@ -132,7 +132,6 @@ class GTKTrayMenuBase(MenuHelper):
         menu.show_all()
         log("setup_menu(%s) done", show_close)
         return menu
-
 
     def make_infomenuitem(self):
         info_menu_item = self.menuitem("Information", "information.png")
@@ -198,7 +197,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.sharing_menuitem.set_tooltip_text("Sharing cannot be changed on this server")
             else:
                 self.sharing_menuitem.set_tooltip_text("")
-        self.client.after_handshake(set_sharing_menuitem)
+        self.after_handshake(set_sharing_menuitem)
         self.client.on_server_setting_changed("sharing", set_sharing_menuitem)
         self.client.on_server_setting_changed("sharing-toggle", set_sharing_menuitem)
         return self.sharing_menuitem
@@ -224,7 +223,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.lock_menuitem.set_tooltip_text("Session locking cannot be toggled on this server")
             else:
                 self.lock_menuitem.set_tooltip_text("")
-        self.client.after_handshake(set_lock_menuitem)
+        self.after_handshake(set_lock_menuitem)
         self.client.on_server_setting_changed("lock", set_lock_menuitem)
         self.client.on_server_setting_changed("lock-toggle", set_lock_menuitem)
         return self.lock_menuitem
@@ -245,7 +244,7 @@ class GTKTrayMenuBase(MenuHelper):
             else:
                 self.readonly_menuitem.set_tooltip_text("Cannot disable readonly mode: "+
                                                         "the server has locked the session to read only")
-        self.client.after_handshake(set_readonly_menuitem)
+        self.after_handshake(set_readonly_menuitem)
         return self.readonly_menuitem
 
     def make_bellmenuitem(self):
@@ -271,7 +270,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.bell_menuitem.set_tooltip_text("Forward system bell")
             else:
                 self.bell_menuitem.set_tooltip_text("Cannot forward the system bell: the feature has been disabled")
-        self.client.after_handshake(set_bell_menuitem)
+        self.after_handshake(set_bell_menuitem)
         self.client.on_server_setting_changed("bell", set_bell_menuitem)
         return  self.bell_menuitem
 
@@ -297,7 +296,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
             else:
                 self.cursors_menuitem.set_tooltip_text("Cannot forward mouse cursors: the feature has been disabled")
-        self.client.after_handshake(set_cursors_menuitem)
+        self.after_handshake(set_cursors_menuitem)
         self.client.on_server_setting_changed("cursors", set_cursors_menuitem)
         return  self.cursors_menuitem
 
@@ -321,7 +320,7 @@ class GTKTrayMenuBase(MenuHelper):
             else:
                 self.notifications_menuitem.set_tooltip_text("Cannot forward system notifications: "+
                                                              "the feature has been disabled")
-        self.client.after_handshake(set_notifications_menuitem)
+        self.after_handshake(set_notifications_menuitem)
         return self.notifications_menuitem
 
 
@@ -437,7 +436,7 @@ class GTKTrayMenuBase(MenuHelper):
             #connect signals:
             for direction_item in items:
                 direction_item.connect("toggled", self.clipboard_direction_changed, clipboard_submenu)
-        self.client.after_handshake(set_clipboard_menu)
+        self.after_handshake(set_clipboard_menu)
         return self.clipboard_menuitem
 
 
@@ -471,7 +470,7 @@ class GTKTrayMenuBase(MenuHelper):
                 log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.keyboard_sync)
             self.keyboard_sync_menuitem.set_active(kh and bool(kh.keyboard_sync))
             set_keyboard_sync_tooltip()
-        self.client.after_handshake(set_keyboard_sync_menuitem)
+        self.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
 
     def make_shortcutsmenuitem(self):
@@ -502,7 +501,7 @@ class GTKTrayMenuBase(MenuHelper):
                 log("opengl_toggled%s", args)
                 self.client.toggle_opengl()
             gl.connect("toggled", opengl_toggled)
-        self.client.after_handshake(gl_set)
+        self.after_handshake(gl_set)
         return gl
 
     def make_modalwindowmenuitem(self):
@@ -515,7 +514,7 @@ class GTKTrayMenuBase(MenuHelper):
             log("modal_toggled%s modal_windows=%s", args, self.client.modal_windows)
         def set_modal_menuitem(*_args):
             set_sensitive(modal, True)
-        self.client.after_handshake(set_modal_menuitem)
+        self.after_handshake(set_modal_menuitem)
         modal.connect("toggled", modal_toggled)
         return modal
 
@@ -579,7 +578,7 @@ class GTKTrayMenuBase(MenuHelper):
                     set_sensitive(c, below_server_limit)
                     if not below_server_limit:
                         c.set_tooltip_text("server set the limit to %sbps" % std_unit_dec(sbl))
-        self.client.after_handshake(set_bwlimitmenu)
+        self.after_handshake(set_bwlimitmenu)
         self.client.on_server_setting_changed("bandwidth-limit", set_bwlimitmenu)
         return bandwidth_limit_menu_item
     def bwitem(self, menu, bwlimit=0):
@@ -621,7 +620,7 @@ class GTKTrayMenuBase(MenuHelper):
             else:
                 self.encodings_submenu = self.make_encodingssubmenu()
                 encodings.set_submenu(self.encodings_submenu)
-        self.client.after_handshake(set_encodingsmenuitem)
+        self.after_handshake(set_encodingsmenuitem)
         #FUGLY warning: we want to update the menu if we get an 'encodings' packet,
         #so we inject our handler:
         saved_process_encodings = getattr(self.client, "_process_encodings")
@@ -716,7 +715,7 @@ class GTKTrayMenuBase(MenuHelper):
             scaling_submenu.updating = True
             c.set_active(scalecmp(scalingvalue))
             scaling_submenu.updating = False
-        self.client.after_handshake(set_active_state)
+        self.after_handshake(set_active_state)
         return c
 
 
@@ -726,7 +725,7 @@ class GTKTrayMenuBase(MenuHelper):
         def may_enable_qualitymenu(*_args):
             self.quality.set_submenu(self.make_qualitysubmenu())
             self.set_qualitymenu()
-        self.client.after_handshake(may_enable_qualitymenu)
+        self.after_handshake(may_enable_qualitymenu)
         return self.quality
 
     def make_qualitysubmenu(self):
@@ -776,7 +775,7 @@ class GTKTrayMenuBase(MenuHelper):
         def may_enable_speedmenu(*_args):
             self.speed.set_submenu(self.make_speedsubmenu())
             self.set_speedmenu()
-        self.client.after_handshake(may_enable_speedmenu)
+        self.after_handshake(may_enable_speedmenu)
         return self.speed
 
     def make_speedsubmenu(self):
@@ -846,7 +845,7 @@ class GTKTrayMenuBase(MenuHelper):
                 return
             set_sensitive(speaker, True)
             speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
-        self.client.after_handshake(speaker_state)
+        self.after_handshake(speaker_state)
         return speaker
 
     def mic_on(self, *args):
@@ -872,7 +871,7 @@ class GTKTrayMenuBase(MenuHelper):
             set_sensitive(microphone, True)
             microphone.set_submenu(self.make_soundsubmenu(is_microphone_on,
                                                           self.mic_on, self.mic_off, "microphone-changed"))
-        self.client.after_handshake(microphone_state)
+        self.after_handshake(microphone_state)
         return microphone
 
     def sound_submenu_activate(self, item, menu, cb):
@@ -913,7 +912,7 @@ class GTKTrayMenuBase(MenuHelper):
                     ensure_item_selected(menu, off)
             menu.ignore_events = False
         self.client.connect(client_signal, update_soundsubmenu_state)
-        self.client.after_handshake(update_soundsubmenu_state)
+        self.after_handshake(update_soundsubmenu_state)
         menu.show_all()
         return menu
 
@@ -960,7 +959,7 @@ class GTKTrayMenuBase(MenuHelper):
                 sync.set_tooltip_text("video-sync requires speaker forwarding")
                 return
             set_sensitive(sync, True)
-        self.client.after_handshake(set_avsyncmenu)
+        self.after_handshake(set_avsyncmenu)
         return sync
 
 
@@ -1067,7 +1066,7 @@ class GTKTrayMenuBase(MenuHelper):
             menu.ignore_events = False
         self.client.connect("webcam-changed", webcam_changed)
         set_sensitive(webcam, False)
-        self.client.after_handshake(webcam_changed)
+        self.after_handshake(webcam_changed)
         self.client.on_server_setting_changed("webcam", webcam_changed)
         return webcam
 
@@ -1180,7 +1179,7 @@ class GTKTrayMenuBase(MenuHelper):
                 keyboard.hide()
                 return
             set_sensitive(keyboard, True)
-        self.client.after_handshake(set_layout_enabled)
+        self.after_handshake(set_layout_enabled)
         return keyboard
 
 
@@ -1222,7 +1221,7 @@ class GTKTrayMenuBase(MenuHelper):
             menu.append(add_monitor_item)
             menu.show_all()
         self.client.on_server_setting_changed("monitors", populate_monitors)
-        self.client.after_handshake(populate_monitors)
+        self.after_handshake(populate_monitors)
         monitors_menu_item.show_all()
         return monitors_menu_item
 
@@ -1348,7 +1347,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.servercommands.set_tooltip_text(SERVER_NOT_SUPPORTED)
             else:
                 self.servercommands.set_tooltip_text("")
-        self.client.after_handshake(enable_servercommands)
+        self.after_handshake(enable_servercommands)
         return self.servercommands
 
     def make_runcommandmenuitem(self):
@@ -1362,7 +1361,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.startnewcommand.set_tooltip_text("Not supported or enabled on the server")
             else:
                 self.startnewcommand.set_tooltip_text("")
-        self.client.after_handshake(enable_start_new_command)
+        self.after_handshake(enable_start_new_command)
         self.client.on_server_setting_changed("start-new-commands", enable_start_new_command)
         return self.startnewcommand
 
@@ -1377,7 +1376,7 @@ class GTKTrayMenuBase(MenuHelper):
                        self.client.remote_open_files_ask or
                        self.client.remote_open_url_ask)
             set_sensitive(self.transfers, has_ask)
-        self.client.after_handshake(enable_transfers)
+        self.after_handshake(enable_transfers)
         return self.transfers
 
     def make_uploadmenuitem(self):
@@ -1389,7 +1388,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.upload.set_tooltip_text(SERVER_NOT_SUPPORTED)
             else:
                 self.upload.set_tooltip_text("Send a file to the server")
-        self.client.after_handshake(enable_upload)
+        self.after_handshake(enable_upload)
         return self.upload
 
     def make_downloadmenuitem(self):
@@ -1404,7 +1403,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.download.set_tooltip_text("'send-file' subcommand is not supported by the server")
             else:
                 self.download.set_tooltip_text("Send a file to the server")
-        self.client.after_handshake(enable_download)
+        self.after_handshake(enable_download)
         return self.download
 
 
@@ -1421,7 +1420,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.download_log.set_tooltip_text("Server does not expose its log-file")
             else:
                 self.download_log.set_tooltip_text("Download the server log")
-        self.client.after_handshake(enable_download)
+        self.after_handshake(enable_download)
         return self.download_log
 
 
@@ -1455,7 +1454,7 @@ class GTKTrayMenuBase(MenuHelper):
                 self.shutdown.set_tooltip_text("Disabled by the server")
             else:
                 self.shutdown.set_tooltip_text("Shutdown this server session")
-        self.client.after_handshake(enable_shutdown)
+        self.after_handshake(enable_shutdown)
         self.client.on_server_setting_changed("client-shutdown", enable_shutdown)
         return self.shutdown
 
@@ -1485,7 +1484,7 @@ class GTKTrayMenuBase(MenuHelper):
                 log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
                 update_menu_data()
             self.client.on_server_setting_changed("xdg-menu", on_xdg_menu_changed)
-        self.client.after_handshake(start_menu_init)
+        self.after_handshake(start_menu_init)
         return start_menu_item
 
     def build_start_menu(self):
