@@ -1,13 +1,14 @@
 # Changelog
 
-## [4.4] 2022-09-02
+## [4.4] 2022-09-30
 * Platforms, build and packaging:
     * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
     * Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
     * [Native qrencode bindings](https://github.com/Xpra-org/xpra/issues/3578)
-    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597)
+    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597), [Fedora 37 support](https://github.com/Xpra-org/xpra/commit/414a1ac9ae2775f1566a800aa1eb4688361f2c38)
     * [Debian finally moved to `libexec`](https://github.com/Xpra-org/xpra/issues/3493)
     * [MS Windows taskbar integration](https://github.com/Xpra-org/xpra/issues/508)
+    * [SSH server support on MS Windows, including starting shadow sessions](https://github.com/Xpra-org/xpra/issues/3626)
 * Server:
     * [Configurable vertical refresh rate](https://github.com/Xpra-org/xpra/issues/3600)
     * [Virtual Monitors](https://github.com/Xpra-org/xpra/issues/56)
@@ -53,6 +54,7 @@
     * [SOCKS proxy connection support](https://github.com/Xpra-org/xpra/issues/2105)
     * [SSH agent forwarding](https://github.com/Xpra-org/xpra/issues/2303)
     * [proxy network performance improvement](https://github.com/Xpra-org/xpra/issues/2976)
+    * [SSH workarounds for polluted stream premable](https://github.com/Xpra-org/xpra/issues/3610)
 * Misc:
     * [easier xpra subcommand invocation](https://github.com/Xpra-org/xpra/issues/3371)
 * Refactoring and preparation for the next LTS release:
@@ -61,6 +63,7 @@
     * [Remove ancient complicated code](https://github.com/Xpra-org/xpra/issues/3537)
     * [Simplify the build file](https://github.com/Xpra-org/xpra/issues/3577)
     * [More robust info handlers](https://github.com/Xpra-org/xpra/issues/3509)
+    * [Remove scary warnings](https://github.com/Xpra-org/xpra/issues/3625)
     * [f-strings](https://github.com/Xpra-org/xpra/issues/3579)
 
 

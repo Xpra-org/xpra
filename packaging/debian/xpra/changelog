@@ -3,9 +3,10 @@ xpra (4.4-1) UNRELEASED; urgency=low
     - Native LZ4 bindings
     - Safer native brotli bindings
     - Native qrencode bindings
-    - openSUSE build tweaks
+    - openSUSE build tweaks, Fedora 37 support
     - Debian finally moved to `libexec`
     - MS Windows taskbar integration
+    - SSH server support on MS Windows, including starting shadow sessions 
   * Server:
     - Configurable vertical refresh rate
     - Virtual Monitors
@@ -50,6 +51,7 @@ xpra (4.4-1) UNRELEASED; urgency=low
   * Network:
     - SOCKS proxy connection support
     - SSH agent forwarding
+    - SSH workarounds for polluted stream premable
     - proxy network performance improvement
   * Misc:
     - easier xpra subcommand invocation
@@ -59,10 +61,10 @@ xpra (4.4-1) UNRELEASED; urgency=low
     - Remove ancient complicated code
     - Simplify the build file
     - More robust info handlers
+    - Remove scary warnings
     - f-strings
 
-
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 02 Sep 2022 18:20:08 +0200
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 30 Sep 2022 14:51:51 +0200
 
 xpra (4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -640,14 +640,15 @@ fi
 
 
 %changelog
-* Fri Sep 02 2022 Antoine Martin <antoine@xpra.org> 4.4-10
+* Fri Sep 30 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings
    Safer native brotli bindings
    Native qrencode bindings
-   openSUSE build tweaks
+   openSUSE build tweaks, Fedora 37 support
    Debian finally moved to `libexec`
    MS Windows taskbar integration
+   SSH server support on MS Windows, including starting shadow sessions 
 - Server:
    Configurable vertical refresh rate
    Virtual Monitors
@@ -692,6 +693,7 @@ fi
 - Network:
    SOCKS proxy connection support
    SSH agent forwarding
+   SSH workarounds for polluted stream premable
    proxy network performance improvement
 - Misc:
    easier xpra subcommand invocation
@@ -701,6 +703,7 @@ fi
    Remove ancient complicated code
    Simplify the build file
    More robust info handlers
+   Remove scary warnings
    f-strings
 
 * Wed Dec 08 2021 Antoine Martin <antoine@xpra.org> 4.3-10
