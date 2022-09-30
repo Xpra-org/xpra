@@ -14,6 +14,9 @@
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
+%if 0%{?fedora}>=37
+%define with_cuda 0
+%endif
 %ifarch x86_64 aarch64
 %{!?with_cuda: %define with_cuda 1}
 %else
