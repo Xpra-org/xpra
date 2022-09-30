@@ -363,9 +363,10 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.platform.win32.gui import get_desktop_name
         if get_desktop_name() is None:
             argv = list(cmdline)
-            if argv[0]=="Xpra_cmd.exe":
-                #we have to use the interactive version:
-                argv[0] = "Xpra.exe"
+            exe = argv[0]
+            if argv[0].endswith("Xpra_cmd.exe"):
+                #we have to use the "interactive" version:
+                argv[0] = exe.split("Xpra_cmd.exe", 1)[0]+"Xpra.exe"
             cmd = ["paexec", "-i" , "1", "-s"] + argv
             try:
                 with Popen(cmd) as p:
