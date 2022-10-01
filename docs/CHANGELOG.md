@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0] 2022-10-02
+* TODO
+
 ## [4.4] 2022-10-01
 * Platforms, build and packaging:
     * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4
+%define version 5.0
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -643,6 +643,8 @@ fi
 
 
 %changelog
+* Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
+- TODO
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings
