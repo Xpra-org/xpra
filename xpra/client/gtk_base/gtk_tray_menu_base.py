@@ -1117,6 +1117,12 @@ class GTKTrayMenuBase(MenuHelper):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
+        def variants_submenu(layout, variants):
+            #just show all the variants to choose from this layout
+            default_layout = kbitem(f"{layout} - Default", layout, "", True)
+            self.layout_submenu.append(default_layout)
+            for v in variants:
+                self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
         kh = self.client.keyboard_helper
         layout, layouts, variant, variants, _ = kh.get_layout_spec()
         layout = bytestostr(layout)
@@ -1142,17 +1148,18 @@ class GTKTrayMenuBase(MenuHelper):
                 if l!=layout:
                     self.layout_submenu.append(kbitem(l, l, ""))
         elif layout and len(variants)>1:
-            #just show all the variants to choose from this layout
-            default = kbitem(f"{layout} - Default", layout, "", True)
-            self.layout_submenu.append(default)
-            for v in variants:
-                self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
+            variants_submenu(layout, variants)
         elif layout or kh.query_struct:
             l = layout or kh.query_struct.get("layout", "")
-            if l:
-                keyboard.set_tooltip_text(f"Detected {l!r}")
-            set_sensitive(keyboard, False)
-            return keyboard
+            from xpra.keyboard.layouts import LAYOUT_VARIANTS
+            variants = LAYOUT_VARIANTS.get(l) if l else ()
+            if variants:
+                variants_submenu(l, variants)
+            else:
+                if l:
+                    keyboard.set_tooltip_text(f"Detected {l!r}")
+                set_sensitive(keyboard, False)
+                return keyboard
         elif not FULL_LAYOUT_LIST:
             keyboard.set_tooltip_text(f"No keyboard layouts detected")
             set_sensitive(keyboard, False)
