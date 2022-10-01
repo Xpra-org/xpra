@@ -35,6 +35,7 @@ xpra (4.4-1) UNRELEASED; urgency=low
     - Forward all command line options
     - Smooth scrolling options
     - Per-window scaling - experimental
+    - Workaround Wayland startup hangs
   * Security and authentication:
     - Configurable information disclosure
     - Keycloak authentication
@@ -64,7 +65,7 @@ xpra (4.4-1) UNRELEASED; urgency=low
     - Remove scary warnings
     - f-strings
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 30 Sep 2022 14:51:51 +0200
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 01 Oct 2022 21:31:22 +0200
 
 xpra (4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

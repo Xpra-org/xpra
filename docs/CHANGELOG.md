@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4] 2022-09-30
+## [4.4] 2022-10-01
 * Platforms, build and packaging:
     * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
     * Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
@@ -37,6 +37,7 @@
     * [Forward all command line options](https://github.com/Xpra-org/xpra/issues/3566)
     * [Smooth scrolling options](https://github.com/Xpra-org/xpra/issues/3127)
     * [Per-window scaling](https://github.com/Xpra-org/xpra/issues/3454) - experimental
+    * [Workaround Wayland startup hangs](https://github.com/Xpra-org/xpra/issues/3630)
 * Security and authentication:
     * [Configurable information disclosure](https://github.com/Xpra-org/xpra/issues/3582)
     * [Keycloak authentication](https://github.com/Xpra-org/xpra/issues/3486)

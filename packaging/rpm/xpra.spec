@@ -643,7 +643,7 @@ fi
 
 
 %changelog
-* Fri Sep 30 2022 Antoine Martin <antoine@xpra.org> 4.4-10
+* Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings
    Safer native brotli bindings
@@ -680,6 +680,7 @@ fi
    Forward all command line options
    Smooth scrolling options
    Per-window scaling - experimental
+   Workaround Wayland startup hangs
 - Security and authentication:
    Configurable information disclosure
    Keycloak authentication
