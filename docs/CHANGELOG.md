@@ -5,7 +5,7 @@
     * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
     * Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
     * [Native qrencode bindings](https://github.com/Xpra-org/xpra/issues/3578)
-    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597), [Fedora 37 support](https://github.com/Xpra-org/xpra/commit/414a1ac9ae2775f1566a800aa1eb4688361f2c38)
+    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597), [Fedora 37](https://github.com/Xpra-org/xpra/commit/414a1ac9ae2775f1566a800aa1eb4688361f2c38), [Rocky Linux / Alma Linux / CentOS Stream : 8 and 9](https://github.com/Xpra-org/repo-build-scripts/commit/f53085abf3227e4b758c3f4c04fa96092fc2b599), [Oracle Linux](https://github.com/Xpra-org/repo-build-scripts/commit/56a2bf9a48e55924782eb777b05e2b37262868e5)
     * [Debian finally moved to `libexec`](https://github.com/Xpra-org/xpra/issues/3493)
     * [MS Windows taskbar integration](https://github.com/Xpra-org/xpra/issues/508)
     * [SSH server support on MS Windows, including starting shadow sessions](https://github.com/Xpra-org/xpra/issues/3626)

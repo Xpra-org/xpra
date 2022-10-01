@@ -648,7 +648,7 @@ fi
    Native LZ4 bindings
    Safer native brotli bindings
    Native qrencode bindings
-   openSUSE build tweaks, Fedora 37 support
+   openSUSE build tweaks, Fedora 37, Oracle Linux / Rocky Linux / Alma Linux / CentOS Stream : 8 and 9
    Debian finally moved to `libexec`
    MS Windows taskbar integration
    SSH server support on MS Windows, including starting shadow sessions 
