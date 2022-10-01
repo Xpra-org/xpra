@@ -156,8 +156,8 @@ def main(): # pragma: no cover
         sub = Gtk.MenuItem(label="Sub Menu Item 1")
         subsubmenu = Gtk.Menu()
         sub.set_submenu(subsubmenu)
-        subsubmenu.append(Gtk.MenuItem(label="Sub Sub Menu Item 1"))
-        subsubmenu.append(Gtk.MenuItem(label="Sub Sub Menu Item 2"))
+        for n in range(1, 1000):
+            subsubmenu.append(Gtk.MenuItem(label="Sub Sub Menu Item "+str(n)))
         submenu.append(sub)
         sub = Gtk.MenuItem(label="Sub Menu Item 2")
         submenu.append(sub)
