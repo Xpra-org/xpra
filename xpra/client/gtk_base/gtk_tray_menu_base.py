@@ -1107,8 +1107,8 @@ class GTKTrayMenuBase(MenuHelper):
                     kh.update()
                     kh.send_layout()
                     kh.send_keymap()
-                    log.info("%s: %s", msg, kh.layout_str())
-            l = self.checkitem(title, set_layout, active)
+                    log.info(f"{msg}: {kh.layout_str()}")
+            l = self.checkitem(str(title), set_layout, active)
             l.set_draw_as_radio(True)
             l.keyboard_layout = layout
             l.keyboard_variant = variant
@@ -1121,8 +1121,7 @@ class GTKTrayMenuBase(MenuHelper):
         layouts = tuple(bytestostr(x) for x in layouts)
         variant = bytestostr(variant or b"")
         variants = tuple(bytestostr(x) for x in variants)
-        log("make_layoutsmenuitem() layout=%s, layouts=%s, variant=%s, variants=%s",
-            layout, layouts, variant, variants)
+        log(f"make_layoutsmenuitem() layout={layout}, layouts={layouts}, variant={variant}, variants={variants}")
         full_layout_list = False
         if len(layouts)>1:
             log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
@@ -1134,19 +1133,19 @@ class GTKTrayMenuBase(MenuHelper):
             auto = kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:
-                self.layout_submenu.append(kbitem("%s" % layout, layout, ""))
+                self.layout_submenu.append(kbitem(layout, layout, ""))
             if variants:
                 for v in variants:
-                    self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
+                    self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
             for l in uniq(layouts):
                 if l!=layout:
-                    self.layout_submenu.append(kbitem("%s" % l, l, ""))
+                    self.layout_submenu.append(kbitem(l, l, ""))
         elif layout and variants and len(variants)>1:
             #just show all the variants to choose from this layout
-            default = kbitem("%s - Default" % layout, layout, "", True)
+            default = kbitem(f"{layout} - Default", layout, "", True)
             self.layout_submenu.append(default)
             for v in variants:
-                self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
+                self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
         else:
             full_layout_list = True
             from xpra.keyboard.layouts import X11_LAYOUTS
@@ -1156,16 +1155,16 @@ class GTKTrayMenuBase(MenuHelper):
             for key in sorted_keys:
                 country,language = key
                 layout,variants = X11_LAYOUTS.get(key)
-                name = "%s - %s" % (country, language)
+                name = f"{country} - {language}"
                 if len(variants)>1:
                     #sub-menu for each variant:
                     variant = self.menuitem(name, tooltip=layout)
                     variant_submenu = Gtk.Menu()
                     variant.set_submenu(variant_submenu)
                     self.layout_submenu.append(variant)
-                    variant_submenu.append(kbitem("%s - Default" % layout, layout, None))
+                    variant_submenu.append(kbitem(f"{layout} - Default", layout, None))
                     for v in variants:
-                        variant_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
+                        variant_submenu.append(kbitem(f"{layout} - {v}", layout, v))
                 else:
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
