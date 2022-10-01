@@ -56,6 +56,7 @@ WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 
+FULL_LAYOUT_LIST = envbool("XPRA_FULL_LAYOUT_LIST", True)
 
 NEW_MONITOR_RESOLUTIONS = os.environ.get("XPRA_NEW_MONITOR_RESOLUTIONS",
                                          "640x480,1024x768,1600x1200,FHD,4K").split(",")
@@ -1116,13 +1117,13 @@ class GTKTrayMenuBase(MenuHelper):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout, layouts, variant, variants, _ = self.client.keyboard_helper.get_layout_spec()
+        kh = self.client.keyboard_helper
+        layout, layouts, variant, variants, _ = kh.get_layout_spec()
         layout = bytestostr(layout)
         layouts = tuple(bytestostr(x) for x in layouts)
         variant = bytestostr(variant or b"")
         variants = tuple(bytestostr(x) for x in variants)
         log(f"make_layoutsmenuitem() layout={layout}, layouts={layouts}, variant={variant}, variants={variants}")
-        full_layout_list = False
         if len(layouts)>1:
             log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
             #log after removing dupes:
@@ -1140,14 +1141,23 @@ class GTKTrayMenuBase(MenuHelper):
             for l in uniq(layouts):
                 if l!=layout:
                     self.layout_submenu.append(kbitem(l, l, ""))
-        elif layout and variants and len(variants)>1:
+        elif layout and len(variants)>1:
             #just show all the variants to choose from this layout
             default = kbitem(f"{layout} - Default", layout, "", True)
             self.layout_submenu.append(default)
             for v in variants:
                 self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
+        elif layout or kh.query_struct:
+            l = layout or kh.query_struct.get("layout", "")
+            if l:
+                keyboard.set_tooltip_text(f"Detected {l!r}")
+            set_sensitive(keyboard, False)
+            return keyboard
+        elif not FULL_LAYOUT_LIST:
+            keyboard.set_tooltip_text(f"No keyboard layouts detected")
+            set_sensitive(keyboard, False)
+            return keyboard
         else:
-            full_layout_list = True
             from xpra.keyboard.layouts import X11_LAYOUTS
             #show all options to choose from:
             sorted_keys = list(X11_LAYOUTS.keys())
@@ -1168,17 +1178,7 @@ class GTKTrayMenuBase(MenuHelper):
                 else:
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
-        kh = self.client.keyboard_helper
-        def set_layout_enabled(*args):
-            log(f"set_layout_enabled({args}) full_layout_list={full_layout_list}")
-            log(f"set_layout_enabled({args}) layout={kh.layout}, query-struct={kh.query_struct}")
-            if full_layout_list and (kh.layout or kh.query_struct):
-                #we have detected a layout
-                #so no need to show the user the huge layout list
-                keyboard.hide()
-                return
-            set_sensitive(keyboard, True)
-        self.after_handshake(set_layout_enabled)
+        self.after_handshake(set_sensitive, keyboard, True)
         return keyboard
 
 
