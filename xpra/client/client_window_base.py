@@ -744,6 +744,9 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def scaleup(self, *_args):
+        self._client.scaleup()
+
+    def window_scaleup(self, *_args):
         scaling = max(self._xscale, self._yscale)
         options = scaleup_value(scaling)
         scalinglog("scaleup() options=%s", options)
@@ -751,6 +754,9 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(min(options))
 
     def scaledown(self, *_args):
+        self._client.scaledown()
+
+    def window_scaledown(self, *_args):
         scaling = min(self._xscale, self._yscale)
         options = scaledown_value(scaling)
         scalinglog("scaledown() options=%s", options)
@@ -758,6 +764,9 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(max(options))
 
     def scalingoff(self):
+        self._client.scalingoff()
+
+    def window_scalingoff(self):
         self._scaleto(1)
 
     def _scaleto(self, scaling):
