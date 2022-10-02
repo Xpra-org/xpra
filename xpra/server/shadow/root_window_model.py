@@ -65,7 +65,7 @@ class RootWindowModel:
         self.signal_listeners = {}
 
     def __repr__(self):
-        return f"RootWindowModel({self.capture} : {self.geometry:24})"
+        return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
 
     def get_info(self) -> dict:
         info = {}
