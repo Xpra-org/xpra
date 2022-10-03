@@ -3440,6 +3440,7 @@ def init_module():
             #obtain a new cdc, since the previous one could be invalid
             cdc = cuda_device_context(device_id, device)
             with cdc as device_context:
+                options["cuda-device-context"] = cdc
                 test_encodings = []
                 for e in TEST_ENCODINGS:
                     if e in FAILED_ENCODINGS:

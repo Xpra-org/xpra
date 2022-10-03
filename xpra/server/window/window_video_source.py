@@ -326,6 +326,8 @@ class WindowVideoSource(WindowSource):
         super().cleanup()
         self.cleanup_codecs()
 
+        self.cuda_device_context = None
+        
     def cleanup_codecs(self):
         """ Video encoders (x264, nvenc and vpx) and their csc helpers
             require us to run cleanup code to free the memory they use.
@@ -1797,6 +1799,8 @@ class WindowVideoSource(WindowSource):
             options["scaled-width"] = enc_width*n//d
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
+        if self.cuda_device_context:
+            options["cuda-device-context"] = self.cuda_device_context
 
         ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, options)
         #record new actual limits:
@@ -2251,6 +2255,7 @@ class WindowVideoSource(WindowSource):
 
         start = monotonic()
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
+        options["cuda-device-context"] = self.cuda_device_context
         try:
             ret = ve.compress_image(csc_image, options)
         except Exception as e:
