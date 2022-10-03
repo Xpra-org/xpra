@@ -158,7 +158,7 @@ def get_version_info(full=1) -> dict:
                 "branch"                : BRANCH,
                 "commit"                : COMMIT,
                 }.items():
-                if v and v!="unknown":
+                if v is not None and v!="unknown":
                     props[k] = v
         except ImportError as e:
             warn("missing some source information: %s", e)
@@ -181,7 +181,7 @@ def get_version_info_full() -> dict:
                     "cython"               : "CYTHON_VERSION",
                   }.items():
             v = getattr(build_info, bk, None)
-            if v:
+            if v is not None:
                 props[k] = v
         #record library versions:
         d = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
