@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+from xpra.util import repr_ellipsized
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.rfb_const import RFB_KEYNAMES
@@ -98,7 +99,7 @@ class RFBServer:
         return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
     def _process_rfb_invalid(self, proto, packet):
-        self.disconnect_protocol(proto, "invalid packet: %s" % (packet[1:]))
+        self.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
 
     def _process_rfb_connection_lost(self, proto, packet):
         self._process_connection_lost(proto, packet)
