@@ -3328,7 +3328,7 @@ cdef class Encoder:
             msg = "could not open encode session: %s" % (nvencStatusInfo(r) or r)
             log(msg)
             
-            if r == 10:
+            if r == NV_ENC_ERR_OUT_OF_MEMORY:
                 log("dumping lib refs and reloading")
                 global NvEncodeAPICreateInstance, cuCtxGetCurrent
                 NvEncodeAPICreateInstance = None
