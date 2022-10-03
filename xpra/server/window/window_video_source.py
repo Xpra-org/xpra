@@ -8,6 +8,7 @@ import os
 import time
 import operator
 import traceback
+import threading
 from math import sqrt
 from functools import reduce
 from time import monotonic
@@ -864,6 +865,7 @@ class WindowVideoSource(WindowSource):
             This runs in the UI thread.
         """
         log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
+        assert self.ui_thread == threading.current_thread()
         assert coding is not None
         rgb_request_time = monotonic()
         image = self.get_damage_image(x, y, w, h)

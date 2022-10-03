@@ -10,6 +10,7 @@
 import os
 from time import monotonic
 from threading import RLock
+import threading
 
 from xpra.codecs.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
@@ -437,7 +438,7 @@ def get_device_context(options):
 
 
 class cuda_device_context:
-    __slots__ = ("device_id", "device", "context", "lock", "opengl", "cleanup_instances")
+    __slots__ = ("device_id", "device", "context", "lock", "opengl", "instances_to_cleanup", "owning_thread_id", "queue_destruction")
     def __init__(self, device_id, device, opengl=False):
         assert device, "no cuda device"
         self.device_id = device_id
@@ -445,7 +446,9 @@ class cuda_device_context:
         self.opengl = opengl
         self.context = None
         self.lock = RLock()
-        self.cleanup_instances = []
+        self.instances_to_cleanup = []
+        self.owning_thread_id = 0
+        self.queue_destruction = False
         log("%r", self)
 
     def __bool__(self):
@@ -469,6 +472,7 @@ class cuda_device_context:
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
         end = monotonic()
         self.context.pop()
+        self.owning_thread_id = threading.current_thread().ident
         log("cuda context allocation took %ims", 1000*(end-start))
 
     def push_context(self):
@@ -476,12 +480,17 @@ class cuda_device_context:
         return self.context
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        log("cuda context deallocation start")
         self.pop_context()
         self.lock.release()
+        log("cuda context deallocation end")
+        if self.queue_destruction:
+            self.destroy_cuda_context()
 
     def pop_context(self):
         c = self.context
         if c:
+            log("cuda context exists, popping")
             c.pop()
         #except driver.LogicError as e:
         #log.warn("Warning: PyCUDA %s", e)
@@ -490,7 +499,7 @@ class cuda_device_context:
 
 
     def __repr__(self):
-        return f"cuda_device_context({self.device_id} - {self.lock._is_owned()})"
+        return f"cuda_device_context({self.device_id} - {self.lock._is_owned()}, has_context:{bool(self.context)}, instances_to_cleanup:{len(self.instances_to_cleanup)})"
 
     def get_info(self):
         info = {
@@ -507,7 +516,11 @@ class cuda_device_context:
         return info
 
     def add_cleanup_instance(self, inst):
-        self.cleanup_instances.append(inst)
+        self.instances_to_cleanup.append(inst)
+
+    def remove_cleanup_instance(self, inst):
+        if inst in self.instances_to_cleanup:
+            self.instances_to_cleanup.remove(inst)
 
     def __del__(self):
         log("cuda_context() del called")
@@ -516,18 +529,45 @@ class cuda_device_context:
     def free(self):
         log("free() context=%s", self.context)
         
-        log("Freeing cleanup instances: %s", self.cleanup_instances)
-        for i in self.cleanup_instances:
-            i.clean(actualClean=True)
+        log("Freeing cleanup instances: %s", self.instances_to_cleanup)
+        instances_to_cleanup = self.instances_to_cleanup[:]
+        for i in range(len(instances_to_cleanup)):
+            log(" - instance num: %i", i)
+            instances_to_cleanup[i].clean_instance()
+        instances_to_cleanup = []
+        self.instances_to_cleanup = []
+
+        if self.owning_thread_id == threading.current_thread().ident:
+            log("cuda_context owning thread is this thread, immediately destroying")
+            self.destroy_cuda_context()
+        else:
+            log("need to queue cuda destruction for later by encoding thread")
+            self.queue_destruction = True
+
 
         c = self.context
         if c:
-            self.device_id = 0
-            self.device = None
-            self.context = None
+            log("cuda free(): found context")
+            try:
+                c.synchronize()
+            except pycuda.driver.LogicError:
+                log("got excpetion at synchronize, continuing")
+        log("cuda free() done")
+
+    def destroy_cuda_context(self):
+        log("destroy_cuda_context()")
+        assert self.owning_thread_id == threading.current_thread().ident, "attempting to cleanup cuda_device_context from wrong thread"
+
+        self.device_id = 0
+        self.device = None
+        self.context = None
+        self.owning_thread_id = 0
+
+        c = self.context
+        if c:
             with self.lock:
                 c.detach()
-
+        log("destroy_cuda_context() done")
 
 CUDA_ERRORS_INFO = {
     #this list is taken from the CUDA 7.0 SDK header file,
