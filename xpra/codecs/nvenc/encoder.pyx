@@ -11,7 +11,6 @@ from time import monotonic
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
-from pycuda.driver import LogicError
 import random
 import weakref
 import contextlib
@@ -36,6 +35,7 @@ log = Logger("encoder", "nvenc")
 #we can import pycuda safely here,
 #because importing cuda_context will have imported it with the lock
 from pycuda import driver  # @UnresolvedImport
+from pycuda.driver import LogicError
 import numpy
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t  #pylint: disable=syntax-error
@@ -2703,6 +2703,7 @@ cdef class Encoder:
         assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()
         cdef unsigned int h = image.get_height()
+        cdef unsigned int image_stride = image.get_rowstride()
         gpu_buffer = image.get_gpu_buffer()
         cdef unsigned int stride = image.get_rowstride()
         log("do_compress_image(%s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i",
@@ -2718,6 +2719,9 @@ cdef class Encoder:
             if w > self.params.encodeWidth:
                 dims_changed = True
             if h > self.params.encodeHeight:
+                dims_changed = True
+            if h*image_stride > len(self.inputBuffer.data):
+                log("compress_image: h_image_stride (%i) is larger than inputbuffer.data (%i), need to resize" % (h*image_stride, len(self.inputBuffer.data)))
                 dims_changed = True
 
             #FIXME: determine when its safe to drop the encoder dimensions back down (no longer need to render a large image)
