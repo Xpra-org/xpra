@@ -1788,7 +1788,7 @@ class ServerCore:
 
     def _process_invalid(self, protocol, packet):
         message, data = packet[1:3]
-        netlog("Received invalid packet: %s", message)
+        netlog(f"Received invalid packet: {message}")
         netlog(" data: %s", ellipsizer(data))
         self.disconnect_client(protocol, message)
 

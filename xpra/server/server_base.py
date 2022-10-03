@@ -962,12 +962,12 @@ class ServerBase(ServerBaseClass):
                 ss = self.get_server_source(proto)
                 if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)
-                    netlog.error("Error: unknown or invalid packet type '%s'", packet_type)
-                    netlog.error(" received from %s", proto)
+                    netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
+                    netlog.error(f" received from {proto}")
                 if not ss:
                     proto.close()
             self.idle_add(invalid_packet)
         except Exception:
-            netlog.error("Error processing a '%s' packet", packet_type)
-            netlog.error(" received from %s:", proto)
-            netlog.error(" using %s", handler, exc_info=True)
+            netlog.error(f"Error processing a {packet_type!r} packet")
+            netlog.error(f" received from {proto}:")
+            netlog.error(f" using {handler}", exc_info=True)
