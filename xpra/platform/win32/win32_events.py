@@ -115,7 +115,7 @@ class Win32EventListener:
         self.wc.hCursor = 0
         self.wc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
         self.wc.lpszMenuName = 0
-        self.wc.lpszClassName = u'Xpra-Event-Window'
+        self.wc.lpszClassName = "Xpra-Event-Window"
         self.wc.hIconSm = 0
         self.wc.hbrBackground = win32con.COLOR_WINDOW
         self.wc_atom = RegisterClassExW(ctypes.byref(self.wc))

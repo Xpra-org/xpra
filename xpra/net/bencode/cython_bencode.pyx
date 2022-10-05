@@ -9,7 +9,7 @@
 # Original version written by Petru Paler
 
 
-__version__ = (u"Cython", 4, 3)
+__version__ = ("Cython", 5, 0)
 
 
 cdef extern from "Python.h":
