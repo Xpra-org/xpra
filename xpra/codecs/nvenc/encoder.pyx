@@ -1575,9 +1575,9 @@ cdef class UniqueEncoder:
         return Encoder.instance().is_ready()
 
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None, int retry=0):
+    def compress_image(self, image, options=None, int retry=0):
         log("called compress_image with unique_encoder: %s, frames: %i, self id: %i", self, self.frames, id(self))
-        return self.base_encoder().compress_image(device_context, image, quality=quality, speed=speed, options=options, retry=retry, unique_id=id(self))
+        return self.base_encoder().compress_image(image, options=options, retry=retry, unique_id=id(self))
     
     def clean(self, actualClean=False, derefOnly=False):
         Encoder.remove_child(self)
@@ -2670,7 +2670,7 @@ cdef class Encoder:
         assert cuda_device_context, "no cuda device context"
         #cuda_device_context.__enter__ does self.context.push()
         log("called compress_image with common encoder: %s, context: %#x, frames: %i", self, <uintptr_t> self.context, self.frames)
-        log("compress_image%s", (device_context, quality, speed, options, retry))
+        log("compress_image%s", (cuda_device_context, options, retry))
 
         #FIXME: do not lock encode_lock on USE_SINGLETON_ENCODER disabled
         global encode_lock
