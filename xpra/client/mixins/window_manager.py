@@ -375,7 +375,7 @@ class WindowClient(StubClientMixin):
             "above", "below",
             "sticky", "iconified", "maximized",
             ))
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
+        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")??
         #input devices:
         self.server_input_devices = c.strget("input-devices")
         self.server_precise_wheel = c.boolget("wheel.precise", False)
