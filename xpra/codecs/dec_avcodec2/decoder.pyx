@@ -553,8 +553,8 @@ def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 v = get_version()
-if v<(3,):
-    raise ImportError("ffmpeg version %s is too old" % v)
+if v<(4, 2):
+    raise ImportError(f"ffmpeg version {v} is too old")
 
 register_all()
 CODECS = []
