@@ -68,10 +68,9 @@ def get_image_type(data) -> str:
 
 
 def open_only(data, types=("png", "jpeg", "webp")):
-    itype = get_image_type(data)
+    itype = get_image_type(data) or "unknown"
     if itype not in types:
-        raise Exception("invalid data: %s, not recognized as %s, header: %s" % (
-            (itype or "unknown"), csv(types), hexstr(data[:64])))
+        raise Exception(f"invalid data: {itype}, not recognized as {csv(types)}, header: "+hexstr(data[:64]))
     buf = BytesIO(data)
     return Image.open(buf)
 
@@ -108,10 +107,10 @@ def decompress(coding, img_data, options):
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):
-        raise Exception("expected %s image data but received %s" % (coding, actual or "unknown"))
+        raise Exception(f"expected {coding} image data but received "+(actual or "unknown"))
     buf = BytesIO(img_data)
     img = Image.open(buf)
-    assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
+    assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), f"invalid image mode: {img.mode}"
     transparency = options.intget("transparency", -1)
     if img.mode=="P":
         if transparency>=0:
@@ -169,7 +168,7 @@ def decompress(coding, img_data, options):
             else:
                 log.warn("Warning: unexpected RGB format '%s'", rgb_format)
     else:
-        raise Exception("invalid image mode: %s" % img.mode)
+        raise Exception(f"invalid image mode: {img.mode}")
     raw_data = img.tobytes("raw", img.mode)
     log("pillow decoded %i bytes of %s data to %i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
     may_save_image(coding, img_data)

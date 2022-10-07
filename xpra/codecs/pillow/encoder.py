@@ -20,10 +20,10 @@ ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,j
 Image.init()
 
 try:
-    from PIL.Image import Palette
+    # pylint: disable=ungrouped-imports
+    from PIL.Image import Palette, Resampling
     ADAPTIVE = Palette.ADAPTIVE
     WEB = Palette.WEB
-    from PIL.Image import Resampling
     NEAREST = Resampling.NEAREST
     BILINEAR = Resampling.BILINEAR
     BICUBIC = Resampling.BICUBIC
@@ -259,6 +259,7 @@ def encode(coding : str, image, options=None):
 
 def selftest(full=False):
     global ENCODINGS
+    # pylint: disable=import-outside-toplevel
     from xpra.os_util import hexstr
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
