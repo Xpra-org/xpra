@@ -207,6 +207,7 @@ jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.8", "vpx") and BITS==64
+vpl_ENABLED             = False     #DEFAULT and pkg_config_version("2.7", "vpl")
 enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
@@ -246,7 +247,7 @@ CODEC_SWITCHES = [
     "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc",
     "cuda_kernels", "cuda_rebuild",
     "nvfbc",
-    "vpx", "webp", "pillow",
+    "vpx", "vpl", "webp", "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
     "nvjpeg_encoder", "nvjpeg_decoder", "avif", "argb",
@@ -352,7 +353,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     if not cython_ENABLED:
         enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = False
         csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = False
-        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
+        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = vpl_ENABLED = False
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
@@ -1044,6 +1045,7 @@ def clean():
                    "xpra/buffers/cyxor.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
+                   "xpra/codecs/vpl/encoder.c",
                    "xpra/codecs/nvenc/encoder.c",
                    "xpra/codecs/nvfbc/fbc_capture_linux.cpp",
                    "xpra/codecs/nvfbc/fbc_capture_win.cpp",
@@ -2226,6 +2228,8 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
+toggle_packages(vpl_ENABLED, "xpra.codecs.vpl")
+tace(vpl_ENABLED, "xpra.codecs.vpl.encoder", "vpl")
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")

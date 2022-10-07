@@ -16,7 +16,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg"]
+NOWARN = ["nvenc", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg", "enc_vpl"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -37,7 +37,7 @@ def filt(*values):
 
 CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
+ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_vpl")
 DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
 SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
@@ -190,6 +190,7 @@ CODEC_OPTIONS = {
     "enc_x265"      : ("x265 encoder",      "enc_x265",     "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvenc",        "encoder", "Encoder"),
     "enc_ffmpeg"    : ("ffmpeg encoder",    "enc_ffmpeg",   "encoder", "Encoder"),
+    "enc_vpl"       : ("oneVPL encoder",    "vpl",          "encoder", "Encoder"),
     #csc:
     "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),

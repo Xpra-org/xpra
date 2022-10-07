@@ -256,6 +256,7 @@ STRUCT_KNOWN_FILTERS = {
                 "spng"          : "spng codec",
                 "jpeg"          : "JPEG codec",
                 "vpx"           : "libvpx encoder and decoder",
+                "vpl"           : "oneVPL encoder",
                 "nvjpeg"        : "nvidia nvjpeg hardware encoder",
                 "nvenc"         : "nvidia nvenc video hardware encoder",
                 "nvfbc"         : "nvidia nvfbc screen capture",
