@@ -43,7 +43,6 @@ assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodin
 assert len(TEST_ENCODINGS)>0, "no encodings enabled!"
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
-cdef int MIN_COMPUTE = 0x30
 
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
