@@ -329,12 +329,6 @@ cdef class Encoder:
         assert options.get("scaled-height", height)==height, "vpx encoder does not handle scaling"
         assert encoding in get_encodings()
         assert src_format in get_input_colorspaces(encoding)
-        if BITS==32 and WIN32:
-            dmaxw, dmaxh = MAX_SIZE[encoding]
-            if width>dmaxw or height>dmaxh:
-                #this can crash on win32, don't even try it
-                #(the unit tests would otherwise crash)
-                raise Exception("invalid dimensions %ix%i - maximum is %ix%i" % (width, height, dmaxw, dmaxh))
 
         self.src_format = src_format
 
