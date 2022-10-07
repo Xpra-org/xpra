@@ -26,7 +26,7 @@ from xpra.codecs.vpx.vpx cimport (
     VPX_CS_BT_709, VPX_CR_FULL_RANGE,
     vpx_codec_err_to_string, vpx_codec_control_,
     )
-from libc.stdint cimport uint8_t
+from libc.stdint cimport uint8_t, int64_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
@@ -51,9 +51,6 @@ cdef inline int MAX(int a, int b):
     if a>=b:
         return a
     return b
-
-
-from libc.stdint cimport int64_t
 
 
 DEF USAGE_STREAM_FROM_SERVER    = 0x0
