@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,6 @@ cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-cdef int ENABLE_VP9_YUV444 = envbool("XPRA_VP9_YUV444", True)
 cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
 
 
@@ -182,11 +181,7 @@ COLORSPACES = {}
 
 CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
-VP9_COLORSPACES = ["YUV420P", "YUV444P"]
-cdef int VP9_10BPP = envbool("XPRA_VP9_10BPP", VPX_ENCODER_ABI_VERSION>23 and not OSX)
-if VP9_10BPP:
-    VP9_COLORSPACES.append("YUV444P10")
-COLORSPACES["vp9"] = tuple(VP9_COLORSPACES)
+COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
 VP9_RANGE = 3
 #as of 1.8:
@@ -300,9 +295,9 @@ def get_spec(encoding, colorspace):
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
     if colorspace=="YUV420P":
         return VPX_IMG_FMT_I420
-    if colorspace=="YUV444P" and ENABLE_VP9_YUV444:
+    if colorspace=="YUV444P":
         return VPX_IMG_FMT_I444
-    if colorspace=="YUV444P10" and ENABLE_VP9_YUV444:
+    if colorspace=="YUV444P10":
         return VPX_IMG_FMT_I44416
     raise Exception("invalid colorspace %s" % colorspace)
 

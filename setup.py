@@ -206,7 +206,7 @@ webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
-vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
+vpx_ENABLED             = DEFAULT and pkg_config_version("1.8", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
