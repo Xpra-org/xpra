@@ -183,13 +183,8 @@ CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
-VP9_RANGE = 3
-#as of 1.8:
-#VPX_ENCODER_ABI_VERSION=14+VPX_CODEC_ABI_VERSION
-#VPX_CODEC_ABI_VERSION=4+VPX_IMAGE_ABI_VERSION
-#VPX_IMAGE_ABI_VERSION=5
-if VPX_ENCODER_ABI_VERSION>=14+4+5:
-    VP9_RANGE = 4
+#as of libvpx 1.8:
+VP9_RANGE = 4
 
 
 def init_module():
@@ -279,11 +274,8 @@ def get_spec(encoding, colorspace):
         quality = 50
     else:
         has_lossless_mode = colorspace.startswith("YUV444P")
-        speed = 20
+        speed = 40
         quality = 50 + 50*int(has_lossless_mode)
-        if VPX_ENCODER_ABI_VERSION>=11:
-            #libvpx 1.5 made some significant performance improvements with vp9:
-            speed = 40
     return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
                       has_lossless_mode=has_lossless_mode,
                       codec_class=Encoder, codec_type=get_type(),
