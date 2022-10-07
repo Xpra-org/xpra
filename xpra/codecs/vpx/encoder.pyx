@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
-from xpra.os_util import WIN32, OSX, POSIX, BITS
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import AtomicInteger, envint, envbool, typedict
 
 from xpra.codecs.vpx.vpx cimport (
