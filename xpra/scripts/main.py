@@ -2607,6 +2607,7 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
     display = None
+    display_name = None
     server_mode = {
         "_proxy"                : "seamless",
         "_proxy_shadow_start"   : "shadow",
@@ -2618,7 +2619,6 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         if attach is not False:
             #maybe this server already exists?
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-            display_name = None
             if not args and server_mode in ("shadow", "expand"):
                 try:
                     display_name = pick_shadow_display(dotxpra, args)
@@ -2644,7 +2644,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
                 v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
                 setattr(opts, fn, v)
             opts.splash = False
-            proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
+            proc, socket_path, display_name = start_server_subprocess(script_file, args, server_mode, opts)
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
                 return 0
@@ -2662,7 +2662,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         #use display specified on command line:
         display = pick_display(error_cb, opts, args, cmdline)
     if display and server_mode!="shadow":
-        display_name = display.get("display_name")
+        display_name = display_name or display.get("display") or display.get("display_name")
         try:
             from xpra.scripts.server import get_session_dir
             with OSEnvContext():
