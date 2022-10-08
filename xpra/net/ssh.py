@@ -977,14 +977,11 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         remote_xpra = display_desc["remote_xpra"]
         assert remote_xpra
         socket_dir = display_desc.get("socket_dir")
-        proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
-        display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+        proxy_command = display_desc["proxy_command"]       #ie: ["_proxy_start"]
+        display_as_args = display_desc["display_as_args"]   #ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
         remote_cmd = ""
         for x in remote_xpra:
-            if not remote_cmd:
-                check = "if"
-            else:
-                check = "elif"
+            check = "if" if not remote_cmd else "elif"
             if x=="xpra":
                 #no absolute path, so use "command -v" to check that the command exists:
                 pc = [f'{check} command -v "{x}" > /dev/null 2>&1; then']
