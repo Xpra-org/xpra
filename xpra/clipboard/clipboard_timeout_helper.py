@@ -116,6 +116,8 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         proxy = self._get_proxy(selection)
         log("clipboard got contents%s: proxy=%s for selection=%s",
             (request_id, dtype, dformat, ellipsizer(data)), proxy, selection)
+        if data and isinstance(data, memoryview):
+            data = bytes(data)
         if proxy:
             proxy.got_contents(target, dtype, dformat, data)
 
