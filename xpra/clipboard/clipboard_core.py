@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -125,9 +125,9 @@ class ClipboardProtocolHelperCore:
 
     def init_translation(self, kwargs):
         def getselection(name):
-            v = kwargs.get("clipboard.%s" % name)           #ie: clipboard.remote
-            env_value = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_%s_SELECTION" % name.upper())
-            selections = kwargs.get("clipboards.%s" % name) #ie: clipboards.remote
+            v = kwargs.get(f"clipboard.{name}")           #ie: clipboard.remote
+            env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
+            selections = kwargs.get(f"clipboards.{name}") #ie: clipboards.remote
             if not selections:
                 return None
             for x in (env_value, v):
@@ -351,7 +351,7 @@ class ClipboardProtocolHelperCore:
                     log.warn("clipboard buffer contains blacklisted pattern '%s' and has been dropped!", x.pattern)
                     return None, None
             return b"bytes", data
-        log.error("unhandled format %s for clipboard data type %s" % (dformat, dtype))
+        log.error(f"Error: unhandled format {dformat} for clipboard data type {dtype}")
         return None, None
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
@@ -362,7 +362,8 @@ class ClipboardProtocolHelperCore:
             if len(data) > max_recv_datalen:
                 olen = len(data)
                 data = data[:max_recv_datalen]
-                log.info("Data copied out truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
+                log.info("clipboard data copied out truncated because of clipboard policy %d to %d",
+                         olen, max_recv_datalen)
         if data and isinstance(data, memoryview):
             data = bytes(data)
         if encoding == "bytes":
@@ -377,11 +378,11 @@ class ClipboardProtocolHelperCore:
             elif dformat == 8:
                 format_char = b"B"
             else:
-                raise Exception("unknown encoding format: %s" % dformat)
+                raise ValueError(f"unknown encoding format: {dformat}")
             fstr = b"@" + format_char * len(data)
             log("struct.pack(%s, %s)", fstr, data)
             return struct.pack(fstr, *data)
-        raise Exception("unhanled encoding: %s" % ((encoding, dtype, dformat),))
+        raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
     def _process_clipboard_request(self, packet):
         request_id, selection, target = packet[1:4]
@@ -461,7 +462,7 @@ class ClipboardProtocolHelperCore:
                 #but this would require the receiving end to use net_utf8()
                 wire_data = wire_data.encode("utf8")
                 log("encoded %i characters to %i utf8 bytes", l, len(wire_data))
-            return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
+            return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
     def _process_clipboard_contents(self, packet):
@@ -507,7 +508,7 @@ class ClipboardProtocolHelperCore:
             #log("process clipboard handler(%s)=%s", packet_type, handler)
             handler(packet)
         else:
-            log.warn("Warning: no clipboard packet handler for '%s'", packet_type)
+            log.warn(f"Warning: no clipboard packet handler for {packet_type!r}")
 
 
 
@@ -689,6 +690,7 @@ class ClipboardProxyCore:
             IMAGE_OVERLAY or
             (SANITIZE_IMAGES and not trusted)
             ):
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img_type = dtype.split("/")[-1]
             img = open_only(data, (img_type, ))
