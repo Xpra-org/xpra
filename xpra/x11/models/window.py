@@ -76,7 +76,7 @@ class WindowModel(BaseWindowModel):
     """This represents a managed client window.  It allows one to produce
     widgets that view that client window in various ways."""
 
-    _NET_WM_ALLOWED_ACTIONS = ["_NET_WM_ACTION_%s" % x for x in (
+    _NET_WM_ALLOWED_ACTIONS = [f"_NET_WM_ACTION_{x}" for x in (
         "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
         "MINIMIZE", "SHADE", "STICK",
         "MAXIMIZE_HORZ", "MAXIMIZE_VERT",
@@ -815,7 +815,7 @@ class WindowModel(BaseWindowModel):
 
     def get_wm_state(self, prop):
         state_names = self._state_properties.get(prop)
-        assert state_names, "invalid window state %s" % prop
+        assert state_names, f"invalid window state {prop}"
         log("get_wm_state(%s) state_names=%s", prop, state_names)
         #this is a virtual property for _NET_WM_STATE:
         #return True if any is set (only relevant for maximized)
