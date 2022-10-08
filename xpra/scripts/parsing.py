@@ -503,11 +503,12 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         if is_paramiko:
             ssh[0] = "paramiko"
             desc["is_paramiko"] = is_paramiko
+            paramiko_config = {}
             if opts.ssh.find(":")>0:
                 paramiko_config = parse_simple_dict(opts.ssh.split(":", 1)[1])
                 desc["paramiko-config"] = paramiko_config
-                agent_forwarding |= paramiko_config.get("agent", "").lower() in TRUE_OPTIONS
-                paramiko_config["agent"] = str(agent_forwarding)
+            agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
+            paramiko_config["agent"] = str(agent_forwarding)
         elif is_putty:
             desc["is_putty"] = True
         desc["agent"] = agent_forwarding
