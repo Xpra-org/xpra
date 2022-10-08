@@ -363,6 +363,8 @@ class ClipboardProtocolHelperCore:
                 olen = len(data)
                 data = data[:max_recv_datalen]
                 log.info("Data copied out truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
+        if data and isinstance(data, memoryview):
+            data = bytes(data)
         if encoding == "bytes":
             return data
         if encoding == "integers":
