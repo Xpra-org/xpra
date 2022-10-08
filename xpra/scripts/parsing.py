@@ -467,10 +467,9 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         opts.display = desc.get("display")
 
     if protocol in ("ssh", "vnc+ssh"):
-        proxy_command = ["_proxy"]
         desc.update({
                 "type"             : protocol,
-                "proxy_command"    : proxy_command,
+                "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
                 "display"          : None,
                 "display_as_args"  : [],
@@ -517,7 +516,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             #so it can setup the ssh agent symlink at a location
             #that the server can find with just the uuid:
             uuid = get_user_uuid()
-            proxy_command.append(f"--env=SSH_AGENT_UUID={uuid}")
+            desc["display_as_args"].append(f"--env=SSH_AGENT_UUID={uuid}")
             desc["ssh-agent-uuid"] = uuid
 
         _parse_host_string(host, 22)
