@@ -1906,13 +1906,20 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         setattr(opts, fn, v)
     if isdisplaytype(args, "ssh"):
         #add special flags to "display_as_args"
-        proxy_args = []
+        proxy_args = params.get("display_as_args", [])
         if params.get("display") is not None:
             geometry = params.get("geometry")
             display = params["display"]
+            try:
+                pos = proxy_args.index(display)
+            except ValueError:
+                pos = -1
             if mode=="shadow" and geometry:
                 display += f",{geometry}"
-            proxy_args.append(display)
+            if pos>=0:
+                proxy_args[pos] = display
+            else:
+                proxy_args.append(display)
         for x in get_start_server_args(opts, compat=True, cmdline=cmdline):
             proxy_args.append(x)
         #we have consumed the start[-child] options
