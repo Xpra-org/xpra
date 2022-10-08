@@ -2600,8 +2600,8 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
     from xpra.scripts.server import get_ssh_agent_path
     #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
     agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
-    if os.path.islink(agent_uuid_sockpath):
-        if is_socket(agent_uuid_sockpath):
+    if os.path.exists(agent_uuid_sockpath):
+        if os.path.islink(agent_uuid_sockpath) and is_socket(agent_uuid_sockpath):
             sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
             #keep the existing socket unchanged - somehow it still works?
             return
