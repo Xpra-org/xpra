@@ -177,7 +177,7 @@ Recommends:			python3-rencode
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
-%if 0%{?el8}
+%if 0%{?el8}%{?el9}
 Recommends:			python3-avahi
 %else
 %if 0%{?fedora}
@@ -268,7 +268,7 @@ Recommends:         qrencode
 Recommends:		    python3-pysocks
 Suggests:			python3-opencv
 #without this, the system tray is unusable with gnome!
-%if 0%{?el8}
+%if 0%{?el8}%{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %else
 Suggests:			gnome-shell-extension-appindicator
@@ -526,11 +526,9 @@ popd
 
 
 %post common-server
-%if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
-%endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
 	umask 077
