@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from PIL import Image
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import first_time, csv
@@ -52,10 +51,16 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
         assert argb_swap, "no argb codec"
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
-    if supports_transparency:
-        modes = PIL_conv.get(pixel_format, ())
+    try:
+        # pylint: disable=import-outside-toplevel
+        from PIL import Image
+    except ImportError:
+        modes = {}
     else:
-        modes = PIL_conv_noalpha.get(pixel_format, ())
+        if supports_transparency:
+            modes = PIL_conv.get(pixel_format, ())
+        else:
+            modes = PIL_conv_noalpha.get(pixel_format, ())
     target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
