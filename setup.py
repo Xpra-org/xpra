@@ -31,6 +31,13 @@ from xpra.os_util import (
     is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
     )
 
+if BITS!=64:
+    print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
+    from time import sleep
+    for _ in range(5):
+        sleep(1)
+        print(".")
+
 
 #*******************************************************************************
 print(" ".join(sys.argv))
