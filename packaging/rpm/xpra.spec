@@ -454,7 +454,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/csc_*
 %{python3_sitearch}/xpra/codecs/drm
 %{python3_sitearch}/xpra/codecs/enc_*
-%{python3_sitearch}/xpra/codecs/evdi
+#%{python3_sitearch}/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
