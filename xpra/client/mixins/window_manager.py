@@ -687,7 +687,6 @@ class WindowClient(StubClientMixin):
         try:
             # pylint: disable=import-outside-toplevel
             from PIL import Image
-            return Image
         except ImportError:
             if first_time("window-icons-require-pillow"):
                 log.info("showing window icons requires python-pillow")
@@ -705,6 +704,7 @@ class WindowClient(StubClientMixin):
             img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
             has_alpha = True
         else:
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img = open_only(data, ("png", ))
             if img.mode not in ("RGB", "RGBA"):
