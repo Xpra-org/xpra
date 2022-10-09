@@ -68,11 +68,19 @@ class WebcamServer(StubServerMixin):
         if not self.webcam_enabled:
             return
         try:
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import get_encodings
+        except ImportError:
+            log("init_webcam()", exc_info=True)
+            log.info("webcam forwarding cannot be enabled without the pillow decoder")
+            self.webcam_enabled = False
+            return
+        try:
             self.webcam_encodings = tuple(x for x in ("png", "jpeg", "webp") if x in get_encodings())
         except Exception as e:
+            log("init_webcam()", exc_info=True)
             log.error("Error: webcam forwarding disabled:")
-            log.error(" %s", e)
+            log.estr(e)
             self.webcam_enabled = False
         if self.webcam_device:
             self.webcam_virtual_video_devices = 1
@@ -85,12 +93,13 @@ class WebcamServer(StubServerMixin):
         log("init_virtual_video_devices")
         if not POSIX or OSX:
             return 0
+        # pylint: disable=import-outside-toplevel
         try:
             from xpra.codecs.v4l2.pusher import Pusher
             assert Pusher
         except ImportError:
             log("failed to import the virtual video module", exc_info=True)
-            log.info("no v4l2 virtual video module")
+            log.info("webcam forwarding requires the v4l2 virtual video module")
             return 0
         try:
             from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
