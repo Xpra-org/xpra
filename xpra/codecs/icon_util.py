@@ -35,7 +35,7 @@ def load_Rsvg():
         import gi  #pylint: disable=import-outside-toplevel
         try:
             gi.require_version('Rsvg', '2.0')
-            from gi.repository import Rsvg
+            from gi.repository import Rsvg  # pylint: disable=import-outside-toplevel
             log("load_Rsvg() Rsvg=%s", Rsvg)
             _Rsvg = Rsvg
         except (ValueError, ImportError) as e:
@@ -62,11 +62,11 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
             buf.close()
             return pngicondata, "png"
         except ValueError as e:
-            log("Image.open(%s)", filename, exc_info=True)
+            log(f"Image.open({filename}) {e}", exc_info=True)
         except Exception as e:
-            log("Image.open(%s)", filename, exc_info=True)
-            log.error("Error loading '%s':", filename)
-            log.error(" %s", e)
+            log(f"Image.open({filename})", exc_info=True)
+            log.error(f"Error loading {filename!r}:")
+            log.estr(e)
     icondata = load_binary_file(filename)
     if not icondata:
         return None
@@ -80,8 +80,7 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
             icondata = pngdata
             filename = filename[:-3]+"png"
     log("got icon data from '%s': %i bytes", filename, len(icondata))
-    if max_size>0 and len(icondata)>max_size and first_time("icon-size-warning-%s" % filename):
-        global large_icons
+    if 0<max_size<len(icondata) and first_time(f"icon-size-warning-{filename}"):
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
@@ -89,7 +88,7 @@ def svg_to_png(filename, icondata, w=128, h=128):
     if not SVG_TO_PNG:
         return None
     Rsvg = load_Rsvg()
-    log("svg_to_png%s Rsvg=%s", (filename, "%i bytes" % len(icondata), w, h), Rsvg)
+    log("svg_to_png%s Rsvg=%s", (filename, f"{len(icondata)} bytes", w, h), Rsvg)
     if not Rsvg:
         return None
     try:
