@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ from time import monotonic
 from PIL import Image
 
 from xpra.os_util import memoryview_to_bytes
-from xpra.util import first_time
+from xpra.util import first_time, csv
 from xpra.log import Logger
 try:
     from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
@@ -44,7 +44,8 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
     #need to convert to a supported format!
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
-    assert pixels, "failed to get pixels from %s" % image
+    if not pixels:
+        raise RuntimeError(f"failed to get pixels from {image}")
     if pixel_format in ("r210", "BGR565"):
         #try to fallback to argb module
         #(required for r210 which is not handled by PIL directly)
@@ -62,9 +63,9 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
         assert argb_swap, "no argb codec"
         if argb_swap(image, rgb_formats, supports_transparency):
             return True
-        warning_key = "rgb_reformat(%s, %s, %s)" % (pixel_format, rgb_formats, supports_transparency)
+        warning_key = f"rgb_reformat({pixel_format}, {rgb_formats}, {supports_transparency})"
         if first_time(warning_key):
-            log.warn("Warning: cannot convert '%s' to one of: %s" % (pixel_format, rgb_formats))
+            log.warn(f"Warning: cannot convert {pixel_format!r} to one of: "+csv(rgb_formats))
         return False
     input_format, target_format = target_rgb[0]
     start = monotonic()
@@ -76,7 +77,8 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
     img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
-    assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, target_format, len(data))
+    if len(data)!=rowstride*h:
+        raise RuntimeError(f"expected {rowstride*h} bytes in {target_format} format but got {len(data)}")
     image.set_pixels(data)
     image.set_rowstride(rowstride)
     image.set_pixel_format(target_format)

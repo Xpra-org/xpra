@@ -58,7 +58,7 @@ def get_subsampling_divs(pixel_format):
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
-        raise Exception("invalid pixel format: %s" % pixel_format)
+        raise Exception(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
 
@@ -124,6 +124,7 @@ class _codec_spec:
 
 
     def make_instance(self):
+        # pylint: disable=import-outside-toplevel
         from xpra.log import Logger
         log = Logger("encoding")
         cur = self.get_instance_count()
@@ -186,10 +187,11 @@ class csc_spec(_codec_spec):
         self._exported_fields += ["input_colorspace", "output_colorspace"]
 
     def __repr__(self):
-        return "%s(%s to %s)" % (self.codec_type, self.input_colorspace, self.output_colorspace)
+        return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspace})"
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Codec-Constants", "Codec Constants Info"):
         import sys

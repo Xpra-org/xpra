@@ -208,11 +208,12 @@ class ImageWrapper:
 
     def get_sub_image(self, x : int, y : int, w : int, h : int):
         #raise NotImplementedError("no sub-images for %s" % type(self))
-        assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
+        if w<=0 or h<=0:
+            raise ValueError(f"invalid sub-image size: {w}x{h}")
         if x+w>self.width:
-            raise Exception("invalid sub-image width: %i+%i greater than image width %i" % (x, w, self.width))
+            raise ValueError(f"invalid sub-image width: {x}+{w} greater than image width {self.width}")
         if y+h>self.height:
-            raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
+            raise ValueError(f"invalid sub-image height: {y}+{h} greater than image height {self.height}")
         assert self.planes==0, "cannot sub-divide planar images!"
         if x==0 and y==0 and w==self.width and h==self.height:
             #same dimensions, use the same wrapper
@@ -233,11 +234,9 @@ class ImageWrapper:
         return image
 
     def __del__(self):
-        #print("ImageWrapper.__del__() calling %s" % self.free)
         self.free()
 
     def free(self):
-        #print("ImageWrapper.free()")
         if not self.freed:
             self.freed = True
             self.planes = None

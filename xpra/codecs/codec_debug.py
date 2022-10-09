@@ -16,7 +16,8 @@ SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 def may_save_image(coding, data, now=0):
     if SAVE_TO_FILE:    # pragma: no cover
         now = now or monotonic()
-        filename = "./%s.%s" % (now, coding.lower().replace("/", "-"))
+        ext = coding.lower().replace("/", "-")
+        filename = f"./{now}.{ext}"
         with open(filename, "wb") as f:
             f.write(data)
         log.info("saved %7i bytes to %s", len(data), filename)
