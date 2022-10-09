@@ -647,9 +647,16 @@ def checkdirs(*dirs):
             raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
 
+def CC_is_clang():
+    cc = os.environ.get("CC", "gcc")
+    return cc.find("clang")>=0
+
 GCC_VERSION = ()
 def get_gcc_version():
     global GCC_VERSION
+    if CC_is_clang():
+        GCC_VERSION = (0, )
+        return GCC_VERSION
     if not GCC_VERSION:
         cc = os.environ.get("CC", "gcc")
         r, _, err = get_status_output([cc, "-v"])
@@ -2131,7 +2138,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             #GCC 6 uses C++11 by default:
             else:
                 cmd.append("-std=c++11")
-            if gcc_version>=(12, 0):
+            if gcc_version>=(12, 0) or CC_is_clang():
                 cmd.append("--allow-unsupported-compiler")
             if nvcc_version>=(11, 5):
                 cmd += ["-arch=all",
