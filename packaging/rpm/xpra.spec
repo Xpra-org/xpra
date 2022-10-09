@@ -161,7 +161,7 @@ Requires:			python3
 Requires:			python3-pillow
 Requires:			libyuv
 Requires:			libvpx
-Requires:			libdrm-devel
+BuildRequires:			libdrm-devel
 #not available yet:
 #Requires:			libevdi-devel
 #this is a downstream package with the codecs separated - it should not be installed:
