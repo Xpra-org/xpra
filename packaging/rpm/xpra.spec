@@ -249,7 +249,7 @@ BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
 %description -n python3-xpra-audio
-This package contains audio support for python2 builds of xpra.
+This package contains audio support for Python 3 builds of xpra.
 
 %package -n python3-xpra-client
 Summary:			python3 build of xpra client
