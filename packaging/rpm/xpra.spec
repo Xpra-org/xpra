@@ -184,7 +184,7 @@ Recommends:			python3-avahi
 Recommends:			python3-zeroconf
 %endif
 %endif
-Recommends:			lz4-libs
+Requires:			lz4-libs
 Recommends:			brotli
 Recommends:			python3-dns
 Recommends:			python3-paramiko
