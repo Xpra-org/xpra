@@ -64,12 +64,12 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-common = %{version}-%{release}
 Requires:			xpra-html5
-Requires:			python3-xpra-client = %{version}-%{release}
-Requires:			python3-xpra-server = %{version}-%{release}
+Requires:			xpra-client = %{version}-%{release}
+Requires:			xpra-server = %{version}-%{release}
 %if 0%{?fedora}
-Requires:			python3-xpra-audio = %{version}-%{release}
+Requires:			xpra-audio = %{version}-%{release}
 %else
-Suggests:			python3-xpra-audio = %{version}-%{release}
+Suggests:			xpra-audio = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -82,23 +82,18 @@ This metapackage installs the xpra in full, including the python client, server 
 %package common
 Summary:			Common files for xpra packages
 Group:				Networking
-BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 5
-Provides:			xpra-common-client
-Provides:			xpra-common-server
+Obsoletes:			xpra-common-client < 5.0-10.r32029
+Conflicts:			xpra-common-client
+Obsoletes:			xpra-common-server < 5.0-10.r32029
+Conflicts:			xpra-common-server
+Obsoletes:			python3-xpra < 5.0-10.r32029
+Conflicts:			python3-xpra
 %if !0%{?el9}
 BuildRequires:		pandoc
 %endif
 BuildRequires:		libfakeXinerama
-%description common
-This package contains the files which are shared between the xpra client and server packages.
-
-
-%package -n python3-xpra
-Summary:			Xpra gives you "persistent remote applications" for X.
-Group:				Networking
-Requires:			xpra-common = %{version}-%{release}
 Requires:			python3
 Requires:			python3-pillow
 Requires:			python3-cryptography
@@ -169,14 +164,17 @@ BuildRequires:		python3-cryptography
 BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
 %endif
-%description -n python3-xpra
-This package contains the shared python components of xpra.
+%description common
+This package contains the files which are shared between the xpra client and server packages.
 
 
-%package -n python3-xpra-audio
+%package -n xpra-audio
 Summary:			python3 build of xpra audio support
 Group:				Networking
-Requires:			python3-xpra = %{version}-%{release}
+#Provides:			python3-xpra-audio
+Conflicts:			python3-xpra-audio < 5.0-10.r32029
+Obsoletes:			python3-xpra-audio < 5.0-10.r32029
+Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-gstreamer1
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
@@ -194,22 +192,24 @@ BuildRequires:		gstreamer1-plugins-good
 BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
-%description -n python3-xpra-audio
+%description -n xpra-audio
 This package contains audio support for xpra.
 
 
-%package -n python3-xpra-client
+%package -n xpra-client
 Summary:			xpra client
 Group:				Networking
+#Provides:			python3-xpra-client
+Conflicts:			python3-xpra-client < 5.0-10.r32029
+Obsoletes:			python3-xpra-client < 5.0-10.r32029
 Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-Requires:			python3-xpra = %{version}-%{release}
 BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
 Recommends:			pinentry
-Recommends:			python3-xpra-audio
+Recommends:			xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
@@ -230,15 +230,17 @@ BuildRequires:		xclip
 BuildRequires:		zlib-devel
 %endif
 %endif
-%description -n python3-xpra-client
+%description -n xpra-client
 This package contains the xpra client.
 
 
-%package -n python3-xpra-server
+%package -n xpra-server
 Summary:			xpra server
 Group:				Networking
+#Provides:			python3-xpra-server
+Conflicts:			python3-xpra-server < 5.0-10.r32029
+Obsoletes:			python3-xpra-server < 5.0-10.r32029
 Requires:			xpra-common = %{version}-%{release}
-Requires:			python3-xpra = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
@@ -307,7 +309,7 @@ BuildRequires:		xorg-x11-drv-dummy
 %endif
 Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
-%description -n python3-xpra-server
+%description -n xpra-server
 This package contains the xpra server.
 
 
@@ -409,7 +411,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
-%files -n python3-xpra
 %{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers
 %{python3_sitearch}/xpra/clipboard
@@ -427,10 +428,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
 
-%files -n python3-xpra-audio
+%files -n xpra-audio
 %{python3_sitearch}/xpra/sound
 
-%files -n python3-xpra-client
+%files -n xpra-client
 %{python3_sitearch}/xpra/client
 %{_libexecdir}/xpra/xpra_signal_listener
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
@@ -441,7 +442,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/xpra/autostart.desktop
 
-%files -n python3-xpra-server
+%files -n xpra-server
 %{python3_sitearch}/xpra/server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
@@ -507,7 +508,7 @@ popd
 %endif
 
 
-%post -n python3-xpra-server
+%post -n xpra-server
 %if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
@@ -568,12 +569,12 @@ fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
-%post -n python3-xpra-client
+%post -n xpra-client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
-%preun -n python3-xpra-server
+%preun -n xpra-server
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
@@ -582,7 +583,7 @@ if [ $1 -eq 0 ] ; then
 	/bin/systemctl stop xpra.socket > /dev/null 2>&1 || :
 fi
 
-%postun -n python3-xpra-server
+%postun -n xpra-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 %if 0%{update_firewall}
 if [ $1 -eq 0 ]; then
@@ -612,7 +613,7 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
-%postun -n python3-xpra-client
+%postun -n xpra-client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
