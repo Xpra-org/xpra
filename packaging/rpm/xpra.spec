@@ -85,12 +85,9 @@ Summary:			Common files for xpra packages
 Group:				Networking
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 5
-Obsoletes:			xpra-common-client < 5.0-10.r32029
-Conflicts:			xpra-common-client
-Obsoletes:			xpra-common-server < 5.0-10.r32029
-Conflicts:			xpra-common-server
-Obsoletes:			python3-xpra < 5.0-10.r32029
-Conflicts:			python3-xpra
+Obsoletes:			xpra-common-client < 5.0-10.r32075
+Obsoletes:			xpra-common-server < 5.0-10.r32075
+Obsoletes:			python3-xpra < 5.0-10.r32075
 %if !0%{?el9}
 BuildRequires:		pandoc
 %endif
@@ -145,13 +142,11 @@ This package contains the files which are shared between the xpra client and ser
 %package codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
-Conflicts:			xpra < 5
 Requires:			python3-pillow
 BuildRequires:		libdrm-devel
 Requires:			libdrm
 BuildRequires:		libvpx-devel
 Requires:			libvpx
-Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
 BuildRequires:		libwebp-devel
 Requires:			libwebp
@@ -184,8 +179,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 Summary:			python3 build of xpra audio support
 Group:				Networking
 #Provides:			python3-xpra-audio
-Conflicts:			python3-xpra-audio < 5.0-10.r32029
-Obsoletes:			python3-xpra-audio < 5.0-10.r32029
+Obsoletes:			python3-xpra-audio < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-gstreamer1
 Requires:			gstreamer1
@@ -212,8 +206,7 @@ This package contains audio support for xpra.
 Summary:			xpra client
 Group:				Networking
 #Provides:			python3-xpra-client
-Conflicts:			python3-xpra-client < 5.0-10.r32029
-Obsoletes:			python3-xpra-client < 5.0-10.r32029
+Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
@@ -249,8 +242,7 @@ This package contains the xpra client.
 Summary:			xpra server
 Group:				Networking
 #Provides:			python3-xpra-server
-Conflicts:			python3-xpra-server < 5.0-10.r32029
-Obsoletes:			python3-xpra-server < 5.0-10.r32029
+Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
