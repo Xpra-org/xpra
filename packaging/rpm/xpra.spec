@@ -290,7 +290,7 @@ Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
 Recommends:			xterm
-Recommends:			libfakeXinerama
+Suggests:			libfakeXinerama
 Recommends:			mesa-dri-drivers
 Recommends:			redhat-menus
 Recommends:			gnome-menus
