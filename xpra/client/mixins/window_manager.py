@@ -243,15 +243,20 @@ class WindowClient(StubClientMixin):
                 icon_filename = get_icon_filename("xpra")
             traylog("window icon overlay: %s", icon_filename)
             if icon_filename:
+                # pylint: disable=import-outside-toplevel
+                #make sure Pillow's PNG image loader doesn't spam the output with debug messages:
+                import logging
+                logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
                 try:
-                    #make sure Pillow's PNG image loader doesn't spam the output with debug messages:
-                    import logging
-                    logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
                     from PIL import Image   #@UnresolvedImport
-                    self.overlay_image = Image.open(icon_filename)
-                except Exception as e:
-                    log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
-                    log.error(" %s", e)
+                except ImportError:
+                    log.info("window icon overlay requires python-pillow")
+                else:
+                    try:
+                        self.overlay_image = Image.open(icon_filename)
+                    except Exception as e:
+                        log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
+                        log.error(" %s", e)
         traylog("overlay_image=%s", self.overlay_image)
         self._draw_queue = Queue()
 

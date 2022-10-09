@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-import os
 import threading
 from io import BytesIO
-from PIL import Image
 from time import monotonic
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 
 from xpra.os_util import load_binary_file, memoryview_to_bytes
 from xpra.net import compression
@@ -91,19 +95,18 @@ class WindowIconSource:
 
     @staticmethod
     def get_fallback_window_icon():
-        if WindowIconSource.fallback_window_icon is False:
+        if WindowIconSource.fallback_window_icon is False and Image:
             try:
-                from xpra.platform.paths import get_icon_filename
+                from xpra.platform.paths import get_icon_filename  # pylint: disable=import-outside-toplevel
                 icon_filename = get_icon_filename("xpra.png")
-                log("get_fallback_window_icon() icon filename=%s", icon_filename)
-                assert os.path.exists(icon_filename), "xpra icon not found: %s" % icon_filename
+                log(f"get_fallback_window_icon() icon filename={icon_filename}")
                 img = Image.open(icon_filename)
                 icon_data = load_binary_file(icon_filename)
                 icon = (img.size[0], img.size[1], "png", icon_data)
                 WindowIconSource.fallback_window_icon = icon
                 return icon
             except Exception as e:
-                log.warn("failed to get fallback icon: %s", e)
+                log.warn(f"Warning: failed to get fallback icon: {e}")
                 WindowIconSource.fallback_window_icon = False
         return WindowIconSource.fallback_window_icon
 
@@ -187,11 +190,12 @@ class WindowIconSource:
         w, h, pixel_format, pixel_data = idata
         log("compress_and_send_window_icon() %ix%i in %s format, %i bytes for wid=%i",
             w, h, pixel_format, len(pixel_data), self.wid)
-        assert pixel_format in ("BGRA", "RGBA", "png"), "invalid window icon format %s" % pixel_format
+        if pixel_format not in ("BGRA", "RGBA", "png"):
+            raise RuntimeError(f"invalid window icon format {pixel_format}")
         if pixel_format=="BGRA":
             #BGRA data is always unpremultiplied
             #(that's what we get from NetWMIcons)
-            from xpra.codecs.argb.argb import premultiply_argb  #@UnresolvedImport
+            from xpra.codecs.argb.argb import premultiply_argb  #@UnresolvedImport pylint: disable=import-outside-toplevel
             pixel_data = premultiply_argb(pixel_data)
 
         max_w, max_h = self.window_icon_max_size
@@ -206,6 +210,9 @@ class WindowIconSource:
 
         image = None
         if must_scale or must_convert or SAVE_WINDOW_ICONS:
+            if Image is None:
+                log("cannot scale or convert window icon without python-pillow")
+                return
             #we're going to need a PIL Image:
             if pixel_format=="png":
                 image = Image.open(BytesIO(pixel_data))
@@ -224,7 +231,7 @@ class WindowIconSource:
                 log("scaling window icon down to %sx%s", rw, rh)
                 image = image.resize((rw, rh), Image.ANTIALIAS)
             if SAVE_WINDOW_ICONS:
-                filename = "server-window-%i-icon-%i.png" % (self.wid, int(monotonic()))
+                filename = f"server-window-{self.wid}-icon-{int(monotonic())}.png"
                 image.save(filename, 'PNG')
                 log("server window icon saved to %s", filename)
 

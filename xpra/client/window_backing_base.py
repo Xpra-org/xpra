@@ -9,7 +9,6 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from PIL import Image, ImageFont, ImageDraw  #@UnresolvedImport
 from gi.repository import GLib
 
 from xpra.net.mmap_pipe import mmap_read
@@ -49,6 +48,7 @@ def load_PIL_font():
     global _PIL_font
     if _PIL_font:
         return _PIL_font
+    from PIL import ImageFont   #@UnresolvedImport pylint: disable=import-outside-toplevel
     for font_file in (
         "/usr/share/fonts/gnu-free/FreeMono.ttf",
         "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
@@ -197,11 +197,12 @@ class WindowBackingBase:
         self.fps_buffer_update_time = monotonic()
         self.fps_value = self.calculate_fps()
         if self.is_show_fps():
-            text = "%i fps" % self.fps_value
+            text = f"{self.fps_value} fps"
             width, height = 64, 32
             self.fps_buffer_size = (width, height)
             pixels = self.rgba_text(text, width, height)
-            self.update_fps_buffer(width, height, pixels)
+            if pixels:
+                self.update_fps_buffer(width, height, pixels)
 
     def update_fps_buffer(self, width, height, pixels):
         raise NotImplementedError
@@ -236,6 +237,13 @@ class WindowBackingBase:
         return monotonic()-last_fps_event<N
 
     def rgba_text(self, text, width=64, height=32, x=20, y=10, bg=(128, 128, 128, 32)):
+        try:
+            from PIL import Image, ImageDraw  #@UnresolvedImport pylint: disable=import-outside-toplevel
+        except ImportError:
+            log("rgba_text(..)", exc_info=True)
+            if first_time("pillow-text-overlay"):
+                log.warn("Warning: cannot show text overlay without python pillow")
+            return None
         rgb_format = "RGBA"
         img = Image.new(rgb_format, (width, height), color=bg)
         draw = ImageDraw.Draw(img)
