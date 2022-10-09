@@ -710,8 +710,7 @@ apply to all connections of the same type. ie: \fItcp-auth\fP for
 Although this is still supported as a fallback, the recommended
 way is to specify authentication options using bind properties.
 ie: \fIbind-tcp=0.0.0.0:14500,auth=file:filename=password.txt\fP.
-For more details on authentication configuration, see \fIauth=\fP.
-The properties can also define extra configuration options.
+The properties can also define extra socket configuration options.
 
 \fB--bind\fP=\fIBIND_LOCATION[,PROPERTIES]\fP
 Create a local Unix domain socket (on Unix)
@@ -747,7 +746,7 @@ If the host portion is omitted, then 127.0.0.1 (localhost) will be
 used.  If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
 
-Using this switch without using the \fItcp-auth\fP option is not recommended,
+Using this switch without setting the \fIauth\fP option is not recommended,
 and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 
@@ -896,11 +895,13 @@ using the python \fIldap3\fP library.
 \fB--tcp-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind-tcp\fP switch).
+Deprecated, use per-socket authentication options.
 .TP
 \fB--ws-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to ws sockets: sockets defined using the \fBbind-ws\fP switch,
 or TCP sockets upgraded to websockets. (if the \fBhtml\fP option is enabled).
+Deprecated, use per-socket authentication options.
 .TP
 \fB--wss-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
@@ -908,18 +909,22 @@ to wss sockets: sockets defined using the \fBbind-wss\fP switch,
 ws sockets upgraded to SSL (if the \fBssl\fP option is enabled) or
 TCP sockets upgraded to SSL and then to wss.
 (if both the \fBssl\fP and \fBhtml\fP options are enabled).
+Deprecated, use per-socket authentication options.
 .TP
 \fB--ssl-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to SSL sockets: sockets defined using the \fBbind-ssl\fP switch,
 or TCP sockets upgraded by \fBssl=auto\fP or \fBssl=on\fP.
+Deprecated, use per-socket authentication options.
 .TP
 \fB--rfb-auth\fP=\fIMODULE\fP
 Authentication module to use for the \fBbind-rfb\fP sockets.
+Deprecated, use per-socket authentication options.
 .TP
 \fB--vsock-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind-vsock\fP switch).
+Deprecated, use per-socket authentication options.
 
 
 .SS Options for start, start-desktop, upgrade
@@ -1273,9 +1278,8 @@ acceleration on MS Windows.
 .TP
 \fB--password-file\fP=\fIFILENAME\fP
 Supply the password to be used for connecting to a server that
-uses authentication. See \fIauth\fP, \fItcp-auth\fP, \fIssl-auth\fP
-and \fIvsock-auth\fP for details.
-Alternatively, you may use the \fIXPRA_PASSWORD\fP environment variable.
+uses authentication.
+Deprecated, use per-socket authentication options.
 .TP
 \fB--opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]
 Use OpenGL accelerated rendering on the client.
@@ -1695,9 +1699,6 @@ The SSL sockets will only be used for xpra's native protocol
 The SSL sockets will only be used for https and websocket (wss)
 .RE
 If SSL is enabled, then a \fBssl-cert\fP is required.
-Authentication, if required, will use the \fBssl-auth\fP module specified,
-and fallback to \fBtcp-auth\fP or \fBauth\fP unless the value
-\fInone\fP is specified.
 
 The remaining options mirror the Python ssl module attributes.
 Please refer to that documentation and bear in mind that configuring
