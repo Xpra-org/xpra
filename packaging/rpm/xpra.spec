@@ -551,11 +551,9 @@ popd
 
 
 %post server
-%if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
-%endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
 	umask 077
