@@ -1,6 +1,4 @@
 include COPYING README.md
-include xpra/monotonic_ctime.h
-include xpra/monotonic_ctime.c
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
 include xpra/buffers/xxhash.h
@@ -9,7 +7,6 @@ include xpra/buffers/xxh3.h
 include xpra/net/lz4_compat.h
 include xpra/x11/gtk3/gdk_x11_macros.c
 include xpra/x11/gtk3/gdk_x11_macros.h
-include xpra/codecs/cuda_common/*.cu
 include xpra/codecs/v4l2/video.h
 include xpra/codecs/dec_avcodec2/register_compat.*
 include xpra/platform/win32/setappid.cpp
