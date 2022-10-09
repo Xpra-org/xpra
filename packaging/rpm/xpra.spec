@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -76,7 +76,7 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 
 So basically it's screen for remote X apps.
 
-This metapackage installs the python3 version of xpra in full, including the python client, server and HTML5 client.
+This metapackage installs the xpra in full, including the python client, server and HTML5 client.
 
 
 %package common
@@ -84,81 +84,42 @@ Summary:			Common files for xpra packages
 Group:				Networking
 BuildArch:			noarch
 Requires(pre):		shadow-utils
-Conflicts:			xpra < 2.1
+Conflicts:			xpra < 5
+Provides:			xpra-common-client
+Provides:			xpra-common-server
 %if !0%{?el9}
 BuildRequires:		pandoc
 %endif
 BuildRequires:		libfakeXinerama
 %description common
-This package contains the files which are shared between all the xpra packages.
+This package contains the files which are shared between the xpra client and server packages.
 
-%package common-client
-Summary:			Common files for xpra client packages
-Group:				Networking
-BuildArch:			noarch
-Requires:			xpra-common = %{version}-%{release}
-BuildRequires:		desktop-file-utils
-Requires(post):		desktop-file-utils
-Requires(postun):	desktop-file-utils
-%description common-client
-This package contains the files which are shared between all the xpra client packages.
-
-%package common-server
-Summary:			Common files for xpra server packages
-Group:				Networking
-BuildArch:			noarch
-Requires:			xpra-common
-%if 0%{?fedora}
-Suggests:			xmodmap
-Suggests:			xrandr
-Requires:			xrdb
-%else
-Requires:			xorg-x11-server-utils
-%endif
-Requires:			xorg-x11-drv-dummy
-Requires:			xorg-x11-xauth
-Requires:			selinux-policy
-Requires(post):		openssl
-Requires(post):		systemd-units
-Requires(preun):	systemd-units
-Requires(postun):	systemd-units
-Recommends:		xterm
-Recommends:		libfakeXinerama
-Recommends:		mesa-dri-drivers
-Recommends:		redhat-menus
-Recommends:		gnome-menus
-Recommends:		gnome-icon-theme
-#allows the server to use software opengl:
-Recommends:		mesa-libOSMesa
-BuildRequires:		systemd-devel
-BuildRequires:		checkpolicy
-BuildRequires:		selinux-policy-devel
-BuildRequires:		pam-devel
-%if 0%{?fedora}
-BuildRequires:		procps-devel
-%endif
-BuildRequires:		lz4-devel
-BuildRequires:		brotli-devel
-BuildRequires:		qrencode-devel
-%if 0%{?run_tests}
-BuildRequires:		dbus-x11
-BuildRequires:		dbus-tools
-BuildRequires:		tigervnc
-BuildRequires:		xorg-x11-server-Xorg
-BuildRequires:		xorg-x11-server-Xvfb
-BuildRequires:		xorg-x11-drv-dummy
-%endif
-Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
-Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
-%description common-server
-This package contains the files which are shared between all the xpra server packages.
 
 %package -n python3-xpra
-Summary:			Xpra gives you "persistent remote applications" for X. Python3 build.
+Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3
 Requires:			python3-pillow
+Requires:			python3-cryptography
+Requires:			python3-gobject
+Recommends:			python3-rencode
+Recommends:			python3-inotify
+Recommends:			python3-netifaces
+Recommends:			python3-dbus
+Recommends:			python3-dns
+Recommends:			python3-paramiko
+Suggests:			python3-kerberos
+Suggests:			python3-gssapi
+Suggests:			python3-ldap
+Suggests:			python3-ldap3
+%if 0%{?el8}%{?el9}
+Recommends:			python3-avahi
+%endif
+%if 0%{?fedora}
+Recommends:			python3-zeroconf
+%endif
+#codecs:
 Requires:			libyuv
 Requires:			libvpx
 Requires:			libdrm-devel
@@ -168,42 +129,26 @@ Requires:			libdrm-devel
 Conflicts:			xpra-codecs-freeworld
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
+Requires:			libwebp
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
-Requires:			python3-cryptography
-Requires:			python3-gobject
-Recommends:			python3-rencode
-Recommends:			python3-inotify
-Recommends:			python3-netifaces
-Recommends:			python3-dbus
-%if 0%{?el8}
-Recommends:			python3-avahi
-%else
-%if 0%{?fedora}
-Recommends:			python3-zeroconf
-%endif
-%endif
-Recommends:			lz4-libs
-Recommends:			brotli
-Recommends:			python3-dns
-Recommends:			python3-paramiko
-Recommends:         python3-kerberos
-Recommends:         python3-gssapi
-Recommends:         python3-ldap
-Recommends:         python3-ldap3
-#Suggests:           python3-cpuinfo
-Requires:			libwebp
 %if 0%{?fedora}
 Requires:			libavif
 BuildRequires:		libavif-devel
 Requires:			libspng
 BuildRequires:		libspng-devel
 %endif
+Requires:			lz4-libs
+Recommends:			brotli
+#Suggests:           python3-cpuinfo
 BuildRequires:		which
 BuildRequires:		libwebp-devel
 BuildRequires:		turbojpeg-devel
 BuildRequires:		libyuv-devel
+BuildRequires:		lz4-devel
+BuildRequires:		brotli-devel
+BuildRequires:		qrencode-devel
 BuildRequires:		coreutils
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
@@ -225,7 +170,8 @@ BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
 %endif
 %description -n python3-xpra
-This package contains the python3 build of xpra.
+This package contains the shared python components of xpra.
+
 
 %package -n python3-xpra-audio
 Summary:			python3 build of xpra audio support
@@ -249,12 +195,16 @@ BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
 %description -n python3-xpra-audio
-This package contains audio support for python2 builds of xpra.
+This package contains audio support for xpra.
+
 
 %package -n python3-xpra-client
-Summary:			python3 build of xpra client
+Summary:			xpra client
 Group:				Networking
-Requires:			xpra-common-client = %{version}-%{release}
+Requires:			xpra-common = %{version}-%{release}
+BuildRequires:		desktop-file-utils
+Requires(post):		desktop-file-utils
+Requires(postun):	desktop-file-utils
 Requires:			python3-xpra = %{version}-%{release}
 BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
@@ -268,7 +218,7 @@ Recommends:         qrencode
 Recommends:		    python3-pysocks
 Suggests:			python3-opencv
 #without this, the system tray is unusable with gnome!
-%if 0%{?el8}
+%if 0%{?el8}%{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %else
 Suggests:			gnome-shell-extension-appindicator
@@ -281,12 +231,13 @@ BuildRequires:		zlib-devel
 %endif
 %endif
 %description -n python3-xpra-client
-This package contains the python3 xpra client.
+This package contains the xpra client.
+
 
 %package -n python3-xpra-server
-Summary:			python3 build of xpra server
+Summary:			xpra server
 Group:				Networking
-Requires:			xpra-common-server = %{version}-%{release}
+Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-xpra = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
@@ -309,6 +260,10 @@ Suggests:			python3-oauthlib
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
+BuildRequires:		systemd-devel
+BuildRequires:		checkpolicy
+BuildRequires:		selinux-policy-devel
+BuildRequires:		pam-devel
 BuildRequires:		libxkbfile-devel
 BuildRequires:		libXtst-devel
 BuildRequires:		libXcomposite-devel
@@ -319,10 +274,41 @@ Requires:			libXtst
 Requires:			libXcomposite
 Requires:			libXdamage
 Requires:			libXres
-#once the server is fully ported over to python3:
-#Recommends:		python3-uinput
+%if 0%{?fedora}
+Suggests:			xmodmap
+Suggests:			xrandr
+Requires:			xrdb
+BuildRequires:		procps-devel
+%else
+Requires:			xorg-x11-server-utils
+%endif
+Requires:			xorg-x11-drv-dummy
+Requires:			xorg-x11-xauth
+Requires:			selinux-policy
+Requires(post):		openssl
+Requires(post):		systemd-units
+Requires(preun):	systemd-units
+Requires(postun):	systemd-units
+Recommends:			xterm
+Recommends:			libfakeXinerama
+Recommends:			mesa-dri-drivers
+Recommends:			redhat-menus
+Recommends:			gnome-menus
+Recommends:			gnome-icon-theme
+#allows the server to use software opengl:
+Recommends:			mesa-libOSMesa
+%if 0%{?run_tests}
+BuildRequires:		dbus-x11
+BuildRequires:		dbus-tools
+BuildRequires:		tigervnc
+BuildRequires:		xorg-x11-server-Xorg
+BuildRequires:		xorg-x11-server-Xvfb
+BuildRequires:		xorg-x11-drv-dummy
+%endif
+Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
+Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 %description -n python3-xpra-server
-This package contains the python3 xpra server.
+This package contains the xpra server.
 
 
 %prep
@@ -423,7 +409,29 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
-%files common-client
+%files -n python3-xpra
+%{python3_sitearch}/xpra/__pycache__
+%{python3_sitearch}/xpra/buffers
+%{python3_sitearch}/xpra/clipboard
+%{python3_sitearch}/xpra/notifications
+%{python3_sitearch}/xpra/codecs
+%{python3_sitearch}/xpra/dbus
+%{python3_sitearch}/xpra/gtk_common
+%{python3_sitearch}/xpra/keyboard
+%{python3_sitearch}/xpra/net
+%{python3_sitearch}/xpra/platform
+%{python3_sitearch}/xpra/scripts
+%{python3_sitearch}/xpra/sound
+%{python3_sitearch}/xpra/x11
+%{python3_sitearch}/xpra/rectangle.*.so
+%{python3_sitearch}/xpra/*.py*
+%{python3_sitearch}/xpra-*.egg-info
+
+%files -n python3-xpra-audio
+%{python3_sitearch}/xpra/sound
+
+%files -n python3-xpra-client
+%{python3_sitearch}/xpra/client
 %{_libexecdir}/xpra/xpra_signal_listener
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 %config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
@@ -433,7 +441,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/xpra/autostart.desktop
 
-%files common-server
+%files -n python3-xpra-server
+%{python3_sitearch}/xpra/server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
@@ -469,33 +478,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/*.pp
 %endif
 
-%files -n python3-xpra
-%{python3_sitearch}/xpra/__pycache__
-%{python3_sitearch}/xpra/buffers
-%{python3_sitearch}/xpra/clipboard
-%{python3_sitearch}/xpra/notifications
-%{python3_sitearch}/xpra/codecs
-%{python3_sitearch}/xpra/dbus
-%{python3_sitearch}/xpra/gtk_common
-%{python3_sitearch}/xpra/keyboard
-%{python3_sitearch}/xpra/net
-%{python3_sitearch}/xpra/platform
-%{python3_sitearch}/xpra/scripts
-%{python3_sitearch}/xpra/sound
-%{python3_sitearch}/xpra/x11
-%{python3_sitearch}/xpra/rectangle.*.so
-%{python3_sitearch}/xpra/*.py*
-%{python3_sitearch}/xpra-*.egg-info
-
-%files -n python3-xpra-audio
-%{python3_sitearch}/xpra/sound
-
-%files -n python3-xpra-client
-%{python3_sitearch}/xpra/client
-
-%files -n python3-xpra-server
-%{python3_sitearch}/xpra/server
-
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-gui.desktop
@@ -525,7 +507,7 @@ popd
 %endif
 
 
-%post common-server
+%post -n python3-xpra-server
 %if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
@@ -586,12 +568,12 @@ fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
-%post common-client
+%post -n python3-xpra-client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
-%preun common-server
+%preun -n python3-xpra-server
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
@@ -600,7 +582,7 @@ if [ $1 -eq 0 ] ; then
 	/bin/systemctl stop xpra.socket > /dev/null 2>&1 || :
 fi
 
-%postun common-server
+%postun -n python3-xpra-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 %if 0%{update_firewall}
 if [ $1 -eq 0 ]; then
@@ -630,7 +612,7 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
-%postun common-client
+%postun -n python3-xpra-client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
