@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -185,7 +185,7 @@ class WebcamMixin(StubSourceMixin):
             #one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
-                from xpra.codecs.csc_libyuv.colorspace_converter import (   #@UnresolvedImport
+                from xpra.codecs.libyuv.colorspace_converter import (   #@UnresolvedImport
                     get_input_colorspaces,
                     get_output_colorspaces,
                     ColorspaceConverter,
@@ -194,13 +194,16 @@ class WebcamMixin(StubSourceMixin):
                 self.send_webcam_stop(device_id, "no csc module")
                 return False
             try:
-                assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
-                assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
+                if rgb_pixel_format not in get_input_colorspaces():
+                    raise ValueError(f"unsupported RGB pixel format {rgb_pixel_format}")
+                if src_format not in get_output_colorspaces(rgb_pixel_format):
+                    raise ValueError(f"unsupported output colourspace format {src_format}")
             except Exception as e:
                 log.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
+                log.estr(e)
                 log.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
                 log.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
-                self.send_webcam_stop(device_id, "csc format error")
+                self.send_webcam_stop(device_id, f"csc format error: {e}")
                 return False
             tw = webcam.get_width()
             th = webcam.get_height()
@@ -217,7 +220,7 @@ class WebcamMixin(StubSourceMixin):
             msg = str(e)
             if not msg:
                 msg = "unknown error"
-                log.error(" %s error" % webcam, exc_info=True)
+                log.error(f" {webcam} error", exc_info=True)
             log.error(" %s", msg)
             self.send_webcam_stop(device_id, msg)
             self.stop_virtual_webcam(device_id)

@@ -183,17 +183,17 @@ CODEC_OPTIONS = {
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     "enc_avif"      : ("avif encoder",      "avif",         "encoder", "encode"),
-    "enc_nvjpeg"    : ("nvjpeg encoder",    "nvjpeg",       "encoder", "encode"),
+    "enc_nvjpeg"    : ("nvjpeg encoder",    "nvidia.nvjpeg","encoder", "encode"),
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
-    "enc_x264"      : ("x264 encoder",      "enc_x264",     "encoder", "Encoder"),
-    "enc_x265"      : ("x265 encoder",      "enc_x265",     "encoder", "Encoder"),
-    "nvenc"         : ("nvenc encoder",     "nvenc",        "encoder", "Encoder"),
+    "enc_x264"      : ("x264 encoder",      "x264",         "encoder", "Encoder"),
+    "enc_x265"      : ("x265 encoder",      "x265",         "encoder", "Encoder"),
+    "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_ffmpeg"    : ("ffmpeg encoder",    "enc_ffmpeg",   "encoder", "Encoder"),
     "enc_vpl"       : ("oneVPL encoder",    "vpl",          "encoder", "Encoder"),
     #csc:
-    "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
-    "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),
+    "csc_swscale"   : ("swscale colorspace conversion", "ffmpeg", "colorspace_converter", "ColorspaceConverter"),
+    "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "colorspace_converter", "ColorspaceConverter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
@@ -209,7 +209,7 @@ CODEC_OPTIONS = {
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
-    "nvfbc"         : ("NVIDIA Capture SDK","nvfbc",        f"fbc_capture_{osname}", "NvFBC_SysCapture"),
+    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"fbc_capture_{osname}", "NvFBC_SysCapture"),
     }
 
 NOLOAD = []

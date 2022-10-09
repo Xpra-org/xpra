@@ -94,7 +94,7 @@ class _codec_spec:
                     can_scale=False,
                     score_boost=0,
                     width_mask=0xFFFF, height_mask=0xFFFF):
-        self.codec_class = codec_class          #ie: xpra.codecs.enc_x264.encoder.Encoder
+        self.codec_class = codec_class          #ie: xpra.codecs.x264.encoder.Encoder
         self.codec_type = codec_type            #ie: "nvenc"
         self.quality = quality
         self.speed = speed

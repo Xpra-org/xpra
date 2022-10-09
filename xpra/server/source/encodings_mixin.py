@@ -366,7 +366,7 @@ class EncodingsMixin(StubSourceMixin):
         or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
             cudalog = Logger("cuda")
             try:
-                from xpra.codecs.nv_common.cuda_context import get_device_context
+                from xpra.codecs.nvidia.cuda_context import get_device_context
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)
             except Exception as e:

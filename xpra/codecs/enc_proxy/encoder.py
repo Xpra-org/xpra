@@ -83,7 +83,7 @@ class Encoder:
     def __repr__(self):
         if self.src_format is None:
             return "proxy_encoder(uninitialized)"
-        return "proxy_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
+        return f"proxy_encoder({self.src_format} - {self.width}x{self.height})"
 
     def is_closed(self):
         return self.src_format is None
@@ -118,9 +118,11 @@ class Encoder:
     def compress_image(self, image, options=None):
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
-        assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
+        if image.get_planes()!=ImageWrapper.PACKED:
+            raise RuntimeError(f"invalid number of planes: {image.get_planes()}")
         pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
+        if not pixels:
+            raise RuntimeError(f"failed to get pixels from {image}")
         #info used by proxy encoder:
         client_options = {
                 "proxy"     : True,

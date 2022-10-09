@@ -377,7 +377,7 @@ class WindowBackingBase:
             dev = get_default_device()
             assert dev
             #make this an opengl compatible context:
-            from xpra.codecs.nv_common.cuda_context import cuda_device_context
+            from xpra.codecs.nvidia.cuda_context import cuda_device_context
             self.cuda_context = cuda_device_context(dev.device_id, dev.device, opengl)
             #create the context now as this is the part that takes time:
             self.cuda_context.make_context()

@@ -463,8 +463,8 @@ cdef class Encoder:
 
     def __repr__(self):
         if self.src_format is None:
-            return "x264_encoder(uninitialized)"
-        return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
+            return "x265_encoder(uninitialized)"
+        return "x265_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
 
     def is_closed(self):
         return self.context==NULL

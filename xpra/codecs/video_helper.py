@@ -20,15 +20,15 @@ CODEC_TO_MODULE = {
     "vpx"        : "vpx",
     "x264"       : "enc_x264",
     "x265"       : "enc_x265",
-    "nvenc"      : "nvenc",
-    "swscale"    : "csc_swscale",
+    "nvenc"      : "nvidia.nvenc",
+    "swscale"    : "ffmpeg.colorspace_converter",
     "cython"     : "csc_cython",
-    "libyuv"     : "csc_libyuv",
+    "libyuv"     : "libyuv",
     "avcodec2"   : "dec_avcodec2",
     "ffmpeg"     : "enc_ffmpeg",
     "jpeg"       : "jpeg",
     "webp"       : "webp",
-    "nvjpeg"     : "nvjpeg",
+    "nvjpeg"     : "nvidia.nvjpeg",
     }
 
 def has_codec_module(module_name):

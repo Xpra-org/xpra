@@ -15,7 +15,7 @@ def scale_image(image, width, height):
     rgb_format = image.get_pixel_format()
     if rgb_format in RGB_SCALE_FORMATS:
         try:
-            from xpra.codecs.csc_libyuv.colorspace_converter import argb_scale  #pylint: disable=import-outside-toplevel
+            from xpra.codecs.libyuv.colorspace_converter import argb_scale  #pylint: disable=import-outside-toplevel
         except ImportError as e:
             log("cannot downscale: %s", e)
         else:

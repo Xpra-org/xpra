@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -186,10 +186,10 @@ class Encodings(StubClientMixin):
         #batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
-            evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
+            evalue = os.environ.get(f"XPRA_BATCH_{bprop.upper()}")
             if evalue:
                 try:
-                    caps["batch.%s" % bprop] = int(evalue)
+                    caps[f"batch.{bprop}"] = int(evalue)
                 except ValueError:
                     log.error("Error: invalid environment value for %s: %s", bprop, evalue)
         log("get_batch_caps()=%s", caps)
@@ -214,7 +214,7 @@ class Encodings(StubClientMixin):
             caps[""] = self.encoding
         if FULL_INFO>1:
             for k,v in codec_versions.items():
-                caps["%s.version" % k] = v
+                caps[f"{k}.version"] = v
         if self.quality>0:
             caps["quality"] = self.quality
         if self.min_quality>0:
@@ -226,7 +226,7 @@ class Encodings(StubClientMixin):
 
         #generic rgb compression flags:
         for x in compression.ALL_COMPRESSORS:
-            caps["rgb_%s" % x] = x in compression.get_enabled_compressors(("lz4", ))
+            caps[f"rgb_{x}"] = x in compression.get_enabled_compressors(("lz4", ))
         #these are the defaults - when we instantiate a window,
         #we can send different values as part of the map event
         #these are the RGB modes we want (the ones we are expected to be able to paint with):
@@ -259,9 +259,9 @@ class Encodings(StubClientMixin):
                         ("YUV420P", "high"),
                         ("YUV422P", ""),
                         ("YUV444P", "")):
-                profile = os.environ.get("XPRA_H264_%s_PROFILE" % (csc_name), default_profile)
+                profile = os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile)
                 if profile:
-                    h264_caps["%s.profile" % (csc_name)] = profile
+                    h264_caps[f"{csc_name}.profile"] = profile
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
             updict(caps, "h264", h264_caps)
@@ -314,23 +314,27 @@ class Encodings(StubClientMixin):
     def send_quality(self):
         q = self.quality
         log("send_quality() quality=%s", q)
-        assert q==-1 or 0<=q<=100, "invalid quality: %s" % q
+        if q!=-1 and (q<0 or q>100):
+            raise ValueError(f"invalid quality: {q}")
         self.send("quality", q)
 
     def send_min_quality(self):
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
-        assert q==-1 or 0<=q<=100, "invalid min-quality: %s" % q
+        if q!=-1 and (q<0 or q>100):
+            raise ValueError(f"invalid min-quality: {q}")
         self.send("min-quality", q)
 
     def send_speed(self):
         s = self.speed
         log("send_speed() min-speed=%s", s)
-        assert s==-1 or 0<=s<=100, "invalid speed: %s" % s
+        if s!=-1 and (s<0 or s>100):
+            raise ValueError(f"invalid speed: {s}")
         self.send("speed", s)
 
     def send_min_speed(self):
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
-        assert s==-1 or 0<=s<=100, "invalid min-speed: %s" % s
+        if s!=-1 and (s<0 or s>100):
+            raise ValueError(f"invalid min-speed: {s}")
         self.send("min-speed", s)

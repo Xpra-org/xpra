@@ -1046,31 +1046,31 @@ def clean():
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/vpl/encoder.c",
-                   "xpra/codecs/nvenc/encoder.c",
-                   "xpra/codecs/nvfbc/fbc_capture_linux.cpp",
-                   "xpra/codecs/nvfbc/fbc_capture_win.cpp",
-                   "xpra/codecs/nvjpeg/common.c",
-                   "xpra/codecs/nvjpeg/encoder.c",
-                   "xpra/codecs/nvjpeg/decoder.c",
+                   "xpra/codecs/nvidia/nvenc/encoder.c",
+                   "xpra/codecs/nvidia/nvfbc/fbc_capture_linux.cpp",
+                   "xpra/codecs/nvidia/nvfbc/fbc_capture_win.cpp",
+                   "xpra/codecs/nvidia/nvjpeg/common.c",
+                   "xpra/codecs/nvidia/nvjpeg/encoder.c",
+                   "xpra/codecs/nvidia/nvjpeg/decoder.c",
                    "xpra/codecs/avif/encoder.c",
                    "xpra/codecs/avif/decoder.c",
-                   "xpra/codecs/enc_x264/encoder.c",
-                   "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/x264/encoder.c",
+                   "xpra/codecs/x265/encoder.c",
                    "xpra/codecs/spng/encoder.c",
                    "xpra/codecs/spng/decoder.c",
                    "xpra/codecs/jpeg/encoder.c",
                    "xpra/codecs/jpeg/decoder.c",
-                   "xpra/codecs/enc_ffmpeg/encoder.c",
+                   "xpra/codecs/ffmpeg/encoder.c",
+                   "xpra/codecs/ffmpeg/av_log.c",
+                   "xpra/codecs/ffmpeg/colorspace_converter.c",
+                   "xpra/codecs/ffmpeg/decoder.c",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/evdi/capture.cpp",
                    "xpra/codecs/drm/drm.c",
-                   "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encoder.c",
                    "xpra/codecs/webp/decoder.c",
-                   "xpra/codecs/dec_avcodec2/decoder.c",
-                   "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
-                   "xpra/codecs/csc_swscale/colorspace_converter.c",
+                   "xpra/codecs/libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
@@ -1495,11 +1495,11 @@ if WIN32:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
         if nvenc_ENABLED:
-            add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
+            add_console_exe("xpra/codecs/nvidia/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:
-            add_console_exe("xpra/codecs/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
+            add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
         if nvfbc_ENABLED or nvenc_ENABLED:
-            add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
+            add_console_exe("xpra/codecs/nvidia/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
@@ -2025,15 +2025,14 @@ tace(proc_ENABLED, "xpra.platform.xposix.proc", "libprocps", extra_compile_args 
 
 #codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
-toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
+toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 if nvfbc_ENABLED:
     #platform: ie: `linux2` -> `linux`, `win32` -> `win`
     platform = sys.platform.rstrip("0123456789")
-    ace("xpra.codecs.nvfbc.fbc_capture_%s" % platform, "nvfbc", language="c++")
+    ace("xpra.codecs.nvidia.nvfbc.fbc_capture_%s" % platform, "nvfbc", language="c++")
 
-toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
-toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
-toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
+nvidia_ENABLED = nvenc_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
+toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 
 CUDA_BIN = "%s/cuda" % share_xpra
 if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
@@ -2182,7 +2181,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
-tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc")
+tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
@@ -2191,10 +2190,10 @@ toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 tace(evdi_ENABLED, "xpra.codecs.evdi.capture,xpra/codecs/evdi/evdi_compat.c", "evdi", language="c++")
 toggle_packages(drm_ENABLED, "xpra.codecs.drm")
 tace(drm_ENABLED, "xpra.codecs.drm.drm", "libdrm")
-toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
-tace(enc_x264_ENABLED, "xpra.codecs.enc_x264.encoder", "x264")
-toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
-tace(enc_x265_ENABLED, "xpra.codecs.enc_x265.encoder", "x265")
+toggle_packages(enc_x264_ENABLED, "xpra.codecs.x264")
+tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
+toggle_packages(enc_x265_ENABLED, "xpra.codecs.x265")
+tace(enc_x265_ENABLED, "xpra.codecs.x265.encoder", "x265")
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 tace(webp_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
@@ -2202,10 +2201,10 @@ tace(webp_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
 toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
-toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg")
-tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg.common", "cuda,nvjpeg")
-tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvjpeg.encoder", "cuda,nvjpeg")
-tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvjpeg.decoder","cuda,nvjpeg")
+toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
+tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", "cuda,nvjpeg")
+tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", "cuda,nvjpeg")
+tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.decoder","cuda,nvjpeg")
 toggle_packages(jpeg_decoder_ENABLED or jpeg_encoder_ENABLED, "xpra.codecs.jpeg")
 tace(jpeg_encoder_ENABLED, "xpra.codecs.jpeg.encoder", "libturbojpeg")
 tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
@@ -2213,16 +2212,15 @@ toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 #swscale and avcodec2 use libav_common/av_log:
-libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
-toggle_packages(libav_common, "xpra.codecs.libav_common")
-tace(libav_common, "xpra.codecs.libav_common.av_log", "libavutil")
-toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
-tace(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2.decoder,xpra/codecs/dec_avcodec2/register_compat.c", "libavcodec,libavutil,libavformat")
-toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter", "libyuv", language="c++",
+ffmpeg_ENABLED = dec_avcodec2_ENABLED or csc_swscale_ENABLED or enc_ffmpeg_ENABLED
+toggle_packages(ffmpeg_ENABLED, "xpra.codecs.ffmpeg")
+tace(ffmpeg_ENABLED, "xpra.codecs.ffmpeg.av_log", "libavutil")
+tace(dec_avcodec2_ENABLED, "xpra.codecs.ffmpeg.decoder,xpra/codecs/ffmpeg/register_compat.c", "libavcodec,libavutil,libavformat")
+tace(csc_swscale_ENABLED, "xpra.codecs.ffmpeg.colorspace_converter", "libswscale,libavutil")
+tace(enc_ffmpeg_ENABLED, "xpra.codecs.ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
+toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
+tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.colorspace_converter", "libyuv", language="c++",
         extra_compile_args = ("-Wno-error=address", ) if WIN32 else ())
-toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
-tace(csc_swscale_ENABLED, "xpra.codecs.csc_swscale.colorspace_converter", "libswscale,libavutil")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize=3)
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
@@ -2230,8 +2228,6 @@ tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 toggle_packages(vpl_ENABLED, "xpra.codecs.vpl")
 tace(vpl_ENABLED, "xpra.codecs.vpl.encoder", "vpl")
-toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
-tace(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
