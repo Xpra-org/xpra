@@ -435,7 +435,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/icon_util.py
 %{python3_sitearch}/xpra/codecs/image_wrapper.py
 %{python3_sitearch}/xpra/codecs/loader.py
-%{python3_sitearch}/xpra/codecs/nv_util.py
 %{python3_sitearch}/xpra/codecs/rgb_transform.py
 %{python3_sitearch}/xpra/codecs/video_helper.py
 %{python3_sitearch}/xpra/dbus
@@ -453,7 +452,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files codecs
 %{python3_sitearch}/xpra/codecs/csc_*
-%{python3_sitearch}/xpra/codecs/cuda_common
 %{python3_sitearch}/xpra/codecs/dec_avcodec2
 %{python3_sitearch}/xpra/codecs/drm
 %{python3_sitearch}/xpra/codecs/enc_*

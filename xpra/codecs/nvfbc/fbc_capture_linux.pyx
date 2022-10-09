@@ -22,7 +22,7 @@ log = Logger("encoder", "nvfbc")
 #because importing CUDAImageWrapper will have imported pycuda with the lock
 try:
     from pycuda import driver
-    from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
+    from xpra.codecs.nv_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
 except ImportError:
     raise
 except:

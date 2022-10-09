@@ -25,7 +25,7 @@ from xpra.codecs.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     ERR_STR, CSS_STR,
     )
-from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
+from xpra.codecs.nv_common.cuda_context import select_device, cuda_device_context
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")

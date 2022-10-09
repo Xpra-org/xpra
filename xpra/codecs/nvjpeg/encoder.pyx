@@ -23,7 +23,7 @@ from xpra.codecs.nvjpeg.common import (
     CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
     )
 from xpra.codecs.codec_debug import may_save_image
-from xpra.codecs.cuda_common.cuda_context import get_CUDA_function, select_device, cuda_device_context
+from xpra.codecs.nv_common.cuda_context import get_CUDA_function, select_device, cuda_device_context
 from xpra.net.compression import Compressed
 from xpra.util import typedict
 
