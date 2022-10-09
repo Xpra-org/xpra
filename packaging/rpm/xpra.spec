@@ -96,9 +96,9 @@ BuildRequires:		pandoc
 %endif
 BuildRequires:		which
 Requires:			python3
-Requires:			python3-pillow
-Requires:			python3-cryptography
 Requires:			python3-gobject
+Recommends:			python3-pillow
+Recommends:			python3-cryptography
 Recommends:			python3-rencode
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
@@ -146,7 +146,7 @@ This package contains the files which are shared between the xpra client and ser
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
 Conflicts:			xpra < 5
-#codecs:
+Requires:			python3-pillow
 BuildRequires:		libdrm-devel
 Requires:			libdrm
 BuildRequires:		libvpx-devel
@@ -290,7 +290,7 @@ Requires:			libXres
 %if 0%{?fedora}
 Suggests:			xmodmap
 Suggests:			xrandr
-Requires:			xrdb
+Recommends:			xrdb
 BuildRequires:		procps-devel
 %else
 Requires:			xorg-x11-server-utils
