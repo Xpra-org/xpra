@@ -180,7 +180,7 @@ Conflicts:			xpra-codecs-freeworld
 This package contains extra picture and video codecs used by xpra clients and servers.
 
 
-%package -n xpra-audio
+%package audio
 Summary:			python3 build of xpra audio support
 Group:				Networking
 #Provides:			python3-xpra-audio
@@ -204,11 +204,11 @@ BuildRequires:		gstreamer1-plugins-good
 BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
-%description -n xpra-audio
+%description audio
 This package contains audio support for xpra.
 
 
-%package -n xpra-client
+%package client
 Summary:			xpra client
 Group:				Networking
 #Provides:			python3-xpra-client
@@ -241,11 +241,11 @@ BuildRequires:		xclip
 BuildRequires:		zlib-devel
 %endif
 %endif
-%description -n xpra-client
+%description client
 This package contains the xpra client.
 
 
-%package -n xpra-server
+%package server
 Summary:			xpra server
 Group:				Networking
 #Provides:			python3-xpra-server
@@ -321,7 +321,7 @@ BuildRequires:		xorg-x11-drv-dummy
 %endif
 Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
-%description -n xpra-server
+%description server
 This package contains the xpra server.
 
 
@@ -550,7 +550,7 @@ popd
 %endif
 
 
-%post -n xpra-server
+%post server
 %if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
@@ -611,12 +611,12 @@ fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
-%post -n xpra-client
+%post client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
-%preun -n xpra-server
+%preun server
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
@@ -625,7 +625,7 @@ if [ $1 -eq 0 ] ; then
 	/bin/systemctl stop xpra.socket > /dev/null 2>&1 || :
 fi
 
-%postun -n xpra-server
+%postun server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 %if 0%{update_firewall}
 if [ $1 -eq 0 ]; then
@@ -655,7 +655,7 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
-%postun -n xpra-client
+%postun client
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
