@@ -62,8 +62,9 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+Requires:			xpra-html5 >= 5
 Requires:			xpra-common = %{version}-%{release}
-Requires:			xpra-html5
+Requires:			xpra-codecs = %{version}-%{release}
 Requires:			xpra-client = %{version}-%{release}
 Requires:			xpra-server = %{version}-%{release}
 %if 0%{?fedora}
@@ -93,7 +94,7 @@ Conflicts:			python3-xpra
 %if !0%{?el9}
 BuildRequires:		pandoc
 %endif
-BuildRequires:		libfakeXinerama
+BuildRequires:		which
 Requires:			python3
 Requires:			python3-pillow
 Requires:			python3-cryptography
@@ -108,42 +109,19 @@ Suggests:			python3-kerberos
 Suggests:			python3-gssapi
 Suggests:			python3-ldap
 Suggests:			python3-ldap3
+#Suggests:           python3-cpuinfo
 %if 0%{?el8}%{?el9}
 Recommends:			python3-avahi
 %endif
 %if 0%{?fedora}
 Recommends:			python3-zeroconf
 %endif
-#codecs:
-Requires:			libyuv
-Requires:			libvpx
-Requires:			libdrm-devel
-#not available yet:
-#Requires:			libevdi-devel
-#this is a downstream package with the codecs separated - it should not be installed:
-Conflicts:			xpra-codecs-freeworld
-Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra < 1.8
-Requires:			libwebp
-Requires:			x264-xpra
-Requires:			ffmpeg-xpra
-Requires:			turbojpeg
-%if 0%{?fedora}
-Requires:			libavif
-BuildRequires:		libavif-devel
-Requires:			libspng
-BuildRequires:		libspng-devel
-%endif
-Requires:			lz4-libs
-Recommends:			brotli
-#Suggests:           python3-cpuinfo
-BuildRequires:		which
-BuildRequires:		libwebp-devel
-BuildRequires:		turbojpeg-devel
-BuildRequires:		libyuv-devel
 BuildRequires:		lz4-devel
+Requires:			lz4-libs
 BuildRequires:		brotli-devel
+Recommends:			brotli
 BuildRequires:		qrencode-devel
+Recommends:			qrencode
 BuildRequires:		coreutils
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
@@ -153,10 +131,6 @@ BuildRequires:		python3-Cython
 BuildRequires:		python3-gobject
 BuildRequires:		pygobject3-devel
 BuildRequires:		python3-cairo-devel
-BuildRequires:		libvpx-devel
-BuildRequires:		x264-xpra-devel
-BuildRequires:		ffmpeg-xpra-devel
-BuildRequires:		libyuv-devel
 BuildRequires:		gtk3-devel
 BuildRequires:		gobject-introspection-devel
 %if 0%{?run_tests}
@@ -166,6 +140,44 @@ BuildRequires:		python3-numpy
 %endif
 %description common
 This package contains the files which are shared between the xpra client and server packages.
+
+
+%package codecs
+Summary:			Picture and video codecs for xpra clients and servers.
+Group:				Networking
+Conflicts:			xpra < 5
+#codecs:
+BuildRequires:		libdrm-devel
+Requires:			libdrm
+BuildRequires:		libvpx-devel
+Requires:			libvpx
+Conflicts:			libvpx-xpra
+Obsoletes:          libvpx-xpra < 1.8
+BuildRequires:		libwebp-devel
+Requires:			libwebp
+BuildRequires:		x264-xpra-devel
+Requires:			x264-xpra
+BuildRequires:		ffmpeg-xpra-devel
+Requires:			ffmpeg-xpra
+BuildRequires:		turbojpeg-devel
+Requires:			turbojpeg
+BuildRequires:		libyuv-devel
+Requires:			libyuv
+%if 0%{?fedora}
+BuildRequires:		libavif-devel
+Requires:			libavif
+BuildRequires:		libspng-devel
+Requires:			libspng
+#BuildRequires:		oneVPL-devel
+#Requires:			oneVPL
+%endif
+#not available yet:
+#BuildRequires:		libevdi-devel
+#Requires:			libevdi
+#this is a downstream package - it should not be installed:
+Conflicts:			xpra-codecs-freeworld
+%description codecs
+This package contains extra picture and video codecs used by xpra clients and servers.
 
 
 %package -n xpra-audio
@@ -214,7 +226,6 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:         python3-psutil
-Recommends:         qrencode
 Recommends:		    python3-pysocks
 Suggests:			python3-opencv
 #without this, the system tray is unusable with gnome!
@@ -292,6 +303,7 @@ Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
 Recommends:			xterm
+BuildRequires:		libfakeXinerama
 Suggests:			libfakeXinerama
 Recommends:			mesa-dri-drivers
 Recommends:			redhat-menus
@@ -415,7 +427,17 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/buffers
 %{python3_sitearch}/xpra/clipboard
 %{python3_sitearch}/xpra/notifications
-%{python3_sitearch}/xpra/codecs
+%{python3_sitearch}/xpra/codecs/__init__.py
+%{python3_sitearch}/xpra/codecs/__pycache__
+%{python3_sitearch}/xpra/codecs/argb
+%{python3_sitearch}/xpra/codecs/pillow
+%{python3_sitearch}/xpra/codecs/codec_*.py*
+%{python3_sitearch}/xpra/codecs/icon_util.py
+%{python3_sitearch}/xpra/codecs/image_wrapper.py
+%{python3_sitearch}/xpra/codecs/loader.py
+%{python3_sitearch}/xpra/codecs/nv_util.py
+%{python3_sitearch}/xpra/codecs/rgb_transform.py
+%{python3_sitearch}/xpra/codecs/video_helper.py
 %{python3_sitearch}/xpra/dbus
 %{python3_sitearch}/xpra/gtk_common
 %{python3_sitearch}/xpra/keyboard
@@ -428,10 +450,31 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
 
-%files -n xpra-audio
+
+%files codecs
+%{python3_sitearch}/xpra/codecs/csc_*
+%{python3_sitearch}/xpra/codecs/cuda_common
+%{python3_sitearch}/xpra/codecs/dec_avcodec2
+%{python3_sitearch}/xpra/codecs/drm
+%{python3_sitearch}/xpra/codecs/enc_*
+%{python3_sitearch}/xpra/codecs/evdi
+%{python3_sitearch}/xpra/codecs/jpeg
+%{python3_sitearch}/xpra/codecs/libav_common
+%{python3_sitearch}/xpra/codecs/nv*
+%{python3_sitearch}/xpra/codecs/v4l2
+%{python3_sitearch}/xpra/codecs/vpx
+%{python3_sitearch}/xpra/codecs/webp
+%if 0%{?fedora}
+%{python3_sitearch}/xpra/codecs/avif
+%{python3_sitearch}/xpra/codecs/spng
+# /xpra/codecs/vpl
+%endif
+
+
+%files audio
 %{python3_sitearch}/xpra/sound
 
-%files -n xpra-client
+%files client
 %{python3_sitearch}/xpra/client
 %{_libexecdir}/xpra/xpra_signal_listener
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
@@ -442,7 +485,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/xpra/autostart.desktop
 
-%files -n xpra-server
+%files server
 %{python3_sitearch}/xpra/server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
