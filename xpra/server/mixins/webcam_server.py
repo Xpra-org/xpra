@@ -88,9 +88,9 @@ class WebcamServer(StubServerMixin):
         try:
             from xpra.codecs.v4l2.pusher import Pusher
             assert Pusher
-        except ImportError as e:
-            log.error("Error: failed to import the virtual video module:")
-            log.error(" %s", e)
+        except ImportError:
+            log("failed to import the virtual video module", exc_info=True)
+            log.info("no v4l2 virtual video module")
             return 0
         try:
             from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
