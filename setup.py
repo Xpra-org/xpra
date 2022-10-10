@@ -9,6 +9,7 @@
 ##############################################################################
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.
 
+import re
 import sys
 import glob
 import shlex
@@ -74,17 +75,19 @@ setup_options = {
 
 
 if "pkg-info" in sys.argv:
-    with open("PKG-INFO", "wb") as f:
-        pkg_info_values = setup_options.copy()
-        pkg_info_values.update({
-                                "metadata_version"  : "1.1",
-                                "summary"           :  description,
-                                "home_page"         : url,
-                                })
-        for k in ("Metadata-Version", "Name", "Version", "Summary", "Home-page",
-                  "Author", "Author-email", "License", "Download-URL", "Description"):
-            v = pkg_info_values[k.lower().replace("-", "_")]
-            f.write(("%s: %s\n" % (k, v)).encode())
+    def write_PKG_INFO():
+        with open("PKG-INFO", "wb") as f:
+            pkg_info_values = setup_options.copy()
+            pkg_info_values.update({
+                                    "metadata_version"  : "1.1",
+                                    "summary"           :  description,
+                                    "home_page"         : url,
+                                    })
+            for k in ("Metadata-Version", "Name", "Version", "Summary", "Home-page",
+                      "Author", "Author-email", "License", "Download-URL", "Description"):
+                v = pkg_info_values[k.lower().replace("-", "_")]
+                f.write(("%s: %s\n" % (k, v)).encode())
+    write_PKG_INFO()
     sys.exit(0)
 
 
@@ -96,21 +99,21 @@ print("Xpra version %s" % XPRA_VERSION)
 #*******************************************************************************
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
-has_pkg_config = False
-if PKG_CONFIG:
+def check_pkgconfig():
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0]==0 and v[1]
     if has_pkg_config:
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
     else:
         print("WARNING: pkg-config not found!")
+check_pkgconfig()
 
 for arg in list(sys.argv):
     if arg.startswith("--pkg-config-path="):
         pcp = arg[len("--pkg-config-path="):]
         pcps = [pcp] + os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep)
         os.environ["PKG_CONFIG_PATH"] = os.path.pathsep.join([x for x in pcps if x])
-        print("using PKG_CONFIG_PATH=%s" % (os.environ["PKG_CONFIG_PATH"], ))
+        print("using PKG_CONFIG_PATH="+os.environ["PKG_CONFIG_PATH"])
         sys.argv.remove(arg)
 
 def no_pkgconfig(*_pkgs_options, **_ekw):
@@ -144,10 +147,11 @@ if "--minimal" in sys.argv:
 skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1]
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
-print("ARCH={ARCH}")
+print(f"ARCH={ARCH}")
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
 CPP = os.environ.get("CPP", "cpp")
+print(f"CPP={CPP}")
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
@@ -315,49 +319,53 @@ ssl_key = None
 minifier = None
 share_xpra = None
 filtered_args = []
-for arg in sys.argv:
-    matched = False
-    for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra"):
-        varg = f"--{x}="
-        if arg.startswith(varg):
-            value = arg[len(varg):]
-            globals()[x.replace("-", "_")] = value
-            #remove these arguments from sys.argv,
-            #except for --install=PATH
-            matched = x!="install"
-            break
-    if matched:
-        continue
-    for x in SWITCHES:
-        with_str = f"--with-{x}"
-        without_str = f"--without-{x}"
-        var_names = SWITCH_ALIAS.get(x, [x])
-        if arg.startswith(with_str+"="):
-            for var in var_names:
-                vars()[f"{var}_ENABLED"] = arg[len(with_str)+1:]
-            matched = True
-            break
-        elif arg==with_str:
-            for var in var_names:
-                vars()[f"{var}_ENABLED"] = True
-            matched = True
-            break
-        elif arg==without_str:
-            for var in var_names:
-                vars()[f"{var}_ENABLED"] = False
-            matched = True
-            break
-    if not matched:
-        filtered_args.append(arg)
+def filter_argv():
+    for arg in sys.argv:
+        matched = False
+        for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra"):
+            varg = f"--{x}="
+            if arg.startswith(varg):
+                value = arg[len(varg):]
+                globals()[x.replace("-", "_")] = value
+                #remove these arguments from sys.argv,
+                #except for --install=PATH
+                matched = x!="install"
+                break
+        if matched:
+            continue
+        for x in SWITCHES:
+            with_str = f"--with-{x}"
+            without_str = f"--without-{x}"
+            var_names = SWITCH_ALIAS.get(x, [x])
+            if arg.startswith(with_str+"="):
+                for var in var_names:
+                    globals()[f"{var}_ENABLED"] = arg[len(with_str)+1:]
+                matched = True
+                break
+            if arg==with_str:
+                for var in var_names:
+                    globals()[f"{var}_ENABLED"] = True
+                matched = True
+                break
+            if arg==without_str:
+                for var in var_names:
+                    globals()[f"{var}_ENABLED"] = False
+                matched = True
+                break
+        if not matched:
+            filtered_args.append(arg)
+filter_argv()
 sys.argv = filtered_args
 if "clean" not in sys.argv and "sdist" not in sys.argv:
-    switches_info = {}
-    for x in SWITCHES:
-        switches_info[x] = vars()["%s_ENABLED" % x]
-    print("build switches:")
-    for k in sorted(SWITCHES):
-        v = switches_info[k]
-        print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
+    def show_switch_info():
+        switches_info = {}
+        for x in SWITCHES:
+            switches_info[x] = globals()["%s_ENABLED" % x]
+        print("build switches:")
+        for k in sorted(SWITCHES):
+            v = switches_info[k]
+            print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
+    show_switch_info()
 
     if not cython_ENABLED:
         enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = False
@@ -377,7 +385,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         print("Warning: enabling x11 on MS Windows is unlikely to work!")
     if gtk_x11_ENABLED and not x11_ENABLED:
         print("Error: you must enable x11 to support gtk_x11!")
-        exit(1)
+        sys.exit(1)
     if client_ENABLED and not gtk3_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if DEFAULT and (not client_ENABLED and not server_ENABLED):
@@ -436,7 +444,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
             convert_doc(fsrc, fdst, fmt, force)
         elif fsrc.endswith(".png"):
             fdst = os.path.join(dst, x)
-            print("copying %s -> %s (%s)" % (fsrc, fdst, oct(0o644)))
+            print(f"copying {fsrc} -> {fdst} (%s)" % oct(0o644))
             os.makedirs(name=dst, mode=0o755, exist_ok=True)
             data = load_binary_file(fsrc)
             with open(fdst, "wb") as f:
@@ -451,9 +459,9 @@ def convert_docs(fmt="html"):
         convert_doc_dir("docs", paths[0])
     elif paths:
         for x in paths:
-            convert_doc(x, f"build/{x}")
+            convert_doc(x, f"build/{x}", fmt=fmt)
     else:
-        convert_doc_dir("docs", "build/docs")
+        convert_doc_dir("docs", "build/docs", fmt=fmt)
 
 
 if "doc" in sys.argv:
@@ -509,7 +517,6 @@ def remove_packages(*mods):
     """ ensures that the given packages are not included:
         removes them from the "modules" and "packages" list and adds them to "excludes" list
     """
-    global packages, modules, excludes
     for m in list(modules):
         for x in mods:
             if m.startswith(x):
@@ -525,7 +532,6 @@ def add_packages(*pkgs):
     """ adds the given packages to the packages list,
         and adds all the modules found in this package (including the package itself)
     """
-    global packages
     for x in pkgs:
         if x not in packages:
             packages.append(x)
@@ -533,7 +539,6 @@ def add_packages(*pkgs):
 
 def add_modules(*mods):
     def add(v):
-        global modules
         if v not in modules:
             modules.append(v)
     do_add_modules(add, *mods)
@@ -597,8 +602,8 @@ def add_cython_ext(*args, **kwargs):
             ('CYTHON_TRACE', 1),
             ('CYTHON_TRACE_NOGIL', 1),
             ]
-        extra_compile_args = kwargs.setdefault("extra_compile_args", [])
-        extra_compile_args += ["-Wno-error"]
+        kwargs.setdefault("extra_compile_args", []).apppend("-Wno-error")
+    # pylint: disable=import-outside-toplevel
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
     cmdclass['build_ext'] = build_ext
@@ -643,43 +648,12 @@ def remove_from_keywords(kw, key, value):
 def checkdirs(*dirs):
     for d in dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
-            raise Exception("cannot find a directory which is required for building: '%s'" % d)
-
+            raise Exception(f"cannot find a directory which is required for building: {d!r}")
 
 def CC_is_clang():
     cc = os.environ.get("CC", "gcc")
     return cc.find("clang")>=0
 
-GCC_VERSION = ()
-def get_gcc_version():
-    global GCC_VERSION
-    if CC_is_clang():
-        GCC_VERSION = (0, )
-        return GCC_VERSION
-    if not GCC_VERSION:
-        cc = os.environ.get("CC", "gcc")
-        r, _, err = get_status_output([cc, "-v"])
-        if r==0:
-            V_LINE = "gcc version "
-            tmp_version = []
-            for line in err.splitlines():
-                if not line.startswith(V_LINE):
-                    continue
-                v_str = line[len(V_LINE):].strip().split(" ")[0]
-                for p in v_str.split("."):
-                    try:
-                        tmp_version.append(int(p))
-                    except ValueError:
-                        break
-                print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
-                break
-            GCC_VERSION = tuple(tmp_version)
-            if GCC_VERSION<(7, 5):
-                print("gcc versions older than 7.5 are not supported!")
-                for _ in range(5):
-                    sleep(1)
-                    print(".")
-    return GCC_VERSION
 
 def get_dummy_driver_version():
     def vernum(s):
@@ -819,7 +793,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if debug_ENABLED and WIN32 and MINGW_PREFIX:
         extra_compile_args.append("-DDEBUG")
     if verbose_ENABLED:
-        print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
+        print(f"exec_pkgconfig({pkgs_options}, {ekw})={kw}")
     return kw
 pkgconfig = exec_pkgconfig
 
@@ -957,37 +931,37 @@ def build_xpra_conf(install_dir):
     is_RH = is_RedHat() or is_CentOS() or is_OracleLinux() or is_AlmaLinux() or is_RockyLinux()
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
     SUBS = {
-            'xvfb_command'          : wrap_cmd_str(xvfb_command),
-            'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
-            'fake_xinerama'         : fake_xinerama,
-            'ssh_command'           : "auto",
-            'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
-            'remote_logging'        : "both",
-            'start_env'             : start_env,
-            'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
-            'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
-            'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
-            'conf_dir'              : conf_dir,
-            'bind'                  : "auto",
-            'ssl_cert'              : ssl_cert or "",
-            'ssl_key'               : ssl_key or "",
-            'systemd_run'           : get_default_systemd_run(),
-            'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
-            'log_dir'               : "auto",
-            "source"                : source,
-            'mdns'                  : bstr(mdns),
-            'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
-            'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
-            'pdf_printer'           : pdf,
-            'postscript_printer'    : postscript,
-            'webcam'                : ["no", "auto"][webcam],
-            'mousewheel'            : "on",
-            'printing'              : bstr(printing_ENABLED),
-            'dbus_control'          : bstr(dbus_ENABLED),
-            'mmap'                  : bstr(True),
-            'opengl'                : "probe",
-            'headerbar'             : ["auto", "no"][OSX or WIN32],
-            }
+        'xvfb_command'          : wrap_cmd_str(xvfb_command),
+        'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
+        'fake_xinerama'         : fake_xinerama,
+        'ssh_command'           : "auto",
+        'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
+        'remote_logging'        : "both",
+        'start_env'             : start_env,
+        'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
+        'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
+        'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
+        'conf_dir'              : conf_dir,
+        'bind'                  : "auto",
+        'ssl_cert'              : ssl_cert or "",
+        'ssl_key'               : ssl_key or "",
+        'systemd_run'           : get_default_systemd_run(),
+        'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
+        'log_dir'               : "auto",
+        "source"                : source,
+        'mdns'                  : bstr(mdns),
+        'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
+        'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
+        'pdf_printer'           : pdf,
+        'postscript_printer'    : postscript,
+        'webcam'                : ["no", "auto"][webcam],
+        'mousewheel'            : "on",
+        'printing'              : bstr(printing_ENABLED),
+        'dbus_control'          : bstr(dbus_ENABLED),
+        'mmap'                  : bstr(True),
+        'opengl'                : "probe",
+        'headerbar'             : ["auto", "no"][OSX or WIN32],
+        }
     def convert_templates(subdirs):
         dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
         #get conf dir for install, without stripping the build root
@@ -1007,11 +981,11 @@ def build_xpra_conf(install_dir):
                 continue
             if not f.endswith(".in"):
                 continue
-            with open(filename, "r") as f_in:
+            with open(filename, "r", encoding="latin1") as f_in:
                 template  = f_in.read()
             target_file = os.path.join(target_dir, f[:-len(".in")])
             print(f"generating {target_file} from {f}")
-            with open(target_file, "w") as f_out:
+            with open(target_file, "w", encoding="latin1") as f_out:
                 config_data = template % SUBS
                 f_out.write(config_data)
     convert_templates([])
@@ -1249,7 +1223,6 @@ if WIN32:
         def do_add_DLLs(prefix="lib", *dll_names):
             dll_names = list(dll_names)
             dll_files = []
-            import re
             version_re = re.compile(r"-[0-9\.-]+$")
             dirs = os.environ.get("PATH").split(os.path.pathsep)
             if os.path.exists(gnome_include_path):
@@ -1412,9 +1385,9 @@ if WIN32:
         import site
         lib_python = os.path.dirname(site.getsitepackages()[0])
         lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
-        add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
+        add_data_files('', glob.glob(f"{lib_dynload_dir}/zlib*dll"))
         for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
-            add_data_files("lib/", glob.glob("%s/%s*" % (lib_python, x)))
+            add_data_files("lib/", glob.glob(f"{lib_python}/{x}*"))
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
@@ -1454,7 +1427,7 @@ if WIN32:
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
             add_gui_exe("fs/bin/xpra",                         "xpra.ico",         "Xpra")
-            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
+            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
@@ -1782,7 +1755,7 @@ else:
 
             if data_ENABLED:
                 for d in ("http-headers", "content-type", "content-categories", "content-parent"):
-                    dirtodir("fs/etc/xpra/%s" % d, "/etc/xpra/%s" % d)
+                    dirtodir(f"fs/etc/xpra/{d}", f"/etc/xpra/{d}")
 
     # add build_conf to build step
     cmdclass.update({
@@ -1827,7 +1800,7 @@ else:
         #don't use py_modules or scripts with py2app, and no cython:
         del setup_options["py_modules"]
         scripts = []
-        def add_cython_ext(*_args, **_kwargs):
+        def add_cython_ext(*_args, **_kwargs):  # pylint: disable=function-redefined
             pass
 
         remove_packages("ctypes.wintypes", "colorsys")
@@ -1969,11 +1942,13 @@ toggle_packages(tests_ENABLED, "unit")
 
 
 if bundle_tests_ENABLED:
-    #bundle the tests directly (not in library.zip):
-    for k,v in glob_recurse("unit").items():
-        if k!="":
-            k = os.sep+k
-        add_data_files("unit"+k, v)
+    def bundle_tests():
+        #bundle the tests directly (not in library.zip):
+        for k,v in glob_recurse("unit").items():
+            if k!="":
+                k = os.sep+k
+            add_data_files("unit"+k, v)
+    bundle_tests()
 
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
@@ -2032,10 +2007,10 @@ tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
 if pam_ENABLED:
     if pkg_config_ok("--exists", "pam", "pam_misc"):
-        kwargs = {"pkgconfig_names" : "pam,pam_misc"}
+        pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
-        kwargs = {"extra_compile_args" : "-I" + find_header_file("/security", isdir=True)}
-    ace("xpra.server.pam", **kwargs)
+        pam_kwargs = {"extra_compile_args" : "-I" + find_header_file("/security", isdir=True)}
+    ace("xpra.server.pam", **pam_kwargs)
 
 #platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
@@ -2054,67 +2029,131 @@ toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 
 CUDA_BIN = f"{share_xpra}/cuda"
 if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
-    #find nvcc:
-    from xpra.util import sorted_nicely
-    path_options = os.environ.get("PATH", "").split(os.path.pathsep)
-    if WIN32:
-        external_includes += ["pycuda"]
-        nvcc_exe = "nvcc.exe"
-        CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob("%s\\*\\bin" % CUDA_DIR))))
-        #pycuda may link against curand, find it and ship it:
-        for p in path_options:
-            if os.path.exists(p):
-                add_data_files("", glob.glob(f"{p}\\curand64*.dll"))
-                add_data_files("", glob.glob(f"{p}\\cudart64*.dll"))
-                break
-    else:
-        nvcc_exe = "nvcc"
-        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
-        path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
-        path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
-    options = [os.path.join(x, nvcc_exe) for x in path_options]
-    #prefer the one we find on the $PATH, if any:
-    try:
-        v = shutil.which(nvcc_exe)
-        if v and (v not in options):
-            options.insert(0, v)
-    except:
-        pass
-    nvcc_versions = {}
-    def get_nvcc_version(command):
-        if not os.path.exists(command):
-            return None
-        code, out, _ = get_status_output([command, "--version"])
-        if code!=0:
-            return None
-        vpos = out.rfind(", V")
-        if vpos>0:
-            version = out[vpos+3:].split("\n")[0]
-            version_str = f" version {version}"
-        else:
-            version = "0"
-            version_str = " unknown version!"
-        print(f"found CUDA compiler: {filename}{version_str}")
-        return tuple(int(x) for x in version.split("."))
-    for filename in options:
-        vnum = get_nvcc_version(filename)
-        if vnum:
-            nvcc_versions[vnum] = filename
-    if nvcc_versions:
-        #choose the most recent one:
-        nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
-        if len(nvcc_versions)>1:
-            print(f" using version {nvcc_version} from {nvcc}")
-    else:
-        nvcc_version = nvcc = None
     if ((nvenc_ENABLED or nvjpeg_encoder_ENABLED) and cuda_kernels_ENABLED):
-        assert nvcc_versions, "cannot find nvcc compiler!"
+        def get_nvcc():
+            #find nvcc:
+            from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
+            path_options = os.environ.get("PATH", "").split(os.path.pathsep)
+            if WIN32:
+                external_includes.append("pycuda")
+                nvcc_exe = "nvcc.exe"
+                CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
+                path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob("%s\\*\\bin" % CUDA_DIR))))
+                #pycuda may link against curand, find it and ship it:
+                for p in path_options:
+                    if os.path.exists(p):
+                        add_data_files("", glob.glob(f"{p}\\curand64*.dll"))
+                        add_data_files("", glob.glob(f"{p}\\cudart64*.dll"))
+                        break
+            else:
+                nvcc_exe = "nvcc"
+                path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
+                path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
+                path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
+            options = [os.path.join(x, nvcc_exe) for x in path_options]
+            #prefer the one we find on the $PATH, if any:
+            v = shutil.which(nvcc_exe)
+            if v and (v not in options):
+                options.insert(0, v)
+            nvcc_versions = {}
+            def get_nvcc_version(command):
+                if not os.path.exists(command):
+                    return None
+                code, out, _ = get_status_output([command, "--version"])
+                if code!=0:
+                    return None
+                vpos = out.rfind(", V")
+                if vpos>0:
+                    version = out[vpos+3:].split("\n")[0]
+                    version_str = f" version {version}"
+                else:
+                    version = "0"
+                    version_str = " unknown version!"
+                print(f"found CUDA compiler: {filename}{version_str}")
+                return tuple(int(x) for x in version.split("."))
+            for filename in options:
+                vnum = get_nvcc_version(filename)
+                if vnum:
+                    nvcc_versions[vnum] = filename
+            if nvcc_versions:
+                #choose the most recent one:
+                nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+                if len(nvcc_versions)>1:
+                    print(f" using version {nvcc_version} from {nvcc}")
+                return nvcc_version, nvcc
+            return None, None
+        nvcc_version, nvcc = get_nvcc()
+        def get_gcc_version():
+            if CC_is_clang():
+                return (0, )
+            cc = os.environ.get("CC", "gcc")
+            r, _, err = get_status_output([cc, "-v"])
+            if r==0:
+                V_LINE = "gcc version "
+                tmp_version = []
+                for line in err.splitlines():
+                    if not line.startswith(V_LINE):
+                        continue
+                    v_str = line[len(V_LINE):].strip().split(" ")[0]
+                    for p in v_str.split("."):
+                        try:
+                            tmp_version.append(int(p))
+                        except ValueError:
+                            break
+                    print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
+                    break
+                return tuple(tmp_version)
+            return (0, )
+        assert nvcc, "cannot find nvcc compiler!"
+        def get_nvcc_args():
+            nvcc_cmd = [nvcc, "-fatbin"]
+            gcc_version = get_gcc_version()
+            if gcc_version<(7, 5):
+                print("gcc versions older than 7.5 are not supported!")
+                for _ in range(5):
+                    sleep(1)
+                    print(".")
+            if (8,1)<=gcc_version<(9, ):
+                #GCC 8.1 has compatibility issues with CUDA 9.2,
+                #so revert to C++03:
+                nvcc_cmd.append("-std=c++03")
+            #GCC 6 uses C++11 by default:
+            else:
+                nvcc_cmd.append("-std=c++11")
+            if gcc_version>=(12, 0) or CC_is_clang():
+                nvcc_cmd.append("--allow-unsupported-compiler")
+            if nvcc_version>=(11, 5):
+                nvcc_cmd += ["-arch=all",
+                        "-Wno-deprecated-gpu-targets",
+                        ]
+                if nvcc_version>=(11, 6):
+                    nvcc_cmd += ["-Xnvlink", "-ignore-host-info"]
+                return nvcc_cmd
+            #older versions, add every arch we know about:
+            comp_code_options = []
+            if nvcc_version>=(7, 5):
+                comp_code_options.append((52, 52))
+                comp_code_options.append((53, 53))
+            if nvcc_version>=(8, 0):
+                comp_code_options.append((60, 60))
+                comp_code_options.append((61, 61))
+                comp_code_options.append((62, 62))
+            if nvcc_version>=(9, 0):
+                comp_code_options.append((70, 70))
+            if nvcc_version>=(10, 0):
+                comp_code_options.append((75, 75))
+            if nvcc_version>=(11, 0):
+                comp_code_options.append((80, 80))
+            if nvcc_version>=(11, 1):
+                comp_code_options.append((86, 86))
+            #if nvcc_version>=(11, 6):
+            #    comp_code_options.append((87, 87))
+            for arch, code in comp_code_options:
+                nvcc_cmd.append(f"-gencode=arch=compute_{arch},code=sm_{code}")
+            return nvcc_cmd
+        nvcc_args = get_nvcc_args()
         #first compile the cuda kernels
         #(using the same cuda SDK for both nvenc modules for now..)
-        #TODO:
-        # * compile directly to output directory instead of using data files?
-        # * detect which arches we want to build for? (does it really matter much?)
         kernels = []
         if nvenc_ENABLED:
             kernels += ["XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444"]
@@ -2130,51 +2169,10 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             if not reason:
                 continue
             print(f"rebuilding {kernel}: {reason}")
-            cmd = [nvcc,
-                   '-fatbin',
-                   "-c", cuda_src,
-                   "-o", cuda_bin]
-            gcc_version = get_gcc_version()
-            if (8,1)<=gcc_version<(9, ):
-                #GCC 8.1 has compatibility issues with CUDA 9.2,
-                #so revert to C++03:
-                cmd.append("-std=c++03")
-            #GCC 6 uses C++11 by default:
-            else:
-                cmd.append("-std=c++11")
-            if gcc_version>=(12, 0) or CC_is_clang():
-                cmd.append("--allow-unsupported-compiler")
-            if nvcc_version>=(11, 5):
-                cmd += ["-arch=all",
-                        "-Wno-deprecated-gpu-targets",
-                        ]
-                if nvcc_version>=(11, 6):
-                    cmd += ["-Xnvlink", "-ignore-host-info"]
-            else:
-                comp_code_options = []
-                if nvcc_version>=(7, 5):
-                    comp_code_options.append((52, 52))
-                    comp_code_options.append((53, 53))
-                if nvcc_version>=(8, 0):
-                    comp_code_options.append((60, 60))
-                    comp_code_options.append((61, 61))
-                    comp_code_options.append((62, 62))
-                if nvcc_version>=(9, 0):
-                    comp_code_options.append((70, 70))
-                if nvcc_version>=(10, 0):
-                    comp_code_options.append((75, 75))
-                if nvcc_version>=(11, 0):
-                    comp_code_options.append((80, 80))
-                if nvcc_version>=(11, 1):
-                    comp_code_options.append((86, 86))
-                #if nvcc_version>=(11, 6):
-                #    comp_code_options.append((87, 87))
-                for arch, code in comp_code_options:
-                    cmd.append(f"-gencode=arch=compute_{arch},code=sm_{code}")
+            kbuild_cmd = nvcc_args + ["-c", cuda_src, "-o", cuda_bin]
             print(f"CUDA compiling %s ({reason})" % kernel.ljust(16))
-            print(" %s" % " ".join(f"'{x}'" for x in cmd))
-            nvcc_commands.append(cmd)
-
+            print(" %s" % " ".join(f"'{x}'" for x in kbuild_cmd))
+            nvcc_commands.append(kbuild_cmd)
         #parallel build:
         nvcc_errors = []
         def nvcc_compile(cmd):
@@ -2195,7 +2193,6 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             if nvcc_errors:
                 sys.exit(1)
             t.join()
-
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
