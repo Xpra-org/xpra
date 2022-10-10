@@ -9,6 +9,11 @@ import os
 from io import BytesIO
 from time import monotonic
 
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
@@ -279,8 +284,7 @@ class WindowsMixin(StubSourceMixin):
         if pixels is not None:
             #convert bytearray to string:
             cpixels = strtobytes(pixels)
-            if "png" in self.cursor_encodings:
-                from PIL import Image
+            if "png" in self.cursor_encodings and Image:
                 cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                 buf = BytesIO()
@@ -298,6 +302,9 @@ class WindowsMixin(StubSourceMixin):
                 cpixels = self.compressed_wrapper("cursor", pixels)
                 cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
                 encoding = "raw"
+            else:
+                cursorlog("no supported cursor encodings")
+                cpixels = b""
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
                   w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
