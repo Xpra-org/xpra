@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,6 +11,7 @@ from time import monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
+from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
 from xpra.os_util import strtobytes, bytestostr
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
@@ -186,6 +187,7 @@ class WindowsMixin(StubSourceMixin):
         """
             Adds encoding and window specific information
         """
+        # pylint: disable=import-outside-toplevel
         from xpra.simple_stats import get_list_stats
         pqpixels = [x[2] for x in tuple(self.packet_queue)]
         pqpi = get_list_stats(pqpixels)
@@ -279,8 +281,7 @@ class WindowsMixin(StubSourceMixin):
             cpixels = strtobytes(pixels)
             if "png" in self.cursor_encodings:
                 from PIL import Image
-                cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'",
-                          len(cpixels), w, h, bytestostr(name))
+                cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                 buf = BytesIO()
                 img.save(buf, "PNG")
@@ -289,7 +290,7 @@ class WindowsMixin(StubSourceMixin):
                 cpixels = Compressed("png cursor", pngdata, can_inline=True)
                 encoding = "png"
                 if SAVE_CURSORS:
-                    filename = "raw-cursor-%#x.png" % serial
+                    filename = f"raw-cursor-{serial:x}.png"
                     with open(filename, "wb") as f:
                         f.write(pngdata)
                     cursorlog("cursor saved to %s", filename)
@@ -324,7 +325,6 @@ class WindowsMixin(StubSourceMixin):
         return [f for uuid, f in self.window_filters if uuid==self.uuid]
 
     def add_window_filter(self, object_name, property_name, operator, value):
-        from xpra.server.window.filters import get_window_filter
         window_filter = get_window_filter(object_name, property_name, operator, value)
         assert window_filter
         self.do_add_window_filter(window_filter)
@@ -342,7 +342,7 @@ class WindowsMixin(StubSourceMixin):
                 filterslog("can_send_window(%s) checking %s for uuid=%s (client uuid=%s)",
                            window, window_filter, uuid, self.uuid)
                 if window_filter.matches(window):
-                    v = uuid=="*" or uuid==self.uuid
+                    v = uuid in ("*", self.uuid)
                     filterslog("can_send_window(%s)=%s", window, v)
                     return v
         if self.send_windows and self.system_tray:
@@ -561,6 +561,7 @@ class WindowsMixin(StubSourceMixin):
             av_sync_delay = getattr(self, "av_sync_delay", 0)
             if mmap_size>0:
                 bandwidth_limit = 0
+            # pylint: disable=import-outside-toplevel
             from xpra.server.window.window_video_source import WindowVideoSource
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
