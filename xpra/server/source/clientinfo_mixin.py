@@ -85,7 +85,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_release = c.strget("proxy.platform.sysrelease")
         self.proxy_version = c.strget("proxy.version")
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
-        log("client uuid %s", self.uuid)
+        log(f"client uuid {self.uuid}")
 
     def get_connect_info(self) -> list:
         #client platform / version info:
@@ -96,7 +96,7 @@ class ClientInfoMixin(StubSourceMixin):
             if self.client_session_type:
                 pinfo += [self.client_session_type]
             revinfo = f"-r{self.client_revision}" if isinstance(self.client_revision, int) else ""
-            bitsstr = f" {self.client_bits}-bit" if self.client_bits else ""
+            bitsstr = f" {self.client_bits}-bit" if self.client_bits not in (0, 64) else ""
             version = self.client_version
         else:
             revinfo = bitsstr = ""
@@ -106,21 +106,23 @@ class ClientInfoMixin(StubSourceMixin):
         if FULL_INFO>0:
             #connection info:
             if self.hostname or self.username:
-                msg = "connected from %r" % std(self.hostname or "unknown host")
+                msg = "connected"
+                if self.hostname:
+                    msg += f" from {std(self.hostname)!r}"
                 if self.username:
-                    msg += " as '%s'" % std(self.username)
+                    msg += f" as {std(self.username)!r}"
                     if self.name and self.name!=self.username:
-                        msg += " - '%s'" % std(self.name)
+                        msg += f" - {std(self.name)!r}"
                 if msg:
                     cinfo.append(msg)
             #proxy info
             if self.client_proxy:
-                msg = "via %s proxy version %s" % (
-                    platform_name(self.proxy_platform, self.proxy_release),
-                    std(self.proxy_version or "unknown")
-                    )
+                pname = platform_name(self.proxy_platform, self.proxy_release)
+                msg = f"via {pname} proxy"
+                if self.proxy_version:
+                    msg += f" version {std(self.proxy_version)}"
                 if self.proxy_hostname:
-                    msg += " on '%s'" % std(self.proxy_hostname)
+                    msg += f" on {std(self.proxy_hostname)!r}"
                 cinfo.append(msg)
             #opengl info:
             if self.client_opengl:
@@ -131,7 +133,7 @@ class ClientInfoMixin(StubSourceMixin):
                     msg += "enabled"
                     driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
                     if driver_info:
-                        msg += " with %s" % driver_info
+                        msg += f" with {std(driver_info)}"
                 cinfo.append(msg)
         return cinfo
 

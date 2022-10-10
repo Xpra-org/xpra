@@ -480,7 +480,7 @@ class UIXpraClient(ClientBaseClass):
                           c.strtupleget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version
         if self._remote_revision:
-            r += "-r%s" % self._remote_revision
+            r += f"-r{self._remote_revision}"
         mode = c.strget("server.mode", "server")
         bits = c.intget("python.bits", 0)
         bitsstr = "" if bits==0 else f" {bits}-bit"
