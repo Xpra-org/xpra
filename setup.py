@@ -10,14 +10,12 @@
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.
 
 import sys
-if sys.version_info<(3, 6):
-    raise Exception("xpra no longer supports Python versions older than 3.6")
-
 import glob
 import shlex
 import shutil
 import os.path
 import subprocess
+from time import sleep
 
 from distutils.core import setup
 from distutils.command.build import build
@@ -31,9 +29,10 @@ from xpra.os_util import (
     is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
     )
 
+if sys.version_info<(3, 6):
+    raise Exception("xpra no longer supports Python versions older than 3.6")
 if BITS!=64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
-    from time import sleep
     for _ in range(5):
         sleep(1)
         print(".")
@@ -134,7 +133,7 @@ def pkg_config_version(req_version, pkgname):
         from packaging.version import parse
         return parse(out)>=parse(req_version)
     except ImportError:
-        from distutils.version import LooseVersion
+        from distutils.version import LooseVersion  # pylint: disable=deprecated-module
         return LooseVersion(out)>=LooseVersion(req_version)
 
 
@@ -290,8 +289,7 @@ SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
     }
 
-HELP = "-h" in sys.argv or "--help" in sys.argv
-if HELP:
+def show_help():
     setup()
     print("Xpra specific build and install switches:")
     for x in SWITCHES:
@@ -305,6 +303,9 @@ if HELP:
         print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
     print("  --pkg-config-path=PATH")
     print("  --rpath=PATH")
+HELP = "-h" in sys.argv or "--help" in sys.argv
+if HELP:
+    show_help()
     sys.exit(0)
 
 install = None
@@ -442,7 +443,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
                 f.write(data)
                 os.chmod(fdst, 0o644)
         else:
-            print("ignoring '%s'" % fsrc)
+            print(f"ignoring {fsrc!r}")
 
 def convert_docs(fmt="html"):
     paths = [x for x in sys.argv[2:] if not x.startswith("--")]
@@ -450,7 +451,7 @@ def convert_docs(fmt="html"):
         convert_doc_dir("docs", paths[0])
     elif paths:
         for x in paths:
-            convert_doc(x, "build/%s" % x)
+            convert_doc(x, f"build/{x}")
     else:
         convert_doc_dir("docs", "build/docs")
 
@@ -540,7 +541,6 @@ def add_modules(*mods):
 def do_add_modules(op, *mods):
     """ adds the packages and any .py module found in the packages to the "modules" list
     """
-    global modules
     for x in mods:
         #ugly path stripping:
         if x.startswith("./"):
@@ -573,7 +573,6 @@ def toggle_packages(enabled, *module_names):
 def toggle_modules(enabled, *module_names):
     if enabled:
         def op(v):
-            global modules
             if v not in modules:
                 modules.append(v)
         do_add_modules(op, *module_names)
@@ -601,7 +600,6 @@ def add_cython_ext(*args, **kwargs):
         extra_compile_args = kwargs.setdefault("extra_compile_args", [])
         extra_compile_args += ["-Wno-error"]
     from Cython.Distutils import build_ext, Extension
-    global cmdclass, ext_modules
     ext_modules.append(Extension(*args, **kwargs))
     cmdclass['build_ext'] = build_ext
 
@@ -678,7 +676,6 @@ def get_gcc_version():
             GCC_VERSION = tuple(tmp_version)
             if GCC_VERSION<(7, 5):
                 print("gcc versions older than 7.5 are not supported!")
-                from time import sleep
                 for _ in range(5):
                     sleep(1)
                     print(".")
@@ -690,7 +687,7 @@ def get_dummy_driver_version():
     #try various rpm names:
     for rpm_name in ("xorg-x11-drv-dummy", "xf86-video-dummy"):
         r, out, err = get_status_output(["rpm", "-q", "--queryformat", "%{VERSION}", rpm_name])
-        print("rpm query: out=%s, err=%s" % (out, err))
+        print(f"rpm query: out={out}, err={err}")
         if r==0:
             return vernum(out)
     r, out, _ = get_status_output(["dpkg-query", "--showformat=${Version}", "--show", "xserver-xorg-video-dummy"])
@@ -718,6 +715,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     #for distros that don't patch distutils,
     #we have to add the python cflags:
     if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_openSUSE()):
+        # pylint: disable=import-outside-toplevel
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
@@ -740,7 +738,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 if len(token)>2:
                     add_to_keywords(kw, flag_map[token[:2]], token[2:])
                 else:
-                    print("Warning: invalid token '%s'" % token)
+                    print(f"Warning: invalid token {token!r}")
             else:
                 add_to_keywords(kw, add_to, token)
 
@@ -919,8 +917,8 @@ def build_xpra_conf(install_dir):
         if b is None:
             return "auto"
         return "yes" if int(b) else "no"
-    start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
-    source = "\n".join("source = %s" % x for x in SOURCE)
+    start_env = "\n".join(f"start-env = {x}" for x in DEFAULT_ENV)
+    source = "\n".join(f"source = {x}" for x in SOURCE)
     conf_dir = get_conf_dir(install_dir)
     print(f"get_conf_dir({install_dir})={conf_dir}")
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
@@ -994,12 +992,12 @@ def build_xpra_conf(install_dir):
         dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
         #get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
-        print("convert_templates(%s) dirname=%s, target_dir=%s" % (subdirs, dirname, target_dir))
+        print(f"convert_templates({subdirs}) dirname={dirname}, target_dir={target_dir}")
         if not os.path.exists(target_dir):
             try:
                 os.makedirs(target_dir)
             except Exception as e:
-                print("cannot create target dir '%s': %s" % (target_dir, e))
+                print(f"cannot create target dir {target_dir!r}: {e}")
         for f in sorted(os.listdir(dirname)):
             if f.endswith("osx.conf.in") and not OSX:
                 continue
@@ -1186,7 +1184,7 @@ if WIN32:
     #all in its own structure called "include_files" instead of "data_files"...
     def add_data_files(target_dir, files):
         if verbose_ENABLED:
-            print("add_data_files(%s, %s)" % (target_dir, files))
+            print(f"add_data_files({target_dir}, {files})")
         assert isinstance(target_dir, str)
         assert isinstance(files, (list, tuple))
         for f in files:
@@ -1208,7 +1206,7 @@ if WIN32:
         #of files and directories we do want to include
         def add_dir(base, defs):
             if verbose_ENABLED:
-                print("add_dir(%s, %s)" % (base, defs))
+                print(f"add_dir({base}, {defs})")
             if isinstance(defs, (list, tuple)):
                 for sub in defs:
                     if isinstance(sub, dict):
@@ -1219,7 +1217,7 @@ if WIN32:
                         if os.path.exists(filename):
                             add_data_files(base, [filename])
                         else:
-                            print("Warning: missing '%s'" % filename)
+                            print(f"Warning: missing {filename!r}")
             else:
                 assert isinstance(defs, dict)
                 for d, sub in defs.items():
@@ -1229,11 +1227,11 @@ if WIN32:
 
         def add_gi_typelib(*libs):
             if verbose_ENABLED:
-                print("add_gi_typelib(%s)" % str(libs))
+                print(f"add_gi_typelib({libs})")
             add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
         def add_gi_gir(*libs):
             if verbose_ENABLED:
-                print("add_gi_gir(%s)" % str(libs))
+                print(f"add_gi_gir({libs})")
             add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
         #convenience method for adding GI libs and "typelib" and "gir":
         def add_gi(*libs):
@@ -1371,7 +1369,7 @@ if WIN32:
                       #I think 'coreelements' needs those (otherwise we would exclude them):
                       "basecamerabinsrc", "mpegts", "photography",
                       ):
-                add_DLLs('gst%s' % p)
+                add_DLLs(f"gst{p}")
             #DLLs needed by the plugins:
             add_DLLs("faac", "faad", "flac", "mpg123")      #"mad" is no longer included?
             #add the gstreamer plugins we need:
@@ -1602,7 +1600,7 @@ if WIN32:
     if data_ENABLED:
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
         for d in ("http-headers", "content-type", "content-categories", "content-parent"):
-            add_data_files("etc/xpra/%s" % d, glob.glob("fs/etc/xpra/%s/*" % d))
+            add_data_files(f"etc/xpra/{d}", glob.glob(f"fs/etc/xpra/{d}/*"))
 
     #END OF win32
 #*******************************************************************************
@@ -1627,7 +1625,7 @@ else:
         libexec_dir = "__LIBEXECDIR__"
     else:
         libexec_dir = "libexec"
-    add_data_files(libexec_dir+"/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
+    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
@@ -1690,11 +1688,11 @@ else:
                 with open(dst_file, "wb") as f:
                     f.write(data)
                 if chmod:
-                    print("chmod(%s, %s)" % (dst_file, oct(chmod)))
+                    print(f"chmod({dst_file}, %s)" % oct(chmod))
                     os.chmod(dst_file, chmod)
 
             def dirtodir(src_dir, dst_dir):
-                print("dirtodir(%s, %s)" % (src_dir, dst_dir))
+                print(f"dirtodir({src_dir}, {dst_dir})")
                 for f in os.listdir(src_dir):
                     copytodir(os.path.join(src_dir, f), dst_dir)
 
@@ -1703,7 +1701,7 @@ else:
                 lib_cups = "lib/cups"
                 if FREEBSD:
                     lib_cups = "libexec/cups"
-                copytodir("fs/lib/cups/backend/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
+                copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
@@ -1723,13 +1721,13 @@ else:
                 if nvfbc_ENABLED:
                     addconf("nvfbc.keys")
                 dummy_driver_version = get_dummy_driver_version()
-                print("found dummy driver version %s" % (dummy_driver_version,))
+                print(f"found dummy driver version {dummy_driver_version}")
                 if dummy_driver_version < (0, 4):
                     addconf("xorg.conf")
                 else:
                     addconf("xorg-randr1.6.conf", "xorg.conf")
                 for src, dst_name in etc_xpra_files.items():
-                    copytodir("fs/etc/xpra/%s" % src, "/etc/xpra", dst_name=dst_name)
+                    copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
                 copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
 
             if pam_ENABLED:
@@ -1777,9 +1775,9 @@ else:
             if docs_ENABLED:
                 if WIN32 or OSX:
                     #keep everything in our own directory:
-                    doc_dir = "%s/share/xpra/doc" % self.install_dir
+                    doc_dir = f"{self.install_dir}/share/xpra/doc"
                 else:
-                    doc_dir = "%s/share/doc/xpra/" % self.install_dir
+                    doc_dir = f"{self.install_dir}/share/doc/xpra/"
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
@@ -1810,7 +1808,7 @@ else:
             #not supported by all distros, but doesn't hurt to install them anyway:
             if not FREEBSD:
                 for x in ("tmpfiles.d", "sysusers.d"):
-                    add_data_files("lib/%s" % x, ["fs/lib/%s/xpra.conf" % x])
+                    add_data_files(f"lib/{x}", [f"fs/lib/{x}/xpra.conf"])
             if uinput_ENABLED:
                 add_data_files("lib/udev/rules.d/", ["fs/lib/udev/rules.d/71-xpra-virtual-pointer.rules"])
 
@@ -1836,6 +1834,7 @@ else:
         remove_packages(*external_excludes)
 
         try:
+            # pylint: disable=ungrouped-imports
             from xpra.src_info import REVISION
         except ImportError:
             REVISION = "unknown"
@@ -1846,7 +1845,7 @@ else:
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
                 },
-            "CFBundleGetInfoString" : "%s-%s (c) 2012-2020 https://xpra.org/" % (XPRA_VERSION, REVISION),
+            "CFBundleGetInfoString" : f"{XPRA_VERSION}-{REVISION} (c) 2012-2020 https://xpra.org/",
             "CFBundleIdentifier"            : "org.xpra.xpra",
             }
         #Note: despite our best efforts, py2app will not copy all the modules we need
@@ -1904,8 +1903,8 @@ if data_ENABLED:
         ICONS += glob.glob("fs/share/xpra/icons/*.icns")
     if WIN32:
         ICONS += glob.glob("fs/share/xpra/icons/*.ico")
-    add_data_files("%s/icons" % share_xpra,         ICONS)
-    add_data_files("%s/css" % share_xpra,           glob.glob("fs/share/xpra/css/*"))
+    add_data_files(f"{share_xpra}/icons",         ICONS)
+    add_data_files(f"{share_xpra}/css",           glob.glob("fs/share/xpra/css/*"))
 
 #*******************************************************************************
 if modules_ENABLED:
@@ -2048,7 +2047,7 @@ toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 if nvfbc_ENABLED:
     #platform: ie: `linux2` -> `linux`, `win32` -> `win`
     platform = sys.platform.rstrip("0123456789")
-    ace("xpra.codecs.nvidia.nvfbc.fbc_capture_%s" % platform, "nvfbc", language="c++")
+    ace(f"xpra.codecs.nvidia.nvfbc.fbc_capture_{platform}", "nvfbc", language="c++")
 
 nvidia_ENABLED = nvenc_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
@@ -2066,8 +2065,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
-                add_data_files("", glob.glob("%s\\curand64*.dll" % p))
-                add_data_files("", glob.glob("%s\\cudart64*.dll" % p))
+                add_data_files("", glob.glob(f"{p}\\curand64*.dll"))
+                add_data_files("", glob.glob(f"{p}\\cudart64*.dll"))
                 break
     else:
         nvcc_exe = "nvcc"
@@ -2130,7 +2129,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             reason = should_rebuild(cuda_src, cuda_bin)
             if not reason:
                 continue
-            print("rebuilding %s: %s" % (kernel, reason))
+            print(f"rebuilding {kernel}: {reason}")
             cmd = [nvcc,
                    '-fatbin',
                    "-c", cuda_src,
@@ -2173,7 +2172,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
                 for arch, code in comp_code_options:
                     cmd.append(f"-gencode=arch=compute_{arch},code=sm_{code}")
             print(f"CUDA compiling %s ({reason})" % kernel.ljust(16))
-            print(" %s" % " ".join("'%s'" % x for x in cmd))
+            print(" %s" % " ".join(f"'{x}'" for x in cmd))
             nvcc_commands.append(cmd)
 
         #parallel build:
@@ -2197,7 +2196,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
                 sys.exit(1)
             t.join()
 
-        add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
+        add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
