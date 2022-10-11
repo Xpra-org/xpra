@@ -225,7 +225,7 @@ class WindowModel(BaseWindowModel):
 
         geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
-            raise Unmanageable("window %#x disappeared already" % self.xid)
+            raise Unmanageable(f"window {self.xid:x} disappeared already")
         geomlog("setup() geometry=%s, ogeom=%s", geom, ogeom)
         nx, ny, w, h = geom[:4]
         #after reparenting, the coordinates of the client window should be 0,0
@@ -320,7 +320,7 @@ class WindowModel(BaseWindowModel):
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
         geom = X11Window.getGeometry(self.xid)
         if not geom:
-            raise Unmanageable("failed to get geometry for %#x" % self.xid)
+            raise Unmanageable(f"failed to get geometry for {self.xid:x}")
         #initial position and size, from the Window object,
         #but allow size hints to override it if specified
         x, y, w, h = geom[:4]

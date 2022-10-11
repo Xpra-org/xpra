@@ -22,6 +22,7 @@ class Keyboard(KeyboardBase):
         super().__init__()
         if not is_Wayland():
             try:
+                #pylint: disable=import-outside-toplevel
                 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
@@ -84,7 +85,7 @@ class Keyboard(KeyboardBase):
         # System Locale: LANG=en_GB.UTF-8
         # VC Keymap: gb
         # X11 Layout: gb
-        from subprocess import getoutput
+        from subprocess import getoutput  # pylint: disable=import-outside-toplevel
         out = getoutput("localectl status")
         if not out:
             return {}
@@ -221,7 +222,8 @@ class Keyboard(KeyboardBase):
         #force re-query on next call:
         self.keymap_modifiers = None
         try:
-            dn = "%s %s" % (type(display).__name__, display.get_name())
+            classname = type(display).__name__
+            dn = f"{classname} "+display.get_name()
         except Exception:
             dn = str(display)
         log(f"update_modifier_map({dn}, {mod_meanings}) modifier_map={self.modifier_map}")

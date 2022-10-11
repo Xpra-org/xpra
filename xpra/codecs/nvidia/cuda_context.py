@@ -11,7 +11,7 @@ import os
 from time import monotonic
 from threading import RLock
 
-from xpra.codecs.nv_util import numpy_import_lock
+from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
 from xpra.platform.paths import (

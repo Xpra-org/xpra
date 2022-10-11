@@ -56,7 +56,7 @@ class ClientWidgetBase:
         if backing is None:
             bc = backing_class
             if USE_FAKE_BACKING:
-                from xpra.client.fake_window_backing import FakeBacking
+                from xpra.client.fake_window_backing import FakeBacking  # pylint: disable=import-outside-toplevel
                 bc = FakeBacking
             log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s",
                 (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -84,18 +84,23 @@ def get_settings(d):
             log("get_settings(..) found property %s of type %s, serial=%s",
                 prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
+        def req(what="int", nbytes=4):
+            remain = len(d)-pos
+            if remain<nbytes:
+                raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
         if setting_type==XSettingsTypeInteger:
-            assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
+            req("int", 4)
             value = int(struct.unpack(b"=I", d[pos:pos+4])[0])
             pos += 4
         elif setting_type==XSettingsTypeString:
-            assert len(d)>=pos+4, "not enough data (%s bytes) to extract string length (4 bytes needed)" % (len(d)-pos)
+            req("string length", 4)
             value_len = struct.unpack(b"=I", d[pos:pos+4])[0]
-            assert len(d)>=pos+4+value_len, "not enough data (%s bytes) to extract string (%s bytes needed)" % (len(d)-pos-4, value_len)
-            value = d[pos+4:pos+4+value_len]
-            pos += 4 + ((value_len + 0x3) & ~0x3)
+            pos += 4
+            req("string", value_len)
+            value = d[pos:pos+value_len]
+            pos += (value_len + 0x3) & ~0x3
         elif setting_type==XSettingsTypeColor:
-            assert len(d)>=pos+8, "not enough data (%s bytes) to extract color (8 bytes needed)" % (len(d)-pos)
+            req("color", 8)
             red, blue, green, alpha = struct.unpack(b"=HHHH", d[pos:pos+8])
             value = (red, blue, green, alpha)
             pos += 8
@@ -111,7 +116,8 @@ def get_settings(d):
     return  serial, settings
 
 def set_settings(d):
-    assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
+    if len(d)!=2:
+        raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d
     log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
     all_bin_settings = []
@@ -157,6 +163,7 @@ def set_settings(d):
 
 
 def main(): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
     from xpra.platform import program_context
@@ -181,13 +188,13 @@ def main(): # pragma: no cover
             window_bindings = X11WindowBindings()
             selection = "_XSETTINGS_S0"
             owner = window_bindings.XGetSelectionOwner(selection)
-            print("owner(%s)=%#x" % (selection, owner))
+            print(f"owner({selection})={owner:x}")
             XSETTINGS = "_XSETTINGS_SETTINGS"
             if owner:
                 data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
                 serial, settings = get_settings(data)
-                print("serial=%s" % serial)
-                print("%s settings:" % len(settings))
+                print(f"serial={serial}")
+                print(f"{len(settings)} settings:")
                 for s in settings:
                     print(s)
             return 0

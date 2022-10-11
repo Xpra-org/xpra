@@ -18,15 +18,14 @@ def measure_fn(fn, data, *args):
         r = fn(data, *args)
     end = monotonic()
     mps = len(data)*N//4/(end-start)//1024//1024
-    print("%s: %i MPixels/s" % (fn, mps))
+    print(f"{fn}: {mps} MPixels/s")
     return r
 
 def cmp(inbytes, outbytes, fn, *args):
     datain = bytes(bytearray(inbytes))
     dataout = bytes(bytearray(outbytes))
     r = bytes(bytearray(fn(datain, *args)))
-    assert dataout==r, "expected %s but got %s" % (
-        hexstr(dataout), hexstr(r))
+    assert dataout==r, f"expected {hexstr(dataout)} but got {hexstr(r)}"
 
 class ARGBTest(unittest.TestCase):
 
@@ -90,5 +89,5 @@ class ARGBTest(unittest.TestCase):
 def main():
     unittest.main()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -247,7 +247,7 @@ def setup_capture(window):
     capture = None
     if USE_NVFBC:
         try:
-            log("setup_capture(%s) USE_NVFBC_CUDA=%s", window, USE_NVFBC_CUDA)
+            log(f"setup_capture({window}) USE_NVFBC_CUDA={USE_NVFBC_CUDA}")
             if USE_NVFBC_CUDA:
                 capture = NvFBC_CUDACapture()
             else:
@@ -258,7 +258,7 @@ def setup_capture(window):
             assert image, "test capture failed"
         except Exception as e:
             log("get_image() NvFBC test failed", exc_info=True)
-            log("not using %s: %s", capture, e)
+            log(f"not using {capture}: {e}")
             capture = None
     if not capture and USE_XSHM:
         try:
@@ -271,7 +271,7 @@ def setup_capture(window):
                 capture = XImageCapture(window.get_xid())
     if not capture:
         capture = GTKImageCapture(window)
-    log("setup_capture(%s)=%s", window, capture)
+    log(f"setup_capture({window})={capture}")
     return capture
 
 
@@ -296,7 +296,7 @@ class X11ShadowModel(RootWindowModel):
 
     def __repr__(self):
         info = ", OR" if self.override_redirect else ""
-        return "X11ShadowModel(%s : %24s : %#x%s)" % (self.capture, self.geometry, self.xid, info)
+        return f"X11ShadowModel({self.capture} : {self.geometry:24x} : {self.xid:x}{info})"
 
 
 #FIXME: warning: this class inherits from ServerBase twice..
@@ -385,7 +385,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def verify_capture(self, ss):
         #verify capture works:
-        log("verify_capture(%s)", ss)
+        log(f"verify_capture({ss})")
         try:
             capture = GTKImageCapture(self.root)
             bdata = capture.take_screenshot()[-1]

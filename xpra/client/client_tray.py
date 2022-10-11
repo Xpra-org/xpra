@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -193,7 +193,7 @@ class ClientTray(ClientWidgetBase):
             tw.cleanup()
 
     def __repr__(self):
-        return "ClientTray(%i:%s)" % (self._id, self.title)
+        return f"ClientTray({self._id}:{self.title})"
 
 
 class TrayBacking(WindowBackingBase):
@@ -249,6 +249,6 @@ class TrayBacking(WindowBackingBase):
             data_mode += "A"
         from PIL import Image  #@UnresolvedImport
         img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width*len(data_mode), 1)
-        filename = "./tray-%s-%s.png" % (rgb_mode, time())
+        filename = f"./tray-{rgb_mode}-{time()}.png"
         img.save(filename, "PNG")
         log.info("tray %s update saved to %s", rgb_mode, filename)

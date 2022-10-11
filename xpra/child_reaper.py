@@ -46,7 +46,7 @@ class ProcInfo:
          "callback", "process",
          )
     def __repr__(self):
-        return "ProcInfo(%s : %s)" % (self.pid, self.command)
+        return f"ProcInfo({self.pid} : {self.command})"
 
     def get_info(self) -> dict:
         info = {

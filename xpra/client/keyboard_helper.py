@@ -41,7 +41,7 @@ class KeyboardHelper:
         self.variants_option = variants
         self.options = options
         #the platform class which allows us to map the keys:
-        from xpra.platform.keyboard import Keyboard
+        from xpra.platform.keyboard import Keyboard  # pylint: disable=import-outside-toplevel
         self.keyboard = Keyboard()      #pylint: disable=not-callable
         log("KeyboardHelper(%s) keyboard=%s",
             (net_send, keyboard_sync, key_shortcuts,

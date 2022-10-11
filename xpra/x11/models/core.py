@@ -258,7 +258,8 @@ class CoreX11WindowModel(WindowModelStub):
 
     def __repr__(self):  #pylint: disable=arguments-differ
         try:
-            return "%s(%#x)" % (type(self).__name__, self.xid)
+            classname = type(self).__name__
+            return f"{classname}({self.xid:x})"
         except AttributeError:
             return repr(self)
 
@@ -282,7 +283,7 @@ class CoreX11WindowModel(WindowModelStub):
             with xsync:
                 geom = X11Window.geometry_with_border(self.xid)
                 if geom is None:
-                    raise Unmanageable("window %#x disappeared already" % self.xid)
+                    raise Unmanageable(f"window {self.xid:x} disappeared already")
                 self._internal_set_property("geometry", geom[:4])
                 self._read_initial_X11_properties()
         except XError as e:
@@ -380,7 +381,7 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("setup_property_sync()")
         #python properties which trigger an X11 property to be updated:
         for prop, cb in self._py_property_handlers.items():
-            self.connect("notify::%s" % prop, cb)
+            self.connect(f"notify::{prop}", cb)
         #initial sync:
         for cb in self._py_property_handlers.values():
             cb(self)
@@ -694,8 +695,9 @@ class CoreX11WindowModel(WindowModelStub):
             return True
         if event.message_type=="":
             log("empty message type: %s", event)
-            if first_time("empty-x11-window-message-type-%#x" % event.window.get_xid()):
-                log.warn("Warning: empty message type received for window %#x:", event.window.get_xid())
+            exid = event.window.get_xid()
+            if first_time(f"empty-x11-window-message-type-{exid:x}"):
+                log.warn(f"Warning: empty message type received for window {exid:x}")
                 log.warn(" %s", event)
                 log.warn(" further messages will be silently ignored")
             return True
@@ -738,9 +740,10 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_xpra_xkb_event(self, event):
         #X11: XKBNotify
-        log("WindowModel.do_xpra_xkb_event(%r)" % event)
+        log("WindowModel.do_xpra_xkb_event(%r)", event)
         if event.subtype!="bell":
-            log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            log("WindowModel.do_xpra_xkb_event(%r)", event, exc_info=True)
+            log.error("Error: unknown xkb event type: %s", event.type)
             return
         event.window_model = self
         self.emit("bell", event)

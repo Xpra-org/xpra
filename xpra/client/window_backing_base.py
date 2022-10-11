@@ -99,20 +99,23 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
         try:
             x(success, message)
         except Exception:
-            log.error("error calling %s(%s)", x, success, exc_info=True)
+            log.error("Error calling %s(%s)", x, success, exc_info=True)
 
 
 def verify_checksum(img_data, options):
     l = options.intget("z.len")
     if l:
-        assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (
-            l, len(img_data))
+        if l!=len(img_data):
+            raise ValueError("compressed pixel data failed length integrity check:"+
+                             f" expected {l} bytes but got {len(img_data)}")
     chksum = options.get("z.sha256")
     if chksum:
         h = hashlib.sha256(img_data)
     if h:
         hd = h.hexdigest()
-        assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
+        if chksum!=hd:
+            raise ValueError("pixel data failed compressed chksum integrity check:"+
+                             f" expected {chksum} but got {hd}")
 
 
 class WindowBackingBase:
@@ -316,8 +319,8 @@ class WindowBackingBase:
             sx, dx = east_x()
             sy, dy = south_y()
         elif g==StaticGravity:
-            if first_time("StaticGravity-%i" % self.wid):
-                log.warn("Warning: window %i requested static gravity", self.wid)
+            if first_time(f"StaticGravity-{self.wid}"):
+                log.warn(f"Warning: window {self.wid} requested static gravity")
                 log.warn(" this is not implemented yet")
         w = min(bw, oldw)
         h = min(bh, oldh)
@@ -385,6 +388,7 @@ class WindowBackingBase:
             dev = get_default_device()
             assert dev
             #make this an opengl compatible context:
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.nvidia.cuda_context import cuda_device_context
             self.cuda_context = cuda_device_context(dev.device_id, dev.device, opengl)
             #create the context now as this is the part that takes time:
@@ -412,7 +416,7 @@ class WindowBackingBase:
     def close_decoder(self, blocking=False):
         videolog("close_decoder(%s)", blocking)
         dl = self._decoder_lock
-        if dl is None or not dl.acquire(blocking):
+        if dl is None or not dl.acquire(blocking):  # pylint: disable=consider-using-with
             videolog("close_decoder(%s) lock %s not acquired", blocking, dl)
             return False
         try:
@@ -482,7 +486,7 @@ class WindowBackingBase:
             elif encoding=="jpega":
                 rgb_format = "RGBA"
             else:
-                raise Exception("invalid encoding %r" % encoding)
+                raise Exception(f"invalid encoding {encoding!r}")
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
@@ -534,6 +538,7 @@ class WindowBackingBase:
         #if the backing can't handle this format,
         #ie: tray only supports RGBA
         if rgb_format not in self.RGB_MODES:
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
             from xpra.codecs.image_wrapper import ImageWrapper
             img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
@@ -553,7 +558,8 @@ class WindowBackingBase:
         #was a compressor used?
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
         if comp:
-            assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
+            if len(comp)!=1:
+                raise ValueError(f"more than one compressor specified: {comp}")
             rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
         else:
             rgb_data = raw_data
@@ -589,7 +595,7 @@ class WindowBackingBase:
             elif bpp==32:
                 paint_fn = self._do_paint_rgb32
             else:
-                raise Exception("invalid rgb format '%s'" % rgb_format)
+                raise Exception(f"invalid rgb format {rgb_format!r}")
             options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
@@ -598,7 +604,7 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
             else:
                 log.error("Error painting rgb%s", bpp, exc_info=True)
-                message = "paint rgb%s error: %s" % (bpp, e)
+                message = f"paint rgb{bpp} error: {e}"
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb16(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
@@ -623,13 +629,12 @@ class WindowBackingBase:
 
     def make_csc(self, src_width, src_height, src_format,
                        dst_width, dst_height, dst_format_options, speed):
-        global CSC_OPTIONS
         in_options = CSC_OPTIONS.get(src_format, {})
         if not in_options:
-            log.error("Error: no csc options for '%s' input, only found:", src_format)
+            log.error(f"Error: no csc options for {src_format!r} input, only found:")
             for k,v in CSC_OPTIONS.items():
                 log.error(" * %-8s : %s", k, csv(v))
-            raise Exception("no csc options for '%s' input in %s" % (src_format, csv(CSC_OPTIONS.keys())))
+            raise Exception(f"no csc options for {src_format!r} input in "+csv(CSC_OPTIONS.keys()))
         videolog("make_csc%s",
             (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
         for dst_format in dst_format_options:
@@ -654,17 +659,17 @@ class WindowBackingBase:
                     videolog.error("Error: failed to create csc instance %s", spec.codec_class)
                     videolog.error(" for %s to %s: %s", src_format, dst_format, e)
         videolog.error("Error: no matching CSC module found")
-        videolog.error(" for %ix%i %s source format,", src_width, src_height, src_format)
-        videolog.error(" to %ix%i %s", dst_width, dst_height, " or ".join(dst_format_options))
-        videolog.error(" with options=%s, speed=%i", dst_format_options, speed)
+        videolog.error(f" for {src_width}x{src_height} {src_format} source format,")
+        videolog.error(f" to {dst_width}x{dst_height} "+" or ".join(dst_format_options))
+        videolog.error(f" with options={dst_format_options}, speed={speed}")
         videolog.error(" tested:")
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             if not specs:
                 continue
-            videolog.error(" * %s:", dst_format)
+            videolog.error(f" * {dst_format}:")
             for spec in specs:
-                videolog.error("   - %s:", spec)
+                videolog.error(f"   - {spec}:")
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     videolog.error("       "+v[0], *v[1:])
@@ -694,14 +699,15 @@ class WindowBackingBase:
         return None
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
-        assert decoder_module, "decoder module not found for %s" % coding
+        if not decoder_module:
+            raise RuntimeError(f"decoder module not found for {coding}")
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
             return
         with dl:
             if self._backing is None:
-                message = "window %s is already gone!" % self.wid
+                message = f"window {self.wid} is already gone!"
                 log(message)
                 fire_paint_callbacks(callbacks, -1, message)
                 return
@@ -796,7 +802,8 @@ class WindowBackingBase:
         rgb = cd.convert_image(img)
         videolog("do_video_paint rgb using %s.convert_image(%s)=%s", cd, img, rgb)
         img.free()
-        assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
+        if rgb.get_planes()!=0:
+            raise RuntimeError(f"invalid number of planes for {rgb_format}: {rgb.get_planes()}")
         #make a new options dict and set the rgb format:
         paint_options = typedict(options)
         #this will also take care of firing callbacks (from the UI thread):
@@ -822,7 +829,7 @@ class WindowBackingBase:
 
     def paint_scroll(self, img_data, options, callbacks):
         log("paint_scroll%s", (img_data, options, callbacks))
-        raise NotImplementedError("no paint scroll on %s" % type(self))
+        raise NotImplementedError(f"no paint scroll on {type(self)}")
 
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
@@ -875,6 +882,6 @@ class WindowBackingBase:
                 raise
 
     def do_draw_region(self, _x, _y, _width, _height, coding, _img_data, _rowstride, _options, callbacks):
-        msg = "invalid encoding: '%s'" % coding
+        msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)

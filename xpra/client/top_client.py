@@ -269,7 +269,7 @@ class TopClient:
         info = [display]
         valid_path = None
         for state, path in state_paths:
-            sinfo = "%50s : %s" % (path, state)
+            sinfo = f"{path:50} : {state}"
             if POSIX:
                 # pylint: disable=import-outside-toplevel
                 from pwd import getpwuid
@@ -277,9 +277,9 @@ class TopClient:
                 try:
                     stat = os.stat(path)
                     #if stat.st_uid!=os.getuid():
-                    sinfo += "  uid=%s" % getpwuid(stat.st_uid).pw_name
+                    sinfo += "  uid=" + getpwuid(stat.st_uid).pw_name
                     #if stat.st_gid!=os.getgid():
-                    sinfo += "  gid=%s" % getgrgid(stat.st_gid).gr_name
+                    sinfo += "  gid=" + getgrgid(stat.st_gid).gr_name
                 except Exception as e:
                     sinfo += f"(stat error: {e})"
             info.append(sinfo)
@@ -311,7 +311,7 @@ class TopClient:
                             self.psprocess[pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            info[0] += ", %3i%% CPU" % (cpu)
+                            info[0] += f", {cpu:3}% CPU"
                     except Exception:
                         pass
         return info
@@ -356,7 +356,7 @@ class TopSessionClient(InfoTimerClient):
         super().__init__(*args)
         self.log_file = None
         if CURSES_LOG:
-            self.log_file = open(CURSES_LOG, "ab")
+            self.log_file = open(CURSES_LOG, "ab")  # pylint: disable=consider-using-with
         self.paused = False
         self.stdscr = None
         self.modified = False
@@ -510,7 +510,7 @@ class TopSessionClient(InfoTimerClient):
             elapsed_time = server_info.intget("elapsed_time")
             if elapsed_time:
                 td = timedelta(seconds=elapsed_time)
-                uptime = " up %s" % str(td).lstrip("0:")
+                uptime = " up " + str(td).lstrip("0:")
             clients_info = self.slidictget("clients")
             nclients = clients_info.intget("")
             load_average = ""
@@ -523,10 +523,11 @@ class TopSessionClient(InfoTimerClient):
             if height<=3:
                 return
             thread_info = self.slidictget("threads")
-            rinfo = "%i threads" % thread_info.intget("count")
+            thread_count = thread_info.intget("count")
+            rinfo = f"{thread_count} threads"
             server_pid = server_info.intget("pid", 0)
             if server_pid:
-                rinfo += ", pid %i" % server_pid
+                rinfo += f", pid {server_pid}"
                 machine_id = server_info.get("machine-id")
                 if machine_id is None or machine_id==get_machine_id():
                     try:
@@ -537,18 +538,18 @@ class TopSessionClient(InfoTimerClient):
                             self.psprocess[server_pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            rinfo += ", %3i%% CPU" % (cpu)
+                            rinfo += f", {cpu:3}% CPU"
                     except Exception:
                         pass
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
-                rinfo += ", %s" % cpuinfo.strget("hz_actual")
+                rinfo += ", " + cpuinfo.strget("hz_actual")
             elapsed = monotonic()-self.server_last_info_time
             color = WHITE
             if self.server_last_info_time==0:
                 rinfo += " - no server data"
             elif elapsed>2:
-                rinfo += " - last updated %i seconds ago" % elapsed
+                rinfo += f" - last updated {elapsed} seconds ago"
                 color = RED
             addstr_main(3, 0, rinfo, curses.color_pair(color))
             if height<=4:
@@ -559,22 +560,24 @@ class TopSessionClient(InfoTimerClient):
             rws = server.intpair("root_window_size", None)
             display_info = self.slidictget("display")
             if rws:
-                sinfo = "%ix%i" % (rws[0], rws[1])
+                rww, rwh = rws
+                sinfo = f"{rww}x{rwh}"
                 depth = display_info.intget("depth")
                 if depth>0:
-                    sinfo += " %i-bit" % depth
+                    sinfo += f" {depth}-bit"
                 sinfo += " display"
                 mds = server.intpair("max_desktop_size")
                 if mds:
-                    sinfo += " (max %ix%i)" % (mds[0], mds[1])
+                    mdw, mdh = mds
+                    sinfo += f" (max {mdw}x{mdh})"
                 dinfo.append(sinfo)
             cursor_info = self.slidictget("cursor")
             if cursor_info:
                 cx, cy = cursor_info.inttupleget("position", (0, 0))
-                dinfo.append("cursor at %ix%i" % (cx, cy))
+                dinfo.append(f"cursor at {cx}x{cy}")
             pid = display_info.intget("pid")
             if pid:
-                dinfo.append("pid %i" % pid)
+                dinfo.append(f"pid {pid}")
             addstr_main(4, 0, csv(dinfo))
             if height<=5:
                 return
@@ -709,13 +712,13 @@ class TopSessionClient(InfoTimerClient):
             if sinfo:
                 cur = sinfo.intget("cur")
                 avg = sinfo.intget("avg")
-                qs_info = f"speed: {cur}%% (avg: f{avg}%%)"
+                qs_info = f"speed: {cur}% (avg: f{avg}%)"
             qinfo = self.td(edict.dictget("quality") or {})
             if qinfo:
                 qs_info = qs_info.ljust(24)
                 cur = qinfo.intget("cur")
                 avg = qinfo.intget("avg")
-                qs_info += f"quality: {cur}%% (avg: {avg}%%)"
+                qs_info += f"quality: {cur}% (avg: {avg}%)"
                 if avg<70:
                     qs_color = YELLOW
                 if avg<50:

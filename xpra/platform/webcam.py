@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform import platform_import
 from xpra.log import Logger
 log = Logger("webcam")
 
@@ -25,17 +26,15 @@ def remove_video_device_change_callback(_callback):
 
 _video_device_change_callbacks = []
 def _fire_video_device_change(create=None, pathname=None):
-    global _video_device_change_callbacks
     for x in _video_device_change_callbacks:
         try:
             x(create, pathname)
         except Exception as e:
             log("error on %s", x, exc_info=True)
             log.error("Error: video device change callback error")
-            log.error(" %s", e)
+            log.estr(e)
 
 
-from xpra.platform import platform_import
 platform_import(globals(), "webcam", False,
                 "get_virtual_video_devices",
                 "get_all_video_devices",
@@ -44,6 +43,7 @@ platform_import(globals(), "webcam", False,
 
 
 def main(argv):
+    # pylint: disable=import-outside-toplevel
     if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for
         enable_debug_for("webcam")

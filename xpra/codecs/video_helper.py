@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,7 +32,7 @@ CODEC_TO_MODULE = {
     }
 
 def has_codec_module(module_name):
-    top_module = "xpra.codecs.%s" % module_name
+    top_module = f"xpra.codecs.{module_name}"
     try:
         __import__(top_module, {}, {}, [])
         log("codec module %s is installed", module_name)
@@ -202,15 +202,15 @@ class VideoHelper:
         for encoding, encoder_specs in self._video_encoder_specs.items():
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
-                    einfo.setdefault("%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
+                    einfo.setdefault(f"{in_csc}_to_{encoding}", []).append(spec.codec_type)
         for in_csc, out_specs in self._csc_encoder_specs.items():
             for out_csc, specs in out_specs.items():
-                cinfo["%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
+                cinfo[f"{in_csc}_to_{out_csc}"] = [spec.codec_type for spec in specs]
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
                     decoder_name = decoder[0]
-                    dinfo.setdefault("%s_to_%s" % (encoding, out_csc), []).append(decoder_name)
+                    dinfo.setdefault(f"{encoding}_to_{out_csc}", []).append(decoder_name)
         def modstatus(x, def_list, active_list):
             #the module is present
             if x in active_list:
@@ -220,10 +220,10 @@ class VideoHelper:
             return "not found"
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
-            venc["%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
+            venc[x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
         cscm = einfo.setdefault("csc-module", {})
         for x in ALL_CSC_MODULE_OPTIONS:
-            cscm["%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
+            cscm[x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
         return d
 
     def init(self):
@@ -436,6 +436,7 @@ def getVideoHelper():
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.codecs.loader import log as loader_log, load_codecs, show_codecs
     from xpra.util import print_nested_dict
     from xpra.log import enable_color

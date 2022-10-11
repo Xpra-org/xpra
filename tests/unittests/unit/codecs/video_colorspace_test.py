@@ -54,9 +54,9 @@ class Test_CSC_Colorspace(unittest.TestCase):
                       width=16, height=16):
         in_csc = "YUV420P"
         if in_csc not in encoder_module.get_input_colorspaces(encoding):
-            raise Exception("%s does not support %s as input" % (encoder_module, in_csc))
+            raise Exception(f"{encoder_module} does not support {in_csc} as input")
         if in_csc!=decoder_module.get_output_colorspace(encoding, in_csc):
-            raise Exception("%s does not support %s as output for %s" % (decoder_module, in_csc, in_csc))
+            raise Exception(f"{decoder_module} does not support {in_csc} as output for {in_csc}")
         encoder = encoder_module.Encoder()
         options = typedict({"max-delayed" : 0})
         encoder.init_context(encoding, width, height, in_csc, options)
@@ -92,8 +92,8 @@ class Test_CSC_Colorspace(unittest.TestCase):
                 in_rowdata = in_pdata[in_stride*y:in_stride*y+width//xdiv]
                 out_rowdata = out_pdata[out_stride*y:out_stride*y+width//xdiv]
                 if not cmpp(in_rowdata, out_rowdata):
-                    raise Exception("expected %s but got %s for row %i of plane %s with %s" % (
-                        hexstr(in_rowdata), hexstr(out_rowdata), y, plane, encoding))
+                    raise Exception(f"expected {hexstr(in_rowdata)} but got {hexstr(out_rowdata)}"+
+                                    f" for row {y} of plane {plane} with {encoding}")
             #print("%s - %s : %s vs %s" % (encoding, plane, hexstr(in_pdata), hexstr(out_pdata)))
 
     def test_YUV420P(self):
@@ -107,17 +107,17 @@ class Test_CSC_Colorspace(unittest.TestCase):
             ):
             encoder = loader.load_codec(encoder_name)
             if not encoder:
-                print("%s not found" % encoder_name)
+                print(f"{encoder_name} not found")
                 continue
             decoder = loader.load_codec(decoder_name)
             if not decoder:
-                print("%s not found" % decoder_name)
+                print(f"{decoder_name} not found")
                 continue
             for colour, yuvdata in SAMPLE_YUV420P_IMAGES.items():
                 try:
                     self._test_YUV420P(encoding, encoder, decoder, yuvdata)
                 except Exception:
-                    print("error with %s %s image via %s and %s" % (colour, encoding, encoder_name, decoder_name))
+                    print(f"error with {colour} {encoding} image via {encoder_name} and {decoder_name}")
                     raise
 
 def main():

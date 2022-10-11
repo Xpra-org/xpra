@@ -218,7 +218,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 if instance:
                     self.challenge_handlers.append(instance)
         if DETECT_LEAKS:
-            from xpra.util import detect_leaks
+            from xpra.util import detect_leaks  # pylint: disable=import-outside-toplevel
             print_leaks = detect_leaks()
             self.timeout_add(10*1000, print_leaks)
 

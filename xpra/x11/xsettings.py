@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -31,7 +31,7 @@ XNone = 0
 class XSettingsManager:
     __slots__ = ("_manager", "_window")
     def __init__(self, screen_number=0):
-        selection = "_XSETTINGS_S%i" % screen_number
+        selection = f"_XSETTINGS_S{screen_number}"
         self._manager = ManagerSelection(selection)
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
@@ -126,20 +126,21 @@ GObject.type_register(XSettingsWatcher)
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import XSettingsNames
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
     s = XSettingsHelper().get_settings()
     assert s
     seq, data = s
-    print("XSettings: (sequence %i)" % seq)
+    print(f"XSettings: (sequence {seq})")
     for vtype, prop, value, serial  in data:
         if isinstance(value, bytes):
             vstr = value.decode()
         else:
             vstr = str(value)
         if serial>0:
-            vstr += " (serial=%#x)" % serial
+            vstr += f" (serial={serial:x})"
         print("%8s: %32s = %-32s" % (XSettingsNames.get(vtype, "?"), prop.decode(), vstr))
 
 

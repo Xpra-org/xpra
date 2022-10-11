@@ -9,6 +9,7 @@ import sys
 import site
 import tempfile
 
+# pylint: disable=import-outside-toplevel
 
 def do_get_desktop_background_paths():
     return [

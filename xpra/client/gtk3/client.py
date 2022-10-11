@@ -31,13 +31,14 @@ class XpraClient(GTKXpraClient):
             if backend:
                 #capitalize, ie: "x11" -> "X11"
                 backend = backend[0].upper()+backend[1:]
-                return "GTK3 %s" % backend
+                return f"GTK3 {backend}"
         return "GTK3"
 
 
     def get_notifier_classes(self):
         ncs = super().get_notifier_classes()
         if not OSX:
+            # pylint: disable=import-outside-toplevel
             try:
                 from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
                 ncs.append(GTK3_Notifier)
@@ -69,6 +70,7 @@ class XpraClient(GTKXpraClient):
 
 
     def get_tray_menu_helper_class(self):
+        # pylint: disable=import-outside-toplevel
         from xpra.client.gtk3.tray_menu import GTK3TrayMenu
         return GTK3TrayMenu
 

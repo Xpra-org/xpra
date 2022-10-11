@@ -94,7 +94,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.finalize_window()
 
     def __repr__(self):
-        return "ClientWindow(%s)" % self._id
+        return f"ClientWindow({self._id})"
 
     def init_window(self, metadata):
         self._backing = None

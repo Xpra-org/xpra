@@ -146,7 +146,7 @@ class RFBClientProtocol(RFBProtocol):
         log("parse_security_handshake(%s)", hexstr(packet))
         n = struct.unpack(b"B", packet[:1])[0]
         if n==0:
-            self._internal_error("cannot parse security handshake '%s'" % hexstr(packet))
+            self._internal_error("cannot parse security handshake " + hexstr(packet))
             return 0
         security_types = struct.unpack(b"B"*n, packet[1:])
         st = []
@@ -194,7 +194,7 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         r = struct.unpack(b"I", packet[:4])[0]
         if r!=0:
-            self._internal_error("authentication denied, server returned %i" % r)
+            self._internal_error(f"authentication denied, server returned {r}")
             return 0
         log("parse_security_result(%s) success", hexstr(packet))
         self._packet_parser = self._parse_client_init
@@ -220,8 +220,8 @@ class RFBClientProtocol(RFBProtocol):
             session_name = sn.decode("utf8")
         except UnicodeDecodeError:
             session_name = bytestostr(sn)
-        log.info("RFB server session '%s': %ix%i %i bits", session_name, w, h, depth)
-        log("bpp=%i, bigendian=%s", bpp, bool(bigendian))
+        log.info(f"RFB server session {session_name!r}: {w}x{h} {depth} bits")
+        log(f"bpp={bpp}, bigendian={bool(bigendian)}")
         if not truecolor:
             self.invalid("server is not true color", packet)
             return 0
@@ -280,7 +280,7 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         x, y, w, h, encoding = struct.unpack(b"!HHHHi", packet[:header_size])
         if encoding!=RFBEncoding.RAW:
-            self.invalid("invalid encoding: %s" % encoding, packet)
+            self.invalid(f"invalid encoding: {encoding}", packet)
             return 0
         if len(packet)<header_size + w*h*4:
             return 0

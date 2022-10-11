@@ -149,7 +149,7 @@ class X11ServerBase(X11ServerCore):
                     ("ADDRESS",     bytestostr,     _save_str),
                     ("PID",         int,            _save_int),
                     ("WINDOW_ID",   int,            _save_int)):
-                k = "DBUS_SESSION_BUS_%s" % n
+                k = f"DBUS_SESSION_BUS_{n}"
                 v = dbus_env.get(k)
                 if v is None:
                     continue
@@ -158,8 +158,9 @@ class X11ServerBase(X11ServerCore):
                     save(k, tv)
                 except Exception as e:
                     log("save_dbus_env(%s)", dbus_env, exc_info=True)
-                    log.error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
-                    log.error(" %s\n" % e)
+                    log.error(f"Error: failed to save dbus environment variable {k!r}")
+                    log.error(f" with value {v!r}")
+                    log.estr(e)
 
 
     def last_client_exited(self):

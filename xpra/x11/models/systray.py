@@ -32,7 +32,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         self._updateprop("tray", True)
 
     def __repr__(self):
-        return "SystemTrayWindowModel(%#x)" % self.xid
+        return f"SystemTrayWindowModel({self.xid:x})"
 
     def _read_initial_X11_properties(self):
         self._internal_set_property("has-alpha", True)

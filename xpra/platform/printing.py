@@ -8,6 +8,7 @@ import os
 import sys
 
 #default implementation uses pycups
+from xpra.platform import platform_import
 from xpra.util import envbool, print_nested_dict
 from xpra.os_util import WIN32
 from xpra.log import Logger
@@ -43,7 +44,7 @@ DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
 MIMETYPES = None
 def get_mimetypes():
-    global MIMETYPES, DEFAULT_MIMETYPES
+    global MIMETYPES
     if MIMETYPES is None:
         v = os.environ.get("XPRA_PRINTING_MIMETYPES", )
         if v is not None:
@@ -78,7 +79,6 @@ def default_get_info():
 
 
 #default implementation uses pycups:
-from xpra.platform import platform_import
 if not WIN32:
     #pycups is not available on win32
     try:
@@ -91,11 +91,10 @@ if not WIN32:
             get_info,
             )
         assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
-    except Exception as e:
+    except Exception as pycupse:
         log("cannot load pycups", exc_info=True)
         log.warn("Warning: printer forwarding disabled:")
-        log.warn(" %s", e)
-        del e
+        log.warn(" %s", pycupse)
 
 platform_import(globals(), "printing", False,
                 "init_printing",
@@ -109,6 +108,7 @@ platform_import(globals(), "printing", False,
 
 
 def main(argv):
+    # pylint: disable=import-outside-toplevel
     if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for
         add_debug_category("printing")
@@ -134,10 +134,10 @@ def main(argv):
                         sv = nonl(pver(pv))
                 except Exception:
                     sv = repr(pv)
-                print("        %s : %s" % (pk.ljust(32), sv))
+                print(f"        {pk:32} : {sv}")
         except Exception as e:
-            print("        error on %s: %s" % (pk, e))
-            print("        raw attributes: " % d)
+            print(f"        error on {pk}: {e}")
+            print(f"        raw attributes: {d}")
     def dump_info(d):
         print("System Configuration:")
         print_nested_dict(d)
@@ -145,13 +145,13 @@ def main(argv):
         for k in sorted(d.keys()):
             v = d[k]
             print("Printers:")
-            print("* %s" % k)
+            print(f"* {k}")
             dump_dict(v)
             attr = get_printer_attributes(k)
             if attr:
                 print(" attributes:")
                 for a in attr:
-                    print("        %s" % a)
+                    print(f"        {a}")
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.util import csv
@@ -161,7 +161,7 @@ def main(argv):
             init_printing()
         except Exception as e:
             print("Error: initializing the printing tool")
-            print(" %s" % e)
+            print(f" {e}")
         if len(argv)<=1:
             dump_printers(get_printers())
             print("")
@@ -174,26 +174,26 @@ def main(argv):
         if len(argv)==2:
             filename = argv[1]
             if not os.path.exists(filename):
-                print("Cannot print file '%s': file does not exist" % filename)
+                print(f"Cannot print file {filename!r}: file does not exist")
                 return 1
             printer = get_default_printer()     #pylint: disable=assignment-from-none
             if not printer:
                 printer = list(printers.keys())[0]
                 if len(printers)>1:
-                    print("More than one printer found: %s", csv(printer.keys()))
-            print("Using printer '%s'" % printer)
+                    print("More than one printer found: "+csv(printer.keys()))
+            print(f"Using printer {printer!r}")
             filenames = [filename]
         if len(argv)>2:
             printer = argv[1]
             if printer not in printers:
-                print("Invalid printer '%s'" % printer)
+                print(f"Invalid printer {printer!r}")
                 return 1
             filenames = argv[2:]
             for filename in filenames:
                 if not os.path.exists(filename):
-                    print("File '%s' does not exist" % filename)
+                    print(f"File {filename!r} does not exist")
                     return 1
-        print("Printing: %s" % csv(filenames))
+        print("Printing: "+csv(filenames))
         print_files(printer, filenames, "Print Command", {})
     return 0
 

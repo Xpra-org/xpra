@@ -32,7 +32,7 @@ EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 EXPORT_TERMINAL_APPLICATIONS = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
 EXPORT_SELF = envbool("XPRA_XDG_EXPORT_SELF", False)
-LOAD_APPLICATIONS = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", "%s/share/applications" % sys.prefix).split(":")
+LOAD_APPLICATIONS = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
 
 
 def isvalidtype(v):
@@ -50,7 +50,7 @@ def export(entry, properties):
     else:
         l = log
     for prop in properties:
-        fn_name = "get%s" % prop
+        fn_name = f"get{prop}"
         try:
             fn = getattr(entry, fn_name, None)
             if fn:
@@ -107,7 +107,7 @@ if LOAD_FROM_THEME:
             addtheme(get_saved_env().get("XDG_MENU_PREFIX"))
             addtheme(get_saved_env().get("XDG_SESSION_DESKTOP"))
             if len(themes)>MAX_THEMES:
-                for x in glob.glob("%s/share/icons/*/index.theme" % sys.prefix):
+                for x in glob.glob(f"{sys.prefix}/share/icons/*/index.theme"):
                     parts = x.split(os.path.sep)
                     name = parts[-2]
                     addtheme(name)
@@ -121,6 +121,7 @@ EXTENSIONS = ("png", "svg", "xpm")
 
 def check_xdg():
     try:
+        # pylint: disable=import-outside-toplevel
         from xdg.Menu import Menu, MenuEntry
         assert Menu and MenuEntry
         return True
@@ -190,14 +191,14 @@ def find_pixmap_icon(*names):
     if not LOAD_FROM_PIXMAPS:
         return None
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
-    pixmaps_dir = "%s/share/pixmaps" % sys.prefix
+    pixmaps_dir = f"{sys.prefix}/share/pixmaps"
     pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"))
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             return None
         for name in names:
             for ext in EXTENSIONS:
-                fn = os.path.join(d, "%s.%s" % (name, ext))
+                fn = os.path.join(d, f"{name}.{ext}")
                 if fn and os.path.exists(fn):
                     return fn
     return None
@@ -205,7 +206,6 @@ def find_pixmap_icon(*names):
 def find_theme_icon(*names):
     if not LOAD_FROM_THEME:
         return None
-    global IconTheme, Config, themes
     if not (IconTheme and Config and themes):
         return None
     size = Config.icon_size
@@ -230,8 +230,8 @@ def find_glob_icon(*names, category="categories"):
             for d in icondirs:
                 for ext in EXTENSIONS:
                     pathnames += [
-                        os.path.join(d, "*", "*", dn, "%s.%s" % (name, ext)),
-                        os.path.join(d, "*", dn, "*", "%s.%s" % (name, ext)),
+                        os.path.join(d, "*", "*", dn, f"{name}.{ext}"),
+                        os.path.join(d, "*", dn, "*", f"{name}.{ext}"),
                         ]
     for pathname in pathnames:
         filenames = glob.glob(pathname)
@@ -297,7 +297,7 @@ def load_xdg_menu(submenu):
             submenu_data["IconData"] = bdata
             submenu_data["IconType"] = ext
     entries_data = submenu_data.setdefault("Entries", {})
-    from xdg.Menu import Menu, MenuEntry
+    from xdg.Menu import Menu, MenuEntry  # pylint: disable=import-outside-toplevel
     def add_entries(entries):
         for i, entry in enumerate(entries):
             if isinstance(entry, MenuEntry):
@@ -422,53 +422,60 @@ def load_xdg_menu_data():
             log("load_xdg_menu_data()", exc_info=True)
             log.error("Error loading submenu '%s':", name)
             log.error(" %s", e)
-    if LOAD_APPLICATIONS:
-        from xdg.Menu import MenuEntry
-        entries = {}
-        for d in LOAD_APPLICATIONS:
-            if not os.path.exists(d):
-                continue
-            for f in os.listdir(d):
-                if not f.endswith(".desktop"):
-                    continue
-                try:
-                    me = MenuEntry(f, d)
-                except Exception:
-                    log("failed to load %s from %s", f, d, exc_info=True)
-                else:
-                    ed = load_xdg_entry(me.DesktopEntry)
-                    if not ed:
-                        continue
-                    name = ed.get("Name")
-                    #ensure we don't already have it in another submenu:
-                    for menu_category in menu_data.values():
-                        if name in menu_category.get("Entries", {}):
-                            ed = None
-                            break
-                    if ed:
-                        entries[name] = ed
-        log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
-        if entries:
-            #add an 'Applications' menu if we don't have one:
-            md = menu_data.get("Applications")
-            if not md:
-                md = {
-                    "Name" : "Applications",
-                    }
-                menu_data["Applications"] = md
-            md.setdefault("Entries", {}).update(entries)
+    entries = load_applications(menu_data)
+    if entries:
+        #add an 'Applications' menu if we don't have one:
+        md = menu_data.get("Applications")
+        if not md:
+            md = {
+                "Name" : "Applications",
+                }
+            menu_data["Applications"] = md
+        md.setdefault("Entries", {}).update(entries)
     return menu_data
+
+def load_applications(menu_data=None):
+    if not LOAD_APPLICATIONS:
+        return {}
+    def already_has_name(name):
+        if not menu_data:
+            return False
+        for menu_category in menu_data.values():
+            if name in menu_category.get("Entries", {}):
+                return True
+        return False
+    entries = {}
+    from xdg.Menu import MenuEntry  # pylint: disable=import-outside-toplevel
+    for d in LOAD_APPLICATIONS:
+        if not os.path.exists(d):
+            continue
+        for f in os.listdir(d):
+            if not f.endswith(".desktop"):
+                continue
+            try:
+                me = MenuEntry(f, d)
+            except Exception:
+                log("failed to load %s from %s", f, d, exc_info=True)
+            else:
+                ed = load_xdg_entry(me.DesktopEntry)
+                if not ed:
+                    continue
+                name = ed.get("Name")
+                if name and not already_has_name(name):
+                    entries[name] = ed
+    log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
+    return entries
 
 
 def load_desktop_sessions():
     if not check_xdg():
         return {}
-    xsessions_dir = "%s/share/xsessions" % sys.prefix
+    xsessions_dir = f"{sys.prefix}/share/xsessions"
     if not os.path.exists(xsessions_dir) or not os.path.isdir(xsessions_dir):
         return {}
     xsessions = {}
     with IconLoadingContext():
-        from xdg.DesktopEntry import DesktopEntry
+        from xdg.DesktopEntry import DesktopEntry  # pylint: disable=import-outside-toplevel
         for f in os.listdir(xsessions_dir):
             filename = os.path.join(xsessions_dir, f)
             de = DesktopEntry(filename)
@@ -504,7 +511,7 @@ def get_icon_names_for_session(name):
             short_name = name.split(split)[0]
             names += [
                 short_name,
-                "%s-session" % short_name,
-                "%s-desktop" % short_name,
+                f"{short_name}-session",
+                f"{short_name}-desktop",
                 ] + ALIASES.get(short_name, [])   # -> "gnome"
     return names

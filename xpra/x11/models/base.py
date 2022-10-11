@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -206,7 +206,7 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_XPRA_SPEED",
                               "_XPRA_ENCODING",
                               ]
-    _DEFAULT_NET_WM_ALLOWED_ACTIONS = ["_NET_WM_ACTION_%s" % x for x in (
+    _DEFAULT_NET_WM_ALLOWED_ACTIONS = [f"_NET_WM_ACTION_{x}" for x in (
         "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
         "MINIMIZE", "SHADE", "STICK",
         "MAXIMIZE_HORZ", "MAXIMIZE_VERT",
@@ -220,7 +220,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #watch for changes to properties that are used to derive the content-type:
         for x in get_content_type_properties():
             if x in self.get_dynamic_property_names():
-                self.connect("notify::%s" % x, self._content_type_related_property_change)
+                self.connect(f"notify::{x}", self._content_type_related_property_change)
 
     def serial_after_last_unmap(self, serial) -> bool:
         #"The serial member is set from the serial number reported in the protocol
@@ -531,7 +531,8 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def update_wm_state(self, prop, b):
         state_names = self._state_properties.get(prop)
-        assert state_names, "invalid window state %s" % prop
+        if not state_names:
+            raise ValueError(f"invalid window state {prop}")
         if b:
             self._state_add(*state_names)
         else:
@@ -539,7 +540,8 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def get_wm_state(self, prop):
         state_names = self._state_properties.get(prop)
-        assert state_names, "invalid window state %s" % prop
+        if not state_names:
+            raise ValueError(f"invalid window state {prop}")
         #this is a virtual property for WM_STATE:
         #return True if any is set (only relevant for maximized)
         for x in state_names:
@@ -667,7 +669,8 @@ class BaseWindowModel(CoreX11WindowModel):
             source = {1 : "application", 2 : "pager"}.get(event.data[0], "default (%s)" % event.data[0])
             sibling_window = event.data[1]
             log("%s sent to window %#x for sibling %#x from %s with detail=%s",
-                event.message_type, event.window, sibling_window, source, RESTACKING_STR.get(event.detail, event.detail))
+                event.message_type, event.window, sibling_window, source,
+                RESTACKING_STR.get(event.detail, event.detail))
             self.emit("restack", event.detail, sibling_window)
             return True
         #TODO: maybe we should process _NET_MOVERESIZE_WINDOW here?

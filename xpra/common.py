@@ -92,7 +92,8 @@ class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 
     def __repr__(self):
-        return "KeyEvent(%s)" % csv("%s=%s" % (k, getattr(self, k)) for k in KeyEvent.__slots__)
+        strattrs = csv(f"{k}="+str(getattr(self, k)) for k in KeyEvent.__slots__)
+        return f"KeyEvent({strattrs})"
 
 
 def get_refresh_rate_for_value(refresh_rate_str, invalue):

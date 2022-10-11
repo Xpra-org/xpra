@@ -185,7 +185,7 @@ def get_platform_name():
     #better version info than standard python platform:
     if sys.platform.startswith("sun"):
         #couldn't find a better way to distinguish opensolaris from solaris...
-        with open("/etc/release") as f:
+        with open("/etc/release", "r", encoding="latin1") as f:
             data = f.read()
         if data and str(data).lower().find("opensolaris"):
             return "OpenSolaris"
@@ -223,7 +223,6 @@ def get_platform_name():
 
 BUILD_INFO_FILE = "./xpra/build_info.py"
 def record_build_info():
-    global BUILD_INFO_FILE
     props = get_properties(BUILD_INFO_FILE)
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     if source_epoch:
@@ -269,7 +268,7 @@ def record_build_info():
                 ):
         #fugly magic for turning the package atom into a legal variable name:
         pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
-        if pkg_name.split("_")[-1].rstrip("0123456789.")=="":
+        if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
             pkg_name = "_".join(pkg_name.split("_")[:-1])
         cmd = [PKG_CONFIG, "--modversion", pkg]
         returncode, out, _ = get_status_output(cmd)

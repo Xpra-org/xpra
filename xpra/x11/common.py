@@ -23,8 +23,8 @@ class X11Event:
             if k in ("name", "display", "type"):
                 continue
             if k=="serial":
-                d[k] = "%#x" % v
+                d[k] = f"{v:x}"
             else:
                 fn = REPR_FUNCTIONS.get(type(v), str)
                 d[k] = fn(v)
-        return "<X11:%s %r>" % (self.name, d)
+        return f"<X11:{self.name} {d!r}>"

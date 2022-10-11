@@ -184,6 +184,9 @@ class UIXpraClient(ClientBaseClass):
         self.client_lock = opts.lock is True
         self.headerbar = opts.headerbar
 
+    def client_toolkit(self) -> str:
+        raise NotImplementedError()
+
 
     def init_ui(self, opts):
         """ initialize user interface """

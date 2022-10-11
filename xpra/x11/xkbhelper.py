@@ -7,6 +7,7 @@ import os
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util import std, csv, envbool, typedict
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
@@ -87,7 +88,7 @@ def do_set_keymap(layout, variant, options, query_struct):
         options = query_struct.strget("options")
         if layout:
             log.info("setting keymap: %s",
-                     csv("%s=%s" % (std(k), std(v)) for k,v in query_struct.items()
+                     csv(f"{std(k)}={std(v)}" for k,v in query_struct.items()
                          if k in ("rules", "model", "layout", "variant", "options") and v))
             if safe_setxkbmap(rules, model, layout, variant, options):
                 return
@@ -181,7 +182,8 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
             defs = x11_keycodes.get(keycode)
             if keysym in DEBUG_KEYSYMS:
                 log.info("server x11 keycode %i: %s", keycode, defs)
-            assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
+            if not defs:
+                raise RuntimeError(f"bug: keycode {keycode} not found in {x11_keycodes}")
             if len(defs)>i and defs[i]==keysym:
                 rlog(keycode, "exact index match")
                 return keycode, True
@@ -711,7 +713,6 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
         Some platforms can't tell us about modifier mappings
         So we try to find matches from the defaults below:
     """
-    from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
     pref = DEFAULT_MODIFIER_MEANINGS
     #keycodes are: {keycode : (keyval, name, keycode, group, level)}
     matches = {}

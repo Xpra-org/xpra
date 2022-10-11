@@ -23,6 +23,6 @@ class WindowBorder:
         def hex2(v):
             b = int(max(0, min(255, v*256)))
             if b<16:
-                return "0%X" % b
-            return "%X" % b
+                return f"0{b:X}"
+            return f"{b:X}"
         return "WindowBorder(%s, 0x%s%s%s, %s, %s)" % (self.shown, hex2(self.red), hex2(self.green), hex2(self.blue), self.alpha, self.size)

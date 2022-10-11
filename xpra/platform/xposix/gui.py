@@ -566,21 +566,19 @@ def set_shaded(window, shaded):
 
 WINDOW_ADD_HOOKS = []
 def add_window_hooks(window):
-    global WINDOW_ADD_HOOKS
     for x in WINDOW_ADD_HOOKS:
         x(window)
     log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
 
 WINDOW_REMOVE_HOOKS = []
 def remove_window_hooks(window):
-    global WINDOW_REMOVE_HOOKS
     for x in WINDOW_REMOVE_HOOKS:
         x(window)
     log("remove_window_hooks(%s) added %s", window, WINDOW_REMOVE_HOOKS)
 
 
 def get_info():
-    from xpra.platform.gui import get_info_base
+    from xpra.platform.gui import get_info_base  # pylint: disable=import-outside-toplevel
     i = get_info_base()
     s = _get_xsettings()
     if s:
@@ -938,6 +936,7 @@ class ClientExtras:
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             self.init_x11_filter()
+            # pylint: disable=import-outside-toplevel
             from xpra.gtk_common.gtk_util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
@@ -975,7 +974,7 @@ class ClientExtras:
                 log(" server uses: %s", self.client.server_input_devices)
             return False
         try:
-            from xpra.gtk_common.error import xsync, XError
+            from xpra.gtk_common.error import xsync, XError # pylint: disable=import-outside-toplevel
             assert X11WindowBindings(), "no X11 window bindings"
             XI2 = X11XI2Bindings()
             assert XI2, "no XI2 window bindings"

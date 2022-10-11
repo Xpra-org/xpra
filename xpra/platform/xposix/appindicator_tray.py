@@ -11,6 +11,7 @@
 # - that menu looks bloody awful
 # etc
 
+import gi
 import os
 import sys
 import tempfile
@@ -22,7 +23,6 @@ from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
-import gi
 gi.require_version('AppIndicator3', '0.1')
 from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 

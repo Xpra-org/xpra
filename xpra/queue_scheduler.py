@@ -13,7 +13,6 @@ log = Logger("util")
 
 
 #emulate the glib main loop using a single thread + queue:
-
 class QueueScheduler:
     __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
@@ -97,7 +96,7 @@ class QueueScheduler:
                     #re-run it
                     self.main_queue.put(v)
             except Exception:
-                log.error("error during main loop callback %s", fn, exc_info=True)
+                log.error(f"Error during main loop callback {fn}", exc_info=True)
         self.exit = True
 
     def stop(self):

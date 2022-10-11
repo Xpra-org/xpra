@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import threading
 from time import monotonic
 from threading import Event
@@ -62,7 +63,6 @@ class UI_thread_watcher:
             def sleep_in_ui_thread(*args):
                 t = threading.current_thread()
                 log.warn("sleep_in_ui_thread%s pausing %s for %ims", args, t, FAKE_UI_LOCKUPS)
-                import time
                 time.sleep(FAKE_UI_LOCKUPS/1000.0)
                 return True
             self.timeout_add(10*1000+FAKE_UI_LOCKUPS, sleep_in_ui_thread)
@@ -116,7 +116,7 @@ class UI_thread_watcher:
 
     def poll_UI_loop(self):
         log("poll_UI_loop() running")
-        while not self.exit.isSet():
+        while not self.exit.is_set():
             delta = monotonic()-self.last_UI_thread_time
             log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s",
                 delta, self.max_delta/1000, self.UI_blocked)
@@ -137,7 +137,7 @@ class UI_thread_watcher:
             wstart = monotonic()
             wait_time = self.polling_timeout/1000.0     #convert to seconds
             self.exit.wait(wait_time)
-            if not self.exit.isSet():
+            if not self.exit.is_set():
                 wdelta = monotonic() - wstart
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):

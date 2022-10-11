@@ -51,7 +51,7 @@ def get_debug_args():
         args += list(debug_enabled_categories)
     if debug_disabled_categories:
         for x in debug_disabled_categories:
-            args.append("-%s" % x)
+            args.append(f"-{x}")
     return args
 
 class FullDebugContext:

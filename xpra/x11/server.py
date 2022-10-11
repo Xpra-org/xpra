@@ -346,7 +346,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                                 if model.startswith(manufacturer):
                                     name = model
                                 else:
-                                    name = "%s %s" % (manufacturer, model)
+                                    name = f"{manufacturer} {model}"
                             else:
                                 name = manufacturer or model
                         if name:
@@ -354,7 +354,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 else:
                     #no? try to extract it from the legacy "screen_sizes" data:
                     #(ie: pre v4.4 clients)
-                    screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
+                    screenlog(f"screen sizes for {ss}: {ss.screen_sizes}")
                     if ss.screen_sizes and len(ss.screen_sizes[0])>6:
                         monitors = ss.screen_sizes[0][5]
                         mdef = {}
@@ -396,7 +396,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         count = max(1, min(20, count))
         names = []
         for i in range(count):
-            name = "Main" if i==0 else "Desktop %i" % (i+1)
+            name = "Main" if i==0 else f"Desktop {i+1}"
             for ss in sources:
                 if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
                     v = net_utf8(ss.desktop_names[i])
@@ -465,7 +465,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 self._add_new_or_window(window)
 
     def _lookup_window(self, wid):
-        assert isinstance(wid, int), "window id value '%s' is a %s and not a number" % (wid, type(wid))
+        if not isinstance(wid, int):
+            raise RuntimeError(f"window id value {wid!r} is a {type(wid)} and not a number")
         return self._id_to_window.get(wid)
 
 
@@ -657,6 +658,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             windowlog("Window error (vanished already?): %s", e)
             return
         try:
+            # pylint: disable=import-outside-toplevel
             tray_window = get_tray_window(raw_window)
             if tray_window is not None:
                 assert self._tray

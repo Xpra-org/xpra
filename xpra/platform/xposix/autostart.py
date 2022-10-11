@@ -36,7 +36,7 @@ def set_autostart(enabled):
         #find the file to copy there:
         autostart = os.path.join(do_get_resources_dir(), "autostart.desktop")
         if not os.path.exists(autostart):
-            raise InitExit(EXIT_FILE_NOT_FOUND, "%s file not found" % autostart)
+            raise InitExit(EXIT_FILE_NOT_FOUND, f"{autostart!r} file not found")
         copy2(autostart, target)
     else:
         os.unlink(target)

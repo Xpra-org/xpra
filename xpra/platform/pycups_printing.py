@@ -8,12 +8,14 @@
 import sys
 import os
 import time
+import string
 import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
 import cups
 
+from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import OSX, bytestostr
 from xpra.util import engs, envint, envbool, parse_simple_dict
 from xpra.log import Logger
@@ -86,12 +88,11 @@ def set_lpinfo_command(lpinfo):
 
 
 def find_ppd_file(short_name, filename):
-    ev = os.environ.get("XPRA_%s_PPD" % short_name)
+    ev = os.environ.get(f"XPRA_{short_name}_PPD")
     if ev and os.path.exists(ev):
         log("using environment override for %s ppd file: %s", short_name, ev)
         return ev
     paths = []
-    from xpra.common import DEFAULT_XDG_DATA_DIRS
     for p in os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":"):
         if os.path.exists(p) and os.path.isdir(p):
             paths.append(os.path.join(p, "cups", "model"))      #used on Fedora and others
@@ -179,7 +180,7 @@ def add_printer_def(mimetype, definition):
 PRINTER_DEF = None
 PRINTER_DEF_LOCK = Lock()
 def get_printer_definitions():
-    global PRINTER_DEF, PRINTER_DEF_LOCK, UNPROBED_PRINTER_DEFS, MIMETYPE_TO_PRINTER
+    global PRINTER_DEF
     with PRINTER_DEF_LOCK:
         if PRINTER_DEF is not None:
             return PRINTER_DEF
@@ -239,6 +240,7 @@ def validate_setup():
 
 
 def exec_lpadmin(args, success_cb=None):
+    # pylint: disable=import-outside-toplevel
     command = shlex.split(LPADMIN)+args
     log("exec_lpadmin(%s) command=%s", args, command)
     proc = Popen(command, start_new_session=True)
@@ -253,18 +255,17 @@ def exec_lpadmin(args, success_cb=None):
             from xpra.platform.info import get_username
             log.warn(" verify that user '%s' has all the required permissions", get_username())
             log.warn(" for running: '%s'", LPADMIN)
-            log.warn(" full command: %s", " ".join("'%s'" % x for x in command))
+            log.warn(" full command: %s", " ".join(f"{x!r}" for x in command))
         elif success_cb:
             success_cb()
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)
     if proc.poll() not in (None, 0):
-        raise Exception("lpadmin command '%s' failed and returned %s" % (command, proc.poll()))
+        raise Exception(f"lpadmin command {command!r} failed and returned {proc.poll()}")
 
 
 def sanitize_name(name):
-    import string
     name = name.replace(" ", "-")
-    valid_chars = "-_.:%s%s" % (string.ascii_letters, string.digits)
+    valid_chars = f"-_.:{string.ascii_letters}{string.digits}"
     return ''.join(c for c in name if c in valid_chars)
 
 def add_printer(name, options, info, location, attributes, success_cb=None):
@@ -292,7 +293,7 @@ def add_printer(name, options, info, location, attributes, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
-    from urllib.parse import urlencode      #@UnresolvedImport @UnusedImport
+    from urllib.parse import urlencode      #@UnresolvedImport pylint: disable=import-outside-toplevel
     command = [
                "-p", xpra_printer_name,
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
@@ -320,7 +321,6 @@ printers_modified_callback = None
 DBUS_PATH="/com/redhat/PrinterSpooler"
 DBUS_IFACE="com.redhat.PrinterSpooler"
 def handle_dbus_signal(*args):
-    global printers_modified_callback
     log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
     if printers_modified_callback:
         printers_modified_callback()
@@ -352,7 +352,6 @@ def init_dbus_listener():
     return dbus_init
 
 def check_printers():
-    global printers_modified_callback
     #we don't actually check anything here and just
     #fire the callback every time, relying in client_base
     #to notice that nothing has changed and avoid sending the same printers to the server
@@ -486,6 +485,7 @@ def get_info():
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     for arg in list(sys.argv):
         if arg in ("-v", "--verbose"):
             from xpra.log import add_debug_category, enable_debug_for

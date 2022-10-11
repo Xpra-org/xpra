@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -53,6 +53,7 @@ def c_attrs(props):
 def get_xdisplay():
     ptr = get_display_ptr()
     assert ptr, "no X11 display registered"
+    # pylint: disable=import-outside-toplevel
     from OpenGL.raw.GLX._types import struct__XDisplay
     return cast(ptr, POINTER(struct__XDisplay))
 
@@ -211,7 +212,7 @@ class GLXContext:
             GLX.glXDestroyContext(self.xdisplay, c)
 
     def __repr__(self):
-        return "GLXContext(%s)" % self.props
+        return f"GLXContext({self.props})"
 
 GLContext = GLXContext
 

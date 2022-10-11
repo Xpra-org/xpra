@@ -7,6 +7,7 @@ import os
 
 from xpra.util import csv, print_nested_dict
 from xpra.os_util import POSIX
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -18,7 +19,6 @@ def get_modifier_names(mod_meanings):
     #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
     #so generate a map from one to the other:
     modifier_names = {}
-    from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
     meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS
     DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
     for pub_name,mod_name in meanings.items():
@@ -79,7 +79,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
     """
     if not strs:
         strs = ["meta+shift+F4:quit"]
-    log("parse_shortcuts(%s)" % str(strs))
+    log("parse_shortcuts(%s)", strs)
     shortcuts = {}
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
@@ -160,6 +160,6 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
             key_shortcuts.append((modifiers, action, args))
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
-    log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+    log("parse_shortcuts(%s)=%s", strs, shortcuts)
     print_nested_dict(shortcuts, print_fn=log)
     return shortcuts
