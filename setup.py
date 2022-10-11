@@ -602,7 +602,7 @@ def add_cython_ext(*args, **kwargs):
             ('CYTHON_TRACE', 1),
             ('CYTHON_TRACE_NOGIL', 1),
             ]
-        kwargs.setdefault("extra_compile_args", []).apppend("-Wno-error")
+        kwargs.setdefault("extra_compile_args", []).append("-Wno-error")
     # pylint: disable=import-outside-toplevel
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
