@@ -132,7 +132,7 @@ class Keyboard(KeyboardBase):
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
-            log.error(" %s", e)
+            log.estr(e)
         return layout, layouts, variant, variants, options
 
     def get_keymap_modifiers(self):

@@ -2223,7 +2223,7 @@ class WindowVideoSource(WindowSource):
                 return None
             videolog.error("Error: failed to encode %s frame", ve.get_encoding())
             videolog.error(" using %s video encoder:", ve.get_type())
-            videolog.error(" %s", e)
+            videolog.estr(e)
             videolog.error(" source: %s", csc_image)
             videolog.error(" options:")
             print_nested_dict(options, prefix="   ", print_fn=videolog.error)

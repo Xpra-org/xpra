@@ -66,4 +66,4 @@ def load_css(provider):
             log("load_from_path(%s)", filename, exc_info=True)
             log.error("Error: CSS loading error on")
             log.error(" '%s'", filename)
-            log.error(" %s", e)
+            log.estr(e)

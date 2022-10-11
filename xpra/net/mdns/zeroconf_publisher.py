@@ -135,7 +135,7 @@ class ZeroconfPublisher:
         except Exception as e:
             log("zeroconf ServiceInfo", exc_info=True)
             log.error(" for port %i", port)
-            log.error(" %s", e)
+            log.estr(e)
 
     def start(self):
         try:

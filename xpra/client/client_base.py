@@ -392,7 +392,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 hello.update(self.make_hello())
         except InitExit as e:
             log.error("error preparing connection:")
-            log.error(" %s", e)
+            log.estr(e)
             self.quit(EXIT_INTERNAL_ERROR)
             return
         except Exception as e:

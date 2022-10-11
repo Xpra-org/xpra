@@ -363,7 +363,7 @@ class ClientWindowBase(ClientWidgetBase):
             return replaced
         except Exception as e:
             log.error("Error parsing window title:")
-            log.error(" %s", e)
+            log.estr(e)
             return ""
 
     def set_metadata(self, metadata):

@@ -35,7 +35,7 @@ def X11WindowBindings():
             except Exception as e:
                 log("X11WindowBindings()", exc_info=True)
                 log.error("Error: no X11 bindings")
-                log.error(" %s", e)
+                log.estr(e)
     return _X11Window
 
 def X11RandRBindings():
@@ -46,7 +46,7 @@ def X11RandRBindings():
         except Exception as e:
             log("RandRBindings()", exc_info=True)
             log.error("Error: no X11 RandR bindings")
-            log.error(" %s", e)
+            log.estr(e)
     return None
 
 X11XI2 = False
@@ -111,7 +111,7 @@ def get_x11_wm_name():
     except Exception as e:
         screenlog("get_x11_wm_name()", exc_info=True)
         screenlog.error("Error accessing window manager information:")
-        screenlog.error(" %s", e)
+        screenlog.estr(e)
     return None
 
 
@@ -285,7 +285,7 @@ def get_icc_info():
                 return icc
         except Exception as e:
             screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
-            screenlog.error(" %s", e)
+            screenlog.estr(e)
             screenlog("get_icc_info()", exc_info=True)
     from xpra.platform.gui import default_get_icc_info
     return default_get_icc_info()
@@ -792,7 +792,7 @@ class ClientExtras:
         except Exception as e:
             log("init_x11_filter()", exc_info=True)
             log.error("Error: failed to initialize X11 GDK filter:")
-            log.error(" %s", e)
+            log.estr(e)
             self.x11_filter = None
 
     def cleanup(self):
@@ -852,7 +852,7 @@ class ClientExtras:
             dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.error("Error: dbus bindings are missing,")
             dbuslog.error(" cannot setup event listeners:")
-            dbuslog.error(" %s", e)
+            dbuslog.estr(e)
             return
 
         try:
@@ -871,7 +871,7 @@ class ClientExtras:
         except Exception as e:
             dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.error("Error setting up dbus signals:")
-            dbuslog.error(" %s", e)
+            dbuslog.estr(e)
         else:
             #the UPower signals:
             try:
@@ -907,7 +907,7 @@ class ClientExtras:
             except Exception as e:
                 dbuslog("setup_dbus_signals()", exc_info=True)
                 dbuslog.error("Error setting up dbus signals:")
-                dbuslog.error(" %s", e)
+                dbuslog.estr(e)
             else:
                 #screensaver signals:
                 try:
@@ -953,7 +953,7 @@ class ClientExtras:
         except ImportError as e:
             log("do_setup_xprops%s", args, exc_info=True)
             log.error("Error: failed to load X11 properties/settings bindings:")
-            log.error(" %s", e)
+            log.estr(e)
             log.error(" root window properties will not be propagated")
 
 
@@ -999,7 +999,7 @@ class ClientExtras:
         except Exception as e:
             xinputlog("enable_xi2()", exc_info=True)
             xinputlog.error("Error: cannot enable XI2 events")
-            xinputlog.error(" %s", e)
+            xinputlog.estr(e)
         else:
             #register our enhanced event handlers:
             self.add_xi2_method_overrides()

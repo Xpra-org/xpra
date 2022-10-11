@@ -323,7 +323,7 @@ class OpenRequestsWindow:
         except Exception as e:
             log("show_downloads()", exc_info=True)
             log.error("Error: failed to open 'Downloads' folder:")
-            log.error(" %s", e)
+            log.estr(e)
         else:
             getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
 

@@ -311,7 +311,7 @@ def load_xdg_menu(submenu):
                 except Exception as e:
                     log("load_xdg_menu(%s)", submenu, exc_info=True)
                     log.error("Error loading desktop entry '%s':", name)
-                    log.error(" %s", e)
+                    log.estr(e)
             elif isinstance(entry, Menu):
                 #merge up:
                 add_entries(entry.Entries)
@@ -421,7 +421,7 @@ def load_xdg_menu_data():
         except Exception as e:
             log("load_xdg_menu_data()", exc_info=True)
             log.error("Error loading submenu '%s':", name)
-            log.error(" %s", e)
+            log.estr(e)
     entries = load_applications(menu_data)
     if entries:
         #add an 'Applications' menu if we don't have one:
@@ -496,7 +496,7 @@ def load_desktop_sessions():
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
                 log.error("Error loading desktop entry '%s':", filename)
-                log.error(" %s", e)
+                log.estr(e)
     return xsessions
 
 

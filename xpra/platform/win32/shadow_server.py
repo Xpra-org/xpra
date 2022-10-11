@@ -556,7 +556,7 @@ class ShadowServer(GTKShadowServerBase):
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
-            log.error(" %s", e)
+            log.estr(e)
         return False
 
     def clear_keys_pressed(self):

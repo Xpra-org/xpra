@@ -118,7 +118,7 @@ def get_lpinfo_drv(make_and_model):
     except Exception as e:
         log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
         log.error("Error: lpinfo command failed to run")
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" command used: '%s'", " ".join(command))
         return None
     #use the global child reaper to make sure this doesn't end up as a zombie
@@ -141,7 +141,7 @@ def get_lpinfo_drv(make_and_model):
         except Exception as e:
             log("%s.terminate()", proc, exc_info=True)
             log.error("Error: failed to terminate lpinfo command")
-            log.error(" %s", e)
+            log.estr(e)
     start_thread(watch_lpinfo, "lpinfo watcher", daemon=True)
     out, err = proc.communicate()
     if proc.wait()!=0:
@@ -508,7 +508,7 @@ def main():
             printers = get_printers()
         except RuntimeError as e:
             log.error("Error accessing the printing system")
-            log.error(" %s", e)
+            log.estr(e)
         else:
             for k,d in get_all_printers().items():
                 log.info("* %s%s", k, [" (NOT EXPORTED)", ""][int(k in printers)])

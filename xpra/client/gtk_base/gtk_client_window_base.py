@@ -93,7 +93,7 @@ if USE_X11_BINDINGS:
             except Exception as e:
                 workspacelog("x11 workspace bindings error", exc_info=True)
                 workspacelog.error("Error: failed to setup workspace hooks:")
-                workspacelog.error(" %s", e)
+                workspacelog.estr(e)
         CAN_SET_WORKSPACE = can_set_workspace()
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)
@@ -456,7 +456,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             except Exception as e:
                 draglog("file upload for %s:", filename, exc_info=True)
                 draglog.error("Error: cannot upload '%s':", filename)
-                draglog.error(" %s", e)
+                draglog.estr(e)
                 del e
                 file_done(filename)
 
@@ -951,7 +951,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 function()
             except Exception as e:
                 log.error("Error calling %s on %s during deiconification:", function, self)
-                log.error(" %s", e)
+                log.estr(e)
         self._ondeiconify = []
         Gtk.Window.deiconify(self)
 

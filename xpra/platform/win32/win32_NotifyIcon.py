@@ -268,7 +268,7 @@ class win32NotifyIcon:
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def get_geometry(self):
@@ -395,7 +395,7 @@ class win32NotifyIcon:
                 rfn[0](*rfn[1:])
         except Exception as e:
             log.error("Error: cannot reset tray icon")
-            log.error(" %s", e)
+            log.estr(e)
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
         cb = self.command_callback

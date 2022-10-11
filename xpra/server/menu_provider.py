@@ -80,7 +80,7 @@ class MenuProvider:
         except Exception as e:
             log("threaded_setup()", exc_info=True)
             log.error("Error setting up menu watcher:")
-            log.error(" %s", e)
+            log.estr(e)
 
     def do_setup_menu_watcher(self):
         if self.watch_manager or OSX or WIN32:

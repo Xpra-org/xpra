@@ -54,7 +54,7 @@ class Authenticator(SysAuthenticator):
             peername = info.get("endpoint")[0]
         except Exception as e:
             log.error("Error: cannot get host from connection")
-            log.error(" %s", e)
+            log.estr(e)
             raise
         self.peername = peername
         self.host = host

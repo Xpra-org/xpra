@@ -395,7 +395,7 @@ def get_uinput_device_path(device):
     except Exception as e:
         log("get_uinput_device_path(%s)", device, exc_info=True)
         log.error("Error: cannot query uinput device path:")
-        log.error(" %s", e)
+        log.estr(e)
     return None
 
 def has_uinput():
@@ -445,7 +445,7 @@ def create_uinput_device(uuid, uid, events, name):
             log.error("Error: cannot open uinput,")
             log.error(" make sure that the kernel module is loaded")
             log.error(" and that the /dev/uinput device exists:")
-            log.error(" %s", e)
+            log.estr(e)
         return None
     dev_path = get_uinput_device_path(device)
     if not dev_path:
@@ -495,7 +495,7 @@ def create_uinput_devices(uinput_uuid, uid):
         assert uinput
     except (ImportError, NameError) as e:
         log.error("Error: cannot access python uinput module:")
-        log.error(" %s", e)
+        log.estr(e)
         return {}
     pointer = create_uinput_pointer_device(uinput_uuid, uid)
     touchpad = create_uinput_touchpad_device(uinput_uuid, uid)

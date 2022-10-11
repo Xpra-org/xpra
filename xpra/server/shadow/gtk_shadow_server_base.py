@@ -256,7 +256,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         except Exception as e:
             log("refresh_window_models()", exc_info=True)
             log.error("Error refreshing window models")
-            log.error(" %s", e)
+            log.estr(e)
             return
         #build a map of window identifier -> window model:
         xid_to_window = dict((window.get_id(), window) for window in windows)
@@ -375,7 +375,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         except Exception as e:
             traylog("error setting up %s", self.tray_widget, exc_info=True)
             traylog.error("Error setting up system tray:")
-            traylog.error(" %s", e)
+            traylog.estr(e)
 
 
     def make_tray_widget(self):

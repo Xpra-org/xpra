@@ -411,7 +411,7 @@ class ServerCore:
                 except Exception as e:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
-                    log.error(" %s", e)
+                    log.estr(e)
 
     def add_init_thread_callback(self, callback):
         self.init_thread_callbacks.append(callback)
@@ -553,7 +553,7 @@ class ServerCore:
         except Exception as e:
             log("init_dbus_server()", exc_info=True)
             log.error("Error: cannot load dbus server:")
-            log.error(" %s", e)
+            log.estr(e)
             self.dbus_server = None
 
     def cleanup_dbus_server(self):
@@ -611,7 +611,7 @@ class ServerCore:
                     httplog.info("html server unavailable, cannot find websocket module")
                 else:
                     httplog.error("Error: cannot import websocket connection handler:")
-                    httplog.error(" %s", e)
+                    httplog.estr(e)
                     httplog.error(" the html server will not be available")
                 self._html = False
         #make sure we have the web root:
@@ -1258,7 +1258,7 @@ class ServerCore:
                 log.error(" no certificate paths specified")
             else:
                 log.error(" check your certificate paths: %s", cpaths)
-            log.error(" %s", e)
+            log.estr(e)
             noerr(sock.close)
             return None
 

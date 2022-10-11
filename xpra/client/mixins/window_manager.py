@@ -256,7 +256,7 @@ class WindowClient(StubClientMixin):
                         self.overlay_image = Image.open(icon_filename)
                     except Exception as e:
                         log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
-                        log.error(" %s", e)
+                        log.estr(e)
         traylog("overlay_image=%s", self.overlay_image)
         self._draw_queue = Queue()
 
@@ -873,7 +873,7 @@ class WindowClient(StubClientMixin):
             except OSError as e:
                 log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
                 log.error("Error: cannot execute signal listener")
-                log.error(" %s", e)
+                log.estr(e)
                 proc = None
             if proc and proc.poll() is None:
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
@@ -920,7 +920,7 @@ class WindowClient(StubClientMixin):
             except Exception as e:
                 log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
                 log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
-                log.error(" %s", e)
+                log.estr(e)
         if proc.poll():
             #watcher ended, stop watching its stdout
             proc.stdout_io_watch = None

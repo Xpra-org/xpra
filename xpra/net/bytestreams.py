@@ -444,7 +444,7 @@ class SocketConnection(Connection):
         except (OSError, ValueError) as e:
             log("do_get_socket_info() error querying socket speed", exc_info=True)
             log.error("Error querying socket speed:")
-            log.error(" %s", e)
+            log.estr(e)
         else:
             opts = {
                     "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),

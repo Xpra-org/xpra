@@ -50,7 +50,7 @@ def main():
         except Exception as e:
             log("Capture()", exc_info=True)
             log.error("Error: failed to create test capture instance:")
-            log.error(" %s", e)
+            log.estr(e)
             return 1
         image = c.get_image()
         assert image

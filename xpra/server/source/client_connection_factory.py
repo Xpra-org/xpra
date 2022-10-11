@@ -104,7 +104,7 @@ def get_client_connection_class(caps):
                 except Exception as e:
                     log("%s.cleanup()", bc, exc_info=True)
                     log.error("Error closing connection")
-                    log.error(" %s", e)
+                    log.estr(e)
                     raise Exception("failed to close %s: %s" % (bc, e)) from None
 
         def send_hello(self, server_capabilities):
@@ -129,7 +129,7 @@ def get_client_connection_class(caps):
                 except Exception as e:
                     log("merge_dicts on %s", bc, exc_info=True)
                     log.error("Error: cannot add information from %s:", bc)
-                    log.error(" %s", e)
+                    log.estr(e)
             return info
 
         def parse_hello(self, c : typedict):

@@ -151,7 +151,7 @@ class Win32EventListener:
                 DestroyWindow(hwnd)
             except Exception as e:
                 log.error("Error during cleanup of event window instance:")
-                log.error(" %s", e)
+                log.estr(e)
 
             wc = self.wc
             self.wc = None
@@ -159,7 +159,7 @@ class Win32EventListener:
                 UnregisterClassW(wc.lpszClassName, wc.hInstance)
             except Exception as e:
                 log.error("Error during cleanup of event window class:")
-                log.error(" %s", e)
+                log.estr(e)
 
 
     def add_event_callback(self, event, callback):

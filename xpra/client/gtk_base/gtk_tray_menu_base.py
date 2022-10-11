@@ -1272,7 +1272,7 @@ class GTKTrayMenuBase(MenuHelper):
                         fn(*args)
                     except Exception as e:
                         log.error("Error calling %s%s on %s:", function, args, win)
-                        log.error(" %s", e)
+                        log.estr(e)
 
     def _raise_all_windows(self, *_args):
         self._call_non_OR_windows({"deiconify" : (), "present" : ()})

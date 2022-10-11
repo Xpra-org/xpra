@@ -153,7 +153,7 @@ def set_settings(d):
             log("set_settings(%s)", d, exc_info=True)
             log.error("Error processing XSettings property %s:", bytestostr(prop_name))
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
-            log.error(" %s", e)
+            log.estr(e)
     #header
     v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
     v += b"".join(all_bin_settings)  #values

@@ -133,7 +133,7 @@ class NotificationClient(StubClientMixin):
                 log("failed to show notification", exc_info=True)
                 log.error("Error: cannot show notification")
                 log.error(" '%s'", summary)
-                log.error(" %s", e)
+                log.estr(e)
         if THREADED_NOTIFICATIONS:
             show_notification()
         else:

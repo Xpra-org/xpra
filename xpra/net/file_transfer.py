@@ -44,7 +44,7 @@ def osclose(fd):
     except OSError as e:
         filelog("os.close(%s)", fd, exc_info=True)
         filelog.error("Error closing file download:")
-        filelog.error(" %s", e)
+        filelog.estr(e)
 
 def basename(filename):
     #we can't use os.path.basename,
@@ -354,7 +354,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state[9] = written
         except OSError as e:
             filelog.error("Error: cannot write file chunk")
-            filelog.error(" %s", e)
+            filelog.estr(e)
             self.cancel_file(chunk_id, "write error: %s" % e, chunk)
             osclose(fd)
             progress(-1, "write error (%s)" % e)
@@ -472,7 +472,7 @@ class FileTransferHandler(FileTransferAttributes):
         except OSError as e:
             filelog("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
             filelog.error("Error: failed to save downloaded file")
-            filelog.error(" %s", e)
+            filelog.estr(e)
             if chunk_id:
                 self.send("ack-file-chunk", chunk_id, False, "failed to create file: %s" % e, 0)
             return
@@ -587,7 +587,7 @@ class FileTransferHandler(FileTransferAttributes):
         except Exception as e:
             printlog("print_files%s", (printer, [filename], title, options), exc_info=True)
             printlog.error("Error: cannot print file '%s'", os.path.basename(filename))
-            printlog.error(" %s", e)
+            printlog.estr(e)
             delfile()
             return
         printlog("printing %s, job=%s", filename, job)

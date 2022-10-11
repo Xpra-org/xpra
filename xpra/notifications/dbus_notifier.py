@@ -135,7 +135,7 @@ class DBUS_Notifier(NotifierBase):
             except Exception as e:
                 log("parse_hints(%s) error on image-data=%s", h, image_data, exc_info=True)
                 log.error("Error parsing notification image:")
-                log.error(" %s", e)
+                log.estr(e)
         log("parse_hints(%s)=%s", h, hints)
         #return dbus.types.Dictionary(hints, signature="sv")
         return hints

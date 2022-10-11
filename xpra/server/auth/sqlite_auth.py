@@ -57,7 +57,7 @@ class Authenticator(SQLAuthenticator):
         except Exception as e:
             log("get_sessions() error on row %s", data, exc_info=True)
             log.error("Error: sqlauth database row parsing problem:")
-            log.error(" %s", e)
+            log.estr(e)
             return None
         return uid, gid, displays, env_options, session_options
 

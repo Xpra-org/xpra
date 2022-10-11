@@ -23,7 +23,7 @@ def make_window_metadata(window, propname, get_window_id=None, skip_defaults=Fal
         log.error("Error: failed to make window metadata")
         log.error(" for attribute '%s' of window %s", propname, window)
         log.error(" with value '%s':", getattr(window, propname, None))
-        log.error(" %s", e)
+        log.estr(e)
         return {}
 
 

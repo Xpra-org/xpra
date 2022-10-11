@@ -59,7 +59,7 @@ class DBUS_Source(dbus.service.Object):
             self.remove_from_connection()
         except Exception as e:
             log.error("Error removing the source's DBUS server:")
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def log(self, fmt, *args):

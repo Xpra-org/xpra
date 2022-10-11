@@ -97,7 +97,7 @@ class AudioClient(StubClientMixin):
                 except Exception as e:
                     log("failed to query sound", exc_info=True)
                     log.error("Error: failed to query sound subsystem:")
-                    log.error(" %s", e)
+                    log.estr(e)
                     self.speaker_allowed = False
                     self.microphone_allowed = False
         encoders = self.sound_properties.strtupleget("encoders")
@@ -338,7 +338,7 @@ class AudioClient(StubClientMixin):
         except Exception as e:
             self.may_notify_audio("Failed to start microphone forwarding", "%s" % e)
             log.error("Error setting up microphone forwarding:")
-            log.error(" %s", e)
+            log.estr(e)
             return False
 
     def new_stream(self, sound_source, codec):

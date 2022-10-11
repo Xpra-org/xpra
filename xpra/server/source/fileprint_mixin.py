@@ -99,7 +99,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 log("file for %s / %s: '%s'", name, authclass, password_file)
             except Exception as e:
                 log.error("Error: cannot forward authentication attributes to printer backend:")
-                log.error(" %s", e)
+                log.estr(e)
             if auth_password_file or password_file:
                 attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:
@@ -174,4 +174,4 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             except Exception as e:
                 log("remove_printer(%s)", printer, exc_info=True)
                 log.error("Error: failed to remove printer '%s':", name)
-                log.error(" %s", e)
+                log.estr(e)

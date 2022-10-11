@@ -74,7 +74,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             init_printing(self.send_printers)
         except Exception as e:
             printlog.error("Error initializing printing support:")
-            printlog.error(" %s", e)
+            printlog.estr(e)
             self.printing = False
         else:
             self.send_printers()
@@ -122,7 +122,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         except Exception as  e:
             printlog("%s", get_printers, exc_info=True)
             printlog.error("Error: cannot access the list of printers")
-            printlog.error(" %s", e)
+            printlog.estr(e)
             return
         printlog("send_printers_thread() found printers=%s", printers)
         try:
@@ -178,4 +178,4 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         except Exception:
             printlog("do_send_printers()", exc_info=True)
             printlog.error("Error sending the list of printers")
-            printlog.error(" %s", e)
+            printlog.estr(e)

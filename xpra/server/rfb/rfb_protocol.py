@@ -85,7 +85,7 @@ class RFBServerProtocol(RFBProtocol):
         except Exception as e:
             authlog("parse_challenge(%s)", hexstr(response), exc_info=True)
             authlog.error("Error: authentication challenge failure:")
-            authlog.error(" %s", e)
+            authlog.estr(e)
         self.timeout_add(1000, self.send_fail_challenge)
         return len(response)
 

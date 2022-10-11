@@ -1167,7 +1167,7 @@ def _do_run_server(script_file, cmdline,
                 except Exception as e:
                     #trying to continue anyway!
                     log.error("Error trying to create XAUTHORITY file %s:", xauthority)
-                    log.error(" %s", e)
+                    log.estr(e)
             else:
                 log("found existing XAUTHORITY file '%s'", xauthority)
         write_session_file("xauthority", xauthority)

@@ -251,7 +251,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             except Exception as e:
                 log("set_image_data(%s, ..)", dtype, exc_info=True)
                 log.error("Error: failed to copy %s image to clipboard", img_type)
-                log.error(" %s", e)
+                log.estr(e)
 
     def set_clipboard_text(self, text):
         self.pasteboard.clearContents()

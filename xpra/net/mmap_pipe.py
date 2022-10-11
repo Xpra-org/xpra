@@ -113,7 +113,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                     temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 except OSError as e:
                     log.error("Error: cannot create mmap file:")
-                    log.error(" %s", e)
+                    log.estr(e)
                     return rerr()
                 #keep a reference to it so it does not disappear!
                 mmap_temp_file = temp
@@ -142,7 +142,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                     except OSError as e:
                         log("fchown(%i, %i, %i) on %s", fd, -1, group_id, mmap_filename, exc_info=True)
                         log.error("Error: failed to change group ownership of mmap file to '%s':", mmap_group)
-                        log.error(" %s", e)
+                        log.estr(e)
                     from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
                     os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
             log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
@@ -154,7 +154,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
         log.error("Error: mmap setup failed:")
-        log.error(" %s", e)
+        log.estr(e)
         if delete:
             if mmap_temp_file:
                 try:
@@ -173,7 +173,7 @@ def clean_mmap(mmap_filename):
             os.unlink(mmap_filename)
         except OSError as e:
             log.error("Error: failed to remove the mmap file '%s':", mmap_filename)
-            log.error(" %s", e)
+            log.estr(e)
 
 DEFAULT_TOKEN_BYTES = 128
 

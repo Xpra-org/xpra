@@ -23,7 +23,7 @@ def log_kerberos_exception(e):
                     pass
             log.error(" %s", x)
     except Exception:
-        log.error(" %s", e)
+        log.estr(e)
 
 class Handler:
 

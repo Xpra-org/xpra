@@ -581,7 +581,7 @@ class CoreX11WindowModel(WindowModelStub):
                 log("_handle_property_change", exc_info=True)
                 log.error("Error processing property change for '%s'", name)
                 log.error(" on window %#x", self.xid)
-                log.error(" %s", e)
+                log.estr(e)
 
     #specific properties:
     def _handle_pid_change(self):

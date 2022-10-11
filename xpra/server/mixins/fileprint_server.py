@@ -225,7 +225,7 @@ class FilePrintServer(StubServerMixin):
             printlog.info("saved print job to: %s", save_filename)
         except Exception as e:
             printlog.error("Error: failed to save print job to %s", save_filename)
-            printlog.error(" %s", e)
+            printlog.estr(e)
 
     def _process_printers(self, proto, packet):
         if not self.file_transfer.printing or WIN32:

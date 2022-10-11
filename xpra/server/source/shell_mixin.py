@@ -73,5 +73,5 @@ class ShellMixin(StubSourceMixin):
         except Exception as e:
             log("shell_exec(..)", exc_info=True)
             log.error("Error running %r:", code)
-            log.error(" %s", e)
+            log.estr(e)
             return None, str(e)

@@ -155,7 +155,7 @@ class Win32Hooks:
                 vlog("%s%s=%s", callback, (hwnd, msg, wparam, lparam), v)
             except Exception as e:
                 log.error("Error: callback %s failed:", callback)
-                log.error(" %s", e)
+                log.estr(e)
         #if our callback doesn't define the return value, use the default handler:
         if v is None:
             v = CallWindowProcW(self._oldwndproc, hwnd, msg, wparam, lparam)

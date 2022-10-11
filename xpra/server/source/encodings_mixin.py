@@ -373,7 +373,7 @@ class EncodingsMixin(StubSourceMixin):
                 cudalog("failed to get a cuda device context using encoding options %s",
                     self.encoding_options, exc_info=True)
                 cudalog.error("Error: failed to allocate a CUDA context:")
-                cudalog.error(" %s", e)
+                cudalog.estr(e)
                 cudalog.error(" NVJPEG and NVENC will not be available")
 
     def print_encoding_info(self):

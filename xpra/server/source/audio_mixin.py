@@ -296,7 +296,7 @@ class AudioMixin(StubSourceMixin):
             except Exception as e:
                 log("new_stream(%s, %s) error playing new stream sound", sound_source, codec, exc_info=True)
                 log.error("Error playing new-stream bell sound:")
-                log.error(" %s", e)
+                log.estr(e)
         log("new_stream(%s, %s)", sound_source, codec)
         if self.sound_source!=sound_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)

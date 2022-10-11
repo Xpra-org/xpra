@@ -95,7 +95,7 @@ class RemoteLogging(StubClientMixin):
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")
             log.error(" %s", repr_ellipsized(msg))
-            log.error(" %s", e)
+            log.estr(e)
 
     def do_log(self, level, line):
         with self.logging_lock:

@@ -164,7 +164,7 @@ def encode(coding : str, image, options=None):
             bpp = 24
     except Exception:
         log.error("Error: pillow failed to convert image")
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" for %s", im)
         raise
     scaled_width = options.get("scaled-width", w)

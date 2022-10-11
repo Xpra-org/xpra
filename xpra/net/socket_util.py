@@ -159,7 +159,7 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
     except Exception as e:
         log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
         log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
-        log.error(" %s", e)
+        log.estr(e)
         return None
 
 
@@ -170,7 +170,7 @@ def accept_connection(socktype, listener, timeout=None, socket_options=None):
     except socket.error as e:
         log("rejecting new connection on %s", listener, exc_info=True)
         log.error("Error: cannot accept new connection:")
-        log.error(" %s", e)
+        log.estr(e)
         return None
     #log("peercred(%s)=%s", sock, get_peercred(sock))
     try:
@@ -727,7 +727,7 @@ def handle_socket_error(sockpath, sperms, e):
             log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
     else:
         log.error("Error: failed to create socket '%s':", sockpath)
-        log.error(" %s", e)
+        log.estr(e)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                        "failed to create socket %s" % sockpath)
 

@@ -59,7 +59,7 @@ def _load_dict_dir(d, parser) -> dict:
                 except Exception as e:
                     log("_load_dict_dir(%s)", cc_file, exc_info=True)
                     log.error("Error loading file data from '%s'", cc_file)
-                    log.error(" %s", e)
+                    log.estr(e)
     log("_load_dict_dir(%s)=%s", d, v)
     return v
 

@@ -599,7 +599,7 @@ def get_icon_from_file(filename):
     except Exception as e:
         log("get_icon_from_file(%s)", filename, exc_info=True)
         log.error("Error: failed to load '%s'", filename)
-        log.error(" %s", e)
+        log.estr(e)
         return None
     pixbuf = loader.get_pixbuf()
     return pixbuf

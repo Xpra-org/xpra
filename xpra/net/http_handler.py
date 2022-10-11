@@ -400,7 +400,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             if emsg.endswith(": '%s'" % path):
                 log.error(" %s", emsg.rsplit(":", 1)[0])
             else:
-                log.error(" %s", e)
+                log.estr(e)
             try:
                 self.send_error(404, "File not found")
             except OSError:

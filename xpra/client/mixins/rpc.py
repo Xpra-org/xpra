@@ -76,7 +76,7 @@ class RPCClient(StubClientMixin):
                         ecb("timeout")
                 except Exception as e:
                     log.error("Error during timeout handler for %s rpc callback:", rpc_type)
-                    log.error(" %s", e)
+                    log.estr(e)
                     del e
 
 
@@ -103,7 +103,7 @@ class RPCClient(StubClientMixin):
             rh(*args)
         except Exception as e:
             log.error("Error processing rpc reply handler %s(%s) :", rh, args)
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def init_authenticated_packet_handlers(self):

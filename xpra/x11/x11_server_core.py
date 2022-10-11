@@ -989,7 +989,7 @@ class X11ServerCore(GTKServerBase):
             device.move_pointer(screen_no, x, y, *args)
         except Exception as e:
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
-            mouselog.error(" %s", e)
+            mouselog.estr(e)
 
     def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
         mouselog("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))

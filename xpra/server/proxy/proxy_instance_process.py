@@ -244,7 +244,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             except OSError as e:
                 log("control_socket=%s", self.control_socket, exc_info=True)
                 log.error("Error accepting socket connection on %s", self.control_socket)
-                log.error(" %s", e)
+                log.estr(e)
             else:
                 self.new_control_connection(sock, address)
         self.control_socket_thread = None

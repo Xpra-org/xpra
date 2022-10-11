@@ -98,7 +98,7 @@ class Authenticator(SysAuthenticatorBase):
         except Exception as e:
             log("ldap3 check(..)", exc_info=True)
             log.error("Error: ldap3 authentication failed:")
-            log.error(" %s", e)
+            log.estr(e)
             return False
 
 

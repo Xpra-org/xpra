@@ -52,7 +52,7 @@ class XSettingsManager:
         except XError as e:
             log("set_settings(%s)", settings, exc_info=True)
             log.error("Error: XSettings not applied")
-            log.error(" %s", e)
+            log.estr(e)
 
 
 class XSettingsHelper:

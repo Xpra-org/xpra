@@ -403,7 +403,7 @@ def load_device(device_id):
     except Exception as e:
         log("load_device(%s)", device_id, exc_info=True)
         log.error("Error: allocating CUDA device %s", device_id)
-        log.error(" %s", e)
+        log.estr(e)
     return None
 
 def make_device_context(device_id):

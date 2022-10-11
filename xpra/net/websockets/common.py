@@ -38,7 +38,7 @@ def get_headers(host, port):
         except ImportError as e:
             log("import %s", mod_name, exc_info=True)
             log.error(f"Error: websocket header module {mod_name!r} not available")
-            log.error(" %s", e)
+            log.estr(e)
         except Exception as e:
             log("get_headers %s", mod_name, exc_info=True)
             log.error(f"Error: cannot get headers from module {mod_name!r}")

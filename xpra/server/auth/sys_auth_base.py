@@ -174,7 +174,7 @@ class SysAuthenticatorBase:
         except Exception as e:
             log("check(..)", exc_info=True)
             log.error("Error: %s authentication check failed:", self)
-            log.error(" %s", e)
+            log.estr(e)
             return False
         return ret
 
@@ -214,7 +214,7 @@ class SysAuthenticatorBase:
         except Exception as e:
             log("get_sessions()", exc_info=True)
             log.error("Error: cannot get the list of sessions for '%s':", self.username)
-            log.error(" %s", e)
+            log.estr(e)
             displays = []
         v = uid, gid, displays, {}, {}
         log("%s.get_sessions()=%s", self, v)

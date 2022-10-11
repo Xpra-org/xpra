@@ -145,7 +145,7 @@ class ProxyServer(ServerCore):
             except OSError as e:
                 log("create_system_dir()", exc_info=True)
                 log.error("Error: failed to create or change the permissions on '%s':", d)
-                log.error(" %s", e)
+                log.estr(e)
 
     def init_control_commands(self):
         super().init_control_commands()
@@ -345,7 +345,7 @@ class ProxyServer(ServerCore):
             except Exception as e:
                 authlog("failed to get the list of sessions from %s", authenticator, exc_info=True)
                 authlog.error("Error: failed to get the list of sessions using '%s' authenticator", authenticator)
-                authlog.error(" %s", e)
+                authlog.estr(e)
                 disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
                 return
         authlog("proxy_auth(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
@@ -404,7 +404,7 @@ class ProxyServer(ServerCore):
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
-                log.error(" %s", e)
+                log.estr(e)
                 disconnect(SERVER_ERROR, "failed to start a new session")
                 return
         if display is None:
@@ -550,7 +550,7 @@ class ProxyServer(ServerCore):
             except Exception as e:
                 log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
-                log.error(" %s", e)
+                log.estr(e)
                 message_queue.put("error: %s" % e)
                 message_queue.put("stop")
             finally:

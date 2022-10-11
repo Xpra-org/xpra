@@ -165,7 +165,7 @@ class Keyboard(KeyboardBase):
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutList:")
-            log.error(" %s", e)
+            log.estr(e)
 
         descr = None
         KL_NAMELENGTH = 9

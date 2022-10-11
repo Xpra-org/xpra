@@ -186,7 +186,7 @@ class InputServer(StubServerMixin):
             except Exception as e:
                 keylog("process_key_action%s", (proto, packet), exc_info=True)
                 keylog.error("Error: failed to %s key", ["unpress", "press"][pressed])
-                keylog.error(" %s", e)
+                keylog.estr(e)
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 

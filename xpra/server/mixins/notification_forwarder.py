@@ -104,7 +104,7 @@ class NotificationForwarder(StubServerMixin):
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
@@ -132,7 +132,7 @@ class NotificationForwarder(StubServerMixin):
         except Exception as e:
             log("notify_callback failed", exc_info=True)
             log.error("Error processing notification:")
-            log.error(" %s", e)
+            log.estr(e)
 
     def get_notification_icon(self, _icon_string):
         return []

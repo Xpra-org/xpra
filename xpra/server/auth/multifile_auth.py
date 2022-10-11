@@ -68,7 +68,7 @@ class Authenticator(FileAuthenticatorBase):
                 log("parsing error", exc_info=True)
                 log.error("Error parsing password file '%s' at line %i:", self.password_filename, i)
                 log.error(" '%s'", bytestostr(line))
-                log.error(" %s", e)
+                log.estr(e)
                 continue
         log("parsed auth data from file %s: %s", self.password_filename, auth_data)
         return auth_data

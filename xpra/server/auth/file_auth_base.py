@@ -73,7 +73,7 @@ class FileAuthenticatorBase(SysAuthenticator):
                     self.password_filetime = ptime
                 except Exception as e:
                     log.error("Error reading password data from '%s':", self.password_filename, exc_info=True)
-                    log.error(" %s", e)
+                    log.estr(e)
                     self.password_filedata = None
         return self.password_filedata
 
@@ -85,5 +85,5 @@ class FileAuthenticatorBase(SysAuthenticator):
             return v
         except Exception as e:
             log.error("Error accessing time of password file '%s'", full_path)
-            log.error(" %s", e)
+            log.estr(e)
             return 0

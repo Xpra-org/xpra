@@ -59,7 +59,7 @@ class Handler:
                 for x in str(e).split(":", 2):
                     log.error(" %s", x.lstrip(" "))
             except Exception:
-                log.error(" %s", e)
+                log.estr(e)
             return None
         log("gss token=%s", repr(token))
         return token

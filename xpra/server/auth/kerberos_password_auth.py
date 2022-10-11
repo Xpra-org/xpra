@@ -56,7 +56,7 @@ class Authenticator(SysAuthenticatorBase):
         except kerberos.KrbError as e:
             log("check(..)", exc_info=True)
             log.error("Error: kerberos authentication failed:")
-            log.error(" %s", e)
+            log.estr(e)
             return False
 
 

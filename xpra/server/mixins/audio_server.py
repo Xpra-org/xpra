@@ -209,7 +209,7 @@ class AudioServer(StubServerMixin):
         except Exception as e:
             soundlog("Popen(%s)", cmd, exc_info=True)
             soundlog.error("Error: failed to start pulseaudio:")
-            soundlog.error(" %s", e)
+            soundlog.estr(e)
             self.clean_pulseaudio_private_dir()
             return
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
@@ -300,7 +300,7 @@ class AudioServer(StubServerMixin):
                     soundlog("cleanup_pulseaudio() error removing '%s'", path, exc_info=True)
                     soundlog.error("Error: failed to cleanup the pulseaudio private directory")
                     soundlog.error(" '%s'", self.pulseaudio_private_dir)
-                    soundlog.error(" %s", e)
+                    soundlog.estr(e)
                     try:
                         files = os.listdir(path)
                         if files:
@@ -328,7 +328,7 @@ class AudioServer(StubServerMixin):
             except Exception as e:
                 soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
-                soundlog.error(" %s", e)
+                soundlog.estr(e)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
         encoders = self.sound_properties.strtupleget("encoders")

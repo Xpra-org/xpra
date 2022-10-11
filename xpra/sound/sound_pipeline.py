@@ -138,7 +138,7 @@ class SoundPipeline(GObject.GObject):
         except Exception as e:
             self.pipeline = None
             gstlog.error("Error setting up the sound pipeline:")
-            gstlog.error(" %s", e)
+            gstlog.estr(e)
             gstlog.error(" GStreamer pipeline for %s:", self.codec)
             for i,x in enumerate(elements):
                 gstlog.error("  %s%s", x, ["", " ! \\"][int(i<(len(elements)-1))])

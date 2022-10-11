@@ -257,7 +257,7 @@ def query_video_device(device="/dev/video0"):
     except Exception as e:
         log("query_video_device(%s)", device, exc_info=True)
         log.error("Error: failed to query device '%s':", device)
-        log.error(" %s", e)
+        log.estr(e)
         for x in path_permission_info(device, "device"):
             log.error(" %s", x)
     return {}

@@ -31,7 +31,7 @@ class DBUS_Server_Base(dbus.service.Object):
             self.remove_from_connection()
         except Exception as e:  # pragma: no cover
             log.error("Error removing the DBUS server:")
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def log(self, fmt, *args):

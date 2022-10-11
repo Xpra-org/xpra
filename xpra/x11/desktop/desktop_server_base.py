@@ -121,7 +121,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             except Exception as e:
                 log("error accessing schema '%s' and attributes %s", schema, attributes, exc_info=True)
                 log.error("Error accessing schema '%s' and attributes %s:", schema, csv(attributes))
-                log.error(" %s", e)
+                log.estr(e)
         return modified
 
     def do_cleanup(self):

@@ -91,7 +91,7 @@ class Authenticator(SysAuthenticator):
         except Exception as e:
             log("peercred", exc_info=True)
             log.error("Error: cannot get peer uid")
-            log.error(" %s", e)
+            log.estr(e)
 
     def get_uid(self):
         return self.uid

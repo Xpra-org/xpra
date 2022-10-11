@@ -314,7 +314,7 @@ class SoundSource(SoundPipeline):
                 d[name] = capd
         except Exception as e:
             log.error("Error parsing '%s':", caps)
-            log.error(" %s", e)
+            log.estr(e)
         return d
 
 

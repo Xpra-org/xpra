@@ -214,7 +214,7 @@ def upnp_add(socktype, info, options):
                 log.error("Error removing port UPnP port mapping")
                 log.error(" for external port %i,", external_port)
                 log.error(" internal port %i (%s):", internal_port, socktype)
-                log.error(" %s", e)
+                log.estr(e)
         return cleanup
     except Exception as e:
         return err(e)

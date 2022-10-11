@@ -177,7 +177,7 @@ class SessionsGUI(Gtk.Window):
                     except Exception as e:
                         log("get_session_info(%s)", sockpath, exc_info=True)
                         log.error("Error querying session info for %s", sockpath)
-                        log.error(" %s", e)
+                        log.estr(e)
                         del e
                     if not info:
                         continue

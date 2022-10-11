@@ -198,7 +198,7 @@ class AvahiPublisher:
             log.error("Error starting publisher %s", self.get_info())
             if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
                 log.error(" another instance already claims this dbus name")
-                log.error(" %s", e)
+                log.estr(e)
                 log.error(" %s", message)
             else:
                 for l in str(e).splitlines():
@@ -216,7 +216,7 @@ class AvahiPublisher:
                 group.Reset()
             except Exception as e:
                 log.error("Error stopping avahi publisher %s:", self)
-                log.error(" %s", e)
+                log.estr(e)
         self.server = None
 
 

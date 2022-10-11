@@ -144,7 +144,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
                 log.error("Error setting up xvfb synchronization:")
-                log.error(" %s", e)
+                log.estr(e)
                 if self.root_overlay:
                     with xswallow:
                         X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
@@ -1204,7 +1204,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         except Exception as e:
             log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
             log.error("Error: failed to send signal %s to pid %i for window %i", sig, pid, wid)
-            log.error(" %s", e)
+            log.estr(e)
 
 
     def refresh_window_area(self, window, x, y, width, height, options=None):

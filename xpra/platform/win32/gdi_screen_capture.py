@@ -54,7 +54,7 @@ def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
         return True
     except Exception as e:
         log.error("Error: cannot change dwm composition:")
-        log.error(" %s", e)
+        log.estr(e)
         return False
 
 def get_desktop_bit_depth():
@@ -194,7 +194,7 @@ class GDICapture:
         except Exception as e:
             log("BitBlt error", exc_info=True)
             log.error("Error: cannot capture screen with BitBlt")
-            log.error(" %s", e)
+            log.estr(e)
             self.clean_dc()
             return None
         bitblt_time = time.time()

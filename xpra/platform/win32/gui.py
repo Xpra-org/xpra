@@ -296,7 +296,7 @@ def win32_propsys_set_group_leader(self, leader):
     except Exception as e:
         log("set_window_group error", exc_info=True)
         log.error("Error: failed to set group leader")
-        log.error(" %s", e)
+        log.estr(e)
 
 WS_NAMES = {
             win32con.WS_BORDER              : "BORDER",
@@ -1047,7 +1047,7 @@ class ClientExtras:
                 el.add_event_callback(win32con.WM_ENDSESSION,       self.end_session)
         except Exception as e:
             log.error("Error: cannot register focus and power callbacks:")
-            log.error(" %s", e)
+            log.estr(e)
         self.keyboard_hook_id = None
         if FORWARD_WINDOWS_KEY and mixin_features.windows:
             from xpra.make_thread import start_thread
@@ -1156,7 +1156,7 @@ class ClientExtras:
                         return 1
             except Exception as e:
                 keylog.error("Error: low level keyboard hook failed")
-                keylog.error(" %s", e)
+                keylog.estr(e)
             return CallNextHookEx(0, nCode, wParam, lParam)
         # Our low level handler signature.
         CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))

@@ -126,7 +126,7 @@ class NamedPipeListener(Thread):
                     log("CreatePipeHandle()", exc_info=True)
                     log.error("Error: failed to create named pipe")
                     log.error(" at path '%s'", self.pipe_name)
-                    log.error(" %s", e)
+                    log.estr(e)
                     return
                 log("CreatePipeHandle()=%#x", pipe_handle)
                 if c_long(pipe_handle).value==INVALID_HANDLE_VALUE:

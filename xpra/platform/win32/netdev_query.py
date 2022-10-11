@@ -31,7 +31,7 @@ def get_interface_info(_fd, iface):
                             v = conv(r.Properties_[k].Value)
                         except Exception as e:
                             log.error("Error retrieving '%s' from network adapter record:", k)
-                            log.error(" %s", e)
+                            log.estr(e)
                         else:
                             props[ik] = v
                     log("get_interface_info(%s)=%s" % (iface, props))

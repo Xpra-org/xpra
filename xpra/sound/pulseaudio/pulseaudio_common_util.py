@@ -25,7 +25,7 @@ def get_x11_property(atom_name):
     except ImportError as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
         log.error("Error: unable to query X11 property '%s':", atom_name)
-        log.error(" %s", e)
+        log.estr(e)
         return b""
     try:
         with X11DisplayContext(display):
@@ -49,7 +49,7 @@ def get_x11_property(atom_name):
     except Exception as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
         log.error("Error: cannot get X11 property '%s'", atom_name)
-        log.error(" %s", e)
+        log.estr(e)
     return b""
 
 def get_pulse_server_x11_property():

@@ -207,7 +207,7 @@ class Keyboard(KeyboardBase):
                     assert len(v)==2
             except Exception as e:
                 log.error("Error: failed to get keyboard repeat rate:")
-                log.error(" %s", e)
+                log.estr(e)
                 v = None
         log("get_keyboard_repeat()=%s", v)
         return v

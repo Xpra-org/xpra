@@ -518,7 +518,7 @@ def register_file_handler(handler):
         get_OSXApplication().connect("NSApplicationOpenFile", handler)
     except Exception as e:
         log.error("Error: cannot handle file associations:")
-        log.error(" %s", e)
+        log.estr(e)
 
 def register_URL_handler(handler):
     log("register_URL_handler(%s)", handler)
