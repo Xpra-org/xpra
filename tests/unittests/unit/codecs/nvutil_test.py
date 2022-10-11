@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
+# pylint: disable=import-outside-toplevel
 
 class TestNVUtil(unittest.TestCase):
 
     def test_nvutil(self):
-        from xpra.codecs.nv_util import get_nvml_driver_version, get_proc_driver_version
+        from xpra.codecs.nvidia.nv_util import get_nvml_driver_version, get_proc_driver_version
         v1 = get_nvml_driver_version()
         v2 = get_proc_driver_version()
         if v1 and v2:
@@ -18,7 +19,7 @@ class TestNVUtil(unittest.TestCase):
 
 def main():
     try:
-        from xpra.codecs import nv_util
+        from xpra.codecs.nvidia import nv_util
         assert nv_util
     except ImportError:
         print("nv_util codec not installed - test skipped")
