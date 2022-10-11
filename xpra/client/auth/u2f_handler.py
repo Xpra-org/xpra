@@ -24,11 +24,12 @@ class Handler:
     def get_digest(self) -> str:
         return "u2f"
 
-    def handle(self, challenge, digest, prompt) -> bool:
+    def handle(self, challenge, digest, prompt) -> bool:  # pylint: disable=unused-argument
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
             return None
         try:
+            #pylint: disable=import-outside-toplevel
             from pyu2f import model                     #@UnresolvedImport
             from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
         except ImportError as e:
@@ -57,12 +58,12 @@ class Handler:
         log("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
             #try to load the key handle from the user conf dir(s):
-            from xpra.platform.paths import get_user_conf_dirs
+            from xpra.platform.paths import get_user_conf_dirs  #pylint: disable=import-outside-toplevel
             info = self.client._protocol.get_info(False)
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):
                 for d in get_user_conf_dirs():
-                    key_handle_filenames.append(os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo))
+                    key_handle_filenames.append(os.path.join(d, f"u2f-keyhandle{hostinfo}.hex"))
             for filename in key_handle_filenames:
                 p = osexpand(filename)
                 key_handle_str = load_binary_file(p)

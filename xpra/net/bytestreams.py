@@ -248,7 +248,7 @@ class TwoFileConnection(Connection):
         log("%s.close() done", self)
 
     def __repr__(self):
-        return "Pipe(%s)" % str(self.target)
+        return f"Pipe({self.target})"
 
     def get_info(self) -> dict:
         d = super().get_info()
@@ -380,7 +380,7 @@ class SocketConnection(Connection):
                 self.socktype, self.protocol_type,
                 pretty_socket(self.local), pretty_socket(self.remote),
                 )
-        return "%s %s:%s" % (self.socktype, self.protocol_type, pretty_socket(self.local))
+        return f"{self.socktype} {self.protocol_type}:{pretty_socket(self.local)}"
 
     def get_info(self) -> dict:
         d = super().get_info()

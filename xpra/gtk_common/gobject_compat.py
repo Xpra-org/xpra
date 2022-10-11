@@ -36,7 +36,6 @@ def register_os_signal(callback, commandtype="", signum=signal.SIGINT):
         callback(signum)
     if POSIX:
         #replace the previous definition if we had one:
-        global _glib_unix_signals
         current = _glib_unix_signals.get(signum, None)
         if current:
             GLib.source_remove(current)

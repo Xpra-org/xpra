@@ -8,12 +8,7 @@ import sys
 import os.path
 import subprocess
 from time import monotonic
-
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import GLib, Gtk, Pango
 
 from xpra.util import envint, net_utf8
 from xpra.os_util import bytestostr, WIN32, OSX
@@ -28,6 +23,11 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("Pango", "1.0")
+from gi.repository import GLib, Gtk, Pango  # pylint: disable=wrong-import-order
 
 log = Logger("gtk", "file")
 

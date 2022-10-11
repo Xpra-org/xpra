@@ -36,14 +36,13 @@ def encode(coding : str, image, options : dict):
     elif pixel_format in ("RGB", "BGR"):
         rgb_formats = options.get("rgb_formats", ("RGB", "BGR"))
     else:
-        raise Exception("unsupported pixel format %s" % pixel_format)
+        raise Exception(f"unsupported pixel format {pixel_format!r}")
     supports_transparency = options.get("alpha", True)
     if pixel_format not in rgb_formats:
         log("rgb_encode reformatting because %s not in %s, supports_transparency=%s",
             pixel_format, rgb_formats, supports_transparency)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
-            raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
-                pixel_format, rgb_formats))
+            raise Exception(f"no compatible rgb format for {pixel_format!r}! (only: {rgb_formats})")
         #get the new format:
         pixel_format = image.get_pixel_format()
         #switch encoding if necessary:
@@ -52,7 +51,7 @@ def encode(coding : str, image, options : dict):
         elif len(pixel_format)==3:
             coding = "rgb24"
         else:
-            raise Exception("invalid pixel format %s" % pixel_format)
+            raise Exception(f"invalid pixel format {pixel_format!r}")
     #we may still want to re-stride:
     image.may_restride()
     #always tell client which pixel format we are sending:
@@ -60,7 +59,8 @@ def encode(coding : str, image, options : dict):
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
-    assert pixels, "failed to get pixels from %s" % image
+    if not pixels:
+        raise RuntimeError(f"failed to get pixels from {image}")
     width = image.get_width()
     height = image.get_height()
     stride = image.get_rowstride()

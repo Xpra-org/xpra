@@ -1448,7 +1448,7 @@ class GTKTrayMenuBase(MenuHelper):
             dialog.add_button(Gtk.STOCK_CANCEL, 0)
             SHUTDOWN = 1
             dialog.add_button("Shutdown", SHUTDOWN)
-            response = dialog.run()
+            response = dialog.run()     # pylint: disable=no-member
             dialog.destroy()
             if response == SHUTDOWN:
                 self.client.send_shutdown_server()

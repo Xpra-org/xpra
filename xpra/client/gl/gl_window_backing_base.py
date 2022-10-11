@@ -595,7 +595,7 @@ class GLWindowBackingBase(WindowBackingBase):
         super().close()
 
 
-    def paint_scroll(self, scroll_data, options, callbacks):    #pylint: disable=arguments-differ
+    def paint_scroll(self, scroll_data, options, callbacks):    #pylint: disable=arguments-differ, arguments-renamed
         flush = options.intget("flush", 0)
         self.idle_add(self.with_gl_context, self.do_scroll_paints, scroll_data, flush, callbacks)
 
@@ -716,7 +716,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.do_present_fbo()
         except Exception as e:
             log.error("Error presenting FBO:")
-            log.error(" %s", e)
+            log.estr(e)
             log("Error presenting FBO", exc_info=True)
             self.last_present_fbo_error = str(e)
 

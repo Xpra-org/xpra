@@ -37,12 +37,13 @@ class Handler:
     def get_digest(self) -> str:
         return "kerberos"
 
-    def handle(self, challenge, digest, prompt) -> bool:
+    def handle(self, challenge, digest, prompt) -> bool:  # pylint: disable=unused-argument
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
             #not a kerberos challenge
             return None
         try:
+            # pylint: disable=import-outside-toplevel
             if WIN32:
                 import winkerberos as kerberos
             else:
@@ -59,7 +60,9 @@ class Handler:
         log("kerberos service=%s", service)
         try:
             r, ctx = kerberos.authGSSClientInit(service)
-            assert r==1, "return code %s" % r
+            if r!=1:
+                log("kerberos.authGSSClientInit failed and returned %s", r)
+                return None
         except Exception as e:
             log("kerberos.authGSSClientInit(%s)", service, exc_info=True)
             log.error("Error: cannot initialize kerberos client:")

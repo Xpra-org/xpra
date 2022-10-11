@@ -35,6 +35,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     elapsed = max(0, monotonic()-start_time)
     if elapsed>6:
         return
+    # pylint: disable=import-outside-toplevel
     from xpra.gtk_common.gtk_util import get_pixbuf_from_data
     from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
     cw = cursor_data[3]
@@ -245,6 +246,7 @@ class CairoBackingBase(WindowBackingBase):
         log.warn("nasty_rgb_via_png_paint%s",
                  (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
+        #pylint: disable=import-outside-toplevel
         from PIL import Image  # @UnresolvedImport
         if has_alpha:
             oformat = "RGBA"
@@ -258,8 +260,7 @@ class CairoBackingBase(WindowBackingBase):
             img = Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
         except ValueError as e:
             log("PIL Image frombytes:", exc_info=True)
-            raise Exception("failed to parse raw %s data as %s to %s: %s" % (
-                rgb_format, src_format, oformat, e)) from None
+            raise Exception(f"failed to parse raw {rgb_format} data as {src_format} to {oformat}: {e}") from None
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
         # pixbuf = new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)

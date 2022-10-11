@@ -6,17 +6,17 @@
 
 import os.path
 import cairo
-
 import gi
+
+from xpra.util import first_time, envint, envbool, print_nested_dict
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
+from xpra.log import Logger
+
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
-
-from xpra.util import first_time, envint, envbool, print_nested_dict
-from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
-from xpra.log import Logger
 
 log = Logger("gtk", "util")
 screenlog = Logger("gtk", "screen")
@@ -147,7 +147,7 @@ def color_parse(*args) -> Gdk.Color:
     v = Gdk.RGBA()
     ok = v.parse(*args)
     if ok:
-        return v.to_color()
+        return v.to_color()  # pylint: disable=no-member
     ok, v = Gdk.Color.parse(*args)
     if ok:
         return v

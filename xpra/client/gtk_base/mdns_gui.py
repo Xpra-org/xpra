@@ -75,6 +75,7 @@ class mdns_sessions(SessionsGUI):
 
 
 def do_main(opts):
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
@@ -96,6 +97,7 @@ def do_main(opts):
         return gui.exit_code
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)

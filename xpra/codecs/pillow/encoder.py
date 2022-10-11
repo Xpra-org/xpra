@@ -64,7 +64,8 @@ def get_info() -> dict:
 
 
 def encode(coding : str, image, options=None):
-    assert coding in ("jpeg", "webp", "png", "png/P", "png/L"), "unsupported encoding: %s" % coding
+    if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
+        raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))
     options = options or {}
     quality = options.get("quality", 50)
@@ -86,12 +87,13 @@ def encode(coding : str, image, options=None):
         }.get(pixel_format, pixel_format)
     bpp = 32
     pixels = image.get_pixels()
-    assert pixels, "failed to get pixels from %s" % image
+    if not pixels:
+        raise RuntimeError(f"failed to get pixels from {image}")
     #remove transparency if it cannot be handled,
     #and deal with non 24-bit formats:
     if pixel_format=="r210":
         stride = image.get_rowstride()
-        from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
+        from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport pylint: disable=import-outside-toplevel
         if supports_transparency:
             pixels = r210_to_rgba(pixels, w, h, stride, w*4)
             pixel_format = "RGBA"
@@ -103,7 +105,7 @@ def encode(coding : str, image, options=None):
             rgb = "RGB"
             bpp = 24
     elif pixel_format=="BGR565":
-        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport
+        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport pylint: disable=import-outside-toplevel
         if supports_transparency:
             image.set_rowstride(image.get_rowstride()*2)
             pixels = bgr565_to_rgbx(pixels)
@@ -141,7 +143,7 @@ def encode(coding : str, image, options=None):
                                    "raw", pixel_format, image.get_rowstride(), 1),
                                    exc_info=True)
         log.error("Error: pillow failed to import image:")
-        log.error(" %s", e)
+        log.estr(e)
         log.error(" for %s", image)
         log.error(" pixel data: %i %s", len(pixels), type(pixels))
         raise

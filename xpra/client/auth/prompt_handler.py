@@ -15,7 +15,7 @@ class Handler:
     def get_digest(self) -> str:
         return None
 
-    def handle(self, challenge, digest, prompt : str = "password") -> bool:
+    def handle(self, challenge, digest, prompt : str = "password") -> bool:  # pylint: disable=unused-argument
         digest_type = digest.split(":", 1)[0]
         if not prompt and digest_type in ("gss", "kerberos"):
             prompt = f"{digest_type} token"

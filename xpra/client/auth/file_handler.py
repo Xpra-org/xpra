@@ -27,7 +27,7 @@ class Handler:
     def get_digest(self) -> str:
         return None
 
-    def handle(self, challenge, digest, prompt) -> bool:
+    def handle(self, challenge, digest, prompt) -> bool:  # pylint: disable=unused-argument
         log("handle(..) password_file=%s", self.password_file)
         if not self.password_file:
             return None

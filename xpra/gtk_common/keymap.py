@@ -22,14 +22,14 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from gi.repository import Gdk
+    from gi.repository import Gdk   # pylint: disable=import-outside-toplevel
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
 def do_get_gtk_keymap(display, ignore_keys):
     if not display:
         return ()
-    from gi.repository import Gdk
+    from gi.repository import Gdk   # pylint: disable=import-outside-toplevel
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
@@ -59,6 +59,7 @@ def do_get_gtk_keymap(display, ignore_keys):
 
 
 def main(): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     import sys
     from xpra.platform import program_context
     from xpra.log import enable_color

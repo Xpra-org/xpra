@@ -1198,6 +1198,7 @@ class PrintingWindow(SessionOptions):
 
 
 def main(options=None): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready

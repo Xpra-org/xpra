@@ -18,5 +18,5 @@ class Handler:
     def get_digest(self) -> str:
         return None
 
-    def handle(self, challenge, digest, prompt) -> bool:
+    def handle(self, challenge, digest, prompt) -> bool:  # pylint: disable=unused-argument
         return os.environ.get(self.var_name)

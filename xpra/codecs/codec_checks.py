@@ -63,6 +63,7 @@ def makebuf(size, b=0x20):
 
 
 def make_test_image(pixel_format, w, h):
+    # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
     #import time

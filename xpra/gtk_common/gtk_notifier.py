@@ -278,8 +278,7 @@ class Popup(Gtk.Window):
         x = self.stack.get_origin_x() - w//2
         if (x + w) >= self.stack.max_width:    #dont overflow on the right
             x = self.stack.max_width - w
-        if x <= 0:                                #or on the left
-            x = 0
+        x = max(0, x)                          #or on the left
         log("get_x(%s)=%s", w, x)
         return    x
 
@@ -289,8 +288,7 @@ class Popup(Gtk.Window):
             y = y - h
         if (y + h) >= self.stack.max_height:
             y = self.stack.max_height - h
-        if y<= 0:
-            y = 0
+        y = max(0, y)
         log("get_y(%s)=%s", h, y)
         return    y
 

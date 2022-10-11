@@ -44,7 +44,7 @@ def main():
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
-        print("module loaded: %s" % load_evdi_module())
+        print(f"module loaded: {load_evdi_module()}")
 
 
 if __name__ == "__main__":

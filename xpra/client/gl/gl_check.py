@@ -79,6 +79,7 @@ def check_functions(force_enable, *functions):
         log("All the required OpenGL functions are available: %s " % csv(available))
 
 def get_max_texture_size() -> int:
+    # pylint: disable=import-outside-toplevel
     from OpenGL.GL import glGetInteger, GL_MAX_TEXTURE_SIZE
     texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
     log("GL_MAX_TEXTURE_SIZE=%s", texture_size)
@@ -101,6 +102,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
     props = {}
     def unsafe():
         props["safe"] = False
+    # pylint: disable=import-outside-toplevel
     try:
         if CRASH:
             import ctypes
@@ -172,12 +174,12 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 log.warn(" %s vs %s", pyopengl_version, accel_version)
                 log.warn(" this may cause crashes")
                 _version_warning_shown = True
-                gl_check_error("PyOpenGL vs accelerate version mismatch: %s vs %s" % (pyopengl_version, accel_version))
+                gl_check_error(f"PyOpenGL vs accelerate version mismatch: {pyopengl_version} vs {accel_version}")
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
         if vsplit[:3]<['3','1']:
             if not force_enable:
-                raise_fatal_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
+                raise_fatal_error(f"PyOpenGL version {pyopengl_version} is too old and buggy")
                 return {}
             unsafe()
         props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
@@ -215,9 +217,9 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 log("%s: %s", d, v)
             except Exception:
                 if fatal and not force_enable:
-                    gl_check_error("OpenGL property '%s' is missing" % d)
+                    gl_check_error(f"OpenGL property {d!r} is missing")
                 else:
-                    log("OpenGL property '%s' is missing", d)
+                    log(f"OpenGL property {d!r} is missing")
                 v = ""
             props[d] = v
         vendor = props["vendor"]
@@ -262,7 +264,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
                 log.warn(" force enabled by option")
             else:
-                log.warn("%s '%s' is blacklisted!" % (blacklisted))
+                log.warn("%s '%s' is blacklisted!", *blacklisted)
                 raise_fatal_error("%s '%s' is blacklisted!" % (blacklisted))
         safe = bool(whitelisted) or not bool(blacklisted)
         if greylisted and not whitelisted:
@@ -406,7 +408,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 m = m.replace("accelerators", "").replace("accelerator", "").strip()
                 missing_accelerators.append(m)
                 continue
-            elif msg.startswith("Using accelerated"):
+            if msg.startswith("Using accelerated"):
                 log(msg)
             else:
                 log.info(msg)
@@ -424,6 +426,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.gtk_common.gtk_util import init_display_source

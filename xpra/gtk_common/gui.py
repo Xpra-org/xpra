@@ -7,12 +7,7 @@
 import os
 import sys
 import subprocess
-
 import gi
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
-gi.require_version('Pango', '1.0')
-from gi.repository import GLib, Pango, Gtk, Gdk, Gio
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
@@ -24,6 +19,11 @@ from xpra.platform.paths import get_xpra_command
 from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
 from xpra.gtk_common.about import about
+
+gi.require_version('Gdk', '3.0')
+gi.require_version('Gtk', '3.0')
+gi.require_version('Pango', '1.0')
+from gi.repository import GLib, Pango, Gtk, Gdk, Gio
 
 log = Logger("client", "util")
 
@@ -249,6 +249,7 @@ class GUI(Gtk.Window):
 
 
 def main(argv): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready

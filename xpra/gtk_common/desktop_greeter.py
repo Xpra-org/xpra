@@ -162,6 +162,7 @@ class DesktopGreeter(Gtk.Window):
 
 
 def main(options=None): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     assert POSIX and not OSX
     from xpra.platform import program_context
     from xpra.log import enable_color

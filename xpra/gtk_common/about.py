@@ -16,14 +16,14 @@ log = Logger("info")
 
 APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
-SITE_URL = "https://%s/" % SITE_DOMAIN
+SITE_URL = f"https://{SITE_DOMAIN}/"
 
 
 GPL2 = None
 def load_license():
     global GPL2
     if GPL2 is None:
-        from xpra.platform.paths import get_resources_dir
+        from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
         gpl2_file = os.path.join(get_resources_dir(), "COPYING")
         if os.path.exists(gpl2_file):
             with open(gpl2_file, mode="rb") as f:
@@ -38,7 +38,7 @@ def about(on_close=None):
         about_dialog.show()
         about_dialog.present()
         return
-    from xpra.platform.paths import get_icon
+    from xpra.platform.paths import get_icon  # pylint: disable=import-outside-toplevel
     xpra_icon = get_icon("xpra.png")
     dialog = Gtk.AboutDialog()
     dialog.set_name("Xpra")
@@ -76,6 +76,7 @@ def close_about(*_args):
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     with program_context("About"):

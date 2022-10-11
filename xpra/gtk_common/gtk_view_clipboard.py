@@ -5,6 +5,7 @@
 import re
 import sys
 from collections import deque
+import gi
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
@@ -12,7 +13,6 @@ from xpra.util import csv
 from xpra.gtk_common.gtk_util import TableBuilder, label, get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
-import gi
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
@@ -243,6 +243,7 @@ class ClipboardStateInfoWindow:
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
     with program_context("Clipboard-Test", "Clipboard Test Tool"):

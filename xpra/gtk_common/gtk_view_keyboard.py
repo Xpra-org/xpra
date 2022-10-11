@@ -4,20 +4,20 @@
 
 import sys
 from collections import deque
+import gi
 
 from xpra.util import csv
 from xpra.os_util import bytestostr
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import get_icon_pixbuf
+from xpra.log import enable_color, Logger
 
-import gi
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Pango, Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import get_icon_pixbuf
-from xpra.log import enable_color, Logger
 log = Logger("gtk", "keyboard")
 
 
@@ -164,6 +164,7 @@ class KeyboardStateInfoWindow:
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init, set_default_icon
     from xpra.gtk_common.gtk_util import init_display_source
     with program_context("Keyboard-Test", "Keyboard Test Tool"):

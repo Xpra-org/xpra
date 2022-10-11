@@ -353,7 +353,7 @@ class BugReport:
                                 temp.flush()
                         except OSError as e:
                             log.error("Error: cannot create mmap file:")
-                            log.error(" %s", e)
+                            log.estr(e)
                         else:
                             zf.write(temp.name, cfile, zipfile.ZIP_STORED if dtype=="png" else zipfile.ZIP_DEFLATED)
                     finally:
