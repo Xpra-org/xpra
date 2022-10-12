@@ -552,7 +552,7 @@ class ProxyServer(ServerCore):
                 popen = process._popen
                 assert popen
                 #when this process dies, run reap to update our list of proxy instances:
-                self.child_reaper.add_process(popen, "xpra-proxy-%s" % display,
+                self.child_reaper.add_process(popen, f"xpra-proxy-{display}",
                                               "xpra-proxy-instance", True, True, self.reap)
             except Exception as e:
                 log("start_proxy_process() failed", exc_info=True)
@@ -568,7 +568,7 @@ class ProxyServer(ServerCore):
                 server_conn.close()
                 log("sending socket-handover-complete")
                 message_queue.put("socket-handover-complete")
-        start_thread(start_proxy_process, "start_proxy(%s)" % client_proto)
+        start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
     def start_new_session(self, username, _password, uid, gid, new_session_dict=None, displays=()):
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))

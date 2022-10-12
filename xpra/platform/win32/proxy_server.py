@@ -17,6 +17,7 @@ log = Logger("proxy")
 
 def exec_command(username, args, exe, cwd, env):
     log("exec_command%s", (username, args, exe, cwd, env))
+    # pylint: disable=import-outside-toplevel
     from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u
     logon_info = logon_msv1_s4u(username)
     log("logon_msv1_s4u(%s)=%s", username, logon_info)
@@ -54,6 +55,7 @@ class ProxyServer(_ProxyServer):
 
     def start_win32_shadow(self, username, password, new_session_dict):
         log("start_win32_shadow%s", (username, "..", new_session_dict))
+        # pylint: disable=import-outside-toplevel
         from xpra.platform.win32.wtsapi import find_session
         session_info = find_session(username)
         if not session_info:
@@ -89,7 +91,7 @@ class ProxyServer(_ProxyServer):
 
         cmd += [
             shadow_command,
-            "--bind=%s" % named_pipe,
+            f"--bind={named_pipe}",
             #"--tray=no",
             ]
         #unless explicitly stated otherwise, exit with client:
@@ -114,9 +116,8 @@ class ProxyServer(_ProxyServer):
                 except (OSError, AttributeError):
                     log("failed to read stdout / stderr of subprocess", exc_info=True)
                 if r!=0:
-                    raise Exception("shadow subprocess failed with exit code %s" % r)
-                else:
-                    raise Exception("shadow subprocess has already terminated")
+                    raise Exception(f"shadow subprocess failed with exit code {r}")
+                raise Exception("shadow subprocess has already terminated")
             if t>=4:
                 state = dotxpra.get_display_state(named_pipe)
                 log("get_display_state(%s)=%s", state)
@@ -124,5 +125,5 @@ class ProxyServer(_ProxyServer):
                     #TODO: test the named pipe
                     sleep(2)
                     break
-        self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
-        return proc, "named-pipe://%s" % named_pipe, named_pipe
+        self.child_reaper.add_process(proc, f"server-{username}", "xpra shadow", True, True)
+        return proc, f"named-pipe://{named_pipe}", named_pipe
