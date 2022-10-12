@@ -114,7 +114,7 @@ class ClipboardConnection(StubSourceMixin):
             elapsed = now-event
             log("send_clipboard(..) elapsed=%.2f, clipboard_stats=%s", elapsed, self.clipboard_stats)
             if elapsed<1:
-                msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_LIMIT
+                msg = f"more than {MAX_CLIPBOARD_LIMIT} clipboard requests per second!"
                 log.warn("Warning: %s", msg)
                 #disable if this rate is sustained for more than S seconds:
                 events = [x for x in tuple(self.clipboard_stats) if x>(now-MAX_CLIPBOARD_LIMIT_DURATION)]
@@ -126,6 +126,7 @@ class ClipboardConnection(StubSourceMixin):
         self.queue_encode((True, self.compress_clipboard, packet))
 
     def compress_clipboard(self, packet):
+        # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         #Note: this runs in the 'encode' thread!
         packet = list(packet)

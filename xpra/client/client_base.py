@@ -828,7 +828,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def get_challenge_prompt(self, prompt="password"):
         text = f"Please enter the {prompt}"
         try:
-            from xpra.net.bytestreams import pretty_socket
+            from xpra.net.bytestreams import pretty_socket  # pylint: disable=import-outside-toplevel
             conn = self._protocol._conn
             text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
         except Exception:

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -69,14 +69,15 @@ DEFAULT_TRANSLATED_TARGETS = "#".join((
     "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
     "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain,public.utf8-plain-text",
     ))
-TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS", DEFAULT_TRANSLATED_TARGETS))
+TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS",
+                                                             DEFAULT_TRANSLATED_TARGETS))
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
 def xatoms_to_strings(data):
     l = len(data)
     if l%sizeof_long!=0:
-        raise ValueError("invalid length for atom array: %i, value=%s" % (l, repr_ellipsized(str(data))))
+        raise ValueError(f"invalid length for atom array: {l}, value={repr_ellipsized(data)}")
     natoms = l//sizeof_long
     atoms = struct.unpack(b"@"+b"L"*natoms, data)
     with xsync:
@@ -243,7 +244,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.reset_incr_data()
 
     def __repr__(self):
-        return  "X11ClipboardProxy(%s)" % self._selection
+        return f"X11ClipboardProxy({self._selection})"
 
     def cleanup(self):
         log("%s.cleanup()", self)
@@ -430,7 +431,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         req_target = target
         if self.targets and target not in self.targets:
-            if first_time("client-%s-invalidtarget-%s" % (wininfo, target)):
+            if first_time(f"client-{wininfo}-invalidtarget-{target}"):
                 l = log.info
             else:
                 l = log.debug
@@ -613,7 +614,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 dtype, dformat, value = target_data
                 got_contents(dtype, dformat, value)
                 return
-        prop = "%s-%s" % (self._selection, target)
+        prop = f"{self._selection}-{target}"
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
             self.owned = owner==self.xid

@@ -12,8 +12,9 @@ from xpra.log import Logger
 log = Logger("x11", "window", "tray")
 
 
-class TrayGeometryChanged:
+class TrayGeometryChanged:  # pylint: disable=too-few-public-methods
     __slots__ = ("x", "y", "width", "height")
+
 
 class SystemTrayWindowModel(CoreX11WindowModel):
     __gproperties__ = CoreX11WindowModel.__common_properties__.copy()

@@ -12,5 +12,6 @@ from gi.repository import GdkX11  #pylint: disable=wrong-import-position
 assert GdkX11
 
 def GDKX11Window(*args, **kwargs) -> GdkX11.X11Window:
+    # pylint: disable=import-outside-toplevel
     from xpra.gtk_common.gtk_util import new_GDKWindow
     return new_GDKWindow(GdkX11.X11Window, *args, **kwargs)

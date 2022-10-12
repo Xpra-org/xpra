@@ -71,6 +71,7 @@ class DisplayManager(StubServerMixin):
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         try:
+            # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
             from xpra.platform.paths import get_xpra_command
             cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])

@@ -32,7 +32,7 @@ class MonitorDesktopModel(DesktopModelBase):
     MAX_RECEIVERS = 20
 
     def __repr__(self):
-        return "MonitorDesktopModel(%s : %s)" % (self.name, self.monitor_geometry)
+        return f"MonitorDesktopModel({self.name} : {self.monitor_geometry})"
 
     def __init__(self, monitor):
         super().__init__()

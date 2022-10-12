@@ -8,7 +8,7 @@ from time import monotonic
 from gi.repository import Gdk
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
+from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_default_root_window
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -72,8 +72,8 @@ class GTKImageCapture:
     def take_screenshot(self):
         return take_png_screenshot(self.window)
 
+
 def main(filename):
-    from xpra.gtk_common.gtk_util import get_default_root_window
     root = get_default_root_window()
     data = take_png_screenshot(root)[-1]
     with open(filename, "wb") as f:
@@ -83,7 +83,7 @@ def main(filename):
 if __name__ == "__main__":
     import sys
     if len(sys.argv)!=2:
-        print("usage: %s filename.png" % sys.argv[0])
+        print(f"usage: {sys.argv[0]} filename.png")
         v = 1
     else:
         v = main(sys.argv[1])

@@ -128,7 +128,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
 
     def setup_printer(self, printer, props, attributes):
-        from xpra.platform.pycups_printing import add_printer
+        from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
         props = typedict(props)
         info = props.strget("printer-info", "")
         attrs = attributes.copy()
@@ -139,7 +139,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             location = "on %s"
             if PRINTER_LOCATION_STRING:
                 #ie: on FOO (via xpra)
-                location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
+                location = f"on {self.hostname} ({PRINTER_LOCATION_STRING})"
         try:
             def printer_added():
                 #once the printer has been added, register it in the list

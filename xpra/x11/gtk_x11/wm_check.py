@@ -96,6 +96,7 @@ def wm_check(upgrading=False):
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
     wm_check()

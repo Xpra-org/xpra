@@ -35,7 +35,7 @@ class EVDIModel(RootWindowModel):
         ld = self.capture.last_damage
         if not ld:
             return None
-        bw, bh, buf, rects = ld
+        bw, bh, buf = ld[:3]
         if bw!=width or bh!=height:
             return None
         return ImageWrapper(0, 0, width, height, buf, "BGRX", 24, width*4, )

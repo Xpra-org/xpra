@@ -113,7 +113,7 @@ class ClientDisplayMixin(StubSourceMixin):
             xdpi = dpi(sw, wmm)
             ydpi = dpi(sh, hmm)
             if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
-                warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
+                warn = first_time(f"invalid-screen-size-{wmm}x{hmm}")
                 if warn:
                     log.warn("Warning: ignoring invalid screen size %ix%i mm", wmm, hmm)
                 if monitors:

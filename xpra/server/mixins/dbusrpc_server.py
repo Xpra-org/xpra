@@ -46,7 +46,7 @@ class DBUS_RPC_Server(StubServerMixin):
         if not self.supports_dbus_proxy:
             return
         try:
-            from xpra.dbus.helper import DBusHelper
+            from xpra.dbus.helper import DBusHelper  # pylint: disable=import-outside-toplevel
             self.dbus_helper = DBusHelper()
             self.rpc_handlers["dbus"] = self._handle_dbus_rpc
         except Exception as e:
@@ -59,7 +59,7 @@ class DBUS_RPC_Server(StubServerMixin):
 
 
     def make_dbus_server(self):
-        from xpra.server.dbus.dbus_server import DBUS_Server
+        from xpra.server.dbus.dbus_server import DBUS_Server  # pylint: disable=import-outside-toplevel
         return DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
     def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):

@@ -41,7 +41,7 @@ class StubClientMixin:
         Free up any resources.
         """
 
-    def send(self, *_args, **_kwargs):
+    def send(self, *_args):
         """
         Send a packet to the server, dummy implementation.
         """

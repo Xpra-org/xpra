@@ -143,7 +143,7 @@ class SystemTray(GObject.GObject):
         owner = X11Window.XGetSelectionOwner(SELECTION)
         log("setup tray: current selection owner=%#x", owner)
         if owner!=XNone:
-            raise Exception("%s already owned by %s" % (SELECTION, owner))
+            raise Exception(f"{SELECTION} already owned by {owner}")
         visual = screen.get_system_visual()
         if TRANSPARENCY:
             visual = screen.get_rgba_visual()
@@ -187,7 +187,7 @@ class SystemTray(GObject.GObject):
                 window = GdkX11.X11Window.foreign_new_for_display(event.display, xid)
                 log("tray docking window %s", window)
                 if window:
-                    from gi.repository import GLib
+                    from gi.repository import GLib  # pylint: disable=import-outside-toplevel
                     GLib.idle_add(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]

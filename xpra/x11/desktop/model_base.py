@@ -97,9 +97,14 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             if not wm_name:
                 return
             icon_name = get_icon_filename(wm_name.lower()+".png")
-            from PIL import Image
-            img = Image.open(icon_name)
-            iconlog("Image(%s)=%s", icon_name, img)
+            try:
+                from PIL import Image  # pylint: disable=import-outside-toplevel
+            except ImportError:
+                iconlog("unable to get icon without pillow")
+                img = None
+            else:
+                img = Image.open(icon_name)
+                iconlog("Image(%s)=%s", icon_name, img)
             if img:
                 icon_data = load_binary_file(icon_name)
                 assert icon_data

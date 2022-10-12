@@ -93,11 +93,12 @@ class LoggingServer(StubServerMixin):
         assert self.local_logging
         def local_warn(*args):
             self.local_logging(log, logging.WARNING, *args)
-        def local_err(message):
+        def local_err(message, e=None):
             if self._closing:
                 return
             local_warn("Warning: %s:", message)
-            local_warn(" %s" % e)
+            if e:
+                local_warn(" %s", e)
             local_warn(" original unformatted message: %s", msg)
             if args:
                 local_warn(" %i arguments: %s", len(args), args)
@@ -122,7 +123,7 @@ class LoggingServer(StubServerMixin):
                 else:
                     data = msg
             except Exception as e:
-                local_err("failed to format log message")
+                local_err("failed to format log message", e)
                 return
             for proto, start_time in self.logging_clients.items():
                 source = self.get_server_source(proto)
@@ -150,7 +151,7 @@ class LoggingServer(StubServerMixin):
                 except Exception as e:
                     if self._closing:
                         return
-                    local_warn("Warning: failed to send log message to %s", source)
+                    local_warn("Warning: failed to send log message to %s: %s", source, e)
             if self.log_both:
                 try:
                     self.local_logging(log, level, msg, *args, **kwargs)

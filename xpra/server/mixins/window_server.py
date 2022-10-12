@@ -38,7 +38,8 @@ class WindowServer(StubServerMixin):
                 pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
                 assert len(pv)==2
                 w, h = pv
-                assert w>=0 and h>0 and w<32768 and h<32768
+                if w<=0 or h<=0 or w>=32768 or h>=32768:
+                    raise ValueError(f"invalid window size {w}x{h}")
                 return w, h
             except Exception:
                 return default_value

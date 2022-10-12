@@ -69,7 +69,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
 
     def init_printing(self):
         try:
-            from xpra.platform.printing import init_printing
+            from xpra.platform.printing import init_printing    # pylint: disable=import-outside-toplevel
             printlog("init_printing=%s", init_printing)
             init_printing(self.send_printers)
         except Exception as e:
@@ -86,10 +86,10 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             return
         self.cancel_send_printers_timer()
         try:
-            from xpra.platform.printing import cleanup_printing
+            from xpra.platform.printing import cleanup_printing  # pylint: disable=import-outside-toplevel
             printlog("cleanup_printing=%s", cleanup_printing)
             cleanup_printing()
-        except ImportError as e:
+        except ImportError:
             printlog("cleanup_printing()", exc_info=True)
         except Exception as e:
             printlog("cleanup_printing()", exc_info=True)
@@ -116,7 +116,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         start_thread(self.send_printers_thread, "send-printers", True)
 
     def send_printers_thread(self):
-        from xpra.platform.printing import get_printers, get_mimetypes
+        from xpra.platform.printing import get_printers, get_mimetypes  # pylint: disable=import-outside-toplevel
         try:
             printers = get_printers()
         except Exception as  e:

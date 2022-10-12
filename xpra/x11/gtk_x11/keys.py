@@ -7,7 +7,7 @@
 from gi.repository import Gdk
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 
 X11Keyboard = X11KeyboardBindings()
 
@@ -15,8 +15,7 @@ X11Keyboard = X11KeyboardBindings()
 def grok_modifier_map(display, meanings):
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
-    #TODO: needs fixing for GTK3
-    from xpra.keyboard.mask import MODIFIER_MAP
+    #is this still correct for GTK3?
     modifier_map = MODIFIER_MAP.copy()
     modifier_map.update({
         "scroll":   0,

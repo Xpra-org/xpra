@@ -261,7 +261,7 @@ def open_log_file(logpath):
     try:
         return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
     except OSError as e:
-        raise InitException("cannot open log file '%s': %s" % (logpath, e)) from None
+        raise InitException(f"cannot open log file {logpath!r}: {e}") from None
 
 def select_log_file(log_dir, log_file, display_name):
     """ returns the log file path we should be using given the parameters,
@@ -279,7 +279,7 @@ def select_log_file(log_dir, log_file, display_name):
     if display_name:
         logpath = norm_makepath(log_dir, display_name) + ".log"
     else:
-        logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
+        logpath = os.path.join(log_dir, f"tmp_{os.getpid()}.log")
     return logpath
 
 # Redirects stdin from /dev/null, and stdout and stderr to the file with the
@@ -329,10 +329,10 @@ def write_pidfile(pidfile):
     pidstr = str(os.getpid())
     inode = 0
     try:
-        with open(pidfile, "w") as f:
+        with open(pidfile, "w", encoding="latin1") as f:
             if POSIX:
                 os.fchmod(f.fileno(), 0o640)
-            f.write("%s\n" % pidstr)
+            f.write(f"{pidstr}\n")
             try:
                 inode = os.fstat(f.fileno()).st_ino
             except OSError:
@@ -383,14 +383,14 @@ def get_uinput_device_path(device):
             log("event dirs(%s)=%s", uevent_path, event_dirs)
             for d in event_dirs:
                 uevent_filename = os.path.join(uevent_path, d, b"uevent")
-                uevent_conf = open(uevent_filename, "rb").read()
+                uevent_conf = open(uevent_filename, "rb", encoding="latin1").read()
                 for line in uevent_conf.splitlines():
                     if line.find(b"=")>0:
                         k,v = line.split(b"=", 1)
                         log("%s=%s", k, v)
                         if k==b"DEVNAME":
                             dev_path = b"/dev/%s" % v
-                            log("found device path: %s" % dev_path)
+                            log(f"found device path: {dev_path}")
                             return dev_path
     except Exception as e:
         log("get_uinput_device_path(%s)", device, exc_info=True)

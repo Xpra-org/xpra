@@ -108,7 +108,7 @@ class IdleMixin(StubSourceMixin):
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name!="Xpra":
-            summary = "The Xpra session %s" % self.session_name
+            summary = f"The Xpra session {self.session_name}"
         else:
             summary = "Xpra session"
         summary += " is about to timeout"

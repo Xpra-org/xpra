@@ -36,7 +36,8 @@ counter = AtomicInteger()
 
 class ClientConnection(StubSourceMixin):
     """
-    This class mediates between the server class (which only knows about actual window objects and display server events)
+    This class mediates between the server class
+    (which only knows about actual window objects and display server events)
     and the client specific WindowSource instances (which only know about window ids
     and manage window pixel compression).
     It sends messages to the client via its 'protocol' instance (the network connection),
@@ -57,7 +58,6 @@ class ClientConnection(StubSourceMixin):
                  setting_changed,
                  socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit, bandwidth_detection,
                  ):
-        global counter
         self.counter = counter.increase()
         self.protocol = protocol
         self.connection_time = monotonic()
@@ -93,7 +93,8 @@ class ClientConnection(StubSourceMixin):
         self.protocol.set_packet_source(self.next_packet)
 
     def __repr__(self) -> str:
-        return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
+        classname = type(self).__name__
+        return f"{classname}({self.counter} : {self.protocol})"
 
     def init_state(self):
         self.hello_sent = False
@@ -120,7 +121,7 @@ class ClientConnection(StubSourceMixin):
 
 
     def is_closed(self) -> bool:
-        return self.close_event.isSet()
+        return self.close_event.is_set()
 
     def cleanup(self):
         log("%s.close()", self)

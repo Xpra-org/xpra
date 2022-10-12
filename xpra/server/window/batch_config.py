@@ -27,7 +27,7 @@ log = Logger("damage")
 
 def ival(key, default, minv=0, maxv=None) -> int:
     try:
-        v = os.environ.get("XPRA_BATCH_%s" % key)
+        v = os.environ.get(f"XPRA_BATCH_{key}")
         if v is None:
             return default
         iv = int(v)

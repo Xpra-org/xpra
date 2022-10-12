@@ -241,7 +241,7 @@ class EncodingServer(StubServerMixin):
         #we can't assume that the window server mixin is loaded:
         refresh = getattr(self, "_idle_refresh_all_windows", None)
         if refresh:
-            refresh(proto)
+            refresh(proto)  # pylint: disable=not-callable
 
 
     def init_packet_handlers(self):

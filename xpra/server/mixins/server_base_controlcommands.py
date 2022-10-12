@@ -303,13 +303,13 @@ class ServerBaseControlCommands(StubServerMixin):
         #find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            raise ControlError("no clients found matching: %s" % client_uuids)
+            raise ControlError(f"no clients found matching: {client_uuids}")
         clients = 0
         for ss in sources:
             if hasattr(ss, "send_open_url"):
                 if ss.send_open_url(url):
                     clients += 1
-        return "url sent to %i clients" % clients
+        return f"url sent to {clients} clients"
 
     def control_command_send_file(self, filename, openit="open", client_uuids="*", maxbitrate=0):
         #we always get the values as strings from the command interface,
@@ -333,7 +333,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            raise ControlError("no clients found matching: %s" % client_uuids)
+            raise ControlError(f"no clients found matching: {client_uuids}")
         def checksize(file_size):
             if file_size>self.file_transfer.file_size_limit:
                 raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (

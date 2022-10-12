@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import subprocess
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -129,6 +130,7 @@ class AudioMixin(StubSourceMixin):
 
     def audio_loop_check(self, mode="speaker") -> bool:
         log("audio_loop_check(%s)", mode)
+        # pylint: disable=import-outside-toplevel
         from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
         if ALLOW_SOUND_LOOP:
             return True
@@ -206,7 +208,7 @@ class AudioMixin(StubSourceMixin):
         if not self.audio_loop_check("speaker"):
             return None
         try:
-            from xpra.sound.wrapper import start_sending_sound
+            from xpra.sound.wrapper import start_sending_sound  # pylint: disable=import-outside-toplevel
             plugins = self.sound_properties.strtupleget("plugins")
             ss = start_sending_sound(plugins, self.sound_source_plugin,
                                      None, codec, volume, True, [codec],
@@ -269,7 +271,7 @@ class AudioMixin(StubSourceMixin):
     def new_stream(self, sound_source, codec):
         if NEW_STREAM_SOUND:
             try:
-                from xpra.platform.paths import get_resources_dir
+                from xpra.platform.paths import get_resources_dir   # pylint: disable=import-outside-toplevel
                 sample = os.path.join(get_resources_dir(), "bell.wav")
                 log("new_stream(%s, %s) sample=%s, exists=%s", sound_source, codec, sample, os.path.exists(sample))
                 if os.path.exists(sample):
@@ -279,14 +281,13 @@ class AudioMixin(StubSourceMixin):
                         sink = "autoaudiosink"
                     cmd = [
                         "gst-launch-1.0", "-q",
-                        "filesrc", "location=%s" % sample,
+                        "filesrc", f"location={sample}",
                         "!", "decodebin",
                         "!", "audioconvert",
                         "!", sink]
-                    import subprocess
-                    proc = subprocess.Popen(cmd)
+                    proc = subprocess.Popen(cmd)  # pylint: disable=consider-using-with
                     log("Popen(%s)=%s", cmd, proc)
-                    from xpra.child_reaper import getChildReaper
+                    from xpra.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
                     getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
                     def stop_new_stream_notification():
                         if self.new_stream_timers.pop(proc, None):
@@ -313,7 +314,7 @@ class AudioMixin(StubSourceMixin):
         self.call_update_av_sync_delay()
         #run it again after 10 seconds,
         #by that point the source info will actually be populated:
-        from gi.repository import GLib
+        from gi.repository import GLib  # pylint: disable=import-outside-toplevel
         GLib.timeout_add(10*1000, self.call_update_av_sync_delay)
 
     def call_update_av_sync_delay(self):
@@ -368,9 +369,9 @@ class AudioMixin(StubSourceMixin):
     def sound_control(self, action, *args):
         action = bytestostr(action)
         log("sound_control(%s, %s)", action, args)
-        method = getattr(self, "sound_control_%s" % (action.replace("-", "_")), None)
+        method = getattr(self, "sound_control_" + action.replace("-", "_"), None)
         if method is None:
-            msg = "unknown sound action: %s" % action
+            msg = f"unknown sound action: {action}"
             log.error(msg)
             return msg
         return method(*args)  #pylint: disable=not-callable
@@ -380,7 +381,7 @@ class AudioMixin(StubSourceMixin):
             try:
                 sequence = int(sequence_str)
             except ValueError:
-                msg = "sound sequence number '%s' is invalid" % sequence_str
+                msg = f"sound sequence number {sequence_str!r} is invalid"
                 log.warn(msg)
                 return msg
             if sequence!=self.sound_source_sequence:
@@ -421,7 +422,7 @@ class AudioMixin(StubSourceMixin):
             return "failed to start sound"
         msg = "sound started"
         if codec:
-            msg += " using codec %s" % codec
+            msg += f" using codec {codec}"
         return msg
 
     def sound_control_fadeout(self, delay_str=""):
@@ -447,7 +448,7 @@ class AudioMixin(StubSourceMixin):
 
     def sound_control_new_sequence(self, seq_str):
         self.sound_source_sequence = int(seq_str)
-        return "new sequence is %s" % self.sound_source_sequence
+        return f"new sequence is {self.sound_source_sequence}"
 
 
     def cancel_sound_fade_timer(self):
@@ -486,7 +487,7 @@ class AudioMixin(StubSourceMixin):
                     log("sound_sink_error%s", args)
                     log.warn("Warning: stopping sound input because of an error")
                     self.stop_receiving_sound()
-                from xpra.sound.wrapper import start_receiving_sound
+                from xpra.sound.wrapper import start_receiving_sound  # pylint: disable=import-outside-toplevel
                 ss = start_receiving_sound(codec)
                 if not ss:
                     return
@@ -516,9 +517,9 @@ class AudioMixin(StubSourceMixin):
                 encoder_latency = info.intget("latency", -1)
                 if encoder_latency<0:
                     #fallback to hard-coded values:
-                    from xpra.sound.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY
+                    from xpra.sound.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY  # pylint: disable=import-outside-toplevel
                     encoder_latency = RECORD_PIPELINE_LATENCY + ENCODER_LATENCY.get(ss.codec, 0)
-                    cinfo = "%s " % ss.codec
+                    cinfo = f"{ss.codec} " 
                 #processing overhead
                 encoder_latency += 100
             except Exception as e:

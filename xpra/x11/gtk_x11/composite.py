@@ -43,7 +43,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         self._listening_to = None
 
     def __repr__(self):
-        return "CompositeHelper(%#x)" % self.xid
+        return f"CompositeHelper({self.xid:x})"
 
     def setup(self):
         X11Window.XCompositeRedirectWindow(self.xid)

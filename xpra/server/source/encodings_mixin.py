@@ -233,11 +233,11 @@ class EncodingsMixin(StubSourceMixin):
                         log.error("Error: invalid value '%s' for batch option %s", value, varname)
                 return None
             #from client caps first:
-            cpname = "batch.%s" % prop
+            cpname = f"batch.{prop}"
             v = parse_batch_int(c.get(cpname), cpname)
             #try env:
             if v is None:
-                evname = "XPRA_BATCH_%s" % prop.upper()
+                evname = f"XPRA_BATCH_{prop.upper()}"
                 v = parse_batch_int(os.environ.get(evname), evname)
             #fallback to default:
             if v is None:
@@ -366,7 +366,7 @@ class EncodingsMixin(StubSourceMixin):
         or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
             cudalog = Logger("cuda")
             try:
-                from xpra.codecs.nvidia.cuda_context import get_device_context
+                from xpra.codecs.nvidia.cuda_context import get_device_context  # pylint: disable=import-outside-toplevel
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)
             except Exception as e:
@@ -384,7 +384,7 @@ class EncodingsMixin(StubSourceMixin):
         if self.encoding=="auto":
             s = "automatic picture encoding enabled"
         else:
-            s = "using %s as primary encoding" % self.encoding
+            s = f"using {self.encoding} as primary encoding"
         if others:
             log.info(" %s, also available:", s)
             log.info("  %s", csv(others))
@@ -447,10 +447,10 @@ class EncodingsMixin(StubSourceMixin):
                 encoding = "rgb"
             if encoding not in self.encodings:
                 log.warn("Warning: client specified '%s' encoding,", encoding)
-                log.warn(" but it only supports: %s" % csv(self.encodings))
+                log.warn(" but it only supports: " + csv(self.encodings))
             if encoding not in self.server_encodings:
                 log.error("Error: encoding %s is not supported by this server", encoding)
-                log.error(" server encodings: %s", csv(self.server_encodings))
+                log.error(" server encodings: " + csv(self.server_encodings))
                 encoding = None
         if not encoding:
             encoding = "auto"

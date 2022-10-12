@@ -93,7 +93,7 @@ class VideoSubregion:
 
 
     def __repr__(self):
-        return "VideoSubregion(%s)" % self.rectangle
+        return f"VideoSubregion({self.rectangle})"
 
 
     def set_enabled(self, enabled):
@@ -125,7 +125,8 @@ class VideoSubregion:
 
     def set_auto_refresh_delay(self, d):
         refreshlog("subregion auto-refresh delay: %s", d)
-        assert isinstance(d, int),"delay is not an int: %s (%s)" % (d, type(d))
+        if not isinstance(d, int):
+            raise ValueError(f"delay is not an int: {d} ({type(d)})")
         self.auto_refresh_delay = d
 
     def cancel_refresh_timer(self):
@@ -171,11 +172,11 @@ class VideoSubregion:
         rr = tuple(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
-                info["refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
+                info[f"refresh_region[{i}]"] = (r.x, r.y, r.width, r.height)
         nvrr = tuple(self.nonvideo_regions)
         if nvrr:
             for i, r in enumerate(nvrr):
-                info["nonvideo_refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
+                info[f"nonvideo_refresh_region[{i}]"] = (r.x, r.y, r.width, r.height)
         return info
 
 
@@ -372,9 +373,9 @@ class VideoSubregion:
             for r in rects:
                 dec[r] = dec.get(r, 0)+1
                 if w>=MIN_W:
-                    wc.setdefault(w, dict()).setdefault(x, set()).add(r)
+                    wc.setdefault(w, {}).setdefault(x, set()).add(r)
                 if h>=MIN_H:
-                    hc.setdefault(h, dict()).setdefault(y, set()).add(r)
+                    hc.setdefault(h, {}).setdefault(y, set()).add(r)
         #we can shortcut the damaged ratio if the whole window got damaged at least once:
         all_damaged = dec.get(rectangle(0, 0, ww, wh), 0) > 0
 
@@ -570,7 +571,7 @@ class VideoSubregion:
         #retry existing region, tolerate lower score:
         if cur_score>=90 and (highscore<100 or cur_score>=highscore):
             sslog("keeping existing video region %s with score %s", rect, cur_score)
-            setnewregion(self.rectangle, "existing region with score: %i" % cur_score)
+            setnewregion(self.rectangle, f"existing region with score: {cur_score}")
             return
 
         if highscore>=100:

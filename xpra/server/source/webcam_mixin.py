@@ -16,7 +16,10 @@ MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
 
 def valid_encodings(args):
     #ensure that the encodings specified can be validated using HEADERS
-    from xpra.codecs.pillow.decoder import HEADERS
+    try:
+        from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return []
     encodings = []
     for x in args:
         x = bytestostr(x)
@@ -39,7 +42,7 @@ class WebcamMixin(StubSourceMixin):
         if not caps.boolget("webcam", True):
             return False
         try:
-            from xpra.codecs.pillow.decoder import HEADERS
+            from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
             assert HEADERS
         except ImportError:
             return False
@@ -84,7 +87,7 @@ class WebcamMixin(StubSourceMixin):
                     "device" : self.webcam_device,
                     },
                    }
-        from xpra.platform.xposix.webcam import get_virtual_video_devices
+        from xpra.platform.xposix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
         return get_virtual_video_devices()
 
 
@@ -115,14 +118,15 @@ class WebcamMixin(StubSourceMixin):
             fail("no virtual devices found")
             return False
         if len(self.webcam_forwarding_devices)>MAX_WEBCAM_DEVICES:
-            fail("too many virtual devices are already in use: %i" % len(self.webcam_forwarding_devices))
+            ndev = len(self.webcam_forwarding_devices)
+            fail(f"too many virtual devices are already in use: {ndev}")
             return False
         errs = {}
         for vid, device_info in devices.items():
             log("trying device %s: %s", vid, device_info)
             device_str = device_info.get("device")
             try:
-                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
+                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport pylint: disable=import-outside-toplevel
                 in_cs = get_input_colorspaces()
                 p = Pusher()
                 src_format = in_cs[0]
@@ -171,11 +175,13 @@ class WebcamMixin(StubSourceMixin):
             self.send_webcam_stop(device_id, "not started")
             return False
         try:
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
-            assert encoding in self.webcam_encodings, "invalid encoding specified: %s (must be one of %s)" % (encoding, self.webcam_encodings)
+            if encoding not in self.webcam_encodings:
+                raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
             rgb_pixel_format = "BGRX"       #BGRX
             img = open_only(data, (encoding,))
-            pixels = img.tobytes('raw', rgb_pixel_format)
+            pixels = img.tobytes("raw", rgb_pixel_format)
             from xpra.codecs.image_wrapper import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
             src_format = webcam.get_src_format()

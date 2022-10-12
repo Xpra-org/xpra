@@ -58,10 +58,10 @@ class DesktopServerBase(DesktopServerBaseClass):
         }
 
     def __init__(self):
-        X11ServerBase.__init__(self)
+        X11ServerBase.__init__(self)  # pylint: disable=non-parent-init-called
         for c in DESKTOPSERVER_BASES:
             if c!=X11ServerBase:
-                c.__init__(self)
+                c.__init__(self)  # pylint: disable=non-parent-init-called
         self.gsettings_modified = {}
         self.root_prop_watcher = None
 

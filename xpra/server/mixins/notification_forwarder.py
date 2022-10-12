@@ -91,12 +91,14 @@ class NotificationForwarder(StubServerMixin):
         if not self._server_sources:
             return
         try:
+            # pylint: disable=import-outside-toplevel
             from xpra.util import XPRA_NEW_USER_NOTIFICATION_ID
-            nid = XPRA_NEW_USER_NOTIFICATION_ID
             from xpra.notifications.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
+            nid = XPRA_NEW_USER_NOTIFICATION_ID
             icon = parse_image_path(get_icon_filename("user"))
-            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+            name = ss.name or ss.username or ss.uuid
+            title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
                 if s!=ss:

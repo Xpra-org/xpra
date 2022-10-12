@@ -292,7 +292,7 @@ class ProxyServer(ServerCore):
             #verify socket type (only local connections by default):
             socktype = get_socktype(proto)
             if socktype not in STOP_PROXY_SOCKET_TYPES:
-                msg = "cannot stop proxy server from a '%s' connection" % socktype
+                msg = f"cannot stop proxy server from a {socktype!r} connection"
                 log.warn("Warning: %s", msg)
                 log.warn(" only from: %s", csv(STOP_PROXY_SOCKET_TYPES))
                 self.send_disconnect(proto, msg)
@@ -416,8 +416,8 @@ class ProxyServer(ServerCore):
                 return
             if display:
                 if display not in displays:
-                    if ":%s" % display in displays:
-                        display = ":%s" % display
+                    if f":{display}" in displays:
+                        display = f":{display}"
                     else:
                         disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
                         return
@@ -567,10 +567,11 @@ class ProxyServer(ServerCore):
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
         mode = sns.strget("mode", "start")
-        assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
+        if mode not in ("start", "start-desktop", "shadow"):
+            raise ValueError(f"invalid start-new-session mode {mode!r}")
         display = sns.strget("display")
         if display in displays:
-            raise Exception("display %s is already active!" % display)
+            raise Exception(f"display {display} is already active!")
         log("starting new server subprocess: mode=%s, display=%s", mode, display)
         args = []
         if display:

@@ -108,7 +108,8 @@ class ProxyInstance:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
         #server connection tweaks:
-        self.server_protocol.large_packets += ["input-devices", "draw", "window-icon", "keymap-changed", "server-settings"]
+        self.server_protocol.large_packets += ["input-devices", "draw", "window-icon",
+                                               "keymap-changed", "server-settings"]
         if self.caps.boolget("file-transfer"):
             self.server_protocol.large_packets += ["send-file", "send-file-chunk"]
             self.client_protocol.large_packets += ["send-file", "send-file-chunk"]
@@ -470,7 +471,7 @@ class ProxyInstance:
             caps = self.filter_server_caps(c)
             #add new encryption caps:
             if self.cipher:
-                from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING
+                from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING   # pylint: disable=import-outside-toplevel
                 crypto_backend_init()
                 padding_options = self.caps.strtupleget("cipher.padding.options", [DEFAULT_PADDING])
                 auth_caps = new_cipher_caps(self.client_protocol,
@@ -545,13 +546,15 @@ class ProxyInstance:
                     salt_digest = bytestostr(packet[4])
                 if salt_digest in ("xor", "des"):
                     if not LEGACY_SALT_DIGEST:
-                        self.stop(None, "server uses legacy salt digest '%s'" % salt_digest)
+                        self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
                         return
                     log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
                 if salt_digest=="xor":
                     #with xor, we have to match the size
-                    assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
-                    assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+                    if l<16:
+                        raise ValueError("server salt is too short: only {l} bytes, minimum is 16")
+                    if l>256:
+                        raise ValueError("server salt is too long: {l} bytes, maximum is 256")
                 else:
                     #other digest, 32 random bytes is enough:
                     l = 32
@@ -560,7 +563,7 @@ class ProxyInstance:
                 challenge_response = gendigest(digest, password, salt)
                 if not challenge_response:
                     log("invalid digest module '%s': %s", digest)
-                    self.stop(None, "server requested '%s' digest but it is not supported" % digest)
+                    self.stop(None, f"server requested {digest!r} digest but it is not supported")
                     return
                 log.info("sending %s challenge response", digest)
                 self.send_hello(challenge_response, client_salt)
@@ -627,7 +630,7 @@ class ProxyInstance:
         #we can only use video encoders on RGB data:
         if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
             #this prevents compression and inlining of pixel data:
-            packet[7] = Compressed("%s pixels" % encoding, pixels)
+            packet[7] = Compressed(f"{encoding} pixels", pixels)
             return True
         client_options = typedict(client_options)
         #we have a proxy video packet:
@@ -663,7 +666,7 @@ class ProxyInstance:
                 #preserve
                 cdata = pixels
                 new_client_options = client_options
-            wrapped = Compressed("%s pixels" % encoding, cdata)
+            wrapped = Compressed(f"{encoding} pixels", cdata)
             #rgb32 is always supported by all clients:
             return send_updated(encoding, wrapped, new_client_options)
 
@@ -674,7 +677,7 @@ class ProxyInstance:
         if not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
-            packet[7] = Compressed("%s pixels" % encoding, packet[7])
+            packet[7] = Compressed(f"{encoding} pixels", packet[7])
             return True
 
         #video encoding: find existing encoder
@@ -717,7 +720,7 @@ class ProxyInstance:
                 #no video encoder!
                 enc_pillow = get_codec("enc_pillow")
                 if not enc_pillow:
-                    if first_time("no-video-no-PIL-%s" % rgb_format):
+                    if first_time(f"no-video-no-PIL-{rgb_format}"):
                         enclog.warn("Warning: no video encoder found for rgb format %s", rgb_format)
                         enclog.warn(" sending as plain RGB")
                     return passthrough(True)

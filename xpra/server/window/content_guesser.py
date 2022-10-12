@@ -27,6 +27,7 @@ def getprop(window, prop):
         return window.get_property(prop)
     except TypeError:
         log.error("Error querying %s on %s", prop, window, exc_info=True)
+        return None
 
 ################################################################
 # generic file parsing functions
@@ -136,7 +137,6 @@ def get_content_type_properties():
 
 
 def guess_content_type_from_defs(window) -> str:
-    global content_type_defs
     load_content_type_defs()
     for prop_name, defs in content_type_defs.items():
         if prop_name not in window.get_property_names():
@@ -272,16 +272,20 @@ def guess_content_from_parent_pid(ppid):
 def guess_content_type(window):
     if not GUESS_CONTENT:
         return DEFAULT_CONTENT_TYPE
-    return guess_content_type_from_defs(window) or guess_content_type_from_command(window) or guess_content_type_from_parent(window) or DEFAULT_CONTENT_TYPE
+    return guess_content_type_from_defs(window) or \
+        guess_content_type_from_command(window) or \
+        guess_content_type_from_parent(window) or \
+        DEFAULT_CONTENT_TYPE
 
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     import sys
     assert len(sys.argv)==2
     ppid = int(sys.argv[1])
     c = guess_content_from_parent_pid(ppid)
-    print("guess_content_from_parent_pid(%i)=%s" % (ppid, c))
+    print(f"guess_content_from_parent_pid({ppid})={c}")
 
 
 if __name__ == "__main__":  # pragma: no cover

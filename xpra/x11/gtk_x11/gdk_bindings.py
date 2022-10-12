@@ -8,7 +8,8 @@ x11_get_server_time = None
 if POSIX and (not OSX or WIN32):
     from gi.repository import GdkX11  #pylint: disable=wrong-import-position
     x11_get_server_time = GdkX11.x11_get_server_time
-from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
+#pylint: disable=wrong-import-position, ungrouped-imports
+from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport
 
 get_pywindow                = gdk_bindings.get_pywindow
 get_xatom                   = gdk_bindings.get_xatom

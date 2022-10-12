@@ -88,7 +88,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
 
     def __repr__(self):
-        return "proxy instance pid %i" % os.getpid()
+        return f"proxy instance pid {os.getpid()}"
 
 
     def server_message_queue(self):
@@ -138,7 +138,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.log_start()
 
         log("ProxyProcessProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
-        set_proc_title("Xpra Proxy Instance for %s" % self.server_conn)
+        set_proc_title(f"Xpra Proxy Instance for {self.server_conn}")
         if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
             #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
@@ -147,7 +147,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 log("the socket directory '%s' does not exist, checking for $XDG_RUNTIME_DIR path", socket_dir)
                 for prefix in ("/run/user/", "/var/run/user/"):
                     if socket_dir.startswith(prefix):
-                        from xpra.scripts.server import create_runtime_dir
+                        from xpra.scripts.server import create_runtime_dir  # pylint: disable=import-outside-toplevel
                         xrd = os.path.join(prefix, str(self.uid))   #ie: /run/user/99
                         log("creating XDG_RUNTIME_DIR=%s for uid=%i, gid=%i", xrd, self.uid, self.gid)
                         create_runtime_dir(xrd, self.uid, self.gid)
@@ -190,10 +190,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def create_control_socket(self):
         assert self.socket_dir
         def stop(msg):
-            self.stop(None, "cannot create the proxy control socket: %s" % msg)
+            self.stop(None, f"cannot create the proxy control socket: {msg}")
         username = get_username_for_uid(self.uid)
         dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
-        sockname = ":proxy-%s" % os.getpid()
+        sockname = f":proxy-{os.getpid()}"
         sockpath = dotxpra.socket_path(sockname)
         log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
         state = dotxpra.get_server_state(sockpath)
@@ -299,7 +299,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 return
             generic_request = caps.strget("request")
             def is_req(mode):
-                return generic_request==mode or caps.boolget("%s_request" % mode)
+                return generic_request==mode or caps.boolget(f"{mode}_request")
             if is_req("info"):
                 info = self.get_proxy_info(proto)
                 info.setdefault("connection", {}).update(self.get_connection_info())

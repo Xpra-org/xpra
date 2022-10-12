@@ -53,13 +53,13 @@ class WindowDamageHandler:
         self._border_width = 0
 
     def __repr__(self):
-        return "WindowDamageHandler(%#x)" % self.xid
+        return f"WindowDamageHandler({self.xid:x})"
 
     def setup(self):
         self.invalidate_pixmap()
         geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
-            raise Unmanageable("window %#x disappeared already" % self.xid)
+            raise Unmanageable(f"window {self.xid:x} disappeared already")
         self._border_width = geom[-1]
         self.create_damage_handle()
         add_event_receiver(self.client_window, self, self.MAX_RECEIVERS)

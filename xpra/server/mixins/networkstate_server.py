@@ -95,7 +95,7 @@ class NetworkStateServer(StubServerMixin):
                     while not self._closing:
                         self.print_memleaks()
                         sleep(DETECT_MEMLEAKS)
-                from xpra.make_thread import start_thread
+                from xpra.make_thread import start_thread  # pylint: disable=import-outside-toplevel
                 start_thread(leak_thread, "leak thread", daemon=True)
         if DETECT_FDLEAKS:
             self.fds = livefds()

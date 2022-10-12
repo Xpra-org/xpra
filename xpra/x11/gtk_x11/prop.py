@@ -54,10 +54,12 @@ def _get_xatom(str_or_int):
 
 
 def set_xsettings(v):
+    # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import set_settings
     return set_settings(v)
 
 def get_xsettings(v):
+    # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import get_settings
     return get_settings(v)
 
@@ -126,8 +128,8 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
 def _etypestr(etype):
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
-        return "array of %s" % scalar_type
-    return "%s" % etype
+        return f"array of {scalar_type}"
+    return str(etype)
 
 def raw_prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     def etypestr():

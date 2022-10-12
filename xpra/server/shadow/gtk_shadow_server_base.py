@@ -15,7 +15,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
-from xpra.gtk_common.gtk_util import get_screen_sizes, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import get_screen_sizes, get_icon_pixbuf, get_default_root_window
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -56,7 +56,6 @@ def parse_geometries(s):
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
-        from xpra.gtk_common.gtk_util import get_default_root_window
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
@@ -315,7 +314,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notifier_classes(self):
         ncs = ShadowServerBase.get_notifier_classes(self)
         try:
-            from xpra.gtk_common.gtk_notifier import GTK_Notifier
+            from xpra.gtk_common.gtk_notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
             ncs.append(GTK_Notifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)
@@ -343,7 +342,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             label = "Xpra Shadow Server"
             display = os.environ.get("DISPLAY")
             if POSIX and display:
-                label = "Xpra %s Shadow Server" % display
+                label = f"Xpra {display} Shadow Server"
             self.tray_menu = Gtk.Menu()
             self.tray_menu.set_title(label)
             title_item = Gtk.MenuItem()
@@ -351,7 +350,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             title_item.set_sensitive(False)
             title_item.show()
             self.tray_menu.append(title_item)
-            from xpra.gtk_common.about import about
+            from xpra.gtk_common.about import about  # pylint: disable=import-outside-toplevel
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
             if server_features.windows:
                 def readonly_toggled(menuitem):
@@ -379,6 +378,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
 
     def make_tray_widget(self):
+        # pylint: disable=import-outside-toplevel
         from xpra.platform.gui import get_native_system_tray_classes
         classes = get_native_system_tray_classes()
         try:
@@ -416,6 +416,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def traymenuitem(self, title, icon_name=None, tooltip=None, cb=None):
         """ Utility method for easily creating an ImageMenuItem """
+        # pylint: disable=import-outside-toplevel
         from xpra.gtk_common.gtk_util import menuitem
         image = None
         if icon_name:

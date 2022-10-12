@@ -52,12 +52,13 @@ class MMAP_Connection(StubSourceMixin):
 
 
     def parse_client_caps(self, c : typedict):
+        # pylint: disable=import-outside-toplevel
         import os
         from xpra.os_util import WIN32
         self.mmap_client_namespace = c.boolget("mmap.namespace", False)
         sep = "." if self.mmap_client_namespace else "_"
         def mmapattr(k):
-            return "mmap%s%s" % (sep, k)
+            return f"mmap{sep}{k}"
         mmap_filename = c.strget(mmapattr("file"))
         if not mmap_filename:
             return
@@ -125,7 +126,7 @@ class MMAP_Connection(StubSourceMixin):
         if self.mmap_client_token:
             sep = "." if self.mmap_client_namespace else "_"
             def mmapattr(name, value):
-                caps["mmap%s%s" % (sep, name)] = value
+                caps[f"mmap{sep}{name}"] = value
             mmapattr("token",       self.mmap_client_token)
             mmapattr("token_index", self.mmap_client_token_index)
             mmapattr("token_bytes", self.mmap_client_token_bytes)

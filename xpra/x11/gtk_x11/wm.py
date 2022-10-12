@@ -486,5 +486,6 @@ class Wm(GObject.GObject):
             return prop_get(self._ewmh_window, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
         except Exception as e:
             log.error("error querying _NET_WM_NAME: %s", e)
+            return None
 
 GObject.type_register(Wm)

@@ -96,7 +96,7 @@ class InputMixin(StubSourceMixin):
 
 
     def is_modifier(self, keyname, keycode) -> bool:
-        if keyname in DEFAULT_MODIFIER_MEANINGS.keys():
+        if keyname in DEFAULT_MODIFIER_MEANINGS:
             return True
         #keyboard config should always exist if we are here?
         kc = self.keyboard_config
