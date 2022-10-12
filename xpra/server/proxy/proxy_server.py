@@ -24,7 +24,7 @@ from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
-from xpra.scripts.parsing import parse_bool
+from xpra.scripts.parsing import parse_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
 from xpra.make_thread import start_thread
@@ -574,7 +574,8 @@ class ProxyServer(ServerCore):
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
         mode = sns.strget("mode", "start")
-        if mode not in ("start", "start-desktop", "shadow"):
+        mode = MODE_ALIAS.get(mode, mode)
+        if mode not in ("seamless", "desktop", "shadow", "monitor", "expand"):
             raise ValueError(f"invalid start-new-session mode {mode!r}")
         display = sns.strget("display")
         if display in displays:
