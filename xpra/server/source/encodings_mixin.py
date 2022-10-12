@@ -43,7 +43,6 @@ class EncodingsMixin(StubSourceMixin):
         self.default_batch_config = batch_config.DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
-        self.supports_transparency = False
         self.encoding = None                        #the default encoding for all windows
         self.encodings = ()                         #all the encodings supported by the client
         self.core_encodings = ()
