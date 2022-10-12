@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -48,7 +48,14 @@ PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", "0.5")
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
 if WIN32:
-    #DEFAULT_ENV_WHITELIST = "ALLUSERSPROFILE,APPDATA,COMMONPROGRAMFILES,COMMONPROGRAMFILES(X86),COMMONPROGRAMW6432,COMPUTERNAME,COMSPEC,FP_NO_HOST_CHECK,LOCALAPPDATA,NUMBER_OF_PROCESSORS,OS,PATH,PATHEXT,PROCESSOR_ARCHITECTURE,PROCESSOR_ARCHITECTURE,PROCESSOR_IDENTIFIER,PROCESSOR_LEVEL,PROCESSOR_REVISION,PROGRAMDATA,PROGRAMFILES,PROGRAMFILES(X86),PROGRAMW6432,PSMODULEPATH,PUBLIC,SYSTEMDRIVE,SYSTEMROOT,TEMP,TMP,USERDOMAIN,WORKGROUP,USERNAME,USERPROFILE,WINDIR,XPRA_REDIRECT_OUTPUT,XPRA_LOG_FILENAME,XPRA_ALL_DEBUG"
+    #DEFAULT_ENV_WHITELIST = "ALLUSERSPROFILE,APPDATA,COMMONPROGRAMFILES,COMMONPROGRAMFILES(X86),"+
+    #                        "COMMONPROGRAMW6432,COMPUTERNAME,COMSPEC,FP_NO_HOST_CHECK,LOCALAPPDATA,"+
+    #                        "NUMBER_OF_PROCESSORS,OS,PATH,PATHEXT,PROCESSOR_ARCHITECTURE,"+
+    #                        "PROCESSOR_ARCHITECTURE,PROCESSOR_IDENTIFIER,PROCESSOR_LEVEL,"+
+    #                        "PROCESSOR_REVISION,PROGRAMDATA,PROGRAMFILES,PROGRAMFILES(X86),"+
+    #                        "PROGRAMW6432,PSMODULEPATH,PUBLIC,SYSTEMDRIVE,SYSTEMROOT,TEMP,TMP,"+
+    #                        "USERDOMAIN,WORKGROUP,USERNAME,USERPROFILE,WINDIR,"+
+    #                        "XPRA_REDIRECT_OUTPUT,XPRA_LOG_FILENAME,XPRA_ALL_DEBUG"
     DEFAULT_ENV_WHITELIST = "*"
 else:
     DEFAULT_ENV_WHITELIST = "LANG,HOSTNAME,PWD,TERM,SHELL,SHLVL,PATH,USER,HOME"
@@ -154,13 +161,13 @@ class ProxyServer(ServerCore):
 
 
     def install_signal_handlers(self, callback):
-        from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
+        from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
 
 
     def make_dbus_server(self):
-        from xpra.server.proxy.proxy_dbus_server import Proxy_DBUS_Server
+        from xpra.server.proxy.proxy_dbus_server import Proxy_DBUS_Server  # pylint: disable=import-outside-toplevel
         return Proxy_DBUS_Server(self)
 
 
@@ -200,8 +207,8 @@ class ProxyServer(ServerCore):
                 log.info("stop command: found matching process %s with pid %i for display %s",
                          instance, instance.pid, display)
                 self.stop_proxy(instance)
-                return "stopped proxy instance for display %s" % display
-        raise ControlError("no proxy found for display %s" % display)
+                return f"stopped proxy instance for display {display}"
+        raise ControlError(f"no proxy found for display {display}")
 
     def stop_all_proxies(self, force=False):
         instances = self.instances
@@ -250,14 +257,14 @@ class ProxyServer(ServerCore):
         if live:
             self.stop_all_proxies(True)
         log("cleanup() frames remaining:")
-        from xpra.util import dump_all_frames
+        from xpra.util import dump_all_frames  # pylint: disable=import-outside-toplevel
         dump_all_frames(log)
 
 
     def do_quit(self):
         self.main_loop.quit()
         #from now on, we can't rely on the main loop:
-        from xpra.os_util import register_SIGUSR_signals
+        from xpra.os_util import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals()
 
     def log_closing_message(self):
@@ -280,7 +287,7 @@ class ProxyServer(ServerCore):
             return generic_request==mode or c.boolget("%s_request" % mode)
         for x in ("screenshot", "event", "print", "exit"):
             if is_req(x):
-                self.send_disconnect(proto, "error: invalid request, '%s' is not supported by the proxy server" % x)
+                self.send_disconnect(proto, f"error: invalid request, {x!r} is not supported by the proxy server")
                 return
         if is_req("stop"):
             #global kill switch:
@@ -419,12 +426,12 @@ class ProxyServer(ServerCore):
                     if f":{display}" in displays:
                         display = f":{display}"
                     else:
-                        disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
+                        disconnect(SESSION_NOT_FOUND, f"display {display!r} not found")
                         return
             else:
                 if len(displays)!=1:
                     disconnect(SESSION_NOT_FOUND,
-                               "please specify a display, more than one is available: %s" % csv(displays))
+                               "please specify a display, more than one is available: " + csv(displays))
                     return
                 display = displays[0]
 
@@ -456,7 +463,7 @@ class ProxyServer(ServerCore):
             log.warn("Error: parsing failed for display string '%s':", display)
             for arg in args:
                 log.warn(" %s", arg)
-            raise Exception("parse error on %s: %s" % (display, args))
+            raise ValueError(f"parse error on {display!r} {args}")
         opts = make_defaults_struct(username=username, uid=uid, gid=gid)
         opts.username = username
         disp_desc = parse_display_name(parse_error, opts, display)
@@ -483,7 +490,7 @@ class ProxyServer(ServerCore):
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:
-                from xpra.net.crypto import DEFAULT_MODE
+                from xpra.net.crypto import DEFAULT_MODE  # pylint: disable=import-outside-toplevel
                 cipher_mode = auth_caps.get("cipher.mode", DEFAULT_MODE)
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
 
@@ -551,7 +558,7 @@ class ProxyServer(ServerCore):
                 log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
                 log.estr(e)
-                message_queue.put("error: %s" % e)
+                message_queue.put(f"error: {e}")
                 message_queue.put("stop")
             finally:
                 #now we can close our handle on the connection:
@@ -626,7 +633,7 @@ class ProxyServer(ServerCore):
         proc, socket_path, display = start_server_subprocess(sys.argv[0], args,
                                                              mode, opts, username, uid, gid, env, cwd)
         if proc:
-            self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
+            self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), f"xpra {mode}", True, True)
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
 
