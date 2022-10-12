@@ -135,24 +135,28 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         gl_icon = get_icon_filename("opengl", ext="png")
         icon_data = None
         if os.path.exists(gl_icon):
-            from PIL import Image  # @UnresolvedImport
-            img = Image.open(gl_icon)
-            img.load()
-            icon_w, icon_h = img.size
-            icon_stride = icon_w * 4
-            noalpha = Image.new("RGB", img.size, (255, 255, 255))
-            noalpha.paste(img, mask=img.split()[3]) # 3 is the alpha channel
-            buf = BytesIO()
             try:
-                noalpha.save(buf, format="JPEG")
-                icon_data = buf.getvalue()
-                buf.close()
-                icon_format = "jpeg"
-            except KeyError as e:
-                log("save()", exc_info=True)
-                log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
-                icon_data = load_binary_file(gl_icon)
-                icon_format = "png"
+                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            except ImportError as e:
+                log(f"testing without icon: {e}")
+            else:
+                img = Image.open(gl_icon)
+                img.load()
+                icon_w, icon_h = img.size
+                icon_stride = icon_w * 4
+                noalpha = Image.new("RGB", img.size, (255, 255, 255))
+                noalpha.paste(img, mask=img.split()[3]) # 3 is the alpha channel
+                buf = BytesIO()
+                try:
+                    noalpha.save(buf, format="JPEG")
+                    icon_data = buf.getvalue()
+                    buf.close()
+                    icon_format = "jpeg"
+                except KeyError as e:
+                    log("save()", exc_info=True)
+                    log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
+                    icon_data = load_binary_file(gl_icon)
+                    icon_format = "png"
         if not icon_data:
             icon_w = 32
             icon_h = 32

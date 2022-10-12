@@ -109,7 +109,7 @@ class ServerCommandsWindow:
                     from xpra.client import mixin_features
                     if mixin_features.windows:
                         windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
-                        log("windows matching pid=%i: %s", pid, windows)
+                        log(f"windows matching pid={pid}: {windows}")
                     icon = Gtk.Label()
                     if windows:
                         try:
@@ -117,7 +117,7 @@ class ServerCommandsWindow:
                             icons = tuple(x for x in icons if x is not None)
                             log("icons: %s", icons)
                             if icons:
-                                from PIL import Image  # @UnresolvedImport
+                                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
                                 img = icons[0].resize((24, 24), Image.ANTIALIAS)
                                 has_alpha = img.mode=="RGBA"
                                 width, height = img.size
@@ -127,7 +127,7 @@ class ServerCommandsWindow:
                                 icon.set_from_pixbuf(pixbuf)
                         except Exception:
                             log("failed to get window icon", exc_info=True)
-                    items = [icon, Gtk.Label("%s" % pid), Gtk.Label(cmd_str), Gtk.Label(rstr)]
+                    items = [icon, Gtk.Label(f"{pid}"), Gtk.Label(cmd_str), Gtk.Label(rstr)]
                     if self.client.server_commands_signals:
                         if returncode is None:
                             items.append(self.signal_button(pid))
