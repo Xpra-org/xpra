@@ -211,6 +211,7 @@ def configure_logging(options, mode):
         "request-start", "request-start-desktop", "request-shadow",
         "_dialog", "_pass",
         "pinentry",
+        "example",
         ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             server_mode = mode not in ("attach", "listen")
@@ -603,6 +604,9 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode=="opengl-test":
         check_gtk()
         return run_glprobe(options, True)
+    elif mode=="example":
+        check_gtk()
+        return run_example(args)
     elif mode=="autostart":
         return run_autostart(script_file, args)
     elif mode=="encoding":
@@ -2147,6 +2151,34 @@ def no_gtk():
         return
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
+
+def run_example(args):
+    all_examples = (
+        "bell", "clicks",
+        "colors-gradient", "colors-plain", "colors",
+        "cursors",
+        "file-chooser",
+        "fontrendering",
+        "grabs",
+        "header-bar",
+        "initiate-moveresize",
+        "text-entry",
+        "transparent-colors",
+        "transparent-window",
+        "tray",
+        "window-focus", "window-geometry-hints",
+        "window-opacity", "window-overrideredirect",
+        "window-states", "window-title",
+        "window-transient",
+        )
+    if not args or args[0] not in all_examples:
+        raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
+    classname = args[0].replace("-", "_")
+    try:
+        ic =  __import__(f"xpra.client.gtk_base.example.{classname}", {}, {}, "main")
+    except ImportError as e:
+        raise InitException(f"failed to import example {classname}: {e}") from None
+    return ic.main()
 
 def run_autostart(script_file, args):
     def err(msg):

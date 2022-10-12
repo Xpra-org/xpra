@@ -793,6 +793,7 @@ def get_usage():
                         "html5",
                         "autostart",
                         "encoding",
+                        "example",
                         "path-info",
                       ]
     try:
