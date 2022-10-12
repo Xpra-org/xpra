@@ -53,10 +53,10 @@ class CairoBacking(CairoBackingBase):
                       x : int, y : int, width : int, height : int, render_width : int, render_height : int,
                       rowstride : int, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s, %s) set_image_surface_data=%s, use pixbuf=%s",
-            FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
+        log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
+            (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
             type(img_data), x, y, width, height, render_width, render_height,
-            rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
+            rowstride, options), set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget("rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
             rgb_formats = CAIRO_FORMATS.get(cairo_format)
@@ -66,7 +66,7 @@ class CairoBacking(CairoBackingBase):
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
                 return True
             log("cannot set image surface data for cairo format %s and rgb_format %s (rgb formats supported: %s)",
-                cairo_format, rgb_format, rgb_formats)
+                FORMATS.get(cairo_format, cairo_format), rgb_format, rgb_formats)
 
         if rgb_format in ("RGB", "RGBA", "RGBX"):
             data = GLib.Bytes(img_data)
