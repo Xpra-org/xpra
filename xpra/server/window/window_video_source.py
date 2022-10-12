@@ -733,7 +733,7 @@ class WindowVideoSource(WindowSource):
             return
 
         if coding not in ("auto", "grayscale") and coding not in self.video_encodings:
-            sublog("not a video encoding: %s" % coding)
+            sublog("not a video encoding: %s", coding)
             #keep current encoding selection function
             send_nonvideo(get_best_encoding=self.get_best_encoding)
             return
@@ -857,7 +857,8 @@ class WindowVideoSource(WindowSource):
             This runs in the UI thread.
         """
         log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
-        assert coding is not None
+        if not coding:
+            raise RuntimeError("no encoding specified")
         rgb_request_time = monotonic()
         image = self.get_damage_image(x, y, w, h)
         if image is None:
@@ -1669,7 +1670,8 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        assert width>0 and height>0, "invalid dimensions: %sx%s" % (width, height)
+        if width<=0 or height<=0:
+            raise RuntimeError(f"invalid dimensions: {width}x{height}")
         start = monotonic()
         if not scores:
             if not self.is_cancelled():
@@ -1984,8 +1986,11 @@ class WindowVideoSource(WindowSource):
             if scroll==0:
                 continue
             for line, count in line_defs.items():
-                assert y+line+scroll>=0, "cannot scroll rectangle by %i lines from %i+%i" % (scroll, y, line)
-                assert y+line+scroll<=wh, "cannot scroll rectangle %i high by %i lines from %i+%i (window height is %i)" % (count, scroll, y, line, wh)
+                if y+line+scroll<0:
+                    raise RuntimeError(f"cannot scroll rectangle by {scroll} lines from {y}+{line}")
+                if y+line+scroll>wh:
+                    raise RuntimeError(f"cannot scroll rectangle {count} high "+
+                                       f"by {scroll} lines from {y}+{line} (window height is {wh})")
                 scrolls.append((x, y+line, w, count, 0, scroll))
         del raw_scroll
         #send the scrolls if we have any
@@ -2018,7 +2023,8 @@ class WindowVideoSource(WindowSource):
                 substart = monotonic()
                 sub = image.get_sub_image(0, sy, w, sh)
                 encoding = self.get_best_nonvideo_encoding(w, sh, options)
-                assert encoding, "no nonvideo encoding found for %ix%i screen update" % (w, sh)
+                if not encoding:
+                    raise RuntimeError(f"no nonvideo encoding found for {w}x{sh} screen update")
                 encode_fn = self._encoders[encoding]
                 ret = encode_fn(encoding, sub, options)
                 self.free_image_wrapper(sub)
@@ -2027,7 +2033,8 @@ class WindowVideoSource(WindowSource):
                     #cancelled?
                     return None
                 coding, data, client_options, outw, outh, outstride, _ = ret
-                assert data
+                if not data:
+                    raise RuntimeError(f"no data from {encoding} function {encode_fn}")
                 flush -= 1
                 if flush>0:
                     client_options["flush"] = flush
@@ -2053,7 +2060,8 @@ class WindowVideoSource(WindowSource):
                       encoding, self._current_quality, self._current_speed, (monotonic()-nsstart)*1000, len(non_scroll))
         else:
             scrolllog("no non_scroll areas")
-        assert flush==0, "flush counter mismatch: %s" % flush
+        if flush!=0:
+            raise RuntimeError(f"flush counter mismatch: {flush}")
         self.last_scroll_time = monotonic()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         self.free_image_wrapper(image)
@@ -2419,6 +2427,7 @@ class WindowVideoSource(WindowSource):
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
         if not csc_image:
-            raise Exception("csc_image: conversion of %s to %s failed" % (image, csce.get_dst_format()))
-        assert csce.get_dst_format()==csc_image.get_pixel_format()
+            raise RuntimeError(f"csc_image: conversion of {image} to {csce.get_dst_format()} failed")
+        if csce.get_dst_format()!=csc_image.get_pixel_format():
+            raise RuntimeError(f"expected image pixel format {csce.get_dst_format()} but got {csc_image.get_pixel_format()}")
         return csce, csc_image, csce.get_dst_format(), csce.get_dst_width(), csce.get_dst_height()

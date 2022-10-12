@@ -1913,7 +1913,8 @@ class WindowSource(WindowIconSource):
             actual_encoding = get_encoding(ww, wh)
             log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s",
                 ww, wh, actual_encoding, cause, get_best_encoding)
-            assert actual_encoding is not None
+            if not actual_encoding:
+                raise RuntimeError(f"no encoding for {ww}x{wh} full screen update")
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
@@ -2622,7 +2623,8 @@ class WindowSource(WindowIconSource):
         y = image.get_target_y()
         w = image.get_width()
         h = image.get_height()
-        assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
+        if w<=0 or h<=0:
+            raise RuntimeError(f"invalid dimensions: {w}x{h}")
 
         #more useful is the actual number of bytes (assuming 32bpp)
         #since we generally don't send the padding with it:
@@ -2687,9 +2689,11 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options, options):
-        assert isinstance(coding, str), "invalid type for encoding: %r (%s)" % (coding, type(coding))
+        if not isinstance(coding, str):
+            raise RuntimeError(f"invalid type for encoding: {coding} ({type(coding)})")
         for v in (x, y, outw, outh, outstride):
-            assert isinstance(v, int), "expected int, found %r (%s)" % (v, type(v))
+            if not isinstance(v, int):
+                raise RuntimeError(f"expected int, found {v} ({type(v)})")
         if self.send_window_size:
             ws = options.get("window-size")
             if ws:
@@ -2722,7 +2726,8 @@ class WindowSource(WindowIconSource):
             pf = image.get_pixel_format()
         #write to mmap area:
         data = image.get_pixels()
-        assert data, "failed to get pixels from %s" % image
+        if not data:
+            raise RuntimeError(f"failed to get pixels from {image}")
         mmap_data, mmap_free_size = self.mmap_write(self._mmap, self._mmap_size, data)
         #elapsed = monotonic()-start+0.000000001 #make sure never zero!
         #log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
