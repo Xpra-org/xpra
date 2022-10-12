@@ -168,9 +168,17 @@ class WindowBackingBase:
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
 
+    def get_rgb_formats(self):
+        if self._alpha_enabled:
+            return self.RGB_MODES
+        #remove modes with alpha:
+        return list(filter(lambda mode : mode.find("A")<0,
+                            ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]))
+
+
     def get_info(self):
         info = {
-            "rgb-formats"   : self.RGB_MODES,
+            "rgb-formats"   : self.get_rgb_formats(),
             "transparency"  : self._alpha_enabled,
             "mmap"          : bool(self.mmap_enabled),
             "size"          : self.size,
@@ -427,9 +435,9 @@ class WindowBackingBase:
 
     def get_encoding_properties(self):
         return {
-                 "encodings.rgb_formats"    : self.RGB_MODES,
+                 "encodings.rgb_formats"    : self.get_rgb_formats(),
                  "encoding.transparency"    : self._alpha_enabled,
-                 "encoding.full_csc_modes"  : self._get_full_csc_modes(self.RGB_MODES),
+                 "encoding.full_csc_modes"  : self._get_full_csc_modes(self.get_rgb_formats()),
                  "encoding.send-window-size" : True,
                  "encoding.render-size"     : self.render_size,
                  }
@@ -518,19 +526,20 @@ class WindowBackingBase:
             buffer_wrapper,
             iwidth, iheight, stride, has_alpha,
             rgb_format,
-            ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.RGB_MODES)
+            ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.get_rgb_formats())
         def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
         #if the backing can't handle this format,
         #ie: tray only supports RGBA
-        if rgb_format not in self.RGB_MODES:
+        if rgb_format not in self.get_rgb_formats():
+            # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
             from xpra.codecs.image_wrapper import ImageWrapper
             img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
                                len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
-            rgb_reformat(img, self.RGB_MODES, has_alpha and self._alpha_enabled)
+            rgb_reformat(img, self.get_rgb_formats(), has_alpha and self._alpha_enabled)
             rgb_format = img.get_pixel_format()
             data = img.get_pixels()
             stride = img.get_rowstride()
@@ -754,7 +763,7 @@ class WindowBackingBase:
             self.close_decoder(True)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        target_rgb_formats = self.RGB_MODES
+        target_rgb_formats = self.get_rgb_formats()
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
