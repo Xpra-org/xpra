@@ -80,7 +80,7 @@ class CairoBackingBase(WindowBackingBase):
         info = super().get_info()
         info.update({
             "type"  : "Cairo",
-            "rgb-formats" : self.RGB_MODES,
+            "rgb-formats" : self.get_rgb_formats(),
             })
         return info
 

@@ -215,7 +215,7 @@ class TrayBacking(WindowBackingBase):
     def get_encoding_properties(self):
         #override so we skip all csc caps:
         return {
-            "encodings.rgb_formats" : self.RGB_MODES,
+            "encodings.rgb_formats" : self.get_rgb_formats(),
             "encoding.transparency" : True,
             }
 
