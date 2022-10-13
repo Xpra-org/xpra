@@ -261,77 +261,78 @@ else:
 
 net_sys_config = None
 def get_net_sys_config():
+    if not sys.platform.startswith("linux"):
+        return {}
     global net_sys_config
     if net_sys_config is None:
         net_sys_config = {}
-        if sys.platform.startswith("linux"):
-            def stripnl(v):
-                return str(v).rstrip("\r").rstrip("\n")
-            def addproc(procpath, subsystem, name, conv=stripnl):
-                assert name
-                try:
-                    with open(procpath, mode="r", encoding="latin1") as f:
-                        data = f.read()
-                        subdict = net_sys_config.setdefault(subsystem, {})
-                        if name.find("/")>0:
-                            sub, name = name.split("/", 1)
+        def stripnl(v):
+            return str(v).rstrip("\r").rstrip("\n")
+        def addproc(procpath, subsystem, name, conv=stripnl):
+            assert name
+            try:
+                with open(procpath, mode="r", encoding="latin1") as f:
+                    data = f.read()
+                    subdict = net_sys_config.setdefault(subsystem, {})
+                    if name.find("/")>0:
+                        sub, name = name.split("/", 1)
+                        subdict = subdict.setdefault(sub, {})
+                    for sub in ("ip", "tcp", "ipfrag", "icmp", "igmp"):
+                        if name.startswith(f"{sub}_"):
+                            name = name[len(sub)+1:]
                             subdict = subdict.setdefault(sub, {})
-                        for sub in ("ip", "tcp", "ipfrag", "icmp", "igmp"):
-                            if name.startswith(f"{sub}_"):
-                                name = name[len(sub)+1:]
-                                subdict = subdict.setdefault(sub, {})
-                                break
-                        subdict[name] = conv(data)
-                except Exception as e:
-                    log("cannot read '%s': %s", procpath, e)
-            for k in ("netdev_max_backlog", "optmem_max",
-                      "rmem_default", "rmem_max", "wmem_default", "wmem_max", "max_skb_frags",
-                      "busy_poll", "busy_read", "somaxconn",
-                      ):
-                addproc(f"/proc/sys/net/core/{k}",  "core", k, int)
-            for k in ("default_qdisc", ):
-                addproc(f"/proc/sys/net/core/{k}",  "core", k)
-            for k in ("max_dgram_qlen", ):
-                addproc(f"/proc/sys/net/unix/{k}",  "unix", k, int)
-            for k in (
-                "ip_forward", "ip_forward_use_pmtu",
-                "tcp_abort_on_overflow", "fwmark_reflect", "tcp_autocorking", "tcp_dsack",
-                "tcp_ecn_fallback", "tcp_fack",
-                #"tcp_l3mdev_accept",
-                "tcp_low_latency", "tcp_no_metrics_save", "tcp_recovery", "tcp_retrans_collapse", "tcp_timestamps",
-                "tcp_workaround_signed_windows", "tcp_thin_linear_timeouts", "tcp_thin_dupack", "ip_nonlocal_bind",
-                "ip_dynaddr", "ip_early_demux", "icmp_echo_ignore_all", "icmp_echo_ignore_broadcasts",
-                ):
-                addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, bool)
-            for k in (
-                "tcp_allowed_congestion_control", "tcp_available_congestion_control",
-                "tcp_congestion_control", "tcp_early_retrans",
-                "tcp_moderate_rcvbuf", "tcp_rfc1337", "tcp_sack", "tcp_slow_start_after_idle", "tcp_stdurg",
-                "tcp_syncookies", "tcp_tw_recycle", "tcp_tw_reuse", "tcp_window_scaling",
-                "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
-                ):
-                addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k)
-            def parsenums(v):
-                return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
-            for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
-                addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, parsenums)
-            for k in (
-                "ip_default_ttl", "ip_no_pmtu_disc", "route/min_pmtu",
-                "route/mtu_expires", "route/min_adv_mss",
-                "ipfrag_high_thresh", "ipfrag_low_thresh", "ipfrag_time", "ipfrag_max_dist",
-                "tcp_adv_win_scale", "tcp_app_win", "tcp_base_mss", "tcp_ecn", "tcp_fin_timeout", "tcp_frto",
-                "tcp_invalid_ratelimit", "tcp_keepalive_time", "tcp_keepalive_probes", "tcp_keepalive_intvl",
-                "tcp_max_orphans", "tcp_max_syn_backlog", "tcp_max_tw_buckets",
-                "tcp_min_rtt_wlen", "tcp_mtu_probing", "tcp_probe_interval",
-                "tcp_probe_threshold", "tcp_orphan_retries",
-                "tcp_reordering", "tcp_max_reordering", "tcp_retries1", "tcp_retries2", "tcp_synack_retries",
-                "tcp_fastopen", "tcp_syn_retries", "tcp_min_tso_segs", "tcp_pacing_ss_ratio",
-                "tcp_pacing_ca_ratio", "tcp_tso_win_divisor", "tcp_notsent_lowat",
-                "tcp_limit_output_bytes", "tcp_challenge_ack_limit",
-                "icmp_ratelimit", "icmp_msgs_per_sec", "icmp_msgs_burst", "icmp_ratemask",
-                "igmp_max_memberships", "igmp_max_msf", "igmp_qrv",
-                ):
-                addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, int)
+                            break
+                    subdict[name] = conv(data)
+            except Exception as e:
+                log("cannot read '%s': %s", procpath, e)
+        for k in ("netdev_max_backlog", "optmem_max",
+                  "rmem_default", "rmem_max", "wmem_default", "wmem_max", "max_skb_frags",
+                  "busy_poll", "busy_read", "somaxconn",
+                  ):
+            addproc(f"/proc/sys/net/core/{k}",  "core", k, int)
+        for k in ("default_qdisc", ):
+            addproc(f"/proc/sys/net/core/{k}",  "core", k)
+        for k in ("max_dgram_qlen", ):
+            addproc(f"/proc/sys/net/unix/{k}",  "unix", k, int)
+        for k in (
+            "ip_forward", "ip_forward_use_pmtu",
+            "tcp_abort_on_overflow", "fwmark_reflect", "tcp_autocorking", "tcp_dsack",
+            "tcp_ecn_fallback", "tcp_fack",
+            #"tcp_l3mdev_accept",
+            "tcp_low_latency", "tcp_no_metrics_save", "tcp_recovery", "tcp_retrans_collapse", "tcp_timestamps",
+            "tcp_workaround_signed_windows", "tcp_thin_linear_timeouts", "tcp_thin_dupack", "ip_nonlocal_bind",
+            "ip_dynaddr", "ip_early_demux", "icmp_echo_ignore_all", "icmp_echo_ignore_broadcasts",
+            ):
+            addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, bool)
+        for k in (
+            "tcp_allowed_congestion_control", "tcp_available_congestion_control",
+            "tcp_congestion_control", "tcp_early_retrans",
+            "tcp_moderate_rcvbuf", "tcp_rfc1337", "tcp_sack", "tcp_slow_start_after_idle", "tcp_stdurg",
+            "tcp_syncookies", "tcp_tw_recycle", "tcp_tw_reuse", "tcp_window_scaling",
+            "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
+            ):
+            addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k)
+        def parsenums(v):
+            return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
+        for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
+            addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, parsenums)
+        for k in (
+            "ip_default_ttl", "ip_no_pmtu_disc", "route/min_pmtu",
+            "route/mtu_expires", "route/min_adv_mss",
+            "ipfrag_high_thresh", "ipfrag_low_thresh", "ipfrag_time", "ipfrag_max_dist",
+            "tcp_adv_win_scale", "tcp_app_win", "tcp_base_mss", "tcp_ecn", "tcp_fin_timeout", "tcp_frto",
+            "tcp_invalid_ratelimit", "tcp_keepalive_time", "tcp_keepalive_probes", "tcp_keepalive_intvl",
+            "tcp_max_orphans", "tcp_max_syn_backlog", "tcp_max_tw_buckets",
+            "tcp_min_rtt_wlen", "tcp_mtu_probing", "tcp_probe_interval",
+            "tcp_probe_threshold", "tcp_orphan_retries",
+            "tcp_reordering", "tcp_max_reordering", "tcp_retries1", "tcp_retries2", "tcp_synack_retries",
+            "tcp_fastopen", "tcp_syn_retries", "tcp_min_tso_segs", "tcp_pacing_ss_ratio",
+            "tcp_pacing_ca_ratio", "tcp_tso_win_divisor", "tcp_notsent_lowat",
+            "tcp_limit_output_bytes", "tcp_challenge_ack_limit",
+            "icmp_ratelimit", "icmp_msgs_per_sec", "icmp_msgs_burst", "icmp_ratemask",
+            "igmp_max_memberships", "igmp_max_msf", "igmp_qrv",
+            ):
+            addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, int)
     return net_sys_config
 
 def get_net_config() -> dict:
