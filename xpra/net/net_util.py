@@ -23,7 +23,7 @@ def import_netifaces() -> object:
     global _netifaces, netifaces_version
     if _netifaces is None:
         try:
-            import netifaces                #@UnresolvedImport
+            import netifaces                #@UnresolvedImport pylint: disable=import-outside-toplevel
             log("netifaces loaded sucessfully")
             _netifaces = netifaces
             netifaces_version = netifaces.version        #@UndefinedVariable
@@ -151,8 +151,9 @@ def do_get_bind_ifacemask(iface):
                         ipmasks.append((addr, mask))
                     except Exception as e:
                         log(f"do_get_bind_ifacemask({iface})", exc_info=True)
-                        log.error(f"Error converting address {addr!r} with mask {mask!r} to binary for interface {iface}")
-                        log.error(f" {e}")
+                        log.error(f"Error converting address {addr!r} with mask {mask!r} to binary")
+                        log.error(f" for interface {iface}:")
+                        log.estr(e)
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
@@ -339,7 +340,7 @@ def get_net_sys_config():
 def get_net_config() -> dict:
     config = {}
     try:
-        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
+        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
         config = {
                 "vsocket.timeout"    : VSOCK_TIMEOUT,
                 "socket.timeout"     : SOCKET_TIMEOUT,
@@ -353,7 +354,7 @@ def get_net_config() -> dict:
 
 def get_ssl_info(show_constants=False) -> dict:
     try:
-        import ssl
+        import ssl  # pylint: disable=import-outside-toplevel
     except ImportError as e:    # pragma: no cover
         log("no ssl: %s", e)
         return {}
@@ -382,7 +383,7 @@ def get_ssl_info(show_constants=False) -> dict:
                     "_INFO"      : ("version-info", str),
                     "_NUMBER"    : ("version-number", int),
                     }.items():
-        v = getattr(ssl, "OPENSSL_VERSION%s" % k, None)
+        v = getattr(ssl, f"OPENSSL_VERSION{k}", None)
         if v is not None:
             name, conv = idef
             info.setdefault("openssl", {})[name] = conv(v)
@@ -390,6 +391,7 @@ def get_ssl_info(show_constants=False) -> dict:
 
 
 def get_network_caps(full=True) -> dict:
+    # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.crypto import get_crypto_caps
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -434,6 +436,7 @@ def get_info() -> dict:
 
 
 def main(): # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.os_util import POSIX
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
@@ -453,7 +456,7 @@ def main(): # pragma: no cover
             if if_nametoindex:
                 print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
             else:
-                print("* %s" % iface)
+                print(f"* {iface}")
             addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
@@ -478,7 +481,7 @@ def main(): # pragma: no cover
             if not POSIX:
                 info = get_interface_info(0, iface)
                 if info:
-                    print("  %s" % info)
+                    print(f"  {info}")
 
         from xpra.os_util import bytestostr
         def pver(v):
@@ -503,10 +506,10 @@ def main(): # pragma: no cover
 
         print("Gateways found:")
         for gt,idefs in get_gateways().items():
-            print("* %s" % gt)      #ie: "INET"
+            print(f"* {gt}")      #ie: "INET"
             for i, idef in enumerate(idefs):
                 if isinstance(idef, (list, tuple)):
-                    print(" [%i]           %s" % (i, csv(idef)))
+                    print(f" [{i}]           "+csv(idef))
                     continue
 
         print("")
@@ -546,7 +549,7 @@ def main(): # pragma: no cover
                 print_nested_dict(ccaps)
         except Exception as e:
             print("No Crypto:")
-            print(" %s" % e)
+            print(f" {e}")
     return 0
 
 
