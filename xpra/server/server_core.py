@@ -2310,7 +2310,7 @@ class ServerCore:
             si = self.get_server_info()
             si.update(self.get_server_load_info())
             si.update(self.get_server_exec_info())
-            if SYSCONFIG:
+            if SYSCONFIG and FULL_INFO>1:
                 si["sysconfig"] = get_sysconfig_info()
         else:
             si = self.get_minimal_server_info()
