@@ -161,7 +161,7 @@ class WindowVideoSource(WindowSource):
             self.add_encoder("scroll", self.scroll_encode)
 
     def __repr__(self):
-        return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)
+        return f"WindowVideoSource({self.wid} : {self.window_dimensions})"
 
     def init_vars(self):
         super().init_vars()
@@ -402,7 +402,7 @@ class WindowVideoSource(WindowSource):
                 msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
                 if x=="jpega" and not self.supports_transparency:
                     log(f"skipping {x} since client does not support transparency")
-                elif not init and first_time("no-csc-%s-%i" % (x, self.wid)):
+                elif not init and first_time(f"no-csc-{x}-{self.wid}"):
                     log.warn(*msg_args)
                 else:
                     log(*msg_args)
@@ -489,7 +489,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="low pixel count")
 
         if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
-            return nonvideo(info="%s not a supported video encoding" % current_encoding)
+            return nonvideo(info=f"{current_encoding} not a supported video encoding")
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
             return nonvideo(info="window is too small")
@@ -1300,7 +1300,7 @@ class WindowVideoSource(WindowSource):
                 encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-PREFERRED_ENCODING_ORDER.index(encoding)
             except ValueError:
                 encoding_score_delta = 0
-            encoding_score_delta = self.encoding_options.get("%s.score-delta" % encoding, encoding_score_delta)
+            encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
             def add_scores(info, csc_spec, enc_in_format):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
@@ -1348,7 +1348,7 @@ class WindowVideoSource(WindowSource):
                 for out_csc, l in csc_specs.items():
                     if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
                         for csc_spec in l:
-                            add_scores("via %s" % out_csc, csc_spec, out_csc)
+                            add_scores(f"via {out_csc}", csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         if self.is_cancelled():
@@ -1416,7 +1416,7 @@ class WindowVideoSource(WindowSource):
                     continue
                 if width*num/den<=mw and height*num/den<=mh:
                     return (num, den)
-            raise Exception("BUG: failed to find a scaling value for window size %sx%s" % (width, height))
+            raise Exception(f"BUG: failed to find a scaling value for window size {width}x{height}")
         if not SCALING:
             if (width>max_w or height>max_h) and first_time("scaling-required"):
                 if not SCALING:
@@ -2102,9 +2102,9 @@ class WindowVideoSource(WindowSource):
 
 
     def video_fallback(self, image, options, warn=False):
-        if warn and first_time("non-video-%i" % self.wid):
+        if warn and first_time(f"non-video-{self.wid}"):
             videolog.warn("Warning: using non-video fallback encoding")
-            videolog.warn(" for %s of window %s" % (image, self.wid))
+            videolog.warn(f" for {image} of window {self.wid}")
         w = image.get_width()
         h = image.get_height()
         encoding = self.do_get_auto_encoding(w, h, options, None, self.non_video_encodings)

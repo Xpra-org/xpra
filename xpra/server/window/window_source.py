@@ -84,7 +84,7 @@ HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 INFINITY = float("inf")
 def get_env_encodings(etype, valid_options=()):
-    v = os.environ.get("XPRA_%s_ENCODINGS" % etype)
+    v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
     encodings = valid_options
     if v:
         options = v.split(",")
@@ -357,7 +357,7 @@ class WindowSource(WindowIconSource):
         self._damage_cancelled = 0
 
     def __repr__(self):
-        return "WindowSource(%s : %s)" % (self.wid, self.window_dimensions)
+        return f"WindowSource({self.wid} : {self.window_dimensions})"
 
 
     def add_encoder(self, encoding, encoder):
@@ -1501,7 +1501,7 @@ class WindowSource(WindowIconSource):
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
         if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
-            if first_time("window-oversize-%i" % self.wid):
+            if first_time(f"window-oversize-{self.wid}"):
                 damagelog("")
                 damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
                 damagelog.warn(" window updates will be dropped until this is corrected")
@@ -1680,8 +1680,9 @@ class WindowSource(WindowIconSource):
                 if celapsed<10:
                     late_pct = 2*100*self.soft_expired
                     delay = now-due
-                    self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (
-                        delay, self.soft_expired, self.max_soft_expired), late_pct)
+                    self.networksend_congestion_event(f"soft-expire limit: {delay}ms,"+
+                                                      f" {self.soft_expired}/{self.max_soft_expired}",
+                                                      late_pct)
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
@@ -1924,11 +1925,11 @@ class WindowSource(WindowIconSource):
 
             if len(regions)>self.max_small_regions:
                 #too many regions!
-                send_full_window_update("too many regions: %i" % len(regions))
+                send_full_window_update(f"too many regions: {len(regions)}")
                 return
             if ww*wh<=MIN_WINDOW_REGION_SIZE:
                 #size is too small to bother with regions:
-                send_full_window_update("small window: %ix%i" % (ww, wh))
+                send_full_window_update(f"small window: {ww}x{wh}")
                 return
             regions = tuple(set(regions))
         else:
@@ -1945,7 +1946,7 @@ class WindowSource(WindowIconSource):
             log("send_delayed_regions: packet_cost=%s, merge_threshold=%s, pixel_count=%s",
                 packet_cost, merge_threshold, pixel_count)
             if packet_cost>=merge_threshold and exclude_region is None:
-                send_full_window_update("bytes cost (%i) too high (max %i)" % (packet_cost, merge_threshold))
+                send_full_window_update(f"bytes cost ({packet_cost}) too high (max {merge_threshold})")
                 return
             #try to merge all the regions to see if we save anything:
             merged = merge_all(regions)
@@ -2025,13 +2026,13 @@ class WindowSource(WindowIconSource):
             return nodata("the window %s is not managed", self.window)
         ww, wh = self.may_update_window_dimensions()
         if x+w<0 or y+h<0:
-            return nodata("dropped, window is offscreen at %i,%i" % (x, y))
+            return nodata(f"dropped, window is offscreen at {x},{y}")
         if x+w>ww or y+h>wh:
             #window is now smaller than the region we're trying to request
             w = ww-x
             h = wh-y
         if w<=0 or h<=0:
-            return nodata("dropped, invalid dimensions %ix%i" % (w, h))
+            return nodata(f"dropped, invalid dimensions {w},{h}")
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
@@ -2230,7 +2231,7 @@ class WindowSource(WindowIconSource):
                 )
             self.refresh_target_time = now + sched_delay/1000.0
             self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
-            return rec("scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay))
+            return rec(f"scheduling refresh in {sched_delay}ms (pct={pct}, batch={self.batch_config.delay})")
         #some of those rectangles may overlap,
         #so the value may be greater than the size of the window:
         due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
@@ -2253,7 +2254,7 @@ class WindowSource(WindowIconSource):
         added_ms = int(1000*(self.refresh_target_time-target_time))
         due_ms = int(1000*(self.refresh_target_time-now))
         if self.refresh_target_time==target_time:
-            return rec("unchanged refresh: due in %ims, pct=%i" % (due_ms, pct))
+            return rec(f"unchanged refresh: due in {due_ms}ms, pct={pct}")
         rec("re-scheduling refresh: due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (
             due_ms, added_ms, sched_delay, pct, self.batch_config.delay))
 
@@ -2568,7 +2569,7 @@ class WindowSource(WindowIconSource):
         def s(v):
             return decode_str(v or b"")
         if emsg:
-            emsg = (" %s" % s(emsg)).replace("\n", "").replace("\r", "")
+            emsg = " "+s(emsg).replace("\n", "").replace("\r", "")
         log.warn("Warning: client decoding error:")
         if message or emsg:
             log.warn(" %s%s", s(message), emsg)
@@ -2638,7 +2639,7 @@ class WindowSource(WindowIconSource):
         if encoder is None:
             if self.is_cancelled(sequence):
                 return nodata("cancelled")
-            raise Exception("BUG: no encoder found for %r with options=%s" % (coding, options))
+            raise Exception(f"BUG: no encoder found for {coding!r} with options={options}")
         ret = encoder(coding, image, options)
         if ret is None:
             return nodata("encoder %s returned None for %s",
@@ -2719,9 +2720,9 @@ class WindowSource(WindowIconSource):
         pf = image.get_pixel_format()
         if pf not in self.rgb_formats:
             if not rgb_reformat(image, self.rgb_formats, self.supports_transparency):
-                warning_key = "mmap_send(%s)" % pf
+                warning_key = f"mmap_send({pf})"
                 if first_time(warning_key):
-                    log.warn("Warning: cannot use mmap to send %s" % pf)
+                    log.warn(f"Warning: cannot use mmap to send {pf}")
                 return None
             pf = image.get_pixel_format()
         #write to mmap area:
