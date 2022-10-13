@@ -422,8 +422,8 @@ def get_info() -> dict:
         i["ssl"] = ssli
     if FULL_INFO>1:
         s = get_net_sys_config()
-    if s:
-        i["system"] = s
+        if s:
+            i["system"] = s
     i["config"] = get_net_config()
     paramiko = sys.modules.get("paramiko")
     if paramiko:
