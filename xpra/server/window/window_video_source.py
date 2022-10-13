@@ -167,8 +167,8 @@ class WindowVideoSource(WindowSource):
         super().init_vars()
         #these constraints get updated with real values
         #when we construct the video pipeline:
-        self.min_w = 1
-        self.min_h = 1
+        self.min_w = 8
+        self.min_h = 8
         self.max_w = 16384
         self.max_h = 16384
         self.width_mask = 0xFFFF
@@ -1715,8 +1715,8 @@ class WindowVideoSource(WindowSource):
                       enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec):
         options = typedict(self.encoding_options)
         self.assign_sq_options(options)
-        min_w = 1
-        min_h = 1
+        min_w = 8
+        min_h = 8
         max_w = 16384
         max_h = 16384
         if csc_spec:
