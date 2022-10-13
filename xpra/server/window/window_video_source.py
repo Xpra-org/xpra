@@ -400,7 +400,9 @@ class WindowVideoSource(WindowSource):
             if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
                 msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
-                if not init and first_time("no-csc-%s-%i" % (x, self.wid)):
+                if x=="jpega" and not self.supports_transparency:
+                    log(f"skipping {x} since client does not support transparency")
+                elif not init and first_time("no-csc-%s-%i" % (x, self.wid)):
                     log.warn(*msg_args)
                 else:
                     log(*msg_args)
@@ -2128,6 +2130,12 @@ class WindowVideoSource(WindowSource):
             videolog.warn("Warning: image pixel format unexpectedly changed from %s to %s",
                           self.pixel_format, src_format)
             self.pixel_format = src_format
+
+        #if the client doesn't support alpha,
+        #use an rgb input format that ignores the alpha channel:
+        if not self.supports_transparency and src_format.find("A")>=0:
+            #ie: "BGRA" -> "BGRX"
+            src_format = src_format.replace("A", "X")
 
         if SAVE_VIDEO_FRAMES:
             from xpra.os_util import memoryview_to_bytes
