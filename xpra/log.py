@@ -349,8 +349,7 @@ def isenvdebug(category : str) -> bool:
 
 
 def get_info():
-    return {
-        "filters" : STRUCT_KNOWN_FILTERS,
+    info = {
         "categories" : {
             "enabled"   : tuple(debug_enabled_categories),
             "disabled"  : tuple(debug_disabled_categories),
@@ -361,6 +360,10 @@ def get_info():
         "debug-modules" : DEBUG_MODULES,
         #all_loggers
         }
+    from xpra.common import FULL_INFO
+    if FULL_INFO:
+        info["filters"] = STRUCT_KNOWN_FILTERS
+    return info
 
 
 class Logger:
