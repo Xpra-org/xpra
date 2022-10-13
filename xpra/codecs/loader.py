@@ -189,7 +189,7 @@ CODEC_OPTIONS = {
     "enc_x264"      : ("x264 encoder",      "x264",         "encoder", "Encoder"),
     "enc_x265"      : ("x265 encoder",      "x265",         "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
-    "enc_ffmpeg"    : ("ffmpeg encoder",    "enc_ffmpeg",   "encoder", "Encoder"),
+    "enc_ffmpeg"    : ("ffmpeg encoder",    "ffmpeg",       "encoder", "Encoder"),
     "enc_vpl"       : ("oneVPL encoder",    "vpl",          "encoder", "Encoder"),
     #csc:
     "csc_swscale"   : ("swscale colorspace conversion", "ffmpeg", "colorspace_converter", "ColorspaceConverter"),
@@ -201,10 +201,10 @@ CODEC_OPTIONS = {
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
-    "dec_nvjpeg"    : ("nvjpeg decoder",    "nvjpeg",       "decoder", "decompress"),
+    "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg","decoder", "decompress"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
-    "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
+    "dec_avcodec2"  : ("avcodec2 decoder",  "ffmpeg",       "decoder", "Decoder"),
     #sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),

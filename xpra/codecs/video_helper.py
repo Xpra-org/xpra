@@ -18,14 +18,14 @@ log = Logger("codec", "video")
 #but we need the module name to be able to probe without loading the codec:
 CODEC_TO_MODULE = {
     "vpx"        : "vpx",
-    "x264"       : "enc_x264",
-    "x265"       : "enc_x265",
+    "x264"       : "x264",
+    "x265"       : "x265",
     "nvenc"      : "nvidia.nvenc",
     "swscale"    : "ffmpeg.colorspace_converter",
     "cython"     : "csc_cython",
     "libyuv"     : "libyuv",
-    "avcodec2"   : "dec_avcodec2",
-    "ffmpeg"     : "enc_ffmpeg",
+    "avcodec2"   : "ffmpeg.decoder",
+    "ffmpeg"     : "ffmpeg.encoder",
     "jpeg"       : "jpeg",
     "webp"       : "webp",
     "nvjpeg"     : "nvidia.nvjpeg",

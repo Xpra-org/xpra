@@ -597,7 +597,7 @@ cdef class ColorspaceConverter:
 def selftest(full=False):
     global MAX_WIDTH, MAX_HEIGHT
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
-    from xpra.codecs.csc_swscale import colorspace_converter
+    from xpra.codecs.ffmpeg import colorspace_converter
     override_logger()
     with SilenceAVWarningsContext():
         #test a limited set, not all combinations:

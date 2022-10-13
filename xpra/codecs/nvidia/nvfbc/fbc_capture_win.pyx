@@ -14,8 +14,8 @@ from xpra.os_util import WIN32
 from xpra.util import csv, roundup
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvfbc.cuda_image_wrapper import CUDAImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
+from xpra.codecs.nvidia.nvfbc.cuda_image_wrapper import CUDAImageWrapper
+from xpra.codecs.nvidia.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")

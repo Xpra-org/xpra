@@ -1861,6 +1861,6 @@ cdef class Encoder:
 def selftest(full=False):
     global CODECS
     from xpra.codecs.codec_checks import testencoder
-    from xpra.codecs.enc_ffmpeg import encoder
+    from xpra.codecs.ffmpeg import encoder
     with SilenceAVWarningsContext():
         CODECS = testencoder(encoder, full)

@@ -489,7 +489,7 @@ cdef class ColorspaceConverter:
 def selftest(full=False):
     global MAX_WIDTH, MAX_HEIGHT
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
-    from xpra.codecs.csc_libyuv import colorspace_converter
+    from xpra.codecs.libyuv import colorspace_converter
     maxw, maxh = MAX_WIDTH, MAX_HEIGHT
     in_csc = get_input_colorspaces()
     out_csc = get_output_colorspaces(in_csc[0])
