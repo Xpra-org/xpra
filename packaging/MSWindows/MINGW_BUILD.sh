@@ -277,7 +277,7 @@ if [ "${DO_CUDA}" == "1" ]; then
 		fi
 	done
 else
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvjpeg_encoder --without-nvjpeg_decoder --without-nvfbc"
 fi
 
 echo "* Building Python3 Cython modules"
