@@ -1824,9 +1824,9 @@ When unspecified, all the available codecs are allowed and the first one is used
             pws_fail()
         return w, h
     if options.min_size:
-        options.min_size = "x".join(parse_window_size(options.min_size, "min-size"))
+        options.min_size = "x".join(map(str, parse_window_size(options.min_size, "min-size")))
     if options.max_size:
-        options.max_size = "x".join(parse_window_size(options.max_size, "max-size"))
+        options.max_size = "x".join(map(str, parse_window_size(options.max_size, "max-size")))
     if options.encryption_keyfile and not options.encryption:
         from xpra.net.crypto import DEFAULT_MODE
         options.encryption = f"AES-{DEFAULT_MODE}"
