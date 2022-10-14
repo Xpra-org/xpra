@@ -135,7 +135,6 @@ Build DEBs
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra
-ln -sf ./packaging/debian/xpra ./debian
 debuild -us -uc -b
 ```
 This builds fresh packages from git master.
