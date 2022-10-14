@@ -2194,7 +2194,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
                 sys.exit(1)
             t.join()
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
-add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
+        add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
