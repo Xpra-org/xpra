@@ -65,6 +65,7 @@ BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-html5 >= 5
 Requires:			xpra-common = %{version}-%{release}
 Requires:			xpra-codecs = %{version}-%{release}
+Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Requires:			xpra-client = %{version}-%{release}
 Requires:			xpra-server = %{version}-%{release}
 %if 0%{?fedora}
@@ -142,6 +143,7 @@ This package contains the files which are shared between the xpra client and ser
 %package codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
+Suggests:			xpra-codecs-nvidia
 Requires:			python3-pillow
 BuildRequires:		libdrm-devel
 Requires:			libdrm
@@ -173,6 +175,20 @@ Requires:			libspng
 Conflicts:			xpra-codecs-freeworld
 %description codecs
 This package contains extra picture and video codecs used by xpra clients and servers.
+
+
+%if %{with_cuda}
+%package codecs-nvidia
+Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
+Group:				Networking
+BuildRequires:		cuda
+Requires:			xpra-codecs = %{version}-%{release}
+Requires:			python3-pycuda
+Recommends:			python3-pynvml
+%description codecs-nvidia
+This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
+this is used by both xpra clients and servers. 
+%endif
 
 
 %package audio
@@ -254,10 +270,6 @@ Recommends:			librsvg2
 Recommends:			ibus
 Recommends:			python3-pyxdg
 Recommends:			xdg-menu
-%if %{with_cuda}
-Recommends:			python3-pynvml
-Recommends:			python3-pycuda
-%endif
 Suggests:			tcp_wrappers-libs
 Suggests:			python3-ldap3
 Suggests:			python3-ldap
@@ -394,7 +406,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
 %{_datadir}/xpra/*.wav
-%{_datadir}/xpra/cuda
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
 %if !0%{?el9}
@@ -450,7 +461,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
-%{python3_sitearch}/xpra/codecs/nvidia
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
@@ -461,6 +471,13 @@ rm -rf $RPM_BUILD_ROOT
 # /xpra/codecs/vpl
 %endif
 
+%if %{with_cuda}
+%files codecs-nvidia
+%{_datadir}/xpra/cuda
+%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
+%config(noreplace) %{_sysconfdir}/xpra/*.keys
+%{python3_sitearch}/xpra/codecs/nvidia
+%endif
 
 %files audio
 %{python3_sitearch}/xpra/sound
@@ -497,10 +514,6 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/X11/xorg.conf.d/90-xpra-virtual.conf
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xorg-uinput.conf
-%if %{with_cuda}
-%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
-%config(noreplace) %{_sysconfdir}/xpra/*.keys
-%endif
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
