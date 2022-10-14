@@ -86,6 +86,9 @@ Summary:			Common files for xpra packages
 Group:				Networking
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 5
+Conflicts:			python2-xpra
+Conflicts:			python2-xpra-client
+Conflicts:			python2-xpra-server
 Obsoletes:			xpra-common-client < 5.0-10.r32075
 Obsoletes:			xpra-common-server < 5.0-10.r32075
 Obsoletes:			python3-xpra < 5.0-10.r32075
