@@ -52,12 +52,26 @@ Vcs-Browser: https://github.com/Xpra-org/xpra
 Package: xpra
 Conflicts: python2-xpra, python3-xpra
 Architecture: any
-Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${python3:Depends}
+        ,libc
         ,python3 (>= 3.6)
         ,python3-gi
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-gi-cairo
+# X11 libraries:
+        ,libx11
+        ,libxcomposite
+        ,libxdamage
+        ,libxtst
+        ,libxkbfile
+        ,libxres
+        ,libdrm
+# System libraries:
+        ,libpam0g
+        ,liblz4
+#jammy:              ,libavif-dev
+# even unstable ships an oudated version!
 # for opengl support:
         ,python3-opengl
 # for PNG and JPEG support:
@@ -74,14 +88,16 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #sid:        ,xserver-xorg-video-dummy
         ,keyboard-configuration
 # for notifications forwarding and dbus server / proxying:
-Recommends: python3-dbus
+Recommends: xpra-codecs
         ,xpra-html5
+        ,libsystemd
+        ,libprocps
+        ,libqrencode4
+        ,python3-dbus
 # for the proxy server:
         ,python3-setproctitle
 # packet encoder:
         ,python3-rencode
-# packet compression:
-        ,liblz4
 # text packet compression:
         ,libbrotli1
 #not available?
@@ -90,8 +106,6 @@ Recommends: python3-dbus
 #authentication:
         ,python3-kerberos
         ,python3-gssapi
-# audio-related:
-        ,python3-gst-1.0
 #for printer forwarding:
         ,python3-cups
 #for ssh transport:
@@ -112,16 +126,6 @@ Recommends: python3-dbus
         ,ibus
 # AES encryption:
         ,python3-cryptography
-# audio-related:
-        ,gstreamer1.0-pulseaudio
-        ,gstreamer1.0-alsa
-        ,gstreamer1.0-plugins-base
-        ,gstreamer1.0-tools
-#                 ^^ vorbis ^^
-        ,gstreamer1.0-plugins-good
-#                  ^^ wavpack, wav, flac, speex ^^
-        ,gstreamer1.0-plugins-ugly
-#                  ^^ mp3 ^^
 #for printer forwarding:
         ,cups-filters
         ,cups-common
@@ -133,14 +137,7 @@ Recommends: python3-dbus
         ,sshpass
 #most of the examples use an xterm:
         ,xterm
-#ability to generate qr codes URLs and otp authentication:
-        ,qrencode
 Suggests: openssh-server
-# for sound forwarding (server side):
-        ,pulseaudio
-        ,pulseaudio-utils
-# for webcam support:
-        ,v4l2loopback-dkms
 # for CPU percentage in "top"
         ,python-psutil
 # to make the system tray work again with gnome-shell:
@@ -171,5 +168,39 @@ Description: tool to detach/reattach running X programs
  Unlike VNC, these applications are "rootless".  They appear as individual
  windows inside your window manager rather than being contained within a single
  window.
- .
- This is the Python3 version.
+
+
+Package: xpra-audio
+Architecture: any
+Depends: python3
+        ,pulseaudio
+        ,gstreamer1.0-pulseaudio
+        ,pulseaudio-utils
+        ,python3-gst-1.0
+        ,gstreamer1.0-plugins-base
+#                 ^^ vorbis ^^
+Recommends: gstreamer1.0-tools
+        ,gstreamer1.0-alsa
+        ,gstreamer1.0-plugins-good
+#                  ^^ wavpack, wav, flac, speex ^^
+        ,gstreamer1.0-plugins-ugly
+#                  ^^ mp3 ^^
+Description: these are the components required for xpra audio forwarding.
+
+Package: xpra-codecs
+Architecture: any
+Depends: python3 (>= 3.6)
+        ,libc
+        ,v4l2loopback-dkms
+        ,libvpx
+        ,libx264
+        ,libwebp
+        ,libturbojpeg
+        ,libavcodec-dev [!i386]
+        ,libavformat-dev [!i386]
+        ,libavutil-dev [!i386]
+        ,libswscale-dev [!i386]
+Recommends: python3-pycuda, libnvidia-encode1
+Suggests: v4l2loopback-dkms, python3-opencv
+Description: these are the picture and video codecs
+ for the xpra server and client.
