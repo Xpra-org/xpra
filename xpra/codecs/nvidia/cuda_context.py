@@ -13,15 +13,17 @@ from threading import RLock
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
-from xpra.util import engs, print_nested_dict, envint, csv, first_time
+from xpra.util import engs, print_nested_dict, envint, envbool, csv, first_time
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir,
     )
-from xpra.os_util import load_binary_file
+from xpra.os_util import load_binary_file, is_WSL
 from xpra.log import Logger
 
 with numpy_import_lock:
+    if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
+        raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda               #@UnresolvedImport
     from pycuda import driver   #@UnresolvedImport
 
