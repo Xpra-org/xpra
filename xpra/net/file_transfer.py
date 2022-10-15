@@ -500,7 +500,8 @@ class FileTransferHandler(FileTransferAttributes):
             self.send("ack-file-chunk", chunk_id, True, "", chunk)
             return
         #not chunked, full file:
-        assert file_data, "no data, got %s" % (file_data,)
+        if not file_data:
+            raise RuntimeError("no file data")
         if len(file_data)!=filesize:
             l.error("Error: invalid data size for file '%s'", basefilename)
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
