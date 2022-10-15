@@ -1,0 +1,3 @@
+usr/share/xpra/cuda/*
+#etc/xpra/cuda.conf
+usr/lib/python3*/*/xpra/codecs/nvidia
