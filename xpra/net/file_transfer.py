@@ -265,7 +265,6 @@ class FileTransferHandler(FileTransferAttributes):
                 os.unlink(filename)
         except OSError:
             filelog.error(f"Error: failed to delete uploaded file {filename}")
-        raise Exception(f"failed {digest.name} digest verification")
 
 
     def _check_chunk_receiving(self, chunk_id, chunk_no):
