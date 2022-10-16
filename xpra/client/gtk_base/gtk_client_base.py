@@ -1160,6 +1160,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                             f.write(b"opengl=nowarn\n")
                         log.info("OpenGL warning will be silenced from now on,")
                         log.info(" '%s' has been updated", conf_file)
+                        break
                     except OSError:
                         log("failed to create / append to config file '%s'", conf_file, exc_info=True)
         def delayed_notify():
