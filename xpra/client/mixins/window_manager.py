@@ -1289,9 +1289,10 @@ class WindowClient(StubClientMixin):
         self.send("focus", wid, self.get_current_modifiers())
 
     def update_focus(self, wid, gotit):
-        focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
+        focused = self._focused
+        focuslog(f"update_focus({wid}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
         if gotit:
-            if self._focused is not wid:
+            if focused is not wid:
                 self.send_focus(wid)
                 self._focused = wid
             self.cancel_lost_focus_timer()
@@ -1302,17 +1303,18 @@ class WindowClient(StubClientMixin):
                 if wwgrab:
                     self.do_force_ungrab(wwgrab)
                 self._window_with_grab = None
-            if wid and self._focused and self._focused!=wid:
+            if wid and focused and focused!=wid:
                 #if this window lost focus, it must have had it!
                 #(catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
-                focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
+                focuslog(f"window {wid} lost a focus it did not have!? (simulating focus before losing it)")
                 self.send_focus(wid)
-            if self._focused and not self.lost_focus_timer:
+            if focused and not self.lost_focus_timer:
                 #send the lost-focus via a timer and re-check it
                 #(this allows a new window to gain focus without having to do a reset_focus)
                 self.lost_focus_timer = self.timeout_add(20, self.send_lost_focus)
                 self._focused = None
+        return focused!=self._focused
 
     def send_lost_focus(self):
         focuslog("send_lost_focus() focused=%s", self._focused)
