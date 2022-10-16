@@ -547,8 +547,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if client.pointer_grabbed and client.pointer_grabbed==self._id:
             #we lost focus, assume we also lost the grab:
             client.pointer_grabbed = None
-        if super()._unfocus() and AUTOGRAB_WITH_FOCUS:
+        changed = super()._unfocus()
+        if changed and AUTOGRAB_WITH_FOCUS:
             self.keyboard_ungrab()
+        return changed
 
     def cancel_focus_timer(self):
         rft = self.recheck_focus_timer
