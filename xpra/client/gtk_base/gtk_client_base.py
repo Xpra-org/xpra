@@ -19,7 +19,7 @@ from xpra.util import (
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
-    bytestostr, strtobytes, hexstr, load_binary_file,
+    bytestostr, strtobytes, hexstr, load_binary_file, osexpand,
     WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.common import FULL_INFO
@@ -1152,7 +1152,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 from xpra.platform.paths import get_user_conf_dirs
                 dirs = get_user_conf_dirs()
                 for d in dirs:
-                    conf_file = os.path.join(d, "xpra.conf")
+                    conf_file = osexpand(os.path.join(d, "xpra.conf"))
                     try:
                         with open(conf_file, 'ab') as f:
                             f.write(b"\n")
