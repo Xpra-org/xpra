@@ -659,13 +659,19 @@ class FileTransferHandler(FileTransferAttributes):
         cr = getChildReaper()
         cr.add_process(proc, f"Open file {url}", command, True, True, open_done)
 
-    def file_size_warning(self, action, location, basefilename, filesize, limit):
-        filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
-        filelog.warn(" this file is too large: %sB", std_unit(filesize))
-        filelog.warn(" the %s file size limit is %sB", location, std_unit(limit))
+    def file_size_warning(self, action, location, basefilename, filesize, limit=0):
+        filelog.warn(f"Warning: cannot {action} the file {basefilename!r}")
+        if filesize<=0:
+            filelog.warn(" this file is empty")
+        else:
+            filelog.warn(" this file is too large: %sB", std_unit(filesize))
+            filelog.warn(f" the {location} file size limit is %sB", std_unit(limit))
 
     def check_file_size(self, action, filename, filesize):
         basefilename = os.path.basename(filename)
+        if filesize<=0:
+            self.file_size_warning(action, "n/a", basefilename, filesize)
+            return False
         if filesize>self.file_size_limit:
             self.file_size_warning(action, "local", basefilename, filesize, self.file_size_limit)
             return False
