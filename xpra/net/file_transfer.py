@@ -65,7 +65,7 @@ def basename(filename):
     return tmp
 
 def safe_open_download_file(basefilename, mimetype):
-    from xpra.platform.paths import get_download_dir
+    from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
     filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
     ext = MIMETYPE_EXTS.get(mimetype)
@@ -78,9 +78,9 @@ def safe_open_download_file(basefilename, mimetype):
     root, ext = os.path.splitext(filename)
     base = 0
     while os.path.exists(filename):
-        filelog("cannot save file as %r: file already exists", filename)
+        filelog(f"cannot save file as {filename!r}: file already exists")
         base += 1
-        filename = root+("-%s" % base)+ext
+        filename = f"{root}-{base}{ext}"
     filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
@@ -89,7 +89,7 @@ def safe_open_download_file(basefilename, mimetype):
         pass
     with umask_context(0o133):
         fd = os.open(filename, flags)
-    filelog("using filename '%s', file descriptor=%s", filename, fd)
+    filelog(f"using filename {filename!r}, file descriptor={fd}")
     return filename, fd
 
 
@@ -193,7 +193,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.receive_chunks_in_progress = {}
         self.file_descriptors = set()
         if not getattr(self, "timeout_add", None):
-            from gi.repository import GLib
+            from gi.repository import GLib  # pylint: disable=import-outside-toplevel
             self.timeout_add = GLib.timeout_add
             self.idle_add = GLib.idle_add
             self.source_remove = GLib.source_remove
@@ -257,7 +257,8 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def digest_mismatch(self, filename, digest, expected_digest):
-        filelog.error("Error: data does not match, invalid %s file digest for '%s'", digest.name, filename)
+        filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
+        filelog.error(f" for {filename!r}")
         filelog.error(f" received {digest.hexdigest()}")
         filelog.error(f" expected {expected_digest}")
         try:
@@ -319,11 +320,11 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_file_chunk(self, packet):
         chunk_id, chunk, file_data, has_more = packet[1:5]
         chunk_id = net_utf8(chunk_id)
-        filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
+        filelog("_process_send_file_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
             filelog.error("Error: cannot find the file transfer id '%r'", chunk_id)
-            self.cancel_file(chunk_id, "file transfer id %r not found" % chunk_id, chunk)
+            self.cancel_file(chunk_id, f"file transfer id {chunk_id!r} not found", chunk)
             return
         if chunk_state[-4]:
             filelog("got chunk for a cancelled file transfer, ignoring it")
@@ -354,9 +355,9 @@ class FileTransferHandler(FileTransferAttributes):
         except OSError as e:
             filelog.error("Error: cannot write file chunk")
             filelog.estr(e)
-            self.cancel_file(chunk_id, "write error: %s" % e, chunk)
+            self.cancel_file(chunk_id, f"write error: {e}", chunk)
             osclose(fd)
-            progress(-1, "write error (%s)" % e)
+            progress(-1, f"write error ({e}")
             return
         filesize = chunk_state[6]
         if written>filesize:
@@ -459,7 +460,7 @@ class FileTransferHandler(FileTransferAttributes):
             l = filelog
             assert self.file_transfer
         l("receiving file: %s",
-          [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
+          [basefilename, mimetype, printit, openit, filesize, f"{len(file_data)} bytes", options])
         if filesize>self.file_size_limit:
             l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %sB, the file size limit is %sB",
@@ -473,7 +474,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error("Error: failed to save downloaded file")
             filelog.estr(e)
             if chunk_id:
-                self.send("ack-file-chunk", chunk_id, False, "failed to create file: %s" % e, 0)
+                self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
             return
         self.file_descriptors.add(fd)
         digest = None
@@ -485,7 +486,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk = 0
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
-                self.cancel_file(chunk_id, "too many file transfers in progress: %i" % l, chunk)
+                self.cancel_file(chunk_id, f"too many file transfers in progress: {l}", chunk)
                 osclose(fd)
                 return
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
@@ -562,7 +563,7 @@ class FileTransferHandler(FileTransferAttributes):
             printlog.info(" sending '%s' to printer '%s'", title, printer)
         else:
             printlog.info(" sending to printer '%s'", printer)
-        from xpra.platform.printing import print_files, printing_finished, get_printers
+        from xpra.platform.printing import print_files, printing_finished, get_printers  # pylint: disable=import-outside-toplevel
         printers = get_printers()
         def delfile():
             if DELETE_PRINTER_FILE:
@@ -656,7 +657,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.warn("Warning: failed to open the downloaded content")
                 filelog.warn(" '%s' returned %s", " ".join(command), returncode)
         cr = getChildReaper()
-        cr.add_process(proc, "Open file %s" % url, command, True, True, open_done)
+        cr.add_process(proc, f"Open file {url}", command, True, True, open_done)
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
@@ -739,7 +740,7 @@ class FileTransferHandler(FileTransferAttributes):
         assert len(data)>=filesize, "data is smaller then the given file size!"
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s action=%s, ask=%s",
-          (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
+          (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options), action, ask)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -845,7 +846,8 @@ class FileTransferHandler(FileTransferAttributes):
         if accept==DENY:
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
-        assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
+        if accept not in (ACCEPT, OPEN):
+            raise ValueError(f"unknown value for send-data response: {accept!r}")
         if dtype=="file":
             mimetype, data, filesize, printit, openit, options = v[2:]
             if accept==ACCEPT:
@@ -883,7 +885,7 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             action = "upload"
             l = filelog
-        l("do_send_file%s", (u(filename), mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
+        l("do_send_file%s", (u(filename), mimetype, type(data), f"{filesize} bytes", printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
         h = hashlib.sha256()
@@ -894,8 +896,9 @@ class FileTransferHandler(FileTransferAttributes):
         options["sha256"] = h.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
         if 0<chunk_size<filesize:
-            if len(self.send_chunks_in_progress)>=MAX_CONCURRENT_FILES:
-                raise Exception("too many file transfers in progress: %i" % len(self.send_chunks_in_progress))
+            in_progress = len(self.send_chunks_in_progress)
+            if in_progress>=MAX_CONCURRENT_FILES:
+                raise Exception(f"too many file transfers in progress: {in_progress}")
             #chunking is supported and the file is big enough
             chunk_id = uuid.uuid4().hex
             options["file-chunk-id"] = chunk_id
@@ -951,7 +954,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%r'", chunk_id)
+            filelog.error(f"Error: cannot find the file transfer id {chunk_id!r}")
             return
         if chunk_state[-1]!=chunk:
             filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state[-1], chunk)
