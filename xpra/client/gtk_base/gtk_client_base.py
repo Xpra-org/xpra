@@ -1148,7 +1148,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         DISABLE = "1"
         def notify_callback(event, nid, action_id, *args):
             log("notify_callback(%s, %s, %s, %s)", event, nid, action_id, args)
-            if event=="notification-action" and nid==XPRA_OPENGL_NOTIFICATION_ID and action_id==DISABLE:
+            if event!="notification-action":
+                log.warn(f"Warning: unexpected event {event}")
+                return
+            if nid!=XPRA_OPENGL_NOTIFICATION_ID:
+                log.warn(f"Warning: unexpected notification id {nid}")
+                return
+            if action_id==DISABLE:
                 from xpra.platform.paths import get_user_conf_dirs
                 dirs = get_user_conf_dirs()
                 for d in dirs:
