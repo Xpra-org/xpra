@@ -1154,10 +1154,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 for d in dirs:
                     conf_file = osexpand(os.path.join(d, "xpra.conf"))
                     try:
-                        with open(conf_file, 'ab') as f:
-                            f.write(b"\n")
-                            f.write(b"# user chose to disable the opengl warning:\n")
-                            f.write(b"opengl=nowarn\n")
+                        with open(conf_file, "a", encoding="latin1") as f:
+                            f.write("\n")
+                            f.write("# user chose to disable the opengl warning:\n")
+                            f.write("opengl=nowarn\n")
                         log.info("OpenGL warning will be silenced from now on,")
                         log.info(" '%s' has been updated", conf_file)
                         break
