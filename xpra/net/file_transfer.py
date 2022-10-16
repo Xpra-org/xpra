@@ -26,6 +26,7 @@ FILE_CHUNKS_SIZE = max(0, envint("XPRA_FILE_CHUNKS_SIZE", 65536))
 MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
+ALWAYS_CHUNK = envbool("XPRA_FILE_ALWAYS_CHUNK", False)
 CHUNK_TIMEOUT = 10*1000
 
 MIMETYPE_EXTS = {
@@ -901,7 +902,7 @@ class FileTransferHandler(FileTransferAttributes):
         options = options or {}
         options["sha256"] = h.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
-        if 0<chunk_size<filesize:
+        if 0<chunk_size<filesize or ALWAYS_CHUNK:
             in_progress = len(self.send_chunks_in_progress)
             if in_progress>=MAX_CONCURRENT_FILES:
                 raise Exception(f"too many file transfers in progress: {in_progress}")
