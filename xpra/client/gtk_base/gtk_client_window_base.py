@@ -536,8 +536,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return autograb
 
     def _focus(self):
-        if super()._focus() and AUTOGRAB_WITH_FOCUS:
+        change = super()._focus()
+        if change and AUTOGRAB_WITH_FOCUS:
             self.may_autograb()
+        return change
 
     def _unfocus(self):
         client = self._client
