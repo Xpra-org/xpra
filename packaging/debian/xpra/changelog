@@ -1,3 +1,30 @@
+xpra (4.4.1-1) UNRELEASED; urgency=low
+  * unable to focus window
+  * chunked file transfer checksum errors
+  * clipboard transfer failures with large data
+  * `--max-size` and `--min-size` parsing errors
+  * SSH agent forwarding issues: dangling symlinks, etc
+  * missing subcommands when starting via proxy
+  * option to ignore OpenGL warnings not being saved on Posix systems and save it just once
+  * `xpra start --encoding=help` error
+  * excruciatingly slow paint without transparency
+  * avoid video pipeline warnings due to race conditions or clients that don't support window transparency
+  * build with clang
+  * sdist snapshots missed an evdi file
+  * don't clean files that no longer exist
+  * RHEL 9 builds
+  * RPM dependency not needed
+  * cosmetic:
+    - logging error handler errors
+    - file transfer errors shown twice
+    - honour transparency override earlier
+    - unused duplicate header
+    - GLib unit test error
+    - version test error
+    - shadow debug logging error
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 17 Oct 2022 16:36:49 +0700
+
 xpra (4.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     - Native LZ4 bindings

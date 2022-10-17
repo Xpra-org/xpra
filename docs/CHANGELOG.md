@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.4.1] 2022-10-17
+* [unable to focus window](https://github.com/Xpra-org/xpra/issues/3596)
+* [chunked file transfer checksum errors](https://github.com/Xpra-org/xpra/commit/c8a9a90d7012c335379f8a175952cdde7e815a01)
+* [clipboard transfer failures with large data](https://github.com/Xpra-org/xpra/issues/3636)
+* [`--max-size` and `--min-size` parsing errors](https://github.com/Xpra-org/xpra/pull/3653)
+* [SSH agent forwarding issues: dangling symlinks, etc](https://github.com/Xpra-org/xpra/issues/2303)
+* [missing subcommands when starting via proxy](https://github.com/Xpra-org/xpra/commit/552d78c00ca73bcb79a89c6cfaf9a665f7707e59)
+* [option to ignore OpenGL warnings not being saved on Posix systems](https://github.com/Xpra-org/xpra/commit/bd15aecb5823da7168f50daa23d56dc43ae628dc) - [save it just once](https://github.com/Xpra-org/xpra/commit/ceffe21cc284e1640cf8251e289ef752eb006297)
+* [`xpra start --encoding=help` error](https://github.com/Xpra-org/xpra/issues/3654)
+* [excruciatingly slow paint without transparency](https://github.com/Xpra-org/xpra/issues/3646)
+* avoid video pipeline warnings [due to race conditions](https://github.com/Xpra-org/xpra/issues/3590) or [clients that don't support window transparency](https://github.com/Xpra-org/xpra/issues/3648)
+* [build with clang](https://github.com/Xpra-org/xpra/commit/67e54b6ac2d65feb7cebe9194901d62f82599eaf)
+* [sdist snapshots missed an evdi file](https://github.com/Xpra-org/xpra/commit/aef2933dcba2990fb52954ed758fe4783515fa67)
+* [don't clean files that no longer exist](https://github.com/Xpra-org/xpra/commit/8c3c68dc78a0432375eab77ade4a0fa4655e053e)
+* [RHEL 9 builds](https://github.com/Xpra-org/xpra/commit/d44d7554d364e0b8c64ed89cdef9f88c719e9bd2)
+* [RPM dependency not needed](https://github.com/Xpra-org/xpra/commit/967a3d3111fc860259f5f0789618c9cc779fc27a)
+* cosmetic:
+    * [logging error handler errors](https://github.com/Xpra-org/xpra/commit/a526354dd1f5efb328e04bc836329e159277a77b)
+    * [file transfer errors shown twice](https://github.com/Xpra-org/xpra/commit/991ec92a4a73981bb9bfcd3e3a17aebe9fa7a7c4)
+    * [honour transparency override earlier](https://github.com/Xpra-org/xpra/commit/268a5560eebf0da87c103225fe3fbc86ecd81f94)
+    * [unused duplicate header](https://github.com/Xpra-org/xpra/commit/c668982ec7e17f0765468ca24becea5b96f0faae)
+    * [GLib unit test error](https://github.com/Xpra-org/xpra/commit/b5722d304d9825c7adceb34c211fa14dc3d9acff)
+    * [version test error](https://github.com/Xpra-org/xpra/commit/e69eb38bf4876411e7f6178ee4cf3b5466aebe69)
+    * [shadow debug logging error](https://github.com/Xpra-org/xpra/commit/edd5fba7434873df729ba6de56119e1ad19ab5d3)
+
 ## [4.4] 2022-10-01
 * Platforms, build and packaging:
     * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)

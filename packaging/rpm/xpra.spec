@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4
+%define version 4.4.1
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -641,6 +641,31 @@ fi
 
 
 %changelog
+* Mon Oct 17 2022 Antoine Martin <antoine@xpra.org> 4.4.1-10
+- unable to focus window
+- chunked file transfer checksum errors
+- clipboard transfer failures with large data
+- `--max-size` and `--min-size` parsing errors
+- SSH agent forwarding issues: dangling symlinks, etc
+- missing subcommands when starting via proxy
+- option to ignore OpenGL warnings not being saved on Posix systems and save it just once
+- `xpra start --encoding=help` error
+- excruciatingly slow paint without transparency
+- avoid video pipeline warnings due to race conditions or clients that don't support window transparency
+- build with clang
+- sdist snapshots missed an evdi file
+- don't clean files that no longer exist
+- RHEL 9 builds
+- RPM dependency not needed
+* cosmetic:
+    - logging error handler errors
+    - file transfer errors shown twice
+    - honour transparency override earlier
+    - unused duplicate header
+    - GLib unit test error
+    - version test error
+    - shadow debug logging error
+
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings
