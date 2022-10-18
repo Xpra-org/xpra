@@ -66,8 +66,8 @@ Package: xpra-codecs
 Architecture: any
 Depends: xpra
         ,${codecs:Depends}
-Recommends: xpra-codecs-nvidia
 Suggests: v4l2loopback-dkms
+          ,xpra-codecs-nvidia
           ,python3-opencv
 Description: the picture and video codecs
  for the xpra server and client.
