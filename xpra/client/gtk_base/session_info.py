@@ -195,10 +195,15 @@ class SessionInfo(Gtk.Window):
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, platform.release(), platform.platform(), distro)
         def cattr(name, default_value=""):
             return getattr(self.client, name, default_value)
-        SERVER_PLATFORM_NAME = make_os_str(cattr("_remote_platform"),
-                                           cattr("_remote_platform_release"),
-                                           cattr("_remote_platform_platform"),
-                                           cattr("_remote_platform_linux_distribution"))
+        pinfo = self.client.server_last_info.get("server", {}).get("platform", {})
+        def plat(key=""):
+            #we can get the platform information from the server info mixin,
+            #or from the server last info:
+            return pinfo.get(key, cattr(f"_remote_platform{key}"))
+        SERVER_PLATFORM_NAME = make_os_str(plat(""),
+                                           plat("release"),
+                                           plat("platform"),
+                                           plat("linux_distribution"))
         csrow("Operating System", LOCAL_PLATFORM_NAME, SERVER_PLATFORM_NAME)
         csrow("Xpra", XPRA_VERSION, cattr("_remote_version", "unknown"))
         try:
