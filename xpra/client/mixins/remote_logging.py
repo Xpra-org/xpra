@@ -132,7 +132,7 @@ class RemoteLogging(StubClientMixin):
                     etypeinfo = exc_info[0].__name__
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
-                self.send("logging", level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
+                self.send("logging", level, f"{etypeinfo}: {exc_info[1]}", dtime)
             if self.log_both:
                 self.local_logging(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
@@ -140,10 +140,10 @@ class RemoteLogging(StubClientMixin):
                 #errors can happen during exit, don't care
                 return
             local_warn("Warning: failed to send logging packet:")
-            local_warn(" %s" % e)
-            local_warn(" original unformatted message: %s", msg)
+            local_warn(f" {e}")
+            local_warn(f" original unformatted message: {msg}")
             if args:
-                local_warn(" %i arguments: %s", len(args), args)
+                local_warn(f" {len(args)} arguments: {args}")
             else:
                 local_warn(" (no arguments)")
             try:
