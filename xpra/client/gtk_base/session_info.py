@@ -227,14 +227,6 @@ class SessionInfo(Gtk.Window):
         def server_vinfo(lib):
             rlv = getattr(self.client, "_remote_lib_versions", {})
             return make_version_str(rlv.get(lib, ""))
-        csrow("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
-        csrow("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
-        csrow("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))
-        csrow("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
-        csrow("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
-        csrow("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
-        csrow("Python",    platform.python_version(),  server_vinfo("python"))
-
         try:
             from xpra.sound.wrapper import query_sound
             props = query_sound()
