@@ -9,6 +9,7 @@ import traceback
 from time import monotonic
 from threading import Lock
 
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import csv, typedict, repr_ellipsized, net_utf8
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -114,7 +115,7 @@ class RemoteLogging(StubClientMixin):
             if args:
                 data = msg % args
             else:
-                data = msg
+                data = memoryview_to_bytes(msg)
             if len(data)>=32:
                 try:
                     data = self.compressed_wrapper("text", data.encode("utf8"), level=1)
