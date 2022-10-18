@@ -173,12 +173,16 @@ def net_utf8(value):
     """
     Given a value received by the network layer,
     convert it to a string.
-    Gymnastics are involved if the rencode packet encoder is used
-    as it ends up giving us a string which is actually utf8 bytes.
+    Gymnastics are involved if:
+    - we get a memoryview from lz4
+    - the rencode packet encoder is used
+      as it ends up giving us a string which is actually utf8 bytes.
     """
     #with 'rencodeplus' or 'bencode', we just get the unicode string directly:
     if isinstance(value, str):
         return value
+    if isinstance(value, memoryview):
+        value = value.tobytes()
     #with rencode v1, we have to decode the value:
     #(after converting it to 'bytes' if necessary)
     return u(strtobytes(value))
