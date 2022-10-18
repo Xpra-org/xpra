@@ -14,10 +14,15 @@ Build-Depends: debhelper (>= 8)
               ,libxkbfile-dev
               ,libxres-dev
               ,libnvidia-fbc1 [amd64]
+# very few Debian or Ubuntu distros have this library
+# so we can't rely on it and we use the one that comes with CUDA instead:
+#              ,libnvjpeg10 [amd64]
               ,libdrm-dev
 # even unstable ships an oudated version!
-# (hopefully this can be updated some day)
+# (hopefully this can be enabled some day)
 #              ,libevdi0-dev
+# this codec is not usable yet:
+#              ,libavif-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
@@ -40,9 +45,6 @@ Build-Depends: debhelper (>= 8)
               ,libbrotli-dev
               ,libqrencode-dev
               ,pandoc
-#jammy:              ,libavif-dev
-#bookworm:              ,libavif-dev
-#sid:              ,libavif-dev
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
 Vcs-Git: https://github.com/Xpra-org/xpra
@@ -52,34 +54,21 @@ Vcs-Browser: https://github.com/Xpra-org/xpra
 Package: xpra
 Conflicts: python2-xpra, python3-xpra
 Architecture: any
-Depends: ${misc:Depends}, ${python3:Depends}
-        ,libc
+Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3 (>= 3.6)
         ,python3-gi
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-gi-cairo
-# X11 libraries:
-        ,libx11
-        ,libxcomposite
-        ,libxdamage
-        ,libxtst
-        ,libxkbfile
-        ,libxres
-        ,libdrm
-# System libraries:
-        ,libpam0g
-        ,liblz4
-#jammy:              ,libavif-dev
-# even unstable ships an oudated version!
-# for opengl support:
+# client opengl acceleration:
         ,python3-opengl
-# for PNG and JPEG support:
+# image processing:
         ,python3-pil
 # ssl (generate cert), wss:
         ,openssl
-#we need a vfb: either Xdummy or Xvfb
-#        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
+# we need a vfb: either Xdummy or Xvfb
+# (but Xdummy is broken on Debian, so stick with Xvfb)
+#        ,xserver-xorg-video-dummy
         ,xvfb,
 #buster:        ,xserver-xorg-video-dummy
 #bullseye:        ,xserver-xorg-video-dummy
@@ -87,72 +76,74 @@ Depends: ${misc:Depends}, ${python3:Depends}
 #trixie:        ,xserver-xorg-video-dummy
 #sid:        ,xserver-xorg-video-dummy
         ,keyboard-configuration
-# for notifications forwarding and dbus server / proxying:
 Recommends: xpra-codecs
         ,xpra-html5
+# socket activation:
         ,libsystemd
+# query parent pid:
         ,libprocps
+# generate QR codes for authentication and connection URLs:
         ,libqrencode4
+# control server sessions, access client desktop environment settings and properties:
         ,python3-dbus
-# for the proxy server:
-        ,python3-setproctitle
-# packet encoder:
-        ,python3-rencode
-# text packet compression:
-        ,libbrotli1
-#not available?
-        ,python3-zeroconf
-        ,python3-netifaces
-#authentication:
-        ,python3-kerberos
-        ,python3-gssapi
-#for printer forwarding:
-        ,python3-cups
-#for ssh transport:
-        ,python3-paramiko
-        ,python3-dnspython
-#for connections through proxies
-        ,python3-socks
-#the start-session GUI:
-        ,python3-xdg
-        ,python3-pyinotify
-#hope that this will allow our status icon to be shown:
-        ,gir1.2-appindicator3-0.1 | gir1.2-ayatanaappindicator3
-#to be able to resize large svg icons:
-        ,gir1.2-rsvg-2.0
-# we use dbus for many things - this provides "dbus-launch":
+# the server uses "dbus-launch" to enable dbus for its sessions:
         ,dbus-x11
 # preferred input method:
         ,ibus
+# set process name of the proxy server:
+        ,python3-setproctitle
+# legacy packet encoder:
+        ,python3-rencode
+# text packet compression:
+        ,libbrotli1
+# see sessions using mDNS:
+        ,python3-zeroconf
+# query network interfaces:
+        ,python3-netifaces
+# printer forwarding:
+        ,python3-cups
+# ssh transport:
+        ,python3-paramiko
+        ,python3-dnspython
+# connections through proxies:
+        ,python3-socks
+# start menu and start-session GUI:
+        ,python3-xdg
+        ,python3-pyinotify
+# hope that this will allow our status icon to be shown:
+        ,gir1.2-appindicator3-0.1 | gir1.2-ayatanaappindicator3
+# to be able to resize large svg icons:
+        ,gir1.2-rsvg-2.0
 # AES encryption:
         ,python3-cryptography
-#for printer forwarding:
+# printer forwarding:
         ,cups-filters
         ,cups-common
         ,cups-pdf
         ,cups-daemon
-#for ssh transport:
-        ,openssh-client
-#for using SSH passwords from the GUI launcher:
-        ,sshpass
-#most of the examples use an xterm:
+# most of the examples use an xterm:
         ,xterm
 Suggests: openssh-server
-# for CPU percentage in "top"
+# for CPU percentage in "xpra top"
         ,python-psutil
 # to make the system tray work again with gnome-shell:
         ,gnome-shell-extension-top-icons-plus
         ,gnome-shell-extension-appindicator
+# external ssh transport:
+        ,openssh-client
+# using SSH passwords from the GUI launcher:
+        ,sshpass
 # password prompts:
         ,pinentry-gnome3
+# authentication:
+        ,python3-kerberos
+        ,python3-gssapi
 # keycloak authentication:
         ,python3-oauthlib
-# for webcam support:
+# webcam support:
         ,python3-opencv
 # only useful when connecting using a JSON / YAML only client:
         ,python3-yaml
-# AES encryption:
-        ,python3-cryptography
 #better debug output:
 #        ,python3-cpuinfo
 Description: tool to detach/reattach running X programs
@@ -169,7 +160,7 @@ Description: tool to detach/reattach running X programs
 
 Package: xpra-audio
 Architecture: any
-Depends: python3
+Depends: xpra
         ,pulseaudio
         ,gstreamer1.0-pulseaudio
         ,pulseaudio-utils
@@ -182,33 +173,27 @@ Recommends: gstreamer1.0-tools
 #                  ^^ wavpack, wav, flac, speex ^^
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-Description: these are the components required for xpra audio forwarding,
+Description: the components required for xpra audio forwarding,
  used by both client and servers.
+
 
 Package: xpra-codecs
 Architecture: any
-Depends: python3 (>= 3.6)
-        ,libc
-        ,v4l2loopback-dkms
-        ,libvpx
-        ,libx264
-        ,libwebp
-        ,libturbojpeg
-        ,libavcodec-dev [!i386]
-        ,libavformat-dev [!i386]
-        ,libavutil-dev [!i386]
-        ,libswscale-dev [!i386]
+Depends: xpra
+        ,${codecs:Depends}
 Recommends: xpra-codecs-nvidia
-Suggests: v4l2loopback-dkms, python3-opencv
-Description: these are the picture and video codecs
+Suggests: v4l2loopback-dkms
+          ,python3-opencv
+Description: the picture and video codecs
  for the xpra server and client.
+
 
 Package: xpra-codecs-nvidia
 Architecture: any
-Depends: python3 (>= 3.6)
-        ,libc
-        ,libnvidia-fbc1 [amd64]
-        ,python3-pycuda,
-        ,libnvidia-encode1
-Description: these are the proprietary nvidia picture and video codecs
+Depends: xpra
+        ,python3-pycuda
+Recommends: libnvidia-encode1
+            ,libnvjpeg
+            ,libnvidia-fbc1 [amd64]
+Description: the proprietary nvidia picture and video codecs
  for the xpra server and client: nvfbc, nvjpeg and nvenc.
