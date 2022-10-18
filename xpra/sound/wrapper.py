@@ -170,10 +170,13 @@ def run_sound(mode, error_cb, options, args):
                  "muxers"           : get_muxers(),
                  "demuxers"         : get_demuxers(),
                  }
-            if FULL_INFO>2:
+            if FULL_INFO>=1:
                 d.update({
                  "gst.version"      : [int(x) for x in get_gst_version()],
                  "pygst.version"    : get_pygst_version(),
+                })
+            if FULL_INFO>=2:
+                d.update({
                  "plugins"          : plugins,
                  "python.version"   : sys.version_info[:3],
                  "python.bits"      : BITS,
