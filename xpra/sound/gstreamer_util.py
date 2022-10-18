@@ -20,6 +20,8 @@ from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
 
+# pylint: disable=import-outside-toplevel
+
 #used on the server (reversed):
 XPRA_PULSE_SOURCE_DEVICE_NAME = "XPRA_PULSE_SOURCE_DEVICE_NAME"
 XPRA_PULSE_SINK_DEVICE_NAME = "XPRA_PULSE_SINK_DEVICE_NAME"
@@ -39,7 +41,7 @@ if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK
     QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
 
 def get_queue_time(default_value=450, prefix=""):
-    queue_time = int(os.environ.get("XPRA_SOUND_QUEUE_%sTIME" % prefix, default_value))*MS_TO_NS
+    queue_time = int(os.environ.get(f"XPRA_SOUND_QUEUE_{prefix}TIME", default_value))*MS_TO_NS
     queue_time = max(0, queue_time)
     return queue_time
 
@@ -278,7 +280,7 @@ def normv(v):
 
 all_plugin_names = []
 def get_all_plugin_names():
-    global all_plugin_names, gst
+    global all_plugin_names
     if not all_plugin_names and gst:
         registry = gst.Registry.get()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
@@ -300,7 +302,6 @@ def has_plugins(*names):
     return len(missing)==0
 
 def get_encoder_default_options(encoder):
-    global ENCODER_DEFAULT_OPTIONS_COMMON, ENCODER_DEFAULT_OPTIONS
     #strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
@@ -314,16 +315,14 @@ DECODERS = {}       #(decoder, depayloader, stream-compressor)
 
 def get_encoders():
     init_codecs()
-    global ENCODERS
     return ENCODERS
 
 def get_decoders():
     init_codecs()
-    global DECODERS
     return DECODERS
 
 def init_codecs():
-    global CODECS, ENCODERS, DECODERS
+    global CODECS
     if CODECS is not None or gst is None:
         return CODECS or {}
     #populate CODECS:
@@ -354,7 +353,6 @@ def init_codecs():
     return CODECS
 
 def add_encoder(encoding, encoder, payloader, stream_compressor):
-    global ENCODERS
     if encoding in ENCODERS:
         return
     if OSX and encoding in (OPUS_OGG, ):
@@ -364,7 +362,6 @@ def add_encoder(encoding, encoder, payloader, stream_compressor):
         ENCODERS[encoding] = (encoder, payloader, stream_compressor)
 
 def add_decoder(encoding, decoder, depayloader, stream_compressor):
-    global DECODERS
     if encoding in DECODERS:
         return
     if has_plugins(decoder, depayloader):
@@ -423,22 +420,28 @@ def get_stream_compressors():
 
 def get_encoder_elements(name):
     encoders = get_encoders()
-    assert name in encoders, "invalid codec: %s (should be one of: %s)" % (name, encoders.keys())
+    if name not in encoders:
+        raise RuntimeError(f"invalid codec: {name} (should be one of: {encoders.keys()})")
     encoder, formatter, stream_compressor = encoders.get(name)
-    if stream_compressor:
-        assert has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
-    assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
-    assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
+    if stream_compressor and not has_stream_compressor(stream_compressor):
+        raise RuntimeError(f"stream-compressor {stream_compressor} not found")
+    if encoder and not has_plugins(encoder):
+        raise RuntimeError(f"encoder {encoder} not found")
+    if formatter and not has_plugins(formatter):
+        raise RuntimeError(f"formatter {formatter} not found")
     return encoder, formatter, stream_compressor
 
 def get_decoder_elements(name):
     decoders = get_decoders()
-    assert name in decoders, "invalid codec: %s (should be one of: %s)" % (name, decoders.keys())
+    if name not in decoders:
+        raise RuntimeError(f"invalid codec: {name} (should be one of: {decoders.keys()})")
     decoder, parser, stream_compressor = decoders.get(name)
-    if stream_compressor:
-        assert has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
-    assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
-    assert parser is None or has_plugins(parser), "parser %s not found" % parser
+    if stream_compressor and not has_stream_compressor(stream_compressor):
+        raise RuntimeError(f"stream-compressor {stream_compressor} not found")
+    if decoder and not has_plugins(decoder):
+        raise RuntimeError(f"decoder {decoder} not found")
+    if parser and not has_plugins(parser):
+        raise RuntimeError(f"parser {parser} not found")
     return decoder, parser, stream_compressor
 
 def has_encoder(name):
@@ -467,15 +470,15 @@ def can_decode():
 def plugin_str(plugin, options):
     if plugin is None:
         return None
-    s = "%s" % plugin
+    s = str(plugin)
     def qstr(v):
         #only quote strings
         if isinstance(v, str):
-            return "\"%s\"" % v
+            return f'"{v}"'
         return v
     if options:
         s += " "
-        s += " ".join([("%s=%s" % (k,qstr(v))) for k,v in options.items()])
+        s += " ".join([f"{k}={qstr(v)}" for k,v in options.items()])
     return s
 
 
@@ -901,21 +904,21 @@ def main():
                 gst_vinfo, sys.version_info[0], sys.version_info[1])
             )
         apn = get_all_plugin_names()
-        print("GStreamer plugins found: %s" % csv(apn))
+        print("GStreamer plugins found: " + csv(apn))
         print("")
-        print("GStreamer version: %s" % ".".join([str(x) for x in get_gst_version()]))
-        print("PyGStreamer version: %s" % ".".join([str(x) for x in get_pygst_version()]))
+        print("GStreamer version: " + ".".join([str(x) for x in get_gst_version()]))
+        print("PyGStreamer version: " + ".".join([str(x) for x in get_pygst_version()]))
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        print("encoders:           %s" % csv(encs))
-        print("decoders:           %s" % csv(decs))
-        print("muxers:             %s" % csv(get_muxers()))
-        print("demuxers:           %s" % csv(get_demuxers()))
-        print("stream compressors: %s" % csv(get_stream_compressors()))
-        print("source plugins:     %s" % csv([x for x in get_source_plugins() if x in apn]))
-        print("sink plugins:       %s" % csv([x for x in get_sink_plugins() if x in apn]))
-        print("default sink:       %s" % get_default_sink_plugin())
+        print("encoders:           " + csv(encs))
+        print("decoders:           " + csv(decs))
+        print("muxers:             " + csv(get_muxers()))
+        print("demuxers:           " + csv(get_demuxers()))
+        print("stream compressors: " + csv(get_stream_compressors()))
+        print("source plugins:     " + csv([x for x in get_source_plugins() if x in apn]))
+        print("sink plugins:       " + csv([x for x in get_sink_plugins() if x in apn]))
+        print("default sink:       " + str(get_default_sink_plugin()))
 
 
 if __name__ == "__main__":
