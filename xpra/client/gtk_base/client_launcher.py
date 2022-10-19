@@ -38,7 +38,7 @@ from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
     )
-from xpra.scripts.parsing import is_local, add_ssh_args, parse_ssh_option, add_ssh_proxy_args
+from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args
 from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
@@ -744,8 +744,7 @@ class ApplicationWindow:
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
             self.is_paramiko = ssh_cmd_0 =="paramiko"
             full_ssh = ssh_cmd[:]
-            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port,
-                                     None, self.is_putty, self.is_paramiko)
+            full_ssh += get_ssh_args(params, ssh_cmd)
             if username:
                 params["username"] = username
             if self.nostrict_host_check.get_active():
@@ -756,10 +755,7 @@ class ApplicationWindow:
                 params["proxy_port"] = self.config.proxy_port
                 params["proxy_username"] = self.config.proxy_username
                 params["proxy_password"] = self.config.proxy_password
-                full_ssh += add_ssh_proxy_args(self.config.proxy_username, self.config.proxy_password,
-                                               self.config.proxy_host, self.config.proxy_port,
-                                               self.config.proxy_key, ssh_cmd,
-                                               self.is_putty, self.is_paramiko)
+                full_ssh += get_ssh_proxy_args(params, ssh_cmd)
             params["host"] = host
             params["local"] = is_local(self.config.host)
             params["full_ssh"] = full_ssh

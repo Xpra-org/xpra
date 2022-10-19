@@ -729,7 +729,8 @@ def find_session_by_name(opts, session_name):
         return None
     if len(session_uuid_to_path)>1:
         raise InitException(f"more than one session found matching {session_name!r}")
-    return "socket://%s" % tuple(session_uuid_to_path.values())[0]
+    socket_path = tuple(session_uuid_to_path.values())[0]
+    return f"socket://{socket_path}" 
 
 
 def display_desc_to_uri(display_desc):
@@ -758,7 +759,7 @@ def display_desc_to_uri(display_desc):
         cid, iport = display_desc["vsock"]
         uri += f"{cid}:{iport}"
     else:
-        raise NotImplementedError("%s is not implemented yet" % dtype)
+        raise NotImplementedError(f"{dtype} is not implemented yet")
     uri += "/" + display_desc_to_display_path(display_desc)
     return uri
 

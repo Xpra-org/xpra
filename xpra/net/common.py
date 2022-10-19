@@ -16,10 +16,28 @@ class ConnectionClosedException(Exception):
 MAX_PACKET_SIZE = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER = envbool("XPRA_FLUSH_HEADER", True)
 
-SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock")
+SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket")
 
 IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
 TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
+
+URL_MODES = {
+    "xpra"      : "tcp",
+    "xpras"     : "ssl",
+    "xpra+tcp"  : "tcp",
+    "xpratcp"   : "tcp",
+    "xpra+tls"  : "ssl",
+    "xpratls"   : "ssl",
+    "xpra+ssl"  : "ssl",
+    "xprassl"   : "ssl",
+    "xpra+ssh"  : "ssh",
+    "xprassh"   : "ssh",
+    "xpra+ws"   : "ws",
+    "xpraws"    : "ws",
+    "xpra+wss"  : "wss",
+    "xprawss"   : "wss",
+    "rfb"       : "vnc",
+    }
 
 
 #this is used for generating aliases:

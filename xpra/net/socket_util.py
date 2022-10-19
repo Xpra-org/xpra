@@ -822,7 +822,8 @@ def get_ssl_attributes(opts, server_side=True, overrides=None):
     for attr in SSL_ATTRIBUTES:
         v = (overrides or {}).get(attr)
         if v is None:
-            ssl_attr = "ssl_%s" % attr.replace("-", "_")    #ie: "ssl_ca_certs"
+            fn = attr.replace("-", "_")
+            ssl_attr = f"ssl_{fn}"          #ie: "ssl_ca_certs"
             v = getattr(opts, ssl_attr)
         args[attr] = v
     return args

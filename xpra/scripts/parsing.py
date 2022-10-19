@@ -12,6 +12,7 @@ import sys
 import shlex
 import os.path
 import optparse
+from urllib import parse
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
@@ -118,12 +119,10 @@ def do_replace_option(cmdline, oldoption, newoption):
 def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
     #find --no-XYZ or --XYZ
     #and replace it with --XYZ=yes|no
-    no = f"--no-{optionname}"
-    yes = f"--{optionname}"
     if newoptionname is None:
         newoptionname = optionname
-    do_replace_option(cmdline, no, f"--{optionname}=no")
-    do_replace_option(cmdline, yes, f"--{optionname}=yes")
+    do_replace_option(cmdline, f"--no-{optionname}", f"--{optionname}=no")
+    do_replace_option(cmdline, f"--{optionname}", f"--{optionname}=yes")
 
 def ignore_options(args, options):
     for x in options:
@@ -369,128 +368,205 @@ def load_password_file(password_file):
     return None
 
 
-def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by_name=False):
-    if WIN32:
-        from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
-    else:
-        PIPE_PREFIX = None
+def normalize_display_name(display_name):
+    if not display_name:
+        raise ValueError("no display name specified")
     if display_name.startswith("/") and POSIX:
-        display_name = "socket://"+display_name
+        return "socket://"+display_name
+    #URL mode aliases (ie: "xpra+tcp://host:port")
+    from xpra.net.common import URL_MODES
+    for alias, prefix in URL_MODES.items():
+        falias = f"{alias}:"
+        parts = display_name.split(falias, 1)
+        if len(parts)==2:
+            display_name = prefix+":"+parts[1]
+            break
+    if display_name.startswith("socket://"):
+        # if the URL uses the form:
+        # "socket://username:password/somepath/dfsdff/fd/fd")
+        # instead of:
+        # "socket://username:password@/somepath/dfsdff/fd/fd")
+        # then the username and password aren't parsed properly!
+        pass
+
+    #fixup the legacy format "tcp:host:port"
+    pos = display_name.find(":")
+    if pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
+        #replace the first ":" with "://"
+        #so we end up with parsable URL, ie: "tcp://host:port"
+        display_name = display_name[:pos]+"://"+display_name[pos+1:]
+    #workaround missing [] around IPv6 addresses:
+    try:
+        netloc = parse.urlparse(display_name).netloc
+        if netloc.find("@")>0:
+            netloc = netloc.split("@", 1)[1]
+        if not netloc.startswith("[") and not netloc.endswith("]"):
+            pos = display_name.find(netloc)
+            parts = netloc.split(":")
+            if pos>0 and len(parts)>2:
+                newnetloc = "["+(":".join(parts[:-1]))+"]:"+parts[-1]
+                display_name = display_name[:pos]+newnetloc+display_name[pos+len(netloc):]
+    except Exception:
+        pass
+    #workaround for vsock 'VMADDR_PORT_ANY':
+    # "any" or "auto" is not a valid port number
+    if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name)>len("vsock://"):
+        #hackish pre-parsing:
+        #extract location: "vsock://10:any/foo?arg=20" -> "10:any"
+        parts = display_name[len("vsock://"):].split("/", 1)
+        netloc = parts[0]
+        extra = parts[1] if len(parts)>1 else ""
+        for s in ("any", "auto"):
+            if netloc.lower().endswith(s):
+                #use "0" for auto
+                #ie: "vsock://10:0/foo?arg=20"
+                return "vsock://"+netloc[:-len(s)]+"0/"+extra
+        return display_name
+    #maybe this is just the display number without the ":" prefix?
+    if display_name and display_name[0] in "0123456789" and POSIX:
+        return ":"+display_name
+    if WIN32 and display_name[0].isalpha():
+        # pragma: no cover
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX
+        return f"named-pipe://{PIPE_PREFIX}{display_name}"
+    return display_name
+
+
+def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by_name=False):
+    display_name = normalize_display_name(display_name)
+    #last chance to find it by name:
+    if display_name.find(":")<0:
+        if not find_session_by_name:
+            raise ValueError(f"invalid display name {display_name!r}")
+        r = find_session_by_name(display_name)
+        if not display_name:
+            raise ValueError(f"no session found matching name {display_name!r}")
+        display_name = r
+
+    #add our URL schemes once:
+    #(should we remove them afterwards?)
+    from xpra.net.common import SOCKET_TYPES
+    def addschemes(array):
+        for x in SOCKET_TYPES:
+            if x not in array:
+                array.append(x)
+    addschemes(parse.uses_params)
+    addschemes(parse.uses_netloc)
+    addschemes(parse.uses_query)
+    addschemes(parse.uses_relative)
+    #now we're ready to parse:
+    parsed = parse.urlparse(display_name)
+    protocol = parsed.scheme
 
     desc = {
         "display_name"  : display_name,
         "cmdline"       : cmdline,
+        "type"          : protocol,
         }
 
-    pos = _sep_pos(display_name)
-    if pos<0 or (display_name and display_name[0] in "0123456789"):
-        match = None
-        if POSIX:
-            #maybe this is just the display number without the ":" prefix?
-            try:
-                if pos>0:
-                    dno = int(display_name[:pos])
-                else:
-                    dno = int(display_name)
-                display_name = f":{dno}"
-                match = True
-            except ValueError:
-                pass
-        elif WIN32: # pragma: no cover
-            display_name = f"named-pipe://{PIPE_PREFIX}{display_name}"
-            match = True
-        if find_session_by_name and not match:
-            #try to find a session whose "session-name" matches:
-            match = find_session_by_name(opts, display_name)
-            if match:
-                display_name = match
-    #display_name may have been updated, re-parse it:
-    pos = _sep_pos(display_name)
-    if pos<0:
-        error_cb(f"unknown format for display name: {display_name!r}")
-    protocol = display_name[:pos]
-    #the separator between the protocol and the rest can be ":", "/" or "://"
-    #but the separator value we use thereafter can only be ":" or "/"
-    #because we want strings like ssl://host:port/DISPLAY to be parsed into ["ssl", "host:port", "DISPLAY"]
-    psep = ""
-    if display_name[pos]==":":
-        psep += ":"
-        pos += 1
-    scount = 0
-    while display_name[pos]=="/" and scount<2:
-        psep += "/"
-        pos += 1
-        scount += 1
-    if protocol=="socket":
-        #socket paths may start with a slash!
-        #so socket:/path means that the slash is part of the path
-        if psep==":/":
-            psep = psep[:-1]
-            pos -= 1
-    elif protocol=="rfb":
-        protocol = "vnc"
-    if psep not in (":", "/", "://"):
-        error_cb(f"unknown format for protocol separator {psep!r} in display name: {display_name!r}")
-    afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
-    separator = psep[-1]                    #ie: "/"
-    parts = afterproto.split(separator, 1)     #ie: "host:port", "DISPLAY"
-
-    def _set_password():
-        password = desc.get("password")
-        if password is None and opts.password_file:
+    def add_credentials():
+        username = opts.username or parsed.username
+        if username is not None:
+            desc["username"] = username
+            opts.username = username
+        password = opts.password or parsed.password
+        if not password and opts.password_file:
             password = load_password_file(opts.password_file[0])
-            if password:
-                desc["password"] = password
         if password:
+            desc["password"] = password
             opts.password = password
 
-    def _set_username():
-        username = desc.get("username")
-        if username:
-            opts.username = username
+    def add_host_port(default_port=DEFAULT_PORT):
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or default_port
+        if port<=0 or port>=65536:
+            raise ValueError(f"invalid port number {port}")
+        desc["host"] = host
+        desc["local"] = is_local(host)
+        desc["port"] = port
+        return host, port
 
-    def _parse_username_and_password(s):
-        d = parse_username_and_password(s)
-        desc.update(d)
-        _set_username()
-        _set_password()
+    def add_path():
+        if parsed.path:
+            path = parsed.path.lstrip("/")
+            if path.find(",")>0:
+                #ie: path="100,foo=bar
+                path, extra = path.split(",", 1)
+                process_query_string(extra)
+            elif path.find("=")>0:
+                #ie: path="foo=bar"
+                process_query_string(path)
+                return
+            desc["display"] = path
 
-    def _parse_host_string(host, default_port=DEFAULT_PORT):
-        d = parse_host_string(host, default_port)
-        desc.update(d)
-        _set_username()
-        _set_password()
+    def process_query_string(s):
+        r = parse.parse_qs(s)
+        for k, v in r.items():
+            if len(v)==1:
+                desc[k] = v[0]
+            else:
+                desc[k] = v
+        if parsed.params:
+            desc["params"] = parsed.params
+        if parsed.fragment:
+            desc["fragment"] = parsed.fragment
 
-    def _parse_remote_display(s):
-        d = parse_remote_display(s)
-        desc.update(d)
-        opts.display = desc.get("display")
+    def add_query():
+        process_query_string(parsed.query)
+
+    if display_name.startswith(":"):
+        if WIN32 or OSX:
+            raise RuntimeError("X11 display names are not supported on this platform")
+        add_query()
+        display = parsed.path.lstrip(":")
+        desc.update({
+                "type"          : "unix-domain",
+                "local"         : True,
+                "display"       : display,
+                "socket_dirs"   : opts.socket_dirs,
+                })
+        opts.display = display
+        if opts.socket_dir:
+            desc["socket_dir"] = opts.socket_dir
+        return desc
+
+    if protocol=="vsock":
+        add_credentials()
+        add_query()
+        cid = parse_vsock_cid(parsed.hostname)
+        from xpra.net.vsock import PORT_ANY  # pylint: disable=no-name-in-module
+        port = parsed.port or PORT_ANY
+        desc.update({
+                "local"         : False,
+                "display"       : display_name,
+                "vsock"         : (cid, port),
+                })
+        opts.display = display_name
+        return desc
 
     if protocol in ("ssh", "vnc+ssh"):
         desc.update({
-                "type"             : protocol,
                 "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
-                "display"          : None,
                 "display_as_args"  : [],
                  })
-        #desc["proxy_command"] = ["_proxy" if protocol=="ssh" else "_proxy_vnc"]
-        host = parts[0]
-        if len(parts)>1:
-            _parse_remote_display(parts[1])
-            if protocol=="vnc+ssh":
-                #use a vnc display string with the proxy command
-                #and specify the vnc port if we know the display number:
-                vnc_uri = "vnc://localhost"
-                if opts.display:
-                    try:
-                        vnc_port = 5900+int(opts.display.lstrip(":"))
-                        desc["remote_port"] = vnc_port
-                    except ValueError:
-                        vnc_uri += "/"
-                    else:
-                        vnc_uri += f":{vnc_port}/"
-                desc["display_as_args"] = [vnc_uri]
+        add_credentials()
+        add_host_port(22)
+        add_path()
+        add_query()
+        display = desc.get("display")
+        if protocol=="vnc+ssh" and display:
+            #ie: "vnc+ssh://host/10" -> path="/10"
+            #use a vnc display string with the proxy command
+            #and specify the vnc port if we know the display number:
+            vnc_uri = "vnc://localhost"
+            try:
+                vnc_port = 5900+int(display)
+                desc["remote_port"] = vnc_port
+                vnc_uri += f":{vnc_port}/"
+            except ValueError:
+                vnc_uri += "/"
+            desc["display_as_args"] = [vnc_uri]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_option(opts.ssh)
         full_ssh = ssh[:]
@@ -520,25 +596,10 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             desc["display_as_args"].append(f"--env=SSH_AGENT_UUID={uuid}")
             desc["ssh-agent-uuid"] = uuid
 
-        _parse_host_string(host, 22)
-        ssh_port = desc.pop("port", 22)
-        if ssh_port!=22:
-            desc["port"] = ssh_port
-        username = desc.get("username")
-        password = desc.get("password")
-        host = desc.get("host")
-        key = desc.get("key", None)
-        full_ssh += add_ssh_args(username, password, host, ssh_port, key, is_putty, is_paramiko)
+        full_ssh += get_ssh_args(desc, ssh_cmd)
         if "proxy_host" in desc:
-            proxy_username = desc.get("proxy_username", "")
-            proxy_password = desc.get("proxy_password", "")
-            proxy_host = desc["proxy_host"]
-            proxy_port = desc.get("proxy_port", 22)
-            proxy_key = desc.get("proxy_key", "")
-            full_ssh += add_ssh_proxy_args(proxy_username, proxy_password, proxy_host, proxy_port,
-                                           proxy_key, ssh, is_putty, is_paramiko)
+            full_ssh += get_ssh_proxy_args(desc, ssh)
         desc.update({
-            "host"          : host,
             "full_ssh"      : full_ssh,
             "remote_xpra"   : opts.remote_xpra,
             })
@@ -547,113 +608,44 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         return desc
 
     if protocol=="socket":
-        assert not WIN32, "unix-domain sockets are not supported on MS Windows"
-        #use the socketfile specified:
-        slash = afterproto.find("/")
-        if 0<afterproto.find(":")<slash:
-            #ie: username:password/run/user/1000/xpra/hostname-number
-            #remove username and password prefix:
-            _parse_username_and_password(afterproto[:slash])
-            sockfile = afterproto[slash:]
-        elif afterproto.find("@")>=0:
-            #ie: username:password@/run/user/1000/xpra/hostname-number
-            parts = afterproto.split("@")
-            _parse_username_and_password("@".join(parts[:-1]))
-            sockfile = parts[-1]
-        else:
-            sockfile = afterproto
+        if WIN32:
+            raise RuntimeError("unix-domain sockets are not supported on MS Windows")
+        if not parsed.path:
+            raise ValueError("missing socket path")
+        add_credentials()
+        add_query()
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
-                "socket_dir"    : os.path.basename(sockfile),
+                "socket_dir"    : os.path.basename(parsed.path),
                 "socket_dirs"   : opts.socket_dirs,
-                "socket_path"   : sockfile,
+                "socket_path"   : parsed.path,
                 })
         opts.display = None
         return desc
 
-    if display_name.startswith(":"):
-        assert not WIN32, "X11 display names are not supported on MS Windows"
-        options = None
-        display = display_name
-        if display_name.find(",")>0:
-            display, options = display_name.split(",", 1)
-        desc.update({
-                "type"          : "unix-domain",
-                "local"         : True,
-                "display"       : display,
-                "socket_dirs"   : opts.socket_dirs,
-                })
-        opts.display = display
-        if opts.socket_dir:
-            desc["socket_dir"] = opts.socket_dir
-        if options:
-            desc["options"] = options
-        return desc
-
     if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
-        desc["type"] = protocol
-        if len(parts) not in (1, 2, 3):
-            error_cb(f"invalid {protocol} connection string,\n"
-                     +f" use {protocol}://[username[:password]@]host[:port][/display]\n")
-        #display (optional):
-        if separator=="/" and len(parts)==2:
-            _parse_remote_display(parts[-1])
-            parts = parts[:-1]
-        host = ":".join(parts)
-        default_port = DEFAULT_PORTS.get(protocol, DEFAULT_PORT)
-        _parse_host_string(host, default_port)
+        add_credentials()
+        host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
+        add_path()
+        add_query()
         if protocol in ("ssl", "wss"):
-            host = desc["host"]
-            port = desc["port"]
-            ssl_host = opts.ssl_server_hostname or host
-            from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
-            #load the host+port specific options from file:
-            ssl_options = load_ssl_options(ssl_host, port)
-            #only override these options via the command line and not configuration files:
-            for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
-                x = f"ssl-{k}"
-                incmdline = (
-                    (f"--{x}") in cmdline or (f"--no-{x}") in cmdline or
-                    any(c.startswith(f"--{x}=") for c in cmdline)
-                )
-                if incmdline or k not in ssl_options:
-                    ssl_options[k] = v
-            #ensure the hostname is always defined and use `host` if `server_hostname` is not set:
-            ssl_options["server-hostname"] = ssl_host
-            #this is used by the launcher to disable strict host key checking:
-            if desc.get("strict-host-check") is False:
-                ssl_options["server-verify-mode"] = "none"
-            desc["ssl-options"] = ssl_options
+            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         proxy = desc.get("proxy")
         if proxy=="auto":
-            proxy_options = auto_proxy(desc["host"], desc["port"])
-            desc.update(proxy_options)
+            desc.update(auto_proxy(host, port))
         return desc
 
-    if protocol=="vsock":
-        #use the vsock specified:
-        cid, iport = parse_vsock(parts[0])
-        desc.update({
-                "type"          : "vsock",
-                "local"         : False,
-                "display"       : display_name,
-                "vsock"         : (cid, iport),
-                })
-        opts.display = display_name
-        return desc
-
-    if WIN32 or display_name.startswith("named-pipe:"):   # pragma: no cover
-        if afterproto.find("@")>=0:
-            parts = afterproto.split("@")
-            _parse_username_and_password("@".join(parts[:-1]))
-            pipe_name = parts[-1]
-        else:
-            pipe_name = afterproto
+    if protocol=="named-pipe:":   # pragma: no cover
+        if not WIN32:
+            raise RuntimeError(f"{protocol} is not supported on this platform")
+        add_credentials()
+        add_query()
+        pipe_name = parsed.netloc
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX
         if not pipe_name.startswith(PIPE_PREFIX):
             pipe_name = f"{PIPE_PREFIX}{pipe_name}"
         desc.update({
-                     "type"             : "named-pipe",
                      "local"            : True,
                      "display"          : "DISPLAY",
                      "named-pipe"       : pipe_name,
@@ -663,6 +655,28 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
 
     error_cb(f"unknown format for display name: {display_name!r}")
 
+
+def get_ssl_options(desc, opts, cmdline):
+    port = desc["port"]
+    ssl_host = opts.ssl_server_hostname or desc["host"]
+    from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
+    #load the host+port specific options from file:
+    ssl_options = load_ssl_options(ssl_host, port)
+    #only override these options via the command line and not configuration files:
+    for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
+        x = f"ssl-{k}"
+        incmdline = (
+            (f"--{x}") in cmdline or (f"--no-{x}") in cmdline or
+            any(c.startswith(f"--{x}=") for c in cmdline)
+        )
+        if incmdline or k not in ssl_options:
+            ssl_options[k] = v
+    #ensure the hostname is always defined and use `host` if `server_hostname` is not set:
+    ssl_options["server-hostname"] = ssl_host
+    #this is used by the launcher to disable strict host key checking:
+    if desc.get("strict-host-check") is False:
+        ssl_options["server-verify-mode"] = "none"
+    return ssl_options
 
 def parse_ssh_option(ssh_setting):
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
@@ -684,8 +698,14 @@ def parse_ssh_option(ssh_setting):
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-
-def add_ssh_args(username, password, host, ssh_port, key, is_putty=False, is_paramiko=False):
+def get_ssh_args(desc, ssh_cmd="paramiko", prefix=""):
+    ssh_port = desc.get(f"{prefix}port", 22)
+    username = desc.get(f"{prefix}username")
+    password = desc.get(f"{prefix}password")
+    host = desc.get(f"{prefix}host")
+    key = desc.get(f"{prefix}key", None)
+    is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
+    is_paramiko = ssh_cmd=="paramiko"
     args = []
     if password and is_putty:
         args += ["-pw", password]
@@ -708,7 +728,9 @@ def add_ssh_args(username, password, host, ssh_port, key, is_putty=False, is_par
             args += ["-i", key_path]
     return args
 
-def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=False, is_paramiko=False):
+def get_ssh_proxy_args(desc, ssh):
+    is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
+    is_paramiko = ssh[0]=="paramiko"
     args = []
     proxyline = ssh
     if is_putty:
@@ -716,7 +738,7 @@ def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=F
     elif not is_paramiko:
         proxyline += ["-W", "%h:%p"]
     # the double quotes are in case the password has something like "&"
-    proxyline += add_ssh_args(username, password, host, ssh_port, pkey, is_putty, is_paramiko)
+    proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
     if is_putty:
         args += ["-proxycmd", " ".join(proxyline)]
     elif not is_paramiko:
@@ -1764,22 +1786,8 @@ When unspecified, all the available codecs are allowed and the first one is used
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach":
-        URL_MODES = {
-            "xpra"      : "tcp",
-            "xpras"     : "ssl",
-            "xpra+tcp"  : "tcp",
-            "xpratcp"   : "tcp",
-            "xpra+tls"  : "ssl",
-            "xpratls"   : "ssl",
-            "xpra+ssl"  : "ssl",
-            "xprassl"   : "ssl",
-            "xpra+ssh"  : "ssh",
-            "xprassh"   : "ssh",
-            "xpra+ws"   : "ws",
-            "xpraws"    : "ws",
-            "xpra+wss"  : "wss",
-            "xprawss"   : "wss",
-            }
+        from xpra.net.common import URL_MODES
+        #ie: "xpra+tcp" -> "tcp"
         for prefix, mode in URL_MODES.items():
             url = args[1]
             fullprefix = f"{prefix}://"
@@ -1917,30 +1925,17 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
                           +" "+csv(invalid_mc))
     return codec_help
 
-
-def parse_vsock(vsock_str):
-    from xpra.net.vsock import STR_TO_CID, CID_ANY, PORT_ANY    #@UnresolvedImport pylint: disable=import-outside-toplevel
-    if not vsock_str.find(":")>=0:
-        raise InitException(f"invalid vsocket format {vsock_str!r}")
-    cid_str, port_str = vsock_str.split(":", 1)
+def parse_vsock_cid(cid_str):
+    from xpra.net.vsock import STR_TO_CID, CID_ANY  #@UnresolvedImport pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
-        cid = CID_ANY
-    else:
-        try:
-            cid = int(cid_str)
-        except ValueError:
-            cid = STR_TO_CID.get(cid_str.upper())  # @UndefinedVariable
-            if cid is None:
-                raise InitException(f"invalid vsock cid {cid_str!r}") from None
-    if port_str.lower() in ("auto", "any"):
-        iport = PORT_ANY
-    else:
-        try:
-            iport = int(port_str)
-        except ValueError:
-            raise InitException(f"invalid vsock port {port_str}") from None
-    return cid, iport
-
+        return CID_ANY
+    try:
+        return int(cid_str)
+    except ValueError:
+        cid = STR_TO_CID.get(cid_str.upper())  # @UndefinedVariable
+        if cid is None:
+            raise InitException(f"invalid vsock cid {cid_str!r}") from None
+        return cid
 
 def is_local(host) -> bool:
     return host.lower() in ("localhost", "127.0.0.1", "::1")

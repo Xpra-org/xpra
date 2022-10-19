@@ -26,6 +26,8 @@ class TestMain(unittest.TestCase):
         opts.exit_ssh = False
         opts.ssh = "ssh -v "
         opts.remote_xpra = "run-xpra"
+        opts.username = ""
+        opts.password = ""
         opts.password_file = None
         opts.ssl_server_hostname = ""
         opts.ssl_cert = ""
@@ -50,7 +52,9 @@ class TestMain(unittest.TestCase):
         if e:
             for k,v in e.items():
                 actual = r.get(k)
-                assert actual==v, f"expected {v!r} but got {actual!r} from parse_display_name({s})={r}, expected {e}"
+                if actual!=v:
+                    raise ValueError(f"expected {v!r} but got {actual!r} for {k!r}"+
+                                     f" from parse_display_name({s!r})={r!r}, expected {e!r}")
         return r
 
     def test_parse_display_name(self):
@@ -72,11 +76,11 @@ class TestMain(unittest.TestCase):
                 raise Exception(f"parse_display_name should fail for {s}")
         if POSIX:
             e("ZZZZZZ")
-            t("10", {"display_name" : "10", "local" : True, "type" : "unix-domain"})
+            t("10", {"display_name" : ":10", "local" : True, "type" : "unix-domain"})
             t(socket_dir+"/thesocket", {"display_name" : "socket://"+socket_dir+"/thesocket"})
             t("socket:"+socket_dir+"/thesocket", {"display_name" : "socket:"+socket_dir+"/thesocket"})
         e("tcp://host:NOTANUMBER/")
-        e("tcp://host:0/")
+        e("tcp://host:-1/")
         e("tcp://host:65536/")
         t("tcp://username@host/", {"username" : "username", "password" : None})
         for socktype in ("tcp", "ws", "wss", "ssl", "ssh"):
@@ -104,6 +108,7 @@ class TestMain(unittest.TestCase):
             t("vsock://any:any/", {"vsock" : (CID_ANY, PORT_ANY)})
             t("vsock://10:2000/", {"vsock" : (10, 2000)})
         t("vnc+ssh://host/0")
+        t("tcp:localhost:10000", {"host" : "localhost", "port" : 10000, "type" : "tcp"})
 
 
 def main():
