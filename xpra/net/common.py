@@ -16,7 +16,7 @@ class ConnectionClosedException(Exception):
 MAX_PACKET_SIZE = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER = envbool("XPRA_FLUSH_HEADER", True)
 
-SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket")
+SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "unix-domain", "named-pipe")
 
 IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
 TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
