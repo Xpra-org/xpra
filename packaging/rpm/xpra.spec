@@ -263,6 +263,7 @@ Group:				Networking
 #Provides:			python3-xpra-server
 Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
+Recommends:			xpra-client = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
