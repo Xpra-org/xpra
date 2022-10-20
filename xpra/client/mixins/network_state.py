@@ -54,7 +54,7 @@ class NetworkState(StubClientMixin):
 
         #bandwidth
         self.bandwidth_limit = 0
-        self.bandwidth_detection = True
+        self.bandwidth_detection = False
         self.server_bandwidth_limit_change = False
         self.server_bandwidth_limit = 0
         self.server_session_name = None

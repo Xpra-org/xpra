@@ -204,7 +204,7 @@ class ClientConnection(StubSourceMixin):
             server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
         self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
         if self.bandwidth_detection:
-            self.bandwidth_detection = c.boolget("bandwidth-detection", True)
+            self.bandwidth_detection = c.boolget("bandwidth-detection", False)
         self.client_connection_data = c.dictget("connection-data", {})
         ccd = typedict(self.client_connection_data)
         self.adapter_type = ccd.strget("adapter-type", "")
