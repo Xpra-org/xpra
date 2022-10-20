@@ -583,21 +583,22 @@ class Protocol:
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE
         min_comp_size = MIN_COMPRESS_SIZE
+        packet_type = packet[0]
         for i in range(1, len(packet)):
             item = packet[i]
             if item is None:
-                raise TypeError(f"invalid None value in {packet[0]} packet at index {i}")
+                raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
             ti = type(item)
             if ti in (int, bool, dict, list, tuple):
                 continue
             if ti==memoryview:
                 if self.encoder!="rencodeplus":
-                    packet[i] = packet[i].tobytes()
+                    packet[i] = item.tobytes()
                 continue
             try:
                 l = len(item)
             except TypeError as e:
-                raise TypeError(f"invalid type {ti} in {packet[0]} packet at index {i}: {e}") from None
+                raise TypeError(f"invalid type {ti} in {packet_type!r} packet at index {i}: {e}") from None
             if issubclass(ti, Compressible):
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
@@ -626,7 +627,7 @@ class Protocol:
                     size_check += l
             elif ti==bytes and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
-                log.warn(f" in packet {packet[0]!r} at position {i}: {len(item)} bytes")
+                log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
                 packets.append((0, i, cl, cdata))
@@ -634,9 +635,8 @@ class Protocol:
                 packet[i] = ''
             elif ti not in (str, bytes):
                 log.warn(f"Warning: unexpected data type {ti}")
-                log.warn(f" in {packet[0]!r} packet at position {i}: {repr_ellipsized(item)}")
+                log.warn(f" in {packet_type!r} packet at position {i}: {repr_ellipsized(item)}")
         #now the main packet (or what is left of it):
-        packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
         if USE_ALIASES:
             alias = self.send_aliases.get(packet_type)
