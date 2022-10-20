@@ -179,7 +179,10 @@ PACKET_KIND = {
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
 
-CODECS = ("vp8", "vp9")
+if VPX_ENCODER_ABI_VERSION<=23:
+    CODECS = ("vp8", )
+else:
+    CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
