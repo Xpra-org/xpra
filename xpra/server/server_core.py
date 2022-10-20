@@ -679,12 +679,12 @@ class ServerCore:
     # authentication:
     def init_auth(self, opts):
         auth = self.get_auth_modules("local-auth", opts.auth or [])
-        if WIN32:
-            self.auth_classes["named-pipe"] = auth
-        else:
-            self.auth_classes["unix-domain"] = auth
         for x in SOCKET_TYPES:
-            opts_value = getattr(opts, f"{x}_auth")
+            if x in ("socket", "unix-domain", "named-pipe"):
+                #use local-auth for these:
+                opts_value = auth
+            else:
+                opts_value = getattr(opts, f"{x}_auth")
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog("init_auth(..) auth=%s", self.auth_classes)
 
@@ -1845,6 +1845,8 @@ class ServerCore:
             auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
         else:
             #use authentication configuration defined for all sockets of this type:
+            if socktype not in self.auth_classes:
+                raise RuntimeError(f"invalid socket type {socktype!r}")
             auth_classes = self.auth_classes[socktype]
         i = 0
         authenticators = []
