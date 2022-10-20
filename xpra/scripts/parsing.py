@@ -502,6 +502,8 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     def process_query_string(s):
         r = parse.parse_qs(s)
         for k, v in r.items():
+            if k in desc:
+                warn(f"ignoring {k} override from query string")
             if len(v)==1:
                 desc[k] = v[0]
             else:
