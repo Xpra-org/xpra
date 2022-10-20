@@ -30,8 +30,8 @@ from xpra.os_util import (
     is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
     )
 
-if sys.version_info<(3, 6):
-    raise Exception("xpra no longer supports Python versions older than 3.6")
+if sys.version_info<(3, 7):
+    raise Exception("xpra no longer supports Python versions older than 3.7")
 if BITS!=64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
     for _ in range(5):
