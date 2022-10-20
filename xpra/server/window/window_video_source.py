@@ -8,7 +8,7 @@ import os
 import time
 import operator
 import traceback
-from math import sqrt
+from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
 
@@ -2056,7 +2056,7 @@ class WindowVideoSource(WindowSource):
                 csize = len(data)
                 compresslog(COMPRESS_FMT,
                      (monotonic()-substart)*1000.0, w, sh, x+0, y+sy, self.wid, coding,
-                     100.0*csize/psize, psize/1024, csize/1024,
+                     100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
                      self._damage_packet_sequence, client_options, options)
             scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles",
                       encoding, self._current_quality, self._current_speed, (monotonic()-nsstart)*1000, len(non_scroll))

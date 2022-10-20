@@ -9,7 +9,7 @@
 import os
 import hashlib
 import threading
-from math import sqrt
+from math import sqrt, ceil
 from collections import deque
 from time import monotonic
 
@@ -2684,7 +2684,7 @@ class WindowSource(WindowIconSource):
             client_options['damage_packet_time'] = int(end * 1000)
         compresslog(COMPRESS_FMT,
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
-                 100.0*csize/psize, psize//1024, csize//1024,
+                 100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
                  self._damage_packet_sequence, client_options, options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
