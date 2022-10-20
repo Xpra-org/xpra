@@ -826,7 +826,7 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
         try:
             sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
-        except:
+        except Exception:
             if getuid()==0 and opts.system_proxy_socket:
                 display = ":PROXY"
                 sockdir = os.path.dirname(opts.system_proxy_socket)
@@ -845,14 +845,14 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
                 })
         else:
             desc.update({
-                "type"          : "unix-domain",
+                "type"          : "socket",
                 "socket_dir"    : sockdir,
                 "socket_path"   : sockpath,
                 })
         return desc
     if len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
-    error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
+    error_cb(f"too many arguments ({len(extra_args)}): {extra_args}")
     return None
 
 def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
@@ -996,7 +996,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             conn.socktype_wrapped = "ssh"
         return conn
 
-    if dtype == "unix-domain":
+    if dtype == "socket":
         if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
             raise InitExit(EXIT_UNSUPPORTED, "unix domain sockets are not available on this operating system")
         def sockpathfail_cb(msg):

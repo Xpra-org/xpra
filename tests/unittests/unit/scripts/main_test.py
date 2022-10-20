@@ -113,7 +113,7 @@ class TestMain(unittest.TestCase):
         f(type="invalid", display_name="test")
         f(type="vsock", display_name="test", vsock=(10, 1000))
         fd({"type" : "named-pipe", "display_name" : "test", "named-pipe" : "TEST-INVALID"})
-        f(type="unix-domain", display_name=":100000", display="100000")
+        f(type="socket", display_name=":100000", display="100000")
         for socktype in ("tcp", "ssl", "ws", "wss", ):
             f(type=socktype, display_name="test", host="localhost", port=100000)
         for paramiko in (True, False):

@@ -717,7 +717,7 @@ class ApplicationWindow:
             params["remote_xpra"] = self.config.remote_xpra
             params["proxy_command"] = ["_proxy"]
             if self.config.port and self.config.port>0:
-                params["display"] = ":%s" % self.config.port
+                params["display"] = f":{self.config.port}"
                 params["display_as_args"] = [params["display"]]
             else:
                 params["display"] = "auto"
@@ -761,7 +761,10 @@ class ApplicationWindow:
             params["full_ssh"] = full_ssh
             params["password"] = password
             params["display_name"] = f"ssh://{self.config.host}:{self.config.port}"
-        elif self.config.mode=="unix-domain":
+        elif self.config.mode=="display":
+            params["display"] = f":{self.config.port}"
+            params["display_name"] = f":{self.config.port}"
+        elif self.config.mode in ("socket", "unix-domain"):
             params["display"] = f":{self.config.port}"
             params["display_name"] = f"unix-domain:{self.config.port}"
         else:

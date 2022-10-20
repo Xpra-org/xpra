@@ -49,7 +49,7 @@ class FilePrintServer(StubServerMixin):
 
     def init_sockets(self, sockets):
         #verify we have a local socket for printing:
-        unixsockets = [info for socktype, _, info, _ in sockets if socktype=="unix-domain"]
+        unixsockets = [info for socktype, _, info, _ in sockets if socktype=="socket"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
             if not WIN32:
@@ -116,7 +116,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         #verify that we can talk to the socket:
-        auth_class = self.auth_classes.get("unix-domain")
+        auth_class = self.auth_classes.get("socket")
         if printing and auth_class:
             try:
                 #this should be the name of the auth module:
@@ -236,7 +236,7 @@ class FilePrintServer(StubServerMixin):
         if ss is None:
             return
         printers = packet[1]
-        auth_class = self.auth_classes.get("unix-domain")
+        auth_class = self.auth_classes.get("socket")
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
 

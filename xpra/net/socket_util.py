@@ -34,6 +34,7 @@ WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)
+SOCKET_PEEK_TIMEOUT_MS = envint("XPRA_SOCKET_PEEK_TIMEOUT_MS", UNIXDOMAIN_PEEK_TIMEOUT_MS)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
@@ -643,7 +644,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 log.warn("Warning: some of the sockets are in an unknown state:")
                 for sockpath in unknown:
                     log.warn(" %s", sockpath)
-                    t = start_thread(timeout_probe, "probe-%s" % sockpath, daemon=True, args=(sockpath,))
+                    t = start_thread(timeout_probe, f"probe-{sockpath}", daemon=True, args=(sockpath,))
                     threads.append(t)
                 log.warn(" please wait as we allow the socket probing to timeout")
                 #wait for all the threads to do their job:
@@ -683,7 +684,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
                         log.info(f"created unix domain socket {sockpath!r}")
-                        defs[("unix-domain", sock, sockpath, cleanup_socket)] = options
+                        defs[("socket", sock, sockpath, cleanup_socket)] = options
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
                         del e

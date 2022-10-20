@@ -70,7 +70,7 @@ def get_sd_listen_socket(int fd):
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:
         sock = fromfd(socket.AF_UNIX, socket.SOCK_STREAM)
         sockpath = sock.getsockname()
-        return "unix-domain", sock, sockpath
+        return "socket", sock, sockpath
     for family in (socket.AF_INET, socket.AF_INET6):
         if sd_is_socket_inet(fd, family, socket.SOCK_STREAM, 1, 0)>0:
             sock = fromfd(family, socket.SOCK_STREAM)

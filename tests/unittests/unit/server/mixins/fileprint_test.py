@@ -19,7 +19,7 @@ class FilePrintMixinTest(ServerMixinTest):
             return ()
         return [
             #socktype, socket, sockpath, cleanup_socket
-            ("unix-domain", None, "/fake/path", None)
+            ("socket", None, "/fake/path", None)
             ]
 
     def test_fileprint(self):

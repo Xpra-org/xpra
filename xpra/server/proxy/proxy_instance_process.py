@@ -262,7 +262,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         target = peername or sockname
         #sock.settimeout(0)
         log("new_control_connection() sock=%s, sockname=%s, address=%s, peername=%s", sock, sockname, address, peername)
-        sc = SocketConnection(sock, sockname, address, target, "unix-domain")
+        sc = SocketConnection(sock, sockname, address, target, "socket")
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
         protocol = Protocol(self, sc, self.process_control_packet)

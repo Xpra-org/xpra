@@ -28,7 +28,7 @@ from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
-    PEEK_TIMEOUT_MS, UNIXDOMAIN_PEEK_TIMEOUT_MS,
+    PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     ssl_wrap_socket,
     )
@@ -678,11 +678,10 @@ class ServerCore:
     ######################################################################
     # authentication:
     def init_auth(self, opts):
-        auth = self.get_auth_modules("local-auth", opts.auth or [])
         for x in SOCKET_TYPES:
-            if x in ("socket", "unix-domain", "named-pipe"):
+            if x in ("socket", "named-pipe"):
                 #use local-auth for these:
-                opts_value = auth
+                opts_value = opts.auth
             else:
                 opts_value = getattr(opts, f"{x}_auth")
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
@@ -815,7 +814,7 @@ class ServerCore:
             mdnslog("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
             for st in socktypes:
                 recs = mdns_recs.setdefault(st, [])
-                if socktype=="unix-domain":
+                if socktype=="socket":
                     assert st=="ssh"
                     host = "*"
                     iport = get_ssh_port()
@@ -863,7 +862,7 @@ class ServerCore:
         elif socktype=="ws":
             if ssl:
                 socktypes.append("wss")
-        elif socktype=="unix-domain":
+        elif socktype=="socket":
             if ssh_access:
                 socktypes = ["ssh"]
         return socktypes
@@ -914,7 +913,7 @@ class ServerCore:
             self.socket_info[sock] = info
             self.socket_options[sock] = options
             self.idle_add(self.add_listen_socket, socktype, sock, options)
-            if socktype=="unix-domain" and info:
+            if socktype=="socket" and info:
                 try:
                     p = os.path.abspath(info)
                     self.unix_socket_paths.append(p)
@@ -1017,13 +1016,13 @@ class ServerCore:
         if conn is None:
             return True
         #limit number of concurrent network connections:
-        if socktype not in ("unix-domain", ) and len(self._potential_protocols)>=self._max_connections:
+        if socktype!="socket" and len(self._potential_protocols)>=self._max_connections:
             netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
             netlog.error(" ignoring new one: %s", conn.endpoint)
             conn.close()
             return True
         #from here on, we run in a thread, so we can poll (peek does)
-        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True,
+        start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
                      args=(conn, socket_info, socket_options))
         return True
 
@@ -1087,8 +1086,8 @@ class ServerCore:
             #rfb does not send any data, waits for a server packet
             #so don't bother waiting for something that should never come:
             timeout = 0
-        elif socktype=="unix-domain":
-            timeout = UNIXDOMAIN_PEEK_TIMEOUT_MS
+        elif socktype=="socket":
+            timeout = SOCKET_PEEK_TIMEOUT_MS
         peek_data = b""
         if timeout>0:
             peek_data = peek_connection(conn, timeout)
@@ -1189,7 +1188,7 @@ class ServerCore:
                 return
             peek_data, line1, packet_type = b"", b"", None
 
-        if socktype in ("tcp", "unix-domain", "named-pipe") and peek_data:
+        if socktype in ("tcp", "socket", "named-pipe") and peek_data:
             #see if the packet data is actually xpra or something else
             #that we need to handle via an ssl wrapper or the websocket adapter:
             try:
@@ -1210,7 +1209,7 @@ class ServerCore:
         #get the new socket object as we may have wrapped it with ssl:
         sock = getattr(conn, "_socket", sock)
         pre_read = None
-        if socktype=="unix-domain" and not peek_data:
+        if socktype=="socket" and not peek_data:
             #try to read from this socket,
             #so short lived probes don't go through the whole protocol instantation
             try:

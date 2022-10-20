@@ -522,7 +522,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         add_query()
         display = parsed.path.lstrip(":")
         desc.update({
-                "type"          : "unix-domain",
+                "type"          : "socket",
                 "local"         : True,
                 "display"       : display,
                 "socket_dirs"   : opts.socket_dirs,
@@ -585,7 +585,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         add_credentials()
         add_query()
         desc.update({
-                "type"          : "unix-domain",
+                "type"          : "socket",
                 "local"         : True,
                 "socket_dir"    : os.path.basename(parsed.path),
                 "socket_dirs"   : opts.socket_dirs,

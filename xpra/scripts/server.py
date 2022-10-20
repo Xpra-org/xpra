@@ -1401,7 +1401,7 @@ def _do_run_server(script_file, cmdline,
         sockets.update(local_sockets)
         if POSIX and (starting or upgrading or starting_desktop):
             #all unix domain sockets:
-            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
+            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="socket"]
             forward_xdg_open = bool(opts.forward_xdg_open) or (
                 opts.forward_xdg_open is None and mode.find("desktop")<0 and mode.find("monitor")<0)
             if ud_paths:

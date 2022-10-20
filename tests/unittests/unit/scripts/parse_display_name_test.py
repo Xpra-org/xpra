@@ -76,7 +76,7 @@ class TestMain(unittest.TestCase):
                 raise Exception(f"parse_display_name should fail for {s}")
         if POSIX:
             e("ZZZZZZ")
-            t("10", {"display_name" : ":10", "local" : True, "type" : "unix-domain"})
+            t("10", {"display_name" : ":10", "local" : True, "type" : "socket"})
             t(socket_dir+"/thesocket", {"display_name" : "socket://"+socket_dir+"/thesocket"})
             t("socket:"+socket_dir+"/thesocket", {"display_name" : "socket:"+socket_dir+"/thesocket"})
         e("tcp://host:NOTANUMBER/")
