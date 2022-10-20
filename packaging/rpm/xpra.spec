@@ -657,7 +657,7 @@ fi
 - don't clean files that no longer exist
 - RHEL 9 builds
 - RPM dependency not needed
-* cosmetic:
+- cosmetic:
     - logging error handler errors
     - file transfer errors shown twice
     - honour transparency override earlier
