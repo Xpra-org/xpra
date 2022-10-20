@@ -550,13 +550,17 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         desc.update({
                 "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
-                "display_as_args"  : [],
                  })
+        if opts.socket_dir:
+            desc["socket_dir"] = opts.socket_dir
+        if opts.remote_xpra:
+            desc["remote_xpra"] = opts.remote_xpra
         add_credentials()
         add_host_port(22)
         add_path()
         add_query()
         display = desc.get("display")
+        args = []
         if protocol=="vnc+ssh" and display:
             #ie: "vnc+ssh://host/10" -> path="/10"
             #use a vnc display string with the proxy command
@@ -568,45 +572,9 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
                 vnc_uri += f":{vnc_port}/"
             except ValueError:
                 vnc_uri += "/"
-            desc["display_as_args"] = [vnc_uri]
-        #ie: ssh=["/usr/bin/ssh", "-v"]
-        ssh = parse_ssh_option(opts.ssh)
-        full_ssh = ssh[:]
-
-        #maybe restrict to win32 only?
-        ssh_cmd = ssh[0].lower()
-        is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
-        agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in full_ssh)
-        if is_paramiko:
-            ssh[0] = "paramiko"
-            desc["is_paramiko"] = is_paramiko
-            paramiko_config = {}
-            if opts.ssh.find(":")>0:
-                paramiko_config = parse_simple_dict(opts.ssh.split(":", 1)[1])
-                desc["paramiko-config"] = paramiko_config
-            agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
-            paramiko_config["agent"] = str(agent_forwarding)
-        elif is_putty:
-            desc["is_putty"] = True
-        desc["agent"] = agent_forwarding
-        if agent_forwarding:
-            #tell the remote proxy command which user uuid we're going to use,
-            #so it can setup the ssh agent symlink at a location
-            #that the server can find with just the uuid:
-            uuid = get_user_uuid()
-            desc["display_as_args"].append(f"--env=SSH_AGENT_UUID={uuid}")
-            desc["ssh-agent-uuid"] = uuid
-
-        full_ssh += get_ssh_args(desc, ssh_cmd)
-        if "proxy_host" in desc:
-            full_ssh += get_ssh_proxy_args(desc, ssh)
-        desc.update({
-            "full_ssh"      : full_ssh,
-            "remote_xpra"   : opts.remote_xpra,
-            })
-        if opts.socket_dir:
-            desc["socket_dir"] = opts.socket_dir
+            args.append(vnc_uri)
+        desc.update(get_ssh_display_attributes(args, opts.ssh))
+        desc["display_as_args"] = args
         return desc
 
     if protocol=="socket":
@@ -699,6 +667,40 @@ def parse_ssh_option(ssh_setting):
             from xpra.platform.features import DEFAULT_SSH_COMMAND
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
+
+def get_ssh_display_attributes(args, ssh_option="auto"):
+    #ie: ssh=["/usr/bin/ssh", "-v"]
+    ssh = parse_ssh_option(ssh_option)
+    full_ssh = ssh[:]
+    ssh_cmd = ssh[0].lower()
+    is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+    is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
+    agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in full_ssh)
+    desc = {}
+    if is_paramiko:
+        ssh[0] = "paramiko"
+        desc["is_paramiko"] = is_paramiko
+        paramiko_config = desc.setdefault("paramiko-config", {})
+        if ssh_option.find(":")>0:
+            paramiko_config = parse_simple_dict(ssh_option.split(":", 1)[1])
+        agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
+        paramiko_config["agent"] = str(agent_forwarding)
+    elif is_putty:
+        desc["is_putty"] = True
+    desc["agent"] = agent_forwarding
+    if agent_forwarding:
+        #tell the remote proxy command which user uuid we're going to use,
+        #so it can setup the ssh agent symlink at a location
+        #that the server can find with just the uuid:
+        uuid = get_user_uuid()
+        args.append(f"--env=SSH_AGENT_UUID={uuid}")
+        desc["ssh-agent-uuid"] = uuid
+    full_ssh += get_ssh_args(desc, ssh_cmd)
+    if "proxy_host" in desc:
+        full_ssh += get_ssh_proxy_args(desc, ssh)
+    desc["full_ssh"] = full_ssh
+    return desc
+
 
 def get_ssh_args(desc, ssh_cmd="paramiko", prefix=""):
     ssh_port = desc.get(f"{prefix}port", 22)
