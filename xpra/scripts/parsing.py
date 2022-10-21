@@ -465,11 +465,11 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         }
 
     def add_credentials():
-        username = opts.username or parsed.username
+        username = parsed.username or opts.username
         if username is not None:
             desc["username"] = username
             opts.username = username
-        password = opts.password or parsed.password
+        password = parsed.password or opts.password
         if not password and opts.password_file:
             password = load_password_file(opts.password_file[0])
         if password:
@@ -573,7 +573,13 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             except ValueError:
                 vnc_uri += "/"
             args.append(vnc_uri)
-        desc.update(get_ssh_display_attributes(args, opts.ssh))
+        ssh_desc = get_ssh_display_attributes(desc, args, opts.ssh)
+        desc.update(ssh_desc)
+        ssh = parse_ssh_option(opts.ssh)
+        full_ssh = ssh + get_ssh_args(desc, ssh[0])
+        if "proxy_host" in desc:
+            full_ssh += get_ssh_proxy_args(desc, ssh)
+        desc["full_ssh"] = full_ssh
         desc["display_as_args"] = args
         return desc
 
@@ -668,14 +674,13 @@ def parse_ssh_option(ssh_setting):
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def get_ssh_display_attributes(args, ssh_option="auto"):
+def get_ssh_display_attributes(desc, args, ssh_option="auto"):
     #ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
-    full_ssh = ssh[:]
     ssh_cmd = ssh[0].lower()
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
     is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
-    agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in full_ssh)
+    agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
     desc = {}
     if is_paramiko:
         ssh[0] = "paramiko"
@@ -695,10 +700,6 @@ def get_ssh_display_attributes(args, ssh_option="auto"):
         uuid = get_user_uuid()
         args.append(f"--env=SSH_AGENT_UUID={uuid}")
         desc["ssh-agent-uuid"] = uuid
-    full_ssh += get_ssh_args(desc, ssh_cmd)
-    if "proxy_host" in desc:
-        full_ssh += get_ssh_proxy_args(desc, ssh)
-    desc["full_ssh"] = full_ssh
     return desc
 
 
@@ -707,7 +708,9 @@ def get_ssh_args(desc, ssh_cmd="paramiko", prefix=""):
     username = desc.get(f"{prefix}username")
     password = desc.get(f"{prefix}password")
     host = desc.get(f"{prefix}host")
-    key = desc.get(f"{prefix}key", None)
+    if not host:
+        raise RuntimeError(f"missing host from session descriptor {desc}")
+    key = desc.get(f"{prefix}key")
     is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
     is_paramiko = ssh_cmd=="paramiko"
     args = []
