@@ -1339,7 +1339,7 @@ def _do_run_server(script_file, cmdline,
 
     if opts.chdir:
         log(f"chdir({opts.chdir})")
-        os.chdir(opts.chdir)
+        os.chdir(osexpand(opts.chdir))
 
     dbus_pid, dbus_env = 0, {}
     if not shadowing and POSIX and not OSX:
