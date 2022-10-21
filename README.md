@@ -44,16 +44,19 @@ For more details, see [building from source](https://github.com/Xpra-org/xpra/tr
 ---
 
 # Usage
+## Initial requirements
+`xpra` must be installed on the client and the host.
+
 ## Seamless Mode
-To start an `xterm` on a remote host and display it locally:
+Run `xterm` on a remote host, display and iteract with it locally (from the client machine):
 ```
 xpra start ssh://USER@HOST/ --start=xterm
+# hint: xterm must be installed on the HOST.
 ```
-(both `xpra` and `xterm` must be installed on `HOST`).  
 For more examples, see [usage](./docs/Usage/README.md).
 
 ## Shadow
-To view an existing desktop session running on a remote host:
+View an existing desktop session running on a remote host:
 ```
 xpra shadow ssh://USER@HOST/
 ```
