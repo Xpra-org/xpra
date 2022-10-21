@@ -2618,7 +2618,7 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
         sshlog(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
-        return
+        return None
     #locate the ssh agent uuid,
     #which is used to derive the agent path symlink
     #that the server will want to use for this connection,
@@ -2639,11 +2639,16 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
         if os.path.islink(agent_uuid_sockpath) and is_socket(agent_uuid_sockpath):
             sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
             #keep the existing socket unchanged - somehow it still works?
-            return
+            return agent_uuid_sockpath
         sshlog(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
         os.unlink(agent_uuid_sockpath)
     sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
-    os.symlink(auth_sock, agent_uuid_sockpath)
+    try:
+        os.symlink(auth_sock, agent_uuid_sockpath)
+    except OSError as e:
+        sshlog.error("Error creating ssh agent socket symlink")
+        sshlog.estr(e)
+        return None
     return agent_uuid_sockpath
 
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
