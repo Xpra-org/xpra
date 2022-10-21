@@ -1796,7 +1796,7 @@ class ServerCore:
     ######################################################################
     # hello / authentication:
     def send_version_info(self, proto, full=False):
-        version = XPRA_VERSION.split(".", 1)[0] if full else version_str()
+        version = version_str() if full else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(("hello", {"version" : version}))
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
