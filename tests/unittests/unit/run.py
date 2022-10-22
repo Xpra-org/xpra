@@ -5,14 +5,23 @@
 #runs all the files in "unit/" that end in "test.py"
 
 import sys
+import time
 import os.path
 import subprocess
 
 
 COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1")=="1"
 
+def getargs():
+    from argparse import ArgumentParser
+    P = ArgumentParser()
+    P.add_argument('--skip-fail', action='append', default=[])
+    P.add_argument('--skip-slow', action='append', default=[])
+    P.add_argument('-T', '--test', action='append')
+    P.add_argument('test', nargs='*', default=[])
+    return P
 
-def main():
+def main(args):
     if COVERAGE:
         # pylint: disable=import-outside-toplevel
         #only include xpra in the report,
@@ -36,14 +45,12 @@ def main():
     else:
         run_cmd = [os.environ.get("PYTHON", "python3")]
 
-    paths = []
     #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
     unit_dir = os.path.abspath(os.path.dirname(__file__))
-    if len(sys.argv)>1:
-        for x in sys.argv[1:]:
-            paths.append(os.path.abspath(x))
-    else:
-        paths.append(unit_dir)
+    paths = args.test or [unit_dir]
+    skip_fail = set(args.skip_fail)
+    skip_slow = set(args.skip_slow)
+
     #ie: unittests_dir = "/path/to/Xpra/trunk/src/unittests"
     unittests_dir = os.path.dirname(unit_dir)
     sys.path.append(unittests_dir)
@@ -58,20 +65,29 @@ def main():
             return 0
         #ie: "unit.version_util_test"
         name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
+        if p in skip_slow or name in skip_slow:
+            write(f"skipped slow test as requested: {p}")
+            return 0
         write(f"running {name}\n")
         cmd = run_cmd + [p]
+        T0 = time.monotonic()
         try:
             with subprocess.Popen(cmd) as proc:
                 v = proc.wait()
             if v!=0:
                 write(f"failure on {name}, exit code={v}")
-                return v
-            return 0
         except OSError as e:
             write(f"failed to execute {p} using {cmd}: {e}")
-            return 1
+            v = 1
+        if v!=0 and (p in skip_fail or name in skip_fail):
+            write(f"ignore failure {v} as requested: {p}")
+            v = 0
+        T1 = time.monotonic()
+        write(f"ran {name} in {T1-T0:.2f} seconds\n")
+        return v
     def add_recursive(d):
         paths = os.listdir(d)
+        ret = 0
         for path in paths:
             p = os.path.join(d, path)
             v = 0
@@ -81,17 +97,19 @@ def main():
                 fp = os.path.join(d, p)
                 v = add_recursive(fp)
             if v !=0:
-                return v
-        return 0
+                ret = v
+        return ret
     write("************************************************************")
     write(f"running all the tests in {paths}")
+    ret = 0
     for x in paths:
         if os.path.isdir(x):
             r = add_recursive(x)
         else:
             r = run_file(x)
         if r!=0:
-            return r
+            ret = r
+    return ret
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(getargs().parse_args()))
