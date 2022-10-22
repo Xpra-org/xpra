@@ -162,7 +162,7 @@ def encode(coding : str, image, options=None):
             im = im.convert("RGB")
             rgb = "RGB"
             bpp = 24
-    except Exception:
+    except Exception as e:
         log.error("Error: pillow failed to convert image")
         log.estr(e)
         log.error(" for %s", im)
