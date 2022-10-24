@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,7 +12,7 @@ from time import monotonic
 from dataclasses import dataclass
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes, umask_context, POSIX, WIN32
+from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
