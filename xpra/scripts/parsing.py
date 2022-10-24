@@ -293,66 +293,6 @@ def parse_username_and_password(s):
         desc["password"] = password
     return desc
 
-def parse_host_string(host, default_port=DEFAULT_PORT):
-    """
-        Parses [username[:password]@]host[:port]
-        and returns username, password, host, port
-        missing arguments will be empty (username and password) or 0 (port)
-    """
-    upos = host.rfind("@")
-    if upos>=0:
-        #HOST=username@host
-        desc = parse_username_and_password(host[:upos])
-        host = host[upos+1:]
-    else:
-        desc = {}
-    port_str = None
-    if host.count(":")>=2:
-        #more than 2 ":", assume this is IPv6:
-        if host.startswith("["):
-            #if we have brackets, we can support: "[HOST]:SSHPORT"
-            epos = host.find("]")
-            if epos<0:
-                raise ValueError("invalid host format, expected IPv6 [..]")
-            port_str = host[epos+1:]        #ie: ":22"
-            if port_str.startswith(":"):
-                port_str = port_str[1:]     #ie: "22"
-            host = host[1:epos]            #ie: "[HOST]"
-        else:
-            #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
-            devsep = host.split("%")
-            if len(devsep)==2:
-                parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
-                if len(parts)==2:
-                    host = f"{devsep[0]}%{parts[0]}"
-                    port_str = parts[1]     #ie: "14500"
-            else:
-                parts = host.split(":")
-                if len(parts[-1])>4:
-                    port_str = parts[-1]
-                    host = ":".join(parts[:-1])
-                else:
-                    #otherwise, we have to assume they are all part of IPv6
-                    #we could count them at split at 8, but that would be just too fugly
-                    pass
-    elif host.find(":")>0:
-        host, port_str = host.split(":", 1)
-    if port_str:
-        try:
-            port = int(port_str)
-        except ValueError:
-            raise ValueError(f"invalid port number specified: {port_str!r}") from None
-    else:
-        port = default_port
-    if port<=0 or port>=2**16:
-        raise ValueError(f"invalid port number: {port}")
-    desc.update({
-        "host"  : host or "127.0.0.1",
-        "port"  : port,
-        "local" : is_local(host),
-        })
-    return desc
-
 def load_password_file(password_file):
     if not password_file:
         return None
