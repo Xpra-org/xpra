@@ -24,6 +24,7 @@ from xpra.scripts.config import InitException, FALSE_OPTIONS
 
 UINPUT_UUID_LEN = 12
 
+# pylint: disable=import-outside-toplevel
 
 def source_env(source=()) -> dict:
     log = get_util_logger()
@@ -85,13 +86,14 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
         decode = decode_dict
     else:
-        source = '%s. %s' % ("set -a && " if include_unexported_variables else "", filename)
+        source = "set -a && " if include_unexported_variables else ""
+        source += f"%s. {filename}"
         #ie: this is "python3.9 -c" on Posix
         #(but our 'Python_exec_cmd.exe' wrapper on MS Windows):
         python_cmd = " ".join(get_python_exec_command())
-        dump = '%s "import os, json;print(json.dumps(dict(os.environ)))"' % (python_cmd)
+        dump = f'{python_cmd} "import os, json;print(json.dumps(dict(os.environ)))"'
         sh = which("bash") or "/bin/sh"
-        cmd = [sh, '-c', '%s 1>&2 && %s' % (source, dump)]
+        cmd = [sh, "-c", f"{source} 1>&2 && {dump}"]
         decode = decode_json
     out = err = ""
     try:
@@ -410,7 +412,7 @@ def has_uinput():
         log.warn("Warning: the system python uinput module looks broken:")
         log.warn(" %s", e)
         return False
-    except ImportError as e:
+    except ImportError:
         log = get_util_logger()
         log("has_uinput()", exc_info=True)
         log.info("no uinput module (not usually needed)")
@@ -468,7 +470,7 @@ def create_uinput_pointer_device(uuid, uid):
         )
     #REL_HIRES_WHEEL = 0x10
     #uinput.REL_HWHEEL,
-    name = "Xpra Virtual Pointer %s" % uuid
+    name = f"Xpra Virtual Pointer {uuid}"
     return create_uinput_device(uuid, uid, events, name)
 
 def create_uinput_touchpad_device(uuid, uid):
@@ -484,7 +486,7 @@ def create_uinput_touchpad_device(uuid, uid):
         ABS_PRESSURE + (0, 255, 0, 0),
         #BTN_TOOL_PEN,
         )
-    name = "Xpra Virtual Touchpad %s" % uuid
+    name = f"Xpra Virtual Touchpad {uuid}"
     return create_uinput_device(uuid, uid, events, name)
 
 
