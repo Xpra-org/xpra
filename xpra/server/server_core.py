@@ -55,7 +55,7 @@ from xpra.os_util import (
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, hexstr,
-    WIN32, POSIX, BITS,
+    POSIX, BITS,
     parse_encoded_bin_data, load_binary_file,
     osexpand,
     )
