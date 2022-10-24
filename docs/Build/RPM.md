@@ -55,7 +55,7 @@ When building against the private video codec libraries, you must point the comp
 
 ```shell
 python3 ./setup.py install \
-        --rpath=/usr/lib64/xpra --pkg-config-path=/usr/lib64/xpra/pkgconfig
+        --rpath=/usr/lib64/xpra --pkg-config-path=/usr/lib64/xpra/pkgconfig \
         --without-html5 --without-printing
 ```
 </details>
