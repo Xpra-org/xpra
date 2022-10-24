@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.4.2] 2022-10-24
+* TODO
+
 ## [4.4.1] 2022-10-17
 * [unable to focus window](https://github.com/Xpra-org/xpra/issues/3596)
 * [chunked file transfer checksum errors](https://github.com/Xpra-org/xpra/commit/c8a9a90d7012c335379f8a175952cdde7e815a01)

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4.1
+%define version 4.4.2
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -641,6 +641,8 @@ fi
 
 
 %changelog
+* Mon Oct 24 2022 Antoine Martin <antoine@xpra.org> 4.4.2-10
+- TODO
 * Mon Oct 17 2022 Antoine Martin <antoine@xpra.org> 4.4.1-10
 - unable to focus window
 - chunked file transfer checksum errors
