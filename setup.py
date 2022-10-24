@@ -1747,7 +1747,7 @@ else:
 
             if docs_ENABLED:
                 doc_dir = f"{self.install_dir}/share/doc/xpra/"
-                convert_doc_dir("./fs/share/doc/xpra", doc_dir)
+                convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
                 for d in ("http-headers", "content-type", "content-categories", "content-parent"):
