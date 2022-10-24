@@ -205,16 +205,14 @@ def configure_logging(options, mode):
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
         "seamless", "desktop", "monitor", "expand", "shadow",
-        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "recover",
         "attach", "listen", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
-        "request-start", "request-start-desktop", "request-shadow",
         "_dialog", "_pass",
         "pinentry",
         "example",
-        ):
+        ) or mode.startswith("upgrade") or mode.startswith("request-"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             server_mode = mode not in ("attach", "listen")
             codec_help = show_sound_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
@@ -445,10 +443,8 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     if mode in (
         "seamless", "desktop", "shadow", "expand",
         "attach", "listen",
-        "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
-        "request-start", "request-start-desktop", "request-shadow",
-        ):
+        ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
     try:
         return do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults)
@@ -493,8 +489,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         "control", "_monitor", "shell", "print",
         "qrcode",
         "show-menu", "show-about", "show-session-info",
-        "connect-test", "request-start", "request-start-desktop", "request-shadow",
-        ):
+        "connect-test",
+        ) or mode.startswith("request-"):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     elif mode in ("stop", "exit"):
         no_gtk()
@@ -1329,7 +1325,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
         extra_args = extra_args[1:]
 
     request_mode = None
-    if mode in ("request-start", "request-start-desktop", "request-shadow"):
+    if mode.startswith("request-"):
         request_mode = mode.replace("request-", "")
 
     try:
