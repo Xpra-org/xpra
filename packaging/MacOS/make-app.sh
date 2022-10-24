@@ -312,7 +312,7 @@ echo " * fixup pixbuf loader"
 sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
 echo " * docs"
-if [ -d "${JHBUILD_PREFIX}/share/xpra/doc" ]; then
+if [ -d "${JHBUILD_PREFIX}/share/doc/xpra" ]; then
 	mkdir -p ${RSCDIR}/share/doc/xpra
 	rsync -rplogt ${JHBUILD_PREFIX}/share/doc/xpra/* ${RSCDIR}/share/doc/xpra/
 fi
