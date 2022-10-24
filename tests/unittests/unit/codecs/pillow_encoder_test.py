@@ -68,7 +68,7 @@ class TestPillow(unittest.TestCase):
     def do_test_pixel_format(self, pixel_format, bpp, encoding):
         maxsize = 1024*1024*4
         buf = bytearray(maxsize)
-        palette = [(10, 255, 127), (0, 0, 0), (255, 255, 255)]
+        palette = [(10, 255, 127), (0, 0, 0), (255, 255, 255)] + [(0, 0, 0)]*253
         for transparency in (True, False):
             for quality in (0, 1, 50, 99, 100):
                 for speed in (0, 1, 50, 99, 100):
