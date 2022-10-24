@@ -8,6 +8,7 @@
 import sys
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from xpra.util import pver, flatten_dict, print_nested_dict
     def print_version_dict(d, vformat=pver):
         for k in sorted(d.keys()):

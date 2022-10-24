@@ -8,6 +8,7 @@ import sys
 
 
 def main(argv=()):
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
     from xpra.gtk_common.gtk_util import init_display_source

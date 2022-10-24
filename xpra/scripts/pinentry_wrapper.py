@@ -135,7 +135,7 @@ def run_pinentry_getpin(pinentry_cmd, title, description):
     def rec(value=None):
         values.append(value)
     def err(value=None):
-        pass
+        log("getpin error: %s", value)
     try:
         pinentry_getpin(proc, title, description, rec, err)
     finally:

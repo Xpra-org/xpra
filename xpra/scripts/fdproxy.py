@@ -31,7 +31,7 @@ class XpraProxy:
     """
 
     def __repr__(self):
-        return "XpraProxy(%s: %s - %s)" % (self._name, self._client_conn, self._server_conn)
+        return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
     def __init__(self, name, client_conn, server_conn, quit_cb=None):
         self._name = name
@@ -62,11 +62,11 @@ class XpraProxy:
         return self.exit_code
 
     def _to_client_loop(self):
-        self._copy_loop("<-server %s" % self._name, self._server_conn, self._client_conn)
+        self._copy_loop(f"<-server {self._name}", self._server_conn, self._client_conn)
         self._closed = True
 
     def _to_server_loop(self):
-        self._copy_loop("->server %s" % self._name, self._client_conn, self._server_conn)
+        self._copy_loop(f"->server {self._name}", self._client_conn, self._server_conn)
         self._closed = True
 
     def _copy_loop(self, log_name, from_conn, to_conn):
