@@ -340,7 +340,7 @@ class ServerCore:
             if w and w.is_alive():
                 #wait up to 1 second for the worker thread to exit
                 try:
-                    w.wait(1)
+                    w.join(1)
                 except Exception:
                     pass
                 if w.is_alive():

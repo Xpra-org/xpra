@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,7 +28,7 @@ class Worker_Thread(Thread):
         self.daemon_work_items = WeakSet()
 
     def __repr__(self):
-        return "Worker_Thread(items=%s, exit=%s)" % (self.items.qsize(), self.exit)
+        return f"Worker_Thread(items={self.items.qsize()}, exit={self.exit})"
 
     def stop(self, force=False):
         if self.exit:
