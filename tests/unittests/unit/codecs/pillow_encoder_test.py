@@ -80,12 +80,18 @@ class TestPillow(unittest.TestCase):
                             image = ImageWrapper(0, 0, width, height, pixel_data, pixel_format, 32,
                                                  width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                                  thread_safe=True, palette=palette)
-                            comp = encode(encoding, image, {
-                                "quality" : quality,
-                                "speed" : speed,
-                                "alpha" : transparency,
-                                })
-                            assert comp
+                            options = {
+                                    "quality" : quality,
+                                    "speed" : speed,
+                                    "alpha" : transparency,
+                                    }
+                            try:
+                                comp = encode(encoding, image, options)
+                                if not comp:
+                                    raise ValueError(f"{encode} returned {comp}")
+                            except Exception as e:
+                                raise RuntimeError(f"failed to encode {image} as {encoding} with options {options}") \
+                                    from e
 
     def test_invalid_pixel_format(self):
         width = 32
