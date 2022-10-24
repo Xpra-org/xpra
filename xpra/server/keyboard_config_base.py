@@ -58,7 +58,7 @@ class KeyboardConfigBase:
         return keycode, group
 
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
-        from xpra.log import Logger
+        from xpra.log import Logger  # pylint: disable=import-outside-toplevel
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))
         log.warn("Warning: %s does not implement get_keycode!", type(self))

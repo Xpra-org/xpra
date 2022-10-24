@@ -753,7 +753,8 @@ class ServerCore:
         log.info("xpra %s version %s %i-bit", self.get_server_mode(), full_version_str(), BITS)
         try:
             pinfo = get_platform_info()
-            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
+            osinfo = " on " + platform_name(sys.platform,
+                                            pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
         except Exception:
             log("platform name error:", exc_info=True)
             osinfo = ""
@@ -935,7 +936,7 @@ class ServerCore:
         netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
         for sockpath in self.unix_socket_paths:
             if not os.path.exists(sockpath):
-                if first_time("missing-socket-%s" % sockpath):
+                if first_time(f"missing-socket-{sockpath}"):
                     log.warn("Warning: the unix domain socket cannot be found:")
                     log.warn(" '%s'", sockpath)
                     log.warn(" was it deleted by mistake?")
@@ -1003,7 +1004,8 @@ class ServerCore:
             netlog("ignoring new connection during shutdown")
             return False
         socket_info = self.socket_info.get(listener)
-        assert socktype, "cannot find socket type for %s" % listener
+        if not socktype:
+            raise RuntimeError(f"cannot find socket type for {listener}")
         #TODO: just like add_listen_socket above, this needs refactoring
         socket_options = self.socket_options.get(listener, {})
         if socktype=="named-pipe":
@@ -1250,7 +1252,7 @@ class ServerCore:
         except Exception as e:
             ssllog("SSL error", exc_info=True)
             ssl_paths = [socket_options.get(x, kwargs.get(x)) for x in ("ssl-cert", "ssl-key")]
-            cpaths = csv("'%s'" % x for x in ssl_paths if x)
+            cpaths = csv(f"{x!r}" for x in ssl_paths if x)
             log.error("Error: failed to create SSL socket")
             log.error(" from %s socket: %s", socktype, sock)
             if not cpaths:
@@ -1448,7 +1450,7 @@ class ServerCore:
             http_protocol = "https" if is_ssl else "http"
             http_upgrade = socket_options.get(http_protocol, self._html) not in FALSE_OPTIONS
             if not http_upgrade:
-                conn_err("%s upgrades are not enabled" % http_protocol)
+                conn_err(f"{http_protocol} upgrades are not enabled")
                 return False, None, None
             self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
             return False, conn, None
@@ -1476,12 +1478,12 @@ class ServerCore:
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
             parts = bytestostr(line1).split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
-            tname = "%s-request" % parts[0]
-            req_info = "%s %s" % (http_proto, parts[0])
+            tname = parts[0]+"-request"
+            req_info = http_proto+" "+parts[0]
         else:
             httplog("New %s connection received from %s", http_proto, frominfo)
             req_info = "wss" if is_ssl else "ws"
-            tname = "%s-proxy" % req_info
+            tname = f"{req_info}-proxy"
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
@@ -1526,8 +1528,9 @@ class ServerCore:
             else:
                 l(" request: %r", bytestostr(line1))
             l(" %s", e)
-        except Exception as e:
-            wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
+        except Exception:
+            wslog.error("Error: %s request failure for client %s:",
+                        req_info, pretty_socket(frominfo), exc_info=True)
         try:
             conn.close()
         except Exception as ce:
@@ -1732,15 +1735,15 @@ class ServerCore:
         i = str(reasons[0])
         if len(reasons)>1:
             i += " (%s)" % csv(reasons[1:])
-        proto_info = " %s" % protocol
+        proto_info = f" {protocol}"
         try:
             conn = protocol._conn
             info = conn.get_info()
             endpoint = info.get("endpoint")
             if endpoint:
-                proto_info = " %s" % pretty_socket(endpoint)
+                proto_info = " " + pretty_socket(endpoint)
             else:
-                proto_info = " %s" % pretty_socket(conn.local)
+                proto_info = " " + pretty_socket(conn.local)
         except (KeyError, AttributeError):
             pass
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
@@ -1947,7 +1950,7 @@ class ServerCore:
                 #this authentication module does not need a challenge
                 #(ie: "peercred" or "none")
                 if not authenticator.authenticate(c):
-                    auth_failed("%s authentication failed" % authenticator)
+                    auth_failed(f"{authenticator} authentication failed")
                     return
                 authenticator.passed = True
                 authlog("authentication passed for %s (no challenge provided)", authenticator)
@@ -2022,8 +2025,7 @@ class ServerCore:
                 return auth_failed("the server does not support encryption on this connection")
             server_cipher = proto.encryption.split("-")[0]
             if server_cipher!=cipher:
-                return auth_failed("the server is configured for '%s' not '%s' as requested by the client" % (
-                    server_cipher, cipher))
+                return auth_failed(f"the server is configured for {server_cipher!r} not {cipher!r} as requested by the client")
             from xpra.net.crypto import (
                 DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS,
                 DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -160,7 +160,7 @@ class MenuProvider:
         if OSX:
             return None
         menu_data = self.menu_data
-        if self.load_lock.acquire(wait):
+        if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
             menu_data = self.menu_data
             try:
                 if not self.menu_data or force_reload:

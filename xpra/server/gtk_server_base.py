@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,8 +10,10 @@
 
 import sys
 import os.path
-import gi
+from io import BytesIO
 from time import monotonic
+
+import gi
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
@@ -70,9 +72,9 @@ class GTKServerBase(ServerBase):
         keymap.connect("keys-changed", keys_changed)
 
     def install_signal_handlers(self, callback):
-        sstr = "%s server" % self.get_server_mode()
+        sstr = self.get_server_mode()+" server"
         register_os_signals(callback, sstr)
-        from xpra.gtk_common.gobject_compat import register_SIGUSR_signals
+        from xpra.gtk_common.gobject_compat import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals(sstr)
 
     def do_quit(self):
@@ -80,7 +82,7 @@ class GTKServerBase(ServerBase):
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
         #from now on, we can't rely on the main loop:
-        from xpra.os_util import register_SIGUSR_signals
+        from xpra.os_util import register_SIGUSR_signals    # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals()
 
     def late_cleanup(self):
@@ -115,7 +117,7 @@ class GTKServerBase(ServerBase):
 
     def do_run(self):
         if UI_THREAD_WATCHER:
-            from xpra.platform.ui_thread_watcher import get_UI_watcher
+            from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
             self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
             self.ui_watcher.start()
         if server_features.windows:
@@ -196,7 +198,7 @@ class GTKServerBase(ServerBase):
             }.items():
             if size is None:
                 continue
-            cinfo["%s_size" % prop] = size
+            cinfo[f"{prop}_size"] = size
         return cinfo
 
     def do_get_info(self, proto, *args):
@@ -339,7 +341,6 @@ class GTKServerBase(ServerBase):
             if w>MAX_SIZE or h>MAX_SIZE:
                 img = img.resize((MAX_SIZE, MAX_SIZE), Image.ANTIALIAS)
                 w = h = MAX_SIZE
-            from io import BytesIO
             buf = BytesIO()
             img.save(buf, "PNG")
             cpixels = buf.getvalue()

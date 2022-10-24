@@ -87,7 +87,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         decode = decode_dict
     else:
         source = "set -a && " if include_unexported_variables else ""
-        source += f"%s. {filename}"
+        source += f". {filename}"
         #ie: this is "python3.9 -c" on Posix
         #(but our 'Python_exec_cmd.exe' wrapper on MS Windows):
         python_cmd = " ".join(get_python_exec_command())

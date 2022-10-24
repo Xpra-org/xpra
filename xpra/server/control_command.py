@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
+from xpra.log import (
+    Logger,
+    add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for,
+    get_all_loggers,
+    )
 from xpra.util import csv, engs
 
 log = Logger("util", "command")
@@ -28,14 +32,14 @@ class ControlCommand:
     def run(self, *args):
         log("%s.run: calling %s%s", self, self.do_run, args)
         if self.do_run is None:
-            raise NotImplementedError("control command %s undefined!" % self.name)
+            raise NotImplementedError(f"control command {self.name} undefined!")
         return self.do_run(*args)
 
     def raise_error(self, msg):
         raise ControlError(msg, self.help)
 
     def __repr__(self):
-        return "ControlCommand(%s)" % self.name
+        return f"ControlCommand({self.name})"
 
 
 class ArgsControlCommand(ControlCommand):
@@ -49,9 +53,9 @@ class ArgsControlCommand(ControlCommand):
 
     def run(self, *args):
         if self.min_args is not None and len(args)<self.min_args:
-            self.raise_error("at least %i argument%s required" % (self.min_args, engs(self.min_args)))
+            self.raise_error(f"not enough arguments, minimum is {self.min_args}")
         if self.max_args is not None and len(args)>self.max_args:
-            self.raise_error("too many arguments, %i maximum" % self.max_args)
+            self.raise_error(f"too many arguments, maximum is {self.max_args}")
         args = list(args)
         for i,validation in enumerate(self.validation):
             if i>=len(args):
@@ -64,7 +68,7 @@ class ArgsControlCommand(ControlCommand):
             try:
                 args[i] = validation(v)
             except ValueError as e:
-                self.raise_error("argument %i failed validation: %s" % (i+1, e))
+                self.raise_error(f"argument {i+1} failed validation: {e}")
         return super().run(*args)
 
 
@@ -101,14 +105,14 @@ class HelpCommand(ArgsControlCommand):
 
     def run(self, *args):
         if len(args)==0:
-            return "control supports: %s" % csv(sorted(self.control_commands))
+            return "control supports: " + csv(sorted(self.control_commands))
         name = args[0]
         command = self.control_commands.get(name)
         if not command:
-            self.raise_error("unknown command '%s'" % name)
+            self.raise_error(f"unknown command {name!r}")
         if not command.help:
-            return "sorry, no help message available for '%s'" % name
-        return "control command '%s': %s" % (name, command.help)
+            return f"sorry, no help message available for {name!r}"
+        return f"control command {name!r}: {command.help}"
 
 
 class DebugControl(ArgsControlCommand):
@@ -119,8 +123,7 @@ class DebugControl(ArgsControlCommand):
 
     def run(self, *args):
         if len(args)==1 and args[0]=="status":
-            from xpra.log import get_all_loggers
-            return "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()]))
+            return "logging is enabled for: " + csv(str(x) for x in get_all_loggers() if x.is_debug_enabled())
         log_cmd = args[0]
         if log_cmd=="mark":
             for _ in range(10):
@@ -136,7 +139,6 @@ class DebugControl(ArgsControlCommand):
             self.raise_error("not enough arguments")
         if log_cmd not in ("enable", "disable"):
             self.raise_error("only 'enable' and 'disable' verbs are supported")
-        from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
         #each argument is a group
         loggers = []
         groups = args[1:]
@@ -158,4 +160,4 @@ class DebugControl(ArgsControlCommand):
             log.info("%sd debugging for:", log_cmd)
             for l in loggers:
                 log.info(" - %s", l)
-        return "logging %sd for %s" % (log_cmd, csv(loggers) or "<no match found")
+        return f"logging {log_cmd}d for "+(csv(loggers) or "<no match found>")

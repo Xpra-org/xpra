@@ -148,7 +148,7 @@ class ServerBase(ServerBaseClass):
 
     def init(self, opts):
         #from now on, use the logger for parsing errors:
-        from xpra.scripts import config
+        from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
         for c in SERVER_BASES:
             start = monotonic()
@@ -253,7 +253,7 @@ class ServerBase(ServerBaseClass):
                 self.disconnect_client(proto, SESSION_BUSY, "this session is locked")
                 return False, 0, 0
             elif self.lock is not False and any(ss.lock for ss in existing_sources):
-                authlog("handle_sharing: another client has locked the session: %s", csv(ss for ss in existing_sources if ss.lock))
+                authlog("handle_sharing: another client has locked the session: " + csv(ss for ss in existing_sources if ss.lock))
                 self.disconnect_client(proto, SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
@@ -397,6 +397,7 @@ class ServerBase(ServerBaseClass):
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def get_client_connection_class(self, caps):
+        # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
 
@@ -537,6 +538,7 @@ class ServerBase(ServerBaseClass):
         capabilities = self.make_hello(server_source)
         if "encodings" in server_source.wants and server_features.windows:
             try:
+                # pylint: disable=import-outside-toplevel
                 from xpra.codecs.loader import codec_versions
             except ImportError:
                 log("no codecs", exc_info=True)
@@ -547,7 +549,7 @@ class ServerBase(ServerBaseClass):
                         if k=="":
                             k = "encodings"
                         else:
-                            k = "encodings.%s" % k
+                            k = f"encodings.{k}"
                         d[k] = v
                 if server_source.encodings_packet:
                     #we can send it later,
@@ -685,7 +687,8 @@ class ServerBase(ServerBaseClass):
         # other clients:
         info["clients"] = {
             ""                   : sum(1 for p in self._server_sources if p!=proto),
-            "unauthenticated"    : sum(1 for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources))),
+            "unauthenticated"    : sum(1 for p in self._potential_protocols
+                                       if ((p is not proto) and (p not in self._server_sources))),
            }
         #find the server source to report on:
         n = len(server_sources or [])
@@ -763,7 +766,7 @@ class ServerBase(ServerBaseClass):
             for p,ss in tuple(self._server_sources.items()):
                 if p!=proto:
                     self.disconnect_client(p, DETACH_REQUEST,
-                                           "client %i no longer wishes to share the session" % ss.counter)
+                                           f"client {ss.counter} no longer wishes to share the session")
 
     def _process_lock_toggle(self, proto, packet):
         assert self.lock is None
