@@ -1637,7 +1637,8 @@ else:
 
             root_prefix = self.install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
-                root_prefix = root_prefix[:-4]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
+                #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
+                root_prefix = root_prefix[:-4]
             build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
@@ -1750,8 +1751,8 @@ else:
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
-                for d in ("http-headers", "content-type", "content-categories", "content-parent"):
-                    dirtodir(f"fs/etc/xpra/{d}", f"/etc/xpra/{d}")
+                for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
+                    dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
 
     # add build_conf to build step
     cmdclass.update({
@@ -2036,10 +2037,10 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
                 CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
                 path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob("%s\\*\\bin" % CUDA_DIR))))
                 #pycuda may link against curand, find it and ship it:
-                for p in path_options:
+                for cuda_bin_dir in path_options:
                     if os.path.exists(p):
-                        add_data_files("", glob.glob(f"{p}\\curand64*.dll"))
-                        add_data_files("", glob.glob(f"{p}\\cudart64*.dll"))
+                        add_data_files("", glob.glob(f"{cuda_bin_dir}\\curand64*.dll"))
+                        add_data_files("", glob.glob(f"{cuda_bin_dir}\\cudart64*.dll"))
                         break
             else:
                 nvcc_exe = "nvcc"
@@ -2167,16 +2168,16 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             print(f"rebuilding {kernel}: {reason}")
             kbuild_cmd = nvcc_args + ["-c", cuda_src, "-o", cuda_bin]
             print(f"CUDA compiling %s ({reason})" % kernel.ljust(16))
-            print(" %s" % " ".join(f"'{x}'" for x in kbuild_cmd))
+            print(" "+" ".join(f"{x!r}" for x in kbuild_cmd))
             nvcc_commands.append(kbuild_cmd)
         #parallel build:
         nvcc_errors = []
-        def nvcc_compile(cmd):
-            c, stdout, stderr = get_status_output(cmd)
+        def nvcc_compile(nvcc_cmd):
+            c, stdout, stderr = get_status_output(nvcc_cmd)
             if c!=0:
                 nvcc_errors.append(c)
                 print(f"Error: failed to compile CUDA kernel {kernel}")
-                print(f" using command: {cmd}")
+                print(f" using command: {nvcc_cmd}")
                 print(stdout or "")
                 print(stderr or "")
         nvcc_threads = []
