@@ -98,6 +98,10 @@ BuildRequires:		pandoc
 BuildRequires:		which
 Requires:			python3
 Requires:			python3-gobject
+%if 0%{?el8}
+BuildRequires:		python3-dataclasses
+Requires:			python3-dataclasses
+%endif
 Recommends:			python3-pillow
 Recommends:			python3-cryptography
 Recommends:			python3-rencode
