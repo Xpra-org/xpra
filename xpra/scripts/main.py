@@ -1938,7 +1938,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             proxy_command = "_proxy_shadow_start"
         else:
             #ie: "_proxy_start_desktop"
-            proxy_command = f"_proxy_{mode.replace('-', '_')}"
+            proxy_command = f"_proxy_start_{mode.replace('-', '_')}"
         params["proxy_command"] = [proxy_command]
     else:
         #tcp, ssl or vsock:
