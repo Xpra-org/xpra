@@ -552,7 +552,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             desc.update(auto_proxy(host, port))
         return desc
 
-    if protocol=="named-pipe:":   # pragma: no cover
+    if protocol=="named-pipe":   # pragma: no cover
         if not WIN32:
             raise RuntimeError(f"{protocol} is not supported on this platform")
         add_credentials()
@@ -791,7 +791,7 @@ def do_parse_cmdline(cmdline, defaults):
     ## NOTE NOTE NOTE
     #################################################################
 
-    version = "xpra v%s" % full_version_str()
+    version = "xpra v" + full_version_str()
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
     parser = ModifiedOptionParser(version=version, usage="\n" + "".join(usage_strs))
     hidden_options = {
