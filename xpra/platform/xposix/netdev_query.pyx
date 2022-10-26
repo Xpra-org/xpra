@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -148,7 +148,7 @@ def get_interface_info(int sockfd, ifname):
         return {}
     info = {}
     adapter_type = None
-    sysnetfs = "/sys/class/net/%s" % ifname
+    sysnetfs = f"/sys/class/net/{ifname}"
     if os.path.exists(sysnetfs) and os.path.isdir(sysnetfs):
         type_file = os.path.join(sysnetfs, "type")
         if os.path.exists(type_file):
@@ -169,7 +169,7 @@ def get_interface_info(int sockfd, ifname):
         elif ifname.startswith("ww"):
             adapter_type = "wan"
         else:
-            wireless_path = "%s/wireless" % sysnetfs
+            wireless_path = f"{sysnetfs}/wireless"
             if os.path.exists(wireless_path):
                 adapter_type = "wireless"
     if adapter_type:
