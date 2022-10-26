@@ -707,8 +707,10 @@ def request_exit(uri):
         p = Popen(cmd, env=env)
         p.wait()
     except OSError as e:
-        noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
-        noerr(sys.stderr.write, f" {e}\n")
+        stderr = sys.stderr
+        if stderr:
+            noerr(stderr.write, "Error: failed to 'exit' the server to upgrade\n")
+            noerr(stderr.write, f" {e}\n")
         return False
     return p.poll() in (EXIT_OK, EXIT_UPGRADE)
 
@@ -738,8 +740,10 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         def show_progress(pct, text=""):
             if splash_process.poll() is not None:
                 return
-            noerr(splash_process.stdin.write, f"{pct}:{text}\n".encode("latin1"))
-            noerr(splash_process.stdin.flush)
+            stdin = splash_process.stdin
+            if stdin:
+                noerr(stdin.write, f"{pct}:{text}\n".encode("latin1"))
+                noerr(stdin.flush)
             if pct==100:
                 #it should exit on its own, but just in case:
                 from xpra.common import SPLASH_EXIT_DELAY
