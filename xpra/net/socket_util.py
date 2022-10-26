@@ -155,7 +155,7 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
                 sources.remove(source)
             for c in upnp_cleanup:
                 if c:
-                    start_thread(c, "pnp-cleanup-%s" % c, daemon=True)
+                    start_thread(c, f"pnp-cleanup-{c}", daemon=True)
         return cleanup
     except Exception as e:
         log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
@@ -217,7 +217,7 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
         class TCPInfo(Structure):
             _fields_ = tuple(fields)
             def __repr__(self):
-                return "TCPInfo(%s)" % self.getdict()
+                return f"TCPInfo({self.getdict()})"
             def getdict(self):
                 return {k[0] : getattr(self, k[0]) for k in self._fields_}
         return TCPInfo
@@ -341,7 +341,7 @@ def create_sockets(opts, error_cb, retry=0):
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
             if iport!=0 and iport<min_port:
-                error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+                error_cb(f"invalid {socktype} port number {iport} (minimum value is {min_port})")
             for h in hosts(host):
                 tcp_defs.append((socktype, h, iport, options, None))
 
@@ -368,7 +368,7 @@ def create_sockets(opts, error_cb, retry=0):
             log.error("Error creating %s socket", socktype)
             log.error(" on %s:%s", host, iport)
             log.error(" %s", exception)
-            raise InitException("failed to create %s socket: %s" % (socktype, exception))
+            raise InitException(f"failed to create {socktype} socket: {exception}")
 
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
@@ -415,7 +415,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     except Exception as e:
         log("create_tcp_socket%s", (host, iport), exc_info=True)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
-                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
+                       f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
     def cleanup_tcp_socket():
         log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
         try:
@@ -449,7 +449,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
                     iport = int(port)
                     assert 0<iport<2**16
                 except (TypeError, ValueError):
-                    raise InitException("invalid port number: %s" % port) from None
+                    raise InitException(f"invalid port number: {port}") from None
             options = {}
             if len(parts)==2:
                 options = parse_simple_dict(parts[1])
@@ -463,7 +463,7 @@ def setup_vsock_socket(cid, iport):
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
-                       "failed to setup vsock socket on %s:%s %s" % (cid, iport, e)) from None
+                       f"failed to setup vsock socket on {cid}:{iport} {e}") from None
     def cleanup_vsock_socket():
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
@@ -475,7 +475,7 @@ def setup_vsock_socket(cid, iport):
 def parse_bind_vsock(bind_vsock):
     vsock_sockets = {}
     if bind_vsock:
-        from xpra.scripts.parsing import parse_vsock  #pylint: disable=import-outside-toplevel
+        from xpra.scripts.parsing import parse_vsock  #@UnresolvedImport pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
             parts = spec.split(",", 1)
             cid, iport = parse_vsock(parts[0])
@@ -506,11 +506,12 @@ def normalize_local_display_name(local_display_name):
     if WIN32 or OSX:
         if after_sc.isalnum():
             return local_display_name
-        raise Exception("non alphanumeric character in display name '%s'" % local_display_name)
+        raise Exception(f"non alphanumeric character in display name {local_display_name!r}")
     #we used to strip the screen from the display string, ie: ":0.0" -> ":0"
     #but now we allow it.. (untested!)
     for char in after_sc:
-        assert char in "0123456789.", "invalid character in display name '%s': %s" % (local_display_name, char)
+        if char not in "0123456789.":
+            raise ValueError(f"invalid character in display name {local_display_name!r}: {char!r}")
     return local_display_name
 
 
@@ -565,7 +566,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 else:
                     sockpath = dotxpra.socket_path(sockpath)
                 sockpaths[sockpath] = options
-            assert sockpaths, "no socket paths to try for %s" % b
+            if not sockpaths:
+                raise ValueError(f"no socket paths to try for {b}")
         #expand and remove duplicate paths:
         tmp = {}
         for tsp, options in sockpaths.items():
@@ -591,11 +593,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             def checkstate(sockpath, state):
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
                     if state==DotXpra.INACCESSIBLE:
-                        raise InitException("An xpra server is already running at %s\n" % (sockpath,))
+                        raise InitException(f"An xpra server is already running at {sockpath!r}\n")
                     raise InitExit(EXIT_SERVER_ALREADY_EXISTS,
-                                   "You already have an xpra server running at %s\n"
-                                   "  (did you want 'xpra upgrade'?)"
-                                   % (sockpath,))
+                                   f"You already have an xpra server running at {sockpath!r}\n"
+                                   "  (did you want 'xpra upgrade'?)")
             #remove exisiting sockets if clobber is set,
             #otherwise verify there isn't a server already running
             #and create the directories for the sockets:
@@ -619,7 +620,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         xpra_gid = get_group_id(SOCKET_DIR_GROUP)
                         if xpra_gid>0:
                             kwargs["gid"] = xpra_gid
-                    log("creating sockdir=%s, kwargs=%s" % (d, kwargs))
+                    log("creating sockdir=%s, kwargs=%s", d, kwargs)
                     dotxpra.mksockdir(d, **kwargs)
                     log("%s permission mask: %s", d, oct(os.stat(d).st_mode))
                 except Exception as e:
@@ -674,10 +675,11 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         else:
                             #assume octal string:
                             sperms = int(socket_permissions, 8)
-                        assert 0<=sperms<=0o777, "invalid socket permission value %s" % oct(sperms)
                     except ValueError:
                         raise ValueError("invalid socket permissions "+
-                                         "(must be an octal number): '%s'" % socket_permissions) from None
+                                         f"(must be an octal number): {socket_permissions!r}") from None
+                    if sperms<0 or sperms>0o777:
+                        raise ValueError(f"invalid socket permission value {sperms:o}")
                 #now try to create all the sockets:
                 for sockpath, options in sockpaths.items():
                     #create it:
@@ -730,7 +732,7 @@ def handle_socket_error(sockpath, sperms, e):
         log.error("Error: failed to create socket '%s':", sockpath)
         log.estr(e)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
-                       "failed to create socket %s" % sockpath)
+                       f"failed to create socket {sockpath}")
 
 def import_zeroconf():
     from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
@@ -790,7 +792,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     except OSError:
         name = "Xpra"
     if display_name and not (OSX or WIN32):
-        name += " %s" % display_name
+        name += f" {display_name}"
     mode = d.get("mode", "tcp")
     service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
     index = 0
@@ -799,9 +801,9 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         sn = name
         mode_str = mode
         if index>0:
-            mode_str = "%s-%i" % (mode, index+1)
+            mode_str = f"{mode}-{index+1}"
         if mode not in ("tcp", "rfb"):
-            sn += " (%s)" % mode_str
+            sn += f" ({mode_str})"
         listen = ( (host, port), )
         index += 1
         aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
@@ -925,7 +927,7 @@ def ssl_handshake(ssl_sock):
             status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
             ssllog("host failed SSL verification: %s", msg)
             raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
-        raise InitExit(status, "SSL handshake failed: %s" % str(e)) from None
+        raise InitExit(status, f"SSL handshake failed: {e}") from None
     return ssl_sock
 
 def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None,
@@ -957,16 +959,16 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
         ca_certs = find_ssl_cert("ca-cert.pem")
     ssllog(" ca-certs=%s", ca_certs)
     #parse verify-mode:
-    ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
+    ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode.upper(), None)
     if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
-        raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
+        raise InitException(f"invalid ssl-server-verify-mode {verify_mode!r}, must be one of: "+csv(values))
     ssllog(" cert-reqs=%#x", ssl_cert_reqs)
     #parse protocol:
-    proto = getattr(ssl, "PROTOCOL_%s" % (protocol.upper().replace("V", "v")), None)
+    proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("V", "v"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-        raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (protocol, csv(values)))
+        raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: "+csv(values))
     ssllog(" protocol=%#x", proto)
     #ca_data may be hex encoded:
     ca_data = parse_encoded_bin_data(ca_data)
@@ -985,7 +987,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             continue
         v = getattr(ssl, "VERIFY_"+x.upper(), None)
         if v is None:
-            raise InitException("invalid ssl verify-flag: %s" % x)
+            raise InitException(f"invalid ssl verify-flag: {x!r}")
         ssl_verify_flags |= v
     ssllog(" verify-flags=%#x", ssl_verify_flags)
     #parse ssl-options as CSV:
@@ -996,7 +998,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             continue
         v = getattr(ssl, "OP_"+x.upper(), None)
         if v is None:
-            raise InitException("invalid ssl option: %s" % x)
+            raise InitException(f"invalid ssl option: {x!r}")
         ssl_options |= v
     ssllog(" options=%#x", ssl_options)
 
@@ -1018,7 +1020,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)
         except ssl.SSLError as e:
             ssllog("load_cert_chain", exc_info=True)
-            raise InitException("SSL error, failed to load certificate chain: %s" % e) from e
+            raise InitException(f"SSL error, failed to load certificate chain: {e}") from e
     #if not server_side and (check_hostname or (ca_certs and ca_certs.lower()!="default")):
     if not server_side:
         kwargs["server_hostname"] = server_hostname
@@ -1038,13 +1040,14 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             ssllog(" using default certs")
             #load_default_certs already calls set_default_verify_paths()
         elif not os.path.exists(ca_certs):
-            raise InitException("invalid ssl-ca-certs file or directory: %s" % ca_certs)
+            raise InitException(f"invalid ssl-ca-certs file or directory: {ca_certs}")
         elif os.path.isdir(ca_certs):
             ssllog(" loading ca certs from directory '%s'", ca_certs)
             context.load_verify_locations(capath=ca_certs)
         else:
             ssllog(" loading ca certs from file '%s'", ca_certs)
-            assert os.path.isfile(ca_certs), "'%s' is not a valid ca file" % ca_certs
+            if not os.path.isfile(ca_certs):
+                raise InitException(f"{ca_certs!r} is not a valid ca file")
             context.load_verify_locations(cafile=ca_certs)
         #handle cadata:
         if ca_data:
@@ -1269,11 +1272,12 @@ def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
     except Exception as e:
-        raise InitException("cannot get %s address for %s: %s" % ({
+        stypestr = {
             socket.AF_INET6 : "IPv6",
             socket.AF_INET  : "IPv4",
             0               : "any",
-            }.get(family, ""), (host, port), e)) from None
+            }.get(family, "")
+        raise InitException(f"cannot get {stypestr} address for {host}:{port} : {e}") from None
     log = get_network_logger()
     log("socket_connect%s addrinfo=%s", (host, port), addrinfo)
     #try each one:
@@ -1287,7 +1291,7 @@ def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
             sock.connect(sockaddr)
             sock.settimeout(None)
             return sock
-        except Exception as e:
+        except Exception:
             log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
             noerr(sock.close)
     return None
