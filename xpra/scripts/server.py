@@ -728,7 +728,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     splash_process = None
     if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
         # use splash screen to show server startup progress:
-        title = "Xpra %s Server %s" % (MODE_TO_NAME.get(mode, ""), __version__)
+        mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
+        title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
         def stop_progress_process():
             if splash_process.poll() is not None:
