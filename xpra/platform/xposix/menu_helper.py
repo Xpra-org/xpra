@@ -396,6 +396,8 @@ def load_xdg_menu_data():
             log.error(" %s", error)
             log.error(" this is either a bug in python-xdg,")
             log.error(" or an invalid system menu configuration")
+            log.error(" please see:")
+            log.error(" https://github.com/Xpra-org/xpra/issues/2174")
         return None
     menu_data = {}
     entries = tuple(menu.getEntries())
