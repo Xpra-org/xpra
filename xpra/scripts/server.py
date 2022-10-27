@@ -58,7 +58,8 @@ IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
 
 
 def deadly_signal(signum):
-    info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
+    signame = SIGNAMES.get(signum, signum)
+    info(f"got deadly signal {signame}, exiting\n")
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
     # KeyboardException (?!?), and the KeyboardException is handled normally
