@@ -331,7 +331,7 @@ cdef class Encoder:
         assert options.get("scaled-width", width)==width, "vpx encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "vpx encoder does not handle scaling"
         assert encoding in get_encodings()
-        assert src_format in get_input_colorspaces(encoding)
+        assert src_format in get_input_colorspaces(encoding), f"invalid source format {src_format!r} for {encoding}"
 
         self.src_format = src_format
 

@@ -504,7 +504,7 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
-        assert self.context!=NULL
+        assert self.context!=NULL, "no context"
         cdef const uint8_t *input_image[4]
         cdef uint8_t *output_image[4]
         cdef int input_stride[4]
