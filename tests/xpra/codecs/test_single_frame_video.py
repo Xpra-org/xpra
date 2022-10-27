@@ -4,24 +4,24 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from PIL import Image
 
-from xpra.util import envbool, typedict, roundup
+from xpra.util import envbool, typedict
 from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.loader import load_codec
 
 
-def main(files=()):
+def main(files):
     assert len(files)>0, "specify images to use for benchmark"
     avcodec = load_codec("dec_avcodec2")
     swscale = load_codec("csc_swscale")
-    libyuv = load_codec("csc_libyuv")
     assert avcodec, "dec_avcodec is required"
     assert swscale, "swscale is required"
     encoders = []
-    ENCODERS = ("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", )
+    ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,enc_x265,nvenc,enc_ffmpeg").split(",")
     for encoder in ENCODERS:
         enc = load_codec(encoder)
         if not enc:
