@@ -2021,7 +2021,10 @@ if pam_ENABLED:
     if pkg_config_ok("--exists", "pam", "pam_misc"):
         kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
-        kwargs = {"extra_compile_args" : "-I" + find_header_file("/security", isdir=True)}
+        kwargs = {
+                 "extra_compile_args" : "-I" + find_header_file("/security", isdir=True),
+                 "extra_link_args"    : ("-lpam", "-lpam_misc"),
+                 }
     ace("xpra.server.pam", **kwargs)
 
 #platform:
