@@ -501,6 +501,8 @@ cdef class Encoder:
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert options.get("scaled-width", width)==width, "x264 encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "x264 encoder does not handle scaling"
+        if (width%2!=0 or height%2!=0) and src_format not in ("BGRX", "YUV444P"):
+            raise ValueError(f"invalid dimensions {width}x{height}")
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
