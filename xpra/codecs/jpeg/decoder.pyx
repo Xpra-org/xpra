@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -125,6 +125,7 @@ def get_encodings():
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
+DEF ALIGN = 4
 
 def get_error_str():
     cdef char *err = tjGetErrorStr()
@@ -189,7 +190,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
             if stride<=0:
                 if subsamp!=TJSAMP_GRAY or i==0:
                     raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
-                stride = roundup(w//2, 4)
+                stride = roundup(w//2, ALIGN)
                 plane_size = stride * roundup(h, 2)//2
                 if i==1:
                     #allocate empty U and V planes:
@@ -198,7 +199,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
                     pixel_format = "YUV420P"
                 membuf = empty
             else:
-                stride = roundup(stride, 4)
+                stride = roundup(stride, ALIGN)
                 strides[i] = stride
                 plane_size = tjPlaneSizeYUV(i, w, stride, h, subsamp)
                 membuf = getbuf(plane_size)     #add padding?

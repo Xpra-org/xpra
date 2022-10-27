@@ -13,6 +13,8 @@ from xpra.buffers.membuf cimport memalign, buffer_context
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free
 
+DEF ALIGN = 4
+
 cdef extern from *:
     ctypedef unsigned long size_t
 
@@ -266,9 +268,9 @@ def decompress_yuv(data, has_alpha=False):
     cdef int w = config.input.width
     cdef int h = config.input.height
     cdef WebPYUVABuffer *YUVA = &config.output.u.YUVA
-    YUVA.y_stride = roundup(w, 4)
-    YUVA.u_stride = roundup((w+1)//2, 4)
-    YUVA.v_stride = roundup((w+1)//2, 4)
+    YUVA.y_stride = roundup(w, ALIGN)
+    YUVA.u_stride = roundup((w+1)//2, ALIGN)
+    YUVA.v_stride = roundup((w+1)//2, ALIGN)
     if alpha:
         YUVA.a_stride = w
     else:
