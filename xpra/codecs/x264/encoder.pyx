@@ -419,12 +419,16 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRX", "RGB")
+    height_mask = 0xFFFF
+    width_mask = 0xFFFE
+    if colorspace in ("YUV444P", "BGRX"):
+        width_mask = 0xFFFF
     return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
                       has_lossless_mode=has_lossless_mode,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+40*int(has_lossless_mode), speed=60,
                       size_efficiency=60,
-                      setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+                      setup_cost=20, width_mask=width_mask, height_mask=height_mask, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 #maps a log level to one of our logger functions:
@@ -501,8 +505,8 @@ cdef class Encoder:
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert options.intget("scaled-width", width)==width, "x264 encoder does not handle scaling"
         assert options.intget("scaled-height", height)==height, "x264 encoder does not handle scaling"
-        if (width%2!=0 or height%2!=0) and src_format not in ("BGRX", "YUV444P"):
-            raise ValueError(f"invalid dimensions {width}x{height}")
+        if width%2!=0 and src_format not in ("BGRX", "YUV444P"):
+            raise ValueError(f"invalid odd width {width} for {src_format}")
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
