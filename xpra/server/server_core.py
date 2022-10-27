@@ -347,7 +347,7 @@ class ServerCore:
                     #still alive, force stop:
                     stop_worker(True)
                     try:
-                        w.wait(1)
+                        w.join(1)
                     except Exception:
                         pass
             self.quit()
