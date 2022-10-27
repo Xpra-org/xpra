@@ -7,7 +7,7 @@
 import sys
 from PIL import Image
 
-from xpra.util import envbool, typedict
+from xpra.util import envbool, typedict, roundup
 from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.loader import load_codec
@@ -17,6 +17,7 @@ def main(files=()):
     assert len(files)>0, "specify images to use for benchmark"
     avcodec = load_codec("dec_avcodec2")
     swscale = load_codec("csc_swscale")
+    libyuv = load_codec("csc_libyuv")
     assert avcodec, "dec_avcodec is required"
     assert swscale, "swscale is required"
     encoders = []
@@ -49,18 +50,19 @@ def main(files=()):
     for f in files:
         index += 1
         img = Image.open(f)
+        print(f"{index} : {f:40} : {img}")
         if img.mode!="RGBA":
             img = img.convert("RGBA")
         pixel_format = "BGRX"
         w, h = img.size
         rgb_data = img.tobytes("raw")
         stride = w * len(pixel_format)
-        print(f"{f:40} : {img}")
         source_image = ImageWrapper(0, 0, w, h,
                              rgb_data, pixel_format, len(pixel_format)*8, stride,
                              planes=ImageWrapper.PACKED, thread_safe=True)
+        #source_image.restride(roundup(w*4, 8))
         for encoding, colorspace, enc in encoders:
-            print(f"{enc.get_type():10} {encoding:10} {colorspace}")
+            print(f"  {enc.get_type():10} {encoding:10} {colorspace}")
             image = source_image
             if colorspace!="BGRX":
                 sws = swscale.ColorspaceConverter()
@@ -71,7 +73,7 @@ def main(files=()):
             try:
                 encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
             except ValueError:
-                print(f"encoder rejected {w}x{h} {image.get_pixel_format()}")
+                print(f"  encoder rejected {w}x{h} {image.get_pixel_format()}")
                 continue
             try:
                 r = encoder.compress_image(image)
@@ -98,8 +100,9 @@ def main(files=()):
                 sws.init_context(w, h, dformat,
                                  w, h, "BGRX", typedict())
                 output = sws.convert_image(decoded)
+                print(f"    converted {dformat} to BGRX")
             obytes = memoryview_to_bytes(output.get_pixels())
-            output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw")
+            output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw", "BGRA", output.get_rowstride())
             filename = f"{index}-{enc.get_type()}-{encoding}-{colorspace}.png"
             output_image.save(filename, "PNG")
             print(f"     saved to {filename!r}")
