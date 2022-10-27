@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# This file is part of Xpra.
+# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import sys
+from io import BytesIO
+from PIL import Image
+
+from xpra.util import envbool, typedict
+from xpra.os_util import memoryview_to_bytes
+from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.loader import load_codec
+
+
+def main(files=()):
+    assert len(files)>0, "specify images to use for benchmark"
+    avcodec = load_codec("dec_avcodec2")
+    swscale = load_codec("csc_swscale")
+    assert avcodec, "dec_avcodec is required"
+    assert swscale, "swscale is required"
+    encoders = []
+    ENCODERS = ("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", )
+    for encoder in ENCODERS:
+        enc = load_codec(encoder)
+        if not enc:
+            print(f"{encoder} not found")
+            continue
+        print(f"* {encoder}")
+        encodings = enc.get_encodings()
+        for encoding in encodings:
+            print(f"  - {encoding}")
+            if encoding not in avcodec.get_encodings():
+                print(f"    {dec_avcodec} cannot decode {encoding}")
+                continue
+            matches = []
+            for ics in enc.get_input_colorspaces(encoding):
+                if ics not in ("BGRX", "YUV420P", "YUV444P"):
+                    print(f"    skipping {ics}")
+                    continue
+                dcs = avcodec.get_output_colorspace(encoding, ics)
+                print(f"    dec_avcodec output colorspace for {encoding} + {ics} : {dcs}")
+                if any(x in dcs for x in ("BGRX", "BGR", "YUV420P", "YUV444P", "GBRP")):
+                    encoders.append((encoding, ics, enc))
+                    matches.append(ics)
+            if not matches:
+                print(f"     no BGRX match for {encoding}")
+    index = 0
+    for f in files:
+        index += 1
+        img = Image.open(f)
+        if img.mode!="RGBA":
+            img = img.convert("RGBA")
+        pixel_format = "BGRX"
+        w, h = img.size
+        rgb_data = img.tobytes("raw")
+        stride = w * len(pixel_format)
+        print(f"{f:40} : {img}")
+        source_image = ImageWrapper(0, 0, w, h,
+                             rgb_data, pixel_format, len(pixel_format)*8, stride,
+                             planes=ImageWrapper.PACKED, thread_safe=True)
+        for encoding, colorspace, enc in encoders:
+            image = source_image
+            if colorspace!="BGRX":
+                sws = swscale.ColorspaceConverter()
+                sws.init_context(w, h, pixel_format,
+                                 w, h, colorspace, typedict({"speed" : 0}))
+                image = sws.convert_image(source_image)
+            encoder = enc.Encoder()
+            encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
+            try:
+                r = encoder.compress_image(image)
+            except Exception:
+                print(f"error on {enc.get_type()} : {enc.encode}")
+                raise
+            if not r:
+                print(f"Error: no data for {enc.get_type()} : {enc.encode}")
+                continue
+            cdata, client_options = r
+            bdata = getattr(cdata, "data", cdata)
+            if envbool("SAVE", False):
+                filename = f"./{index}-{enc.get_type()}.{encoding.replace('/','-')}"
+                with open(filename, "wb") as f:
+                    f.write(bdata)
+            #now decode it back into an RGB picture:
+            decoder = avcodec.Decoder()
+            decoder.init_context(encoding, w, h, colorspace)
+            decoded = decoder.decompress_image(bdata, client_options)
+            dformat = decoded.get_pixel_format()
+            output = decoded
+            if dformat!="BGRX":
+                sws = swscale.ColorspaceConverter()
+                sws.init_context(w, h, dformat,
+                                 w, h, "BGRX", typedict())
+                output = sws.convert_image(decoded)
+            obytes = memoryview_to_bytes(output.get_pixels())
+            output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw")
+            filename = f"{index}-{enc.get_type()}-{encoding}-{colorspace}.png"
+            output_image.save(filename, "PNG")
+
+if __name__ == '__main__':
+    assert len(sys.argv)>1
+    main(sys.argv[1:])
