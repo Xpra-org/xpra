@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-from io import BytesIO
 from PIL import Image
 
 from xpra.util import envbool, typedict
@@ -32,11 +31,11 @@ def main(files=()):
         for encoding in encodings:
             print(f"  - {encoding}")
             if encoding not in avcodec.get_encodings():
-                print(f"    {dec_avcodec} cannot decode {encoding}")
+                print(f"    {avcodec} cannot decode {encoding}")
                 continue
             matches = []
             for ics in enc.get_input_colorspaces(encoding):
-                if ics not in ("BGRX", "YUV420P", "YUV444P"):
+                if ics not in ("BGRX", "YUV420P", "YUV444P", ):
                     print(f"    skipping {ics}")
                     continue
                 dcs = avcodec.get_output_colorspace(encoding, ics)
@@ -61,6 +60,7 @@ def main(files=()):
                              rgb_data, pixel_format, len(pixel_format)*8, stride,
                              planes=ImageWrapper.PACKED, thread_safe=True)
         for encoding, colorspace, enc in encoders:
+            print(f"{enc.get_type():10} {encoding:10} {colorspace}")
             image = source_image
             if colorspace!="BGRX":
                 sws = swscale.ColorspaceConverter()
@@ -68,7 +68,11 @@ def main(files=()):
                                  w, h, colorspace, typedict({"speed" : 0}))
                 image = sws.convert_image(source_image)
             encoder = enc.Encoder()
-            encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
+            try:
+                encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
+            except ValueError:
+                print(f"encoder rejected {w}x{h} {image.get_pixel_format()}")
+                continue
             try:
                 r = encoder.compress_image(image)
             except Exception:
@@ -98,6 +102,7 @@ def main(files=()):
             output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw")
             filename = f"{index}-{enc.get_type()}-{encoding}-{colorspace}.png"
             output_image.save(filename, "PNG")
+            print(f"     saved to {filename!r}")
 
 if __name__ == '__main__':
     assert len(sys.argv)>1
