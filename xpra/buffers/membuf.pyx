@@ -137,7 +137,10 @@ cdef class MemBufContext:
 
 
 cdef buffer_context(object obj):
-    assert obj, "no buffer"
+    if obj is None:
+        raise ValueError(f"no buffer")
+    if len(obj)==0:
+        raise ValueError(f"empty {type(obj)} buffer")
     if isinstance(obj, MemBuf):
         return MemBufContext(obj)
     return BufferContext(obj)
