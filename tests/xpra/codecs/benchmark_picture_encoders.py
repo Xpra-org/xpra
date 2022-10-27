@@ -10,8 +10,9 @@ from time import monotonic
 from PIL import Image
 
 from xpra.net import compression
+from xpra.util import envbool
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.loader import load_codec, get_codec
+from xpra.codecs.loader import load_codec
 
 N = 10
 CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_avif")
@@ -28,11 +29,12 @@ def main(fmt="png", files=()):
     compression.init_all()
     encoders = []
     for codec in CODECS:
-        load_codec(codec)
-        enc = get_codec(codec)
+        enc = load_codec(codec)
         if enc and (fmt=="all" or fmt in enc.get_encodings()):
             encoders.append(enc)
+    index = 0
     for f in files:
+        index += 1
         img = Image.open(f)
         if img.mode not in ("RGBA", "RGB"):
             img = img.convert("RGB")
@@ -66,6 +68,11 @@ def main(fmt="png", files=()):
                     continue
                 end = monotonic()
                 cdata = r[1]
+                if envbool("SAVE", False):
+                    filename = f"./benchmark-{index}-{enc.get_type()}.{encoding.replace('/','-')}"
+                    bdata = getattr(cdata, "data", cdata)
+                    with open(filename, "wb") as f:
+                        f.write(bdata)
                 ratio = 100*len(cdata)/len(rgb_data)
                 mps = w*h*N/(end-start)/1024/1024
                 sizek = size*N//1024
