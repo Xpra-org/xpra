@@ -2006,7 +2006,10 @@ if pam_ENABLED:
     if pkg_config_ok("--exists", "pam", "pam_misc"):
         pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
-        pam_kwargs = {"extra_compile_args" : "-I" + find_header_file("/security", isdir=True)}
+        pam_kwargs = {
+            "extra_compile_args" : "-I" + find_header_file("/security", isdir=True),
+            "extra_link_args"    : ("-lpam", "-lpam_misc"),
+            }
     ace("xpra.server.pam", **pam_kwargs)
 
 #platform:
@@ -2035,10 +2038,10 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
                 external_includes.append("pycuda")
                 nvcc_exe = "nvcc.exe"
                 CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-                path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob("%s\\*\\bin" % CUDA_DIR))))
+                path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob(f"{CUDA_DIR}\\*\\bin"))))
                 #pycuda may link against curand, find it and ship it:
                 for cuda_bin_dir in path_options:
-                    if os.path.exists(p):
+                    if os.path.exists(cuda_bin_dir):
                         add_data_files("", glob.glob(f"{cuda_bin_dir}\\curand64*.dll"))
                         add_data_files("", glob.glob(f"{cuda_bin_dir}\\cudart64*.dll"))
                         break
