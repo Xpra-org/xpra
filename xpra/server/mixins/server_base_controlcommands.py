@@ -39,7 +39,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 return True
             if str(v).lower() in FALSE_OPTIONS:
                 return False
-            raise ControlError("a boolean is required, not %s" % v)
+            raise ControlError(f"a boolean is required, not {v!r}")
         def parse_4intlist(v):
             if not v:
                 return []
@@ -53,7 +53,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 assert (lp+1)<rp
                 item = v[lp+1:rp].strip()           #"0,10,100,20"
                 items = [int(x) for x in item]      # 0,10,100,20
-                assert len(items)==4, "expected 4 numbers but got %i" % len(items)
+                assert len(items)==4, f"expected 4 numbers but got {len(items)}"
                 l.append(items)
             return l
 
@@ -132,20 +132,22 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_focus(self, wid):
         if self.readonly:
             return
-        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
         self._focus(None, wid, None)
-        return "gave focus to window %s" % wid
+        return f"gave focus to window {wid}"
 
     def control_command_map(self, wid):
         if self.readonly:
             return
-        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
         window = self._id_to_window.get(wid)
-        assert window, "window %i not found" % wid
+        assert window, f"window {wid} not found"
         if window.is_tray():
-            return "cannot map tray window %s" % wid
+            return f"cannot map tray window {wid}"
         if window.is_OR():
-            return "cannot map override redirect window %s" % wid
+            return f"cannot map override redirect window {wid}"
         window.show()
         #window.set_owner(dm)
         #iconic = window.get_property("iconic")
@@ -159,36 +161,40 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_unmap(self, wid):
         if self.readonly:
             return
-        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
         window = self._id_to_window.get(wid)
-        assert window, "window %i not found" % wid
+        assert window, f"window {wid} not found"
         if window.is_tray():
-            return "cannot map tray window %s" % wid
+            return f"cannot unmap tray window {wid}"
         if window.is_OR():
-            return "cannot map override redirect window %s" % wid
+            return f"cannot unmap override redirect window {wid}"
         window.hide()
         self.repaint_root_overlay()
-        return "unmapped window %s" % wid
+        return f"unmapped window {wid}"
 
     def control_command_suspend(self):
         for csource in tuple(self._server_sources.values()):
             csource.suspend(True, self._id_to_window)
-        return "suspended %s clients" % len(self._server_sources)
+        count = len(self._server_sources)
+        return f"suspended {count} clients" 
 
     def control_command_resume(self):
         for csource in tuple(self._server_sources.values()):
             csource.resume(True, self._id_to_window)
-        return "resumed %s clients" % len(self._server_sources)
+        count = len(self._server_sources)
+        return f"resumed {count} clients"
 
     def control_command_ungrab(self):
         for csource in tuple(self._server_sources.values()):
             csource.pointer_ungrab(-1)
-        return "ungrabbed %s clients" % len(self._server_sources)
+        count = len(self._server_sources)
+        return f"ungrabbed {count} clients"
 
     def control_command_readonly(self, onoff):
         log("control_command_readonly(%s)", onoff)
         self.readonly = onoff
-        msg = "server readonly: %s" % onoff
+        msg = f"server readonly: {onoff}"
         log.info(msg)
         return msg
 
@@ -197,27 +203,27 @@ class ServerBaseControlCommands(StubServerMixin):
         for csource in tuple(self._server_sources.values()):
             csource.idle_timeout = t
             csource.schedule_idle_timeout()
-        return "idle-timeout set to %s" % t
+        return f"idle-timeout set to {t}"
 
     def control_command_server_idle_timeout(self, t):
         self.server_idle_timeout = t
         reschedule = len(self._server_sources)==0
         self.reset_server_timeout(reschedule)
-        return "server-idle-timeout set to %s" % t
+        return f"server-idle-timeout set to {t}"
 
 
     def control_command_start_env(self, action="set", var_name="", value=None):
         assert var_name, "the environment variable name must be specified"
         if action=="unset":
-            assert value is None, "invalid number of arguments for %s" % action
+            assert value is None, f"invalid number of arguments for {action}"
             if self.start_env.pop(var_name, None) is None:
-                return "%r is not set" % var_name
-            return "%r unset" % var_name
+                return f"{var_name!r} is not set"
+            return f"{var_name} unset"
         if action=="set":
             assert value, "the value must be specified"
             self.start_env[var_name] = value
-            return "%s=%s" % (var_name, value)
-        return "invalid start-env subcommand %r" % action
+            return f"{var_name}={value}"
+        return f"invalid start-env subcommand {action!r}"
 
 
     def control_command_start(self, *args):
@@ -229,18 +235,18 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("this feature is currently disabled")
         proc = self.start_command(" ".join(args), args, ignore, shell=True)
         if not proc:
-            raise ControlError("failed to start new child command %s" % str(args))
+            raise ControlError("failed to start new child command " + str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
     def control_command_toggle_feature(self, feature, state=None):
         log("control_command_toggle_feature(%s, %s)", feature, state)
         if feature not in TOGGLE_FEATURES:
-            msg = "invalid feature '%s'" % feature
+            msg = f"invalid feature {feature!r}"
             log.warn(msg)
             return msg
         fn = feature.replace("-", "_")
         if not hasattr(self, feature):
-            msg = "attribute '%s' not found - bug?" % feature
+            msg = f"attribute {feature!r} not found - bug?" 
             log.warn(msg)
             return msg
         cur = getattr(self, fn, None)
@@ -249,7 +255,7 @@ class ServerBaseControlCommands(StubServerMixin):
             state = not cur
         setattr(self, fn, state)
         self.setting_changed(feature, state)
-        return "%s set to %s" % (feature, state)
+        return f"{feature} set to {state}"
 
     def _control_get_sources(self, client_uuids_str, _attr=None):
         #find the client uuid specified as a string:
@@ -281,7 +287,7 @@ class ServerBaseControlCommands(StubServerMixin):
         for source in sources:
             if source.notify(0, nid, "control channel", 0, "", title, message, [], {}, 10, ""):
                 count += 1
-        msg = "notification id %i: message sent to %i clients" % (nid, count)
+        msg = f"notification id {nid}: message sent to {count} clients"
         log(msg)
         return msg
 
@@ -294,7 +300,7 @@ class ServerBaseControlCommands(StubServerMixin):
         log("control_command_close_notification(%s, %s) will send to %s", nid, client_uuids, sources)
         for source in sources:
             source.notify_close(nid)
-        msg = "notification id %i: close request sent to %i clients" % (nid, len(sources))
+        msg = f"notification id {nid}: close request sent to {len(sources)} clients"
         log(msg)
         return msg
 
@@ -349,10 +355,10 @@ class ServerBaseControlCommands(StubServerMixin):
         else:
             checksize(stat.st_size)
         if not os.path.exists(actual_filename):
-            raise ControlError("file '%s' does not exist" % filename)
+            raise ControlError(f"file {filename!r} does not exist")
         data = load_binary_file(actual_filename)
         if data is None:
-            raise ControlError("failed to load '%s'" % actual_filename)
+            raise ControlError(f"failed to load {actual_filename!r}")
         #verify size:
         file_size = len(data)
         checksize(file_size)
@@ -374,7 +380,7 @@ class ServerBaseControlCommands(StubServerMixin):
                          ss, std_unit(ss.file_size_limit), std_unit(file_size))
             else:
                 ss.send_file(filename, "", data, file_size, *send_file_args)
-        return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)
+        return f"{command_type} of {filename!r} to {client_uuids} initiated"
 
 
     def control_command_remove_window_filters(self):
@@ -382,7 +388,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #which is referenced by all the sources
         l = len(self.window_filters)
         self.window_filters[:] = []
-        return "removed %i window-filters" % l
+        return f"removed {l} window-filters"
 
     def control_command_add_window_filter(self, object_name, property_name, operator, value, client_uuids=""):
         from xpra.server.window import filters  #pylint: disable=import-outside-toplevel
@@ -394,7 +400,7 @@ class ServerBaseControlCommands(StubServerMixin):
         else:
             for client_uuid in client_uuids.split(","):
                 self.window_filters.append((client_uuid, window_filter))
-        return "added window-filter: %s for client uuids=%s" % (window_filter, client_uuids)
+        return f"added window-filter: {window_filter} for client uuids={client_uuids}"
 
 
     def control_command_compression(self, compression):
@@ -402,22 +408,22 @@ class ServerBaseControlCommands(StubServerMixin):
         from xpra.net import compression    #pylint: disable=import-outside-toplevel
         opts = compression.get_enabled_compressors()    #ie: [lz4, zlib]
         if c not in opts:
-            raise ControlError("compressor argument must be one of: %s" % csv(opts))
+            raise ControlError("compressor argument must be one of: " + csv(opts))
         for cproto in tuple(self._server_sources.keys()):
             cproto.enable_compressor(c)
-        self.all_send_client_command("enable_%s" % c)
-        return "compressors set to %s" % compression
+        self.all_send_client_command(f"enable_{c}")
+        return f"compressors set to {compression}"
 
     def control_command_encoder(self, encoder):
         e = encoder.lower()
         from xpra.net import packet_encoding  #pylint: disable=import-outside-toplevel
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, rencodeplus, bencode, yaml]
         if e not in opts:
-            raise ControlError("encoder argument must be one of: %s" % csv(opts))
+            raise ControlError("encoder argument must be one of: " + csv(opts))
         for cproto in tuple(self._server_sources.keys()):
             cproto.enable_encoder(e)
-        self.all_send_client_command("enable_%s" % e)
-        return "encoders set to %s" % encoder
+        self.all_send_client_command(f"enable_{e}")
+        return f"encoders set to {encoder}"
 
 
     def all_send_client_command(self, *client_command):
@@ -431,7 +437,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_client(self, *args):
         self.all_send_client_command(*args)
-        return "client control command %s forwarded to clients" % str(args)
+        return f"client control command {args} forwarded to clients"
 
     def control_command_client_property(self, wid, uuid, prop, value, conv=None):
         wid = int(wid)
@@ -444,7 +450,7 @@ class ServerBaseControlCommands(StubServerMixin):
         typeinfo = "%s " % (conv or "string")
         value = conv_fn(value)
         self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
-        return "property '%s' set to %s value '%s' for window %i, client %s" % (prop, typeinfo, value, wid, uuid)
+        return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid}, client {uuid}"
 
     def control_command_name(self, name):
         self.session_name = name
@@ -452,7 +458,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #self.all_send_client_command("name", name)    not supported by any clients, don't bother!
         self.setting_changed("session_name", name)
         self.mdns_update()
-        return "session name set to %s" % name
+        return f"session name set to {name}"
 
     def _ws_from_args(self, *args):
         #converts the args to valid window ids,
@@ -466,7 +472,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 try:
                     wid = int(x)
                 except ValueError:
-                    raise ControlError("invalid window id: %s" % x) from None
+                    raise ControlError(f"invalid window id: {x!r}") from None
                 if wid in self._id_to_window:
                     wids.append(wid)
                 else:
@@ -483,12 +489,12 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def _set_encoding_property(self, name, value, *wids):
         for ws in self._ws_from_args(*wids):
-            fn = getattr(ws, "set_%s" % name.replace("-", "_"))   #ie: "set_quality"
+            fn = getattr(ws, "set_" + name.replace("-", "_"))   #ie: "set_quality"
             fn(value)
         #now also update the defaults:
         for csource in tuple(self._server_sources.values()):
             csource.default_encoding_options[name] = value
-        return "%s set to %i" % (name, value)
+        return f"{name} set to {value}"
 
     def control_command_quality(self, quality, *wids):
         return self._set_encoding_property("quality", quality, *wids)
@@ -507,24 +513,24 @@ class ServerBaseControlCommands(StubServerMixin):
         delay = int(float(auto_refresh)*1000.0)      # ie: 0.5 -> 500 (milliseconds)
         for ws in self._ws_from_args(*wids):
             ws.set_auto_refresh_delay(auto_refresh)
-        return "auto-refresh delay set to %sms for windows %s" % (delay, wids)
+        return f"auto-refresh delay set to {delay}ms for windows {wids}"
 
     def control_command_refresh(self, *wids):
         for ws in self._ws_from_args(*wids):
             ws.full_quality_refresh({})
-        return "refreshed windows %s" % str(wids)
+        return f"refreshed windows {wids}"
 
     def control_command_scaling_control(self, scaling_control, *wids):
         for ws in tuple(self._ws_from_args(*wids)):
             ws.set_scaling_control(scaling_control)
             ws.refresh()
-        return "scaling-control set to %s on windows %s" % (scaling_control, wids)
+        return f"scaling-control set to {scaling_control} on windows {wids}"
 
     def control_command_scaling(self, scaling, *wids):
         for ws in tuple(self._ws_from_args(*wids)):
             ws.set_scaling(scaling)
             ws.refresh()
-        return "scaling set to %s on windows %s" % (str(scaling), wids)
+        return f"scaling set to {scaling} on windows {wids}"
 
     def control_command_encoding(self, encoding, *args):
         if encoding in ("add", "remove"):
@@ -548,7 +554,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 ws.core_encodings = tuple(core_encodings)
                 ws.do_set_client_properties(typedict())
                 ws.refresh()
-            return "%s %s" % (["removed", "added"][cmd=="add"], encoding)
+            return ["removed", "added"][cmd=="add"] +" "+encoding
 
         strict = None       #means no change
         if encoding in ("strict", "nostrict"):
@@ -564,7 +570,7 @@ class ServerBaseControlCommands(StubServerMixin):
         for ws in tuple(self._ws_from_args(*wids)):
             ws.set_new_encoding(encoding, strict)
             ws.refresh()
-        return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
+        return f"set encoding to {encoding}%s for windows {wids}" % ["", " (strict)"][int(strict or 0)]
 
     def control_command_request_update(self, encoding, geom, *args):
         wids = args
@@ -589,12 +595,13 @@ class ServerBaseControlCommands(StubServerMixin):
         assert self.clipboard and ch
         direction = direction.lower()
         DIRECTIONS = ("to-server", "to-client", "both", "disabled")
-        assert direction in DIRECTIONS, "invalid direction '%s', must be one of %s" % (direction, csv(DIRECTIONS))
+        if direction not in DIRECTIONS:
+            raise ValueError(f"invalid direction {direction!r}, must be one of "+csv(DIRECTIONS))
         self.clipboard_direction = direction
         can_send = direction in ("to-server", "both")
         can_receive = direction in ("to-client", "both")
         ch.set_direction(can_send, can_receive)
-        msg = "clipboard direction set to '%s'" % direction
+        msg = f"clipboard direction set to {direction!r}"
         log(msg)
         self.setting_changed("clipboard-direction", direction)
         return msg
@@ -603,14 +610,14 @@ class ServerBaseControlCommands(StubServerMixin):
         ch = self._clipboard_helper
         assert self.clipboard and ch
         ch.set_limits(max_send, max_recv)
-        msg = "clipboard send limit set to %d, recv limit set to %d (single copy/paste)" % (max_send, max_recv)
+        msg = f"clipboard send limit set to {max_send}, recv limit set to {max_recv} (single copy/paste)"
         log(msg)
         self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
         return msg
 
     def _control_video_subregions_from_wid(self, wid):
         if wid not in self._id_to_window:
-            raise ControlError("invalid window %i" % wid)
+            raise ControlError(f"invalid window {wid}")
         video_subregions = []
         for ws in self._ws_from_args(wid):
             vs = getattr(ws, "video_subregion", None)
@@ -640,12 +647,12 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_video_region_exclusion_zones(self, wid, zones):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_exclusion_zones(zones)
-        return "video exclusion zones set to %s for window %i" % (zones, wid)
+        return f"video exclusion zones set to {zones} for window {wid}"
 
     def control_command_reset_video_region(self, wid):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.reset()
-        return "reset video region heuristics for window %i" % wid
+        return f"reset video region heuristics for window {wid}"
 
 
     def control_command_lock_batch_delay(self, wid, delay):
@@ -660,23 +667,22 @@ class ServerBaseControlCommands(StubServerMixin):
         self.lock = parse_bool("lock", lock)
         self.setting_changed("lock", lock is not False)
         self.setting_changed("lock-toggle", lock is None)
-        return "lock set to %s" % self.lock
+        return f"lock set to {self.lock}"
 
     def control_command_set_sharing(self, sharing):
         self.sharing = parse_bool("sharing", sharing)
         self.setting_changed("sharing", sharing is not False)
         self.setting_changed("sharing-toggle", sharing is None)
-        return "sharing set to %s" % self.sharing
+        return f"sharing set to {self.sharing}"
 
     def control_command_set_ui_driver(self, uuid):
         ss = [s for s in self._server_sources.values() if s.uuid==uuid]
         if not ss:
-            return "source not found for uuid '%s'" % uuid
-        elif len(ss)>1:
-            return "more than one source found for uuid '%s'" % uuid
-        else:
-            self.set_ui_driver(ss)
-            return "ui-driver set to %s" % ss
+            return f"source not found for uuid {uuid!r}"
+        if len(ss)>1:
+            return f"more than one source found for uuid {uuid!r}"
+        self.set_ui_driver(ss)
+        return "ui-driver set to {ss}"
 
     def control_command_key(self, keycode_str, press = True):
         if self.readonly:
@@ -687,55 +693,55 @@ class ServerBaseControlCommands(StubServerMixin):
             else:
                 keycode = int(keycode_str)
         except ValueError:
-            raise ControlError("invalid keycode specified: '%s' (not a number)" % keycode_str) from None
+            raise ControlError(f"invalid keycode specified: {keycode_str!r} (not a number)") from None
         if keycode<=0 or keycode>=255:
-            raise ControlError("invalid keycode value: '%s' (must be between 1 and 255)" % keycode_str)
+            raise ControlError(f"invalid keycode value: {keycode} (must be between 1 and 255)")
         if press is not True:
             if press in ("1", "press"):
                 press = True
             elif press in ("0", "unpress"):
                 press = False
             else:
-                raise ControlError("if present, the press argument must be one of: %s" %
+                raise ControlError("if present, the press argument must be one of: " +
                                    csv(("1", "press", "0", "unpress")))
         self.fake_key(keycode, press)
 
     def control_command_sound_output(self, *args):
         msg = []
         for csource in tuple(self._server_sources.values()):
-            msg.append("%s : %s" % (csource, csource.sound_control(*args)))
+            msg.append(f"{csource} : " + str(csource.sound_control(*args)))
         return csv(msg)
 
     def control_command_workspace(self, wid, workspace):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         if "workspace" not in window.get_property_names():
-            raise ControlError("cannot set workspace on window %s" % window)
+            raise ControlError(f"cannot set workspace on window {window}")
         if workspace<0:
-            raise ControlError("invalid workspace value: %s" % workspace)
+            raise ControlError(f"invalid workspace value: {workspace}")
         window.set_property("workspace", workspace)
-        return "window %s moved to workspace %s" % (wid, workspace)
+        return f"window {wid} moved to workspace {workspace}"
 
 
     def control_command_close(self, wid):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         window.request_close()
-        return "requested window %s closed" % window
+        return f"requested window {window} closed"
 
     def control_command_delete(self, wid):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         window.send_delete()
-        return "requested window %s deleted" % window
+        return f"requested window {window} deleted"
 
     def control_command_move(self, wid, x, y):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         ww, wh = window.get_dimensions()
         count = 0
         for source in tuple(self._server_sources.values()):
@@ -743,31 +749,31 @@ class ServerBaseControlCommands(StubServerMixin):
             if move_resize_window:
                 move_resize_window(wid, window, x, y, ww, wh)
                 count += 1
-        return "window %s moved to %i,%i for %i clients" % (wid, x, y, count)
+        return f"window {wid} moved to {x},{y} for {count} clients"
 
     def control_command_resize(self, wid, w, h):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         count = 0
         for source in tuple(self._server_sources.values()):
             resize_window = getattr(source, "resize_window", None)
             if resize_window:
                 resize_window(wid, window, w, h)
                 count += 1
-        return "window %s resized to %ix%i for %i clients" % (wid, w, h, count)
+        return f"window {wid} resized to {x}x{h} for {count} clients"
 
     def control_command_moveresize(self, wid, x, y, w, h):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist" % wid)
+            raise ControlError(f"window {wid} does not exist")
         count = 0
         for source in tuple(self._server_sources.values()):
             move_resize_window = getattr(source, "move_resize_window", None)
             if move_resize_window:
                 move_resize_window(wid, window, x, y, w, h)
                 count += 1
-        return "window %s moved to %i,%i and resized to %ix%i for %i clients" % (wid, x, y, w, h, count)
+        return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
 
     def _process_command_request(self, _proto, packet):
