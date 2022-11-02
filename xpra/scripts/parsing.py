@@ -365,7 +365,7 @@ def normalize_display_name(display_name):
     #maybe this is just the display number without the ":" prefix?
     if display_name and display_name[0] in "0123456789" and POSIX:
         return ":"+display_name
-    if WIN32 and display_name[0].isalpha():
+    if WIN32 and display_name[0].isalpha() and display_name.find(":")<0:
         # pragma: no cover
         from xpra.platform.win32.dotxpra import PIPE_PREFIX
         return f"named-pipe://{PIPE_PREFIX}{display_name}"
