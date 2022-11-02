@@ -115,6 +115,8 @@ Suggests:			python3-gssapi
 Suggests:			python3-ldap
 Suggests:			python3-ldap3
 #Suggests:           python3-cpuinfo
+Recommends:			python3-aioquic
+Recommends:			python3-uvloop
 %if 0%{?el8}%{?el9}
 Recommends:			python3-avahi
 %endif

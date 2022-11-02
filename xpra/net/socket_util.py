@@ -124,9 +124,9 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
+def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=None):
     log = get_network_logger()
-    log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options))
+    log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:
         #ugly that we have different ways of starting sockets,
         #TODO: abstract this into the socket class
@@ -135,6 +135,10 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
             sock.new_connection_cb = new_connection_cb
             sock.start()
             return None
+        if socktype=="quic":
+            from xpra.net.quic.listener import listen_quic
+            assert server, "cannot use quic sockets without a server"
+            return listen_quic(sock, server)
         sources = []
         from gi.repository import GLib
         sock.listen(5)
@@ -307,6 +311,7 @@ def create_sockets(opts, error_cb, retry=0):
     bind_ws  = parse_bind_ip(opts.bind_ws, 80)
     bind_wss = parse_bind_ip(opts.bind_wss, 443)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
+    bind_quic = parse_bind_ip(opts.bind_quic, 20000)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     min_port = int(opts.min_port)
@@ -373,6 +378,13 @@ def create_sockets(opts, error_cb, retry=0):
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
         sock = setup_vsock_socket(cid, iport)
+        sockets[sock] = options
+
+    log("setting up quic sockets: %s", csv(bind_quic.items()))
+    for (host, iport), options in bind_quic.items():
+        ssl_cert = options.get("ssl-cert", opts.ssl_cert)
+        ssl_key = options.get("ssl-key", opts.ssl_key)
+        sock = setup_quic_socket(host, iport, ssl_cert, ssl_key)
         sockets[sock] = options
 
     # systemd socket activation:
@@ -484,6 +496,11 @@ def parse_bind_vsock(bind_vsock):
                 options = parse_simple_dict(parts[1])
             vsock_sockets[(cid, iport)] = options
     return vsock_sockets
+
+def setup_quic_socket(host, port, ssl_cert, ssl_key):
+    from xpra.net.quic.socket import quic_socket
+    quic_sock = quic_socket(host, port, ssl_cert, ssl_key)
+    return "quic", quic_sock, (host, port), quic_sock.close
 
 def setup_sd_listen_socket(stype, sock, addr):
     log = get_network_logger()

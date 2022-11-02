@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -48,6 +48,162 @@ def parse_url(handler):
             args[v[0]] = v[1]
     return args
 
+http_headers_cache = {}
+http_headers_time = {}
+def may_reload_headers(http_headers_dirs):
+    mtimes = {}
+    global http_headers_cache
+    if http_headers_cache:
+        #do we need to refresh the cache?
+        for d in http_headers_dirs:
+            if os.path.exists(d) and os.path.isdir(d):
+                mtime = os.path.getmtime(d)
+                if mtime>http_headers_time.get(d, -1):
+                    mtimes[d] = mtime
+        if not mtimes:
+            return http_headers_cache.copy()
+        log("headers directories have changed: %s", mtimes)
+    headers = {}
+    for d in http_headers_dirs:
+        if not os.path.exists(d) or not os.path.isdir(d):
+            continue
+        mtime = os.path.getmtime(d)
+        for f in sorted(os.listdir(d)):
+            header_file = os.path.join(d, f)
+            if not os.path.isfile(header_file):
+                continue
+            log("may_reload_headers() loading from '%s'", header_file)
+            h = {}
+            with open(header_file, "r", encoding="latin1") as hf:
+                for line in hf:
+                    sline = line.strip().rstrip("\r\n").strip()
+                    if sline.startswith("#") or not sline:
+                        continue
+                    parts = sline.split("=", 1)
+                    if len(parts)!=2 and sline.find(":")>0:
+                        parts = sline.split(":", 1)
+                    if len(parts)!=2:
+                        continue
+                    h[parts[0].strip()] = parts[1].strip()
+            log(f"may_reload_headers() {header_file}={h!r}")
+            headers.update(h)
+        http_headers_time[d] = mtime
+    log(f"may_reload_headers() headers={headers!r}, mtime={mtimes}")
+    http_headers_cache = headers
+    return headers.copy()
+
+
+def translate_path(path, web_root="/usr/share/xpra/www"):
+    #code duplicated from superclass since we can't easily inject the web_root..
+    s = path
+    # abandon query parameters
+    path = path.split('?',1)[0]
+    path = path.split('#',1)[0]
+    # Don't forget explicit trailing slash when normalizing. Issue17324
+    trailing_slash = path.rstrip().endswith('/')
+    path = posixpath.normpath(unquote(path))
+    words = path.split('/')
+    words = filter(None, words)
+    path = web_root
+    xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
+    www_dir_options = [web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
+    for p in www_dir_options:
+        if os.path.exists(p) and os.path.isdir(p):
+            path = p
+            break
+    for word in words:
+        word = os.path.splitdrive(word)[1]
+        word = os.path.split(word)[1]
+        if word in (os.curdir, os.pardir):
+            continue
+        path = os.path.join(path, word)
+    if trailing_slash:
+        path += '/'
+    #hack for locating the default desktop background at runtime:
+    if not os.path.exists(path) and s.endswith("/background.png"):
+        paths = get_desktop_background_paths()
+        for p in paths:
+            matches = glob.glob(p)
+            if matches:
+                path = matches[0]
+                break
+        if not os.path.exists(path):
+            #better send something than a 404,
+            #use a transparent 1x1 image:
+            path = os.path.join(web_root, "icons", "empty.png")
+    log("translate_path(%s)=%s", s, path)
+    return path
+
+def load_path(headers, path):
+    ext = os.path.splitext(path)[1]
+    extra_headers = {}
+    with open(path, "rb") as f:
+        # Always read in binary mode. Opening files in text mode may cause
+        # newline translations, making the actual size of the content
+        # transmitted *less* than the content-length!
+        fs = os.fstat(f.fileno())
+        content_length = fs[6]
+        content_type = EXTENSION_TO_MIMETYPE.get(ext)
+        if not content_type:
+            if not mimetypes.inited:
+                mimetypes.init()
+            ctype = mimetypes.guess_type(path, False)
+            if ctype and ctype[0]:
+                content_type = ctype[0]
+        log("guess_type(%s)=%s", path, content_type)
+        if content_type:
+            extra_headers["Content-type"] = content_type
+        accept = headers.get('accept-encoding', '').split(",")
+        accept = tuple(x.split(";")[0].strip() for x in accept)
+        content = None
+        log("accept-encoding=%s", csv(accept))
+        for enc in HTTP_ACCEPT_ENCODING:
+            #find a matching pre-compressed file:
+            if enc not in accept:
+                continue
+            compressed_path = f"{path}.{enc}"       #ie: "/path/to/index.html.br"
+            if not os.path.exists(compressed_path):
+                continue
+            if not os.path.isfile(compressed_path):
+                log.warn(f"Warning: {compressed_path!r} is not a file!")
+                continue
+            if not os.access(compressed_path, os.R_OK):
+                log.warn(f"Warning: {compressed_path!r} is not readable")
+                continue
+            st = os.stat(compressed_path)
+            if st.st_size==0:
+                log.warn(f"Warning: {compressed_path!r} is empty")
+                continue
+            log("sending pre-compressed file '%s'", compressed_path)
+            #read pre-gzipped file:
+            with open(compressed_path, "rb") as cf:
+                content = cf.read()
+            assert content, f"no data in {compressed_path!r}"
+            extra_headers["Content-Encoding"] = enc
+            break
+        if not content:
+            content = f.read()
+            if len(content)!=content_length:
+                raise RuntimeError(f"expected {path!r} to contain {content_length} bytes"+
+                                   f" but read {len(content)} bytes")
+            if content_length>128 and \
+            ("gzip" in accept) and \
+            ("gzip" in HTTP_ACCEPT_ENCODING) \
+            and (ext not in (".png", )):
+                #gzip it on the fly:
+                import zlib  # pylint: disable=import-outside-toplevel
+                gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+                compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
+                if len(compressed_content)<content_length:
+                    log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
+                    extra_headers["Content-Encoding"] = "gzip"
+                    content = compressed_content
+        extra_headers.update({
+            "Content-Length"    : len(content),
+            "Last-Modified"     : fs.st_mtime,
+            })
+        return 200, extra_headers, content
+
 
 class HTTPRequestHandler(BaseHTTPRequestHandler):
     """
@@ -80,47 +236,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.directory_listing = DIRECTORY_LISTING
         self.extra_headers = {}
         super().__init__(sock, addr, server)
-
-    def translate_path(self, path):
-        #code duplicated from superclass since we can't easily inject the web_root..
-        s = path
-        # abandon query parameters
-        path = path.split('?',1)[0]
-        path = path.split('#',1)[0]
-        # Don't forget explicit trailing slash when normalizing. Issue17324
-        trailing_slash = path.rstrip().endswith('/')
-        path = posixpath.normpath(unquote(path))
-        words = path.split('/')
-        words = filter(None, words)
-        path = self.web_root
-        xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
-        www_dir_options = [self.web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
-        for p in www_dir_options:
-            if os.path.exists(p) and os.path.isdir(p):
-                path = p
-                break
-        for word in words:
-            word = os.path.splitdrive(word)[1]
-            word = os.path.split(word)[1]
-            if word in (os.curdir, os.pardir):
-                continue
-            path = os.path.join(path, word)
-        if trailing_slash:
-            path += '/'
-        #hack for locating the default desktop background at runtime:
-        if not os.path.exists(path) and s.endswith("/background.png"):
-            paths = get_desktop_background_paths()
-            for p in paths:
-                matches = glob.glob(p)
-                if matches:
-                    path = matches[0]
-                    break
-            if not os.path.exists(path):
-                #better send something than a 404,
-                #use a transparent 1x1 image:
-                path = os.path.join(self.web_root, "icons", "empty.png")
-        log("translate_path(%s)=%s", s, path)
-        return path
 
 
     def log_error(self, fmt, *args):  #pylint: disable=arguments-differ
@@ -155,50 +270,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         super().end_headers()
 
     def get_headers(self):
-        return self.may_reload_headers(self.http_headers_dirs)
-
-    @classmethod
-    def may_reload_headers(cls, http_headers_dirs):
-        mtimes = {}
-        if cls.http_headers_cache:
-            #do we need to refresh the cache?
-            for d in http_headers_dirs:
-                if os.path.exists(d) and os.path.isdir(d):
-                    mtime = os.path.getmtime(d)
-                    if mtime>cls.http_headers_time.get(d, -1):
-                        mtimes[d] = mtime
-            if not mtimes:
-                return cls.http_headers_cache.copy()
-            log("headers directories have changed: %s", mtimes)
-        headers = {}
-        for d in http_headers_dirs:
-            if not os.path.exists(d) or not os.path.isdir(d):
-                continue
-            mtime = os.path.getmtime(d)
-            for f in sorted(os.listdir(d)):
-                header_file = os.path.join(d, f)
-                if not os.path.isfile(header_file):
-                    continue
-                log("may_reload_headers() loading from '%s'", header_file)
-                h = {}
-                with open(header_file, "r", encoding="latin1") as hf:
-                    for line in hf:
-                        sline = line.strip().rstrip("\r\n").strip()
-                        if sline.startswith("#") or not sline:
-                            continue
-                        parts = sline.split("=", 1)
-                        if len(parts)!=2 and sline.find(":")>0:
-                            parts = sline.split(":", 1)
-                        if len(parts)!=2:
-                            continue
-                        h[parts[0].strip()] = parts[1].strip()
-                log(f"may_reload_headers() {header_file}={h!r}")
-                headers.update(h)
-            cls.http_headers_time[d] = mtime
-        log(f"may_reload_headers() headers={headers!r}, mtime={mtimes}")
-        cls.http_headers_cache = headers
-        return headers.copy()
-
+        return may_reload_headers(self.http_headers_dirs)
 
     def do_POST(self):
         try:
@@ -282,7 +354,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
-
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
         path = self.path.split("?",1)[0].split("#",1)[0]
@@ -293,9 +364,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         log("send_head() script(%s)=%s", path, script)
         if script:
             log("request for %s handled using %s", path, script)
-            content = script(self)
-            return content
-        path = self.translate_path(self.path)
+            code, headers, body = script(self)
+            self.send_response(code)
+            self.extra_headers.update(headers or {})
+            self.end_headers()
+            return body
+        path = translate_path(self.path, self.web_root)
         if not path or not os.path.exists(path):
             self.send_error(404, "Path not found")
             return None
@@ -316,88 +390,21 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     self.send_error(403, "Directory listing forbidden")
                     return None
                 return SimpleHTTPRequestHandler.list_directory(self, path).read()
-        ext = os.path.splitext(path)[1]
-        f = None
+
         try:
-            # Always read in binary mode. Opening files in text mode may cause
-            # newline translations, making the actual size of the content
-            # transmitted *less* than the content-length!
-            f = open(path, "rb")
-            fs = os.fstat(f.fileno())
-            content_length = fs[6]
-            content_type = EXTENSION_TO_MIMETYPE.get(ext)
-            if not content_type:
-                if not mimetypes.inited:
-                    mimetypes.init()
-                ctype = mimetypes.guess_type(path, False)
-                if ctype and ctype[0]:
-                    content_type = ctype[0]
-            log("guess_type(%s)=%s", path, content_type)
-            if content_type:
-                self.extra_headers["Content-type"] = content_type
-            accept = self.headers.get('accept-encoding', '').split(",")
-            accept = tuple(x.split(";")[0].strip() for x in accept)
-            content = None
-            log("accept-encoding=%s", csv(accept))
-            for enc in HTTP_ACCEPT_ENCODING:
-                #find a matching pre-compressed file:
-                if enc not in accept:
-                    continue
-                compressed_path = f"{path}.{enc}"       #ie: "/path/to/index.html.br"
-                if not os.path.exists(compressed_path):
-                    continue
-                if not os.path.isfile(compressed_path):
-                    log.warn(f"Warning: {compressed_path!r} is not a file!")
-                    continue
-                if not os.access(compressed_path, os.R_OK):
-                    log.warn(f"Warning: {compressed_path!r} is not readable")
-                    continue
-                st = os.stat(compressed_path)
-                if st.st_size==0:
-                    log.warn(f"Warning: {compressed_path!r} is empty")
-                    continue
-                log("sending pre-compressed file '%s'", compressed_path)
-                #read pre-gzipped file:
-                f.close()
-                f = None
-                f = open(compressed_path, "rb")
-                content = f.read()
-                assert content, f"no data in {compressed_path!r}"
-                self.extra_headers["Content-Encoding"] = enc
-                break
-            if not content:
-                content = f.read()
-                assert len(content)==content_length, \
-                    "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
-                if content_length>128 and \
-                ("gzip" in accept) and \
-                ("gzip" in HTTP_ACCEPT_ENCODING) \
-                and (ext not in (".png", )):
-                    #gzip it on the fly:
-                    import zlib
-                    assert len(content)==content_length, \
-                        "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
-                    gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
-                    compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
-                    if len(compressed_content)<content_length:
-                        log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
-                        self.extra_headers["Content-Encoding"] = "gzip"
-                        content = compressed_content
-            f.close()
-            f = None
-            #send back response headers:
-            self.send_response(200)
-            self.extra_headers.update({
-                "Content-Length"    : len(content),
-                "Last-Modified"     : self.date_time_string(fs.st_mtime),
-                })
+            code, extra_headers, content = load_path(self.headers, path)
+            lm = extra_headers.get("Last-Modified")
+            if lm:
+                extra_headers["Last-Modified"] = self.date_time_string(lm)
+            self.send_response(code)
+            self.extra_headers.update(extra_headers)
             self.end_headers()
         except IOError as e:
             self.close_connection = True
             log("send_head()", exc_info=True)
             log.error("Error sending '%s':", path)
             emsg = str(e)
-            if emsg.endswith(": '%s'" % path):
+            if emsg.endswith(f": '{path}'"):
                 log.error(" %s", emsg.rsplit(":", 1)[0])
             else:
                 log.estr(e)
@@ -406,10 +413,4 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             except OSError:
                 log("failed to send 404 error - maybe some of the headers were already sent?", exc_info=True)
             return None
-        finally:
-            if f:
-                try:
-                    f.close()
-                except OSError:
-                    log("failed to close", exc_info=True)
         return content

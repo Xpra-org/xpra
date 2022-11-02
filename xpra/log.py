@@ -298,7 +298,8 @@ STRUCT_KNOWN_FILTERS = {
                 "named-pipe"    : "Named pipe",
                 "crypto"        : "Encryption",
                 "auth"          : "Authentication",
-                "upnp"           : "UPnP",
+                "upnp"          : "UPnP",
+                "quic"          : "QUIC",
                 },
     "Server" : {
                 #Server:

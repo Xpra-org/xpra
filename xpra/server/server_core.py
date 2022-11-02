@@ -989,7 +989,7 @@ class ServerCore:
     def add_listen_socket(self, socktype, sock, options):
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
-        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, options)
+        cleanup = add_listen_socket(socktype, sock, info, self, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
@@ -1005,14 +1005,16 @@ class ServerCore:
             return False
         socket_info = self.socket_info.get(listener)
         if not socktype:
-            raise RuntimeError(f"cannot find socket type for {listener}")
+            netlog.error(f"Error: cannot find socket type for {listener!r}")
+            return True
         #TODO: just like add_listen_socket above, this needs refactoring
         socket_options = self.socket_options.get(listener, {})
         if socktype=="named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
-            return self.make_protocol(socktype, conn, socket_options)
+            self.make_protocol(socktype, conn, socket_options)
+            return True
 
         conn = accept_connection(socktype, listener, self._socket_timeout, socket_options)
         if conn is None:
@@ -1540,19 +1542,15 @@ class ServerCore:
     def get_http_scripts(self):
         return self._http_scripts
 
-    def http_err(self, handler, code=500):  #pylint: disable=useless-return
-        handler.send_response(code)
-        return None
-
     def http_query_dict(self, path):
         return dict(parse_qsl(urlparse(path).query))
 
-    def send_json_response(self, handler, data):
+    def send_json_response(self, data):
         import json  #pylint: disable=import-outside-toplevel
-        return self.send_http_response(handler, json.dumps(data), "application/json")
+        return self.http_response(json.dumps(data), "application/json")
 
-    def send_icon(self, handler, icon_type, icon_data):
-        httplog("send_icon%s", (handler, icon_type, ellipsizer(icon_data)))
+    def send_icon(self, icon_type, icon_data):
+        httplog("send_icon%s", (icon_type, ellipsizer(icon_data)))
         if not icon_data:
             icon_filename = get_icon_filename("noicon.png")
             icon_data = load_binary_file(icon_filename)
@@ -1575,21 +1573,21 @@ class ServerCore:
             mime_type = "image/"+icon_type
         else:
             mime_type = "application/octet-stream"
-        return self.send_http_response(handler, icon_data, mime_type)
+        return self.http_response(icon_data, mime_type)
 
-    def http_menu_request(self, handler):
+    def http_menu_request(self, path):
         xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
-        return self.send_json_response(handler, xdg_menu or "not available")
+        return self.send_json_response(xdg_menu or "not available")
 
-    def http_desktop_menu_request(self, handler):
+    def http_desktop_menu_request(self, path):
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
-        return self.send_json_response(handler, xsessions or "not available")
+        return self.send_json_response(xsessions or "not available")
 
-    def http_menu_icon_request(self, handler):
+    def http_menu_icon_request(self, path):
         def invalid_path():
-            httplog("invalid menu-icon request path '%s'", handler.path)
-            return self.http_err(404)
-        parts = unquote(handler.path).split("/MenuIcon/", 1)
+            httplog("invalid menu-icon request path '%s'", path)
+            return 404, None, None
+        parts = unquote(path).split("/MenuIcon/", 1)
         #ie: "/menu-icon/a/b" -> ['', 'a/b']
         if len(parts)<2:
             return invalid_path()
@@ -1603,13 +1601,13 @@ class ServerCore:
             app_name = path[1]
         httplog("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
         icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
-        return self.send_icon(handler, icon_type, icon_data)
+        return self.send_icon(icon_type, icon_data)
 
-    def http_desktop_menu_icon_request(self, handler):
+    def http_desktop_menu_icon_request(self, path):
         def invalid_path():
-            httplog("invalid menu-icon request path '%s'", handler.path)
-            return self.http_err(handler, 404)
-        parts = unquote(handler.path).split("/DesktopMenuIcon/", 1)
+            httplog("invalid menu-icon request path '%s'", path)
+            return 404, None, None
+        parts = unquote(path).split("/DesktopMenuIcon/", 1)
         #ie: "/menu-icon/wmname" -> ['', 'sessionname']
         if len(parts)<2:
             return invalid_path()
@@ -1617,7 +1615,7 @@ class ServerCore:
         sessionname = parts[1].split("/")[0]
         httplog("http_desktop_menu_icon_request: sessionname=%s", sessionname)
         icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
-        return self.send_icon(handler, icon_type, icon_data)
+        return self.send_icon(icon_type, icon_data)
 
     def _filter_display_dict(self, display_dict, *whitelist):
         displays_info = {}
@@ -1626,26 +1624,26 @@ class ServerCore:
         httplog("_filter_display_dict(%s)=%s", display_dict, displays_info)
         return displays_info
 
-    def http_displays_request(self, handler):
+    def http_displays_request(self, path):
         displays = self.get_displays()
         displays_info = self._filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
-        return self.send_json_response(handler, displays_info)
+        return self.send_json_response(displays_info)
 
     def get_displays(self):
         from xpra.scripts.main import get_displays_info #pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
-    def http_sessions_request(self, handler):
+    def http_sessions_request(self, path):
         sessions = self.get_xpra_sessions()
         sessions_info = self._filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
-        return self.send_json_response(handler, sessions_info)
+        return self.send_json_response(sessions_info)
 
     def get_xpra_sessions(self):
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
-    def http_info_request(self, handler):
-        return self.send_json_response(handler, self.get_http_info())
+    def http_info_request(self, path):
+        return self.send_json_response(self.get_http_info())
 
     def get_http_info(self) -> dict:
         return {
@@ -1654,22 +1652,18 @@ class ServerCore:
             "uuid"              : self.uuid,
             }
 
-    def http_status_request(self, handler):
-        return self.send_http_response(handler, "ready")
+    def http_status_request(self, path):
+        return self.http_response("ready")
 
-    def send_http_response(self, handler, content, content_type="text/plain"):
+    def http_response(self, content, content_type="text/plain"):
         if not content:
-            handler.send_response(404)
-        else:
-            handler.send_response(200)
-            handler.extra_headers.update({
-                "Content-type"      : content_type,
-                "Content-Length"    : len(content),
-                })
-        handler.end_headers()
+            return 404, {}, None
         if isinstance(content, str):
             content = content.encode("latin1")
-        return content
+        return 200, {
+                "Content-type"      : content_type,
+                "Content-Length"    : len(content),
+                }, content
 
 
     def is_timedout(self, protocol):

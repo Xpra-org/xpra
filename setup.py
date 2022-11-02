@@ -156,6 +156,7 @@ print(f"CPP={CPP}")
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
+quic_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
@@ -284,7 +285,7 @@ SWITCHES = [
     "rebuild",
     "docs",
     "annotate", "warn", "strict",
-    "shadow", "proxy", "rfb",
+    "shadow", "proxy", "rfb", "quic",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     ]
@@ -297,9 +298,9 @@ def show_help():
     setup()
     print("Xpra specific build and install switches:")
     for x in SWITCHES:
-        d = vars()["%s_ENABLED" % x]
-        with_str = "  --with-%s" % x
-        without_str = "  --without-%s" % x
+        d = vars()[f"{x}_ENABLED"]
+        with_str = f"  --with-{x}"
+        without_str = f"  --without-{x}"
         if d is True or d is False:
             default_str = str(d)
         else:
@@ -1887,7 +1888,6 @@ if modules_ENABLED:
     tace(cython_ENABLED, "xpra.buffers.xxh,xpra/buffers/xxhash.c", optimize=3, extra_compile_args=extra_compile_args)
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
-toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
@@ -2257,6 +2257,8 @@ tace(cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode", optimize=3)
 toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
+toggle_packages(mdns_ENABLED, "xpra.net.mdns")
+toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")

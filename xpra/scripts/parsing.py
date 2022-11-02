@@ -1077,6 +1077,12 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Listen for RFB connections."
                       + " Use --rfb-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-quic", action="append",
+                      dest="bind_quic", default=list(defaults.bind_quic or []),
+                      metavar="[HOST]:PORT",
+                      help="Listen for QUIC HTTP/3 or WebTransport connections."
+                      + " Use --quic-auth to secure it."
+                      + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-vsock", action="append",
                       dest="bind_vsock", default=list(defaults.bind_vsock or []),
                       metavar="[CID]:[PORT]",
@@ -1608,6 +1614,10 @@ When unspecified, all the available codecs are allowed and the first one is used
                       dest="rfb_auth", default=list(defaults.rfb_auth or []),
                       help="The authentication module to use for RFB sockets - deprecated, use per socket syntax"
                       +" (default: %s)" % dcsv(defaults.rfb_auth))
+    group.add_option("--quic-auth", action="append",
+                      dest="quic_auth", default=list(defaults.quic_auth or []),
+                      help="The authentication module to use for QUIC sockets - deprecated, use per socket syntax"
+                      +" (default: %s)" % dcsv(defaults.quic_auth))
     group.add_option("--vsock-auth", action="append",
                      dest="vsock_auth", default=list(defaults.vsock_auth or []),
                      help="The authentication module to use for vsock sockets - deprecated, use per socket syntax"

@@ -1537,7 +1537,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
                 socket_cleanup[:] = []
             for socktype, sock, sinfo, cleanup_socket in sockets:
                 socket_cleanup.append(cleanup_socket)
-                cleanup = add_listen_socket(socktype, sock, sinfo, new_connection)
+                cleanup = add_listen_socket(socktype, sock, sinfo, None, new_connection)
                 if cleanup:
                     listen_cleanup.append(cleanup)
             #listen mode is special,
