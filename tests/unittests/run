@@ -12,6 +12,8 @@ export XPRA_TEST_DEBUG=${XPRA_TEST_DEBUG:-0}
 export XPRA_HIDE_SUBPROCESS_OUTPUT=${XPRA_HIDE_SUBPROCESS_OUTPUT:-1}
 export XPRA_TEST_COVERAGE=${XPRA_TEST_COVERAGE:-1}
 export PYTHON=${PYTHON:-python3}
+#Ubuntu will spew at too many warnings without this:
+export NO_AT_BRIDGE=1
 #SAVED_PYTHONPATH=$PYTHONPATH
 
 UNITTESTS_DIR=`dirname $(readlink -f $0)`

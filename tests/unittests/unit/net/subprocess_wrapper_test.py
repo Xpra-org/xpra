@@ -54,7 +54,7 @@ class loopback_connection(Connection):
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
     protocol = Protocol(GLib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
-    protocol.enable_encoder("rencode")
+    protocol.enable_encoder("rencodeplus")
     protocol.enable_compressor("none")
     return protocol
 

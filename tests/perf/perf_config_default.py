@@ -168,7 +168,7 @@ class Config():
     XPRA_COMPRESSION_LEVEL_OPTIONS = [None]
 
     #XPRA_PACKET_ENCODERS_OPTIONS = ["rencode", "bencode", "yaml"]
-    XPRA_PACKET_ENCODERS_OPTIONS = ["rencode"]
+    XPRA_PACKET_ENCODERS_OPTIONS = ["rencodeplus"]
 
     #XPRA_CONNECT_OPTIONS = [("ssh", None), ("tcp", None), ("unix-domain", None)]
     XPRA_CONNECT_OPTIONS = [("tcp", None)]

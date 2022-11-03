@@ -142,10 +142,10 @@ class ProtocolTest(unittest.TestCase):
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         proto.start()
         loop.run()
-        assert not errs, "%s" % csv(errs)
+        assert not errs, csv(errs)
 
     def test_encoders_and_compressors(self):
-        for encoder in ("rencode", "bencode"):
+        for encoder in ("rencodeplus", "bencode"):
             for compressor in ("lz4", "zlib"):
                 p = self.make_memory_protocol()
                 p.enable_encoder(encoder)
@@ -175,7 +175,7 @@ class ProtocolTest(unittest.TestCase):
         #prepare some packets to parse:
         p = self.make_memory_protocol()
         #use optimal setup:
-        p.enable_encoder("rencode")
+        p.enable_encoder("rencodeplus")
         p.enable_compressor("lz4")
         #catch network packets before we write them:
         data = []
@@ -246,7 +246,7 @@ class ProtocolTest(unittest.TestCase):
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         proto.enable_compressor("lz4")
-        proto.enable_encoder("rencode")
+        proto.enable_encoder("rencodeplus")
         proto.start()
         proto.source_has_more()
         start = time.monotonic()

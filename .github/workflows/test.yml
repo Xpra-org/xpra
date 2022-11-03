@@ -30,6 +30,7 @@ jobs:
                 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
                 gstreamer1.0-plugins-ugly \
                 liblz4-dev \
+                libbrotli-dev \
                 python3-coverage \
                 x11-xserver-utils dbus-x11
 
