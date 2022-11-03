@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+set -e
 
 die() { echo "$*" 1>&2 ; exit 1; }
 
@@ -50,6 +51,6 @@ if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
 	coverage report -m
 	ls -la
 	coverage html
-	xdg-open ./htmlcov/index.html
+	[ "$GITHUB_ACTIONS" ] || xdg-open ./htmlcov/index.html
 fi
 popd

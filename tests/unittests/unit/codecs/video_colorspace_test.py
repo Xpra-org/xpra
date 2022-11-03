@@ -109,6 +109,11 @@ class Test_CSC_Colorspace(unittest.TestCase):
             if not encoder:
                 print(f"{encoder_name} not found")
                 continue
+            try:
+                encoder.get_input_colorspaces(encoding)
+            except AssertionError:
+                print(f"{encoder_name} does not support {encoding}")
+                continue
             decoder = loader.load_codec(decoder_name)
             if not decoder:
                 print(f"{decoder_name} not found")

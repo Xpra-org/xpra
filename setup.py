@@ -473,8 +473,9 @@ if "pdf-doc" in sys.argv:
     convert_docs("pdf")
     sys.exit(0)
 
-if "unittests" in sys.argv:
-    os.execv("./tests/unittests/run", ["run"])
+if sys.argv[1]=="unittests":
+    os.execv("./tests/unittests/run", ["run"] + sys.argv[2:])
+assert "unittests" not in sys.argv, sys.argv
 
 
 #*******************************************************************************
