@@ -12,7 +12,8 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-
                 libxkbfile-dev \
                 python-all-dev \
                 pandoc \
-                libsystemd-dev
+                libsystemd-dev \
+                liblz4-dev
 ```
 GTK3 for the server and GUI client:
 ```shell
@@ -25,7 +26,7 @@ apt-get install xauth x11-xkb-utils
 To be able to run xpra, you are likely to need:
 ```shell
 apt-get install xvfb python3-cairo python3-gi-cairo \
-    python3-opengl python3-lz4 python3-rencode python3-pil
+    python3-opengl python3-pil
 ```
 
 ### Optional:
