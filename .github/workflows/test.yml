@@ -41,7 +41,6 @@ jobs:
       run: >
         python3 setup.py unittests
         --skip-fail unit.x11.fakexinerama_test
-        --skip-fail unit.server.mixins.child_command_test
         --skip-fail unit.server.server_sockets_test
         --skip-fail unit.scripts.parsing_test
         --skip-fail unit.notifications.common_test
