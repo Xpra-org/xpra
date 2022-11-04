@@ -641,8 +641,14 @@ fi
 
 
 %changelog
-* Mon Oct 24 2022 Antoine Martin <antoine@xpra.org> 4.4.2-10
-- TODO
+* Fri Nov 04 2022 Antoine Martin <antoine@xpra.org> 4.4.2-10
+- unit test errors with older versions of python pillow
+- worker thread cleaner termination
+- guard against missing stdin / stderr when starting servers
+- pam authentication module not linked properly
+- add another safeguard for x264 encoder crashes
+- packet errors with legacy encoders
+
 * Mon Oct 17 2022 Antoine Martin <antoine@xpra.org> 4.4.1-10
 - unable to focus window
 - chunked file transfer checksum errors

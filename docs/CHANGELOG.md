@@ -1,7 +1,12 @@
 # Changelog
 
-## [4.4.2] 2022-10-24
-* TODO
+## [4.4.2] 2022-11-04
+* [unit test errors with older versions of python pillow](https://github.com/Xpra-org/xpra/commit/7c916589e165769587100ba83e55cdea923c713e)
+* [worker thread cleaner termination](https://github.com/Xpra-org/xpra/commit/54775f1cba980780d88cbe197972e1de634e15cb)
+* [guard against missing stdin / stderr when starting servers](https://github.com/Xpra-org/xpra/commit/080bc8c8b2597ac86c72bd08a709523fff29fcf4)
+* [pam authentication module not linked properly](https://github.com/Xpra-org/xpra/commit/1026918bbc01a3bc551147da601be3b330e403dd)
+* [add another safeguard for x264 encoder crashes](https://github.com/Xpra-org/xpra/commit/91fdd9ba91737a073023c8530e1b30436c944169)
+* [packet errors with legacy encoders](https://github.com/Xpra-org/xpra/commit/c8aea5aa35825dfe0a1ba5a289a7b488f837fdd7)
 
 ## [4.4.1] 2022-10-17
 * [unable to focus window](https://github.com/Xpra-org/xpra/issues/3596)

@@ -1,7 +1,12 @@
 xpra (4.4.2-1) UNRELEASED; urgency=low
-  * TODO
+  * unit test errors with older versions of python pillow
+  * worker thread cleaner termination
+  * guard against missing stdin / stderr when starting servers
+  * pam authentication module not linked properly
+  * add another safeguard for x264 encoder crashes
+  * packet errors with legacy encoders
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 24 Oct 2022 16:58:58 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 04 Nov 2022 23:12:38 +0700
 
 xpra (4.4.1-1) UNRELEASED; urgency=low
   * unable to focus window
