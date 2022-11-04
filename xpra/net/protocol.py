@@ -591,10 +591,6 @@ class Protocol:
             ti = type(item)
             if ti in (int, bool, dict, list, tuple):
                 continue
-            if ti==memoryview:
-                if self.encoder!="rencodeplus":
-                    packet[i] = item.tobytes()
-                continue
             try:
                 l = len(item)
             except TypeError as e:
@@ -606,6 +602,10 @@ class Protocol:
                 packet[i] = item
                 ti = type(item)
                 #(it may now be a "Compressed" item and be processed further)
+            if ti==memoryview:
+                if self.encoder!="rencodeplus":
+                    packet[i] = item.tobytes()
+                continue
             if issubclass(ti, LargeStructure):
                 packet[i] = item.data
                 continue
@@ -623,6 +623,8 @@ class Protocol:
                 else:
                     #data is small enough, inline it:
                     packet[i] = item.data
+                    if isinstance(item.data, memoryview) and self.encoder!="rencodeplus":
+                        packet[i] = item.data.tobytes()
                     min_comp_size += l
                     size_check += l
             elif ti==bytes and level>0 and l>LARGE_PACKET_SIZE:
