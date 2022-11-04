@@ -21,6 +21,7 @@ def b(s):
 
 INVALID_INPUTS = (None, True, 1, 1.2, [1, 2], (1, 2), object())
 
+# pylint: disable=import-outside-toplevel
 
 class TestBrotli(unittest.TestCase):
 
@@ -37,32 +38,32 @@ class TestBrotli(unittest.TestCase):
         from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
         value = decompress(v, maxsize)
         if match_value is not None:
-            assert value==match_value, "expected %s but got %s" % (match_value, value)
+            assert value==match_value, f"expected {match_value!r} but got {value!r}"
         return value
 
     def fd(self, v, match_value=None, maxsize=512*1024):
         try:
             self.td(v, match_value, maxsize)
-        except:
+        except Exception:
             pass
         else:
-            raise ValueError("decompression should have failed for %r" % v)
+            raise ValueError(f"decompression should have failed for {v!r}")
 
     def tc(self, v, match_value=None, level=2, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), level, maxsize))
         from xpra.net.brotli.compressor import compress  # @UnresolvedImport
         value = compress(v, level)
         if match_value is not None:
-            assert value==match_value, "expected %s but got %s" % (match_value, value)
+            assert value==match_value, f"expected {match_value!r} but got {value!r}"
         return value
 
     def fc(self, v, match_value=None, maxsize=512*1024):
         try:
             self.tc(v, match_value, maxsize)
-        except:
+        except Exception:
             pass
         else:
-            raise ValueError("compression should have failed for %r" % v)
+            raise ValueError(f"compression should have failed for {v!r}")
 
 
     def test_decompressinvalidinput(self):
@@ -122,7 +123,7 @@ def main():
         from xpra.net.brotli import decompressor, compressor
         assert decompressor and compressor
     except ImportError as e:
-        print("brotli test skipped: %s" % e)
+        print(f"brotli test skipped: {e}")
     else:
         unittest.main()
 
