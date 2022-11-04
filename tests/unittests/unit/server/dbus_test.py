@@ -34,7 +34,7 @@ class DBUSTest(unittest.TestCase):
             return True
         def t(fn, r):
             v = dbus_common.dbus_exception_wrap(fn)
-            assert v==r, "expected dbus_exception_wrap(%s)=%s but got %s" % (fn, r, v)
+            assert v==r, f"expected dbus_exception_wrap({fn})={r} but got {v}"
         t(rimporterror, None)
         t(rfail, None)
         t(ok, True)
@@ -44,10 +44,10 @@ class DBUSTest(unittest.TestCase):
         from xpra.server.dbus.dbus_start import start_dbus
         def f(v):
             r, d = start_dbus(v)
-            assert r==0 and not d, "dbus should not have started for '%s'" % v
+            assert r==0 and not d, f"dbus should not have started for {v!r}"
         def w(v):
             r, d = start_dbus(v)
-            assert r>0 and d, "dbus should have started for '%s'" % v
+            assert r>0 and d, f"dbus should have started for {v!r}"
         def rm():
             os.environ.pop("DBUS_SESSION_BUS_ADDRESS", None)
         with OSEnvContext():

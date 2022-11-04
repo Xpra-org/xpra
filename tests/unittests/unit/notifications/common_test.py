@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,7 +27,8 @@ class TestCommon(unittest.TestCase):
     def test_parse_image_path(self):
         from xpra.platform.paths import get_icon_filename
         filename = get_icon_filename("xpra")
-        assert common.parse_image_path(filename) is not None
+        if not common.parse_image_path(filename):
+            raise RuntimeError(f"failed to parse image path for {filename}")
         f = tempfile.NamedTemporaryFile(prefix="test-invalid-file", delete=False)
         try:
             f.file.write(b"0000000000000001111111111111111111111")

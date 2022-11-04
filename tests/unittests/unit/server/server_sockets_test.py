@@ -33,14 +33,14 @@ class ServerSocketsTest(ServerTestUtil):
         server_proc = self.run_xpra(["start", "--no-daemon"]+list(args))
         if pollwait(server_proc, 10) is not None:
             r = server_proc.poll()
-            raise Exception("server failed to start with args=%s, returned %s" % (args, estr(r)))
+            raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
         return server_proc
 
     def _test_connect(self, server_args=(), auth="none", client_args=(), password=None, uri_prefix=DISPLAY_PREFIX, exit_code=0):
         display_no = self.find_free_display_no()
-        display = ":%s" % display_no
-        log("starting test server on %s", display)
-        server = self.start_server(display, "--auth=%s" % auth, "--printing=no", *server_args)
+        display = f":{display_no}"
+        log(f"starting test server on {display}")
+        server = self.start_server(display, f"--auth={auth}", "--printing=no", *server_args)
         #we should always be able to get the version:
         uri = uri_prefix + str(display_no)
         start = monotonic()
@@ -52,14 +52,14 @@ class ServerSocketsTest(ServerTestUtil):
             if r is None:
                 client.terminate()
             if monotonic()-start>SUBPROCESS_WAIT:
-                raise Exception("version client failed to connect, returned %s" % estr(r))
+                raise Exception(f"version client failed to connect, returned {estr(r)}")
         #try to connect
         cmd = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
         f = None
         if password:
             f = self._temp_file(password)
-            cmd += ["--password-file=%s" % f.name]
-            cmd += ["--challenge-handlers=file:filename=%s" % f.name]
+            cmd += [f"--password-file={f.name}"]
+            cmd += [f"--challenge-handlers=file:filename={f.name}"]
         client = self.run_xpra(cmd)
         r = pollwait(client, SUBPROCESS_WAIT)
         if f:
@@ -83,22 +83,22 @@ class ServerSocketsTest(ServerTestUtil):
 
     def test_tcp_socket(self):
         port = get_free_tcp_port()
-        self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello",
-						"tcp://127.0.0.1:%i/" % port, EXIT_OK)
+        self._test_connect([f"--bind-tcp=0.0.0.0:{port}"], "allow", [], b"hello",
+						f"tcp://127.0.0.1:{port}/", EXIT_OK)
         port = get_free_tcp_port()
-        self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello",
-						"ws://127.0.0.1:%i/" % port, EXIT_OK)
+        self._test_connect([f"--bind-tcp=0.0.0.0:{port}"], "allow", [], b"hello",
+						f"ws://127.0.0.1:{port}/", EXIT_OK)
 
     def test_ws_socket(self):
         port = get_free_tcp_port()
-        self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], b"hello",
-						"ws://127.0.0.1:%i/" % port, EXIT_OK)
+        self._test_connect([f"--bind-ws=0.0.0.0:{port}"], "allow", [], b"hello",
+						f"ws://127.0.0.1:{port}/", EXIT_OK)
 
 
     def test_ssl(self):
         server = None
         display_no = self.find_free_display_no()
-        display = ":%s" % display_no
+        display = f":{display_no}"
         tcp_port = get_free_tcp_port()
         ws_port = get_free_tcp_port()
         wss_port = get_free_tcp_port()
@@ -127,13 +127,13 @@ class ServerSocketsTest(ServerTestUtil):
                 log.warn("SSL test skipped, cannot run '%s'", b" ".join(openssl_command))
                 return
             server_args = [
-                "--bind-tcp=0.0.0.0:%i" % tcp_port,
-                "--bind-ws=0.0.0.0:%i" % ws_port,
-                "--bind-wss=0.0.0.0:%i" % wss_port,
-                "--bind-ssl=0.0.0.0:%i" % ssl_port,
+                f"--bind-tcp=0.0.0.0:{tcp_port}",
+                f"--bind-ws=0.0.0.0:{ws_port}",
+                f"--bind-wss=0.0.0.0:{wss_port}",
+                f"--bind-ssl=0.0.0.0:{ssl_port}",
                 "--ssl=on",
                 "--html=on",
-                "--ssl-cert=%s" % certfile,
+                f"--ssl-cert={certfile}",
                 ]
 
             log("starting test ssl server on %s", display)
@@ -159,19 +159,19 @@ class ServerSocketsTest(ServerTestUtil):
                 assert r==exit_code, "expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll()))
             noverify = "--ssl-server-verify-mode=none"
             #connect to ssl socket:
-            test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
+            test_connect(f"ssl://127.0.0.1:{ssl_port}/", EXIT_OK, noverify)
             #tcp socket should upgrade to ssl:
-            test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+            test_connect(f"ssl://127.0.0.1:{tcp_port}/", EXIT_OK, noverify)
             #tcp socket should upgrade to ws and ssl:
-            test_connect("wss://127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+            test_connect(f"wss://127.0.0.1:{tcp_port}/", EXIT_OK, noverify)
             #ws socket should upgrade to ssl:
-            test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
+            test_connect(f"wss://127.0.0.1:{ws_port}/", EXIT_OK, noverify)
 
             #self signed cert should fail without noverify:
-            test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+            test_connect(f"ssl://127.0.0.1:{ssl_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+            test_connect(f"ssl://127.0.0.1:{tcp_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+            test_connect(f"wss://127.0.0.1:{ws_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+            test_connect(f"wss://127.0.0.1:{wss_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
 
         finally:
             shutil.rmtree(tmpdir)

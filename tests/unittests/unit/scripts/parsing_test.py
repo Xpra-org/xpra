@@ -11,7 +11,7 @@ import unittest
 from xpra.log import add_debug_category, remove_debug_category
 from xpra.os_util import nomodule_context, WIN32
 from xpra.scripts.parsing import (
-    parse_ssh_option, add_ssh_args, add_ssh_proxy_args, parse_remote_display,
+    parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
     )
 
 class TestParsing(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestParsing(unittest.TestCase):
             remove_debug_category("ssh")
         #args:
         def targs(e, *args, **kwargs):
-            r = add_ssh_args(*args, **kwargs)
+            r = get_ssh_args(*args, **kwargs)
             assert r==e, f"expected {e} but got {r}"
         targs([], None, None, None, None, None, is_paramiko=True)
         targs(["-pw", "password", "-l", "username", "-P", "2222", "-T", "host"],
@@ -43,7 +43,7 @@ class TestParsing(unittest.TestCase):
                   "username", "password", "host", 2222, keyfile)
         #ssh proxy:
         def pargs(e, n, *args, **kwargs):
-            r = add_ssh_proxy_args(*args, **kwargs)[:n]
+            r = get_ssh_proxy_args(*args, **kwargs)[:n]
             assert r==e, f"expected {e} but got {r}"
         pargs(["-o"], 1,
             "username", "password", "host", 222, None, ["ssh"])
