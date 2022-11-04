@@ -31,24 +31,41 @@ class TestParsing(unittest.TestCase):
                 pssh("auto", "ssh")
             remove_debug_category("ssh")
         #args:
-        def targs(e, *args, **kwargs):
-            r = get_ssh_args(*args, **kwargs)
+        def targs(e, *args):
+            r = get_ssh_args(*args)
             assert r==e, f"expected {e} but got {r}"
-        targs([], None, None, None, None, None, is_paramiko=True)
-        targs(["-pw", "password", "-l", "username", "-P", "2222", "-T", "host"],
-              "username", "password", "host", 2222, None, is_putty=True)
+        targs([], {"host" : "host"})
+        targs(["-pw", "password1", "-l", "username1", "-P", "2222", "-T", "host1"], {
+            "username" : "username1",
+            "password" : "password1",
+            "host"    : "host1",
+            "port"    : 2222,
+            }, "putty")
         if not WIN32:
             keyfile = os.path.expanduser("~/key")
-            targs(["-l", "username", "-p", "2222", "-T", "host", "-i", keyfile],
-                  "username", "password", "host", 2222, keyfile)
+            targs(["-l", "username1", "-p", "2222", "-T", "host1", "-i", keyfile], {
+                "username" : "username1",
+                "password" : "password1",
+                "host"    : "host1",
+                "port"    : 2222,
+                "key"     : keyfile,
+                }, "ssh")
         #ssh proxy:
-        def pargs(e, n, *args, **kwargs):
-            r = get_ssh_proxy_args(*args, **kwargs)[:n]
+        def pargs(e, n, *args):
+            r = get_ssh_proxy_args(*args)[:n]
             assert r==e, f"expected {e} but got {r}"
-        pargs(["-o"], 1,
-            "username", "password", "host", 222, None, ["ssh"])
-        pargs(["-proxycmd"], 1,
-              "username", "password", "host", 222, None, ["putty.exe"], is_putty=True)
+        pargs(["-o"], 1, {
+            "proxy_username" : "username1",
+            "proxy_password" : "password1",
+            "proxy_host"    : "host1",
+            "proxy_port"    : 2222,
+            }, ["ssh"])
+        pargs(["-proxycmd"], 1, {
+            "proxy_username" : "username1",
+            "proxy_password" : "password1",
+            "proxy_host"    : "host1",
+            "proxy_port"    : 2222,
+            }, ["plink"])
         #remote display attributes:
         assert parse_remote_display("somedisplay").get("display")=="somedisplay"
         assert parse_remote_display("10?proxy=username:password@host:222").get("proxy")=="username:password@host:222"

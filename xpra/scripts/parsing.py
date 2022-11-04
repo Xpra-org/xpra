@@ -685,7 +685,7 @@ def get_ssh_proxy_args(desc, ssh):
     elif not is_paramiko:
         proxyline += ["-W", "%h:%p"]
     # the double quotes are in case the password has something like "&"
-    proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
+    proxyline += get_ssh_args(desc, ssh[0], prefix="proxy_")
     if is_putty:
         args += ["-proxycmd", " ".join(proxyline)]
     elif not is_paramiko:
