@@ -602,6 +602,12 @@ In \fIauto\fP mode, the client will set the bandwidth limit
 value to 80% of the maximum speed of the network interface
 it is using to connect to the server.
 
+\fB--splash\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+Show a splash screen during client or server startup.
+With the default value of \fIauto\fP, the splash screen is only
+shown if there is a GUI available - ie: no attempt will be made
+to show the splash screen when xpra is launched from an SSH session.
+
 
 .SS Options for start, start-desktop, upgrade, proxy and shadow
 .TP
