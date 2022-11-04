@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+import shlex
 import inspect
 import os.path
-import sys
+import tempfile
 
 from xpra.platform import platform_import
 
@@ -119,14 +121,12 @@ def do_get_download_dir():
 def get_mmap_dir():
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
 def do_get_mmap_dir():
-    import tempfile
     return tempfile.gettempdir()
 
 
 def get_xpra_tmp_dir():
     return env_or_delegate("XPRA_TMP_DIR", do_get_xpra_tmp_dir)
 def do_get_xpra_tmp_dir():
-    import tempfile
     return tempfile.gettempdir()
 
 
@@ -147,9 +147,9 @@ def do_get_sshpass_command():
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
     SSHPASS = "sshpass"
-    from xpra.platform.features import EXECUTABLE_EXTENSION
+    from xpra.platform.features import EXECUTABLE_EXTENSION  # pylint: disable=import-outside-toplevel
     if EXECUTABLE_EXTENSION:
-        SSHPASS = "sshpass.%s" % EXECUTABLE_EXTENSION
+        SSHPASS = f"sshpass.{EXECUTABLE_EXTENSION}"
     paths = os.environ["PATH"].split(os.pathsep)
     for path in paths:
         path = path.strip('"')
@@ -182,7 +182,7 @@ def default_get_app_dir():
     adir = os.path.dirname(inspect.getfile(sys._getframe(1)))  #pylint: disable=protected-access
     def root_module(d):
         for psep in (os.path.sep, "/", "\\"):
-            pos = d.find("xpra%splatform" % psep)
+            pos = d.find(f"xpra{psep}platform")
             if pos>=0:
                 return d[:pos]
         return d
@@ -227,7 +227,7 @@ def get_icon_filename(basename=None, ext="png"):
     filename = basename
     fext = os.path.splitext(filename)[1]
     if not fext:
-        filename = "%s.%s" % (basename, ext)
+        filename = f"{basename}.{ext}"
     if not os.path.isabs(filename):
         icon_dir = get_icon_dir()
         filename = os.path.join(icon_dir, filename)
@@ -245,7 +245,6 @@ def do_get_desktop_background_paths():
 def get_xpra_command():
     envvalue = os.environ.get("XPRA_COMMAND")
     if envvalue:
-        import shlex
         return shlex.split(envvalue)
     return do_get_xpra_command()
 def do_get_xpra_command():
@@ -260,7 +259,6 @@ def default_do_get_xpra_command():
 def get_nodock_command():
     envvalue = os.environ.get("XPRA_NODOCK_COMMAND")
     if envvalue:
-        import shlex
         return shlex.split(envvalue)
     return do_get_nodock_command()
 def do_get_nodock_command():
@@ -270,7 +268,6 @@ def do_get_nodock_command():
 def get_sound_command():
     envvalue = os.environ.get("XPRA_SOUND_COMMAND")
     if envvalue:
-        import shlex
         return shlex.split(envvalue)
     return do_get_sound_command()
 def do_get_sound_command():
@@ -280,20 +277,20 @@ def do_get_sound_command():
 def get_python_exec_command():
     envvalue = os.environ.get("XPRA_PYTHON_EXEC_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
     if envvalue:
-        import shlex
         return shlex.split(envvalue)
     return do_get_python_exec_command()
 def do_get_python_exec_command():
-    return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor), "-c"]
+    vi = sys.version_info
+    return [f"python{vi.major}.{vi.minor}", "-c"]
 
 def get_python_execfile_command():
     envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
     if envvalue:
-        import shlex
         return shlex.split(envvalue)
     return do_get_python_execfile_command()
 def do_get_python_execfile_command():
-    return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor)]
+    vi = sys.version_info
+    return [f"python{vi.major}.{vi.minor}"]
 
 
 platform_import(globals(), "paths", True,
@@ -328,7 +325,7 @@ platform_import(globals(), "paths", False,
 
 def get_info():
     try:
-        import xpra
+        import xpra  # pylint: disable=import-outside-toplevel
         XPRA_MODULE_PATH = xpra.__file__
         pos = XPRA_MODULE_PATH.find("__init__.py")
         if pos>0:
@@ -368,6 +365,7 @@ def get_info():
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     if "-v" in sys.argv or "--verbose" in sys.argv:
         from xpra.log import add_debug_category
         add_debug_category("util")
