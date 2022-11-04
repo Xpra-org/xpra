@@ -49,6 +49,10 @@ class ChildCommandMixinTest(ServerMixinTest):
         def noop():
             pass
         def _ChildCommandServer():
+            from gi.repository import GLib
+            def idle_add(ccs, *args):
+                return GLib.idle_add(*args)
+            child_command_server.ChildCommandServer.idle_add = idle_add
             ccs = child_command_server.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs
