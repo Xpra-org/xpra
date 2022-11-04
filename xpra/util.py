@@ -532,8 +532,9 @@ def prettify_plug_name(s, default=""):
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
     if s.startswith("WinSta-"):
         s = s[len("WinSta-"):]
-    if s.startswith("(Standard monitor types) "):
-        s = s[len("(Standard monitor types) "):]
+    #ie: "(Standard monitor types) DELL ..."
+    if s.startswith("(") and s.lower().find("standard")<s.find(") "):
+        s = s.split(") ", 1)[1]
     if s=="0":
         s = default
     return s
