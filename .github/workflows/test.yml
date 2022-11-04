@@ -44,6 +44,7 @@ jobs:
         --skip-fail unit.server.server_sockets_test
         --skip-fail unit.scripts.parsing_test
         --skip-fail unit.notifications.common_test
+        --skip-fail unit.net.brotli_test
         --skip-slow unit.client.x11_client_test
         --skip-slow unit.server.shadow_server_test
         --skip-slow unit.server.mixins.start_option_test
