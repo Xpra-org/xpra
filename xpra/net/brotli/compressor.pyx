@@ -88,7 +88,7 @@ def compress(data, int quality=1):
 
     cdef Py_buffer in_buf
     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read data from %s" % type(data))
+        raise Exception(f"failed to read data from {type(data)}")
     cdef const uint8_t *in_ptr = <const uint8_t*> in_buf.buf
 
     cdef size_t out_size
@@ -103,5 +103,5 @@ def compress(data, int quality=1):
     finally:
         PyBuffer_Release(&in_buf)
     if not r:
-        raise ValueError("brotli compression failed: %i" % r)
+        raise ValueError(f"brotli compression failed: {r}")
     return out[:out_size]
