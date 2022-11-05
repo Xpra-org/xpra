@@ -588,32 +588,30 @@ class Protocol:
             item = packet[i]
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
-            ti = type(item)
-            if ti in (int, bool, dict, list, tuple):
+            if isinstance(item, (int, bool, dict, list, tuple)):
                 continue
             try:
                 l = len(item)
             except TypeError as e:
-                raise TypeError(f"invalid type {ti} in {packet_type!r} packet at index {i}: {e}") from None
-            if issubclass(ti, Compressible):
+                raise TypeError(f"invalid type {type(item)} in {packet_type!r} packet at index {i}: {e}") from None
+            if isinstance(item, Compressible):
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
                 item = item.compress()
                 packet[i] = item
-                ti = type(item)
                 #(it may now be a "Compressed" item and be processed further)
-            if ti==memoryview:
+            if isinstance(item, memoryview):
                 if self.encoder!="rencodeplus":
                     packet[i] = item.tobytes()
                 continue
-            if issubclass(ti, LargeStructure):
+            if isinstance(item, LargeStructure):
                 packet[i] = item.data
                 continue
-            if issubclass(ti, Compressed):
+            if isinstance(item, Compressed):
                 #already compressed data (usually pixels, cursors, etc)
                 if not item.can_inline or l>INLINE_SIZE:
                     il = 0
-                    if ti==LevelCompressed:
+                    if isinstance(item, LevelCompressed):
                         #unlike Compressed (usually pixels, decompressed in the paint thread),
                         #LevelCompressed is decompressed by the network layer
                         #so we must tell it how to do that and pass the level flag
@@ -627,7 +625,8 @@ class Protocol:
                         packet[i] = item.data.tobytes()
                     min_comp_size += l
                     size_check += l
-            elif ti==bytes and level>0 and l>LARGE_PACKET_SIZE:
+                continue
+            if isinstance(item, bytes) and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 #add new binary packet with large item:
@@ -635,8 +634,9 @@ class Protocol:
                 packets.append((0, i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
-            elif ti not in (str, bytes):
-                log.warn(f"Warning: unexpected data type {ti}")
+                continue
+            if not isinstance(item, (str, bytes)):
+                log.warn(f"Warning: unexpected data type {type(item)}")
                 log.warn(f" in {packet_type!r} packet at position {i}: {repr_ellipsized(item)}")
         #now the main packet (or what is left of it):
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
