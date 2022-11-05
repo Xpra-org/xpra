@@ -159,7 +159,7 @@ class quic_queue_server:
         self.start()
 
     def listen(self, quic_sock, xpra_server):
-        log.warn(f"listen({quic_sock}, {xpra_server})")
+        log(f"listen({quic_sock}, {xpra_server})")
         self.queue.put((quic_sock, xpra_server))
 
     def start(self):
