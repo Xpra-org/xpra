@@ -540,12 +540,12 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         opts.display = None
         return desc
 
-    if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
+    if protocol in ("tcp", "ssl", "ws", "wss", "vnc", "quic"):
         add_credentials()
         host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
         add_path()
         add_query()
-        if protocol in ("ssl", "wss"):
+        if protocol in ("ssl", "wss", "quic"):
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         proxy = desc.get("proxy")
         if proxy=="auto":

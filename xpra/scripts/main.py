@@ -358,7 +358,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         warn("\nWarning: running as root")
 
     mode = MODE_ALIAS.get(mode, mode)
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
     if mode=="shadow" and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         #are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name
@@ -455,7 +455,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
         return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
@@ -742,7 +742,7 @@ def display_desc_to_uri(display_desc):
         uri += ":"+password
     if username is not None or password is not None:
         uri += "@"
-    if dtype in ("ssh", "tcp", "ssl", "ws", "wss"):
+    if dtype in ("ssh", "tcp", "ssl", "ws", "wss", "quic"):
         #TODO: re-add 'proxy_host' arguments here
         host = display_desc.get("host")
         if not host:
@@ -1060,9 +1060,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             )
         return conn
 
+    if dtype=="quic":
+        sock = retry_socket_connect(display_desc)
+        sock.settimeout(None)
+        from xpra.net.quic import QUIC_Connection
+        return QUIC_Connection(sock)
+
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
-        host = display_desc["host"]
-        port = display_desc["port"]
         sock = retry_socket_connect(display_desc)
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
