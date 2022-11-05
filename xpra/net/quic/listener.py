@@ -112,7 +112,7 @@ class ServerProtocol(HttpServerProtocol):
         web_root = self.xpra_server._www_dir
         headers_dirs = self.xpra_server._http_headers_dirs
         headers = may_reload_headers(headers_dirs)
-        log.info(f"req_path={req_path}, web_root={web_root}, scripts={scripts}, headers_dir={headers_dir}")
+        log(f"req_path={req_path}, web_root={web_root}, scripts={scripts}, headers_dir={headers_dirs}")
         path = translate_path(req_path, web_root)
         if not path or not os.path.exists(path):
             await http3_response(404, headers, body=b"Path not found")
@@ -223,7 +223,7 @@ class quic_queue_server:
 
 
 def listen_quic(quic_sock, xpra_server=None):
-    log.info(f"listen_quic({quic_sock})")
+    log(f"listen_quic({quic_sock})")
     qs = get_quic_server()
     qs.listen(quic_sock, xpra_server)
     return quic_sock.close

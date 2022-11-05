@@ -163,7 +163,7 @@ def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=N
         return cleanup
     except Exception as e:
         log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
-        log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
+        log.error("Error: failed to listen on %s socket %s:", socktype, pretty_socket(info or sock))
         log.estr(e)
         return None
 
