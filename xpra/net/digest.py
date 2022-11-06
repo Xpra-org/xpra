@@ -22,7 +22,7 @@ def get_digests():
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
                 and getattr(hashlib, x, None) is not None]
     try:
-        from xpra.net import d3des  #pylint: disable=import-outside-toplevel
+        from xpra.net.rfb import d3des  #pylint: disable=import-outside-toplevel
         assert d3des
         digests.append("des")
     except (ImportError, TypeError):    # pragma: no cover
@@ -62,7 +62,7 @@ def gendigest(digest, password, salt):
     salt = memoryview_to_bytes(salt)
     password = strtobytes(password)
     if digest=="des":
-        from xpra.net.d3des import generate_response  #pylint: disable=import-outside-toplevel
+        from xpra.net.rfb.d3des import generate_response  #pylint: disable=import-outside-toplevel
         password = password.ljust(8, b"\x00")[:8]
         salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)

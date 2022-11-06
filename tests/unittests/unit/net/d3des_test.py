@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.net.d3des import generate_response, deskey, desfunc, decrypt_passwd
+from xpra.net.rfb.d3des import generate_response, deskey, desfunc, decrypt_passwd
 
 class TestD3DES(unittest.TestCase):
 
