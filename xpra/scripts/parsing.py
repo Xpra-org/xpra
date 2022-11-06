@@ -516,7 +516,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         ssh_desc = get_ssh_display_attributes(desc, args, opts.ssh)
         desc.update(ssh_desc)
         ssh = parse_ssh_option(opts.ssh)
-        full_ssh = ssh + get_ssh_args(desc, ssh[0])
+        full_ssh = ssh + get_ssh_args(desc, ssh)
         if "proxy_host" in desc:
             full_ssh += get_ssh_proxy_args(desc, ssh)
         desc["full_ssh"] = full_ssh
@@ -643,7 +643,8 @@ def get_ssh_display_attributes(desc, args, ssh_option="auto"):
     return desc
 
 
-def get_ssh_args(desc, ssh_cmd="paramiko", prefix=""):
+def get_ssh_args(desc, ssh=("paramiko",), prefix=""):
+    ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
     password = desc.get(f"{prefix}password")
@@ -685,7 +686,7 @@ def get_ssh_proxy_args(desc, ssh):
     elif not is_paramiko:
         proxyline += ["-W", "%h:%p"]
     # the double quotes are in case the password has something like "&"
-    proxyline += get_ssh_args(desc, ssh[0], prefix="proxy_")
+    proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
     if is_putty:
         args += ["-proxycmd", " ".join(proxyline)]
     elif not is_paramiko:
