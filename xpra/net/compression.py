@@ -27,7 +27,7 @@ COMPRESSION = {}
 def init_lz4():
     #pylint: disable=import-outside-toplevel
     #pylint: disable=redefined-outer-name
-    from xpra.net.lz4 import compress, decompress, get_version  # @UnresolvedImport
+    from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5-level//3))

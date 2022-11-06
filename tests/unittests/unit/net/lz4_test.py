@@ -25,12 +25,12 @@ INVALID_INPUTS = (None, True, 1, 1.2, [1, 2], (1, 2), object())
 class TestLZ4(unittest.TestCase):
 
     def test_libversions(self):
-        from xpra.net.lz4 import get_version    # @UnresolvedImport
+        from xpra.net.lz4.lz4 import get_version    # @UnresolvedImport
         assert get_version()>=(1, 8)
 
     def td(self, v, match_value=None, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), maxsize))
-        from xpra.net.lz4 import decompress # @UnresolvedImport
+        from xpra.net.lz4.lz4 import decompress # @UnresolvedImport
         value = decompress(v, maxsize)
         if match_value is not None:
             assert mtb(value)==mtb(match_value), "expected %s but got %s" % (e(match_value), e(value))
@@ -46,7 +46,7 @@ class TestLZ4(unittest.TestCase):
 
     def tc(self, v, match_value=None, level=2, maxsize=512*1024):
         log("tc%s", (ellipsizer(v), ellipsizer(match_value), level, maxsize))
-        from xpra.net.lz4 import compress  # @UnresolvedImport
+        from xpra.net.lz4.lz4 import compress  # @UnresolvedImport
         value = compress(v, 10-level)
         if match_value is not None:
             assert mtb(value)==mtb(match_value), "expected %s but got %s" % (e(match_value), e(value))
@@ -118,7 +118,7 @@ def main():
         add_debug_category("brotli")
         enable_debug_for("brotli")
     try:
-        from xpra.net.lz4 import decompress, compress
+        from xpra.net.lz4.lz4 import decompress, compress
         assert decompress and compress
     except ImportError as e:
         print("lz4 test skipped: %s" % e)

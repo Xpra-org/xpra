@@ -90,7 +90,7 @@ class TestCompression(unittest.TestCase):
 
     def test_lz4(self):
         try:
-            from xpra.net.lz4 import compress, decompress
+            from xpra.net.lz4.lz4 import compress, decompress
             from lz4 import block
         except ImportError as e:
             print(f"lz4 test skipped: {e}")

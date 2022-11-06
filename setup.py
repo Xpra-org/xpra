@@ -1033,7 +1033,7 @@ def clean():
                    "xpra/net/qrcode/qrencode.c",
                    "xpra/net/websockets/mask.c",
                    "xpra/net/vsock/vsock.c",
-                   "xpra/net/lz4.c",
+                   "xpra/net/lz4/lz4.c",
                    "xpra/buffers/membuf.c",
                    "xpra/buffers/xxh.c",
                    "xpra/buffers/cyxor.c",
@@ -2270,7 +2270,8 @@ tace(qrencode_ENABLED, "xpra.net.qrcode.qrencode", extra_link_args="-lqrencode")
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
 toggle_packages(vsock_ENABLED, "xpra.net.vsock")
 tace(vsock_ENABLED, "xpra.net.vsock.vsock")
-tace(lz4_ENABLED, "xpra.net.lz4", "liblz4")
+toggle_packages(lz4_ENABLED, "xpra.net.lz4")
+tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
 
 if ext_modules:
