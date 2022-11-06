@@ -354,8 +354,8 @@ def use_systemd_run(s):
 
 def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if POSIX and getuid()==0 and options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
-        warn("\nWarning: running as root")
+    if POSIX and getuid()==options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
+        warn("\nWarning: running as root\n")
 
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
@@ -982,7 +982,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     if dtype in ("ssh", "vnc+ssh"):
-        from xpra.net.ssh import ssh_paramiko_connect_to, ssh_exec_connect_to
+        from xpra.net.ssh.ssh import ssh_paramiko_connect_to, ssh_exec_connect_to
         if display_desc.get("is_paramiko", False):
             conn = ssh_paramiko_connect_to(display_desc)
         else:
@@ -1061,10 +1061,19 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         return conn
 
     if dtype=="quic":
-        sock = retry_socket_connect(display_desc)
-        sock.settimeout(None)
-        from xpra.net.quic import QUIC_Connection
-        return QUIC_Connection(sock)
+        host = display_desc["host"]
+        port = display_desc["port"]
+        ssl_options = display_desc.get("ssl-options", {})
+        ssl_server_verify_mode = ssl_options.get("server-verify-mode", opts.ssl_server_verify_mode)
+        ssl_ca_certs = ssl_options.get("ca-certs", opts.ssl_ca_certs)
+        ssl_cert = ssl_options.get("cert", opts.ssl_cert)
+        ssl_key = ssl_options.get("key", opts.ssl_key)
+        from xpra.net.quic.quic_connection import quic_connect
+        conn = quic_connect(host, port,
+                     ssl_cert, ssl_key,
+                     ssl_ca_certs, ssl_server_verify_mode)
+        print(f"quic_connect={conn}")
+        return conn
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         sock = retry_socket_connect(display_desc)
@@ -2607,49 +2616,6 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
-def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
-    sshlog = Logger("ssh")
-    sshlog(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
-    #this is the socket path that the ssh client wants us to use:
-    #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
-    if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
-        sshlog(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
-        return None
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
-    if not session_dir or not os.path.exists(session_dir):
-        sshlog(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
-        return None
-    #locate the ssh agent uuid,
-    #which is used to derive the agent path symlink
-    #that the server will want to use for this connection,
-    #newer clients pass it to the remote proxy command process using an env var:
-    agent_uuid = None
-    for x in cmdline:
-        if x.startswith("--env=SSH_AGENT_UUID="):
-            agent_uuid = x[len("--env=SSH_AGENT_UUID="):]
-            break
-    #prevent illegal paths:
-    if not agent_uuid or agent_uuid.find("/")>=0 or agent_uuid.find(".")>=0:
-        sshlog(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
-        return None
-    from xpra.scripts.server import get_ssh_agent_path
-    #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-    agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
-    if os.path.exists(agent_uuid_sockpath):
-        if os.path.islink(agent_uuid_sockpath) and is_socket(agent_uuid_sockpath):
-            sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
-            #keep the existing socket unchanged - somehow it still works?
-            return agent_uuid_sockpath
-        sshlog(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
-        os.unlink(agent_uuid_sockpath)
-    sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
-    try:
-        os.symlink(auth_sock, agent_uuid_sockpath)
-    except OSError as e:
-        sshlog.error("Error creating ssh agent socket symlink")
-        sshlog.estr(e)
-        return None
-    return agent_uuid_sockpath
 
 def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     no_gtk()
@@ -2711,18 +2677,23 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     if display and server_mode!="shadow":
         display_name = display_name or display.get("display") or display.get("display_name")
         try:
-            from xpra.scripts.server import get_session_dir
-            with OSEnvContext():
-                #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
-                #and we use an OSEnvContext to avoid polluting the env with it
-                #(we need it to use the server ssh agent path functions)
-                os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
-                #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-                setup_proxy_ssh_socket(cmdline)
-        except OSError:
-            sshlog = Logger("ssh")
-            sshlog = Logger("ssh")
-            sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)
+            from xpra.net.ssh.agent import setup_proxy_ssh_socket
+        except ImportError:
+            pass
+        else:
+            try:
+                from xpra.scripts.server import get_session_dir
+                with OSEnvContext():
+                    #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
+                    #and we use an OSEnvContext to avoid polluting the env with it
+                    #(we need it to use the server ssh agent path functions)
+                    os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
+                    #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
+                    setup_proxy_ssh_socket(cmdline)
+            except OSError:
+                sshlog = Logger("ssh")
+                sshlog = Logger("ssh")
+                sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection

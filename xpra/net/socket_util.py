@@ -321,7 +321,7 @@ def create_sockets(opts, error_cb, retry=0):
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
-            from xpra.net.ssh import nogssapi_context
+            from xpra.net.ssh.util import nogssapi_context
             with nogssapi_context():
                 import paramiko
             assert paramiko
@@ -947,6 +947,15 @@ def ssl_handshake(ssl_sock):
         raise InitExit(status, f"SSL handshake failed: {e}") from None
     return ssl_sock
 
+def get_ssl_verify_mode(verify_mode_str):
+    #parse verify-mode:
+    import ssl
+    ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode_str.upper(), None)
+    if ssl_cert_reqs is None:
+        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
+        raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: "+csv(values))
+    return ssl_cert_reqs
+
 def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
                         client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
@@ -955,10 +964,6 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
                         server_side=True):
     if server_side and not cert:
         raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
-    if server_side:
-        verify_mode = client_verify_mode
-    else:
-        verify_mode = server_verify_mode
     from xpra.log import Logger
     ssllog = Logger("ssl")
     ssllog("get_ssl_wrap_socket_context%s", (cert, key, ca_certs, ca_data,
@@ -967,21 +972,19 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
                                     check_hostname, server_hostname,
                                     options, ciphers,
                                     server_side))
-    import ssl
-    ssllog(" verify_mode for server_side=%s : %s", server_side, verify_mode)
+    if server_side:
+        ssl_cert_reqs = get_ssl_verify_mode(client_verify_mode)
+    else:
+        ssl_cert_reqs = get_ssl_verify_mode(server_verify_mode)
+    ssllog(" verify_mode for server_side=%s : %s", server_side, ssl_cert_reqs)
     #ca-certs:
     if ca_certs=="default":
         ca_certs = None
     elif ca_certs=="auto":
         ca_certs = find_ssl_cert("ca-cert.pem")
     ssllog(" ca-certs=%s", ca_certs)
-    #parse verify-mode:
-    ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode.upper(), None)
-    if ssl_cert_reqs is None:
-        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
-        raise InitException(f"invalid ssl-server-verify-mode {verify_mode!r}, must be one of: "+csv(values))
-    ssllog(" cert-reqs=%#x", ssl_cert_reqs)
     #parse protocol:
+    import ssl
     proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("V", "v"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
@@ -1078,7 +1081,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
                 f.file.flush()
                 context.load_verify_locations(cafile=f.name)
     elif check_hostname and not server_side:
-        ssllog("cannot check hostname client side with verify mode %s", verify_mode)
+        ssllog("cannot check hostname client side with verify mode %s", ssl_cert_reqs)
     return context, kwargs
 
 def do_wrap_socket(tcp_socket, context, **kwargs):

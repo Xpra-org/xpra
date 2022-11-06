@@ -421,57 +421,6 @@ def save_session_file(filename, contents, uid=None, gid=None):
         log.estr(e)
     return path
 
-def ssh_dir_path():
-    session_dir = os.environ["XPRA_SESSION_DIR"]
-    return os.path.join(session_dir, "ssh")
-
-def setup_ssh_auth_sock():
-    #the 'ssh' dir contains agent socket symlinks to the real agent socket
-    #and we can just update the "agent" symlink
-    #which is the one that applications are told to use
-    ssh_dir = ssh_dir_path()
-    if not os.path.exists(ssh_dir):
-        os.mkdir(ssh_dir, 0o700)
-    #ie: "/run/user/1000/xpra/10/ssh/agent"
-    agent_sockpath = get_ssh_agent_path("agent")
-    #the current value from the environment:
-    #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
-    # or "SSH_AUTH_SOCK=/run/user/1000/keyring/ssh"
-    cur_sockpath = os.environ.pop("SSH_AUTH_SOCK", None)
-    #ie: "/run/user/1000/xpra/10/ssh/agent.default"
-    agent_default_sockpath = get_ssh_agent_path("agent.default")
-    if cur_sockpath and cur_sockpath!=agent_sockpath and not os.path.exists(agent_default_sockpath):
-        #the current agent socket will be the default:
-        #ie: "agent.default" -> "/run/user/1000/keyring/ssh"
-        os.symlink(cur_sockpath, agent_default_sockpath)
-    set_ssh_agent()
-    return agent_sockpath
-
-def get_ssh_agent_path(filename):
-    ssh_dir = ssh_dir_path()
-    assert "/" not in filename and ".." not in filename
-    return os.path.join(ssh_dir, filename or "agent.default")
-
-def set_ssh_agent(filename=None):
-    ssh_dir = ssh_dir_path()
-    if filename and os.path.isabs(filename):
-        sockpath = filename
-    else:
-        filename = filename or "agent.default"
-        sockpath = get_ssh_agent_path(filename)
-    if not os.path.exists(sockpath):
-        return
-    agent_sockpath = os.path.join(ssh_dir, "agent")
-    try:
-        if os.path.islink(agent_sockpath):
-            os.unlink(agent_sockpath)
-        os.symlink(filename, agent_sockpath)
-    except OSError as e:
-        from xpra.log import Logger
-        log = Logger("server", "ssh")
-        log(f"set_ssh_agent({filename})", exc_info=True)
-        log.error(f"Error: failed to set ssh agent socket path to {filename!r}")
-        log.estr(e)
 
 def rm_session_dir(warn=True):
     session_dir = os.environ.get("XPRA_SESSION_DIR")
@@ -1375,6 +1324,7 @@ def _do_run_server(script_file, cmdline,
     if SSH_AGENT_DISPATCH and (not shadowing or proxying):
         progress(50, "setup ssh agent forwarding")
         try:
+            from xpra.net.ssh.agent import setup_ssh_auth_sock
             ssh_auth_sock = setup_ssh_auth_sock()
             os.environ["SSH_AUTH_SOCK"] = ssh_auth_sock
             protected_env["SSH_AUTH_SOCK"] = ssh_auth_sock

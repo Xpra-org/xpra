@@ -157,6 +157,7 @@ shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
 quic_ENABLED = DEFAULT
+ssh_ENABLED = DEFAULT
 http_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
@@ -286,7 +287,7 @@ SWITCHES = [
     "rebuild",
     "docs",
     "annotate", "warn", "strict",
-    "shadow", "proxy", "rfb", "quic", "http",
+    "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     ]
@@ -2261,6 +2262,7 @@ tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlide
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
+toggle_packages(ssh_ENABLED, "xpra.net.ssh")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")

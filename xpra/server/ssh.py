@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 import paramiko
 
-from xpra.net.ssh import SSHSocketConnection
+from xpra.net.ssh.ssh import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
 from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
@@ -228,7 +228,7 @@ class SSHServer(paramiko.ServerInterface):
                 log(f"paramiko agent socket={auth_sock!r}")
                 if auth_sock:
                     # pylint: disable=import-outside-toplevel
-                    from xpra.scripts.main import setup_proxy_ssh_socket
+                    from xpra.net.ssh.agent import setup_proxy_ssh_socket
                     setup_proxy_ssh_socket(cmd, auth_sock)
         def csend(exit_status=0, out=None, err=None):
             channel.exec_response = (exit_status, out, err)

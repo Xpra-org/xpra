@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,6 +19,7 @@ from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry_wrapper import input_pass, confirm
+from xpra.net.ssh.util import nogssapi_context, get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.make_thread import start_thread
 from xpra.exit_codes import (
@@ -26,8 +27,8 @@ from xpra.exit_codes import (
     EXIT_CONNECTION_FAILED,
     )
 from xpra.os_util import (
-    bytestostr, osexpand, load_binary_file,
-    nomodule_context, umask_context,
+    bytestostr, load_binary_file,
+    umask_context,
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
@@ -365,19 +366,6 @@ def ssh_paramiko_connect_to(display_desc):
         return conn
 
 
-#workaround incompatibility between paramiko and gssapi:
-class nogssapi_context(nomodule_context):
-
-    def __init__(self):
-        super().__init__("gssapi")
-
-
-def get_default_keyfiles():
-    dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
-    if dkf is not None:
-        return [x for x in dkf.split(":") if x]
-    return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
-
 AUTH_MODES = ("none", "agent", "key", "password")
 
 def get_auth_modes(paramiko_config, host_config, password):
@@ -492,7 +480,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password,
             dnscheck = ""
             if configbool("verifyhostkeydns"):
                 try:
-                    from xpra.net.sshfp import check_host_key
+                    from xpra.net.ssh.sshfp import check_host_key
                     dnscheck = check_host_key(host, host_key)
                 except ImportError as e:
                     log("verifyhostkeydns failed", exc_info=True)

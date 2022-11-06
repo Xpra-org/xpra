@@ -23,7 +23,6 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import server_features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
-from xpra.scripts.server import set_ssh_agent
 
 SERVER_BASES = [ServerCore]
 if server_features.control:
@@ -406,7 +405,12 @@ class ServerBase(ServerBaseClass):
         if not uuid:
             sshlog("cannot setup ssh agent without client uuid")
             return
-        from xpra.scripts.server import get_ssh_agent_path
+        try:
+            from xpra.net.ssh.agent import get_ssh_agent_path, set_ssh_agent
+        except ImportError as e:
+            sshlog.error("Error: cannot setup ssh agent:")
+            sshlog.estr(e)
+            return
         #perhaps the agent sock path for this uuid already exists:
         #ie: /run/user/1000/xpra/10/$UUID
         sockpath = get_ssh_agent_path(uuid)
@@ -832,7 +836,12 @@ class ServerBase(ServerBaseClass):
                 if ss.uuid and ss.ssh_auth_sock:
                     agent = ss.uuid
                     break
-            set_ssh_agent(agent)
+            try:
+                from xpra.net.ssh.agent import set_ssh_agent
+            except ImportError:
+                pass
+            else:
+                set_ssh_agent(agent)
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("%s client %i disconnected.", ptype, source.counter)

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.net.ssh import (
-    keymd5, get_default_keyfiles,
-    )
+from xpra.net.ssh.ssh import keymd5
+from xpra.net.ssh.util import get_default_keyfiles
 
 
 class SSHTest(unittest.TestCase):
