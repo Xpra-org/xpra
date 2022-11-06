@@ -5,7 +5,7 @@
 
 from xpra.util import envbool
 from xpra.net.websockets.common import make_websocket_accept_hash
-from xpra.net.http_handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
+from xpra.net.http.http_handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
 
 log = Logger("network", "websocket")

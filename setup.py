@@ -157,6 +157,7 @@ shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
 quic_ENABLED = DEFAULT
+http_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
@@ -285,7 +286,7 @@ SWITCHES = [
     "rebuild",
     "docs",
     "annotate", "warn", "strict",
-    "shadow", "proxy", "rfb", "quic",
+    "shadow", "proxy", "rfb", "quic", "http",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     ]
@@ -1817,7 +1818,7 @@ else:
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
                 },
-            "CFBundleGetInfoString" : f"{XPRA_VERSION}-{REVISION} (c) 2012-2020 https://xpra.org/",
+            "CFBundleGetInfoString" : f"{XPRA_VERSION}-{REVISION} (c) 2012-2022 https://xpra.org/",
             "CFBundleIdentifier"            : "org.xpra.xpra",
             }
         #Note: despite our best efforts, py2app will not copy all the modules we need
@@ -2260,6 +2261,7 @@ tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlide
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
+toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")

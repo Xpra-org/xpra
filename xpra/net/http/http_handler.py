@@ -8,9 +8,10 @@ import glob
 import posixpath
 import mimetypes
 from urllib.parse import unquote
-from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
 from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized
 from xpra.platform.paths import get_desktop_background_paths
@@ -389,7 +390,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if not self.directory_listing:
                     self.send_error(403, "Directory listing forbidden")
                     return None
-                return SimpleHTTPRequestHandler.list_directory(self, path).read()
+                return list_directory(self, path).read()
 
         try:
             code, extra_headers, content = load_path(self.headers, path)
