@@ -8,18 +8,12 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
+from xpra.net.qrcode import qrencode
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
 
 log = Logger("menu")
 
-
-def qrencode(s):
-    try:
-        from xpra.net.qrencode import encode_image
-    except ImportError:
-        return None
-    return encode_image(s)
 
 def show_qr(uri, width=640, height=640):
     assert uri.find(":")>0, "invalid uri"
