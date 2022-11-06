@@ -1032,7 +1032,7 @@ def clean():
                    "xpra/net/brotli/decompressor.c",
                    "xpra/net/qrencode.c",
                    "xpra/net/websockets/mask.c",
-                   "xpra/net/vsock.c",
+                   "xpra/net/vsock/vsock.c",
                    "xpra/net/lz4.c",
                    "xpra/buffers/membuf.c",
                    "xpra/buffers/xxh.c",
@@ -2267,7 +2267,8 @@ toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
-tace(vsock_ENABLED, "xpra.net.vsock")
+toggle_packages(vsock_ENABLED, "xpra.net.vsock")
+tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 tace(lz4_ENABLED, "xpra.net.lz4", "liblz4")
 
 

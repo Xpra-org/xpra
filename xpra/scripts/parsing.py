@@ -476,7 +476,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         add_credentials()
         add_query()
         cid = parse_vsock_cid(parsed.hostname)
-        from xpra.net.vsock import PORT_ANY  # pylint: disable=no-name-in-module
+        from xpra.net.vsock.vsock import PORT_ANY  # pylint: disable=no-name-in-module
         port = parsed.port or PORT_ANY
         desc.update({
                 "local"         : False,
@@ -1884,7 +1884,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     return codec_help
 
 def parse_vsock_cid(cid_str):
-    from xpra.net.vsock import STR_TO_CID, CID_ANY  #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY  #@UnresolvedImport pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
         return CID_ANY
     try:

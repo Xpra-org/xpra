@@ -471,7 +471,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
 def setup_vsock_socket(cid, iport):
     log = get_network_logger()
     try:
-        from xpra.net.vsock import bind_vsocket     #@UnresolvedImport
+        from xpra.net.vsock.vsock import bind_vsocket     #@UnresolvedImport
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
