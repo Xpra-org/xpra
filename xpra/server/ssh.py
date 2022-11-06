@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 import paramiko
 
-from xpra.net.ssh.ssh import SSHSocketConnection
+from xpra.net.ssh.paramiko_client import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
 from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX

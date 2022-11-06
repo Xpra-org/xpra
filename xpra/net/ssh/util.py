@@ -5,10 +5,7 @@
 
 import os
 
-from xpra.os_util import (
-    bytestostr, osexpand,
-    nomodule_context,
-    )
+from xpra.os_util import osexpand, nomodule_context
 
 
 #workaround incompatibility between paramiko and gssapi:
