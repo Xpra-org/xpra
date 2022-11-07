@@ -50,8 +50,10 @@ class threaded_asyncio_loop:
             log(f"waiting for event loop")
             import time
             time.sleep(0.01)
+        if self.loop is None:
+            raise RuntimeError("no asyncio main loop")
         def tsafe():
-            log("creating task")
+            log(f"creating task for {f}")
             self.loop.create_task(f)
         log("call_soon_threadsafe")
         self.loop.call_soon_threadsafe(tsafe)
