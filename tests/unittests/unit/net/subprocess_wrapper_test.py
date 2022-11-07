@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from queue import Queue
 from gi.repository import GObject, GLib               #@UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.log import Logger
@@ -53,7 +53,7 @@ class loopback_connection(Connection):
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
-    protocol = Protocol(GLib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+    protocol = SocketProtocol(GLib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
     protocol.enable_encoder("rencodeplus")
     protocol.enable_compressor("none")
     return protocol

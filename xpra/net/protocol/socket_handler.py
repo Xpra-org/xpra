@@ -17,7 +17,11 @@ from queue import Queue
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
-from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML
+from xpra.net.protocol.header import (
+    unpack_header, pack_header,
+    FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
+    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML,
+    )
 from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
@@ -34,10 +38,6 @@ from xpra.net.socket_util import guess_packet_type
 from xpra.net.packet_encoding import (
     decode,
     InvalidPacketEncodingException,
-    )
-from xpra.net.protocol.header import (
-    unpack_header, pack_header,
-    FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
     )
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger

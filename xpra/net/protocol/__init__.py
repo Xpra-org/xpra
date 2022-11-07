@@ -2,5 +2,3 @@
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.net.protocol.socket_handler import SocketProtocol as Protocol

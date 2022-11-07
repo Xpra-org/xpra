@@ -13,7 +13,7 @@ from xpra.os_util import bytestostr, get_machine_id
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -155,7 +155,7 @@ class NetworkListener(StubClientMixin):
 
     def make_protocol(self, socktype, conn, listener):
         socktype = socktype.lower()
-        protocol = Protocol(self, conn, self.process_network_packet)
+        protocol = SocketProtocol(self, conn, self.process_network_packet)
         #protocol.large_packets.append(b"info-response")
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)

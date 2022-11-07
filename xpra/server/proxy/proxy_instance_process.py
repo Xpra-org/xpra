@@ -13,7 +13,7 @@ from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import (
     SIGNAMES, POSIX,
@@ -266,7 +266,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         sc = SocketConnection(sock, sockname, address, target, "socket")
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
-        protocol = Protocol(self, sc, self.process_control_packet)
+        protocol = SocketProtocol(self, sc, self.process_control_packet)
         protocol.large_packets.append("info-response")
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()

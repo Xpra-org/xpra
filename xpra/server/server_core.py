@@ -40,7 +40,7 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
     )
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
@@ -1332,7 +1332,7 @@ class ServerCore:
             self.source_remove(t)
 
 
-    def make_protocol(self, socktype, conn, socket_options, protocol_class=Protocol, pre_read=None):
+    def make_protocol(self, socktype, conn, socket_options, protocol_class=SocketProtocol, pre_read=None):
         """ create a new xpra Protocol instance and start it """
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """

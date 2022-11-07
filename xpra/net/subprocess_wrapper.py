@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool, csv
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32
 from xpra.child_reaper import getChildReaper
@@ -179,7 +179,7 @@ class subprocess_callee:
                                  abort_test=None, target=self.name,
                                  socktype=self.name, close_cb=self.net_stop)
         conn.timeout = 0
-        protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = SocketProtocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         if LOCAL_ALIASES:
             protocol.send_aliases = LOCAL_SEND_ALIASES
             protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
@@ -377,7 +377,7 @@ class subprocess_caller:
                                  abort_test=self.abort_test, target=self.description,
                                  socktype=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
-        protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = SocketProtocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         if LOCAL_ALIASES:
             protocol.send_aliases = LOCAL_SEND_ALIASES
             protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
