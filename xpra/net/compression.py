@@ -200,6 +200,7 @@ class InvalidCompressionException(Exception):
 
 
 def get_compression_type(level) -> str:
+    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         return "lz4"
     if level & BROTLI_FLAG:
@@ -208,7 +209,7 @@ def get_compression_type(level) -> str:
 
 
 def decompress(data, level):
-    #log.info("decompress(%s bytes, %s) type=%s", len(data), get_compression_type(level))
+    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"
     elif level & BROTLI_FLAG:
