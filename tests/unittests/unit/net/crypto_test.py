@@ -12,7 +12,7 @@ from xpra.util import envbool
 
 from xpra.net.crypto import (
     DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_IV,
-    validate_backend,
+    crypto_backend_init,
     )
 
 SHOW_PERF = envbool("XPRA_SHOW_PERF", False)
@@ -25,12 +25,13 @@ def log(_message):
 
 class TestCrypto(unittest.TestCase):
 
-    def setUp(self):
-        from xpra.net import pycryptography_backend
-        pycryptography_backend.init()
-        self.backend = pycryptography_backend
+    def test_crypto(self):
+        from xpra.net.crypto import get_modes
+        for mode in get_modes():
+            self.do_test_roundtrip(mode=mode)
 
-    def do_test_backend(self, message=b"some message1234", encrypt_count=1, decrypt_count=1):
+    def do_test_roundtrip(self, message=b"some message1234", encrypt_count=1, decrypt_count=1, mode="CBC"):
+        from xpra.net.crypto import get_cipher_encryptor, get_cipher_decryptor, get_key
         def mustequ(l):
             if not l:
                 return
@@ -46,17 +47,17 @@ class TestCrypto(unittest.TestCase):
         block_size = DEFAULT_KEYSIZE
         #test key stretching:
         args = password, key_salt, key_hash, block_size, iterations
-        secret = self.backend.get_key(*args)
-        log("%s%s=%s" % (self.backend.get_key, args, hexstr(secret)))
+        secret = get_key(*args)
+        log("%s%s=%s" % (get_key, args, hexstr(secret)))
         assert secret is not None
         #test creation of encryptors and decryptors:
         iv = DEFAULT_IV
-        args = secret, iv
-        enc = self.backend.get_encryptor(*args)
-        log("%s%s=%s" % (self.backend.get_encryptor, args, enc))
+        args = secret, iv, mode
+        enc = get_cipher_encryptor(*args)
+        log("%s%s=%s" % (get_cipher_encryptor, args, enc))
         assert enc is not None
-        dec = self.backend.get_decryptor(*args)
-        log("%s%s=%s" % (self.backend.get_decryptor, args, dec))
+        dec = get_cipher_decryptor(*args)
+        log("%s%s=%s" % (get_cipher_decryptor, args, dec))
         assert dec is not None
         #print("init took %ims", (monotonic()-start)//1000)
         #test encoding of a message:
@@ -80,15 +81,13 @@ class TestCrypto(unittest.TestCase):
         if decrypted:
             mustequ([decrypted[0], message])
 
-    def test_backends(self):
-        self.do_test_backend()
 
     def do_test_perf(self, size=1024*4, enc_iterations=20, dec_iterations=20):
         asize = (size+15)//16
         times = []
         data = b"0123456789ABCDEF"*asize
         start = monotonic()
-        self.do_test_backend(data, enc_iterations, dec_iterations)
+        self.do_test_roundtrip(data, enc_iterations, dec_iterations)
         end = monotonic()
         elapsed = max(0.0001, end-start)
         speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed
@@ -113,8 +112,9 @@ class TestCrypto(unittest.TestCase):
         for i in RANGE:
             self.do_test_perf(i, 10, 10)
 
-    def test_crypto(self):
-        validate_backend(self.backend)
+
+    def setUp(self):
+        crypto_backend_init()
 
 
 def main():

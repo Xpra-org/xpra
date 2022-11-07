@@ -2021,10 +2021,10 @@ class ServerCore:
             if server_cipher!=cipher:
                 return auth_failed(f"the server is configured for {server_cipher!r} not {cipher!r} as requested by the client")
             from xpra.net.crypto import (
-                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS,
+                DEFAULT_PADDING, ALL_PADDING_OPTIONS,
                 DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                KEY_HASHES, DEFAULT_KEY_STRETCH,
-                new_cipher_caps,
+                DEFAULT_KEY_STRETCH,
+                new_cipher_caps, get_ciphers, get_key_hashes,
                 )
             if not cipher_mode:
                 cipher_mode = DEFAULT_MODE
@@ -2039,10 +2039,11 @@ class ServerCore:
             key_stretch = c.strget("cipher.key_stretch", DEFAULT_KEY_STRETCH)
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
             padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
-            if cipher not in ENCRYPTION_CIPHERS:
+            ciphers = get_ciphers()
+            if cipher not in ciphers:
                 authlog.warn("Warning: unsupported cipher: %s", cipher)
-                if ENCRYPTION_CIPHERS:
-                    authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
+                if ciphers:
+                    authlog.warn(" should be: %s", csv(ciphers))
                 return auth_failed("unsupported cipher")
             if key_stretch!="PBKDF2":
                 return auth_failed(f"unsupported key stretching {key_stretch!r}")
@@ -2051,7 +2052,9 @@ class ServerCore:
                 return auth_failed("encryption key is missing")
             if padding not in ALL_PADDING_OPTIONS:
                 return auth_failed(f"unsupported padding {padding!r}")
-            if key_hash not in KEY_HASHES:
+            ciphers = get_ciphers()
+            key_hashes = get_key_hashes()
+            if key_hash not in key_hashes:
                 return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
             cryptolog("setting output cipher using %s-%s encryption key '%s'",
                       cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))

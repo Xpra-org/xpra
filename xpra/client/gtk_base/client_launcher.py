@@ -168,8 +168,8 @@ class ApplicationWindow:
             pass
         #assume crypto is available
         try:
-            from xpra.net.crypto import MODES
-            for mode in MODES:
+            from xpra.net.crypto import get_modes
+            for mode in get_modes():
                 modes.append(f"tcp + aes-{mode.lower()}")
         except ImportError:
             pass

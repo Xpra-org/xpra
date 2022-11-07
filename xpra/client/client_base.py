@@ -25,9 +25,10 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
-    ENCRYPTION_CIPHERS, MODES, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
+    get_ciphers, get_modes, get_key_hashes,
+    ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
-    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES, DEFAULT_KEY_STRETCH,
+    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH,
     )
 from xpra.version_util import get_version_info, vparts, XPRA_VERSION
 from xpra.platform.info import get_name, get_username
@@ -461,10 +462,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             enc, mode = (encryption+"-").split("-")[:2]
             if not mode:
                 mode = DEFAULT_MODE
-            if enc not in ENCRYPTION_CIPHERS:
-                raise ValueError(f"invalid encryption {enc!r}, options: {csv(ENCRYPTION_CIPHERS)}")
-            if mode not in MODES:
-                raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(MODES)}")
+            ciphers = get_ciphers()
+            if enc not in ciphers:
+                raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers)}")
+            modes = get_modes()
+            if mode not in modes:
+                raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes)}")
             iv = get_iv()
             key_salt = get_salt()
             iterations = get_iterations()
@@ -906,6 +909,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         key_stretch = caps.strget("cipher.key_stretch", DEFAULT_KEY_STRETCH)
         iterations = caps.intget("cipher.key_stretch_iterations")
         padding = caps.strget("cipher.padding", DEFAULT_PADDING)
+        ciphers = get_ciphers()
+        key_hashes = get_key_hashes()
         #server may tell us what it supports,
         #either from hello response or from challenge packet:
         self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
@@ -916,12 +921,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return fail(f"unsupported key stretching {key_stretch}")
         if not cipher or not cipher_iv:
             return fail("the server does not use or support encryption/password, cannot continue")
-        if cipher not in ENCRYPTION_CIPHERS:
-            return fail(f"unsupported server cipher: {cipher}, allowed ciphers: {csv(ENCRYPTION_CIPHERS)}")
+        if cipher not in ciphers:
+            return fail(f"unsupported server cipher: {cipher}, allowed ciphers: {csv(ciphers)}")
         if padding not in ALL_PADDING_OPTIONS:
             return fail(f"unsupported server cipher padding: {padding}, allowed paddings: {csv(ALL_PADDING_OPTIONS)}")
-        if key_hash not in KEY_HASHES:
-            return fail(f"unsupported key hashing: {key_hash}, allowed algorithms: {csv(KEY_HASHES)}")
+        if key_hash not in key_hashes:
+            return fail(f"unsupported key hashing: {key_hash}, allowed algorithms: {csv(key_hashes)}")
         p = self._protocol
         if not p:
             return False

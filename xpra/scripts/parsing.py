@@ -1827,20 +1827,22 @@ def do_validate_encryption(auth, tcp_auth,
     crypto_backend_init()
     env_key = os.environ.get("XPRA_ENCRYPTION_KEY")
     pass_key = os.environ.get("XPRA_PASSWORD")
-    from xpra.net.crypto import ENCRYPTION_CIPHERS, MODES, DEFAULT_MODE
-    if not ENCRYPTION_CIPHERS:
+    from xpra.net.crypto import get_ciphers, get_modes, DEFAULT_MODE
+    ciphers = get_ciphers()
+    if not ciphers:
         raise InitException("cannot use encryption: no ciphers available"+
                             " (the python-cryptography library must be installed)")
     if encryption=="help" or tcp_encryption=="help":
-        raise InitInfo(f"the following encryption ciphers are available: {csv(ENCRYPTION_CIPHERS)}")
+        raise InitInfo(f"the following encryption ciphers are available: {csv(ciphers)}")
     enc, mode = ((encryption or tcp_encryption)+"-").split("-")[:2]
     if not mode:
         mode = DEFAULT_MODE
     if enc:
-        if enc not in ENCRYPTION_CIPHERS:
-            raise InitException(f"encryption {enc} is not supported, try: "+csv(ENCRYPTION_CIPHERS))
-        if mode not in MODES:
-            raise InitException(f"encryption mode {mode} is not supported, try: " + csv(MODES))
+        if enc not in ciphers:
+            raise InitException(f"encryption {enc} is not supported, try: "+csv(ciphers))
+        modes = get_modes()
+        if mode not in modes:
+            raise InitException(f"encryption mode {mode} is not supported, try: " + csv(modes))
         if encryption and not encryption_keyfile and not env_key and not auth:
             raise InitException(f"encryption {encryption} cannot be used without an authentication module or keyfile"
                                 +" (see --encryption-keyfile option)")

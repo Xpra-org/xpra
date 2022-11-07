@@ -1,19 +1,22 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import secrets
 from struct import pack
 
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, csv
 from xpra.log import Logger
-from xpra.os_util import hexstr
+from xpra.os_util import hexstr, strtobytes, memoryview_to_bytes, OSX
 from xpra.net.digest import get_salt
 
 log = Logger("network", "crypto")
+
+cryptography = None
 
 ENCRYPT_FIRST_PACKET = envbool("XPRA_ENCRYPT_FIRST_PACKET", False)
 
@@ -50,55 +53,97 @@ def get_padding_options():
 PADDING_OPTIONS = get_padding_options()
 
 
-ENCRYPTION_CIPHERS = []
+CIPHERS = []
 MODES = []
 KEY_HASHES = []
 KEY_STRETCHING = []
-backend = False
 def crypto_backend_init():
-    global backend, ENCRYPTION_CIPHERS
-    log("crypto_backend_init() backend=%s", backend)
-    if backend is not False:
+    global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
+    log("crypto_backend_init() pycryptography=%s", cryptography)
+    if cryptography:
         return
     try:
-        from xpra.net import pycryptography_backend
-        #validate it:
-        validate_backend(pycryptography_backend)
-        ENCRYPTION_CIPHERS[:] = pycryptography_backend.ENCRYPTION_CIPHERS[:]
-        MODES[:] = list(pycryptography_backend.MODES)
-        KEY_HASHES[:] = list(pycryptography_backend.KEY_HASHES)
-        KEY_STRETCHING[:] = list(pycryptography_backend.KEY_STRETCHING)
-        backend = pycryptography_backend
+        if getattr(sys, 'frozen', False) or OSX:
+            patch_crypto_be_discovery()
+        import cryptography as pc
+        MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CFB,CTR").split(",")
+              if x in ("CBC", "GCM", "CFB", "CTR"))
+        KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
+        KEY_STRETCHING = ("PBKDF2", )
+        CIPHERS = ("AES", )
+        from cryptography.hazmat.backends import default_backend
+        backend = default_backend()
+        log("default_backend()=%s", backend)
+        log("backends=%s", getattr(backend, "_backends", []))
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+        from cryptography.hazmat.primitives import hashes
+        assert Cipher and algorithms and modes and hashes
+        validate_backend()
+        cryptography = pc
         return
     except ImportError:
         log("crypto backend init failure", exc_info=True)
         log.error("Error: cannot import python-cryptography")
     except Exception:
         log.error("Error: cannot initialize python-cryptography", exc_info=True)
-    backend = None
+    CIPHERS = MODES = KEY_HASHES = KEY_STRETCHING = ()
 
-def validate_backend(try_backend):
-    log("validate_backend(%s) will validate AES modes: %s", try_backend, try_backend.MODES)
-    try_backend.init()
+def patch_crypto_be_discovery():
+    """
+    Monkey patches cryptography's backend detection.
+    Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
+    """
+    from cryptography.hazmat import backends
+    try:
+        from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
+    except ImportError:
+        log("failed to import commoncrypto", exc_info=True)
+        be_cc = None
+    try:
+        import _ssl
+        log("loaded _ssl=%s", _ssl)
+    except ImportError:
+        log("failed to import _ssl", exc_info=True)
+        be_ossl = None
+    try:
+        from cryptography.hazmat.backends.openssl.backend import backend as be_ossl
+    except ImportError:
+        log("failed to import openssl backend", exc_info=True)
+        be_ossl = None
+    setattr(backends, "_available_backends_list", [
+        be for be in (be_cc, be_ossl) if be is not None
+    ])
+
+def get_ciphers():
+    return CIPHERS
+
+def get_modes():
+    return MODES
+
+def get_key_hashes():
+    return KEY_HASHES
+
+def validate_backend():
+    log("validate_backend() will validate AES modes: "+csv(MODES))
     message = b"some message1234"*8
     password = "this is our secret"
     key_salt = DEFAULT_SALT
     iterations = DEFAULT_ITERATIONS
-    for mode in try_backend.MODES:
+    for mode in MODES:
         log("testing AES-%s", mode)
         key = None
-        for key_hash in try_backend.KEY_HASHES:
-            key = try_backend.get_key(password, key_salt, key_hash, DEFAULT_KEYSIZE, iterations)
+        for key_hash in KEY_HASHES:
+            key = get_key(password, key_salt, key_hash, DEFAULT_KEYSIZE, iterations)
             assert key
-        block_size = try_backend.get_block_size(mode)
+        block_size = get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
-        assert key is not None, "backend %s failed to generate a key" % try_backend
-        enc = try_backend.get_encryptor(key, DEFAULT_IV, mode)
+        assert key is not None, "pycryptography failed to generate a key"
+        enc = get_cipher_encryptor(key, DEFAULT_IV, mode)
         log(" encryptor=%s", enc)
-        assert enc is not None, "backend %s failed to generate an encryptor" % enc
-        dec = try_backend.get_decryptor(key, DEFAULT_IV, mode)
+        assert enc is not None, "pycryptography failed to generate an encryptor"
+        dec = get_cipher_decryptor(key, DEFAULT_IV, mode)
         log(" decryptor=%s", dec)
-        assert dec is not None, "backend %s failed to generate a decryptor" % enc
+        assert dec is not None, "pycryptography failed to generate a decryptor"
         test_messages = [message*(1+block_size)]
         if block_size==0:
             test_messages.append(message[:29])
@@ -168,8 +213,11 @@ def get_crypto_caps(full=True) -> dict:
             "modes"         : {"options"    : MODES},
             "stretch"       : {"options"    : KEY_STRETCHING},
             }
-    if full and backend:
-        caps.update(backend.get_info())
+    if full and cryptography:
+        caps["python-cryptography"] = {
+                ""          : True,
+                "version"   : cryptography.__version__,
+                }
     return caps
 
 
@@ -182,8 +230,13 @@ def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
-    return backend.get_encryptor(key, iv, mode), backend.get_block_size(mode)
+    key = get_key(password, key_salt, key_hash, key_size, iterations)
+    return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
+
+def get_cipher_encryptor(key, iv, mode):
+    encryptor = _get_cipher(key, iv, mode).encryptor()
+    encryptor.encrypt = encryptor.update
+    return encryptor
 
 def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_size : int, iterations : int):
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
@@ -194,14 +247,66 @@ def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
-    return backend.get_decryptor(key, iv, mode), backend.get_block_size(mode)
+    key = get_key(password, key_salt, key_hash, key_size, iterations)
+    return get_cipher_decryptor(key, iv, mode), get_block_size(mode)
+
+def get_cipher_decryptor(key, iv, mode):
+    decryptor = _get_cipher(key, iv, mode).decryptor()
+    def i(s):
+        try:
+            return int(s)
+        except ValueError:
+            return 0
+    import cryptography
+    version = cryptography.__version__
+    supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
+    log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
+        version, supports_memoryviews)
+    if supports_memoryviews:
+        decryptor.decrypt = decryptor.update
+    else:
+        _patch_decryptor(decryptor)
+    return decryptor
+
+def _patch_decryptor(decryptor):
+    #with older versions of python-cryptography,
+    #we have to copy the memoryview to a bytearray:
+    def decrypt(v):
+        return decryptor.update(memoryview_to_bytes(v))
+    decryptor.decrypt = decrypt
+
+def get_block_size(mode):
+    if mode=="CBC":
+        #16 would also work,
+        #but older versions require 32
+        return 32
+    return 0
+
+def get_key(password, key_salt, key_hash, block_size, iterations):
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    from cryptography.hazmat.primitives import hashes
+    if key_hash.upper() not in KEY_HASHES:
+        raise ValueError(f"invalid key hash {key_hash.upper()!r}, should be one of: "+csv(KEY_HASHES))
+    algorithm = getattr(hashes, key_hash.upper(), None)
+    if not algorithm:
+        raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
+    kdf = PBKDF2HMAC(algorithm=algorithm, length=block_size,
+                     salt=strtobytes(key_salt), iterations=iterations)
+    key = kdf.derive(strtobytes(password))
+    return key
+
+def _get_cipher(key, iv, mode=DEFAULT_MODE):
+    assert mode in MODES
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    mode_class = getattr(modes, mode, None)
+    if mode_class is None:
+        raise ValueError("no %s mode in this version of python-cryptography" % mode)
+    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)))
 
 
 def main():
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
-    import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     with program_context("Encryption Properties"):
