@@ -290,8 +290,10 @@ def get_key(password, key_salt, key_hash, block_size, iterations):
     algorithm = getattr(hashes, key_hash.upper(), None)
     if not algorithm:
         raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
+    from cryptography.hazmat.backends import default_backend
     kdf = PBKDF2HMAC(algorithm=algorithm, length=block_size,
-                     salt=strtobytes(key_salt), iterations=iterations)
+                     salt=strtobytes(key_salt), iterations=iterations,
+                     backend=default_backend())
     key = kdf.derive(strtobytes(password))
     return key
 
