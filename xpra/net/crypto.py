@@ -15,7 +15,6 @@ from xpra.net.digest import get_salt
 
 log = Logger("network", "crypto")
 
-ENABLE_CRYPTO = envbool("XPRA_ENABLE_CRYPTO", True)
 ENCRYPT_FIRST_PACKET = envbool("XPRA_ENCRYPT_FIRST_PACKET", False)
 
 DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
@@ -139,7 +138,6 @@ def get_iterations() -> int:
 
 
 def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options) -> dict:
-    assert backend
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
@@ -165,14 +163,12 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
          }
 
 def get_crypto_caps(full=True) -> dict:
-    if not backend:
-        return {}
     caps = {
             "padding"       : {"options"    : PADDING_OPTIONS},
             "modes"         : {"options"    : MODES},
             "stretch"       : {"options"    : KEY_STRETCHING},
             }
-    if full:
+    if full and backend:
         caps.update(backend.get_info())
     return caps
 
