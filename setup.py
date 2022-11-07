@@ -2250,6 +2250,7 @@ toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
 #network:
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
 tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3)
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 import struct
 
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi
-from xpra.net.protocol import Protocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util import first_time, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
@@ -32,9 +32,9 @@ OPCODES = {
 MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
 
-class WebSocketProtocol(Protocol):
+class WebSocketProtocol(SocketProtocol):
 
-    STATE_FIELDS = tuple(list(Protocol.STATE_FIELDS)+["legacy_frame_per_chunk"])
+    STATE_FIELDS = tuple(list(SocketProtocol.STATE_FIELDS)+["legacy_frame_per_chunk"])
 
     TYPE = "websocket"
 

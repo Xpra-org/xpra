@@ -19,8 +19,8 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
 from xpra.make_thread import start_thread
-from xpra.net.protocol_classes import get_client_protocol_class
-from xpra.net.protocol import CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.net.protocol.factory import get_client_protocol_class
+from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (

@@ -11,8 +11,9 @@ from multiprocessing import Process
 
 from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
-from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
-from xpra.net.protocol import Protocol, CONNECTION_LOST
+from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
+from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.net.protocol import Protocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import (
     SIGNAMES, POSIX,

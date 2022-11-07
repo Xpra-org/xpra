@@ -17,6 +17,8 @@ from queue import Queue
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
+from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML
+from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
     MAX_PACKET_SIZE, FLUSH_HEADER,
@@ -33,7 +35,10 @@ from xpra.net.packet_encoding import (
     decode,
     InvalidPacketEncodingException,
     )
-from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
+from xpra.net.protocol.header import (
+    unpack_header, pack_header,
+    FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
+    )
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
 
@@ -85,7 +90,6 @@ def find_xpra_header(data, index=0, max_data_size=2**16):
             #validate flags:
             if compress==0 or (compress & 0xf)>0:
                 # pylint: disable=import-outside-toplevel
-                from xpra.net.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML
                 encoder_flag = pflags & (FLAGS_RENCODE | FLAGS_YAML | FLAGS_RENCODEPLUS)
                 n_flags_set = sum(1 for flag in (FLAGS_RENCODE, FLAGS_YAML, FLAGS_RENCODEPLUS) if encoder_flag & flag)
                 if encoder_flag==0 or n_flags_set==1:
@@ -133,12 +137,8 @@ def do_verify_packet(tree, packet):
         r = False
     return r
 
-CONNECTION_LOST = "connection-lost"
-GIBBERISH = "gibberish"
-INVALID = "invalid"
 
-
-class Protocol:
+class SocketProtocol:
     """
         This class handles sending and receiving packets,
         it will encode and compress them before sending,
@@ -216,13 +216,13 @@ class Protocol:
 
     def save_state(self):
         state = {}
-        for x in Protocol.STATE_FIELDS:
+        for x in self.STATE_FIELDS:
             state[x] = getattr(self, x)
         return state
 
     def restore_state(self, state):
         assert state is not None
-        for x in Protocol.STATE_FIELDS:
+        for x in self.STATE_FIELDS:
             assert x in state, f"field {x!r} is missing"
             setattr(self, x, state[x])
         #special handling for compressor / encoder which are named objects:

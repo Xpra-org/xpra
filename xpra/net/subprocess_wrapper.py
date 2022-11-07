@@ -12,7 +12,8 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool, csv
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
-from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH
+from xpra.net.protocol import Protocol
+from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger

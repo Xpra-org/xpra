@@ -12,7 +12,8 @@ from xpra.os_util import hexstr
 from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
 from xpra.simple_stats import std_unit
-from xpra.net.protocol import force_flush_queue, exit_queue, INVALID, CONNECTION_LOST
+from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
+from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.rfb_const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
@@ -307,7 +308,7 @@ class RFBProtocol:
         if self._closed:
             return
         self._closed = True
-        #self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
+        #self.idle_add(self._process_packet_cb, self, [CONNECTION_LOST])
         if c:
             try:
                 log(f"RFBProtocol.close() calling {c.close}")

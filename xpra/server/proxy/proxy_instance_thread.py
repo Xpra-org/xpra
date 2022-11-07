@@ -5,7 +5,7 @@
 
 from gi.repository import GLib
 
-from xpra.net.protocol_classes import get_server_protocol_class
+from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.log import Logger

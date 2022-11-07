@@ -10,7 +10,7 @@ from queue import Queue
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.protocol import CONNECTION_LOST
+from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec

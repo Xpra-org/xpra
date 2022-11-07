@@ -12,8 +12,8 @@ def get_client_protocol_class(socktype):
     if socktype == "vnc":
         from xpra.client.rfb_protocol import RFBClientProtocol
         return RFBClientProtocol
-    from xpra.net.protocol import Protocol
-    return Protocol
+    from xpra.net.protocol.socket_handler import SocketProtocol
+    return SocketProtocol
 
 def get_server_protocol_class(socktype):
     if socktype in ("ws", "wss"):
@@ -22,5 +22,5 @@ def get_server_protocol_class(socktype):
     if socktype == "vnc":
         from xpra.server.rfb.rfb_protocol import RFBServerProtocol
         return RFBServerProtocol
-    from xpra.net.protocol import Protocol
-    return Protocol
+    from xpra.net.protocol.socket_handler import SocketProtocol
+    return SocketProtocol

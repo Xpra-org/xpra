@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.net.rfb.rfb_const import RFBEncoding
 from xpra.net.rfb.rfb_encode import (
     raw_encode, tight_encode, tight_png, rgb222_encode, #zlib_encode,
     )
-from xpra.net.protocol import PACKET_JOIN_SIZE
+from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.os_util import memoryview_to_bytes
 from xpra.os_util import strtobytes
 from xpra.util import AtomicInteger, csv

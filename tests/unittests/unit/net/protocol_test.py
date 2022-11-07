@@ -10,15 +10,15 @@ import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import csv, envint, envbool
-from xpra.net import protocol
-from xpra.net.protocol import Protocol, verify_packet
+from xpra.net.protocol import socket_handler
+from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 from unit.test_util import silence_error
 
-log = protocol.log
+log = socket_handler.log
 
 TIMEOUT = envint("XPRA_PROTOCOL_TEST_TIMEOUT", 20)
 PROFILING = envbool("XPRA_PROTOCOL_PROFILING", False)
@@ -74,17 +74,17 @@ def make_profiling_protocol_class(protocol_class):
 
         def write_format_thread_loop(self):
             with self.profiling_context("%s-format-thread" % protocol_class.TYPE):
-                Protocol.write_format_thread_loop(self)
+                socket_handler.SocketProtocol.write_format_thread_loop(self)
 
         def do_read_parse_thread_loop(self):
             with self.profiling_context("%s-read-parse-thread" % protocol_class.TYPE):
-                Protocol.do_read_parse_thread_loop(self)
+                socket_handler.SocketProtocol.do_read_parse_thread_loop(self)
 
     return ProfileProtocol
 
 
 class ProtocolTest(unittest.TestCase):
-    protocol_class = Protocol
+    protocol_class = socket_handler.SocketProtocol
 
     @classmethod
     def setUpClass(cls):
@@ -112,11 +112,12 @@ class ProtocolTest(unittest.TestCase):
         return p
 
     def test_verify_packet(self):
+        verify_packet = socket_handler.verify_packet
         for x in (True, 1, "hello", {}, None):
             assert verify_packet(x) is False
         assert verify_packet(["foo", 1]) is True
         assert verify_packet(["foo", [1,2,3], {1:2}]) is True
-        with silence_error(protocol):
+        with silence_error(socket_handler):
             assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
             assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
             assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
@@ -192,7 +193,7 @@ class ProtocolTest(unittest.TestCase):
         parsed_packets = []
         def process_packet_cb(proto, packet):
             #log.info("process_packet_cb%s", packet[0])
-            if packet[0]==protocol.CONNECTION_LOST:
+            if packet[0]==CONNECTION_LOST:
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
@@ -239,7 +240,7 @@ class ProtocolTest(unittest.TestCase):
                 proto.close()
                 return (None, )
         def process_packet_cb(proto, packet):
-            if packet[0]==protocol.CONNECTION_LOST:
+            if packet[0]==CONNECTION_LOST:
                 GLib.timeout_add(1000, loop.quit)
         proto = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
         conn = proto._conn
@@ -253,7 +254,7 @@ class ProtocolTest(unittest.TestCase):
         loop.run()
         end = time.monotonic()
         assert proto.is_closed()
-        log("protocol: %s", protocol)
+        log("protocol: %s", socket_handler.SocketProtocol)
         log("%s write-data=%s", conn, len(conn.write_data))
         total_size = sum(len(packet) for packet in conn.write_data)
         elapsed = end-start
