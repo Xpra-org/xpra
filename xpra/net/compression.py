@@ -8,7 +8,7 @@
 from collections import namedtuple
 
 from xpra.util import envbool
-from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
+from xpra.net.protocol.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 

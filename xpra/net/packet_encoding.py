@@ -11,7 +11,7 @@ from collections import namedtuple
 from threading import Lock
 
 from xpra.log import Logger
-from xpra.net.header import (
+from xpra.net.protocol.header import (
     FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER,
     pack_header,
     )

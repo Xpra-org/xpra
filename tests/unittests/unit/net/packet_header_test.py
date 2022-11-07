@@ -9,7 +9,7 @@
 
 import unittest
 
-from xpra.net.header import (
+from xpra.net.protocol.header import (
     unpack_header, pack_header,
     FLAGS_BENCODE, FLAGS_RENCODE, FLAGS_CIPHER, FLAGS_YAML,
     ZLIB_FLAG, LZ4_FLAG, BROTLI_FLAG,

@@ -260,7 +260,7 @@ def guess_packet_type(data):
     if not data:
         return None
     if data[0]==ord("P"):
-        from xpra.net.header import (
+        from xpra.net.protocol.header import (
             unpack_header, HEADER_SIZE,
             FLAGS_RENCODE, FLAGS_YAML,
             LZ4_FLAG, BROTLI_FLAG,
