@@ -160,13 +160,7 @@ class Protocol:
         self.read_buffer_size = READ_BUFFER_SIZE
         self.hangup_delay = 1000
         self._conn = conn
-        if FAKE_JITTER>0:   # pragma: no cover
-            # pylint: disable=import-outside-toplevel
-            from xpra.net.fake_jitter import FakeJitter
-            fj = FakeJitter(self.timeout_add, process_packet_cb, FAKE_JITTER)
-            self._process_packet_cb =  fj.process_packet_cb
-        else:
-            self._process_packet_cb = process_packet_cb
+        self._process_packet_cb = process_packet_cb
         self.make_chunk_header = self.make_xpra_header
         self.make_frame_header = self.noframe_header
         self._write_queue = Queue(1)
