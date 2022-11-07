@@ -8,7 +8,6 @@
 from collections import namedtuple
 
 from xpra.util import envbool
-from xpra.net.protocol.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
@@ -28,6 +27,7 @@ def init_lz4():
     #pylint: disable=import-outside-toplevel
     #pylint: disable=redefined-outer-name
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
+    from xpra.net.protocol.header import LZ4_FLAG
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5-level//3))
@@ -38,6 +38,7 @@ def init_lz4():
 def init_brotli():
     #pylint: disable=import-outside-toplevel
     #pylint: disable=redefined-outer-name
+    from xpra.net.protocol.header import BROTLI_FLAG
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
     from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
     brotli_decompress = decompress
@@ -56,6 +57,7 @@ def init_brotli():
 def init_zlib():
     #pylint: disable=import-outside-toplevel
     import zlib
+    from xpra.net.protocol.header import ZLIB_FLAG
     def zlib_compress(packet, level):
         level = min(9, max(1, level))
         if not isinstance(packet, (bytes, bytearray, memoryview)):
