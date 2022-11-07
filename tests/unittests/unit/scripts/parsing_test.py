@@ -40,7 +40,7 @@ class TestParsing(unittest.TestCase):
             "password" : "password1",
             "host"    : "host1",
             "port"    : 2222,
-            }, "putty")
+            }, ["putty"])
         if not WIN32:
             keyfile = os.path.expanduser("~/key")
             targs(["-l", "username1", "-p", "2222", "-T", "host1", "-i", keyfile], {
@@ -49,7 +49,7 @@ class TestParsing(unittest.TestCase):
                 "host"    : "host1",
                 "port"    : 2222,
                 "key"     : keyfile,
-                }, "ssh")
+                }, ["ssh"])
         #ssh proxy:
         def pargs(e, n, *args):
             r = get_ssh_proxy_args(*args)[:n]
