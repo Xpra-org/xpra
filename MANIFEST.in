@@ -4,7 +4,7 @@ include xpra/buffers/memalign.c
 include xpra/buffers/xxhash.h
 include xpra/buffers/xxhash.c
 include xpra/buffers/xxh3.h
-include xpra/net/lz4_compat.h
+include xpra/net/lz4/lz4_compat.h
 include xpra/x11/gtk3/gdk_x11_macros.c
 include xpra/x11/gtk3/gdk_x11_macros.h
 include xpra/codecs/evdi/evdi_compat.c
