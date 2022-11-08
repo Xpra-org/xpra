@@ -3,23 +3,27 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
-from aioquic.quic.configuration import QuicConfiguration
-from aioquic.asyncio import serve
-from aioquic.quic.logger import QuicLogger
-from aioquic.h3.connection import H3_ALPN
-from aioquic.h0.connection import H0_ALPN
-from xpra.net.quic.http3_server import HttpServerProtocol
-from xpra.net.quic.session_ticket_store import SessionTicketStore
+from typing import Dict, List, Optional, Union
 
-from xpra.net.http.directory_listing import list_directory
+from aioquic.asyncio import QuicConnectionProtocol, serve
+from aioquic.quic.configuration import QuicConfiguration
+from aioquic.quic.logger import QuicLogger
+from aioquic.h0.connection import H0_ALPN, H0Connection
+from aioquic.h3.connection import H3_ALPN, H3Connection
+from aioquic.h3.events import (
+    DatagramReceived,
+    DataReceived,
+    H3Event,
+    HeadersReceived,
+    WebTransportStreamDataReceived,
+)
+from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
+from xpra.net.quic.http_request_handler import HttpRequestHandler
+from xpra.net.quic.websocket_request_handler import WebSocketHandler
+#from xpra.net.quic.webtransport_request_handler import WebTransportHandler
+from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
-from xpra.net.http.http_handler import (
-    DIRECTORY_LISTING,
-    translate_path, load_path, may_reload_headers,
-    )
 from xpra.util import envint
-from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("quic")
 
@@ -27,74 +31,134 @@ quic_logger = QuicLogger()
 
 MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 
+HttpConnection = Union[H0Connection, H3Connection]
+Handler = Union[HttpRequestHandler, WebSocketHandler]
 
-#HttpRequestHandler
-class ServerProtocol(HttpServerProtocol):
-    async def app(self, scope, receive, send):
-        log.warn(f"app({scope}, {receive}, {send})")
-        http_version = scope.get("http_version", "0")
-        if http_version!="3":
-            log.warn(f"Warning: http version {http_version} is not supported")
-            return
-        method = scope.get("method", "")
-        if method!="GET":
-            log.warn(f"Warning: http {method} requests are not supported")
-            return
-        async def http3_response(code, headers=None, body=None):
-            await self.send_http3_response(send, code, headers, body)
-        req_path = scope.get("path", "")
-        scripts = self.xpra_server.get_http_scripts()
-        script = scripts.get(req_path)
-        if script:
-            log("request for %s handled using %s", req_path, script)
-            await http3_response(*script(req_path))
-            return
-        web_root = self.xpra_server._www_dir
-        headers_dirs = self.xpra_server._http_headers_dirs
-        headers = may_reload_headers(headers_dirs)
-        log(f"req_path={req_path}, web_root={web_root}, scripts={scripts}, headers_dir={headers_dirs}")
-        path = translate_path(req_path, web_root)
-        if not path or not os.path.exists(path):
-            await http3_response(404, headers, body=b"Path not found")
-            return
-        if os.path.isdir(path):
-            if not path.endswith('/'):
-                # redirect browser - doing basically what apache does
-                headers["Location"] = path + "/"
-                await http3_response(301, headers)
-                return
-            for index in "index.html", "index.htm":
-                index = os.path.join(path, index)
-                if os.path.exists(index):
-                    path = index
-                    break
-            else:
-                if not DIRECTORY_LISTING:
-                    await http3_response(403, headers, body=b"Directory listing forbidden")
-                    return
-                return list_directory(path)
-        code, path_headers, body = load_path(scope.get("headers", {}), path)
-        headers.update(path_headers)
-        await http3_response(code, headers, body)
 
-    async def send_http3_response(self, send, code, headers, body):
-        await send({
-            "type"      : "http.response.start",
-            "status"    : code,
-            "headers"   : tuple((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items()),
+class HttpServerProtocol(QuicConnectionProtocol):
+    def __init__(self, *args, **kwargs) -> None:
+        self._xpra_server = kwargs.pop("xpra_server", None)
+        log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
+        super().__init__(*args, **kwargs)
+        self._handlers: Dict[int, Handler] = {}
+        self._http: Optional[HttpConnection] = None
+
+    def quic_event_received(self, event: QuicEvent) -> None:
+        log(f"hsp:quic_event_received({event})")
+        if isinstance(event, ProtocolNegotiated):
+            if event.alpn_protocol in H3_ALPN:
+                self._http = H3Connection(self._quic, enable_webtransport=True)
+            elif event.alpn_protocol in H0_ALPN:
+                self._http = H0Connection(self._quic)
+        elif isinstance(event, DatagramFrameReceived):
+            if event.data == b"quack":
+                self._quic.send_datagram_frame(b"quack-ack")
+        #  pass event to the HTTP layer
+        if self._http is not None:
+            for http_event in self._http.handle_event(event):
+                self.http_event_received(http_event)
+
+    def http_event_received(self, event: H3Event) -> None:
+        handler = self._handlers.get(event.stream_id)
+        log(f"hsp:http_event_received({event}) handler for stream id {event.stream_id}: {handler}")
+        if isinstance(event, HeadersReceived) and not handler:
+            handler = self.new_http_handler(event)
+            handler.xpra_server = self._xpra_server
+            self._handlers[event.stream_id] = handler
+            #asyncio.ensure_future(handler.run_asgi(self.app))
+            #return
+        if isinstance(event, (DataReceived, HeadersReceived)) and handler:
+            handler.http_event_received(event)
+            return
+        if isinstance(event, DatagramReceived):
+            handler = self._handlers[event.flow_id]
+            handler.http_event_received(event)
+            return
+        if isinstance(event, WebTransportStreamDataReceived):
+            handler = self._handlers[event.session_id]
+            handler.http_event_received(event)
+
+    def new_http_handler(self, event) -> Handler:
+        authority = None
+        headers = []
+        raw_path = b""
+        method = ""
+        protocol = None
+        for header, value in event.headers:
+            if header == b":authority":
+                authority = value
+                headers.append((b"host", value))
+            elif header == b":method":
+                method = value.decode()
+            elif header == b":path":
+                raw_path = value
+            elif header == b":protocol":
+                protocol = value.decode()
+            elif header and not header.startswith(b":"):
+                headers.append((header, value))
+        if b"?" in raw_path:
+            path_bytes, query_string = raw_path.split(b"?", maxsplit=1)
+        else:
+            path_bytes, query_string = raw_path, b""
+        path = path_bytes.decode()
+        log.info("HTTP request %s %s", method, path)
+
+        # FIXME: add a public API to retrieve peer address
+        client_addr = self._http._quic._network_paths[0].addr
+
+        scope = {
+            "client": (client_addr[0], client_addr[1]),
+            "headers": headers,
+            "http_version": "0.9" if isinstance(self._http, H0Connection) else "3",
+            "method": method,
+            "path": path,
+            "query_string": query_string,
+            "raw_path": raw_path,
+        }
+        if method == "CONNECT" and protocol == "websocket":
+            subprotocols: List[str] = []
+            for header, value in event.headers:
+                if header == b"sec-websocket-protocol":
+                    subprotocols = [x.strip() for x in value.decode().split(",")]
+            scope.update({
+                "subprotocols"  : subprotocols,
+                "type"          : "websocket",
+                "scheme"        : "wss",
+                })
+            return WebSocketHandler(connection=self._http, scope=scope,
+                                    stream_id=event.stream_id,
+                                    transmit=self.transmit)
+
+        if method == "CONNECT" and protocol == "webtransport":
+            scope.update({
+                "scheme"        : "https",
+                "type"          : "webtransport",
             })
-        await send({
-            "type" : "http.response.body",
-            "body" : body,
-            })
+            raise RuntimeError("no WebTransport support yet")
+            #return WebTransportHandler(connection=self._http, scope=scope,
+            #                           stream_id=event.stream_id,
+            #                           transmit=self.transmit)
+
+        #extensions: Dict[str, Dict] = {}
+        #if isinstance(self._http, H3Connection):
+        #    extensions["http.response.push"] = {}
+        scope.update({
+            "scheme": "https",
+            "type": "http",
+        })
+        return HttpRequestHandler(xpra_server=self._xpra_server,
+                                  authority=authority, connection=self._http,
+                                  protocol=self,
+                                  scope=scope,
+                                  stream_id=event.stream_id,
+                                  transmit=self.transmit)
 
 
 async def do_listen(quic_sock, xpra_server):
-    log.info(f"do_listen({quic_sock}, {xpra_server})")
-    def make_protocol(*args, **kwargs):
-        sp = ServerProtocol(*args, **kwargs)
-        sp.xpra_server = xpra_server
-        return sp
+    log(f"do_listen({quic_sock}, {xpra_server})")
+    def create_protocol(*args, **kwargs):
+        log("create_protocol!")
+        return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
     try:
         configuration = QuicConfiguration(
             alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
@@ -109,7 +173,7 @@ async def do_listen(quic_sock, xpra_server):
             quic_sock.host,
             quic_sock.port,
             configuration=configuration,
-            create_protocol=make_protocol,
+            create_protocol=create_protocol,
             session_ticket_fetcher=session_ticket_store.pop,
             session_ticket_handler=session_ticket_store.add,
             retry=quic_sock.retry,
