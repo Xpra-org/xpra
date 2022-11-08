@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import asyncio
 
 from time import monotonic
@@ -47,8 +48,7 @@ class threaded_asyncio_loop:
         log(f"call({f})")
         now = monotonic()
         while monotonic()-now<1 and self.loop is None:
-            log(f"waiting for event loop")
-            import time
+            log("waiting for asyncio event loop")
             time.sleep(0.01)
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")

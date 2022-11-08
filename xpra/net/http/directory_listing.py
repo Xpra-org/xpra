@@ -45,16 +45,15 @@ def list_directory(path):
         if os.path.islink(fullname):
             displayname = name + "@"
             # Note: a link to a directory displays with @ and links with /
-        r.append('<li><a href="%s">%s</a></li>' % (
-            quote(linkname, errors='surrogatepass'),
-            html.escape(displayname, quote=False))
-        )
+        href = quote(linkname, errors='surrogatepass')
+        link = html.escape(displayname, quote=False)
+        r.append(f'<li><a href="{href}">{link}</a></li>')
     r.append('</ul>\n<hr>\n</body>\n</html>\n')
     encoded = '\n'.join(r).encode(enc, 'surrogateescape')
     f = BytesIO()
     f.write(encoded)
     f.seek(0)
     return 200, {
-        "Content-type", "text/html; charset=%s" % enc,
+        "Content-type", f"text/html; charset={enc}",
         "Content-Length", str(len(encoded)),
         }, f
