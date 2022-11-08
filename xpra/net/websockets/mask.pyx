@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,15 +9,17 @@ from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 
 def hybi_unmask(data, unsigned int offset, unsigned int datalen):
     cdef uintptr_t mp
+    cdef unsigned int min_len = offset+4+datalen
     with buffer_context(data) as bc:
-        assert len(bc)>=<Py_ssize_t>(offset+4+datalen), "buffer too small %i vs %i: offset=%i, datalen=%i" % (len(bc), offset+4+datalen, offset, datalen)
+        if len(bc)<(<Py_ssize_t> min_len):
+            raise ValueError(f"buffer too small {len(bc)} vs {min_len}: offset={offset}, datalen={datalen}")
         mp = (<uintptr_t> int(bc))+offset
         return do_hybi_mask(mp, mp+4, datalen)
 
 def hybi_mask(mask, data):
     with buffer_context(mask) as mbc:
         if len(mbc)<4:
-            raise Exception("mask buffer too small: %i bytes" % len(mbc))
+            raise ValueError(f"mask buffer too small: {len(mbc)} bytes")
         with buffer_context(data) as dbc:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 

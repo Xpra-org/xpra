@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # This file is based on websockify/websocket.py from the websockify project
-# Copyright 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright 2019-2022 Antoine Martin <antoine@xpra.org>
 # Copyright 2011 Joel Martin
 # Copyright 2016 Pierre Ossman
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
@@ -12,7 +12,8 @@ from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
 
 def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):
     """ Encode a HyBi style WebSocket frame """
-    assert (opcode & 0x0f)==opcode, "invalid opcode %#x" % opcode
+    if (opcode & 0x0f)!=opcode:
+        raise ValueError(f"invalid opcode {opcode:x}")
     mask_bit = 0x80*has_mask
     b1 = opcode | (0x80 * fin)
     if payload_len <= 125:
