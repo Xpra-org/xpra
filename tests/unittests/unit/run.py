@@ -74,14 +74,15 @@ def main(args):
         try:
             with subprocess.Popen(cmd) as proc:
                 v = proc.wait()
-            if v!=0:
-                write(f"failure on {name}, exit code={v}")
         except OSError as e:
             write(f"failed to execute {p} using {cmd}: {e}")
             v = 1
         if v!=0 and (p in skip_fail or name in skip_fail):
             write(f"ignore failure {v} as requested: {p}")
             v = 0
+        elif v!=0:
+            write(f"failure on {name}, exit code={v}")
+        # else: pass
         T1 = time.monotonic()
         write(f"ran {name} in {T1-T0:.2f} seconds\n")
         return v
