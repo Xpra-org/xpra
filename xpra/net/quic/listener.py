@@ -18,18 +18,17 @@ from aioquic.h3.events import (
     WebTransportStreamDataReceived,
 )
 from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
+from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http_request_handler import HttpRequestHandler
 from xpra.net.quic.websocket_request_handler import WebSocketHandler
 #from xpra.net.quic.webtransport_request_handler import WebTransportHandler
 from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
-from xpra.util import envint
+from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
 
 quic_logger = QuicLogger()
-
-MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 
 HttpConnection = Union[H0Connection, H3Connection]
 Handler = Union[HttpRequestHandler, WebSocketHandler]
@@ -44,7 +43,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         self._http: Optional[HttpConnection] = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        log(f"hsp:quic_event_received({event})")
+        log(f"hsp:quic_event_received(%s)", ellipsizer(event))
         if isinstance(event, ProtocolNegotiated):
             if event.alpn_protocol in H3_ALPN:
                 self._http = H3Connection(self._quic, enable_webtransport=True)
@@ -54,13 +53,14 @@ class HttpServerProtocol(QuicConnectionProtocol):
             if event.data == b"quack":
                 self._quic.send_datagram_frame(b"quack-ack")
         #  pass event to the HTTP layer
+        log(f"hsp:quic_event_received(..) http={self._http}")
         if self._http is not None:
             for http_event in self._http.handle_event(event):
                 self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
         handler = self._handlers.get(event.stream_id)
-        log(f"hsp:http_event_received({event}) handler for stream id {event.stream_id}: {handler}")
+        log(f"hsp:http_event_received(%s) handler for stream id {event.stream_id}: {handler}", ellipsizer(event))
         if isinstance(event, HeadersReceived) and not handler:
             handler = self.new_http_handler(event)
             handler.xpra_server = self._xpra_server

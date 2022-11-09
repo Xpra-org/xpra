@@ -37,6 +37,7 @@ from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, HeadersReceived, H3Event
 
 from xpra.net.quic.common import SERVER_NAME
+from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
 
@@ -56,7 +57,7 @@ class WebSocketHandler:
         #self.queue.put_nowait({"type": "websocket.connect"})
 
     def http_event_received(self, event: H3Event) -> None:
-        log(f"ws:http_event_received({event})")
+        log("ws:http_event_received(%s)", ellipsizer(event))
         if self.closed:
             return
         if isinstance(event, DataReceived):
@@ -77,7 +78,7 @@ class WebSocketHandler:
 
 
     def websocket_event_received(self, event: wsproto.events.Event) -> None:
-        log(f"ws:websocket_event_received({event})")
+        log(f"ws:websocket_event_received(%s)", ellipsizer(event))
         if isinstance(event, wsproto.events.TextMessage):
             self.queue.put_nowait({"type": "websocket.receive", "text": event.data})
         elif isinstance(event, wsproto.events.Message):

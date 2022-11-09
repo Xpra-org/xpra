@@ -19,6 +19,7 @@ from xpra.net.http.http_handler import (
     DIRECTORY_LISTING,
     translate_path, load_path, may_reload_headers,
     )
+from xpra.util import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("quic")
@@ -63,7 +64,7 @@ class HttpRequestHandler:
 
 
     def http_event_received(self, event: H3Event) -> None:
-        log(f"http_event_received({event!r}) scope={self.scope}")
+        log(f"http_event_received(%s) scope={self.scope}", ellipsizer(event))
         http_version = self.scope.get("http_version", "0")
         if http_version!="3":
             log.warn(f"Warning: http version {http_version} is not supported")
