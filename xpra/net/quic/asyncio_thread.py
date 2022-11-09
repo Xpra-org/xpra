@@ -5,6 +5,7 @@
 
 import time
 import asyncio
+from queue import Queue
 
 from time import monotonic
 from xpra.make_thread import start_thread
@@ -28,7 +29,10 @@ class threaded_asyncio_loop:
     """
     shim for quic asyncio sockets,
     this runs the asyncio main loop in a thread
-    and provides methods for calling functions as tasks
+    and provides methods for:
+    * calling functions as tasks
+    * turning an async function into a sync function
+     (for calling async functions from regular threads)
     """
     def __init__(self):
         self.loop = None
@@ -66,3 +70,22 @@ class threaded_asyncio_loop:
             self.loop.create_task(f)
         log("call_soon_threadsafe")
         self.loop.call_soon_threadsafe(tsafe)
+
+
+    def sync(self, async_fn, *args):
+        response = Queue(1)
+        async def awaitable():
+            log("awaitable()")
+            r = await async_fn(*args)
+            #log(f"await: {r}")
+            response.put_nowait(r)
+        def tsafe():
+            r = awaitable()
+            log(f"awaitable={r}")
+            f = asyncio.run_coroutine_threadsafe(r, self.loop)
+            log(f"run_coroutine_threadsafe({r}, {self.loop})={f}")
+        self.loop.call_soon_threadsafe(tsafe)
+        log("sync: waiting for response")
+        r = response.get()
+        log(f"sync: response={r}")
+        return r
