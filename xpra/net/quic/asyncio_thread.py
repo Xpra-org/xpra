@@ -8,8 +8,12 @@ import asyncio
 
 from time import monotonic
 from xpra.make_thread import start_thread
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("quic")
+
+
+UVLOOP = envbool("XPRA_UVLOOP", True)
 
 
 singleton = None
@@ -23,35 +27,40 @@ def get_threaded_loop():
 class threaded_asyncio_loop:
     """
     shim for quic asyncio sockets,
-    this runs the asyncio main loop in a thread.
+    this runs the asyncio main loop in a thread
+    and provides methods for calling functions as tasks
     """
     def __init__(self):
         self.loop = None
         start_thread(self.run_forever, "asyncio-thread", True)
+        self.wait_for_loop()
 
     def run_forever(self):
-        try:
-            import uvloop  # pylint: disable=import-outside-toplevel
-        except ImportError:
-            log.info("no uvloop")
-        else:
-            log("installing uvloop")
-            uvloop.install()
-            log.info("uvloop installed")
+        if UVLOOP:
+            try:
+                import uvloop  # pylint: disable=import-outside-toplevel
+            except ImportError:
+                log.info("no uvloop")
+            else:
+                log("installing uvloop")
+                uvloop.install()
+                log.info("uvloop installed")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.loop = loop
         self.loop.run_forever()
         self.loop.close()
 
-    def call(self, f):
-        log(f"call({f})")
+    def wait_for_loop(self):
         now = monotonic()
         while monotonic()-now<1 and self.loop is None:
             log("waiting for asyncio event loop")
             time.sleep(0.01)
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")
+
+    def call(self, f):
+        log(f"call({f})")
         def tsafe():
             log(f"creating task for {f}")
             self.loop.create_task(f)
