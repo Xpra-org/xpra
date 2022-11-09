@@ -67,10 +67,12 @@ class HttpRequestHandler:
         log(f"http_event_received(%s) scope={self.scope}", ellipsizer(event))
         http_version = self.scope.get("http_version", "0")
         if http_version!="3":
-            log.warn(f"Warning: http version {http_version} is not supported")
+            log.error(f"Error: http version {http_version} is not supported")
             self.protocol.close()
             return
+        method = self.scope.get("method", "")
         req_path = self.scope.get("path", "")
+        log.info("HTTP request %s %s", method, req_path)
         scripts = self.xpra_server.get_http_scripts()
         script = scripts.get(req_path)
         log(f"req_path={req_path}, scripts={scripts}")
@@ -78,7 +80,6 @@ class HttpRequestHandler:
             log("request for %s handled using %s", req_path, script)
             self.send_http3_response(*script(req_path))
             return
-        method = self.scope.get("method", "")
         if method!="GET":
             log.warn(f"Warning: http {method} requests are not supported")
             self.protocol.close()

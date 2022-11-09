@@ -101,7 +101,6 @@ class HttpServerProtocol(QuicConnectionProtocol):
         else:
             path_bytes, query_string = raw_path, b""
         path = path_bytes.decode()
-        log.info("HTTP request %s %s", method, path)
 
         # FIXME: add a public API to retrieve peer address
         client_addr = self._http._quic._network_paths[0].addr
@@ -134,11 +133,11 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 "scheme"        : "https",
                 "type"          : "webtransport",
             })
+            log.info("WebTransport request at %s", path)
             raise RuntimeError("no WebTransport support yet")
             #return WebTransportHandler(connection=self._http, scope=scope,
             #                           stream_id=event.stream_id,
             #                           transmit=self.transmit)
-
         #extensions: Dict[str, Dict] = {}
         #if isinstance(self._http, H3Connection):
         #    extensions["http.response.push"] = {}

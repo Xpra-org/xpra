@@ -72,13 +72,15 @@ class WebSocketHandler:
         elif isinstance(event, HeadersReceived):
             subprotocols = self.scope.get("subprotocols", ())
             if "xpra" not in subprotocols:
+                log.warn(f"Warning: unsupported websocket subprotocols {subprotocols}")
                 self.close()
                 return
+            log.info("websocket request at %s", self.scope.get("path", "/"))
             self.send_accept()
 
 
     def websocket_event_received(self, event: wsproto.events.Event) -> None:
-        log(f"ws:websocket_event_received(%s)", ellipsizer(event))
+        log("ws:websocket_event_received(%s)", ellipsizer(event))
         if isinstance(event, wsproto.events.TextMessage):
             self.queue.put_nowait({"type": "websocket.receive", "text": event.data})
         elif isinstance(event, wsproto.events.Message):
