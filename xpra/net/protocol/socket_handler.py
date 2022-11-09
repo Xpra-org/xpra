@@ -355,7 +355,7 @@ class SocketProtocol:
 
 
     def send_disconnect(self, reasons, done_callback=None):
-        self.flush_then_close(["disconnect"]+list(reasons), done_callback=done_callback)
+        self.flush_then_close(self.encode, ["disconnect"]+list(reasons), done_callback=done_callback)
 
     def send_now(self, packet):
         if self._closed:
@@ -1120,7 +1120,7 @@ class SocketProtocol:
                 self._process_packet_cb(self, packet)
                 packet = None
 
-    def flush_then_close(self, last_packet, done_callback=None):    #pylint: disable=method-hidden
+    def flush_then_close(self, encoder=None, last_packet=None, done_callback=None):    #pylint: disable=method-hidden
         """ Note: this is best effort only
             the packet may not get sent.
 
@@ -1130,11 +1130,11 @@ class SocketProtocol:
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
-        def closing_already(last_packet, done_callback=None):
+        def closing_already(encoder, last_packet, done_callback=None):
             log("flush_then_close%s had already been called, this new request has been ignored",
-                (last_packet, done_callback))
+                (encoder, last_packet, done_callback))
         self.flush_then_close = closing_already
-        log("flush_then_close(%s, %s) closed=%s", last_packet, done_callback, self._closed)
+        log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
         def done():
             log("flush_then_close: done, callback=%s", done_callback)
             if done_callback:
@@ -1151,24 +1151,25 @@ class SocketProtocol:
                     log("flush_then_close: queue still busy, closing without sending the last packet")
                     try:
                         self._write_lock.release()
-                    except Exception:
-                        pass
-                    self.close()
-                    done()
+                    finally:
+                        self.close()
+                        done()
                 else:
                     log("flush_then_close: still waiting for queue to flush")
                     self.timeout_add(100, wait_for_queue, timeout-1)
             else:
+                if not last_packet:
+                    self.close()
+                    done()
+                    return
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
-                chunks = self.encode(last_packet)
                 def close_and_release():
                     log("flush_then_close: wait_for_packet_sent() close_and_release()")
                     self.close()
                     try:
                         self._write_lock.release()
-                    except Exception:
-                        pass
-                    done()
+                    finally:
+                        done()
                 def wait_for_packet_sent():
                     log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
                         self._write_queue.empty(), self._closed)
@@ -1183,9 +1184,13 @@ class SocketProtocol:
                     if wait_for_packet_sent():
                         #check again every 100ms
                         self.timeout_add(100, wait_for_packet_sent)
-                self._add_chunks_to_queue(last_packet[0], chunks,
-                                          start_send_cb=None, end_send_cb=packet_queued,
-                                          synchronous=False, more=False)
+                if encoder:
+                    chunks = encoder(last_packet)
+                    self._add_chunks_to_queue(last_packet[0], chunks,
+                                              start_send_cb=None, end_send_cb=packet_queued,
+                                              synchronous=False, more=False)
+                else:
+                    self.raw_write("flush-then-close", (last_packet, ))
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 

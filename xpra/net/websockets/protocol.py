@@ -50,12 +50,22 @@ class WebSocketProtocol(SocketProtocol):
         self.make_frame_header = self.make_wsframe_header
 
     def __repr__(self):
-        return "WebSocket(%s)" % self._conn
+        return f"WebSocket({self._conn})"
 
     def close(self, message=None):
+        if not self._closed:
+            pass
         super().close(message)
         self.ws_data = b""
         self.ws_payload = []
+
+    def send_ws_close(self, code=1000, reason="closing"):
+        data = struct.pack("!H", code)
+        if reason:
+            #should validate that length is less than 125
+            data += reason.encode("utf-8")
+        header = encode_hybi_header(OPCODE_CLOSE, len(data), has_mask=False, fin=True)
+        self.flush_then_close(None, header+data)
 
 
     def make_wsframe_header(self, packet_type, items):
@@ -106,11 +116,13 @@ class WebSocketProtocol(SocketProtocol):
                 self.ws_payload_opcode = 0
             else:
                 if self.ws_payload and self.ws_payload_opcode:
-                    raise Exception("expected a continuation frame not %s" % OPCODES.get(opcode, opcode))
+                    op = OPCODES.get(opcode, opcode)
+                    raise Exception(f"expected a continuation frame not {op}")
                 full_payload = payload
                 if not fin:
                     if opcode not in (OPCODE_BINARY, OPCODE_TEXT):
-                        raise Exception("cannot handle fragmented '%s' frames" % OPCODES.get(opcode, opcode))
+                        op = OPCODES.get(opcode, opcode)
+                        raise RuntimeError(f"cannot handle fragmented {op} frames")
                     #fragmented, keep this payload for later
                     self.ws_payload_opcode = opcode
                     self.ws_payload.append(payload)
@@ -118,7 +130,7 @@ class WebSocketProtocol(SocketProtocol):
             if opcode==OPCODE_BINARY:
                 self._read_queue_put(full_payload)
             elif opcode==OPCODE_TEXT:
-                if first_time("ws-text-frame-from-%s" % self._conn):
+                if first_time(f"ws-text-frame-from-{self._conn}"):
                     log.warn("Warning: handling text websocket frame as binary")
                 self._read_queue_put(full_payload)
             elif opcode==OPCODE_CLOSE:
@@ -128,7 +140,7 @@ class WebSocketProtocol(SocketProtocol):
             elif opcode==OPCODE_PONG:
                 self._process_ws_pong(full_payload)
             else:
-                log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, "%#x" % opcode))
+                log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
     def _process_ws_ping(self, payload):
