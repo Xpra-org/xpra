@@ -72,12 +72,12 @@ class HttpRequestHandler:
             return
         method = self.scope.get("method", "")
         req_path = self.scope.get("path", "")
-        log.info("HTTP request %s %s", method, req_path)
+        log.info(f"HTTP request {method} {req_path}")
         scripts = self.xpra_server.get_http_scripts()
         script = scripts.get(req_path)
         log(f"req_path={req_path}, scripts={scripts}")
         if script:
-            log("request for %s handled using %s", req_path, script)
+            log(f"request for {req_path} handled using {script}")
             self.send_http3_response(*script(req_path))
             return
         if method!="GET":
