@@ -1073,7 +1073,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         conn = quic_connect(host, port,
                      ssl_cert, ssl_key,
                      ssl_ca_certs, ssl_server_verify_mode)
-        print(f"quic_connect={conn}")
         return conn
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
