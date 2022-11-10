@@ -8,27 +8,16 @@ import struct
 
 from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi
+from xpra.net.common import (
+    OPCODES,
+    OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
+    )
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util import first_time, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("websocket")
-
-OPCODE_CONTINUE = 0
-OPCODE_TEXT     = 1
-OPCODE_BINARY   = 2
-OPCODE_CLOSE    = 8
-OPCODE_PING     = 9
-OPCODE_PONG     = 10
-OPCODES = {
-    OPCODE_CONTINUE : "continuation frame",
-    OPCODE_TEXT     : "text frame",
-    OPCODE_BINARY   : "binary frame",
-    OPCODE_CLOSE    : "connection close",
-    OPCODE_PING     : "ping",
-    OPCODE_PONG     : "pong",
-    }
 
 MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
@@ -55,6 +44,7 @@ class WebSocketProtocol(SocketProtocol):
     def close(self, message=None):
         if not self._closed:
             pass
+        self.send_ws_close(reason=message)
         super().close(message)
         self.ws_data = b""
         self.ws_payload = []

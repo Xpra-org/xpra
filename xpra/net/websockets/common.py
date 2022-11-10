@@ -21,6 +21,22 @@ READ_CHUNK_SIZE = 4096
 
 HEADERS_MODULES = os.environ.get("XPRA_WEBSOCKET_HEADERS_MODULES", "default").split(",")
 
+OPCODE_CONTINUE = 0
+OPCODE_TEXT = 1
+OPCODE_BINARY = 2
+OPCODE_CLOSE = 8
+OPCODE_PING = 9
+OPCODE_PONG = 10
+
+OPCODES = {
+    OPCODE_CONTINUE     : "CONTINUE",
+    OPCODE_TEXT         : "TEXT",
+    OPCODE_BINARY       : "BINARY",
+    OPCODE_CLOSE        : "CLOSE",
+    OPCODE_PING         : "PING",
+    OPCODE_PONG         : "PONG",
+    }
+
 
 def make_websocket_accept_hash(key):
     GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
