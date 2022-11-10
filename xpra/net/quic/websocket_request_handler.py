@@ -1,4 +1,5 @@
 #Copyright (c) 2018-2019 Jeremy Lainé.
+#Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 #All rights reserved.
 #
 #Redistribution and use in source and binary forms, with or without
@@ -48,16 +49,18 @@ log = Logger("quic")
 HttpConnection = Union[H0Connection, H3Connection]
 
 
-class WebSocketHandler:
+class WebSocketConnection(Connection):
     def __init__(self, connection: HttpConnection, scope: Dict,
                  stream_id: int, transmit: Callable[[], None]) -> None:
-        self.closed = False
-        self.connection = connection
+        Connection.__init__(self, ("quic", 0), "wss")
+        self.socktype_wrapped = "quic"
+        self.connection: HttpConnection = connection
         self.data_queue: Queue[bytes] = Queue()
-        self.scope = scope
-        self.stream_id = stream_id
-        self.transmit = transmit
+        self.scope: Dict = scope
+        self.stream_id: int = stream_id
+        self.transmit: Callable[[], None] = transmit
         self.accepted : bool = False
+        self.closed : bool = False
 
     def __repr__(self):
         return f"WebSocketHandler<{self.stream_id}>"
@@ -76,15 +79,15 @@ class WebSocketHandler:
                 return
             log.info("websocket request at %s", self.scope.get("path", "/"))
             self.send_accept()
+        else:
+            log.warn(f"Warning: unhandled websocket http event {event}")
 
 
     def close(self):
+        log("WebSocketConnection.close()")
         if not self.closed:
             self.send_close(1000)
-
-    def receive(self) -> Dict:
-        log("ws:receive()")
-        return self.data_queue.get()
+        Connection.close(self)
 
 
     def send_accept(self):
@@ -118,25 +121,9 @@ class WebSocketHandler:
         self.transmit()
 
 
-class WebSocketConnection(Connection, WebSocketHandler):
-
-    def __init__(self, connection: HttpConnection, scope: Dict,
-                 stream_id: int, transmit: Callable[[], None]) -> None:
-        #def __init__(self, endpoint, socktype, info=None, options=None):
-        Connection.__init__(self, ("udp", 0), "wss")
-        self.socktype_wrapped = "quic"
-        WebSocketHandler.__init__(self, connection, scope, stream_id, transmit)
-
-
-    def close(self):
-        log("WebSocketConnection.close()")
-        WebSocketHandler.close(self)
-        Connection.close(self)
-
     def write(self, buf):
         self.send_bytes(buf)
         return len(buf)
 
     def read(self, n):
-        log(f"read({n})")
-        return self.receive()
+        return self.data_queue.get()
