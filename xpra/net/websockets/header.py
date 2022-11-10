@@ -7,7 +7,17 @@
 
 import struct
 
+from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
+
+
+def close_packet(code : int = 1000, reason : str = ""):
+    data = struct.pack("!H", code)
+    if reason:
+        #should validate that encoded data length is less than 125, meh
+        data += reason.encode("utf-8")
+    header = encode_hybi_header(OPCODE_CLOSE, len(data), has_mask=False, fin=True)
+    return header + data
 
 
 def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):

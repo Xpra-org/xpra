@@ -7,7 +7,7 @@ import os
 import struct
 
 from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
-from xpra.net.websockets.header import encode_hybi_header, decode_hybi
+from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
 from xpra.net.websockets.common import (
     OPCODES,
     OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
@@ -50,12 +50,8 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_payload = []
 
     def send_ws_close(self, code=1000, reason="closing"):
-        data = struct.pack("!H", code)
-        if reason:
-            #should validate that length is less than 125
-            data += reason.encode("utf-8")
-        header = encode_hybi_header(OPCODE_CLOSE, len(data), has_mask=False, fin=True)
-        self.flush_then_close(None, header+data)
+        data = close_packet(code, reason)
+        self.flush_then_close(None, data)
 
 
     def make_wsframe_header(self, packet_type, items):
