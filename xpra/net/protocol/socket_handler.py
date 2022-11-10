@@ -1149,8 +1149,10 @@ class SocketProtocol:
                 #write queue still has stuff in it..
                 if timeout<=0:
                     log("flush_then_close: queue still busy, closing without sending the last packet")
+                    wl = self._write_lock
                     try:
-                        self._write_lock.release()
+                        if wl:
+                            wl.release()
                     finally:
                         self.close()
                         done()
@@ -1166,8 +1168,10 @@ class SocketProtocol:
                 def close_and_release():
                     log("flush_then_close: wait_for_packet_sent() close_and_release()")
                     self.close()
+                    wl = self._write_lock
                     try:
-                        self._write_lock.release()
+                        if wl:
+                            wl.release()
                     finally:
                         done()
                 def wait_for_packet_sent():
