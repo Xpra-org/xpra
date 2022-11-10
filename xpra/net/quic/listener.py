@@ -18,12 +18,14 @@ from aioquic.h3.events import (
     WebTransportStreamDataReceived,
 )
 from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
+
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http_request_handler import HttpRequestHandler
-from xpra.net.quic.websocket_request_handler import WebSocketConnection
+from xpra.net.quic.websocket_request_handler import ServerWebSocketConnection
 #from xpra.net.quic.webtransport_request_handler import WebTransportHandler
 from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
+from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
@@ -31,7 +33,7 @@ log = Logger("quic")
 quic_logger = QuicLogger()
 
 HttpConnection = Union[H0Connection, H3Connection]
-Handler = Union[HttpRequestHandler, WebSocketConnection]
+Handler = Union[HttpRequestHandler, ServerWebSocketConnection]
 
 
 class HttpServerProtocol(QuicConnectionProtocol):
@@ -43,7 +45,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         self._http: Optional[HttpConnection] = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        log(f"hsp:quic_event_received(%s)", ellipsizer(event))
+        log("hsp:quic_event_received(%s)", ellipsizer(event))
         if isinstance(event, ProtocolNegotiated):
             if event.alpn_protocol in H3_ALPN:
                 self._http = H3Connection(self._quic, enable_webtransport=True)
@@ -124,11 +126,10 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 "type"          : "websocket",
                 "scheme"        : "wss",
                 })
-            wsc = WebSocketConnection(connection=self._http, scope=scope,
+            wsc = ServerWebSocketConnection(connection=self._http, scope=scope,
                                     stream_id=event.stream_id,
                                     transmit=self.transmit)
             socket_options = {}
-            from xpra.net.websockets.protocol import WebSocketProtocol
             self._xpra_server.make_protocol("quic", wsc, socket_options, protocol_class=WebSocketProtocol)
             return wsc
 
@@ -160,7 +161,6 @@ class HttpServerProtocol(QuicConnectionProtocol):
 async def do_listen(quic_sock, xpra_server):
     log(f"do_listen({quic_sock}, {xpra_server})")
     def create_protocol(*args, **kwargs):
-        log("create_protocol!")
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
     try:
         configuration = QuicConfiguration(

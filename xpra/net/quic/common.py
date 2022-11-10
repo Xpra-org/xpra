@@ -6,6 +6,7 @@
 from xpra.util import envint
 
 SERVER_NAME = "xpra/aioquic"
+USER_AGENT = "xpra/aioquic"
 
 MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 

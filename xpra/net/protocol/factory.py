@@ -6,7 +6,7 @@
 #pylint: disable=import-outside-toplevel
 
 def get_client_protocol_class(socktype):
-    if socktype in ("ws", "wss"):
+    if socktype in ("ws", "wss", "quic"):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol
     if socktype == "vnc":
