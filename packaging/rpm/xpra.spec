@@ -465,7 +465,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files codecs
-%{python3_sitearch}/xpra/codecs/csc_*
+#%{python3_sitearch}/xpra/codecs/csc_*
 %{python3_sitearch}/xpra/codecs/drm
 %{python3_sitearch}/xpra/codecs/enc_*
 #%{python3_sitearch}/xpra/codecs/evdi
