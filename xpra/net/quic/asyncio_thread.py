@@ -73,12 +73,16 @@ class threaded_asyncio_loop:
 
 
     def sync(self, async_fn, *args):
-        response = Queue(1)
+        response = Queue()
         async def awaitable():
             log("awaitable()")
-            r = await async_fn(*args)
+            try:
+                r = await async_fn(*args)
+                response.put(r)
+            except Exception as e:
+                log.error(f"Error calling async function {async_fn} with {args}", exc_info=True)
+                response.put(e)
             #log(f"await: {r}")
-            response.put_nowait(r)
         def tsafe():
             r = awaitable()
             log(f"awaitable={r}")
@@ -87,5 +91,7 @@ class threaded_asyncio_loop:
         self.loop.call_soon_threadsafe(tsafe)
         log("sync: waiting for response")
         r = response.get()
+        if isinstance(r, Exception):
+            raise Exception(f"async function error: {r}")
         log(f"sync: response={r}")
         return r
