@@ -8,7 +8,7 @@ import struct
 
 from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi
-from xpra.net.common import (
+from xpra.net.websockets.common import (
     OPCODES,
     OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
     )

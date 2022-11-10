@@ -35,9 +35,12 @@ from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, HeadersReceived, H3Event
 
+from xpra.net.bytestreams import Connection
 from xpra.net.websockets.mask import hybi_mask  # pylint: disable=no-name-in-module
 from xpra.net.websockets.header import encode_hybi_header
+from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.quic.common import SERVER_NAME
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
@@ -46,7 +49,8 @@ HttpConnection = Union[H0Connection, H3Connection]
 
 
 class WebSocketHandler:
-    def __init__(self, connection: HttpConnection, scope: Dict, stream_id: int, transmit: Callable[[], None]) -> None:
+    def __init__(self, connection: HttpConnection, scope: Dict,
+                 stream_id: int, transmit: Callable[[], None]) -> None:
         self.closed = False
         self.connection = connection
         self.data_queue: Queue[bytes] = Queue()
@@ -54,6 +58,9 @@ class WebSocketHandler:
         self.stream_id = stream_id
         self.transmit = transmit
         self.accepted : bool = False
+
+    def __repr__(self):
+        return f"WebSocketHandler<{self.stream_id}>"
 
     def http_event_received(self, event: H3Event) -> None:
         log("ws:http_event_received(%s)", ellipsizer(event))
@@ -80,15 +87,14 @@ class WebSocketHandler:
         return self.data_queue.get()
 
 
-    def send_accept(self, subprotocol : str = "xpra"):
+    def send_accept(self):
         self.accepted = True
         headers = [
             (b":status", b"200"),
             (b"server", SERVER_NAME.encode()),
             (b"date", formatdate(time.time(), usegmt=True).encode()),
-        ]
-        if subprotocol:
-            headers.append((b"sec-websocket-protocol", subprotocol.encode()))
+            (b"sec-websocket-protocol", b"xpra"),
+            ]
         self.connection.send_headers(stream_id=self.stream_id, headers=headers)
         self.transmit()
 
@@ -98,7 +104,7 @@ class WebSocketHandler:
             if reason:
                 #should validate that encoded data length is less than 125, meh
                 data += reason.encode("utf-8")
-            header = encode_hybi_header(code, len(data), has_mask=False, fin=True)
+            header = encode_hybi_header(OPCODE_CLOSE, len(data), has_mask=False, fin=True)
             self.connection.send_data(stream_id=self.stream_id, data=header+data, end_stream=True)
         else:
             self.connection.send_headers(stream_id=self.stream_id, headers=[(b":status", str(code).encode())])
@@ -107,6 +113,30 @@ class WebSocketHandler:
 
     def send_bytes(self, bdata : bytes):
         mask = os.urandom(4)
-        data = hybi_mask(mask, bdata)
-        self.connection.send_data(stream_id=self.stream_id, data=data)
+        data = memoryview_to_bytes(hybi_mask(mask, bdata))
+        self.connection.send_data(stream_id=self.stream_id, data=data, end_stream=self.closed)
         self.transmit()
+
+
+class WebSocketConnection(Connection, WebSocketHandler):
+
+    def __init__(self, connection: HttpConnection, scope: Dict,
+                 stream_id: int, transmit: Callable[[], None]) -> None:
+        #def __init__(self, endpoint, socktype, info=None, options=None):
+        Connection.__init__(self, ("udp", 0), "wss")
+        self.socktype_wrapped = "quic"
+        WebSocketHandler.__init__(self, connection, scope, stream_id, transmit)
+
+
+    def close(self):
+        log("WebSocketConnection.close()")
+        WebSocketHandler.close(self)
+        Connection.close(self)
+
+    def write(self, buf):
+        self.send_bytes(buf)
+        return len(buf)
+
+    def read(self, n):
+        log(f"read({n})")
+        return self.receive()

@@ -20,7 +20,7 @@ from aioquic.h3.events import (
 from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http_request_handler import HttpRequestHandler
-from xpra.net.quic.websocket_request_handler import WebSocketHandler
+from xpra.net.quic.websocket_request_handler import WebSocketConnection
 #from xpra.net.quic.webtransport_request_handler import WebTransportHandler
 from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
@@ -31,7 +31,7 @@ log = Logger("quic")
 quic_logger = QuicLogger()
 
 HttpConnection = Union[H0Connection, H3Connection]
-Handler = Union[HttpRequestHandler, WebSocketHandler]
+Handler = Union[HttpRequestHandler, WebSocketConnection]
 
 
 class HttpServerProtocol(QuicConnectionProtocol):
@@ -124,9 +124,13 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 "type"          : "websocket",
                 "scheme"        : "wss",
                 })
-            return WebSocketHandler(connection=self._http, scope=scope,
+            wsc = WebSocketConnection(connection=self._http, scope=scope,
                                     stream_id=event.stream_id,
                                     transmit=self.transmit)
+            socket_options = {}
+            from xpra.net.websockets.protocol import WebSocketProtocol
+            self._xpra_server.make_protocol("quic", wsc, socket_options, protocol_class=WebSocketProtocol)
+            return wsc
 
         if method == "CONNECT" and protocol == "webtransport":
             scope.update({
