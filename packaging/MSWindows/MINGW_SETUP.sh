@@ -39,7 +39,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}l
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 #dependencies of browser_cookie3 and pycuda,
@@ -49,9 +49,9 @@ for x in pycryptodome mako markupsafe typing_extensions platformdirs; do
 done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
 
-#this needs to be converted to a PKGBUILD:
+#these need to be converted to PKGBUILD:
 $PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}gcc
-for x in browser-cookie3; do
+for x in browser-cookie3 pylsqpack aioquic; do
 	pip3 install $x
 done
 #for webcam support:
