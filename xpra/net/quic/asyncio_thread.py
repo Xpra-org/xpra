@@ -11,11 +11,12 @@ from collections import namedtuple
 from time import monotonic
 from xpra.make_thread import start_thread
 from xpra.util import envbool
+from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("quic")
 
 
-UVLOOP = envbool("XPRA_UVLOOP", True)
+UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
 
 
 singleton = None
