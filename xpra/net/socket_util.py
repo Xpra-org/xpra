@@ -138,7 +138,7 @@ def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=N
         if socktype=="quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
-            return listen_quic(sock, server)
+            return listen_quic(sock, server, options)
         sources = []
         from gi.repository import GLib
         sock.listen(5)
@@ -436,10 +436,46 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
             pass
     if iport==0:
         iport = tcp_socket.getsockname()[1]
-        log.info("allocated %s port %i on %s", socktype, iport, host)
+        log.info(f"allocated {socktype} port {iport} on {host}")
     log(f"{socktype}: {host}:{iport} : {socket}")
     log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
+
+def create_udp_socket(host, iport):
+    if host.find(":")<0:
+        listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sockaddr = (host, iport)
+    else:
+        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
+        res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
+        listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        sockaddr = res[0][-1]
+    listener.bind(sockaddr)
+    return listener
+
+def setup_quic_socket(host, port, ssl_cert, ssl_key):
+    return setup_udp_socket(host, port, "quic")
+
+def setup_udp_socket(host, iport, socktype):
+    log = get_network_logger()
+    try:
+        udp_socket = create_udp_socket(host, iport)
+    except Exception as e:
+        log("create_udp_socket%s", (host, iport), exc_info=True)
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
+    def cleanup_udp_socket():
+        log.info("closing %s socket %s:%s", socktype, host, iport)
+        try:
+            udp_socket.close()
+        except OSError:
+            pass
+    if iport==0:
+        iport = udp_socket.getsockname()[1]
+        log.info(f"allocated {socktype} port {iport} on {host}")
+    log(f"{socktype}: {host}:{iport} : {socket}")
+    log.info(f"created {socktype} socket {host}:{iport}")
+    return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
 def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
     ip_sockets = {}
@@ -496,11 +532,6 @@ def parse_bind_vsock(bind_vsock):
                 options = parse_simple_dict(parts[1])
             vsock_sockets[(cid, iport)] = options
     return vsock_sockets
-
-def setup_quic_socket(host, port, ssl_cert, ssl_key):
-    from xpra.net.quic.socket import quic_socket
-    quic_sock = quic_socket(host, port, ssl_cert, ssl_key)
-    return "quic", quic_sock, (host, port), quic_sock.close
 
 def setup_sd_listen_socket(stype, sock, addr):
     log = get_network_logger()

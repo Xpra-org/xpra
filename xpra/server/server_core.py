@@ -1236,16 +1236,21 @@ class ServerCore:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
+    def get_ssl_socket_options(self, socket_options):
+        ssllog("get_ssl_socket_options(%s)", socket_options)
+        kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
+        for k,v in socket_options.items():
+            #options use '-' but attributes and parameters use '_':
+            k = k.replace("-", "_")
+            if k.startswith("ssl_"):
+                k = k[4:]
+                kwargs[k] = v
+        return kwargs
+
     def _ssl_wrap_socket(self, socktype, sock, socket_options):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
-        kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
         try:
-            for k,v in socket_options.items():
-                #options use '-' but attributes and parameters use '_':
-                k = k.replace("-", "_")
-                if k.startswith("ssl_"):
-                    k = k[4:]
-                    kwargs[k] = v
+            kwargs = self.get_ssl_socket_options(socket_options)
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:

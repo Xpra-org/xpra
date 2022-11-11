@@ -5,7 +5,9 @@
 
 from typing import Dict, List, Optional, Union
 
-from aioquic.asyncio import QuicConnectionProtocol, serve
+import asyncio
+from aioquic.asyncio import QuicConnectionProtocol
+from aioquic.asyncio.server import QuicServer
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.logger import QuicLogger
 from aioquic.h0.connection import H0_ALPN, H0Connection
@@ -26,6 +28,8 @@ from xpra.net.quic.websocket_request_handler import ServerWebSocketConnection
 from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
+from xpra.scripts.config import InitExit
+from xpra.exit_codes import EXIT_SSL_FAILURE
 from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
@@ -158,8 +162,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
                                   transmit=self.transmit)
 
 
-async def do_listen(quic_sock, xpra_server):
-    log(f"do_listen({quic_sock}, {xpra_server})")
+async def do_listen(sock, xpra_server, cert, key, retry):
+    log(f"do_listen({sock}, {xpra_server}, {cert}, {key}, {retry})")
     def create_protocol(*args, **kwargs):
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
     try:
@@ -169,24 +173,36 @@ async def do_listen(quic_sock, xpra_server):
             max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
             quic_logger=quic_logger,
         )
-        configuration.load_cert_chain(quic_sock.ssl_cert, quic_sock.ssl_key)
+        configuration.load_cert_chain(cert, key)
         log(f"quic configuration={configuration}")
         session_ticket_store = SessionTicketStore()
-        await serve(
-            quic_sock.host,
-            quic_sock.port,
-            configuration=configuration,
-            create_protocol=create_protocol,
-            session_ticket_fetcher=session_ticket_store.pop,
-            session_ticket_handler=session_ticket_store.add,
-            retry=quic_sock.retry,
-        )
+
+        def create_server():
+            return QuicServer(
+                configuration=configuration,
+                create_protocol=create_protocol,
+                session_ticket_fetcher=session_ticket_store.pop,
+                session_ticket_handler=session_ticket_store.add,
+                retry=retry,
+                )
+        loop = asyncio.get_event_loop()
+        r = await loop.create_datagram_endpoint(create_server, sock=sock)
+        log(f"create_datagram_endpoint({create_server}, {sock})={r}")
+        return r
     except Exception:
-        log.error(f"Error: listening on {quic_sock}", exc_info=True)
+        log.error(f"Error: listening on {sock}", exc_info=True)
         raise
 
-def listen_quic(quic_sock, xpra_server=None):
-    log(f"listen_quic({quic_sock})")
+def listen_quic(sock, xpra_server, options):
+    log(f"listen_quic({sock}, {xpra_server}, {options})")
     t = get_threaded_loop()
-    t.call(do_listen(quic_sock, xpra_server))
-    return quic_sock.close
+    ssl_socket_options = xpra_server.get_ssl_socket_options(options)
+    cert = ssl_socket_options.get("cert")
+    key = ssl_socket_options.get("key")
+    if not cert:
+        raise InitExit(EXIT_SSL_FAILURE, "missing ssl certificate")
+    if not key:
+        raise InitExit(EXIT_SSL_FAILURE, "missing ssl key")
+    retry = options.get("retry", False)
+    t.call(do_listen(sock, xpra_server, cert, key, retry))
+    return sock.close
