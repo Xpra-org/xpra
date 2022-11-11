@@ -6,6 +6,7 @@
 import time
 import asyncio
 from queue import Queue
+from collections import namedtuple
 
 from time import monotonic
 from xpra.make_thread import start_thread
@@ -23,6 +24,9 @@ def get_threaded_loop():
     if not singleton:
         singleton = threaded_asyncio_loop()
     return singleton
+
+
+ExceptionWrapper = namedtuple("ExceptionWrapper", "exception")
 
 
 class threaded_asyncio_loop:
@@ -81,7 +85,7 @@ class threaded_asyncio_loop:
                 response.put(r)
             except Exception as e:
                 log.error(f"Error calling async function {async_fn} with {args}", exc_info=True)
-                response.put(e)
+                response.put(ExceptionWrapper(e))
             #log(f"await: {r}")
         def tsafe():
             r = awaitable()
@@ -91,7 +95,8 @@ class threaded_asyncio_loop:
         self.loop.call_soon_threadsafe(tsafe)
         log("sync: waiting for response")
         r = response.get()
-        if isinstance(r, Exception):
-            raise Exception(f"async function error: {r}")
+        if isinstance(r, ExceptionWrapper):
+            e = r.exception
+            raise Exception(str(e) or type(e))
         log(f"sync: response={r}")
         return r
