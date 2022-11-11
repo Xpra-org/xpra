@@ -158,6 +158,7 @@ def quic_connect(host : str, port : int,
         local_host = "localhost"
     local_port = 0
     sock = create_udp_socket(local_host, local_port)
+    log(f"create_udp_socket({local_host}:{local_port})={sock}")
     tl = get_threaded_loop()
 
     def create_protocol():
@@ -174,7 +175,6 @@ def quic_connect(host : str, port : int,
                 addr = ("::ffff:" + addr[0], addr[1], 0, 0)
             else:
                 addr = (addr[0], addr[1])
-        log(f"connect() remote address: {addr}")
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"transport={transport}, protocol={protocol}")
         protocol = cast(QuicConnectionProtocol, protocol)
