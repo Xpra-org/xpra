@@ -1069,10 +1069,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         ssl_ca_certs = ssl_options.get("ca-certs", opts.ssl_ca_certs)
         ssl_cert = ssl_options.get("cert", opts.ssl_cert)
         ssl_key = ssl_options.get("key", opts.ssl_key)
+        ssl_server_name = ssl_options.get("server-hostname")
         from xpra.net.quic.client import quic_connect
         conn = quic_connect(host, port,
                      ssl_cert, ssl_key,
-                     ssl_ca_certs, ssl_server_verify_mode)
+                     ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
         return conn
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):

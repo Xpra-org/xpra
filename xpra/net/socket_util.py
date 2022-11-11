@@ -138,7 +138,8 @@ def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=N
         if socktype=="quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
-            return listen_quic(sock, server, options)
+            listen_quic(sock, server, options)
+            return None
         sources = []
         from gi.repository import GLib
         sock.listen(5)
@@ -449,8 +450,12 @@ def create_udp_socket(host, iport):
         assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        sockaddr = res[0][-1]
-    listener.bind(sockaddr)
+        sockaddr = res[0][4]
+    try:
+        listener.bind(sockaddr)
+    except:
+        listener.close()
+        raise
     return listener
 
 def setup_quic_socket(host, port, ssl_cert, ssl_key):

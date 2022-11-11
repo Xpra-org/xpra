@@ -193,16 +193,15 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         log.error(f"Error: listening on {sock}", exc_info=True)
         raise
 
-def listen_quic(sock, xpra_server, options):
-    log(f"listen_quic({sock}, {xpra_server}, {options})")
-    t = get_threaded_loop()
-    ssl_socket_options = xpra_server.get_ssl_socket_options(options)
+def listen_quic(sock, xpra_server, socket_options : dict):
+    log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
+    ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert")
     key = ssl_socket_options.get("key")
     if not cert:
         raise InitExit(EXIT_SSL_FAILURE, "missing ssl certificate")
     if not key:
         raise InitExit(EXIT_SSL_FAILURE, "missing ssl key")
-    retry = options.get("retry", False)
+    retry = socket_options.get("retry", False)
+    t = get_threaded_loop()
     t.call(do_listen(sock, xpra_server, cert, key, retry))
-    return sock.close

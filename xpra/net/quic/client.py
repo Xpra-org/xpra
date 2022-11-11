@@ -23,17 +23,18 @@ from aioquic.quic.logger import QuicLogger
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
-from xpra.net.socket_util import get_ssl_verify_mode
+from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraWebSocketConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT
-from xpra.util import ellipsizer
+from xpra.util import ellipsizer, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
+IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 
 quic_logger = QuicLogger()
 
@@ -130,37 +131,33 @@ class WebSocketClient(QuicConnectionProtocol):
 
 def quic_connect(host : str, port : int,
                  ssl_cert : str, ssl_key : str,
-                 ssl_ca_certs, ssl_server_verify_mode : str):
+                 ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
     configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
     configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
         configuration.load_cert_chain(ssl_cert, ssl_key, None)
-    # if host is not an IP address, pass it to enable SNI:
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        configuration.server_name = host
+    if ssl_server_name:
+        configuration.server_name = ssl_server_name
+    else:
+        # if host is not an IP address, use it for SNI:
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            configuration.server_name = host
     #configuration.max_data = args.max_data
     #configuration.max_stream_data = args.max_stream_data
     #configuration.quic_logger = QuicFileLogger(args.quic_log)
     #configuration.secrets_log_file = open(args.secrets_log, "a")
     connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
 
-    # explicitly enable IPv4/IPv6 dual stack
-    local_host = "::"
+    if IPV6:
+        local_host = "::"
+    else:
+        local_host = "localhost"
     local_port = 0
-    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-    completed = False
-    try:
-        sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        sock.bind((local_host, local_port, 0, 0))
-        completed = True
-    finally:
-        if not completed:
-            sock.close()
-
+    sock = create_udp_socket(local_host, local_port)
     tl = get_threaded_loop()
 
     def create_protocol():
@@ -170,9 +167,13 @@ def quic_connect(host : str, port : int,
         log("quic_connect: connect()")
         # lookup remote address
         infos = await tl.loop.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
+        log(f"getaddrinfo({host}, {port}, SOCK_DGRAM)={infos}")
         addr = infos[0][4]
         if len(addr) == 2:
-            addr = ("::ffff:" + addr[0], addr[1], 0, 0)
+            if IPV6:
+                addr = ("::ffff:" + addr[0], addr[1], 0, 0)
+            else:
+                addr = (addr[0], addr[1])
         log(f"connect() remote address: {addr}")
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"transport={transport}, protocol={protocol}")
