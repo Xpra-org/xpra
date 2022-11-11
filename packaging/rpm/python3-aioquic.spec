@@ -18,6 +18,7 @@ Requires:       python3-cryptography
 Requires:       python3-certifi
 Requires:       python3-pyOpenSSL
 Requires:       python3-pylsqpack
+Recommends:     python3-uvloop
 
 %description
 It features a minimal TLS 1.3 implementation, a QUIC stack and an HTTP/3 stack.
