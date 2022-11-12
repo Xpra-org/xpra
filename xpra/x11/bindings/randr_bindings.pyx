@@ -19,7 +19,7 @@ from xpra.x11.bindings.xlib cimport (
     )
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util import envint, envbool, csv, first_time, decode_str, prettify_plug_name
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, BITS
 
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
@@ -597,7 +597,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     cdef XRRModeInfo *calculate_mode(self, name, unsigned int w, unsigned int h, unsigned int vrefresh):
         log("calculate_mode(%s, %i, %i, %i)", name, w, h, vrefresh)
         #monitor settings as set in xorg.conf...
-        cdef unsigned long maxPixelClock = 30*1000*1000*1000    #30,000 MHz
         cdef unsigned int minHSync = 1*1000                     #1KHz
         cdef unsigned int maxHSync = 300*1000                   #300KHz
         cdef unsigned int minVSync = 1                          #1Hz
@@ -622,31 +621,21 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         yBack = round(h * timeVBack)
         yTotal = h + yFront + ySync + yBack
 
-        cdef unsigned long modeMaxClock = maxPixelClock
-        if (maxHSync * xTotal)<maxPixelClock:
-            modeMaxClock = maxHSync * xTotal
-        tmp = maxVSync * xTotal * yTotal * yFactor
-        if tmp<modeMaxClock:
-            modeMaxClock = tmp
-        cdef unsigned long modeMinClock = minHSync * xTotal
-        # Monitor minVSync too low? => increase mode minimum pixel clock
-        tmp = minVSync * xTotal * yTotal * yFactor
-        if tmp > modeMinClock:
-            modeMinClock = tmp
+        if sizeof(long)<=4:
+            maxPixelClock = 0xffffffff
+        else:
+            maxPixelClock = 30*1000*1000*1000    #30,000 MHz
+        modeMaxClock = min(maxPixelClock, maxHSync * xTotal, maxVSync * xTotal * yTotal * yFactor)
+        modeMinClock = max(minHSync * xTotal, minVSync * xTotal * yTotal * yFactor)
         # If minimum clock > maximum clock, the mode is impossible...
         if modeMinClock > modeMaxClock:
-            log.warn("Warning: cannot add mode %s", name)
-            log.warn(" clock %iHz is above maximum value %iHz", modeMinClock, modeMaxClock)
+            log.warn(f"Warning: cannot add mode {name}")
+            log.warn(f" clock {modeMinClock}Hz is above maximum value {modeMaxClock}Hz")
             log.warn(" no suitable clocks could be found")
             return NULL
 
         idealClock = idealVSync * xTotal * yTotal * yFactor
-        cdef unsigned long clock = idealClock
-        if clock < modeMinClock:
-            clock = modeMinClock
-        elif clock > modeMaxClock:
-            clock = modeMaxClock
-
+        cdef unsigned long clock = min(modeMaxClock, max(modeMinClock, idealClock))
         log("Modeline %ix%i@%i %s %s %s %s %s %s %s %s %s", w, h, round(vrefresh/1000),
                         clock/1000/1000,
                         w, w+xFront, w+xFront+xSync, xTotal,
