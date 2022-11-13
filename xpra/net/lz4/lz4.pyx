@@ -9,7 +9,6 @@
 import struct
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
-from libc.string cimport memset
 
 from xpra.log import Logger
 log = Logger("lz4")
