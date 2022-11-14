@@ -24,7 +24,7 @@ from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
-from xpra.net.quic.connection import XpraWebSocketConnection
+from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT
 from xpra.util import ellipsizer, envbool
@@ -42,7 +42,7 @@ def save_session_ticket(ticket: SessionTicket) -> None:
     pass
 
 
-class ClientWebSocketConnection(XpraWebSocketConnection):
+class ClientWebSocketConnection(XpraQuicConnection):
 
     def __init__(self, connection : HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host : str, port : int, info=None, options=None) -> None:
@@ -77,8 +77,8 @@ class ClientWebSocketConnection(XpraWebSocketConnection):
                         return
                     self.accepted = True
                     self.flush_writes()
-        elif isinstance(event, DataReceived):
-            self.read_queue.put(event.data)
+            return
+        super().http_event_received(event)
 
 
 class WebSocketClient(QuicConnectionProtocol):

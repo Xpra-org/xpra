@@ -3,9 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os.path
-from email.utils import formatdate
 from typing import Callable, Dict, Union
 
 from aioquic.asyncio import QuicConnectionProtocol
@@ -13,7 +11,7 @@ from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event
 
-from xpra.net.quic.common import SERVER_NAME
+from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.http.http_handler import (
     DIRECTORY_LISTING,
@@ -55,7 +53,7 @@ class HttpRequestHandler:
         headers = [
                 (b":status", str(status).encode()),
                 (b"server", SERVER_NAME.encode()),
-                (b"date", formatdate(time.time(), usegmt=True).encode()),
+                (b"date", http_date().encode()),
                 ] + list((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items())
         self.connection.send_headers(stream_id=self.stream_id, headers=headers)
 

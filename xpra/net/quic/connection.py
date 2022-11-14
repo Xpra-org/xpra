@@ -8,19 +8,19 @@ from typing import Callable, Union
 
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
-from aioquic.h3.events import H3Event
+from aioquic.h3.events import DataReceived, H3Event
 
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
 from xpra.util import ellipsizer
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.log import Logger
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
 
-class XpraWebSocketConnection(Connection):
+class XpraQuicConnection(Connection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host : str, port : int, info=None, options=None) -> None:
         Connection.__init__(self, (host, port), "wss", info=info, options=options)
@@ -33,33 +33,44 @@ class XpraWebSocketConnection(Connection):
         self.closed : bool = False
 
     def __repr__(self):
-        return f"XpraWebSocketConnection<{self.stream_id}>"
+        return f"XpraQuicConnection<{self.stream_id}>"
 
     def http_event_received(self, event: H3Event) -> None:
-        raise NotImplementedError()
+        log("ws:http_event_received(%s)", ellipsizer(event))
+        if self.closed:
+            return
+        if isinstance(event, DataReceived):
+            self.read_queue.put(event.data)
+        else:
+            log.warn(f"Warning: unhandled websocket http event {event}")
 
     def close(self):
-        log("XpraWebSocketConnection.close()")
+        log("XpraQuicConnection.close()")
         if not self.closed:
-            self.send_close(1000)
+            self.send_close()
         Connection.close(self)
 
     def send_close(self, code : int = 1000, reason : str = ""):
+        self.closed = True
         if self.accepted:
             data = close_packet(code, reason)
-            self.connection.send_data(stream_id=self.stream_id, data=data, end_stream=True)
+            self.write(data)
         else:
-            self.connection.send_headers(stream_id=self.stream_id, headers=[(b":status", str(code).encode())])
-        self.closed = True
-        self.transmit()
+            self.send_headers({":status" : code})
+            self.transmit()
+
+    def send_headers(self, headers : dict):
+        #HttpConnection takes a pair of byte strings:
+        bheaders = [(strtobytes(k), strtobytes(v)) for k,v in headers.items()]
+        self.connection.send_headers(stream_id=self.stream_id, headers=bheaders, end_stream=self.closed)
 
     def write(self, buf):
-        log("XpraWebSocketConnection.write(%s)", ellipsizer(buf))
+        log("XpraQuicConnection.write(%s)", ellipsizer(buf))
         data = memoryview_to_bytes(buf)
         self.connection.send_data(stream_id=self.stream_id, data=data, end_stream=self.closed)
         self.transmit()
         return len(buf)
 
     def read(self, n):
-        log("XpraWebSocketConnection.read(%s)", n)
+        log("XpraQuicConnection.read(%s)", n)
         return self.read_queue.get()
