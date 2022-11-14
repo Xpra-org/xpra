@@ -26,7 +26,7 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
-from xpra.net.quic.common import USER_AGENT
+from xpra.net.quic.common import USER_AGENT, binary_headers
 from xpra.util import ellipsizer, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
@@ -40,6 +40,15 @@ quic_logger = QuicLogger()
 
 def save_session_ticket(ticket: SessionTicket) -> None:
     pass
+
+WS_HEADERS = {
+        ":method"   : "CONNECT",
+        ":scheme"   : "https",
+        ":protocol" : "websocket",
+        "sec-websocket-version" : 13,
+        "sec-websocket-protocol" : "xpra",
+        "user-agent" : USER_AGENT,
+        }
 
 
 class ClientWebSocketConnection(XpraQuicConnection):
@@ -97,18 +106,13 @@ class WebSocketClient(QuicConnectionProtocol):
         websocket = ClientWebSocketConnection(self._http, stream_id, self.transmit,
                                               host, port)
         self._websockets[stream_id] = websocket
-        headers = [
-            (b":method", b"CONNECT"),
-            (b":scheme", b"https"),
-            (b":authority", host.encode()),
-            (b":path", path.encode()),
-            (b":protocol", b"websocket"),
-            (b"user-agent", USER_AGENT.encode()),
-            (b"sec-websocket-version", b"13"),
-            (b"sec-websocket-protocol", b"xpra"),
-            ]
+        headers = {
+            ":authority" : host,
+            ":path" : path,
+            }
+        headers.update(WS_HEADERS)
         log("open: sending http headers for websocket upgrade")
-        self._http.send_headers(stream_id=stream_id, headers=headers)
+        self._http.send_headers(stream_id=stream_id, headers=binary_headers(headers))
         self.transmit()
         return websocket
 
@@ -129,7 +133,7 @@ class WebSocketClient(QuicConnectionProtocol):
             log.warn(f"Warning: unexpected http event type: {event}")
 
 
-def quic_connect(host : str, port : int,
+def quic_connect(host : str, port : int, path : str,
                  ssl_cert : str, ssl_key : str,
                  ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
     configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
@@ -181,7 +185,7 @@ def quic_connect(host : str, port : int,
         log(f"connecting to {addr}")
         protocol.connect(addr)
         await protocol.wait_connected()
-        conn = protocol.open(host, port, "/TEST")
+        conn = protocol.open(host, port, path)
         log(f"websocket connection {conn}")
         return conn
     #protocol.close()

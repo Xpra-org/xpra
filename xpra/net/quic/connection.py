@@ -12,8 +12,9 @@ from aioquic.h3.events import DataReceived, H3Event
 
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
+from xpra.net.quic.common import binary_headers
 from xpra.util import ellipsizer
-from xpra.os_util import memoryview_to_bytes, strtobytes
+from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("quic")
 
@@ -61,8 +62,7 @@ class XpraQuicConnection(Connection):
 
     def send_headers(self, headers : dict):
         #HttpConnection takes a pair of byte strings:
-        bheaders = [(strtobytes(k), strtobytes(v)) for k,v in headers.items()]
-        self.connection.send_headers(stream_id=self.stream_id, headers=bheaders, end_stream=self.closed)
+        self.connection.send_headers(stream_id=self.stream_id, headers=binary_headers(headers), end_stream=self.closed)
 
     def write(self, buf):
         log("XpraQuicConnection.write(%s)", ellipsizer(buf))

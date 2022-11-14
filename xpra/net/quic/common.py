@@ -6,6 +6,7 @@
 from time import time
 from email.utils import formatdate
 from xpra.util import envint
+from xpra.os_util import strtobytes
 
 SERVER_NAME = "xpra/aioquic"
 USER_AGENT = "xpra/aioquic"
@@ -15,3 +16,7 @@ MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 def http_date():
     """ GMT date in a format suitable for http headers """
     return formatdate(time(), usegmt=True)
+
+def binary_headers(headers : dict):
+    """ aioquic expects the headers as a list of binary pairs """
+    return [(strtobytes(k), strtobytes(v)) for k,v in headers.items()]
