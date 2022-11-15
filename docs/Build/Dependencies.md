@@ -78,6 +78,7 @@ See [picture encodings](../Usage/Encodings.md)
 |[vpx]([http://www.webmproject.org/tools/](https://github.com/webmproject/libvpx/))|[http://downloads.webmproject.org/releases/webm/index.html](https://github.com/webmproject/libvpx/)|vp8 and vp9 codecs|both|
 |[webp](https://code.google.com/p/webp/)|http://downloads.webmproject.org/releases/webp/index.html|webp codec|both|
 |[libpng](http://www.libpng.org/pub/png/libpng.html)|ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/|png encoding|both|
+|[libspng](libspng.org)|https://libspng.org/download/|faster png encoding|both|
 |[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)|https://sourceforge.net/projects/libjpeg-turbo/files/|jpeg encoding|both|
 |[python-pillow](https://python-pillow.github.io/)|https://pypi.python.org/pypi/Pillow|png,jpeg,webp encoding and decoding, format conversion - **Required**|both|
 |[opencv](http://opencv.org/)|https://opencv.org/releases/|[Webcam capture](./Webcam)]|client|
