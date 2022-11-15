@@ -10,7 +10,7 @@ from xpra.os_util import strtobytes
 
 
 def get_headers(host, port):  #pylint: disable=unused-argument
-    headers = {}
-    if "XPRA_WS_COOKIE" in os.environ:
-        headers[b"Cookie"] = strtobytes(os.environ['XPRA_WS_COOKIE'])
-    return headers
+    cookie = os.environ.get("XPRA_WS_COOKIE")
+    if cookie:
+        return { b"Cookie" : strtobytes(cookie) }
+    return {}

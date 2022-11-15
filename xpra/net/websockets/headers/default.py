@@ -17,5 +17,5 @@ HEADERS = {
 def get_headers(host, port):
     headers = HEADERS.copy()
     if host:
-        headers[b"Host"] = strtobytes("%s:%s" % (host, port))
+        headers[b"Host"] = strtobytes(f"{host}:{port}")
     return headers
