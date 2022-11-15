@@ -113,7 +113,7 @@ def parse_response_header(response):
     return headers
 
 def verify_response_headers(headers, key):
-    log(f"verify_response_headers({headers!r})")
+    log(f"verify_response_headers({headers!r}, {key})")
     if not headers:
         raise Exception("no http headers found in response")
     if headers.get("www-authenticate"):
