@@ -184,7 +184,18 @@ def quic_connect(host : str, port : int, path : str,
         protocol = cast(QuicConnectionProtocol, protocol)
         log(f"connecting to {addr}")
         protocol.connect(addr)
-        await protocol.wait_connected()
+        try:
+            await protocol.wait_connected()
+        except Exception as e:
+            #try to get a more meaningful exception message:
+            einfo = str(e)
+            if not einfo:
+                quic_conn = getattr(protocol, "_quic", None)
+                if quic_conn:
+                    close_event = getattr(quic_conn, "_close_event", None)
+                    if close_event:
+                        raise Exception(close_event.reason_phrase)
+            raise
         conn = protocol.open(host, port, path)
         log(f"websocket connection {conn}")
         return conn
