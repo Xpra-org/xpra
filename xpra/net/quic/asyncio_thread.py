@@ -85,7 +85,7 @@ class threaded_asyncio_loop:
                 r = await async_fn(*args)
                 response.put(r)
             except Exception as e:
-                log.error(f"Error calling async function {async_fn} with {args}", exc_info=True)
+                log(f"error calling async function {async_fn} with {args}", exc_info=True)
                 response.put(ExceptionWrapper(e))
         def tsafe():
             r = awaitable()
