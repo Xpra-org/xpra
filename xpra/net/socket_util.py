@@ -1222,7 +1222,9 @@ def ssl_retry(e, ssl_ca_certs):
         r = confirm((msg,), title, prompt)
         ssllog("run_pinentry_confirm(..) returned %r", r)
         if r:
-            ssllog.info("retrying without checking the hostname")
+            ssllog.info(title)
+            ssllog.info(" user chose to connect anyway")
+            ssllog.info(" retrying without checking the hostname")
             options["check-hostname"] = False
             save_ssl_options(server_hostname, port, options)
             return options
