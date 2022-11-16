@@ -383,9 +383,7 @@ def create_sockets(opts, error_cb, retry=0):
 
     log("setting up quic sockets: %s", csv(bind_quic.items()))
     for (host, iport), options in bind_quic.items():
-        ssl_cert = options.get("ssl-cert", opts.ssl_cert)
-        ssl_key = options.get("ssl-key", opts.ssl_key)
-        sock = setup_quic_socket(host, iport, ssl_cert, ssl_key)
+        sock = setup_quic_socket(host, iport)
         sockets[sock] = options
 
     # systemd socket activation:
@@ -458,7 +456,7 @@ def create_udp_socket(host, iport):
         raise
     return listener
 
-def setup_quic_socket(host, port, ssl_cert, ssl_key):
+def setup_quic_socket(host, port):
     return setup_udp_socket(host, port, "quic")
 
 def setup_udp_socket(host, iport, socktype):
