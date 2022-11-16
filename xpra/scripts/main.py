@@ -1309,7 +1309,7 @@ def connect_to_server(app, display_desc, opts):
             protocol.start()
         except InitInfo as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            werr("failed to connect:", " %s" % e)
+            werr("failed to connect:", f" {e}")
             GLib.idle_add(app.quit, EXIT_OK)
         except InitExit as e:
             from xpra.net.socket_util import ssl_retry
@@ -1321,15 +1321,15 @@ def connect_to_server(app, display_desc, opts):
                 do_setup_connection()
                 return
             ssllog("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            werr("Warning: failed to connect:", " %s" % e)
+            werr("Warning: failed to connect:", f" {e}")
             GLib.idle_add(app.quit, e.status)
         except InitException as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            werr("Warning: failed to connect:", " %s" % e)
+            werr("Warning: failed to connect:", f" {e}")
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
         except Exception as e:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            werr("Error: failed to connect:", " %s" % e)
+            werr("Error: failed to connect:", f" {e}")
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
