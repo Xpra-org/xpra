@@ -1141,7 +1141,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
         if SSLEOFError and isinstance(e, SSLEOFError):
             return None
-        raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e)) from None
+        raise InitExit(EXIT_SSL_FAILURE, f"Cannot wrap socket {tcp_socket}: {e}") from None
     return ssl_sock
 
 
@@ -1273,13 +1273,13 @@ def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
     ssllog = Logger("ssl")
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_")+"_%i" % port
+    host_dirname = std(server_hostname, extras="-.:#_")+f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
-    ssllog("looking for %r in %s", filename, host_dirs)
+    ssllog(f"looking for {filename!r} in {host_dirs}")
     for d in host_dirs:
         f = os.path.join(d, filename)
         if os.path.exists(f):
-            ssllog("found %s", f)
+            ssllog(f"found {f}")
             return f
     return None
 
