@@ -1417,7 +1417,9 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
                 cmdline[i] = uri.replace(opts.password, "********")
                 set_proc_title(" ".join(cmdline))
         connect_to_server(app, display_desc, opts)
-    except Exception:
+    except Exception as e:
+        einfo = str(e) or type(e)
+        app.show_progress(100, f"error: {einfo}")
         app.cleanup()
         raise
     return app
