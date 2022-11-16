@@ -457,6 +457,13 @@ def create_udp_socket(host, iport):
     return listener
 
 def setup_quic_socket(host, port):
+    try:
+        from xpra.net.quic import common
+        import aioquic
+        assert common and aioquic
+    except ImportError as e:
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       f"cannot use quic sockets: {e}") from None
     return setup_udp_socket(host, port, "quic")
 
 def setup_udp_socket(host, iport, socktype):

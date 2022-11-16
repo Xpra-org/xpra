@@ -31,6 +31,7 @@ from xpra.exit_codes import (
     EXIT_NO_DISPLAY,
     EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
     EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
+    EXIT_SOCKET_CREATION_ERROR,
     RETRY_EXIT_CODES,
     )
 from xpra.os_util import (
@@ -1071,7 +1072,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         ssl_cert = ssl_options.get("cert", opts.ssl_cert)
         ssl_key = ssl_options.get("key", opts.ssl_key)
         ssl_server_name = ssl_options.get("server-hostname")
-        from xpra.net.quic.client import quic_connect
+        try:
+            from xpra.net.quic.client import quic_connect
+            import aioquic
+            assert aioquic
+        except ImportError as e:
+            raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       f"cannot use quic sockets: {e}") from None
         conn = quic_connect(host, port, path,
                      ssl_cert, ssl_key,
                      ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
