@@ -1,3 +1,9 @@
+xpra (4.4.3-1) UNRELEASED; urgency=low
+  * build failures on 32-bit systems
+  * splash screen hanging after connection failures
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 16 Nov 2022 17:53:50 +0700
+
 xpra (4.4.2-1) UNRELEASED; urgency=low
   * unit test errors with older versions of python pillow
   * worker thread cleaner termination

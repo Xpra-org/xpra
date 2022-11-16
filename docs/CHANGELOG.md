@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.4.3] 2022-11-16
+* [build failures on 32-bit systems](https://github.com/Xpra-org/xpra/issues/3685)
+* [splash screen hanging after connection failures](https://github.com/Xpra-org/xpra/commit/da0f001dc4b952774627e4d70e0bd849eaf07071)
+
 ## [4.4.2] 2022-11-04
 * [unit test errors with older versions of python pillow](https://github.com/Xpra-org/xpra/commit/7c916589e165769587100ba83e55cdea923c713e)
 * [worker thread cleaner termination](https://github.com/Xpra-org/xpra/commit/54775f1cba980780d88cbe197972e1de634e15cb)

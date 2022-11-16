@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4.2
+%define version 4.4.3
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -641,6 +641,10 @@ fi
 
 
 %changelog
+* Wed Nov 16 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
+- build failures on 32-bit systems
+- splash screen hanging after connection failures
+
 * Fri Nov 04 2022 Antoine Martin <antoine@xpra.org> 4.4.2-10
 - unit test errors with older versions of python pillow
 - worker thread cleaner termination
