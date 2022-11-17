@@ -7,6 +7,7 @@ See also: [authentication](../Usage/Authentication.md), [encryption](./Encryptio
 |Type|Bind option|Availability|Information|
 |----|-----------|---------|-----------|
 |`TCP`|`bind-tcp`|All|
+|[QUIC](https://github.com/Xpra-org/xpra/issues/3376)|`bind-quic`|All|
 |[SSL](./SSL.md)|`bind-ssl`|All|
 |[SSH](./SSH.md)|`bind-ssh`|All|
 |`WebSocket`|`bind-ws`|All|
