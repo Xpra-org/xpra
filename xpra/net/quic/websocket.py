@@ -20,6 +20,11 @@ class ServerWebSocketConnection(XpraQuicConnection):
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.scope: Dict = scope
 
+    def get_info(self) -> dict:
+        info = super().get_info()
+        info.setdefault("quic", {})["scope"] = self.scope
+        return info
+
     def __repr__(self):
         return f"ServerWebSocketConnection<{self.stream_id}>"
 

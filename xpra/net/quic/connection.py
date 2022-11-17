@@ -36,6 +36,16 @@ class XpraQuicConnection(Connection):
     def __repr__(self):
         return f"XpraQuicConnection<{self.stream_id}>"
 
+    def get_info(self) -> dict:
+        info = super().get_info()
+        info["quic"] = {
+            "read-queue"    : self.read_queue.qsize(),
+            "stream-id"     : self.stream_id,
+            "accepted"      : self.accepted,
+            "closed"        : self.closed,
+            }
+        return info
+
     def http_event_received(self, event: H3Event) -> None:
         log("ws:http_event_received(%s)", ellipsizer(event))
         if self.closed:

@@ -187,6 +187,7 @@ def quic_connect(host : str, port : int, path : str,
         try:
             await protocol.wait_connected()
         except Exception as e:
+            log("connect()", exc_info=True)
             #try to get a more meaningful exception message:
             einfo = str(e)
             if not einfo:
@@ -194,7 +195,7 @@ def quic_connect(host : str, port : int, path : str,
                 if quic_conn:
                     close_event = getattr(quic_conn, "_close_event", None)
                     if close_event:
-                        raise Exception(close_event.reason_phrase)
+                        raise Exception(close_event.reason_phrase) from None
             raise
         conn = protocol.open(host, port, path)
         log(f"websocket connection {conn}")
