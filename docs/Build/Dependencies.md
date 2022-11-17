@@ -24,6 +24,7 @@ See [Network](../Network/README.md)
 |[rencode](https://github.com/aresch/rencode)|https://pypi.python.org/pypi/rencode/|[packet encoding](./PacketEncoding)|both |(deprecated in 4.4)|
 |[pyyaml](http://pyyaml.org/)|https://pypi.python.org/pypi/PyYAML/|alternative packet encoder|both |optional (usually unused)|
 |[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Strongly recommended|
+|[aioquic](https://github.com/aiortc/aioquic)|https://pypi.org/project/aioquic/|low level network protocol|both|[quic](https://github.com/Xpra-org/xpra/issues/3376)|
 |[python-cryptography](https://cryptography.io/en/latest/)|https://pypi.python.org/pypi/cryptography|[Encryption](./Encryption)|both||
 |[python-zeroconf](https://github.com/jstasiak/python-zeroconf)|https://pypi.org/project/zeroconf/|[Multicast DNS](./Multicast-DNS) session publishing|server||
 |[python-netifaces](http://alastairs-place.net/projects/netifaces/)|https://pypi.python.org/pypi/netifaces|[Multicast DNS](./Multicast-DNS) session publishing|server||
