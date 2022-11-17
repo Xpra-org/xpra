@@ -7,3 +7,5 @@ All window management operations are handled directly by the client's operating 
 This makes a huge difference in usability when compared to other modes ([desktop](./Start-Desktop.md) and [shadow](./Shadow-Server.md)) and other remote desktop solutions like `VNC`.
 
 Obviously, this also means that unlike `VNC`, the remote windows are not trapped within a single desktop window. (except with the [html5 client](https://github.com/Xpra-org/xpra-html5)) where the windows must still be contained within the browser's canvas).
+
+This mode is not available on MS Windows and MacOS, though it can be approximated with [shadow specific applications or windows](https://github.com/Xpra-org/xpra/issues/3476)
