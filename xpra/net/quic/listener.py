@@ -111,6 +111,12 @@ class HttpServerProtocol(QuicConnectionProtocol):
         # FIXME: add a public API to retrieve peer address
         client_addr = self._http._quic._network_paths[0].addr
 
+        einfo = {}
+        for k in ("peername", "sockname", "compression", "cipher", "peercert", "sslcontext"):
+            v = self._transport.get_extra_info(k)
+            if v:
+                einfo[k] = v
+
         scope = {
             "client": (client_addr[0], client_addr[1]),
             "headers": headers,
@@ -119,6 +125,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
             "path": path,
             "query_string": query_string,
             "raw_path": raw_path,
+            "transport-info" : einfo,
         }
         if method == "CONNECT" and protocol == "websocket":
             subprotocols: List[str] = []
