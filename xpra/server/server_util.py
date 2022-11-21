@@ -471,17 +471,17 @@ def has_uinput():
     try:
         import uinput
         assert uinput
-    except NameError as e:
-        log = get_util_logger()
-        log("has_uinput()", exc_info=True)
-        log.warn("Warning: the system python uinput module looks broken:")
-        log.warn(" %s", e)
-        return False
     except ImportError as e:
         log = get_util_logger()
         log("has_uinput()", exc_info=True)
         log.info("cannot access python uinput module:")
         log.info(" %s", e)
+        return False
+    except Exception as e:
+        log = get_util_logger()
+        log("has_uinput()", exc_info=True)
+        log.warn("Warning: the system python uinput module looks broken:")
+        log.warn(" %s", e)
         return False
     try:
         uinput.fdopen()         #@UndefinedVariable
