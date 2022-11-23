@@ -20,7 +20,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}l
 #python GStreamer bindings:
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
-$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
+$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
@@ -32,7 +32,7 @@ done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #these need to be converted to PKGBUILD:
-$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}gcc
+$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${XPKG}python-lz4 ${XPKG}python-keyring openssl-devel
 for x in browser-cookie3 pylsqpack aioquic; do
 	pip3 install $x
 done
@@ -42,20 +42,19 @@ done
 echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
 echo "https://github.com/bblanchon/pdfium-binaries"
-echo "and place the 'pdfium.dll' in '$MINGW_PREFIX/bin'"
-echo
-echo "for minifying the html5 client,"
-echo "install yuicompressor"
+echo "and place the 'pdfium.dll' in '$MSYSTEM_PREFIX/bin'"
 echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
 echo
 echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10.html"
+echo "into $MSYSTEM_PREFIX/share/themes/Windows-10/"
 echo " (see ticket #2762)"
 echo
 echo "to support NVIDIA hardware accelerated encoders NVENC, NVJPEG"
 echo "and NVFBC screen capture:"
 echo "* install CUDA in its default location"
+echo "* install python-setuptools python-numpy python-pip"
 echo "* create a symbolic link so the build system can find CUDA more easily:"
 echo " `ln -sf /c/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v*/ ./cuda`"
 echo "* install `NVidia_Capture` into `$MINGW_PREFIX/lib/nvenc`"
