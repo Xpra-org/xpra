@@ -3423,7 +3423,7 @@ def display_wm_info(args):
         return get_wm_info()
 
 def run_xwait(args):
-    from xpra.x11.bindings.xwait import main as xwait_main
+    from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
     xwait_main(args)
 
 def run_wminfo(args):
