@@ -626,7 +626,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.codecs import video_helper
         return video_helper.main()
     elif mode=="nvinfo":
-        from xpra.codecs import nv_util
+        from xpra.codecs.nvidia import nv_util
         return nv_util.main()
     elif mode=="webcam":
         check_gtk()
