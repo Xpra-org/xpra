@@ -1,31 +1,13 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 set -e
 
-if [ -z "$1" ]; then
-	if [ "$MSYSTEM" == "MINGW64" ]; then
-		export XPKG="mingw-w64-x86_64-"
-	elif [ "$MSYSTEM" == "MINGW32" ]; then
-		export XPKG="mingw-w64-i686-"
-	else
-		echo "failed to detect msys platform, MSYSTEM=$MSYSTEM"
-		exit 1
-	fi
-elif [ "$1" == "x86_64" ]; then
-	export XPKG="mingw-w64-x86_64-"
-elif [ "$1" == "i386" ]; then
-	export XPKG="mingw-w64-i686-"
-else
-	echo "invalid argument '$1'"
-	echo "usage: $0 [x86_64|i386]"
-	exit 1
-fi
-
+export XPKG="mingw-w64-${MSYSTEM_ARCH}-"
 PACMAN="pacman"
 #PACMAN="echo pacman"
 
