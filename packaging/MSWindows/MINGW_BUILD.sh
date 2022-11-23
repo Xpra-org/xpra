@@ -138,11 +138,13 @@ if [ "${MSYSTEM_CARCH}" == "i686" ]; then
 	DO_CUDA="0"
 	APPID="Xpra32bit"
 	BITS="32"
+	VERSION_BITS="${VERSION} (${BITS}-bit)"
+	echo " (32-bit)"
 else
 	BUILD_TYPE="-${MSYSTEM_CARCH}"
-	echo " (64-bit)"
 	APPID="Xpra_is1"
 	BITS="64"
+	VERSION_BITS="${VERSION}"
 fi
 BUILD_TYPE="-Python3${BUILD_TYPE}"
 echo
@@ -541,8 +543,8 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 		sed -i"" "s/.*Xpra Shadow Server.*//g" xpra.iss
 	fi
 	sed -i"" "s/AppId=.*/AppId=${APPID}/g" xpra.iss
-	sed -i"" "s/AppName=.*/AppName=Xpra ${VERSION} (${BITS}-bit)/g" xpra.iss
-	sed -i"" "s/UninstallDisplayName=.*/UninstallDisplayName=Xpra ${VERSION} (${BITS}-bit)/g" xpra.iss
+	sed -i"" "s/AppName=.*/AppName=Xpra ${VERSION_BITS}/g" xpra.iss
+	sed -i"" "s/UninstallDisplayName=.*/UninstallDisplayName=Xpra ${VERSION_BITS}/g" xpra.iss
 	sed -i"" "s/AppVersion=.*/AppVersion=${FULL_VERSION}/g" xpra.iss
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
 	if [ "$?" != "0" ]; then
