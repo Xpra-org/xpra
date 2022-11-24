@@ -8,8 +8,8 @@ import os
 import sys
 
 from xpra.version_util import version_str
-from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR
-from xpra.os_util import bytestostr, get_machine_id
+from xpra.util import envint, envfloat, envbool, typedict, DETACH_REQUEST, PROTOCOL_ERROR
+from xpra.os_util import bytestostr, get_machine_id, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -24,6 +24,7 @@ log = Logger("network")
 SOCKET_TIMEOUT = envfloat("XPRA_CLIENT_SOCKET_TIMEOUT", "0.1")
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 5)
 REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
+WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", False)
 
 
 class NetworkListener(StubClientMixin):
@@ -47,7 +48,7 @@ class NetworkListener(StubClientMixin):
         def err(msg):
             raise InitException(msg)
         self.sockets = create_sockets(opts, err)
-        if opts.bind:
+        if opts.bind and (not WIN32 or WIN32_LOCAL_SOCKETS or opts.bind!="auto"):
             try:
                 local_sockets = setup_local_sockets(opts.bind,
                                                 None, opts.client_socket_dirs,
