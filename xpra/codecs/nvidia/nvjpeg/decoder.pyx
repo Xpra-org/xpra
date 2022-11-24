@@ -255,13 +255,15 @@ def get_default_device():
 
 
 def selftest(full=False):
+    from xpra.util import envbool
     from xpra.codecs.nvidia.nv_util import has_nvidia_hardware, get_nvidia_module_version
     mod_ver = get_nvidia_module_version()
-    if mod_ver<(522, 6):
-        vstr = ".".join(str(x) for x in mod_ver)
-        raise ImportError(f"nvidia module {vstr} is too old, version 522.6 or later is required")
-    if not has_nvidia_hardware():
-        raise ImportError("no nvidia GPU device found")
+    if envbool("XPRA_NVJPEG_MODULE_CHECK", True):
+        if mod_ver<(522, 6):
+            vstr = ".".join(str(x) for x in mod_ver)
+            raise ImportError(f"nvidia module {vstr} is too old, version 522.6 or later is required")
+        if not has_nvidia_hardware():
+            raise ImportError("no nvidia GPU device found")
     from xpra.codecs.codec_checks import TEST_PICTURES
     #options = {"cuda-device-context" : get_device_context()}
     for bdata in TEST_PICTURES["jpeg"]:
