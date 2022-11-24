@@ -229,6 +229,10 @@ if [ "${DO_SERVICE}" == "1" ]; then
 					fi
 				done
 			fi
+			LINK=`find "$PF\\Microsoft Visual Studio" -name "link.exe" | grep -i "Hostx64/x64/link.exe" | sort -n | head -n 1`
+			if [ ! -z "${LINK}" ]; then
+				break 2
+			fi
 		done
 	done
 	#MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
