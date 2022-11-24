@@ -939,7 +939,7 @@ def build_xpra_conf(install_dir):
         'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
         'fake_xinerama'         : fake_xinerama,
         'ssh_command'           : "auto",
-        'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
+        'key_shortcuts'         : "".join(f"key-shortcut = {x}\n" for x in get_default_key_shortcuts()),
         'remote_logging'        : "both",
         'start_env'             : start_env,
         'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
@@ -950,7 +950,7 @@ def build_xpra_conf(install_dir):
         'ssl_cert'              : ssl_cert or "",
         'ssl_key'               : ssl_key or "",
         'systemd_run'           : get_default_systemd_run(),
-        'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
+        'socket_dirs'           : "".join(f"socket-dirs = {x}\n" for x in socket_dirs),
         'log_dir'               : "auto",
         "source"                : source,
         'mdns'                  : bstr(mdns),
@@ -1206,11 +1206,11 @@ if WIN32:
         def add_gi_typelib(*libs):
             if verbose_ENABLED:
                 print(f"add_gi_typelib({libs})")
-            add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
+            add_dir('lib',      {"girepository-1.0":    [f"{x}.typelib" for x in libs]})
         def add_gi_gir(*libs):
             if verbose_ENABLED:
                 print(f"add_gi_gir({libs})")
-            add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
+            add_dir('share',    {"gir-1.0" :            [f"{x}.gir" for x in libs]})
         #convenience method for adding GI libs and "typelib" and "gir":
         def add_gi(*libs):
             add_gi_typelib(*libs)
@@ -1416,8 +1416,8 @@ if WIN32:
                         script                  = script,
                         initScript              = None,
                         #targetDir               = "dist",
-                        icon                    = "fs/share/xpra/icons/%s" % icon,
-                        targetName              = "%s.exe" % base_name,
+                        icon                    = f"fs/share/xpra/icons/{icon}",
+                        targetName              = f"{base_name}.exe",
                         base                    = base,
                         ))
 
