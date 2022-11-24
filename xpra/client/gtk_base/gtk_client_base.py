@@ -77,6 +77,7 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
 inject_css_overrides()
 
 
+# pylint: disable=import-outside-toplevel
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     __gsignals__ = {}
     #add signals from super classes (all no-arg signals)
@@ -980,7 +981,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                             log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
                             if first_time("cursor:%s" % cursor_name.upper()):
                                 log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
-                global missing_cursor_names
                 if cursor:
                     pixbuf = cursor.get_image()
                     cursorlog("image=%s", pixbuf)
