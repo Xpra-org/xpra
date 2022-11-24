@@ -54,6 +54,8 @@ echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10
 echo "into $MSYSTEM_PREFIX/share/themes/Windows-10/"
 echo " (see ticket #2762)"
 echo
+echo "you may also want to install libspng for faster PNG support"
+echo
 echo "to support NVIDIA hardware accelerated encoders NVENC, NVJPEG"
 echo "and NVFBC screen capture:"
 echo "* install CUDA in its default location"
