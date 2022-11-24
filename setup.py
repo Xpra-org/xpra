@@ -1491,7 +1491,7 @@ if WIN32:
             add_console_exe("xpra/codecs/nvidia/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
-        if nvfbc_ENABLED or nvenc_ENABLED:
+        if nvfbc_ENABLED or nvenc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_console_exe("xpra/codecs/nvidia/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
@@ -2029,63 +2029,53 @@ if nvfbc_ENABLED:
 
 nvidia_ENABLED = nvenc_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
-
-CUDA_BIN = f"{share_xpra}/cuda"
-if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
-    if ((nvenc_ENABLED or nvjpeg_encoder_ENABLED) and cuda_kernels_ENABLED):
-        def get_nvcc():
-            #find nvcc:
-            from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
-            path_options = os.environ.get("PATH", "").split(os.path.pathsep)
-            if WIN32:
-                external_includes.append("pycuda")
-                nvcc_exe = "nvcc.exe"
-                CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-                path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob(f"{CUDA_DIR}\\*\\bin"))))
-                #pycuda may link against curand, find it and ship it:
-                for cuda_bin_dir in path_options:
-                    if os.path.exists(cuda_bin_dir):
-                        add_data_files("", glob.glob(f"{cuda_bin_dir}\\curand64*.dll"))
-                        add_data_files("", glob.glob(f"{cuda_bin_dir}\\cudart64*.dll"))
-                        break
-            else:
-                nvcc_exe = "nvcc"
-                path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
-                path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
-                path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
-            options = [os.path.join(x, nvcc_exe) for x in path_options]
-            #prefer the one we find on the $PATH, if any:
-            v = shutil.which(nvcc_exe)
-            if v and (v not in options):
-                options.insert(0, v)
-            nvcc_versions = {}
-            def get_nvcc_version(command):
-                if not os.path.exists(command):
-                    return None
-                code, out, _ = get_status_output([command, "--version"])
-                if code!=0:
-                    return None
-                vpos = out.rfind(", V")
-                if vpos>0:
-                    version = out[vpos+3:].split("\n")[0]
-                    version_str = f" version {version}"
-                else:
-                    version = "0"
-                    version_str = " unknown version!"
-                print(f"found CUDA compiler: {filename}{version_str}")
-                return tuple(int(x) for x in version.split("."))
-            for filename in options:
-                vnum = get_nvcc_version(filename)
-                if vnum:
-                    nvcc_versions[vnum] = filename
-            if nvcc_versions:
-                #choose the most recent one:
-                nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
-                if len(nvcc_versions)>1:
-                    print(f" using version {nvcc_version} from {nvcc}")
-                return nvcc_version, nvcc
-            return None, None
-        nvcc_version, nvcc = get_nvcc()
+if nvidia_ENABLED:
+    CUDA_BIN = f"{share_xpra}/cuda"
+    #find nvcc:
+    from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
+    path_options = os.environ.get("PATH", "").split(os.path.pathsep)
+    if WIN32:
+        external_includes.append("pycuda")
+        nvcc_exe = "nvcc.exe"
+        CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
+        path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob(f"{CUDA_DIR}\\*\\bin"))))
+    else:
+        nvcc_exe = "nvcc"
+        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
+        path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
+        path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
+    options = [os.path.join(x, nvcc_exe) for x in path_options]
+    #prefer the one we find on the $PATH, if any:
+    v = shutil.which(nvcc_exe)
+    if v and (v not in options):
+        options.insert(0, v)
+    nvcc_versions = {}
+    def get_nvcc_version(command):
+        if not os.path.exists(command):
+            return None
+        code, out, _ = get_status_output([command, "--version"])
+        if code!=0:
+            return None
+        vpos = out.rfind(", V")
+        if vpos>0:
+            version = out[vpos+3:].split("\n")[0]
+            version_str = f" version {version}"
+        else:
+            version = "0"
+            version_str = " unknown version!"
+        print(f"found CUDA compiler: {filename}{version_str}")
+        return tuple(int(x) for x in version.split("."))
+    for filename in options:
+        vnum = get_nvcc_version(filename)
+        if vnum:
+            nvcc_versions[vnum] = filename
+    nvcc_version = nvcc = None
+    if nvcc_versions:
+        #choose the most recent one:
+        nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+        if len(nvcc_versions)>1:
+            print(f" using version {nvcc_version} from {nvcc}")
+    if cuda_kernels_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED):
         def get_gcc_version():
             if CC_is_clang():
                 return (0, )
@@ -2198,6 +2188,14 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_encoder_ENABLED:
             t.join()
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
+    if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED):
+        assert nvcc_versions
+        CUDA_BIN_DIR = os.path.dirname(nvcc)
+        add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
+        #if pycuda is built with curand, add this:
+        #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
+        if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
+            add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 

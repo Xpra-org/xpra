@@ -372,6 +372,8 @@ mv *dll lib/
 cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 #and keep pdfium:
 mv lib/*pdfium*.dll ./
+#keep cuda bits:
+mv lib/cuda* lib/nvjpeg* ./
 pushd lib > /dev/null
 #remove all the pointless duplication:
 for x in `ls *dll`; do
