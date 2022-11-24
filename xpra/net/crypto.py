@@ -308,7 +308,8 @@ def _get_cipher(key, iv, mode=DEFAULT_MODE):
     mode_class = getattr(modes, mode, None)
     if mode_class is None:
         raise ValueError(f"no {mode} mode in this version of python-cryptography")
-    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)))
+    from cryptography.hazmat.backends import default_backend
+    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=default_backend())
 
 
 def main():
