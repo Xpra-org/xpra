@@ -41,6 +41,10 @@ done
 
 echo "to package the EXE, install verpatch:"
 echo "https://github.com/pavel-a/ddverpatch/releases"
+echo "and innosetup":
+echo "https://jrsoftware.org/isdl.php"
+echo "to generate the MSI, install MSIWrapper:"
+echo "https://www.exemsi.com/"
 echo
 echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
