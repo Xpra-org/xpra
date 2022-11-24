@@ -41,8 +41,10 @@ ALL_PADDING_OPTIONS = (PADDING_LEGACY, PADDING_PKCS7)
 INITIAL_PADDING = os.environ.get("XPRA_CRYPTO_INITIAL_PADDING", PADDING_LEGACY)
 DEFAULT_PADDING = PADDING_LEGACY
 PREFERRED_PADDING = os.environ.get("XPRA_CRYPTO_PREFERRED_PADDING", PADDING_PKCS7)
-assert PREFERRED_PADDING in ALL_PADDING_OPTIONS, "invalid preferred padding: %s" % PREFERRED_PADDING
-assert INITIAL_PADDING in ALL_PADDING_OPTIONS, "invalid padding: %s" % INITIAL_PADDING
+if PREFERRED_PADDING not in ALL_PADDING_OPTIONS:
+    raise ValueError(f"invalid preferred padding: {PREFERRED_PADDING}")
+if INITIAL_PADDING not in ALL_PADDING_OPTIONS:
+    raise ValueError(f"invalid padding: {INITIAL_PADDING}")
 #make sure the preferred one is first in the list:
 def get_padding_options():
     options = [PREFERRED_PADDING]
@@ -53,6 +55,7 @@ def get_padding_options():
 PADDING_OPTIONS = get_padding_options()
 
 
+# pylint: disable=import-outside-toplevel
 CIPHERS = []
 MODES = []
 KEY_HASHES = []
@@ -155,7 +158,8 @@ def validate_backend():
             log(" encrypted(%s)=%s", m, evs)
             dv = dec.decrypt(ev)
             log(" decrypted(%s)=%s", evs, dv)
-            assert dv==m, "expected %r but got %r" % (m, dv)
+            if dv!=m:
+                raise RuntimeError(f"expected {m!r} but got {dv!r}")
             log(" test passed")
 
 
@@ -164,7 +168,7 @@ def pad(padding, size):
         return b" "*size
     if padding==PADDING_PKCS7:
         return pack("B", size)*size
-    raise Exception("invalid padding: %s" % padding)
+    raise Exception(f"invalid padding: {padding}")
 
 def choose_padding(options):
     if PREFERRED_PADDING in options:
@@ -172,7 +176,7 @@ def choose_padding(options):
     for x in options:
         if x in PADDING_OPTIONS:
             return x
-    raise Exception("cannot find a valid padding in %s" % str(options))
+    raise Exception(f"cannot find a valid padding in {options}")
 
 
 def get_iv():
@@ -226,7 +230,8 @@ def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     if not ciphername:
         return None, 0
     assert key_size>=16
-    assert MIN_ITERATIONS<=iterations<=MAX_ITERATIONS, "invalid number of iterations %i" % iterations
+    if MIN_ITERATIONS<iterations or iterations>MAX_ITERATIONS:
+        raise ValueError(f"invalid number of iterations {iterations}")
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
@@ -243,7 +248,8 @@ def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     if not ciphername:
         return None, 0
     assert key_size>=16
-    assert MIN_ITERATIONS<=iterations<=MAX_ITERATIONS, "invalid number of iterations %i" % iterations
+    if MIN_ITERATIONS<iterations or iterations>MAX_ITERATIONS:
+        raise ValueError(f"invalid number of iterations {iterations}")
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
@@ -257,7 +263,6 @@ def get_cipher_decryptor(key, iv, mode):
             return int(s)
         except ValueError:
             return 0
-    import cryptography
     version = cryptography.__version__
     supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
     log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
@@ -302,7 +307,7 @@ def _get_cipher(key, iv, mode=DEFAULT_MODE):
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     mode_class = getattr(modes, mode, None)
     if mode_class is None:
-        raise ValueError("no %s mode in this version of python-cryptography" % mode)
+        raise ValueError(f"no {mode} mode in this version of python-cryptography")
     return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)))
 
 
