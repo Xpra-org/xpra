@@ -8,7 +8,7 @@ import os
 import sys
 
 from xpra.version_util import version_str
-from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR
+from xpra.util import envint, envfloat, envbool, typedict, DETACH_REQUEST, PROTOCOL_ERROR
 from xpra.os_util import bytestostr, get_machine_id, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
