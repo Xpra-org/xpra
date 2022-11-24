@@ -500,6 +500,11 @@ if [ "${BUNDLE_DESKTOPLOGON}" == "1" ]; then
 	done
 fi
 
+if [ "${DO_CUDA}" == "1" ]; then
+	#pycuda wants a CUDA_PATH with "/bin" in it:
+	mkdir "${DIST}/bin"
+fi
+
 if [ "${DO_VERPATCH}" == "1" ]; then
 	for exe in `ls dist/*exe | grep -v Plink.exe`; do
 		tool_name=`echo $exe | sed 's+dist/++g;s+Xpra_++g;s+Xpra-++g;s+_+ +g;s+-+ +g;s+\.exe++g'`

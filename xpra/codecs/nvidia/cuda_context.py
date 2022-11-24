@@ -16,10 +16,13 @@ from xpra.codecs.codec_constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, envbool, csv, first_time
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
-    get_resources_dir,
+    get_resources_dir, get_app_dir,
     )
-from xpra.os_util import load_binary_file, is_WSL
+from xpra.os_util import load_binary_file, is_WSL, WIN32
 from xpra.log import Logger
+
+if WIN32 and not os.environ.get("CUDA_PATH"):
+    os.environ["CUDA_PATH"] = os.path.join(get_app_dir(), "bin")
 
 with numpy_import_lock:
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
