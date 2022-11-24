@@ -21,6 +21,7 @@ from xpra.util import (
 from xpra.os_util import (
     bytestostr, strtobytes, hexstr, load_binary_file, osexpand,
     WIN32, OSX, POSIX, is_Wayland,
+    memoryview_to_bytes,
     )
 from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
@@ -1020,7 +1021,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if w<=fw and h<=fh:
                 cursorlog("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
                 from PIL import Image  # @UnresolvedImport
-                img = Image.frombytes("RGBA", (w, h), pixels, "raw", "BGRA", w*4, 1)
+                img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w*4, 1)
                 target = Image.new("RGBA", (fw, fh))
                 target.paste(img, (0, 0, w, h))
                 pixels = target.tobytes("raw", "BGRA")
