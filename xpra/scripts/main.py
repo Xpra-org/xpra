@@ -39,7 +39,7 @@ from xpra.os_util import (
     bytestostr, use_tty, osexpand,
     OSEnvContext,
     set_proc_title,
-    is_systemd_pid1, is_socket,
+    is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -2965,19 +2965,19 @@ def run_list_mdns(error_cb, extra_args):
                 session = text.strget("session")
                 dtype = text.strget("type")
                 if i==0:
-                    print("* user '%s' on '%s'" % (username, host))
+                    print(f"* user {username!r} on {host!r}")
                     if session:
-                        print(" %s session '%s', uuid=%s" % (dtype, session, uuid))
+                        print(f" {dtype} session {session!r}, uuid={uuid}")
                     elif uuid:
-                        print(" uuid=%s" % uuid)
+                        print(f" uuid={uuid}")
                 iinfo = ""
                 if iface:
-                    iinfo = ", interface %s" % iface
-                print(" + %s endpoint on host %s, port %i%s" % (mode, address, port, iinfo))
+                    iinfo = f", interface {iface}"
+                print(f" + {mode} endpoint on host {address}, port {port}{iinfo}")
                 dstr = ""
                 if display.startswith(":"):
                     dstr = display[1:]
-                uri = "%s://%s@%s:%s/%s" % (mode, username, address, port, dstr)
+                uri = f"{mode}://{username}@{address}:{port}/{dstr}"
                 print("   \"%s\"" % uri)
             shown.add(uq)
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
@@ -3321,7 +3321,7 @@ def run_clean_displays(args):
         print("%4s    %-8s    %s" % (display, pid, cmd))
     print()
     WAIT = 5
-    print("These displays will be forcibly terminated in %i seconds" % (WAIT,))
+    print(f"These displays will be forcibly terminated in {WAIT} seconds")
     print("Press Control-C to abort")
     for _ in range(WAIT):
         sys.stdout.write(".")
@@ -3331,7 +3331,7 @@ def run_clean_displays(args):
         try:
             os.kill(pid, signal.SIGINT)
         except OSError as e:
-            print("Unable to send SIGINT to %i: %s" % (pid, e))
+            print(f"Unable to send SIGINT to {pid}: {e}")
     print("")
     print("Done")
 
