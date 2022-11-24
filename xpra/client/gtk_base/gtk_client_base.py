@@ -994,6 +994,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
         if not pixbuf:
+            if not pixels:
+                cursorlog.warn("Warning: no cursor pixel data")
+                cursorlog.warn(f" in cursor data {cursor_data}")
+                return None
             if len(pixels)<w*h*4:
                 cursorlog.warn("Warning: not enough pixels provided in cursor data")
                 cursorlog.warn(" %s needed and only %s bytes found:", w*h*4, len(pixels))
