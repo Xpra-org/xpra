@@ -19,7 +19,8 @@ from xpra.util import (
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
-    bytestostr, strtobytes, hexstr, load_binary_file, osexpand,
+    bytestostr, strtobytes, memoryview_to_bytes,
+    hexstr, load_binary_file, osexpand,
     WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.common import FULL_INFO
@@ -1023,7 +1024,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 except ImportError:
                     return None
-                img = Image.frombytes("RGBA", (w, h), pixels, "raw", "BGRA", w*4, 1)
+                img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w*4, 1)
                 target = Image.new("RGBA", (fw, fh))
                 target.paste(img, (0, 0, w, h))
                 pixels = target.tobytes("raw", "BGRA")
