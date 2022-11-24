@@ -381,7 +381,7 @@ class WindowBackingBase:
 
     def assign_cuda_context(self, opengl=False):
         if self.cuda_context is None:
-            from xpra.codecs.nvjpeg.decoder import get_default_device  # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
+            from xpra.codecs.nvidia.nvjpeg.decoder import get_default_device  # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
             dev = get_default_device()
             assert dev
             #make this an opengl compatible context:
@@ -473,10 +473,17 @@ class WindowBackingBase:
     def do_paint_jpeg(self, encoding, img_data, x, y, width, height, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
         log("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
+        img = None
         if self.nvjpeg_decoder and not alpha_offset:
-            with self.assign_cuda_context(False):
-                img = self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
-        else:
+            try:
+                with self.assign_cuda_context(False):
+                    img = self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
+            except Exception as e:
+                if first_time(str(e)):
+                    log.error("Error accessing cuda context", exc_info=True)
+                else:
+                    log("cuda context error, again")
+        if img is None:
             if encoding=="jpeg":
                 rgb_format = "RGBX"
             elif encoding=="jpega":
