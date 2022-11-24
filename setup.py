@@ -235,7 +235,7 @@ dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "lib
 csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
 nvjpeg_encoder_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
-nvjpeg_decoder_ENABLED = False
+nvjpeg_decoder_ENABLED = nvjpeg_encoder_ENABLED
 nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
 nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
