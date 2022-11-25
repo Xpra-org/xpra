@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,7 +34,7 @@ def check_host_key(hostname, key):
         return do_check_host_key(hostname, key.get_name(), key.asbytes())
     except Exception as e:
         log("check_host_key(%r, %r)", hostname, key, exc_info=True)
-        return "error checking sshfp record: %s" % e
+        return f"error checking sshfp record: {e}"
 
 def do_check_host_key(hostname, keytype, keydata) -> str:
     resolver = Resolver()
@@ -43,20 +43,20 @@ def do_check_host_key(hostname, keytype, keydata) -> str:
 
     key_alg = _key_algorithms.get(keytype)
     if key_alg is None:
-        return "Unsupported key type for SSHFP: %s" % keytype
+        return f"Unsupported key type for SSHFP: {keytype}"
     log("key algorithm for %s: %s", keytype, key_alg)
 
     try:
         resp = resolver.query(hostname, "SSHFP")
     except (NoAnswer, NoNameservers):
-        return "could not obtain SSHFP records for host '%s'" % hostname
+        return f"could not obtain SSHFP records for host {hostname!r}"
 
     for item in resp:
         try:
             alg, fg_type, fg = item.to_text().split()
             log("found SSHFP record: %s", (alg, fg_type, fg))
         except ValueError:
-            return "invalid SSHFP record format: %s" % item.to_text()
+            return "invalid SSHFP record format: "+item.to_text()
 
         if alg != key_alg:
             log("SSHFP record does not match algorithm")
@@ -81,11 +81,11 @@ def main(argv):
         log.enable_debug()
         argv.remove("-v")
     if len(argv)!=3:
-        print("usage: %s hostname rsaprivatekeyfile [-v]" % argv[0])
+        print(f"usage: {argv[0]} hostname rsaprivatekeyfile [-v]")
         return 1
     hostname = argv[1]
     keyfile = argv[2]
-    from paramiko import RSAKey
+    from paramiko import RSAKey  # pylint: disable=import-outside-toplevel
     key = RSAKey.from_private_key_file(keyfile)
     return check_host_key(hostname, key)
 
