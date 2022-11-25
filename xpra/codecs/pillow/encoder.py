@@ -128,6 +128,7 @@ def encode(coding : str, image, options=None):
     else:
         if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
             raise ValueError(f"invalid pixel format {pixel_format}")
+    pil_import_format = pixel_format.replace("A", "a")
     try:
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
@@ -135,10 +136,10 @@ def encode(coding : str, image, options=None):
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
-        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
     except Exception as e:
         log("Image.frombuffer%s", (rgb, (w, h), len(pixels),
-                                   "raw", pixel_format, image.get_rowstride(), 1),
+                                   "raw", pil_import_format, image.get_rowstride(), 1),
                                    exc_info=True)
         log.error("Error: pillow failed to import image:")
         log.error(" %s", e)
