@@ -159,6 +159,7 @@ glInitFrameTerminatorGREMEDY = None
 glFrameTerminatorGREMEDY = None
 if OPENGL_DEBUG:
     try:
+        # pylint: disable=ungrouped-imports
         from OpenGL.GL.KHR.debug import (
             GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS,
             glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR,
@@ -196,6 +197,7 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
 
 
 if POSIX and not OSX:
+    # pylint: disable=ungrouped-imports
     from xpra.gtk_common.error import xsync
     paint_context_manager = xsync
 else:
@@ -327,8 +329,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.RGB_MODES.append("BGR565")
                 self.RGB_MODES.append("RGB565")
         else:
-            if self.bit_depth not in (0, 24, 32) and first_time("bit-depth-%i" % self.bit_depth):
-                log.warn("Warning: invalid bit depth %i, using 24", self.bit_depth)
+            if self.bit_depth not in (0, 24, 32) and first_time(f"bit-depth-{self.bit_depth}"):
+                log.warn(f"Warning: invalid bit depth {self.bit_depth}, using 24")
             #assume 24:
             if self._alpha_enabled:
                 self.internal_format = GL_RGBA8
@@ -353,7 +355,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def __repr__(self):
-        return "GLWindowBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
+        return f"GLWindowBacking({self.wid}, {self.size}, {self.pixel_format})"
 
     def init(self, ww : int, wh : int, bw : int, bh : int):
         #re-init gl projection with new dimensions
@@ -410,7 +412,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not bool(glStringMarkerGREMEDY):
             return
         s = str(msg)
-        from ctypes import c_char_p
+        from ctypes import c_char_p  # pylint: disable=import-outside-toplevel
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
@@ -434,7 +436,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
         # Initialize string_marker GL debugging extension if available
         if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() is True:
-            log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
+            log.info("Extension GL_GREMEDY_string_marker available.")
+            log.info(" Will output detailed information about each frame.")
         else:
             # General case - running without debugger, extension not available
             glStringMarkerGREMEDY = None
@@ -474,7 +477,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if err:
                 log.error("OpenGL shader %s failed:", name)
                 log.error(" %s", err)
-                raise Exception("OpenGL shader %s setup failure: %s" % (name, err))
+                raise Exception(f"OpenGL shader {name} setup failure: {err}")
             log("%s shader initialized", name)
 
     def gl_init(self, skip_fbo=False):
@@ -489,7 +492,7 @@ class GLWindowBackingBase(WindowBackingBase):
         mt = get_max_texture_size()
         w, h = self.size
         if w>mt or h>mt:
-            raise Exception("invalid texture dimensions %ix%i, maximum is %i" % (w, h, mt))
+            raise ValueError(f"invalid texture dimensions {w}x{h}, maximum size is {mt}x{mt}")
         self.gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
                        self.render_size, self.size, mt)
         # Initialize viewport and matrices for 2D rendering
@@ -613,16 +616,16 @@ class GLWindowBackingBase(WindowBackingBase):
 
         for x,y,w,h,xdelta,ydelta in scrolls:
             if abs(xdelta)>=bw:
-                fail("invalid xdelta value: %i, backing width is %i" % (xdelta, bw))
+                fail(f"invalid xdelta value: {xdelta}, backing width is {bw}")
                 continue
             if abs(ydelta)>=bh:
-                fail("invalid ydelta value: %i, backing height is %i" % (ydelta, bh))
+                fail(f"invalid ydelta value: {ydelta}, backing height is {bh}")
                 continue
             if ydelta==0 and xdelta==0:
                 fail("scroll has no delta!")
                 continue
             if w<=0 or h<=0:
-                fail("invalid scroll area size: %ix%i" % (w, h))
+                fail(f"invalid scroll area size: {w}x{h}")
                 continue
             #these should be errors,
             #but desktop-scaling can cause a mismatch between the backing size
@@ -640,12 +643,14 @@ class GLWindowBackingBase(WindowBackingBase):
                 if h<=0:
                     continue        #nothing left!
             if x+xdelta<0:
-                fail("horizontal scroll by %i:" % xdelta
-                     +" rectangle %s overflows the backing buffer size %s" % ((x, y, w, h), self.size))
+                rect = (x, y, w, h)
+                fail(f"horizontal scroll by {xdelta}"
+                     +f" rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             if y+ydelta<0:
-                fail("vertical scroll by %i:" % ydelta
-                     +" rectangle %s overflows the backing buffer size %s" % ((x, y, w, h), self.size))
+                rect = (x, y, w, h)
+                fail(f"vertical scroll by {ydelta}"
+                     +f" rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
             glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
@@ -821,7 +826,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glReadBuffer(GL_COLOR_ATTACHMENT0)
         glViewport(0, 0, bw, bh)
         size = bw*bh*4
-        from xpra.buffers.membuf import get_membuf  #@UnresolvedImport
+        from xpra.buffers.membuf import get_membuf  #@UnresolvedImport pylint: disable=import-outside-toplevel
         membuf = get_membuf(size)
         glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, membuf.get_mem_ptr())
         pixels = memoryview(membuf).tobytes()
@@ -1017,7 +1022,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if hasattr(img_data, "raw"):
             return "zerocopy:mmap", img_data.raw
         #everything else.. copy to bytes (aka str):
-        return "copy:bytes(%s)" % type(img_data), strtobytes(img_data)
+        return f"copy:bytes({type(img_data)})", strtobytes(img_data)
 
     def set_alignment(self, width : int, rowstride : int, pixel_format):
         bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4, Y -> 1, YY -> 2
@@ -1065,7 +1070,7 @@ class GLWindowBackingBase(WindowBackingBase):
             alpha_offset = options.intget("alpha-offset", 0)
             img = self.jpeg_decoder.decompress_to_rgb("BGRA", img_data, alpha_offset)
         else:
-            raise Exception("invalid encoding %r" % encoding)
+            raise ValueError(f"invalid encoding {encoding}")
         w = img.get_width()
         h = img.get_height()
         rgb_format = img.get_pixel_format()
@@ -1097,7 +1102,8 @@ class GLWindowBackingBase(WindowBackingBase):
             log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
             mapping = cuda_pbo.map(stream)
             ptr, msize = mapping.device_ptr_and_size()
-            assert msize>=size, "registered buffer size %i too small for pbo size %i" % (msize, size)
+            if msize<size:
+                raise ValueError(f"registered buffer size {msize} too small for pbo size {size}")
             log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
             memcpy_dtod_async(ptr, cuda_buffer, size, stream)
             mapping.unmap(stream)
@@ -1106,7 +1112,8 @@ class GLWindowBackingBase(WindowBackingBase):
             stream.synchronize()
 
         rgb_format = img.get_pixel_format()
-        assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
+        if rgb_format not in ("RGB", "BGR", "RGBA", "BGRA"):
+            raise ValueError(f"unexpected rgb format {rgb_format}")
         pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
 
         target = GL_TEXTURE_RECTANGLE_ARB
@@ -1200,9 +1207,11 @@ class GLWindowBackingBase(WindowBackingBase):
 
             #convert it to a GL constant:
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
-            assert pformat is not None, "could not find pixel format for %s" % rgb_format
+            if pformat is None:
+                raise ValueError(f"could not find pixel format for {rgb_format!r}")
             ptype = PIXEL_FORMAT_TO_DATATYPE.get(rgb_format)
-            assert pformat is not None, "could not find pixel type for %s" % rgb_format
+            if pformat is None:
+                raise ValueError(f"could not find pixel type for {rgb_format!r}")
 
             self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal format=%s",
                            rgb_format, x, y, width, height, len(img_data), render_width, render_height,
@@ -1244,10 +1253,10 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks)
             return
         except GLError as e:
-            message = "OpenGL %s paint failed: %r" % (rgb_format, e)
+            message = f"OpenGL {rgb_format} paint failed: {e}"
             log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         except Exception as e:
-            message = "OpenGL %s paint error: %s" % (rgb_format, e)
+            message = f"OpenGL {rgb_format} paint error: {e}"
             log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 
@@ -1287,8 +1296,8 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"), \
-                "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
+            if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"):
+                raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
             if not context:
                 log("%s._do_paint_rgb(..) no context!", self)
                 fire_paint_callbacks(callbacks, False, "failed to get a gl context")
@@ -1312,10 +1321,10 @@ class GLWindowBackingBase(WindowBackingBase):
             img.free()
             return
         except GLError as e:
-            message = "OpenGL %s paint failed: %r" % (encoding, e)
+            message = f"OpenGL {encoding} paint failed: {e!r}"
             log.error("Error painting planar update", exc_info=True)
         except Exception as e:
-            message = "OpenGL %s paint failed: %s" % (encoding, e)
+            message = f"OpenGL {encoding} paint failed: {e}"
             log.error("Error painting planar update", exc_info=True)
         log.error(" flush=%i, image=%s, coords=%s, size=%ix%i",
                   flush, img, (x, y, enc_width, enc_height), width, height)
