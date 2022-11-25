@@ -169,6 +169,7 @@ def safe_lookup(config_obj, host):
 
 
 def connect_to(display_desc):
+    log(f"connect_to({display_desc})")
     #plain socket attributes:
     host = display_desc["host"]
     port = display_desc.get("port", 22)
