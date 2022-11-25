@@ -1447,6 +1447,10 @@ When unspecified, all the available codecs are allowed and the first one is used
                       dest="ssl_key", default=defaults.ssl_key,
                       help="Key file to use."
                       +" Default: '%default'.")
+    group.add_option("--ssl-key-password", action="store",
+                      dest="ssl_key_password", default=defaults.ssl_key_password,
+                      help="Password to use for decrypting the key file."
+                      +" Default: '%default'.")
     group.add_option("--ssl-cert", action="store",
                       dest="ssl_cert", default=defaults.ssl_cert,
                       help="Certifcate file to use."

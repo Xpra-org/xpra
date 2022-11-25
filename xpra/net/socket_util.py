@@ -997,7 +997,7 @@ def get_ssl_verify_mode(verify_mode_str):
         raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: "+csv(values))
     return ssl_cert_reqs
 
-def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None,
+def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
                         client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
                         check_hostname=False, server_hostname=None,
@@ -1075,10 +1075,10 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             cert = find_ssl_cert()
             if not cert:
                 raise InitException("failed to automatically locate an SSL certificate to use")
-        SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
-        ssllog("context.load_cert_chain%s", (cert or None, key or None, SSL_KEY_PASSWORD))
+        key_password = key_password or os.environ.get("XPRA_SSL_KEY_PASSWORD")
+        ssllog("context.load_cert_chain%s", (cert or None, key or None, key_password))
         try:
-            context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)
+            context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=key_password)
         except ssl.SSLError as e:
             ssllog("load_cert_chain", exc_info=True)
             raise InitException(f"SSL error, failed to load certificate chain: {e}") from e
@@ -1130,7 +1130,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     assert tcp_socket
     from xpra.log import Logger
     ssllog = Logger("ssl")
-    ssllog("do_wrap_socket(%s, %s)", tcp_socket, context)
+    ssllog("do_wrap_socket(%s, %s, %s)", tcp_socket, context, kwargs)
     import ssl
     if WIN32:
         #on win32, setting the tcp socket to blocking doesn't work?

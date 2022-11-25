@@ -1071,6 +1071,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         ssl_ca_certs = ssl_options.get("ca-certs", opts.ssl_ca_certs)
         ssl_cert = ssl_options.get("cert", opts.ssl_cert)
         ssl_key = ssl_options.get("key", opts.ssl_key)
+        ssl_key_password = ssl_options.get("key-password", opts.ssl_key_password)
         ssl_server_name = ssl_options.get("server-hostname")
         try:
             from xpra.net.quic.client import quic_connect
@@ -1080,7 +1081,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                        f"cannot use quic sockets: {e}") from None
         conn = quic_connect(host, port, path,
-                     ssl_cert, ssl_key,
+                     ssl_cert, ssl_key, ssl_key_password,
                      ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
         return conn
 

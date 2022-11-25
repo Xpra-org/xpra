@@ -134,14 +134,14 @@ class WebSocketClient(QuicConnectionProtocol):
 
 
 def quic_connect(host : str, port : int, path : str,
-                 ssl_cert : str, ssl_key : str,
+                 ssl_cert : str, ssl_key : str, ssl_key_password : str,
                  ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
     configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
     configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
-        configuration.load_cert_chain(ssl_cert, ssl_key, None)
+        configuration.load_cert_chain(ssl_cert, ssl_key, ssl_key_password)
     if ssl_server_name:
         configuration.server_name = ssl_server_name
     else:

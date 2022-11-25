@@ -580,6 +580,7 @@ OPTION_TYPES = {
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
+                    "ssl-key-password"  : str,
                     "ssl-cert"          : str,
                     "ssl-protocol"      : str,
                     "ssl-ca-certs"      : str,
@@ -1017,6 +1018,7 @@ def get_defaults():
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",
+                    "ssl-key-password"  : "",
                     "ssl-cert"          : "",
                     "ssl-protocol"      : ssl_protocol,
                     "ssl-ca-certs"      : "default",
