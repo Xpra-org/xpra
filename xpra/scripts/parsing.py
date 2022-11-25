@@ -607,10 +607,12 @@ def parse_ssh_option(ssh_setting):
             ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):
                 Logger("ssh").info("using paramiko ssh backend")
-        except ImportError as e:
-            if is_debug_enabled("ssh"):
-                Logger("ssh").info(f"no paramiko: {e}")
+        except ImportError:
+            log = Logger("ssh")
+            log(f"parse_ssh_option({ssh_setting})", exc_info=True)
             from xpra.platform.features import DEFAULT_SSH_COMMAND
+            if is_debug_enabled("ssh"):
+                log.info(f"paramiko not found, using {DEFAULT_SSH_COMMAND}")
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
