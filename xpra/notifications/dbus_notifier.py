@@ -128,7 +128,6 @@ class DBUS_Notifier(NotifierBase):
                 rowstride = w*channels
                 has_alpha = img.mode=="RGBA"
                 pixel_data = bytearray(img.tobytes("raw", img.mode))
-                log.info("pixel_data=%s", type(pixel_data))
                 args = w, h, rowstride, has_alpha, 8, channels, pixel_data
                 hints["image-data"] = tuple(native_to_dbus(x) for x in args)
                 #hints["image-data"] = args
