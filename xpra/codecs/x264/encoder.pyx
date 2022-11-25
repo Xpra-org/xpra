@@ -423,6 +423,8 @@ def get_spec(encoding, colorspace):
     width_mask = 0xFFFE
     if colorspace in ("YUV444P", "BGRX"):
         width_mask = 0xFFFF
+    if colorspace in ("YUV420P", "YUV422P"):
+        height_mask = 0xFFFE
     return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
                       has_lossless_mode=has_lossless_mode,
                       codec_class=Encoder, codec_type=get_type(),
@@ -507,6 +509,8 @@ cdef class Encoder:
         assert options.intget("scaled-height", height)==height, "x264 encoder does not handle scaling"
         if width%2!=0 and src_format not in ("BGRX", "YUV444P"):
             raise ValueError(f"invalid odd width {width} for {src_format}")
+        if height%2!=0 and src_format in ("YUV420P", "YUV422P"):
+            raise ValueError(f"invalid odd height {height} for {src_format}")
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
