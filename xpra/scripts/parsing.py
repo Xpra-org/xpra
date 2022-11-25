@@ -500,7 +500,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         add_path()
         add_query()
         display = desc.get("display")
-        args = []
+        args = desc.setdefault("display_as_args", [display])
         if protocol=="vnc+ssh" and display:
             #ie: "vnc+ssh://host/10" -> path="/10"
             #use a vnc display string with the proxy command
@@ -520,7 +520,6 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         if "proxy_host" in desc:
             full_ssh += get_ssh_proxy_args(desc, ssh)
         desc["full_ssh"] = full_ssh
-        desc["display_as_args"] = args
         return desc
 
     if protocol=="socket":
