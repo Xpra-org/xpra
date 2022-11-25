@@ -1942,6 +1942,9 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
                 pos = proxy_args.index(display)
             except ValueError:
                 pos = -1
+            if display.replace(".", "").isnumeric():
+                #numeric displays are X11 display names:
+                display = f":{display}"
             if mode=="shadow" and geometry:
                 display += f",{geometry}"
             if pos>=0:
