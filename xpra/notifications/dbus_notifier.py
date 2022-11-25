@@ -18,7 +18,7 @@ except ImportError:
     #beware: this import has side-effects:
     import dbus.glib
     assert dbus.glib
-import dbus.exceptions
+import dbus.exceptions  # pylint: disable=wrong-import-order
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
 
@@ -120,7 +120,7 @@ class DBUS_Notifier(NotifierBase):
         image_data = h.get("image-data")
         if image_data and bytestostr(image_data[0])=="png":
             try:
-                from xpra.codecs.pillow.decoder import open_only
+                from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
                 img_data = image_data[3]
                 img = open_only(img_data, ("png",))
                 w, h = img.size
@@ -209,6 +209,7 @@ class DBUS_Notifier(NotifierBase):
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     from gi.repository import GLib, Gtk
     def show():
         n = DBUS_Notifier_factory()

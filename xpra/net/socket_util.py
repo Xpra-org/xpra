@@ -256,41 +256,48 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
     return d
 
 
+def looks_like_xpra_packet(data):
+    if data[0]!=ord("P"):
+        return False
+    if len(data)<8:
+        return False
+    from xpra.net.protocol.header import (
+        unpack_header, HEADER_SIZE,
+        FLAGS_RENCODE, FLAGS_YAML,
+        LZ4_FLAG, BROTLI_FLAG,
+        )
+    header = data.ljust(HEADER_SIZE, b"\0")
+    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
+    #this normally used on the first packet, so the packet index should be 0
+    #and I don't think we can make packets smaller than 8 bytes,
+    #even with packet name aliases and rencode
+    #(and aliases should not be defined for the initial packet anyway)
+    if packet_index!=0:
+        return False
+    if data_size<8 or data_size>=256*1024*1024:
+        return False
+    rencode = bool(protocol_flags & FLAGS_RENCODE)
+    yaml = bool(protocol_flags & FLAGS_YAML)
+    lz4 = bool(protocol_flags & LZ4_FLAG)
+    brotli = bool(protocol_flags & BROTLI_FLAG)
+    compressors = sum((lz4, brotli))
+    #only one compressor can be enabled:
+    if compressors>1:
+        return False
+    if compressors==1 and compression_level<=0:
+        #if compression is enabled, the compression level must be set:
+        return False
+    if rencode and yaml:
+        #rencode and yaml are mutually exclusive:
+        return False
+    #we passed all the checks
+    return True
 
 def guess_packet_type(data):
     if not data:
         return None
-    if data[0]==ord("P"):
-        from xpra.net.protocol.header import (
-            unpack_header, HEADER_SIZE,
-            FLAGS_RENCODE, FLAGS_YAML,
-            LZ4_FLAG, BROTLI_FLAG,
-            )
-        header = data.ljust(HEADER_SIZE, b"\0")
-        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
-        #this normally used on the first packet, so the packet index should be 0
-        #and I don't think we can make packets smaller than 8 bytes,
-        #even with packet name aliases and rencode
-        #(and aliases should not be defined for the initial packet anyway)
-        if packet_index==0 and 8<data_size<256*1024*1024:
-            rencode = bool(protocol_flags & FLAGS_RENCODE)
-            yaml = bool(protocol_flags & FLAGS_YAML)
-            lz4 = bool(protocol_flags & LZ4_FLAG)
-            brotli = bool(protocol_flags & BROTLI_FLAG)
-            def is_xpra():
-                compressors = sum((lz4, brotli))
-                #only one compressor can be enabled:
-                if compressors>1:
-                    return False
-                if compressors==1 and compression_level<=0:
-                    #if compression is enabled, the compression level must be set:
-                    return False
-                if rencode and yaml:
-                    #rencode and yaml are mutually exclusive:
-                    return False
-                return True
-            if is_xpra():
-                return "xpra"
+    if looks_like_xpra_packet(data):
+        return "xpra"
     if data[:4]==b"SSH-":
         return "ssh"
     if data[0]==0x16:
