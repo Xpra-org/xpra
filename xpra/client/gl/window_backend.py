@@ -57,6 +57,7 @@ class FakeClient(AdHocStruct):
         self.encoding_defaults = {}
         self.get_window_frame_sizes = get_None
         self._focused = None
+        self._remote_server_mode = "seamless"
         self.wheel_smooth = False
         self.pointer_grabbed = None
         def noop(*_args):
@@ -78,6 +79,8 @@ class FakeClient(AdHocStruct):
         log("send%s", args)
     def get_current_modifiers(self):
         return ()
+    def get_raw_mouse_position(self):
+        return 0, 0
     def get_mouse_position(self):
         return 0, 0
     def server_ok(self):
