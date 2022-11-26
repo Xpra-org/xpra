@@ -199,7 +199,7 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     log("webp decompress found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s", config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
     cdef int stride = 4 * config.input.width
-    config.output.colorspace = MODE_bgrA
+    config.output.colorspace = MODE_BGRA
     if has_alpha:
         if len(rgb_format or "")!=4:
             #use default if the format given is not valid:
