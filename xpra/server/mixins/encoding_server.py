@@ -163,7 +163,7 @@ class EncodingServer(StubServerMixin):
                 add_encodings("webp")
                 if "webp" not in lossless:
                     lossless.append("webp")
-        for codec_name in ("avif", "enc_jpeg", "enc_nvjpeg"):
+        for codec_name in ("enc_avif", "enc_jpeg", "enc_nvjpeg"):
             codec = get_codec(codec_name)
             if codec:
                 add_encodings(*codec.get_encodings())
