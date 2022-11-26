@@ -10,6 +10,7 @@ log = Logger("decoder", "spng")
 
 from xpra.net.compression import Compressed
 from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.argb.argb import unpremultiply_argb
 from xpra.codecs.spng.spng cimport (
     SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH,
     SPNG_CTX_ENCODER,
@@ -78,11 +79,13 @@ def encode(coding, image, options=None):
 
     rgb_format = image.get_pixel_format()
     alpha = options.get("alpha", rgb_format.find("A")>=0)
-    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format) or grayscale:
+    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format) or grayscale or alpha:
         #best to restride before byte-swapping to trim extra unused data:
         if rowstride!=width*len(rgb_format):
             image.restride(width*len(rgb_format))
         input_formats = INPUT_FORMATS
+        if alpha:
+            image.set_pixels(unpremultiply_argb(image.get_pixels()))
         if grayscale:
             input_formats = ("BGRX", "BGRA", "BGR", "RGB")
         if rgb_format not in input_formats:
