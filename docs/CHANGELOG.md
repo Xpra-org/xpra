@@ -1,8 +1,27 @@
 # Changelog
 
-## [4.4.3] 2022-11-16
-* [build failures on 32-bit systems](https://github.com/Xpra-org/xpra/issues/3685)
-* [splash screen hanging after connection failures](https://github.com/Xpra-org/xpra/commit/da0f001dc4b952774627e4d70e0bd849eaf07071)
+## [4.4.3] 2022-11-27
+* platforms, packaging and build:
+    * [build failures on 32-bit systems](https://github.com/Xpra-org/xpra/issues/3685)
+    * [workaround more broken python uinput packages](https://github.com/Xpra-org/xpra/commit/be1baec9f43e012d162f7114f469712c75446ce5)
+    * build path detection for newer versions of Visual Studio: [2085ea1b721eba3bae7848e92d92d70b9efdfdf4](https://github.com/Xpra-org/xpra/commit/2085ea1b721eba3bae7848e92d92d70b9efdfdf4) and [07a79a5cafbda17c31be65fa5bb0d032306038b5](https://github.com/Xpra-org/xpra/commit/07a79a5cafbda17c31be65fa5bb0d032306038b5)
+    * [unusual x264 library version strings disabled the encoder](https://github.com/Xpra-org/xpra/commit/66eeba7878fb10bd4995c807e931ba2cc8c6eb16)
+    * [MS Windows builds switch to CUDA 11.8](https://github.com/Xpra-org/xpra/commit/ad4f411b35a30e7831860db22446fd462273c133)
+* encodings:
+    * [extra validation for x264 image height](https://github.com/Xpra-org/xpra/commit/d7ab9887178e6920e0a208821362ead499bc6eba)
+    * transparency pre-multiplied twice with [webp](https://github.com/Xpra-org/xpra/commit/defecc5914afdf0186d17cb9aa9fb10a9c5ba35e), [pillow](https://github.com/Xpra-org/xpra/commit/f674dce096b1abf78980ea181c35cd4bbb512866), [spng](https://github.com/Xpra-org/xpra/commit/f674dce096b1abf78980ea181c35cd4bbb512866) and [jpeg without OpenGL](https://github.com/Xpra-org/xpra/commit/cf3058c37d7df1043095cf1ec9d43042eff11fcd) which also paints faster
+    * [fix avif encoder loading](https://github.com/Xpra-org/xpra/commit/0c44f0ada31b5ce426b9f6ffe73bbdc69169f894)
+    * [incorrect image metadata with jpega decoder](https://github.com/Xpra-org/xpra/commit/c04fe890c0cde655c2165291ab8a3e02255fc07c)
+    * [fallback to plain jpeg when nvjpeg fails to allocate a CUDA context](https://github.com/Xpra-org/xpra/commit/7f189545647353bf5ed53a2e883ee5989c13f6ae)
+    * [enable nvjpeg decoder with drivers 522.6 or later](https://github.com/Xpra-org/xpra/commit/3fa57607c957eb0dbabeb054b689fec565238d2b)
+* UI and cosmetic issues:
+    * [splash screen hanging after connection failures](https://github.com/Xpra-org/xpra/commit/da0f001dc4b952774627e4d70e0bd849eaf07071)
+    * [avoid pycuda import warnings on MS Windows](https://github.com/Xpra-org/xpra/commit/18cff56438d169a57646d08a515c14afa1528861)
+    * [avoid named-pipe warnings with MS Windows client](https://github.com/Xpra-org/xpra/commit/d30df6d9be2fa1e6c8487dc1ee9f68e0a29f8fbe)
+    * [raw cursors TypeError with lz4 compression on some platforms](https://github.com/Xpra-org/xpra/commit/095e108bf9ce7c10ea9697954c4433e6f5bf1736)
+    * [more helpful warning for some cursor issues](https://github.com/Xpra-org/xpra/commit/76868eb65f3d850536afeef2838d759bf02896a1)
+    * [remove debug logging](https://github.com/Xpra-org/xpra/commit/9df13045b81c723aa0bb2c196d15c8bcde1b502f)
+    * [opengl toolbox test errors](https://github.com/Xpra-org/xpra/commit/eb3b5f54da46ff32b4d55f762f97d8c3c774b021)
 
 ## [4.4.2] 2022-11-04
 * [unit test errors with older versions of python pillow](https://github.com/Xpra-org/xpra/commit/7c916589e165769587100ba83e55cdea923c713e)

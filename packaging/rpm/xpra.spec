@@ -641,9 +641,28 @@ fi
 
 
 %changelog
-* Wed Nov 16 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
-- build failures on 32-bit systems
-- splash screen hanging after connection failures
+* Sun Nov 27 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
+- platforms, packaging and build:
+   build failures on 32-bit systems
+   workaround more broken python uinput packages
+   build path detection for newer versions of Visual Studio
+   unusual x264 library version strings disabled the encoder
+   MS Windows builds switch to CUDA 11.8
+- encodings:
+   extra validation for x264 image height
+   transparency pre-multiplied twice with webp, pillow, spng and jpeg without OpenGL which also paints faster
+   fix avif encoder loading
+   incorrect image metadata with jpega decoder
+   fallback to plain jpeg when nvjpeg fails to allocate a CUDA context
+   enable nvjpeg decoder with drivers 522.6 or later
+- UI and cosmetic issues:
+   splash screen hanging after connection failures
+   avoid pycuda import warnings on MS Windows
+   avoid named-pipe warnings with MS Windows client
+   raw cursors TypeError with lz4 compression on some platforms
+   more helpful warning for some cursor issues
+   remove debug logging
+   opengl toolbox test errors
 
 * Fri Nov 04 2022 Antoine Martin <antoine@xpra.org> 4.4.2-10
 - unit test errors with older versions of python pillow
