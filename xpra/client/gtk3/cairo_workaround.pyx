@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -111,18 +111,20 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
     cdef int istride    = cairo_image_surface_get_stride(surface)
     cdef int iwidth     = cairo_image_surface_get_width(surface)
     cdef int iheight    = cairo_image_surface_get_height(surface)
-    assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
+    if iwidth<width or iheight<height:
+        raise ValueError(f"invalid image surface: expected at least {width}x{height} but got {iwidth}x{iheight}")
     BPP = 2 if cairo_format==CAIRO_FORMAT_RGB16_565 else 4
-    assert istride>=iwidth*BPP, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
-    #log("set_image_surface_data%s pixel buffer=%#x, surface=%#x, data=%#x, stride=%i, width=%i, height=%i", (image_surface, rgb_format, pixel_data, width, height, stride), <uintptr_t> cbuf, <uintptr_t> surface, <uintptr_t> data, istride, iwidth, iheight)
+    if istride<iwidth*BPP:
+        raise ValueError(f"invalid image stride: expected at least {iwidth*4} but got {istride}")
     cdef int x, y
     cdef int srci, dsti
 
     cdef const unsigned char * cbuf
     with buffer_context(pixels) as bc:
         cbuf = <const unsigned char *> (<uintptr_t> int(bc))
-        assert len(bc)>=height*stride, "pixel buffer is too small for %sx%s with stride=%s: only %s bytes, expected %s" % (
-            width, height, stride, len(bc), height*stride)
+        if len(bc)<height*stride:
+            raise ValueError(f"pixel buffer is too small for {width}x{height} with stride={stride}:"+
+                             f" only {len(bc)} bytes, expected {height*stride}")
         #only deal with the formats we care about:
         if cairo_format==CAIRO_FORMAT_RGB24:
             #cairo's RGB24 format is actually stored as BGR on little endian
@@ -167,7 +169,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
                             cdata[dsti + 2] = cbuf[srci + 0]     #R
                             cdata[dsti + 3] = 0                  #X
             else:
-                raise ValueError("unhandled pixel format for RGB24: '%s'" % rgb_format)
+                raise ValueError(f"unhandled pixel format for RGB24: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_ARGB32:
             if rgb_format in ("RGBA", "RGBX"):
                 with nogil:
@@ -180,7 +182,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
             elif rgb_format in ("BGRA", "BGRX"):
                 simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             else:
-                raise ValueError("unhandled pixel format for ARGB32: '%s'" % rgb_format)
+                raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB30:
             if rgb_format in ("r210"):
                 simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
@@ -199,14 +201,14 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
             #                srci += 3
             #                dsti += 1
             else:
-                raise ValueError("unhandled pixel format for RGB30 '%s'" % rgb_format)
+                raise ValueError(f"unhandled pixel format for RGB30 {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB16_565:
             if rgb_format in ("BGR565"):
                 simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             else:
-                raise ValueError("unhandled pixel format for RGB16_565 '%s'" % rgb_format)
+                raise ValueError(f"unhandled pixel format for RGB16_565 {rgb_format!r}")
         else:
-            raise ValueError("unhandled cairo format '%s'" % cairo_format)
+            raise ValueError(f"unhandled cairo format {cairo_format!r}")
     cairo_surface_mark_dirty(surface)
 
 
