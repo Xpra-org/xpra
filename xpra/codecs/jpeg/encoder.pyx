@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,18 +7,15 @@
 
 from time import monotonic
 
-from xpra.util import envbool, typedict
-from xpra.log import Logger
-log = Logger("encoder", "jpeg")
-
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
-
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.codec_debug import may_save_image
 from xpra.net.compression import Compressed
-from xpra.util import csv
+from xpra.util import envbool, typedict, csv
 from xpra.os_util import bytestostr
+from xpra.log import Logger
+log = Logger("encoder", "jpeg")
 
 cdef int YUV = envbool("XPRA_TURBOJPEG_YUV", True)
 
