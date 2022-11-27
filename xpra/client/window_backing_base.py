@@ -487,7 +487,7 @@ class WindowBackingBase:
             if encoding=="jpeg":
                 rgb_format = "RGBX"
             elif encoding=="jpega":
-                rgb_format = "RGBA"
+                rgb_format = "BGRA"
             else:
                 raise Exception("invalid encoding %r" % encoding)
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
