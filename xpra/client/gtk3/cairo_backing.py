@@ -73,13 +73,14 @@ class CairoBacking(CairoBackingBase):
             pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                                      has_alpha, 8, width, height, rowstride)
             if render_width!=width or render_height!=height:
-                resample = options.strget("resample")
+                resample = options.strget("resample", "bilinear")
                 if resample=="NEAREST":
                     interp_type = GdkPixbuf.InterpType.NEAREST
                 elif resample in ("BICUBIC", "LANCZOS"):
                     interp_type = GdkPixbuf.InterpType.HYPER
                 else:
                     interp_type = GdkPixbuf.InterpType.BILINEAR
+                log(f"scaling using {resample!r} from {width}x{height} to {render_width}x{render_height}")
                 pixbuf = pixbuf.scale_simple(render_width, render_height, interp_type)
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
