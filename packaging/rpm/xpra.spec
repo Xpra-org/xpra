@@ -648,6 +648,7 @@ fi
    build path detection for newer versions of Visual Studio
    unusual x264 library version strings disabled the encoder
    MS Windows builds switch to CUDA 11.8
+   bundle nvidia codecs DLLs
 - encodings:
    extra validation for x264 image height
    transparency pre-multiplied twice with webp, pillow, spng and jpeg without OpenGL which also paints faster

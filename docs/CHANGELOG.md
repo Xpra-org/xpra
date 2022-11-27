@@ -7,6 +7,7 @@
     * build path detection for newer versions of Visual Studio: [2085ea1b721eba3bae7848e92d92d70b9efdfdf4](https://github.com/Xpra-org/xpra/commit/2085ea1b721eba3bae7848e92d92d70b9efdfdf4) and [07a79a5cafbda17c31be65fa5bb0d032306038b5](https://github.com/Xpra-org/xpra/commit/07a79a5cafbda17c31be65fa5bb0d032306038b5)
     * [unusual x264 library version strings disabled the encoder](https://github.com/Xpra-org/xpra/commit/66eeba7878fb10bd4995c807e931ba2cc8c6eb16)
     * [MS Windows builds switch to CUDA 11.8](https://github.com/Xpra-org/xpra/commit/ad4f411b35a30e7831860db22446fd462273c133)
+    * [bundle nvidia codecs DLLs](https://github.com/Xpra-org/xpra/commit/f09f6edc488cd21835f3c002c70b16ac35e4346b)
 * encodings:
     * [extra validation for x264 image height](https://github.com/Xpra-org/xpra/commit/d7ab9887178e6920e0a208821362ead499bc6eba)
     * transparency pre-multiplied twice with [webp](https://github.com/Xpra-org/xpra/commit/defecc5914afdf0186d17cb9aa9fb10a9c5ba35e), [pillow](https://github.com/Xpra-org/xpra/commit/f674dce096b1abf78980ea181c35cd4bbb512866), [spng](https://github.com/Xpra-org/xpra/commit/f674dce096b1abf78980ea181c35cd4bbb512866) and [jpeg without OpenGL](https://github.com/Xpra-org/xpra/commit/cf3058c37d7df1043095cf1ec9d43042eff11fcd) which also paints faster
