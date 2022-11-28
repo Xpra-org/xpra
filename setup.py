@@ -2045,8 +2045,8 @@ toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
 nvidia_ENABLED = nvenc_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
+CUDA_BIN = f"{share_xpra}/cuda"
 if nvidia_ENABLED:
-    CUDA_BIN = f"{share_xpra}/cuda"
     #find nvcc:
     from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
