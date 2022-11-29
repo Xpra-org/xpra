@@ -18,6 +18,9 @@ class nogssapi_context(nomodule_context):
 def get_default_keyfiles():
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
-        return [x for x in dkf.split(":") if x]
+        return [x for x in dkf.split(os.pathsep) if x]
+
+    if os.name == "nt":
+        return []
     return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
 
