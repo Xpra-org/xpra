@@ -361,7 +361,7 @@ class EncodingsMixin(StubSourceMixin):
             return
         common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
         from xpra.codecs.loader import has_codec
-        if (has_codec("nvenc") and "h264" in self.core_encodings or "h265" in self.core_encodings) \
+        if (has_codec("nvenc") and ("h264" in self.core_encodings or "h265" in self.core_encodings)) \
         or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
             cudalog = Logger("cuda")
             try:
