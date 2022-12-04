@@ -25,7 +25,6 @@ proxylog = Logger("proxy")
 statslog = Logger("stats")
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
-DEFAULT_VREFRESH = envint("XPRA_DEFAULT_VREFRESH", 100)
 
 
 class EncodingsMixin(StubSourceMixin):
