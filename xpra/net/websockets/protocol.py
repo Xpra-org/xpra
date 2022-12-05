@@ -24,8 +24,6 @@ MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
 class WebSocketProtocol(SocketProtocol):
 
-    STATE_FIELDS = tuple(list(SocketProtocol.STATE_FIELDS)+["legacy_frame_per_chunk"])
-
     TYPE = "websocket"
 
     def __init__(self, *args, **kwargs):
