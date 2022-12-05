@@ -215,7 +215,7 @@ class TwoFileConnection(Connection):
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)
 
-    def write(self, buf):
+    def write(self, buf, packet_type=None):
         self.may_abort("write")
         return self._write(os.write, self._write_fd, buf)
 
@@ -344,7 +344,7 @@ class SocketConnection(Connection):
     def read(self, n : int):
         return self._read(self._socket.recv, n)
 
-    def write(self, buf):
+    def write(self, buf, packet_type=None):
         return self._write(self._socket.send, buf)
 
     def close(self):

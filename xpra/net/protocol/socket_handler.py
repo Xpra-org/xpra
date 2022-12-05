@@ -351,7 +351,7 @@ class SocketProtocol:
                 self._read_thread.start()
         self.idle_add(start_network_read_thread)
         if SEND_INVALID_PACKET:
-            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, "invalid", SEND_INVALID_PACKET_DATA)
+            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
 
     def send_disconnect(self, reasons, done_callback=None):
@@ -482,7 +482,7 @@ class SocketProtocol:
                 items[0] = frame_header + item0
             else:
                 items.insert(0, frame_header)
-        self.raw_write(packet_type, items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
+        self.raw_write(items, packet_type, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
     def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size) -> bytes:
         return pack_header(proto_flags, level, index, payload_size)
@@ -496,12 +496,12 @@ class SocketProtocol:
             assert not self._write_thread, "write thread already started"
             self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def raw_write(self, packet_type, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
+    def raw_write(self, items, packet_type=None, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
             log("raw_write for %s, starting write thread", packet_type)
             self.start_write_thread()
-        self._write_queue.put((items, start_cb, end_cb, fail_cb, synchronous, more))
+        self._write_queue.put((items, packet_type, start_cb, end_cb, fail_cb, synchronous, more))
 
 
     def enable_default_encoder(self):
@@ -710,7 +710,7 @@ class SocketProtocol:
             return False
         return self.write_items(*items)
 
-    def write_items(self, buf_data, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
+    def write_items(self, buf_data, packet_type=None, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
         conn = self._conn
         if not conn:
             return False
@@ -729,7 +729,7 @@ class SocketProtocol:
             except Exception:
                 if not self._closed:
                     log.error(f"Error on write start callback {start_cb}", exc_info=True)
-        self.write_buffers(buf_data, fail_cb, synchronous)
+        self.write_buffers(buf_data, packet_type, fail_cb, synchronous)
         try:
             if len(buf_data)>1:
                 conn.set_cork(False)
@@ -747,13 +747,13 @@ class SocketProtocol:
                     log.error(f"Error on write end callback {end_cb}", exc_info=True)
         return True
 
-    def write_buffers(self, buf_data, _fail_cb, _synchronous):
+    def write_buffers(self, buf_data, packet_type, _fail_cb, _synchronous):
         con = self._conn
         if not con:
             return
         for buf in buf_data:
             while buf and not self._closed:
-                written = self.con_write(con, buf)
+                written = self.con_write(con, buf, packet_type)
                 #example test code, for sending small chunks very slowly:
                 #written = con.write(buf[:1024])
                 #import time
@@ -763,8 +763,8 @@ class SocketProtocol:
                     self.output_raw_packetcount += 1
         self.output_packetcount += 1
 
-    def con_write(self, con, buf):
-        return con.write(buf)
+    def con_write(self, con, buf, packet_type):
+        return con.write(buf, packet_type)
 
 
     def _read_thread_loop(self):
@@ -1194,7 +1194,7 @@ class SocketProtocol:
                                               start_send_cb=None, end_send_cb=packet_queued,
                                               synchronous=False, more=False)
                 else:
-                    self.raw_write("flush-then-close", (last_packet, ))
+                    self.raw_write((last_packet, ), "flush-then-close")
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 

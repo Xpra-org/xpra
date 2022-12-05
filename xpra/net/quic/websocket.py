@@ -39,16 +39,16 @@ class ServerWebSocketConnection(XpraQuicConnection):
                 self.close()
                 return
             log.info("websocket request at %s", self.scope.get("path", "/"))
-            self.send_accept()
+            self.accepted = True
+            self.send_accept(self.stream_id)
+            self.transmit()
             return
         super().http_event_received(event)
 
-    def send_accept(self):
-        self.accepted = True
-        self.send_headers({
+    def send_accept(self, stream_id : int):
+        self.send_headers(stream_id=stream_id, headers={
             ":status"   : 200,
             "server"    : SERVER_NAME,
             "date"      : http_date(),
             "sec-websocket-protocol" : "xpra",
             })
-        self.transmit()

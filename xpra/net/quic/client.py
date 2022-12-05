@@ -17,6 +17,7 @@ from aioquic.h3.events import (
     DataReceived,
     H3Event,
     HeadersReceived,
+    PushPromiseReceived,
 )
 from aioquic.tls import SessionTicket
 from aioquic.quic.logger import QuicLogger
@@ -28,7 +29,6 @@ from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, binary_headers
 from xpra.util import ellipsizer, envbool
-from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("quic")
 
@@ -60,22 +60,23 @@ class ClientWebSocketConnection(XpraQuicConnection):
 
     def flush_writes(self):
         #flush the buffered writes:
-        while self.write_buffer.qsize()>0:
-            buf = self.write_buffer.get()
-            self.connection.send_data(self.stream_id, memoryview_to_bytes(buf), end_stream=False)
-        self.transmit()
-        self.write_buffer = None
+        try:
+            while self.write_buffer.qsize()>0:
+                self.stream_write(*self.write_buffer.get())
+        finally:
+            self.transmit()
+            self.write_buffer = None
 
-    def write(self, buf):
-        log(f"write(%s) {len(buf)} bytes", ellipsizer(buf))
+    def write(self, buf, packet_type=None):
+        log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)
         if self.write_buffer is not None:
             #buffer it until we are connected and call flush_writes()
-            self.write_buffer.put(buf)
+            self.write_buffer.put((buf, packet_type))
             return len(buf)
-        return super().write(buf)
+        return super().write(buf, packet_type)
 
     def http_event_received(self, event: H3Event) -> None:
-        log("http_event_received(%s)", event)
+        log("http_event_received(%s)", ellipsizer(event))
         if isinstance(event, HeadersReceived):
             for header, value in event.headers:
                 if header == b"sec-websocket-protocol":
@@ -87,6 +88,10 @@ class ClientWebSocketConnection(XpraQuicConnection):
                     self.accepted = True
                     self.flush_writes()
             return
+        if isinstance(event, PushPromiseReceived):
+            log(f"PushPromiseReceived: {event}")
+            log(f"PushPromiseReceived headers: {event.headers}")
+            return
         super().http_event_received(event)
 
 
@@ -94,6 +99,7 @@ class WebSocketClient(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._http: Optional[HttpConnection] = None
+        self._push_types: Dict[str, int] = {}
         self._websockets: Dict[int, ClientWebSocketConnection] = {}
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
             self._http = H0Connection(self._quic)
@@ -121,16 +127,29 @@ class WebSocketClient(QuicConnectionProtocol):
             self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
-        if isinstance(event, (HeadersReceived, DataReceived)):
-            stream_id = event.stream_id
-            if stream_id in self._websockets:
-                # websocket
-                websocket : ClientWebSocketConnection = self._websockets[stream_id]
-                websocket.http_event_received(event)
-            else:
-                log.warn(f"Warning: unexpected websocket stream id: {stream_id}")
-        else:
+        if not isinstance(event, (HeadersReceived, DataReceived, PushPromiseReceived)):
             log.warn(f"Warning: unexpected http event type: {event}")
+            return
+        stream_id = event.stream_id
+        websocket : Optional[ClientWebSocketConnection] = self._websockets.get(stream_id)
+        if not websocket:
+            #perhaps this is a new substream?
+            sub = -1
+            hdict = {}
+            if isinstance(event, HeadersReceived):
+                hdict = dict((k.decode(),v.decode()) for k,v in event.headers)
+                sub = int(hdict.get("substream", -1))
+            if sub<0:
+                log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
+                return
+            websocket = self._websockets.get(sub)
+            if not websocket:
+                log.warn(f"Warning: stream {sub} not found in {self._websockets}")
+                return
+            subtype = hdict.get("stream-type")
+            log.info(f"new substream {stream_id} for {subtype}")
+            self._websockets[stream_id] = websocket
+        websocket.http_event_received(event)
 
 
 def quic_connect(host : str, port : int, path : str,
