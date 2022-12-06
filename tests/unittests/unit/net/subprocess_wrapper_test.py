@@ -39,7 +39,7 @@ class loopback_connection(Connection):
         #FIXME: we don't handle n...
         return self.queue.get(True)
 
-    def write(self, buf):
+    def write(self, buf, packet_type=None):
         self.may_abort("write")
         self.queue.put(buf)
         return len(buf)
