@@ -160,7 +160,7 @@ def quic_connect(host : str, port : int, path : str,
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
-        configuration.load_cert_chain(ssl_cert, ssl_key, ssl_key_password)
+        configuration.load_cert_chain(ssl_cert, ssl_key or None, ssl_key_password or None)
     if ssl_server_name:
         configuration.server_name = ssl_server_name
     else:
