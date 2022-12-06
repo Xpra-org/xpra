@@ -2200,7 +2200,7 @@ if nvidia_ENABLED:
             add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
-tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvenc")
+tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvenc,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
