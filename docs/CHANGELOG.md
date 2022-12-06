@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.4.4] 2022-12-06
+* TODO
+
 ## [4.4.3] 2022-11-27
 * platforms, packaging and build:
     * [build failures on 32-bit systems](https://github.com/Xpra-org/xpra/issues/3685)

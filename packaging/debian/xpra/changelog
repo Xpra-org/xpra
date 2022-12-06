@@ -1,3 +1,8 @@
+xpra (4.4.4-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2022 19:29:33 +0700
+
 xpra (4.4.3-1) UNRELEASED; urgency=low
   * platforms, packaging and build:
     - build failures on 32-bit systems

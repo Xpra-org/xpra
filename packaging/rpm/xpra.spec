@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4.3
+%define version 4.4.4
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -638,6 +638,8 @@ fi
 
 
 %changelog
+* Tue Dec 06 2022 Antoine Martin <antoine@xpra.org> 4.4.4-10
+- TODO
 * Sun Nov 27 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
 - platforms, packaging and build:
    build failures on 32-bit systems
