@@ -47,7 +47,7 @@ class FastMemoryConnection(Connection):
         self.read_buffers[0] = b[n:]
         return b[:n]
 
-    def write(self, buf):
+    def write(self, buf, packet_type=None):
         self.write_data.append(buf)
         return len(buf)
 
