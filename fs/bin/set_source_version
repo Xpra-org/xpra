@@ -11,7 +11,7 @@ if [ -z "${AUTHOR}" ]; then
 fi
 
 
-for f in "fs/lib/cups/xpraforwarder" "xpra/__init__.py"; do
+for f in "fs/lib/cups/backend/xpraforwarder" "xpra/__init__.py"; do
 	sed -i'' "s/__version__ = .*/__version__ = \"$NEWV\"/" $f
 done
 
