@@ -640,6 +640,8 @@ fi
 %changelog
 * Tue Dec 06 2022 Antoine Martin <antoine@xpra.org> 4.4.4-10
 - TODO
+* Tue Dec 06 2022 Antoine Martin <antoine@xpra.org> 4.4.4-10
+- TODO
 * Sun Nov 27 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
 - platforms, packaging and build:
    build failures on 32-bit systems
