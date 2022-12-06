@@ -243,7 +243,7 @@ STRUCT_KNOWN_FILTERS = {
     "Codec" : {
                 #codecs:
                 "csc"           : "Colourspace conversion codecs",
-                "cuda"          : "CUDA device access (nvenc)",
+                "cuda"          : "CUDA device access",
                 "cython"        : "Cython CSC module",
                 "swscale"       : "swscale CSC module",
                 "libyuv"        : "libyuv CSC module",
@@ -259,6 +259,7 @@ STRUCT_KNOWN_FILTERS = {
                 "vpl"           : "oneVPL encoder",
                 "nvjpeg"        : "nvidia nvjpeg hardware encoder",
                 "nvenc"         : "nvidia nvenc video hardware encoder",
+                "nvdec"         : "nvidia nvdec video hardware decoder",
                 "nvfbc"         : "nvidia nvfbc screen capture",
                 "x264"          : "libx264 encoder",
                 "x265"          : "libx265 encoder",

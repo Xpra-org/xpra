@@ -16,7 +16,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg", "enc_vpl"]
+NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg", "enc_vpl"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -29,7 +29,7 @@ log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s,
 
 
 if OSX:
-    SKIP_LIST = ("avif", "nvenc", "nvjpeg", "x265")
+    SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg", "x265")
 else:
     SKIP_LIST = ()
 def filt(*values):
@@ -39,7 +39,7 @@ CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_vpl")
 DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
-DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
+DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2", "nvdec")
 SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS = filt(*set(
@@ -205,6 +205,7 @@ CODEC_OPTIONS = {
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "ffmpeg",       "decoder", "Decoder"),
+    "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     #sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),

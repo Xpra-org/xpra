@@ -237,6 +237,7 @@ csc_cython_ENABLED      = DEFAULT
 nvjpeg_encoder_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
 nvjpeg_decoder_ENABLED = nvjpeg_encoder_ENABLED
 nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
+nvdec_ENABLED = False
 nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
 cuda_rebuild_ENABLED    = not WIN32
@@ -258,7 +259,7 @@ rebuild_ENABLED         = not skip_build
 
 #allow some of these flags to be modified on the command line:
 CODEC_SWITCHES = [
-    "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc",
+    "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc", "nvdec",
     "cuda_kernels", "cuda_rebuild",
     "nvfbc",
     "vpx", "vpl", "webp", "pillow",
@@ -371,7 +372,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     show_switch_info()
 
     if not cython_ENABLED:
-        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = False
+        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = False
         csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = False
         vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = vpl_ENABLED = False
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
@@ -1041,6 +1042,7 @@ def clean():
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/vpl/encoder.c",
                    "xpra/codecs/nvidia/nvenc/encoder.c",
+                   "xpra/codecs/nvidia/nvdec/decoder.c",
                    "xpra/codecs/nvidia/nvfbc/fbc_capture_linux.cpp",
                    "xpra/codecs/nvidia/nvfbc/fbc_capture_win.cpp",
                    "xpra/codecs/nvidia/nvjpeg/common.c",
@@ -1404,7 +1406,7 @@ if WIN32:
                             "bin_excludes"      : bin_excludes,
                             }
         #cx_Freeze v5 workarounds:
-        if nvenc_ENABLED or nvfbc_ENABLED:
+        if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
             add_packages("numpy.core._methods", "numpy.lib.format")
 
         setup_options["options"] = {"build_exe" : cx_freeze_options}
@@ -1487,11 +1489,11 @@ if WIN32:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
-        if nvenc_ENABLED:
+        if nvenc_ENABLED or nvdec_ENABLED:
             add_console_exe("xpra/codecs/nvidia/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
-        if nvfbc_ENABLED or nvenc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
+        if nvfbc_ENABLED or nvenc_ENABLED or nvdec_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_console_exe("xpra/codecs/nvidia/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
@@ -1534,7 +1536,7 @@ if WIN32:
     else:
         remove_packages("cv2")
 
-    if nvenc_ENABLED or nvfbc_ENABLED:
+    if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
         external_includes.append("numpy")
     else:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
@@ -1692,7 +1694,7 @@ else:
                     etc_xpra_files[name] = dst_name
                 if uinput_ENABLED:
                     addconf("xorg-uinput.conf")
-                if nvenc_ENABLED or nvfbc_ENABLED:
+                if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
                     addconf("cuda.conf")
                 if nvenc_ENABLED:
                     addconf("nvenc.keys")
@@ -2027,7 +2029,7 @@ if nvfbc_ENABLED:
     platform = sys.platform.rstrip("0123456789")
     ace(f"xpra.codecs.nvidia.nvfbc.fbc_capture_{platform}", "nvfbc", language="c++")
 
-nvidia_ENABLED = nvenc_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
+nvidia_ENABLED = nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 if nvidia_ENABLED:
     CUDA_BIN = f"{share_xpra}/cuda"
@@ -2188,7 +2190,7 @@ if nvidia_ENABLED:
             t.join()
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
-    if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED):
+    if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
         assert nvcc_versions
         CUDA_BIN_DIR = os.path.dirname(nvcc)
         add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
@@ -2198,6 +2200,7 @@ if nvidia_ENABLED:
             add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
+tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvenc")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
