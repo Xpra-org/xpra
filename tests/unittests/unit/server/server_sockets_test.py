@@ -45,7 +45,7 @@ class ServerSocketsTest(ServerTestUtil):
         uri = uri_prefix + str(display_no)
         start = monotonic()
         while True:
-            client = self.run_xpra(["version", uri] + list(server_args or ()))
+            client = self.run_xpra(["version", uri] + list(client_args or ()))
             r = pollwait(client, CONNECT_WAIT)
             if r==0:
                 break
