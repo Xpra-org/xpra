@@ -2,19 +2,11 @@
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-from pip._vendor.typing_extensions import runtime
-from xpra.platform.win32.constants import NULL
 
 from libc.string cimport memset
 
-from xpra.os_util import bytestostr
-from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
-
-#we can import pycuda safely here,
-#because importing cuda_context will have imported it with the lock
-from pycuda import driver  # @UnresolvedImport
 
 
 cdef inline int roundup(int n, int m):
@@ -250,7 +242,7 @@ cdef class Decoder:
 
     def init_context(self, encoding, width, height, colorspace):
         self.encoding = encoding
-        self.dst_format = bytestostr(colorspace)
+        self.dst_format = colorspace
         self.width = width
         self.height = height
         self.dst_format = colorspace
