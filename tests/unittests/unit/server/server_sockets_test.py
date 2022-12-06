@@ -9,6 +9,7 @@ import shutil
 import unittest
 import tempfile
 from time import monotonic
+from subprocess import Popen
 
 from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
@@ -22,7 +23,58 @@ CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
 SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT*2)
 
 
+class GenSSLCertContext:
+    __slots__ = ("tmpdir", "keyfile", "outfile", "certfile")
+    def __init__(self):
+        self._clear()
+    def _clear(self):
+        self.tmpdir = self.keyfile = self.outfile = self.certfile = None
+    def __enter__(self):
+        self.tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
+        self.keyfile = os.path.join(self.tmpdir, "key.pem")
+        self.outfile = os.path.join(self.tmpdir, "out.pem")
+        openssl_command = [
+            "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+            "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+            "-keyout", self.keyfile, "-out", self.outfile,
+            ]
+        proc = Popen(args=openssl_command)
+        assert pollwait(proc, 20)==0, "openssl certificate generation failed"
+        #combine the two files:
+        self.certfile = os.path.join(self.tmpdir, "cert.pem")
+        with open(self.certfile, "wb") as cf:
+            for fname in (self.keyfile, self.outfile):
+                with open(fname, "rb") as f:
+                    cf.write(f.read())
+        cert_data = load_binary_file(self.certfile)
+        log("generated cert data: %s", repr_ellipsized(cert_data))
+        if not cert_data:
+            #cannot run openssl? (happens from rpmbuild)
+            raise RuntimeError("SSL test skipped, cannot run "+" ".join(openssl_command))
+        return self
+    def __exit__(self, *_args):
+        for f in (self.keyfile, self.outfile, self.certfile):
+            os.unlink(f)
+        os.rmdir(self.tmpdir)
+        self._clear()
+    def __repr__(self):
+        return "GenSSLCertContext"
+
+
 class ServerSocketsTest(ServerTestUtil):
+
+    @classmethod
+    def setUpClass(cls):
+        ServerTestUtil.setUpClass()
+        cls.default_xpra_args += [
+            "--start-new-commands=no",
+            "--video-encoders=none",
+            "--csc-modules=none",
+            "--video-decoders=none",
+            "--encodings=rgb",
+            "--mdns=no",
+            "--webcam=no",
+            ]
 
     def get_run_env(self):
         env = super().get_run_env()
@@ -36,22 +88,24 @@ class ServerSocketsTest(ServerTestUtil):
             raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
         return server_proc
 
-    def _test_connect(self, server_args=(), auth="none", client_args=(), password=None, uri_prefix=DISPLAY_PREFIX, exit_code=0):
+    def _test_connect(self, server_args=(), client_args=(), password=None, uri_prefix=DISPLAY_PREFIX, exit_code=0):
         display_no = self.find_free_display_no()
         display = f":{display_no}"
         log(f"starting test server on {display}")
-        server = self.start_server(display, f"--auth={auth}", "--printing=no", *server_args)
+        server = self.start_server(display, "--printing=no", *server_args)
         #we should always be able to get the version:
         uri = uri_prefix + str(display_no)
         start = monotonic()
         while True:
-            client = self.run_xpra(["version", uri] + list(server_args or ()))
+            client = self.run_xpra(["version", uri] + list(client_args or ()))
             r = pollwait(client, CONNECT_WAIT)
             if r==0:
                 break
             if r is None:
                 client.terminate()
             if monotonic()-start>SUBPROCESS_WAIT:
+                if exit_code==EXIT_CONNECTION_FAILED:
+                    return
                 raise Exception(f"version client failed to connect, returned {estr(r)}")
         #try to connect
         cmd = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
@@ -79,21 +133,83 @@ class ServerSocketsTest(ServerTestUtil):
         pollwait(server, 10)
 
     def test_default_socket(self):
-        self._test_connect([], "allow", [], b"hello", DISPLAY_PREFIX, EXIT_OK)
+        self._test_connect(["--bind=auto,auth=allow"], [], b"hello", DISPLAY_PREFIX, EXIT_OK)
 
     def test_tcp_socket(self):
         port = get_free_tcp_port()
-        self._test_connect([f"--bind-tcp=0.0.0.0:{port}"], "allow", [], b"hello",
-						f"tcp://127.0.0.1:{port}/", EXIT_OK)
+        self._test_connect([f"--bind-tcp=0.0.0.0:{port},auth=allow"], [], b"hello",
+                           f"tcp://127.0.0.1:{port}/", EXIT_OK)
         port = get_free_tcp_port()
-        self._test_connect([f"--bind-tcp=0.0.0.0:{port}"], "allow", [], b"hello",
-						f"ws://127.0.0.1:{port}/", EXIT_OK)
+        self._test_connect([f"--bind-tcp=0.0.0.0:{port},auth=allow"], [], b"hello",
+                           f"ws://127.0.0.1:{port}/", EXIT_OK)
 
     def test_ws_socket(self):
         port = get_free_tcp_port()
-        self._test_connect([f"--bind-ws=0.0.0.0:{port}"], "allow", [], b"hello",
-						f"ws://127.0.0.1:{port}/", EXIT_OK)
+        self._test_connect([f"--bind-ws=0.0.0.0:{port},auth=allow"], [], b"hello",
+                           f"ws://127.0.0.1:{port}/", EXIT_OK)
 
+    def _gen_ssl(self):
+        tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
+        keyfile = os.path.join(tmpdir, "key.pem")
+        outfile = os.path.join(tmpdir, "out.pem")
+        openssl_command = [
+            "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+            "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+            "-keyout", keyfile, "-out", outfile,
+            ]
+        openssl = self.run_command(openssl_command)
+        assert pollwait(openssl, 20)==0, "openssl certificate generation failed"
+        #combine the two files:
+        certfile = tempfile.NamedTemporaryFile(delete=False)
+        os.path.join(tmpdir, "cert.pem")
+        for fname in (keyfile, outfile):
+            with open(fname, 'rb') as f:
+                certfile.write(f.read())
+        shutil.rmtree(tmpdir)
+        cert_data = load_binary_file(certfile.name)
+        log("generated cert data: %s", repr_ellipsized(cert_data))
+        if not cert_data:
+            #cannot run openssl? (happens from rpmbuild)
+            raise RuntimeError("SSL test skipped, cannot run "+" ".join(openssl_command))
+        return certfile
+
+    def verify_connect(self, uri, exit_code, *client_args):
+        cmd = ["info", uri] + list(client_args)
+        client = self.run_xpra(cmd)
+        r = pollwait(client, CONNECT_WAIT)
+        if client.poll() is None:
+            client.terminate()
+        assert r==exit_code, "expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll()))
+
+    def test_quic_socket(self):
+        port = get_free_tcp_port()
+        try:
+            from xpra.net.quic import listener, client
+            assert listener and client
+        except ImportError as e:
+            print(f"quic socket test skipped: {e}")
+            return
+        display_no = self.find_free_display_no()
+        display = f":{display_no}"
+        with GenSSLCertContext() as genssl:
+            try:
+                log("starting test quic server on %s", display)
+                server = self.start_server(display,
+                    f"--bind-quic=0.0.0.0:{port},auth=allow",
+                    f"--ssl-cert={genssl.certfile}",
+                    f"--ssl-key={genssl.keyfile}",
+                    )
+                def tc(exit_code, *client_args):
+                    self.verify_connect(f"quic://127.0.0.1:{port}/", exit_code, *client_args)
+                noverify = "--ssl-server-verify-mode=none"
+                nohostname = "--ssl-check-hostname=no"
+                #asyncio makes it too difficult to emit the correct exception here:
+                #we should be getting EXIT_SSL_CERTIFICATE_VERIFY_FAILURE..
+                tc(EXIT_CONNECTION_FAILED)
+                tc(0, noverify, nohostname)
+            finally:
+                if server:
+                    server.terminate()
 
     def test_ssl(self):
         server = None
@@ -103,96 +219,59 @@ class ServerSocketsTest(ServerTestUtil):
         ws_port = get_free_tcp_port()
         wss_port = get_free_tcp_port()
         ssl_port = get_free_tcp_port()
-        try:
-            tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
-            keyfile = os.path.join(tmpdir, "key.pem")
-            outfile = os.path.join(tmpdir, "out.pem")
-            openssl_command = [
-                "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
-                "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
-                "-keyout", keyfile, "-out", outfile,
-                ]
-            openssl = self.run_command(openssl_command)
-            assert pollwait(openssl, 20)==0, "openssl certificate generation failed"
-            #combine the two files:
-            certfile = os.path.join(tmpdir, "cert.pem")
-            with open(certfile, 'wb') as cert:
-                for fname in (keyfile, outfile):
-                    with open(fname, 'rb') as f:
-                        cert.write(f.read())
-            cert_data = load_binary_file(certfile)
-            log("generated cert data: %s", repr_ellipsized(cert_data))
-            if not cert_data:
-                #cannot run openssl? (happens from rpmbuild)
-                log.warn("SSL test skipped, cannot run '%s'", b" ".join(openssl_command))
-                return
-            server_args = [
-                f"--bind-tcp=0.0.0.0:{tcp_port}",
-                f"--bind-ws=0.0.0.0:{ws_port}",
-                f"--bind-wss=0.0.0.0:{wss_port}",
-                f"--bind-ssl=0.0.0.0:{ssl_port}",
-                "--ssl=on",
-                "--html=on",
-                f"--ssl-cert={certfile}",
-                ]
+        with GenSSLCertContext() as genssl:
+            try:
+                server_args = ["--ssl=on", "--html=on", f"--ssl-cert={genssl.certfile}"]
+                for bind_mode, port in {
+                    "tcp"   : tcp_port,
+                    "ws"    : ws_port,
+                    "wss"   : wss_port,
+                    "ssl"   : ssl_port,
+                    }.items():
+                    server_args.append(f"--bind-{bind_mode}=0.0.0.0:{port},auth=allow")
+                log("starting test ssl server on %s", display)
+                server = self.start_server(display, *server_args)
 
-            log("starting test ssl server on %s", display)
-            server = self.start_server(display, *server_args)
+                #test it with openssl client:
+                for port in (tcp_port, ssl_port, ws_port, wss_port):
+                    openssl_verify_command = (
+                        "openssl", "s_client", "-connect",
+                        "127.0.0.1:%i" % port, "-CAfile", genssl.certfile,
+                        )
+                    devnull = os.open(os.devnull, os.O_WRONLY)
+                    openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
+                    r = pollwait(openssl, 10)
+                    assert r==0, "openssl certificate verification failed, returned %s" % r
 
-            #test it with openssl client:
-            for port in (tcp_port, ssl_port, ws_port, wss_port):
-                openssl_verify_command = (
-					"openssl", "s_client", "-connect",
-					"127.0.0.1:%i" % port, "-CAfile", certfile,
-					)
-                devnull = os.open(os.devnull, os.O_WRONLY)
-                openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
-                r = pollwait(openssl, 10)
-                assert r==0, "openssl certificate verification failed, returned %s" % r
+                def tc(mode, port, exit_code, *client_args):
+                    self.verify_connect(f"{mode}://foo:bar@127.0.0.1:{port}/", exit_code, *client_args)
+                noverify = "--ssl-server-verify-mode=none"
+                #connect to ssl socket:
+                tc("ssl", ssl_port, EXIT_OK, noverify)
+                #tcp socket should upgrade to ssl:
+                tc("ssl", tcp_port, EXIT_OK, noverify)
+                #tcp socket should upgrade to ws and ssl:
+                tc("wss", tcp_port, EXIT_OK, noverify)
+                #ws socket should upgrade to ssl:
+                tc("wss", ws_port, EXIT_OK, noverify)
 
-            def test_connect(uri, exit_code, *client_args):
-                cmd = ["info", uri] + list(client_args)
-                client = self.run_xpra(cmd)
-                r = pollwait(client, CONNECT_WAIT)
-                if client.poll() is None:
-                    client.terminate()
-                assert r==exit_code, "expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll()))
-            noverify = "--ssl-server-verify-mode=none"
-            #connect to ssl socket:
-            test_connect(f"ssl://127.0.0.1:{ssl_port}/", EXIT_OK, noverify)
-            #tcp socket should upgrade to ssl:
-            test_connect(f"ssl://127.0.0.1:{tcp_port}/", EXIT_OK, noverify)
-            #tcp socket should upgrade to ws and ssl:
-            test_connect(f"wss://127.0.0.1:{tcp_port}/", EXIT_OK, noverify)
-            #ws socket should upgrade to ssl:
-            test_connect(f"wss://127.0.0.1:{ws_port}/", EXIT_OK, noverify)
-
-            #self signed cert should fail without noverify:
-            test_connect(f"ssl://127.0.0.1:{ssl_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect(f"ssl://127.0.0.1:{tcp_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect(f"wss://127.0.0.1:{ws_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-            test_connect(f"wss://127.0.0.1:{wss_port}/", EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-
-        finally:
-            shutil.rmtree(tmpdir)
-            if server:
-                server.terminate()
+                #self signed cert should fail without noverify:
+                tc("ssl", ssl_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("ssl", tcp_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("wss", ws_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("wss", wss_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+            finally:
+                if server:
+                    server.terminate()
 
     def test_bind_tmpdir(self):
         #remove socket dirs from default arguments temporarily:
-        saved_default_xpra_args = ServerSocketsTest.default_xpra_args
+        saved_args = ServerSocketsTest.default_xpra_args
         tmpsocketdir1 = tempfile.mkdtemp(suffix='xpra')
         tmpsocketdir2 = tempfile.mkdtemp(suffix='xpra')
         tmpsessionsdir = tempfile.mkdtemp(suffix='xpra')
         #hide sessions dir and use a single socket dir location:
-        ServerSocketsTest.default_xpra_args = [
-            x for x in saved_default_xpra_args if not x.startswith("--socket-dir")
-            ] + [
-                "--video-encoders=none",
-                "--csc-modules=none",
-                "--video-decoders=none",
-                "--encodings=rgb",
-                ]
+        ServerSocketsTest.default_xpra_args = list(filter(lambda x : not x.startswith("--socket-dir"), saved_args))
         server_args = [
                 "--socket-dir=%s" % tmpsocketdir1,
                 "--socket-dirs=%s" % tmpsocketdir2,
@@ -200,7 +279,7 @@ class ServerSocketsTest(ServerTestUtil):
             ]
         log_gap()
         def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=EXIT_OK):
-            self._test_connect(server_args, "none", client_args, None, prefix, exit_code)
+            self._test_connect(server_args, client_args, None, prefix, exit_code)
         try:
             #it should not be found by default
             #since we only use hidden temporary locations
@@ -211,7 +290,7 @@ class ServerSocketsTest(ServerTestUtil):
                 t(["--socket-dir=%s" % d])
                 t(["--socket-dirs=%s" % d])
         finally:
-            ServerSocketsTest.default_xpra_args = saved_default_xpra_args
+            ServerSocketsTest.default_xpra_args = saved_args
             for d in (tmpsocketdir1, tmpsocketdir2, tmpsessionsdir):
                 shutil.rmtree(d)
 
