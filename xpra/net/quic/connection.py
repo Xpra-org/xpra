@@ -32,7 +32,6 @@ class XpraQuicConnection(Connection):
         self.transmit: Callable[[], None] = transmit
         self.accepted : bool = False
         self.closed : bool = False
-        self._packet_type_streams = {}
 
     def __repr__(self):
         return f"XpraQuicConnection<{self.stream_id}>"
@@ -74,12 +73,11 @@ class XpraQuicConnection(Connection):
             self.closed = True
             self.send_close()
         Connection.close(self)
-        self._packet_type_streams = {}
 
     def send_close(self, code : int = 1000, reason : str = ""):
         if self.accepted:
             data = close_packet(code, reason)
-            self.write("close", data)
+            self.write(data, "close")
         else:
             self.send_headers(self.stream_id, headers={":status" : code})
             self.transmit()
@@ -98,6 +96,8 @@ class XpraQuicConnection(Connection):
             self.transmit()
 
     def stream_write(self, buf, packet_type):
+        if not packet_type:
+            log.warn(f"no packet type for {buf}")
         data = memoryview_to_bytes(buf)
         stream_id = self.get_packet_stream_id(packet_type)
         log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",
@@ -106,34 +106,7 @@ class XpraQuicConnection(Connection):
         return len(buf)
 
     def get_packet_stream_id(self, packet_type):
-        stream_type = {
-            "sound-data" : "sound",
-            "ping"      : "ping",
-            "ping-echo" : "ping",
-            }.get(packet_type)
-        stream_id = self._packet_type_streams.setdefault(stream_type, self.stream_id)
-        if stream_type and stream_id==self.stream_id:
-            if self.closed:
-                raise RuntimeError(f"cannot send {packet_type} after connection is closed")
-            log(f"new quic stream for {packet_type}")
-            #should use more "correct" values here
-            #(we don't need those headers,
-            # but the client would drop the packet without them..)
-            headers = binary_headers({
-                ":method" : "foo",
-                ":scheme" : "https",
-                ":authority" : "bar",
-                ":path" : "/",
-                })
-            stream_id = self.connection.send_push_promise(self.stream_id, headers)
-            log.error(f"new stream: {stream_id}")
-            self._packet_type_streams[stream_type] = stream_id
-            self.send_headers(stream_id=stream_id, headers={
-                ":status" : 200,
-                "substream" : self.stream_id,
-                "stream-type" : stream_type,
-                })
-        return stream_id
+        return self.stream_id
 
 
     def read(self, n):
