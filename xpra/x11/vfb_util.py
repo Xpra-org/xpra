@@ -358,7 +358,7 @@ def kill_xvfb(xvfb_pid):
         os.unlink(xauthority)
 
 
-def set_initial_resolution(resolutions):
+def set_initial_resolution(resolutions, dpi=0):
     try:
         log = get_vfb_logger()
         log("set_initial_resolution(%s)", resolutions)
@@ -378,10 +378,15 @@ def set_initial_resolution(resolutions):
                 if not (isinstance(v, int) for v in res):
                     raise ValueError(f"resolution values must be ints, found: {res} ({csv(type(v) for v in res)})")
                 w, h, hz = res
+                mdpi = dpi or 96
+                def rdpi(v):
+                    return round(v * 25.4 / mdpi)
                 monitors[i] = {
                     "name"      : f"VFB-{i}",
                     "primary"   : i==0,
                     "geometry"  : (x, y, w, h),
+                    "width-mm"  : rdpi(w),
+                    "height-mm" : rdpi(h),
                     "refresh-rate" : hz*1000,
                     "automatic" : True,
                     }

@@ -48,7 +48,7 @@ class XpraDesktopServer(DesktopServerBase):
             log.warn(" using %r", res[0])
             res = (res[0], )
         with xlog:
-            set_initial_resolution(res)
+            set_initial_resolution(res, self.dpi or self.default_dpi)
 
 
     def configure_best_screen_size(self):
