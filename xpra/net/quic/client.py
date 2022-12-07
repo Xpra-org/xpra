@@ -27,7 +27,7 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
-from xpra.net.quic.common import USER_AGENT, binary_headers
+from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
 from xpra.util import ellipsizer, envbool
 from xpra.log import Logger
 log = Logger("quic")
@@ -156,6 +156,7 @@ def quic_connect(host : str, port : int, path : str,
                  ssl_cert : str, ssl_key : str, ssl_key_password : str,
                  ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
     configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
+    configuration.max_datagram_frame_size = MAX_DATAGRAM_FRAME_SIZE
     configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)

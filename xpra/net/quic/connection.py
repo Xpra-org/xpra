@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from queue import Queue
 from typing import Callable, Union
 
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
-from aioquic.h3.events import DataReceived, H3Event
+from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
@@ -19,6 +20,8 @@ from xpra.log import Logger
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
+
+DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer-position").split(",")
 
 
 class XpraQuicConnection(Connection):
@@ -62,7 +65,7 @@ class XpraQuicConnection(Connection):
         log("ws:http_event_received(%s)", ellipsizer(event))
         if self.closed:
             return
-        if isinstance(event, DataReceived):
+        if isinstance(event, (DataReceived, DatagramReceived)):
             self.read_queue.put(event.data)
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
@@ -97,7 +100,11 @@ class XpraQuicConnection(Connection):
 
     def stream_write(self, buf, packet_type):
         if not packet_type:
-            log.warn(f"no packet type for {buf}")
+            log.warn(f"Warning: missing packet type for {buf}")
+        if packet_type in DATAGRAM_PACKET_TYPES:
+            self.connection.send_datagram(self.stream_id, buf)
+            log(f"sending {packet_type} using datagram")
+            return len(buf)
         data = memoryview_to_bytes(buf)
         stream_id = self.get_packet_stream_id(packet_type)
         log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",
