@@ -378,7 +378,16 @@ def set_initial_resolution(resolutions, dpi=0):
                 if not (isinstance(v, int) for v in res):
                     raise ValueError(f"resolution values must be ints, found: {res} ({csv(type(v) for v in res)})")
                 w, h, hz = res
-                mdpi = dpi or 96
+                mdpi = dpi
+                #guess the DPI if we don't have one:
+                if mdpi<=0:
+                    #use a higher DPI for higher resolutions
+                    if w>=4096 or h>=2560:
+                        mdpi = 144
+                    elif w>=2560 or h>=1440:
+                        mdpi = 120
+                    else:
+                        mdpi = 96
                 def rdpi(v):
                     return round(v * 25.4 / mdpi)
                 monitors[i] = {
