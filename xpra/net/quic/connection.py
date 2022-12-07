@@ -99,13 +99,13 @@ class XpraQuicConnection(Connection):
             self.transmit()
 
     def stream_write(self, buf, packet_type):
+        data = memoryview_to_bytes(buf)
         if not packet_type:
-            log.warn(f"Warning: missing packet type for {buf}")
+            log.warn(f"Warning: missing packet type for {data}")
         if packet_type in DATAGRAM_PACKET_TYPES:
-            self.connection.send_datagram(self.stream_id, buf)
+            self.connection.send_datagram(flow_id=self.stream_id, data=data)
             log(f"sending {packet_type} using datagram")
             return len(buf)
-        data = memoryview_to_bytes(buf)
         stream_id = self.get_packet_stream_id(packet_type)
         log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
