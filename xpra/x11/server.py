@@ -107,7 +107,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             from xpra.x11.vfb_util import set_initial_resolution, parse_env_resolutions
             DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
             with xlog:
-                set_initial_resolution(self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS)
+                set_initial_resolution(self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS, self.dpi or self.default_dpi)
 
     def validate(self):
         if not X11Window.displayHasXComposite():

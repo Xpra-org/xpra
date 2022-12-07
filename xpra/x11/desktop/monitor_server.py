@@ -49,7 +49,7 @@ class XpraMonitorServer(DesktopServerBase):
             return
         res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
         with xlog:
-            set_initial_resolution(res)
+            set_initial_resolution(res, self.dpi or self.default_dpi)
 
 
     def get_server_mode(self):
