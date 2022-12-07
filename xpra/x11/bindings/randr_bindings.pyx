@@ -1129,13 +1129,22 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     self.set_output_int_property(i, "HEIGHT_MM", mmh)
                     #this allows us to disconnect the output of this crtc:
                     self.set_output_int_property(i, "SUSPENDED", not bool(m))
-                    posinfo = ""
-                    if x or y:
-                        posinfo = " at %i,%i" % (x, y)
                     if width==height==mmw==mmh==0:
                         log.info(f"disabling dummy crtc and output {i}")
                     else:
-                        log.info(f"setting dummy crtc and output {i} to {width}x{height} {hz}Hz ({mmw}x{mmh} mm){posinfo}")
+                        posinfo = ""
+                        if x or y:
+                            posinfo = " at %i,%i" % (x, y)
+                        dpiinfo = ""
+                        dpix = round(width * 25.4 / mmw)
+                        dpiy = round(height * 25.4 / mmh)
+                        if abs(dpix-dpiy)<2:
+                            dpi = round((dpix+dpiy)/2)
+                            dpiinfo = f"dpi={dpi}"
+                        else:
+                            dpiinfo = f"dpi={dpix}x{dpiy}"
+                        log.info(f"setting dummy crtc and output {i} to:")
+                        log.info(f" {width}x{height} {hz}Hz ({mmw}x{mmh} mm, {dpiinfo}){posinfo}")
                 finally:
                     if output_info:
                         XRRFreeOutputInfo(output_info)
