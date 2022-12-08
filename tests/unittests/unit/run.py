@@ -60,8 +60,9 @@ def main(args):
         sys.stdout.flush()
     def run_file(p):
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
-        if not (p.startswith(unittests_dir) and p.endswith("test.py")):
-            write(f"invalid file skipped: {p}")
+        tfile = os.path.join(unittests_dir, p)
+        if not (os.path.isfile(tfile) and tfile.startswith(unittests_dir) and tfile.endswith("test.py")):
+            write(f"invalid file skipped: {p}  Expect {unittests_dir}/.../*test.py")
             return 0
         #ie: "unit.version_util_test"
         name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
