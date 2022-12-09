@@ -22,7 +22,7 @@ from xpra.os_util import load_binary_file, WIN32
 from xpra.log import Logger
 
 if WIN32 and not os.environ.get("CUDA_PATH"):
-    os.environ["CUDA_PATH"] = os.path.join(get_app_dir(), "bin")
+    os.environ["CUDA_PATH"] = get_app_dir()
 
 with numpy_import_lock:
     import pycuda               #@UnresolvedImport
