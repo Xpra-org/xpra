@@ -2189,7 +2189,6 @@ if nvidia_ENABLED:
                 sys.exit(1)
             t.join()
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
-        add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
         assert nvcc_versions
         CUDA_BIN_DIR = os.path.dirname(nvcc)
@@ -2198,6 +2197,8 @@ if nvidia_ENABLED:
         #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
+if (nvidia_ENABLED and cuda_kernels_ENABLED) or (is_Debian() or is_Ubuntu()):
+    add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvenc,cuda")
