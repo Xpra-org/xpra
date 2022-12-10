@@ -432,6 +432,8 @@ class SocketProtocol:
         items = []
         for proto_flags,index,level,data in chunks:
             payload_size = len(data)
+            if not payload_size:
+                raise RuntimeError(f"missing data in chunk {index}")
             actual_size = payload_size
             if self.cipher_out:
                 proto_flags |= FLAGS_CIPHER
