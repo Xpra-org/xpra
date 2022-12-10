@@ -2275,7 +2275,7 @@ class WindowVideoSource(WindowSource):
                 stream_filename = os.path.join(SAVE_VIDEO_PATH, stream_filename)
             self.video_stream_file = open(stream_filename, "wb")
             log.info("saving new %s stream for window %i to %s", ve.get_encoding(), self.wid, stream_filename)
-        if self.video_stream_file:
+        if self.video_stream_file and data:
             self.video_stream_file.write(data)
             self.video_stream_file.flush()
 
@@ -2310,6 +2310,9 @@ class WindowVideoSource(WindowSource):
         videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %6.1f MPixels/s, client options=%s",
                             ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""),
                             (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
+        if not data:
+            videolog.error("Error: %s video data is missing", encoding)
+            return None
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
 
     def cancel_video_encoder_flush(self):
