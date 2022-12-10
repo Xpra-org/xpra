@@ -8,6 +8,7 @@
 #pylint: disable=no-member
 
 import os
+import sys
 from time import monotonic
 from threading import RLock
 
@@ -21,7 +22,7 @@ from xpra.platform.paths import (
 from xpra.os_util import load_binary_file, is_WSL, WIN32
 from xpra.log import Logger
 
-if WIN32 and not os.environ.get("CUDA_PATH"):
+if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
 with numpy_import_lock:
