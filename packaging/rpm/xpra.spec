@@ -453,6 +453,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/platform
 %{python3_sitearch}/xpra/scripts
 %{python3_sitearch}/xpra/sound
+%{python3_sitearch}/xpra/gst_*
 %{python3_sitearch}/xpra/x11
 %{python3_sitearch}/xpra/rectangle.*.so
 %{python3_sitearch}/xpra/*.py*
@@ -471,6 +472,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
 %{python3_sitearch}/xpra/codecs/x26?
+%{python3_sitearch}/xpra/codecs/gstreamer
 %if 0%{?fedora}
 %{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/spng

@@ -8,5 +8,6 @@ usr/lib/python3*/*/xpra/codecs/v4l2
 usr/lib/python3*/*/xpra/codecs/vpx
 usr/lib/python3*/*/xpra/codecs/webp
 usr/lib/python3*/*/xpra/codecs/x26?
+usr/lib/python3*/*/xpra/codecs/gstreamer
 #usr/lib/python3*/*/xpra/codecs/avif
 #usr/lib/python3*/*/xpra/codecs/spng
