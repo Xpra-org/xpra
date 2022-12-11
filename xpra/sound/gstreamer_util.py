@@ -7,6 +7,10 @@
 import sys
 import os
 
+from xpra.gst_common import (
+    has_plugins, get_all_plugin_names,
+    import_gst, get_gst_version,
+    )
 from xpra.sound.common import (
     FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
     AAC_MPEG4, WAV_LZ4, \
@@ -219,88 +223,6 @@ CODEC_ORDER = [
     ]
 
 
-gst = None
-
-def get_pygst_version():
-    import gi
-    return getattr(gi, "version_info", ())
-
-def get_gst_version():
-    if not gst:
-        return ()
-    return gst.version()
-
-
-def do_import_gst():
-    global gst
-    if gst is not None:
-        return gst
-
-    #hacks to locate gstreamer plugins on win32 and osx:
-    if WIN32:
-        frozen = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
-        log("gstreamer_util: frozen=%s", frozen)
-        if frozen:
-            from xpra.platform.paths import get_app_dir
-            gst_dir = os.path.join(get_app_dir(), "lib", "gstreamer-1.0")   #ie: C:\Program Files\Xpra\lib\gstreamer-1.0
-            os.environ["GST_PLUGIN_PATH"] = gst_dir
-    elif OSX:
-        bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
-        log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
-        if bundle_contents:
-            rsc_dir = os.path.join(bundle_contents, "Resources")
-            os.environ["GST_PLUGIN_PATH"]       = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
-            os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "bin", "gst-plugin-scanner-1.0")
-    log("GStreamer 1.x environment: %s",
-        dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
-    log("GStreamer 1.x sys.path=%s", csv(sys.path))
-
-    try:
-        log("import gi")
-        import gi
-        gi.require_version('Gst', '1.0')
-        from gi.repository import Gst           #@UnresolvedImport
-        log("Gst=%s", Gst)
-        Gst.init(None)
-        gst = Gst
-    except Exception as e:
-        log("Warning failed to import GStreamer 1.x", exc_info=True)
-        log.warn("Warning: failed to import GStreamer 1.x:")
-        log.warn(" %s", e)
-        return None
-    return gst
-import_gst = do_import_gst
-
-
-def normv(v):
-    if v==2**64-1:
-        return -1
-    return int(v)
-
-
-all_plugin_names = []
-def get_all_plugin_names():
-    global all_plugin_names
-    if not all_plugin_names and gst:
-        registry = gst.Registry.get()
-        all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
-        all_plugin_names.sort()
-        log("found the following plugins: %s", all_plugin_names)
-    return all_plugin_names
-
-def has_plugins(*names):
-    allp = get_all_plugin_names()
-    #support names that contain a gstreamer chain, ie: "flacparse ! flacdec"
-    snames = []
-    for x in names:
-        if not x:
-            continue
-        snames += [v.strip() for v in x.split("!")]
-    missing = [name for name in snames if (name is not None and name not in allp)]
-    if missing:
-        log("missing %s from %s", missing, names)
-    return len(missing)==0
-
 def get_encoder_default_options(encoder):
     #strip the muxer:
     enc = encoder.split("+")[0]
@@ -323,7 +245,7 @@ def get_decoders():
 
 def init_codecs():
     global CODECS
-    if CODECS is not None or gst is None:
+    if CODECS is not None or import_gst() is None:
         return CODECS or {}
     #populate CODECS:
     CODECS = {}
@@ -466,20 +388,6 @@ def can_encode():
 
 def can_decode():
     return [x for x in CODEC_ORDER if has_decoder(x)]
-
-def plugin_str(plugin, options):
-    if plugin is None:
-        return None
-    s = str(plugin)
-    def qstr(v):
-        #only quote strings
-        if isinstance(v, str):
-            return f'"{v}"'
-        return v
-    if options:
-        s += " "
-        s += " ".join([f"{k}={qstr(v)}" for k,v in options.items()])
-    return s
 
 
 def get_source_plugins():
@@ -809,9 +717,6 @@ DEFAULT_SINK_PLUGIN_OPTIONS = {
     "pulse"                 : get_pulse_sink_defaults,
     }
 
-
-def format_element_options(options):
-    return csv("%s=%s" % (k,v) for k,v in options.items())
 
 
 def get_sound_source_options(plugin, options_str, device, want_monitor_device, remote):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,15 +11,19 @@ from threading import Lock
 from gi.repository import GObject
 
 from xpra.sound.sound_pipeline import SoundPipeline
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gst_common import (
+    normv, make_buffer, plugin_str,
+    STREAM_TYPE, BUFFER_FORMAT,
+    )
 from xpra.sound.gstreamer_util import (
-    plugin_str, get_decoder_elements, has_plugins,
-    get_queue_time, normv, get_decoders,
+    get_decoder_elements, has_plugins,
+    get_queue_time, get_decoders,
     get_default_sink_plugin, get_sink_plugins,
-    MP3, CODEC_ORDER, gst, QUEUE_LEAK,
+    MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
     GST_FLOW_OK,
     )
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
 from xpra.util import csv, envint, envbool
@@ -28,7 +32,6 @@ from xpra.log import Logger
 
 log = Logger("sound")
 gstlog = Logger("gstreamer")
-
 
 SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
                                   "async"   : True,
@@ -49,15 +52,6 @@ MARGIN = max(0, min(200, envint("XPRA_SOUND_MARGIN", 50)))
 #how high we push up the min-level to prevent underruns:
 UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
-
-
-GST_FORMAT_BYTES = 2
-GST_FORMAT_TIME = 3
-GST_FORMAT_BUFFERS = 4
-BUFFER_FORMAT = GST_FORMAT_BUFFERS
-
-GST_APP_STREAM_TYPE_STREAM = 0
-STREAM_TYPE = GST_APP_STREAM_TYPE_STREAM
 
 
 class SoundSink(SoundPipeline):
@@ -105,14 +99,16 @@ class SoundSink(SoundPipeline):
         self.last_min_update = monotonic()
         self.level_lock = Lock()
         pipeline_els = []
-        appsrc_el = ["appsrc",
-                     #"do-timestamp=1",
-                     "name=src",
-                     "emit-signals=0",
-                     "block=0",
-                     "is-live=0",
-                     "stream-type=%s" % STREAM_TYPE,
-                     "format=%s" % BUFFER_FORMAT]
+        appsrc_el = [
+            "appsrc",
+            #"do-timestamp=1",
+            "name=src",
+            "emit-signals=0",
+            "block=0",
+            "is-live=0",
+            f"stream-type={STREAM_TYPE}",
+            f"format={BUFFER_FORMAT}",
+            ]
         pipeline_els.append(" ".join(appsrc_el))
         if parser:
             pipeline_els.append(parser)
@@ -122,13 +118,15 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         if QUEUE_TIME>0:
-            pipeline_els.append(" ".join(["queue",
-                                          "name=queue",
-                                          "min-threshold-time=0",
-                                          "max-size-buffers=0",
-                                          "max-size-bytes=0",
-                                          "max-size-time=%s" % QUEUE_TIME,
-                                          "leaky=%s" % QUEUE_LEAK]))
+            pipeline_els.append(" ".join([
+                "queue",
+                "name=queue",
+                "min-threshold-time=0",
+                "max-size-buffers=0",
+                "max-size-bytes=0",
+                f"max-size-time={QUEUE_TIME}",
+                f"leaky={QUEUE_LEAK}",
+                ]))
         pipeline_els.append("volume name=volume volume=0")
         if CLOCK_SYNC:
             if not has_plugins("clocksync"):
@@ -424,8 +422,7 @@ class SoundSink(SoundPipeline):
         #having a timestamp causes problems with the queue and overruns:
         log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         self.save_to_file(data)
-        buf = gst.Buffer.new_allocate(None, len(data), None)
-        buf.fill(0, data)
+        buf = make_buffer(data)
         if metadata:
             #having a timestamp causes problems with the queue and overruns:
             #ts = metadata.get("timestamp")
@@ -460,7 +457,7 @@ class SoundSink(SoundPipeline):
         #buf.offset_end = offset_end
         #buf.set_caps(gst.caps_from_string(caps))
         r = self.src.emit("push-buffer", buf)
-        if r==gst.FlowReturn.OK:
+        if r==GST_FLOW_OK:
             return r
         if self.queue_state!="error":
             log.error("Error pushing buffer: %s", r)

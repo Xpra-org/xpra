@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,10 +14,11 @@ from xpra.os_util import SIGNAMES
 from xpra.util import csv, envint, envbool, envfloat
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.gst_common import normv, has_plugins, plugin_str
 from xpra.sound.gstreamer_util import (
-    get_source_plugins, plugin_str, get_encoder_elements,
-    get_encoder_default_options, normv,
-    get_encoders, get_queue_time, has_plugins,
+    get_source_plugins, get_encoder_elements,
+    get_encoder_default_options,
+    get_encoders, get_queue_time,
     MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT,
     SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT,
     CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
@@ -110,8 +111,8 @@ class SoundSource(SoundPipeline):
                         "min-threshold-time=0",
                         "max-size-buffers=0",
                         "max-size-bytes=0",
-                        "max-size-time=%s" % (SOURCE_QUEUE_TIME*MS_TO_NS),
-                        "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM]
+                        f"max-size-time={SOURCE_QUEUE_TIME*MS_TO_NS}",
+                        f"leaky={GST_QUEUE_LEAK_DOWNSTREAM}"]
             pipeline_els += [" ".join(queue_el)]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
@@ -122,7 +123,7 @@ class SoundSource(SoundPipeline):
                 pipeline_els.append("audioconvert")
             if encoder in CUTTER_NEEDS_RESAMPLE:
                 pipeline_els.append("audioresample")
-        pipeline_els.append("volume name=volume volume=%s" % volume)
+        pipeline_els.append(f"volume name=volume volume={volume}")
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
             pipeline_els.append(encoder_str)
@@ -295,27 +296,6 @@ class SoundSource(SoundPipeline):
             return GST_FLOW_OK
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
         return self.do_emit_buffer(data, metadata)
-
-
-    def caps_to_dict(self, caps):
-        if not caps:
-            return {}
-        d = {}
-        try:
-            for cap in caps:
-                name = cap.get_name()
-                capd = {}
-                for k in cap.keys():
-                    v = cap[k]
-                    if isinstance(v, (str, int)):
-                        capd[k] = cap[k]
-                    elif k not in self.skipped_caps:
-                        log("skipping %s cap key %s=%s of type %s", name, k, v, type(v))
-                d[name] = capd
-        except Exception as e:
-            log.error("Error parsing '%s':", caps)
-            log.estr(e)
-        return d
 
 
     def flush_jitter_queue(self):

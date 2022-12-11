@@ -65,7 +65,6 @@ class Encoder:
             "encoding"  : self.encoding,
             "src_format": self.src_format,
             "dst_formats" : self.dst_formats,
-            "version"   : get_version(),
             })
         #calculate fps:
         now = monotonic()

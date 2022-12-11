@@ -242,6 +242,7 @@ nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("
 cuda_kernels_ENABLED    = DEFAULT and not OSX
 cuda_rebuild_ENABLED    = not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
+gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
@@ -268,14 +269,13 @@ CODEC_SWITCHES = [
     "nvjpeg_encoder", "nvjpeg_decoder", "avif", "argb",
     "v4l2", "evdi", "drm",
     "dec_avcodec2", "csc_swscale",
-    "csc_cython", "csc_libyuv",
+    "csc_cython", "csc_libyuv", "gstreamer",
     ]
 SWITCHES = [
     "cython", "cython_tracing",
     "modules", "data",
     "codecs",
     ] + CODEC_SWITCHES + [
-    "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "rencodeplus", "brotli", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4",
     "clipboard",
@@ -373,7 +373,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
 
     if not cython_ENABLED:
         enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = False
-        csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = False
+        csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
         vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = vpl_ENABLED = False
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
@@ -2248,6 +2248,8 @@ tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 toggle_packages(vpl_ENABLED, "xpra.codecs.vpl")
 tace(vpl_ENABLED, "xpra.codecs.vpl.encoder", "vpl")
+toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer")
+
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 

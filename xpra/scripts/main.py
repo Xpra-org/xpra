@@ -424,20 +424,14 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                 os.environ["XDG_RUNTIME_DIR"] = xrd
 
     if not mode.startswith("_sound_"):
-        #only the sound subcommands should ever actually import GStreamer:
-        if "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
-            raise Exception("cannot prevent the import of the GStreamer bindings, already loaded")
-        sys.modules["gst"] = None
-        sys.modules["gi.repository.Gst"]= None
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
         if mode not in (
             "attach", "listen",
             "seamless", "desktop", "shadow", "expand",
-            "upgrade", "upgrade-seamless", "upgrade-desktop",
             "proxy",
-            ):
+            ) and not mode.startswith("upgrade"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
