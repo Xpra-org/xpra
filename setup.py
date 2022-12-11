@@ -2022,7 +2022,7 @@ tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
 tace(proc_ENABLED, "xpra.platform.xposix.proc", "libprocps", extra_compile_args = "-Wno-error")
 
 #codecs:
-toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
+toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 if nvfbc_ENABLED:
     #platform: ie: `linux2` -> `linux`, `win32` -> `win`

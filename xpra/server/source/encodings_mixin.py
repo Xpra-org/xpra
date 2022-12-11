@@ -392,7 +392,7 @@ class EncodingsMixin(StubSourceMixin):
 
     def parse_proxy_video(self):
         self.wait_for_threaded_init()
-        from xpra.codecs.enc_proxy.encoder import Encoder  #pylint: disable=import-outside-toplevel
+        from xpra.codecs.proxy.encoder import Encoder  #pylint: disable=import-outside-toplevel
         proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
         proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
         for encoding, colorspace_specs in proxy_video_encodings.items():
