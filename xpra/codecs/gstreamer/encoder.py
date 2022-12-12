@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from queue import Queue, Empty
 
-from xpra.util import typedict
+from xpra.util import typedict, parse_simple_dict
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
     import_gst, make_buffer, normv,
@@ -18,6 +19,26 @@ from xpra.codecs.image_wrapper import ImageWrapper
 
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
+
+#ENCODER_PLUGIN = "vaapih264enc"
+#ENCODER_PLUGIN = "x264enc"
+ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "x264enc")
+DEFAULT_ENCODER_OPTIONS = {
+    "vaapih264enc" : {
+        #"max-bframes" : 0,
+        #"tune"  : 3,    #low-power
+        #"rate-control" : 4, #vbr
+        "quality-level" : 6,
+        },
+    "x264enc" : {
+        "speed-preset"  : "ultrafast",
+        "tune"          : "zerolatency",
+        "byte-stream"   : True,
+        "threads"       : 1,
+        "key-int-max"   : 15,
+        "intra-refresh" : True,
+        }
+    }
 
 
 def get_version():
@@ -102,6 +123,16 @@ class Encoder(Pipeline):
             #"RGB8P"
             }[src_format] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=30/1"
+        #parse encoder plugin string:
+        parts = ENCODER_PLUGIN.split(" ", 1)
+        encoder = parts[0]
+        encoder_options = DEFAULT_ENCODER_OPTIONS.get(encoder, {})
+        if len(parts)==2:
+            #override encoder options:
+            encoder_options.update(parse_simple_dict(parts[1], " "))
+        encoder_str = encoder
+        if encoder_options:
+            encoder_str += " "+" ".join(f"{k}={v}" for k,v in encoder_options.items())
         elements = [
             #"do-timestamp=1",
             f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
@@ -109,7 +140,7 @@ class Encoder(Pipeline):
             #f"capsfilter caps=video/x-raw,format={src_format},width={self.width},height={self.height}",
             "queue max-size-buffers=2",
             "videoconvert",
-            "x264enc speed-preset=ultrafast tune=zerolatency byte-stream=true threads=1 key-int-max=15 intra-refresh=true",
+            encoder_str,
             #mp4mux
             "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
             ]
@@ -186,16 +217,17 @@ class Encoder(Pipeline):
     def on_new_sample(self, _bus):
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
-        pts = normv(buf.pts)
         size = buf.get_size()
         log("on_new_sample size=%s", size)
         if size:
             data = buf.extract_dup(0, size)
+            client_info = {}
+            pts = normv(buf.pts)
+            if pts>=0:
+                client_info["timestamp"] = pts
             duration = normv(buf.duration)
-            client_info = {
-                "timestamp"  : pts,
-                "duration"   : duration,
-                }
+            if duration>=0:
+                client_info["duration"] = duration
             qs = self.frame_queue.qsize()
             if qs>0:
                 client_info["delayed"] = qs
