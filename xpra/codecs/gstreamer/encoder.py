@@ -25,10 +25,15 @@ log = Logger("encoder", "gstreamer")
 ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "x264enc")
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
-        #"max-bframes" : 0,
-        #"tune"  : 3,    #low-power
-        #"rate-control" : 4, #vbr
-        "quality-level" : 6,
+        "max-bframes" : 0,
+        "tune"  : 3,    #low-power
+        #"rate-control" : 8, #qvbr
+        "compliance-mode" : 1,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
+        #"keyframe-period"   : 9999,
+        "prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
+        #"quality-factor" : 10,
+        #"quality-level" : 50,
+        #"bitrate"   : 2000,
         },
     "x264enc" : {
         "speed-preset"  : "ultrafast",
@@ -55,7 +60,7 @@ def get_encodings():
 
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
-    return ("BGRX", )
+    return ("YUV420P", )
     #return ("YUV420P", "BGRX", )
 
 def get_output_colorspaces(encoding, input_colorspace):
@@ -122,7 +127,7 @@ class Encoder(Pipeline):
             "YUV400"    : "GRAY8",
             #"RGB8P"
             }[src_format] 
-        CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=30/1"
+        CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
         #parse encoder plugin string:
         parts = ENCODER_PLUGIN.split(" ", 1)
         encoder = parts[0]
@@ -136,9 +141,6 @@ class Encoder(Pipeline):
         elements = [
             #"do-timestamp=1",
             f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
-            #f"capsfilter 'video/x-raw,format=(string){self.src_format},width={self.width},height={self.height},framerate=(fraction)30/1'",
-            #f"capsfilter caps=video/x-raw,format={src_format},width={self.width},height={self.height}",
-            "queue max-size-buffers=2",
             "videoconvert",
             encoder_str,
             #mp4mux
@@ -154,12 +156,15 @@ class Encoder(Pipeline):
         self.sink.connect("new-preroll", self.on_new_preroll)
         self.start()
 
+    def on_message(self, bus, message):
+        if message.type == Gst.MessageType.NEED_CONTEXT and ENCODER_PLUGIN.startswith("vaapi"):
+            log("vaapi is requesting a context")
+            return GST_FLOW_OK
+        return super().on_message(bus, message)
+
     def on_new_preroll(self, _appsink):
         log("new-preroll")
         return GST_FLOW_OK
-
-    def is_ready(self):
-        return True
 
     def get_info(self) -> dict:
         info = get_info()
@@ -180,6 +185,9 @@ class Encoder(Pipeline):
         if self.src_format is None:
             return "gstreamer(uninitialized)"
         return f"gstreamer({self.src_format} - {self.width}x{self.height})"
+
+    def is_ready(self):
+        return self.src_format is not None
 
     def is_closed(self):
         return self.src_format is None
@@ -244,9 +252,9 @@ class Encoder(Pipeline):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
         buf = make_buffer(data)
-        duration = normv(0)
-        if duration>0:
-            buf.duration = duration
+        #duration = normv(0)
+        #if duration>0:
+        #    buf.duration = duration
         #buf.size = size
         #buf.timestamp = timestamp
         #buf.offset = offset
@@ -264,3 +272,10 @@ class Encoder(Pipeline):
             return None
 
 GObject.type_register(Encoder)
+
+
+def selftest(full=False):
+    log("gstreamer encoder selftest: %s", get_info())
+    from xpra.codecs.codec_checks import testencoder
+    from xpra.codecs.gstreamer import encoder
+    assert testencoder(encoder, full)
