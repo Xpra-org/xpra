@@ -22,7 +22,7 @@ log = Logger("encoder", "gstreamer")
 
 #ENCODER_PLUGIN = "vaapih264enc"
 #ENCODER_PLUGIN = "x264enc"
-ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "x264enc")
+ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "vaapih264enc")
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes" : 0,
