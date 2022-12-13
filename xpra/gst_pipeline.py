@@ -143,8 +143,6 @@ class Pipeline(GObject.GObject):
         #        v = s.replace("\r", "").replace("\n", "")
         #        if v:
         #            log(v)
-        if self.state not in ("starting", "stopped", "ready", None):
-            log.info("stopping")
         self.update_state("stopped")
         p.set_state(Gst.State.NULL)
         log("Pipeline.stop() done")

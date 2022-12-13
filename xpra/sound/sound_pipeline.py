@@ -116,6 +116,11 @@ class SoundPipeline(Pipeline):
             self.timeout_add(1000, logsc)
         log("SoundPipeline.start() done")
 
+    def stop(self):
+        if self.pipeline and self.state not in ("starting", "stopped", "ready", None):
+            log.info("stopping")
+        super().stop()
+
     def cleanup(self):
         super().cleanup()
         self.codec = None
