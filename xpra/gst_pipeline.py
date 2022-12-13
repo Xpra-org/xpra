@@ -9,7 +9,7 @@
 from time import monotonic
 
 from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
-gst = import_gst()
+Gst = import_gst()
 from gi.repository import GLib, GObject
 
 from xpra.util import AtomicInteger, noerr, first_time
@@ -91,7 +91,7 @@ class Pipeline(GObject.GObject):
         log("pipeline=%s", self.pipeline_str)
         self.start_time = monotonic()
         try:
-            self.pipeline = gst.parse_launch(self.pipeline_str)
+            self.pipeline = Gst.parse_launch(self.pipeline_str)
         except Exception as e:
             self.pipeline = None
             log.error("Error setting up the pipeline:")
@@ -112,10 +112,10 @@ class Pipeline(GObject.GObject):
         if not self.pipeline:
             return  "stopped"
         return {
-            gst.State.PLAYING   : "active",
-            gst.State.PAUSED    : "paused",
-            gst.State.NULL      : "stopped",
-            gst.State.READY     : "ready",
+            Gst.State.PLAYING   : "active",
+            Gst.State.PAUSED    : "paused",
+            Gst.State.NULL      : "stopped",
+            Gst.State.READY     : "ready",
             }.get(state, "unknown")
 
     def get_state(self):
@@ -126,7 +126,7 @@ class Pipeline(GObject.GObject):
             log.error("Error: cannot start without a pipeline")
             return False
         self.update_state("active")
-        self.pipeline.set_state(gst.State.PLAYING)
+        self.pipeline.set_state(Gst.State.PLAYING)
         self.emit_info()
         return True
 
@@ -146,7 +146,7 @@ class Pipeline(GObject.GObject):
         if self.state not in ("starting", "stopped", "ready", None):
             log.info("stopping")
         self.update_state("stopped")
-        p.set_state(gst.State.NULL)
+        p.set_state(Gst.State.NULL)
         log("Pipeline.stop() done")
 
     def cleanup(self):
@@ -198,13 +198,13 @@ class Pipeline(GObject.GObject):
         #log("on_message(%s, %s)", bus, message)
         log("on_message: %s", message)
         t = message.type
-        if t == gst.MessageType.EOS:
-            self.pipeline.set_state(gst.State.NULL)
+        if t == Gst.MessageType.EOS:
+            self.pipeline.set_state(Gst.State.NULL)
             self.gstloginfo("EOS")
             self.update_state("stopped")
             self.idle_emit("state-changed", self.state)
-        elif t == gst.MessageType.ERROR:
-            self.pipeline.set_state(gst.State.NULL)
+        elif t == Gst.MessageType.ERROR:
+            self.pipeline.set_state(Gst.State.NULL)
             err, details = message.parse_error()
             log.error("Gstreamer pipeline error: %s", err.message)
             for l in err.args:
@@ -225,39 +225,39 @@ class Pipeline(GObject.GObject):
             self.idle_emit("error", str(err))
             #exit
             self.cleanup()
-        elif t == gst.MessageType.TAG:
+        elif t == Gst.MessageType.TAG:
             try:
                 self.parse_message(message)
             except Exception as e:
                 self.gstlogwarn("Warning: failed to parse gstreamer message:")
                 self.gstlogwarn(" %s: %s", type(e), e)
-        elif t == gst.MessageType.ELEMENT:
+        elif t == Gst.MessageType.ELEMENT:
             try:
                 self.parse_element_message(message)
             except Exception as e:
                 self.gstlogwarn("Warning: failed to parse gstreamer element message:")
                 self.gstlogwarn(" %s: %s", type(e), e)
-        elif t == gst.MessageType.STREAM_STATUS:
+        elif t == Gst.MessageType.STREAM_STATUS:
             log("stream status: %s", message)
-        elif t == gst.MessageType.STREAM_START:
+        elif t == Gst.MessageType.STREAM_START:
             log("stream start: %s", message)
             self.onstart()
-        elif t in (gst.MessageType.ASYNC_DONE, gst.MessageType.NEW_CLOCK):
+        elif t in (Gst.MessageType.ASYNC_DONE, Gst.MessageType.NEW_CLOCK):
             log("%s", message)
-        elif t == gst.MessageType.STATE_CHANGED:
+        elif t == Gst.MessageType.STATE_CHANGED:
             _, new_state, _ = message.parse_state_changed()
-            log("state-changed on %s: %s", message.src, gst.Element.state_get_name(new_state))
+            log("state-changed on %s: %s", message.src, Gst.Element.state_get_name(new_state))
             state = self.do_get_state(new_state)
-            if isinstance(message.src, gst.Pipeline):
+            if isinstance(message.src, Gst.Pipeline):
                 self.update_state(state)
                 self.idle_emit("state-changed", state)
-        elif t == gst.MessageType.DURATION_CHANGED:
+        elif t == Gst.MessageType.DURATION_CHANGED:
             log("duration changed: %s", message)
-        elif t == gst.MessageType.LATENCY:
+        elif t == Gst.MessageType.LATENCY:
             log("latency message from %s: %s", message.src, message)
-        elif t == gst.MessageType.INFO:
+        elif t == Gst.MessageType.INFO:
             self.gstloginfo("pipeline message: %s", message)
-        elif t == gst.MessageType.WARNING:
+        elif t == Gst.MessageType.WARNING:
             w = message.parse_warning()
             self.gstlogwarn("pipeline warning: %s", w[0].message)
             for x in w[1:]:
