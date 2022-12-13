@@ -384,7 +384,13 @@ def main(args):
             list_codecs = ALL_CODECS
             #not really a codec, but gets used by codecs, so include version info:
             add_codec_version("numpy", "numpy")
-        print("modules found:")
+
+        #use another logger for printing the results,
+        #and use debug level by default, which shows up as green
+        out = Logger("encoding")
+        out.enable_debug()
+        enable_color(format_string=NOPREFIX_FORMAT)
+        out("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
             mod = codecs.get(name, "")
@@ -398,30 +404,33 @@ def main(args):
             if name in NOLOAD and not f:
                 #don't show codecs from the NOLOAD list
                 continue
-            print(f"* {name.ljust(20)} : {f}")
-            if mod and verbose:
-                try:
-                    if name.find("csc")>=0:
-                        cs = list(mod.get_input_colorspaces())
-                        for c in list(cs):
-                            cs += list(mod.get_output_colorspaces(c))
-                        print(f"                         colorspaces: {csv(list(set(cs)))}")
-                    elif name.find("enc")>=0 or name.find("dec")>=0:
-                        encodings = mod.get_encodings()
-                        print(f"                         encodings: {csv(encodings)}")
+            if mod:
+                out(f"* {name.ljust(20)} : {f}")
+                if verbose:
                     try:
-                        i = mod.get_info()
-                        for k,v in sorted(i.items()):
-                            print(f"                         {k} = {v}")
-                    except Exception:
-                        pass
-                except Exception as e:
-                    print(f"error getting extra information on {name}: {e}")
-        print("")
-        print("codecs versions:")
+                        if name.find("csc")>=0:
+                            cs = list(mod.get_input_colorspaces())
+                            for c in list(cs):
+                                cs += list(mod.get_output_colorspaces(c))
+                            out(f"                         colorspaces: {csv(list(set(cs)))}")
+                        elif name.find("enc")>=0 or name.find("dec")>=0:
+                            encodings = mod.get_encodings()
+                            out(f"                         encodings: {csv(encodings)}")
+                        try:
+                            i = mod.get_info()
+                            for k,v in sorted(i.items()):
+                                out(f"                         {k} = {v}")
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        log.error(f"error getting extra information on {name}: {e}")
+            elif name in codec_errors:
+                out.error(f"* {name.ljust(20)} : {codec_errors[name]}")
+        out("")
+        out("codecs versions:")
         def forcever(v):
             return pver(v, numsep=".", strsep=".").lstrip("v")
-        print_nested_dict(codec_versions, vformat=forcever)
+        print_nested_dict(codec_versions, vformat=forcever, print_fn=out)
     return 0
 
 
