@@ -191,7 +191,7 @@ class Pipeline(GObject.GObject):
         pass
 
 
-    def parse_message(self, message):
+    def parse_tag_message(self, message):
         pass
 
     def on_message(self, _bus, message):
@@ -227,7 +227,7 @@ class Pipeline(GObject.GObject):
             self.cleanup()
         elif t == Gst.MessageType.TAG:
             try:
-                self.parse_message(message)
+                self.parse_tag_message(message)
             except Exception as e:
                 self.gstlogwarn("Warning: failed to parse gstreamer message:")
                 self.gstlogwarn(" %s: %s", type(e), e)
