@@ -9,7 +9,7 @@ from queue import Queue, Empty
 from xpra.util import typedict, parse_simple_dict
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
-    import_gst, make_buffer, normv,
+    import_gst, normv,
     STREAM_TYPE, BUFFER_FORMAT,
     )
 from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
@@ -246,12 +246,20 @@ class Encoder(Pipeline):
         if image.get_planes()==ImageWrapper.PACKED:
             data = image.get_pixels()
         else:
+            #merge all planes into a single buffer:
             data = b"".join(image.get_pixels())
         log(f"compress_image({image}, {options}) state={self.state} pixel buffer size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        buf = make_buffer(data)
+        mf = Gst.MemoryFlags
+        buf = Gst.Buffer.new_wrapped_full(
+            mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
+            data,
+            len(data),
+            0,
+            None,
+            None)
         #duration = normv(0)
         #if duration>0:
         #    buf.duration = duration
