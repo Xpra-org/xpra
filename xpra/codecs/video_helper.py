@@ -29,7 +29,8 @@ CODEC_TO_MODULE = {
     "jpeg"       : "jpeg",
     "webp"       : "webp",
     "nvjpeg"     : "nvidia.nvjpeg",
-    "gstreamer"  : "gstreamer",
+    "dec_gstreamer"  : "gstreamer.decoder",
+    "enc_gstreamer"  : "gstreamer.encoder",
     }
 
 def has_codec_module(module_name):
@@ -52,14 +53,14 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "enc_gstreamer", "dec_gstreamer")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx")
 
-PREFERRED_ENCODER_ORDER = ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer")
-PREFERRED_DECODER_ORDER = ("avcodec2", "vpx")
+PREFERRED_ENCODER_ORDER = ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "enc_gstreamer")
+PREFERRED_DECODER_ORDER = ("avcodec2", "vpx", "dec_gstreamer")
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
@@ -75,6 +76,8 @@ def get_encoder_module_name(x):
     return "enc_"+x             #ie: "enc_x264"
 
 def get_decoder_module_name(x):
+    if x.find("dec")>=0:
+        return x                #ie: "nvenc" or "enc_vpx"
     return "dec_"+x         #ie: "dec_vpx"
 
 def get_csc_module_name(x):
@@ -394,7 +397,7 @@ class VideoHelper:
             (taking into account the decoder's actual output colorspace for each encoding)
         """
         log("get_server_full_csc_modes(%s) decoder encodings=%s",
-            client_supported_csc_modes, self._video_decoder_specs.keys())
+            client_supported_csc_modes, csv(self._video_decoder_specs.keys()))
         full_csc_modes = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None

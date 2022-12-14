@@ -16,7 +16,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg", "enc_vpl", "enc_gstreamer"]
+NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "enc_ffmpeg", "enc_vpl", "enc_gstreamer", "dec_gstreamer"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -38,7 +38,7 @@ def filt(*values):
 CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_vpl", "enc_gstreamer")
-DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
+DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2", "nvdec")
 SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
 
@@ -207,6 +207,7 @@ CODEC_OPTIONS = {
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "ffmpeg",       "decoder", "Decoder"),
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
+    "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
     #sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
@@ -390,7 +391,7 @@ def main(args):
         out = Logger("encoding")
         out.enable_debug()
         enable_color(format_string=NOPREFIX_FORMAT)
-        out("modules found:")
+        out.info("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
             mod = codecs.get(name, "")
@@ -427,7 +428,7 @@ def main(args):
             elif name in codec_errors:
                 out.error(f"* {name.ljust(20)} : {codec_errors[name]}")
         out("")
-        out("codecs versions:")
+        out.info("codecs versions:")
         def forcever(v):
             return pver(v, numsep=".", strsep=".").lstrip("v")
         print_nested_dict(codec_versions, vformat=forcever, print_fn=out)

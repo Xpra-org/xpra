@@ -4,15 +4,20 @@
 # later version. See the file COPYING for details.
 
 import os
-from queue import Queue, Empty
+from queue import Empty
 
-from xpra.util import typedict, parse_simple_dict
+from xpra.util import parse_simple_dict
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
     import_gst, normv,
     STREAM_TYPE, BUFFER_FORMAT,
     )
-from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
+from xpra.gst_pipeline import GST_FLOW_OK
+from xpra.codecs.gstreamer.codec_common import (
+    VideoPipeline,
+    get_version, get_type, get_info,
+    init_module, cleanup_module,
+    )
 from xpra.log import Logger
 from gi.repository import GObject
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -20,6 +25,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
+assert get_version and init_module and cleanup_module
 #ENCODER_PLUGIN = "vaapih264enc"
 #ENCODER_PLUGIN = "x264enc"
 ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "vaapih264enc")
@@ -46,15 +52,6 @@ DEFAULT_ENCODER_OPTIONS = {
     }
 
 
-def get_version():
-    return (5, 0)
-
-def get_type():
-    return "gstreamer"
-
-def get_info():
-    return {"version"   : get_version()}
-
 def get_encodings():
     return ("h264", )
 
@@ -67,12 +64,6 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()
     assert input_colorspace in get_input_colorspaces(encoding)
     return ("YUV420P", )
-
-def init_module():
-    log("gstreamer.init_module()")
-
-def cleanup_module():
-    log("gstreamer.cleanup_module()")
 
 
 def get_spec(encoding, colorspace):
@@ -89,24 +80,16 @@ def get_spec(encoding, colorspace):
                       width_mask=0xFFFE, height_mask=0xFFFE, max_w=4096, max_h=4096)
 
 
-class Encoder(Pipeline):
-    __gsignals__ = Pipeline.__generic_signals__.copy()
+class Encoder(VideoPipeline):
+    __gsignals__ = VideoPipeline.__generic_signals__.copy()
     """
     Dispatch video encoding to a gstreamer pipeline
     """
-    def init_context(self, encoding, width, height, src_format, options=None):
-        options = typedict(options or {})
-        if encoding not in get_encodings():
-            raise ValueError(f"invalid encoding {encoding!r}")
-        self.encoding = encoding
-        self.width = width
-        self.height = height
-        self.src_format = src_format
+    def create_pipeline(self, options):
+        if self.encoding not in get_encodings():
+            raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
-        self.frames = 0
-        self.pipeline_str = ""
-        self.frame_queue = Queue()
-        if src_format in (
+        if self.colorspace in (
             "NV12",
             "RGBA", "BGRA", "ARGB", "ABGR",
             "RGB", "BGR",
@@ -115,7 +98,7 @@ class Encoder(Pipeline):
             "BGRP", "RGBP",
             ):
             #identical name:
-            gst_rgb_format = src_format
+            gst_rgb_format = self.colorspace
         else:
             #translate to gstreamer name:
             gst_rgb_format = {
@@ -126,7 +109,7 @@ class Encoder(Pipeline):
             "XBGR"      : "xBGR",
             "YUV400"    : "GRAY8",
             #"RGB8P"
-            }[src_format] 
+            }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
         #parse encoder plugin string:
         parts = ENCODER_PLUGIN.split(" ", 1)
@@ -148,78 +131,15 @@ class Encoder(Pipeline):
             ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
-        self.src    = self.pipeline.get_by_name("src")
-        self.src.set_property("format", Gst.Format.TIME)
-        #self.src.set_caps(Gst.Caps.from_string(CAPS))
-        self.sink   = self.pipeline.get_by_name("sink")
-        self.sink.connect("new-sample", self.on_new_sample)
-        self.sink.connect("new-preroll", self.on_new_preroll)
-        self.start()
-
-    def on_message(self, bus, message):
-        if message.type == Gst.MessageType.NEED_CONTEXT and ENCODER_PLUGIN.startswith("vaapi"):
-            log("vaapi is requesting a context")
-            return GST_FLOW_OK
-        return super().on_message(bus, message)
-
-    def on_new_preroll(self, _appsink):
-        log("new-preroll")
-        return GST_FLOW_OK
-
-    def get_info(self) -> dict:
-        info = get_info()
-        if self.src_format is None:
-            return info
-        info.update({
-            "frames"    : self.frames,
-            "width"     : self.width,
-            "height"    : self.height,
-            "encoding"  : self.encoding,
-            "src_format": self.src_format,
-            "dst_formats" : self.dst_formats,
-            "version"   : get_version(),
-            })
-        return info
-
-    def __repr__(self):
-        if self.src_format is None:
-            return "gstreamer(uninitialized)"
-        return f"gstreamer({self.src_format} - {self.width}x{self.height})"
-
-    def is_ready(self):
-        return self.src_format is not None
-
-    def is_closed(self):
-        return self.src_format is None
-
-    def get_encoding(self):
-        return self.encoding
-
-    def get_width(self):
-        return self.width
-
-    def get_height(self):
-        return self.height
-
-    def get_type(self):
-        return "gstreamer"
 
     def get_src_format(self):
-        return self.src_format
+        return self.colorspace
 
-    def clean(self):
-        super().stop()
-        self.width = 0
-        self.height = 0
-        self.src_format = None
-        self.encoding = ""
-        self.src_format = ""
-        self.dst_formats = []
-        self.frames = 0
-
-
-    def do_emit_info(self):
-        pass
+    def get_info(self) -> dict:
+        info = super().get_info()
+        if self.dst_formats:
+            info["dst_formats"] = self.dst_formats
+        return info
 
 
     def on_new_sample(self, _bus):
@@ -267,17 +187,7 @@ class Encoder(Pipeline):
         #buf.timestamp = timestamp
         #buf.offset = offset
         #buf.offset_end = offset_end
-        r = self.src.emit("push-buffer", buf)
-        if r!=GST_FLOW_OK:
-            log.error("Error: unable to push image buffer")
-            return None
-        try:
-            r = self.frame_queue.get(timeout=0.5)
-            self.frames += 1
-            return r
-        except Empty:
-            log.error("Error: frame queue timeout")
-            return None
+        return self.process_buffer(buf)
 
 GObject.type_register(Encoder)
 
