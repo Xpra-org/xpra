@@ -20,8 +20,9 @@ log = Logger("decoder", "gstreamer")
 assert get_version and get_type and init_module and cleanup_module
 
 
+CODECS = ("vp8", "h264")
 def get_encodings():
-    return ("vp8", )
+    return CODECS
 
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
@@ -44,19 +45,21 @@ class Decoder(VideoPipeline):
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = "I420"
-        #STREAM_CAPS = f"caps=video/x-vp8,width={self.width},height={self.height}"
-        STREAM_CAPS = f"video/x-vp8,width={self.width},height={self.height}"
         IMAGE_CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format}"
+        if self.encoding=="vp8":
+            stream_caps = f"video/x-vp8,width={self.width},height={self.height}"
+            decode = ["vp8dec"]
+        elif self.encoding=="h264":
+            stream_caps = f"video/x-h264,profile=main,stream-format=avc,alignment=au,width={self.width},height={self.height}"
+            decode = ["vaapih264dec"]
+            decode = ["openh264dec"]
+            decode = ["avdec_h264"]
+        else:
+            raise RuntimeError(f"invalid encoding {self.encoding}")
         elements = [
             #"do-timestamp=1",
-            f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={STREAM_CAPS}",
-            "vp8dec",
-            #avdec_vp8
-            #"h264parse",
-            #"avdec_h264",
-            #video/x-h264,stream-format=avc,alignment=au
-            #"videoconvert",
-            #mp4mux
+            f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}"
+            ] + decode + [
             f"appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false caps={IMAGE_CAPS}",
             ]
         if not self.setup_pipeline_and_bus(elements):
@@ -77,9 +80,12 @@ class Decoder(VideoPipeline):
             Ysize = Ystride*roundup(self.height, 2)
             UVstride = roundup(roundup(self.width, 2)//2, 4)
             UVsize = UVstride*roundup(self.height, 2)//2
+            total = Ysize+2*UVsize
+            if size<total:
+                raise RuntimeError(f"I420 sample buffer is too small: expected {total} but got {size}")
             Y = mem[:Ysize]
             U = mem[Ysize:Ysize+UVsize]
-            V = mem[Ysize+UVsize:Ysize+2*UVsize]
+            V = mem[Ysize+UVsize:total]
             strides = (Ystride, UVstride, UVstride)
             image = ImageWrapper(0, 0, self.width, self.height, (Y, U, V), "YUV420P", 24, strides, 3, ImageWrapper.PLANAR_3)
             self.frame_queue.put(image)
@@ -108,4 +114,4 @@ def selftest(full=False):
     log("gstreamer decoder selftest: %s", get_info())
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.gstreamer import decoder
-    assert testdecoder(decoder, full)
+    decoder.CODECS = testdecoder(decoder, full)

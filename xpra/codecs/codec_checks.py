@@ -138,6 +138,7 @@ def testdecoding(decoder_module, encoding, full):
                 assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
                 assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
                 assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
+                log(f" test passed for {W}x{H} {encoding} - {cs}")
             if full:
                 log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
                 #test failures:
