@@ -55,7 +55,7 @@ class Decoder(VideoPipeline):
             #"h264parse",
             #"avdec_h264",
             #video/x-h264,stream-format=avc,alignment=au
-            "videoconvert",
+            #"videoconvert",
             #mp4mux
             f"appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false caps={IMAGE_CAPS}",
             ]
