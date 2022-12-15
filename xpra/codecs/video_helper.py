@@ -53,11 +53,11 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "enc_gstreamer", "dec_gstreamer")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "enc_gstreamer")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx")
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx", "dec_gstreamer")
 
 PREFERRED_ENCODER_ORDER = ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "enc_gstreamer")
 PREFERRED_DECODER_ORDER = ("avcodec2", "vpx", "dec_gstreamer")

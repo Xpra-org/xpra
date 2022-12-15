@@ -14,7 +14,8 @@ PREFERRED_ENCODING_ORDER = (
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
-    "h265", "mpeg1", "mpeg2",
+    "h265", "av1",
+    "mpeg1", "mpeg2",
     "scroll",
     "grayscale",
     )
@@ -28,7 +29,7 @@ EDGE_ENCODING_ORDER = (
 HELP_ORDER = (
     "auto",
     "grayscale",
-    "h264", "h265", "vp8", "vp9", "mpeg4",
+    "h264", "h265", "av1", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "jpeg", "jpega",
     "scroll",

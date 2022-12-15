@@ -20,7 +20,7 @@ log = Logger("decoder", "gstreamer")
 assert get_version and get_type and init_module and cleanup_module
 
 
-CODECS = ("vp8", "h264")
+CODECS = ("vp8", "h264", "av1")
 def get_encodings():
     return CODECS
 
@@ -51,9 +51,12 @@ class Decoder(VideoPipeline):
             decode = ["vp8dec"]
         elif self.encoding=="h264":
             stream_caps = f"video/x-h264,profile=main,stream-format=avc,alignment=au,width={self.width},height={self.height}"
-            decode = ["vaapih264dec"]
-            decode = ["openh264dec"]
+            #decode = ["vaapih264dec"]
+            #decode = ["openh264dec"]
             decode = ["avdec_h264"]
+        elif self.encoding=="av1":
+            stream_caps = f"video/x-av1,width={self.width},height={self.height}"
+            decode = ["av1dec"]
         else:
             raise RuntimeError(f"invalid encoding {self.encoding}")
         elements = [

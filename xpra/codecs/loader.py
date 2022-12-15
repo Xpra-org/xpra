@@ -319,6 +319,7 @@ def get_encoding_name(encoding):
           "jpeg"    : "JPEG",
           "jpega"   : "JPEG with alpha",
           "avif"    : "AVIF",
+          "av1"     : "AV1",
           "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)
@@ -342,7 +343,8 @@ def get_encoding_help(encoding):
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
-          "avif"    : "AVIF",
+          "avif"    : "AVIF: AV1 Image File Format",
+          "av1"     : "AV1: AOMedia Video 1",
           "rgb"     : "Raw RGB pixels, lossless,"
                       +f" compressed using {compressors_str} (24bpp or 32bpp for transparency)",
           "scroll"  : "motion vectors, supplemented with picture codecs",

@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from queue import Empty
 
+from xpra.os_util import hexstr
 from xpra.util import parse_simple_dict
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
@@ -26,9 +26,10 @@ Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
 assert get_version and init_module and cleanup_module
-#ENCODER_PLUGIN = "vaapih264enc"
-#ENCODER_PLUGIN = "x264enc"
-ENCODER_PLUGIN = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN", "vaapih264enc")
+ENCODERS = {
+    "h264"  : ("vaapih264enc", "x264enc"),
+    "av1"   : ("av1enc", ),
+    }
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes" : 0,
@@ -48,12 +49,35 @@ DEFAULT_ENCODER_OPTIONS = {
         "threads"       : 1,
         "key-int-max"   : 15,
         "intra-refresh" : True,
+        },
+    #"svtav1enc" : {
+    #    "speed"         : 12,
+    #    "gop-size"      : 251,
+    #    "intra-refresh" : 1,    #open gop
+    #    "lookahead"     : 0,
+    #    "rc"            : 1,    #vbr
+    #    },
+    #"svthevcenc" : {
+    #    "b-pyramid"         : 0,
+    #    "baselayer-mode"    : 1,
+    #    "enable-open-gop"   : True,
+    #    "key-int-max"       : 255,
+    #    "lookahead"         : 0,
+    #    "pred-struct"       : 0,
+    #    "rc"                : 1, #vbr
+    #    "speed"             : 9,
+    #    "tune"              : 0,
+    #    }
+    "av1enc" : {
+        "cpu-used"          : 5,
+        "end-usage"         : 2,    #cq
         }
     }
 
 
+CODECS = ("h264", "av1")
 def get_encodings():
-    return ("h264", )
+    return CODECS
 
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
@@ -77,7 +101,9 @@ def get_spec(encoding, colorspace):
                       codec_class=Encoder, codec_type=get_type(),
                       quality=40, speed=40,
                       setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
-                      width_mask=0xFFFE, height_mask=0xFFFE, max_w=4096, max_h=4096)
+                      width_mask=0xFFFE, height_mask=0xFFFE,
+                      min_w=64, min_h=64,
+                      max_w=4096, max_h=4096)
 
 
 class Encoder(VideoPipeline):
@@ -112,7 +138,14 @@ class Encoder(VideoPipeline):
             }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
         #parse encoder plugin string:
-        parts = ENCODER_PLUGIN.split(" ", 1)
+        encoder_options = ENCODERS.get(self.encoding, ())
+        encoder_str = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN")
+        if not encoder_str:
+            if not encoder_options:
+                raise ValueError(f"{self.encoding} is not supported here")
+            #choose the first option (ie: "vaapih264enc"):
+            encoder_str = encoder_options[0]
+        parts = encoder_str.split(" ", 1)
         encoder = parts[0]
         encoder_options = DEFAULT_ENCODER_OPTIONS.get(encoder, {})
         if len(parts)==2:
@@ -149,6 +182,7 @@ class Encoder(VideoPipeline):
         log("on_new_sample size=%s", size)
         if size:
             data = buf.extract_dup(0, size)
+            #log(" output=%s", hexstr(data))
             client_info = {}
             pts = normv(buf.pts)
             if pts>=0:
@@ -196,4 +230,4 @@ def selftest(full=False):
     log("gstreamer encoder selftest: %s", get_info())
     from xpra.codecs.codec_checks import testencoder
     from xpra.codecs.gstreamer import encoder
-    assert testencoder(encoder, full)
+    encoder.CODECS = testencoder(encoder, full)
