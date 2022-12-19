@@ -193,6 +193,8 @@ Recommends: gstreamer1.0-tools
         ,gstreamer1.0-alsa
         ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
+        ,gstreamer1.0-plugins-bad
+#                  ^^ removesilence
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
 Description: the components required for xpra audio forwarding,

@@ -19,9 +19,8 @@ from xpra.sound.gstreamer_util import (
     get_source_plugins, get_encoder_elements,
     get_encoder_default_options,
     get_encoders, get_queue_time,
-    MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT,
-    SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT,
-    CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
+    MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS,
+    MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
     GST_FLOW_OK,
     )
 from xpra.net.compression import compressed_wrapper
@@ -116,13 +115,12 @@ class SoundSource(SoundPipeline):
             pipeline_els += [" ".join(queue_el)]
         #if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
         pipeline_els += ["audioconvert"]
-        if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER and not fmt:
-            pipeline_els.append("cutter threshold=%.4f run-length=%i pre-length=%i leaky=false name=cutter" % (
-                CUTTER_THRESHOLD, CUTTER_RUN_LENGTH*MS_TO_NS, CUTTER_PRE_LENGTH*MS_TO_NS))
-            if encoder in CUTTER_NEEDS_CONVERT:
-                pipeline_els.append("audioconvert")
-            if encoder in CUTTER_NEEDS_RESAMPLE:
-                pipeline_els.append("audioresample")
+        if has_plugins("removesilence"):
+            pipeline_els += [
+                "removesilence",
+                "audioconvert",
+                "audioresample"
+                ]
         pipeline_els.append(f"volume name=volume volume={volume}")
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))

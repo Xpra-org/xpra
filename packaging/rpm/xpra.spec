@@ -207,6 +207,7 @@ Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
 Recommends:			gstreamer1-plugin-timestamp
+Recommends:			gstreamer1-plugins-bad
 Recommends:			gstreamer1-plugins-ugly
 Recommends:			gstreamer1-plugins-ugly-free
 Recommends:			pulseaudio
