@@ -114,8 +114,8 @@ class SoundSource(SoundPipeline):
                         f"max-size-time={SOURCE_QUEUE_TIME*MS_TO_NS}",
                         f"leaky={GST_QUEUE_LEAK_DOWNSTREAM}"]
             pipeline_els += [" ".join(queue_el)]
-        if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
-            pipeline_els += ["audioconvert"]
+        #if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
+        pipeline_els += ["audioconvert"]
         if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER and not fmt:
             pipeline_els.append("cutter threshold=%.4f run-length=%i pre-length=%i leaky=false name=cutter" % (
                 CUTTER_THRESHOLD, CUTTER_RUN_LENGTH*MS_TO_NS, CUTTER_PRE_LENGTH*MS_TO_NS))

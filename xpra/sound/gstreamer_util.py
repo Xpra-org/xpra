@@ -135,9 +135,9 @@ del emux
 
 
 #these encoders require an "audioconvert" element:
-ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
+#ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
 #if this is lightweight enough, maybe we should include it unconditionally?
-SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc", "wasapisrc")
+#SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc", "wasapisrc")
 
 CUTTER_NEEDS_RESAMPLE = ("opusenc", )
 #those don't work anyway:
