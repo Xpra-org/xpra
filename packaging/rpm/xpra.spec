@@ -454,7 +454,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/platform
 %{python3_sitearch}/xpra/scripts
 %{python3_sitearch}/xpra/sound
-%{python3_sitearch}/xpra/gst_*
 %{python3_sitearch}/xpra/x11
 %{python3_sitearch}/xpra/rectangle.*.so
 %{python3_sitearch}/xpra/*.py*
@@ -464,7 +463,7 @@ rm -rf $RPM_BUILD_ROOT
 %files codecs
 #%{python3_sitearch}/xpra/codecs/csc_*
 %{python3_sitearch}/xpra/codecs/drm
-%{python3_sitearch}/xpra/codecs/enc_*
+%{python3_sitearch}/xpra/codecs/proxy
 #%{python3_sitearch}/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/jpeg
