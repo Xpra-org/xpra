@@ -149,6 +149,7 @@ This package contains the files which are shared between the xpra client and ser
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
 Suggests:			xpra-codecs-nvidia
+Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-pillow
 BuildRequires:		libdrm-devel
 Requires:			libdrm
@@ -230,6 +231,7 @@ Group:				Networking
 #Provides:			python3-xpra-client
 Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
+Recommends:			xpra-codecs = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
@@ -267,6 +269,7 @@ Group:				Networking
 Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Recommends:			xpra-client = %{version}-%{release}
+Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
