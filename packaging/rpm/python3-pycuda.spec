@@ -16,13 +16,13 @@
 %endif
 
 Name:           python3-pycuda
-Version:        2022.2.1
+Version:        2022.2.2
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/7b/30/29ebc207949d3fbf03ab42ad67e50b652c4ac72b1754fa03a9a454a982cf/pycuda-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/78/09/9df5358ffb74d225243b56a65ffe196de481fcd8f731f55e41f2d5d36015/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -47,7 +47,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "894348c98853c2292b8d8b2fa81a6f0ad1c0777fd1c859f2713836bfc18e4178" ]; then
+if [ "${sha256}" != "cd92e7246bb45ac3452955a110714112674cdf3b4a9e2f4ff25a4159c684e6bb" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -80,6 +80,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.2.2-1
+- new upstream release
+
 * Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.2.1-1
 - new upstream release
 
