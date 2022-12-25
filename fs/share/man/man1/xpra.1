@@ -1639,16 +1639,17 @@ Those statistics can be seen using the \fBxpra info\fP command.
 .TP
 \fB--ssh\fP\=\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
-xpra runs \fBssh\fP(1) to make the underlying connection. By default,
-it does this by running the command "ssh". If your ssh program is in
+xpra runs \fBssh\fP(1) to make the underlying connection.
+Most installations should now be using \fBparamiko\fP as default backend command.
+Another common value for \fBCMD\fP is \fBssh\fP or \fBplink\fP on Microsoft
+Windows. 
+If your ssh program is in
 an unusual location, has an unusual name, or you want to pass special
 options to change ssh's behavior, then you can use the \fB--ssh\fP
 switch to tell xpra how to run ssh.
 
 For example, if you want to use arcfour encryption, then you should run
 
-.\" I'm sure this is completely the wrong thing to do here, but it
-.\" produces fine output in the terminal, at least:
 .RS
 .RS
 \fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh://frodo/7\fP
@@ -1656,7 +1657,7 @@ For example, if you want to use arcfour encryption, then you should run
 .RE
 \fINote:\fP Don't bother to enable ssh compression; this
 is redundant with xpra's own compression, and will just waste your
-CPU.  See also xpra's \fB--compress\fP switch.
+CPU.
 
 On MS Windows, where backslashes are used to separate path elements
 and where spaces are often used as part of paths, you need to add
