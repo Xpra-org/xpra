@@ -39,6 +39,7 @@ fake-xinerama = %(fake_xinerama)s
 #        +extension GLX +extension Composite \
 #        -auth $XAUTHORITY \
 #        -screen 0 8192x4096x24+32
+#        -dpi 96x96
 # - Xephyr (requires a running X11 server):
 # xvfb = Xephyr -nolisten tcp -noreset \
 #        +extension GLX +extension Composite \

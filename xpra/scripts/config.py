@@ -129,7 +129,7 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96):
            "-auth", "$XAUTHORITY"
            ]
     if dpi>0:
-        cmd += ["-dpi", str(dpi)]
+        cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
