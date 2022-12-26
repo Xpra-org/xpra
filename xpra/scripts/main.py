@@ -1921,7 +1921,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
                 display += f",{geometry}"
             if pos>=0:
                 proxy_args[pos] = display
-            else:
+            elif display:
                 proxy_args.append(display)
         for x in get_start_server_args(opts, compat=True, cmdline=cmdline):
             proxy_args.append(x)
