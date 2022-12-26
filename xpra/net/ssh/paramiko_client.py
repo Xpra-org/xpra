@@ -165,6 +165,8 @@ def safe_lookup(config_obj, host):
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.warn(f"Warning: unable to load SSH host config for {host!r}:")
         log.warn(f" {e}")
+        if isinstance(e, ModuleNotFoundError):
+            log.warn(f" (looks like a 'paramiko' distribution packaging issue)")
     return {}
 
 
