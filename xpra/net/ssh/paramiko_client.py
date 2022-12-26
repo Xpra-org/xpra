@@ -800,6 +800,8 @@ def run_test_command(transport, cmd):
 
 def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                              socket_dir=None, display_as_args=None, paramiko_config=None):
+    log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
+                             socket_dir, display_as_args, paramiko_config))
     from paramiko import SSHException
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
