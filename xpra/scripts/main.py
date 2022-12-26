@@ -2348,7 +2348,7 @@ def start_macos_shadow(cmd, env, cwd):
                        ["launchctl", "start", LAUNCH_AGENT],
                        ]
     log = get_util_logger()
-    log("start_server_subprocess: launch_commands=%s", launch_commands)
+    log("start_macos_shadow: launch_commands=%s", launch_commands)
     for x in launch_commands:
         proc = Popen(x, env=env, cwd=cwd)
         proc.wait()
