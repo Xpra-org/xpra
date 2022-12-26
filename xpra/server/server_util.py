@@ -385,7 +385,7 @@ def get_uinput_device_path(device):
             log("event dirs(%s)=%s", uevent_path, event_dirs)
             for d in event_dirs:
                 uevent_filename = os.path.join(uevent_path, d, b"uevent")
-                uevent_conf = open(uevent_filename, "rb", encoding="latin1").read()
+                uevent_conf = open(uevent_filename, "rb").read()
                 for line in uevent_conf.splitlines():
                     if line.find(b"=")>0:
                         k,v = line.split(b"=", 1)
