@@ -40,7 +40,7 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "string.h":
-    int vsnprintf(char * s, size_t n, const char * format, va_list arg)
+    int vsnprintf(char * s, size_t n, const char *fmt, va_list arg)
 
 cdef extern from "stdarg.h":
     ctypedef struct va_list:
@@ -901,7 +901,7 @@ cdef class Encoder:
         assert self.context!=NULL
         cdef double start = monotonic()
 
-        cdef int frame_size = 0
+        cdef int frame_size
         with nogil:
             x264_picture_init(&pic_out)
             frame_size = x264_encoder_encode(self.context, &nals, &i_nals, pic_in, &pic_out)

@@ -86,7 +86,7 @@ cdef extern from "vpx/vpx_decoder.h":
     vpx_codec_err_t vpx_codec_decode(vpx_codec_ctx_t *ctx, const uint8_t *data,
                                      unsigned int data_sz, void *user_priv, long deadline) nogil
 
-    vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
+    vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *citer) nogil
 
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
@@ -258,7 +258,7 @@ cdef class Decoder:
 
 
     def decompress_image(self, data, options=None):
-        cdef vpx_codec_iter_t iter = NULL
+        cdef vpx_codec_iter_t citer = NULL
         cdef MemBuf output_buf
         cdef void *output
         cdef Py_ssize_t plane_len
@@ -281,7 +281,7 @@ cdef class Decoder:
             return None
         cdef vpx_image_t *img
         with nogil:
-            img = vpx_codec_get_frame(self.context, &iter)
+            img = vpx_codec_get_frame(self.context, &citer)
         if img==NULL:
             log.error("Error: vpx_codec_get_frame: %s", self.codec_error_str())
             return None

@@ -630,7 +630,6 @@ def get_CUDA_function(function_name):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
