@@ -559,6 +559,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.source_remove(rft)
 
     def schedule_recheck_focus(self):
+        if self._override_redirect:
+            #never send focus events for OR windows
+            return
         #we receive pairs of FocusOut + FocusIn following a keyboard grab,
         #so we recheck the focus status via this timer to skip unnecessary churn
         if FOCUS_RECHECK_DELAY<0:
