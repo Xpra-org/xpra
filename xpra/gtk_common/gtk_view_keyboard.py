@@ -127,8 +127,8 @@ class KeyboardStateInfoWindow:
                 if isinstance(v, (list, tuple)):
                     v = csv(bytestostr(x) for x in v)
                 self.add_event_text("%16s: %s" % (k, bytestostr(v)))
-        log.info("do_keymap_changed: %s" % (msg,))
-        log.info("do_keymap_changed: %s" % ((layout, layouts, variant, variants, options),))
+        log.info(f"do_keymap_changed: {msg}")
+        log.info("do_keymap_changed: " + csv((layout, layouts, variant, variants, options)))
 
     def key_press(self, _, event):
         self.add_key_event("down", event)
