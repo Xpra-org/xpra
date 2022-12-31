@@ -11,7 +11,7 @@ def main():
 	window = Gtk.Window()
 	window.set_size_request(220, 120)
 	window.connect("delete_event", Gtk.main_quit)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	b = Gtk.Button(label="Bypass")
 	def bypass(*args):

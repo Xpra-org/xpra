@@ -152,8 +152,8 @@ class SessionInfo(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
 
         #tables on the left in a vbox with buttons at the top:
-        self.tab_box = Gtk.VBox(False, 0)
-        self.tab_button_box = Gtk.HBox(True, 0)
+        self.tab_box = Gtk.VBox(homogeneous=False, spacing=0)
+        self.tab_button_box = Gtk.HBox(homogeneous=True, spacing=0)
         self.tabs = []          #pairs of button, table
         self.populate_cb = None
         self.tab_box.pack_start(self.tab_button_box, expand=False, fill=True, padding=0)
@@ -258,7 +258,7 @@ class SessionInfo(Gtk.Window):
         al.add(table)
         vbox.pack_start(al, expand=True, fill=False, padding=10)
         #top table contents:
-        randr_box = Gtk.HBox(False, 20)
+        randr_box = Gtk.HBox(homogeneous=False, spacing=20)
         self.server_randr_label = slabel()
         self.server_randr_icon = Gtk.Image()
         randr_box.add(self.server_randr_icon)
@@ -267,7 +267,7 @@ class SessionInfo(Gtk.Window):
         if show_client:
             self.client_display = slabel()
             tb.new_row("Client Display", self.client_display)
-            opengl_box = Gtk.HBox(False, 20)
+            opengl_box = Gtk.HBox(homogeneous=False, spacing=20)
             self.client_opengl_label = slabel()
             self.client_opengl_label.set_line_wrap(True)
             self.client_opengl_icon = Gtk.Image()
@@ -462,7 +462,7 @@ class SessionInfo(Gtk.Window):
                 etb.new_row("Window Encoders", self.encoder_info_box)
 
         if show_client:
-            self.graph_box = Gtk.VBox(False, 10)
+            self.graph_box = Gtk.VBox(homogeneous=False, spacing=10)
             self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
             bandwidth_label = "Bandwidth used"
             if SHOW_PIXEL_STATS:
@@ -525,7 +525,7 @@ class SessionInfo(Gtk.Window):
         return tb, vbox
 
     def vbox_tab(self, icon_filename, title, populate_cb):
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
 

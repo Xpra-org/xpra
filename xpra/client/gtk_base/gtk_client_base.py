@@ -365,10 +365,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         import gi
         gi.require_version("Pango", "1.0")  # @UndefinedVariable
         from gi.repository import Pango  # @UnresolvedImport
-        title = Gtk.Label(title)
+        title = Gtk.Label(label=title)
         title.modify_font(Pango.FontDescription("sans 14"))
         add(title, 16)
-        add(Gtk.Label(self.get_challenge_prompt(prompt)), 10)
+        add(Gtk.Label(label=self.get_challenge_prompt(prompt)), 10)
         password_input = Gtk.Entry()
         password_input.set_max_length(255)
         password_input.set_width_chars(32)

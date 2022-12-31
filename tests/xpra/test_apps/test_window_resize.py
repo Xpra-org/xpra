@@ -22,7 +22,7 @@ def make_window(OR=False):
 	w_e = Gtk.Entry()
 	w_e.set_max_length(64)
 	hbox.add(w_e)
-	hbox.add(Gtk.Label("x"))
+	hbox.add(Gtk.Label(label="x"))
 	h_e = Gtk.Entry()
 	h_e.set_max_length(64)
 	hbox.add(h_e)

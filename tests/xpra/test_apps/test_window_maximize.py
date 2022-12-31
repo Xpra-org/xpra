@@ -10,10 +10,10 @@ def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(220, 120)
 	window.connect("delete_event", Gtk.main_quit)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	def add_buttons(t1, cb1, t2, cb2):
-		hbox = Gtk.HBox(True, 10)
+		hbox = Gtk.HBox(homogeneous=True, spacing=10)
 		b1 = Gtk.Button(t1)
 		def vcb1(*_args):
 			cb1()

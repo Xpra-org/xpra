@@ -54,15 +54,15 @@ class StartNewCommand:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(0)
 
         self.entry = None
         if self.xdg_menu:
             # or use menus if we have xdg data:
-            hbox = Gtk.HBox(False, 20)
+            hbox = Gtk.HBox(homogeneous=False, spacing=20)
             vbox.add(hbox)
-            hbox.add(Gtk.Label("Category:"))
+            hbox.add(Gtk.Label(label="Category:"))
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
             for name in sorted(self.xdg_menu.keys()):
@@ -70,16 +70,16 @@ class StartNewCommand:
             self.category_combo.set_active(0)
             self.category_combo.connect("changed", self.category_changed)
 
-            hbox = Gtk.HBox(False, 20)
+            hbox = Gtk.HBox(homogeneous=False, spacing=20)
             vbox.add(hbox)
             self.command_combo = Gtk.ComboBoxText()
-            hbox.pack_start(Gtk.Label("Command:"))
+            hbox.pack_start(Gtk.Label(label="Command:"))
             hbox.pack_start(self.command_combo)
             self.command_combo.connect("changed", self.command_changed)
             #this will populate the command combo:
             self.category_changed()
         #always show the command as text so it can be edited:
-        entry_label = Gtk.Label("Command to run:")
+        entry_label = Gtk.Label(label="Command to run:")
         entry_label.modify_font(Pango.FontDescription("sans 14"))
         entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         entry_al.add(entry_label)
@@ -100,7 +100,7 @@ class StartNewCommand:
             self.share = None
 
         # Buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             btn = Gtk.Button(label)

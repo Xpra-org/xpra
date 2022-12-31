@@ -25,7 +25,7 @@ def make_window():
     if icon:
         window.set_icon(icon)
 
-    vbox = Gtk.VBox(False, 10)
+    vbox = Gtk.VBox(homogeneous=False, spacing=10)
     window.add(vbox)
     entry = Gtk.Entry()
     entry.set_text("hello")

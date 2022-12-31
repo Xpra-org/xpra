@@ -46,14 +46,14 @@ class ServerCommandsWindow:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
 
         self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
@@ -87,9 +87,11 @@ class ServerCommandsWindow:
                 self.alignment.remove(self.table)
             tb = TableBuilder(rows=1, columns=2, row_spacings=15)
             self.table = tb.get_table()
-            headers = [Gtk.Label(""), Gtk.Label("PID"), Gtk.Label("Command"), Gtk.Label("Exit Code")]
+            def l(s=""):
+                return Gtk.Label(label=s)
+            headers = [l(), l("PID"), l("Command"), l("Exit Code")]
             if self.client.server_commands_signals:
-                headers.append(Gtk.Label("Send Signal"))
+                headers.append(l("Send Signal"))
             tb.add_row(*headers)
             for procinfo in self.commands_info.values():
                 if not isinstance(procinfo, dict):
@@ -127,12 +129,12 @@ class ServerCommandsWindow:
                                 icon.set_from_pixbuf(pixbuf)
                         except Exception:
                             log("failed to get window icon", exc_info=True)
-                    items = [icon, Gtk.Label(f"{pid}"), Gtk.Label(cmd_str), Gtk.Label(rstr)]
+                    items = [icon, l(f"{pid}"), l(cmd_str), l(rstr)]
                     if self.client.server_commands_signals:
                         if returncode is None:
                             items.append(self.signal_button(pid))
                         else:
-                            items.append(Gtk.Label(""))
+                            items.append(l())
                     tb.add_row(*items)
             self.alignment.add(self.table)
             self.table.show_all()

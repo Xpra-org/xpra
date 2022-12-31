@@ -42,19 +42,19 @@ class UpdateStatusWindow:
             self.window.set_icon(icon)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(0)
 
         # Label:
         self.progress = 0
-        self.label = Gtk.Label("Version Check")
+        self.label = Gtk.Label(label="Version Check")
         self.label.modify_font(Pango.FontDescription("sans 14"))
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)
 
         # Buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             btn = Gtk.Button(label)

@@ -39,7 +39,7 @@ def sf(w, font="sans 14"):
     return w
 
 def l(label):
-    widget = Gtk.Label(label)
+    widget = Gtk.Label(label=label)
     return sf(widget)
 
 
@@ -58,7 +58,7 @@ class DesktopGreeter(Gtk.Window):
         self.connect("delete-event", self.quit)
         add_close_accel(self, self.quit)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
 
         #self.entry_label = l("Command:")
@@ -67,7 +67,7 @@ class DesktopGreeter(Gtk.Window):
         vbox.add(self.desktop_combo)
 
         # Action buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
         def btn(label, tooltip, callback, default=False):
             ib = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,

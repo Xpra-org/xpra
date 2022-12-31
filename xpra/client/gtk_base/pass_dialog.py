@@ -41,7 +41,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         vbox.set_spacing(10)
 
         def al(label, font="sans 14", xalign=0):
-            l = Gtk.Label(label)
+            l = Gtk.Label(label=label)
             l.modify_font(Pango.FontDescription(font))
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)

@@ -69,22 +69,22 @@ class SessionsGUI(Gtk.Window):
         self.clients_disconnecting = set()
         self.child_reaper = getChildReaper()
 
-        self.vbox = Gtk.VBox(False, 20)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
         self.add(self.vbox)
 
-        title_label = Gtk.Label(title)
+        title_label = Gtk.Label(label=title)
         title_label.modify_font(Pango.FontDescription("sans 14"))
         title_label.show()
         self.vbox.add(title_label)
 
-        self.warning = Gtk.Label(" ")
+        self.warning = Gtk.Label(label=" ")
         red = color_parse("red")
         self.warning.modify_fg(Gtk.StateType.NORMAL, red)
         self.warning.show()
         self.vbox.add(self.warning)
 
-        self.password_box = Gtk.HBox(False, 10)
-        self.password_label = Gtk.Label("Password:")
+        self.password_box = Gtk.HBox(homogeneous=False, spacing=10)
+        self.password_label = Gtk.Label(label="Password:")
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
         al.show()
@@ -245,7 +245,7 @@ class SessionsGUI(Gtk.Window):
             self.vbox.remove(self.table)
             self.table = None
         if not self.records:
-            self.table = Gtk.Label("No sessions found")
+            self.table = Gtk.Label(label="No sessions found")
             self.vbox.add(self.table)
             self.table.show()
             self.set_size_request(440, 200)
@@ -254,7 +254,9 @@ class SessionsGUI(Gtk.Window):
         self.password_box.show()
         self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
-        labels = [Gtk.Label(x) for x in (
+        def l(s=""):
+            return Gtk.Label(label=s)
+        labels = [l(x) for x in (
             "Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser",
             )]
         tb.add_row(*labels)
@@ -304,7 +306,7 @@ class SessionsGUI(Gtk.Window):
             title = uuid
             if display:
                 title = display
-            label = Gtk.Label(title)
+            label = l(title)
             if uuid!=title:
                 label.set_tooltip_text(uuid)
             #try to use an icon for the platform:
@@ -315,10 +317,10 @@ class SessionsGUI(Gtk.Window):
                 if pwidget:
                     pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
-                pwidget = Gtk.Label(platform)
+                pwidget = l(platform)
             w, c, b = self.make_connect_widgets(key, recs, address, port, display)
             session_name = session_names.get(key, "")
-            tb.add_row(Gtk.Label(host), label, Gtk.Label(session_name), pwidget, Gtk.Label(dtype), w, c, b)
+            tb.add_row(l(host), label, l(session_name), pwidget, l(dtype), w, c, b)
         self.table.show_all()
 
     def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
@@ -408,7 +410,7 @@ class SessionsGUI(Gtk.Window):
                 proc.terminate()
                 self.populate()
             btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
-            return Gtk.Label("Already connected with pid=%i" % proc.pid), btn, Gtk.Label("")
+            return Gtk.Label(label="Already connected with pid=%i" % proc.pid), btn, Gtk.Label(label="")
 
         icon = get_icon_pixbuf("browser.png")
         bopen = imagebutton("Open", icon)
@@ -428,7 +430,7 @@ class SessionsGUI(Gtk.Window):
                 uri = self.get_uri(password, *rec)
                 self.attach(key, uri)
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
-            return Gtk.Label(uri), btn, bopen
+            return Gtk.Label(label=uri), btn, bopen
 
         #multiple modes / uris
         uri_menu = Gtk.ComboBoxText()

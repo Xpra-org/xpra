@@ -50,11 +50,11 @@ class BugReport:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
 
         # Title
-        hbox = Gtk.HBox(False, 0)
+        hbox = Gtk.HBox(homogeneous=False, spacing=0)
         icon_pixbuf = get_icon_pixbuf("xpra.png")
         if icon_pixbuf and self.show_about:
             from xpra.gtk_common.about import about
@@ -69,13 +69,13 @@ class BugReport:
             hbox.pack_start(logo_button, expand=False, fill=False)
 
         #the box containing all the input:
-        ibox = Gtk.VBox(False, 0)
+        ibox = Gtk.VBox(homogeneous=False, spacing=0)
         ibox.set_spacing(3)
         vbox.pack_start(ibox)
 
         # Description
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(Gtk.Label("Please describe the problem:"))
+        al.add(Gtk.Label(label="Please describe the problem:"))
         ibox.pack_start(al)
         #self.description = Gtk.Entry(max=128)
         #self.description.set_width_chars(40)
@@ -89,7 +89,7 @@ class BugReport:
 
         # Toggles:
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(Gtk.Label("Include:"))
+        al.add(Gtk.Label(label="Include:"))
         ibox.pack_start(al)
         #generic toggles:
         from xpra.gtk_common.keymap import get_gtk_keymap
@@ -196,7 +196,7 @@ class BugReport:
             self.checkboxes[name] = cb
 
         # Buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             btn = Gtk.Button(label)

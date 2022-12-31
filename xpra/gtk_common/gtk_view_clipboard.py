@@ -185,7 +185,7 @@ class ClipboardStateInfoWindow:
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_title("Clipboard Test Tool")
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
 
         self.log = deque(maxlen=25)

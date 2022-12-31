@@ -18,9 +18,9 @@ def main():
 	window.set_title("Main")
 	window.set_size_request(width, height)
 	window.connect("delete_event", Gtk.main_quit)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 	def add_button(title, callback):
-		hbox = Gtk.HBox(False, 0)
+		hbox = Gtk.HBox(homogeneous=False, spacing=0)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 		btn = Gtk.Button(label=title)
 		hbox.pack_start(btn, expand=False, fill=False, padding=10)

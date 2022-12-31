@@ -690,7 +690,7 @@ def add_window_accel(window, accel, callback) -> Gtk.AccelGroup:
 
 
 def label(text="", tooltip=None, font=None) -> Gtk.Label:
-    l = Gtk.Label(text)
+    l = Gtk.Label(label=text)
     if font:
         fontdesc = Pango.FontDescription(font)
         l.modify_font(fontdesc)

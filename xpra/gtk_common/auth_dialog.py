@@ -35,14 +35,14 @@ class AuthDialog(Gtk.Window):
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
 
-        self.vbox = Gtk.VBox(False, 20)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
         self.add(self.vbox)
 
-        title_label = Gtk.Label(title)
+        title_label = Gtk.Label(label=title)
         title_label.modify_font(Pango.FontDescription("sans 14"))
         self.vbox.add(title_label)
 
-        info_label = Gtk.Label(info)
+        info_label = Gtk.Label(label=info)
         info_label.modify_font(Pango.FontDescription("sans 12"))
         self.vbox.add(info_label)
 
@@ -55,7 +55,7 @@ class AuthDialog(Gtk.Window):
         #buttons:
         al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
         al.set_padding(0, 0, 10, 10)
-        hbox = Gtk.HBox(False, 10)
+        hbox = Gtk.HBox(homogeneous=False, spacing=10)
         al.add(hbox)
         hbox.add(self.btn("Cancel", Gtk.STOCK_NO, self.cancel))
         hbox.add(self.btn("Accept", Gtk.STOCK_OK, self.accept))

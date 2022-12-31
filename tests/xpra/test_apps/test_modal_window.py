@@ -9,7 +9,7 @@ def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(320, 500)
 	window.connect("delete_event", Gtk.main_quit)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	b = Gtk.Button("Modal Window")
 	def show_modal_window(*_args):

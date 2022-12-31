@@ -100,7 +100,7 @@ class GUI(Gtk.Window):
         self.add(self.vbox)
         #with most window managers,
         #the window's title bar already shows "Xpra"
-        #title_label = Gtk.Label(title)
+        #title_label = Gtk.Label(label=title)
         #title_label.modify_font(pango.FontDescription("sans 14"))
         #self.vbox.add(title_label)
         self.widgets = []

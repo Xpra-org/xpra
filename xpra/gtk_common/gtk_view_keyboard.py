@@ -33,9 +33,9 @@ class KeyboardStateInfoWindow:
         self.window.set_title("Keyboard State Tool")
 
         # Title
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
-        label = Gtk.Label("Keyboard State")
+        label = Gtk.Label(label="Keyboard State")
         label.modify_font(Pango.FontDescription("sans 13"))
         #patch pack_start:
         from xpra.gtk_common.gtk_util import pack_start

@@ -12,8 +12,8 @@ class MoveWindow(Gtk.Window):
 		super().__init__(type=window_type)
 		self.set_size_request(width, height)
 		self.connect("delete_event", Gtk.main_quit)
-		vbox = Gtk.VBox(False, 0)
-		hbox = Gtk.HBox(False, 0)
+		vbox = Gtk.VBox(homogeneous=False, spacing=0)
+		hbox = Gtk.HBox(homogeneous=False, spacing=0)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		gtk_btn = Gtk.Button(label="move+resize via GTK")

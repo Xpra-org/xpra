@@ -65,7 +65,7 @@ def sf(w, font="sans 14"):
     return w
 
 def l(label):
-    widget = Gtk.Label(label)
+    widget = Gtk.Label(label=label)
     return sf(widget)
 
 
@@ -81,10 +81,10 @@ def link_btn(link, label=None, icon_name="question.png"):
     return btn
 
 def attach_label(table, label, tooltip_text=None, link=None):
-    lbl = Gtk.Label(label)
+    lbl = Gtk.Label(label=label)
     if tooltip_text:
         lbl.set_tooltip_text(tooltip_text)
-    hbox = Gtk.HBox(False, 0)
+    hbox = Gtk.HBox(homogeneous=False, spacing=0)
     hbox.pack_start(xal(lbl), True, True)
     if link:
         help_btn = link_btn(link, "About %s" % label)
@@ -112,11 +112,11 @@ class StartSession(Gtk.Window):
         self.connect("delete-event", self.quit)
         add_close_accel(self, self.quit)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
 
         # choose the session type:
-        hbox = Gtk.HBox(True, 40)
+        hbox = Gtk.HBox(homogeneous=True, spacing=40)
         def rb(sibling=None, label="", cb=None, tooltip_text=None):
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
             if cb:
@@ -136,19 +136,19 @@ class StartSession(Gtk.Window):
 
         vbox.pack_start(Gtk.HSeparator(), True, False)
 
-        options_box = Gtk.VBox(False, 10)
+        options_box = Gtk.VBox(homogeneous=False, spacing=10)
         vbox.pack_start(options_box, True, False, 20)
         # select host:
-        host_box = Gtk.HBox(True, 20)
+        host_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(host_box, False)
         self.host_label = l("Host:")
-        hbox = Gtk.HBox(True, 0)
+        hbox = Gtk.HBox(homogeneous=True, spacing=0)
         host_box.pack_start(self.host_label, True)
         host_box.pack_start(hbox, True, True)
         self.localhost_btn = rb(None, "Local System", self.host_toggled)
         self.remote_btn = rb(self.localhost_btn, "Remote")
         self.remote_btn.set_tooltip_text("Start sessions on a remote system")
-        self.address_box = Gtk.HBox(False, 0)
+        self.address_box = Gtk.HBox(homogeneous=False, spacing=0)
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
         self.address_box.pack_start(xal(self.mode_combo), False)
@@ -167,7 +167,7 @@ class StartSession(Gtk.Window):
         self.host_entry.set_placeholder_text("Hostname or IP address")
         self.host_entry.set_max_length(255)
         self.address_box.pack_start(xal(self.host_entry), False)
-        self.address_box.pack_start(Gtk.Label(":"), False)
+        self.address_box.pack_start(Gtk.Label(label=":"), False)
         self.port_entry = sf(Gtk.Entry())
         self.port_entry.set_text("22")
         self.port_entry.set_width_chars(5)
@@ -175,7 +175,7 @@ class StartSession(Gtk.Window):
         self.port_entry.set_max_length(5)
         self.address_box.pack_start(xal(self.port_entry, 0), False)
 
-        self.display_box = Gtk.HBox(True, 20)
+        self.display_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(self.display_box, False, True, 20)
         self.display_label = l("Display:")
         self.display_entry = sf(Gtk.Entry())
@@ -190,7 +190,7 @@ class StartSession(Gtk.Window):
         self.display_box.pack_start(self.display_combo, True, False)
 
         # Label:
-        self.entry_box = Gtk.HBox(True, 20)
+        self.entry_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(self.entry_box, False, True, 20)
         self.entry_label = l("Command:")
         self.entry = sf(Gtk.Entry())
@@ -202,7 +202,7 @@ class StartSession(Gtk.Window):
         self.entry_box.pack_start(self.entry, True, False)
 
         # or use menus if we have xdg data:
-        self.category_box = Gtk.HBox(True, 20)
+        self.category_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(self.category_box, False)
         self.category_label = l("Category:")
         self.category_combo = sf(Gtk.ComboBoxText())
@@ -211,7 +211,7 @@ class StartSession(Gtk.Window):
         self.category_combo.connect("changed", self.category_changed)
         self.categories = {}
 
-        self.command_box = Gtk.HBox(True, 20)
+        self.command_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(self.command_box, False)
         self.command_label = l("Command:")
         self.command_combo = sf(Gtk.ComboBoxText())
@@ -223,7 +223,7 @@ class StartSession(Gtk.Window):
         self.desktop_entry = None
 
         # start options:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         options_box.pack_start(hbox, False)
         self.exit_with_children_cb = sf(Gtk.CheckButton())
         self.exit_with_children_cb.set_label("exit with application")
@@ -234,7 +234,7 @@ class StartSession(Gtk.Window):
         hbox.add(xal(self.exit_with_client_cb, 0.5))
         self.exit_with_client_cb.set_active(False)
         # session options:
-        hbox = Gtk.HBox(False, 12)
+        hbox = Gtk.HBox(homogeneous=False, spacing=12)
         hbox.pack_start(l("Options:"), True, False)
         for label_text, icon_name, tooltip_text, cb in (
             ("Features",    "features.png", "Session features", self.configure_features),
@@ -254,7 +254,7 @@ class StartSession(Gtk.Window):
         options_box.pack_start(hbox, True, False)
 
         # Action buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
         def btn(label, tooltip, callback, default=False):
             ib = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,
@@ -696,7 +696,7 @@ class SessionOptions(Gtk.Window):
         if icon:
             self.set_icon(icon)
 
-        self.vbox = Gtk.VBox(False, 0)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=0)
         self.vbox.show()
         self.add(self.vbox)
         self.widgets = []
@@ -761,7 +761,7 @@ class SessionOptions(Gtk.Window):
         self.widgets.append(option_name)
         value = getattr(self.options, fn)
         #log.warn("%s=%s", fn, value)
-        hbox = Gtk.HBox(True, 10)
+        hbox = Gtk.HBox(homogeneous=True, spacing=10)
         i = 0
         sibling = None
         btns = []
@@ -1078,11 +1078,11 @@ class EncodingWindow(SessionOptions):
         encoding_options = dict((encoding, get_encoding_name(encoding)) for encoding in encodings)
         #opts.encodings
         self.combo(tb, "Encoding", "encoding", encoding_options)
-        #tb.attach(Gtk.Label("Colourspace Modules"), 0)
+        #tb.attach(Gtk.Label(label="Colourspace Modules"), 0)
         #tb.inc()
-        #tb.attach(Gtk.Label("Video Encoders"), 0)
+        #tb.attach(Gtk.Label(label="Video Encoders"), 0)
         #tb.inc()
-        #tb.attach(Gtk.Label("Video Decoders"), 0)
+        #tb.attach(Gtk.Label(label="Video Decoders"), 0)
         self.vbox.show_all()
 
 
@@ -1139,7 +1139,7 @@ class AudioWindow(SessionOptions):
             "disabled"  : ("disabled", ),
             })
         self.sep(tb)
-        #tb.attach(Gtk.Label("Speaker Codec"))
+        #tb.attach(Gtk.Label(label="Speaker Codec"))
         #self.speaker_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.speaker_codec_widget.append_text(v)
@@ -1151,7 +1151,7 @@ class AudioWindow(SessionOptions):
             "disabled"  : ("disabled", ),
             })
         self.sep(tb)
-        #tb.attach(Gtk.Label("Microphone Codec"))
+        #tb.attach(Gtk.Label(label="Microphone Codec"))
         #self.microphone_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.microphone_codec_widget.append_text(v)
@@ -1176,9 +1176,9 @@ class WebcamWindow(SessionOptions):
             cb.set_sensitive(False)
             cb.set_active(False)
             tb.inc()
-            tb.attach(Gtk.Label(""), 0, 2)
+            tb.attach(Gtk.Label(label=""), 0, 2)
             tb.inc()
-            tb.attach(Gtk.Label("Webcam forwarding is not supported on %s" % platform_name()), 0, 2)
+            tb.attach(Gtk.Label(label="Webcam forwarding is not supported on %s" % platform_name()), 0, 2)
         self.vbox.show_all()
 
 
