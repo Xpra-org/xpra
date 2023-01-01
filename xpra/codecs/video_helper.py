@@ -17,20 +17,22 @@ log = Logger("codec", "video")
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
 CODEC_TO_MODULE = {
-    "vpx"        : "vpx",
-    "x264"       : "x264",
-    "x265"       : "x265",
-    "nvenc"      : "nvidia.nvenc",
-    "swscale"    : "ffmpeg.colorspace_converter",
-    "cython"     : "csc_cython",
-    "libyuv"     : "libyuv",
-    "avcodec2"   : "ffmpeg.decoder",
-    "ffmpeg"     : "ffmpeg.encoder",
-    "jpeg"       : "jpeg",
-    "webp"       : "webp",
-    "nvjpeg"     : "nvidia.nvjpeg",
-    "dec_gstreamer"  : "gstreamer.decoder",
-    "enc_gstreamer"  : "gstreamer.encoder",
+    "enc_vpx"       : "vpx.encoder",
+    "dec_vpx"       : "vpx.decoder",
+    "enc_x264"      : "x264.encoder",
+    "enc_x265"      : "x265.encoder",
+    "nvenc"         : "nvidia.nvenc",
+    "csc_swscale"   : "ffmpeg.colorspace_converter",
+    "csc_cython"    : "csc_cython.colorspace_converter",
+    "csc_libyuv"    : "libyuv.colorspace_converter",
+    "dec_avcodec2"  : "ffmpeg.decoder",
+    "enc_ffmpeg"    : "ffmpeg.encoder",
+    "enc_jpeg"      : "jpeg.encoder",
+    "enc_webp"      : "webp.encoder",
+    "enc_nvjpeg"    : "nvidia.nvjpeg.encoder",
+    "dec_nvjpeg"    : "nvidia.nvjpeg.decoder",
+    "dec_gstreamer" : "gstreamer.decoder",
+    "enc_gstreamer" : "gstreamer.encoder",
     }
 
 def has_codec_module(module_name):
@@ -53,14 +55,14 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "enc_gstreamer")
-HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "nvjpeg")
-ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "cython", "libyuv")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc_x264", "enc_vpx", "enc_x265", "nvenc", "enc_ffmpeg", "enc_nvjpeg", "enc_jpeg", "enc_webp", "enc_gstreamer")
+HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "enc_nvjpeg")
+ALL_CSC_MODULE_OPTIONS = try_import_modules("csc_swscale", "csc_cython", "csc_libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx", "dec_gstreamer")
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec_avcodec2", "dec_vpx", "dec_gstreamer")
 
-PREFERRED_ENCODER_ORDER = ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "enc_gstreamer")
-PREFERRED_DECODER_ORDER = ("avcodec2", "vpx", "dec_gstreamer")
+PREFERRED_ENCODER_ORDER = ("nvenc", "enc_nvjpeg", "enc_x264", "enc_vpx", "enc_jpeg", "enc_webp", "enc_x265", "enc_gstreamer")
+PREFERRED_DECODER_ORDER = ("dec_avcodec2", "dec_vpx", "dec_gstreamer")
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
@@ -81,6 +83,8 @@ def get_decoder_module_name(x):
     return "dec_"+x         #ie: "dec_vpx"
 
 def get_csc_module_name(x):
+    if x.startswith("csc_"):
+        return x
     return "csc_"+x             #ie: "csc_swscale"
 
 
