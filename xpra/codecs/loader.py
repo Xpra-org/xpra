@@ -343,6 +343,7 @@ def get_encoding_help(encoding):
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
+          "jpega"   : "JPEG lossy compression, with alpha channel",
           "avif"    : "AVIF: AV1 Image File Format",
           "av1"     : "AV1: AOMedia Video 1",
           "rgb"     : "Raw RGB pixels, lossless,"
