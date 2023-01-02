@@ -1354,10 +1354,13 @@ def fixup_debug_option(value):
 
 def _csvstr(value):
     if isinstance(value, (tuple, list)):
-        return ",".join(str(x).lower().strip() for x in value if x)
+        return ",".join(str(x).strip() for x in value if x)
     if isinstance(value, str):
-        return value.strip().lower()
+        return value.strip()
     raise Exception(f"don't know how to convert {type(value)} to a csv list!")
+
+def _csvstrl(value):
+    return _csvstr(value).lower()
 
 def _nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
@@ -1386,18 +1389,18 @@ def fixup_video_all_or_none(options, defaults=None):
             raise InitInfo(f"the following {help_txt} may be available: " +
                            csv(getattr(video_helper, all_list_name)))
         return v
-    vestr = _csvstr(options.video_encoders)
+    vestr = _csvstrl(options.video_encoders)
     if not vestr and defaults:
-        vestr = _csvstr(defaults.video_encoders)
-    cscstr = _csvstr(options.csc_modules)
+        vestr = _csvstrl(defaults.video_encoders)
+    cscstr = _csvstrl(options.csc_modules)
     if not cscstr and defaults:
-        cscstr = _csvstr(defaults.csc_modules)
-    vdstr = _csvstr(options.video_decoders)
+        cscstr = _csvstrl(defaults.csc_modules)
+    vdstr = _csvstrl(options.video_decoders)
     if not vdstr and defaults:
-        vdstr = _csvstr(defaults.video_decoders)
-    pvestr = _csvstr(options.proxy_video_encoders)
+        vdstr = _csvstrl(defaults.video_decoders)
+    pvestr = _csvstrl(options.proxy_video_encoders)
     if not pvestr and defaults:
-        pvestr  = _csvstr(defaults.proxy_video_encoders)
+        pvestr  = _csvstrl(defaults.proxy_video_encoders)
     options.video_encoders  = getlist(vestr,    "video encoders",   "ALL_VIDEO_ENCODER_OPTIONS")
     options.csc_modules     = getlist(cscstr,   "csc modules",      "ALL_CSC_MODULE_OPTIONS")
     options.video_decoders  = getlist(vdstr,    "video decoders",   "ALL_VIDEO_DECODER_OPTIONS")
@@ -1431,7 +1434,13 @@ def fixup_pings(options):
 def fixup_encodings(options):
     from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
     estr = _csvstr(options.encodings)
-    RENAME = {"jpg" : "jpeg"}
+    RENAME = {
+        "jpg"   : "jpeg",
+        "png/l" : "png/L",
+        "pngl"  : "png/L",
+        "png/p" : "png/P",
+        "pngp"  : "png/P",
+        }
     options.encoding = RENAME.get(options.encoding, options.encoding)
     encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
     while True:
@@ -1473,7 +1482,7 @@ def fixup_encodings(options):
 def fixup_compression(options):
     #packet compression:
     from xpra.net import compression
-    cstr = _csvstr(options.compressors)
+    cstr = _csvstrl(options.compressors)
     if cstr=="none":
         compressors = []
     elif cstr=="all":
@@ -1488,7 +1497,7 @@ def fixup_compression(options):
 def fixup_packetencoding(options):
     #packet encoding
     from xpra.net import packet_encoding
-    pestr = _csvstr(options.packet_encoders)
+    pestr = _csvstrl(options.packet_encoders)
     if pestr=="all":
         packet_encoders = packet_encoding.PERFORMANCE_ORDER
     else:
