@@ -54,10 +54,10 @@ class EncodingServer(StubServerMixin):
         if "webp" in ae:
             #try to load the fast webp encoder:
             load_codec("enc_webp")
-        if "png" in ae:
+        if "png" in ae or "png/L" in ae:
             #try to load the fast png encoder:
             load_codec("enc_spng")
-        if "jpeg" in ae:
+        if "jpeg" in ae or "jpega" in ae:
             #try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
         if "avif" in ae:
