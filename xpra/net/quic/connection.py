@@ -21,7 +21,7 @@ log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
-DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer-position").split(",")
+DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer").split(",")
 
 
 class XpraQuicConnection(Connection):
@@ -80,7 +80,11 @@ class XpraQuicConnection(Connection):
     def send_close(self, code : int = 1000, reason : str = ""):
         if self.accepted:
             data = close_packet(code, reason)
-            self.write(data, "close")
+            try:
+                self.write(data, "close")
+            except AssertionError as e:
+                #probably already closed
+                log(f"send_close: {e}")
         else:
             self.send_headers(self.stream_id, headers={":status" : code})
             self.transmit()
@@ -104,7 +108,7 @@ class XpraQuicConnection(Connection):
             log.warn(f"Warning: missing packet type for {data}")
         if packet_type in DATAGRAM_PACKET_TYPES:
             self.connection.send_datagram(flow_id=self.stream_id, data=data)
-            log(f"sending {packet_type} using datagram")
+            log.warn(f"sending {packet_type} using datagram")
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)
         log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",

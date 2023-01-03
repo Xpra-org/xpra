@@ -27,6 +27,7 @@ class InputServer(StubServerMixin):
         self.input_devices = "auto"
         self.input_devices_format = None
         self.input_devices_data = None
+        self.pointer_sequence = {}
 
         self.mod_meanings = {}
         self.keyboard_config = None
@@ -329,10 +330,10 @@ class InputServer(StubServerMixin):
 
     ######################################################################
     # pointer:
-    def _move_pointer(self, wid, pos, *args):
+    def _move_pointer(self, device_id, wid, pos, *args):
         raise NotImplementedError()
 
-    def _adjust_pointer(self, proto, wid, pointer):
+    def _adjust_pointer(self, proto, device_id, wid, pointer):
         #the window may not be mapped at the same location by the client:
         ss = self.get_server_source(proto)
         window = self._id_to_window.get(wid)
@@ -354,16 +355,15 @@ class InputServer(StubServerMixin):
                             return [ax, ay]+list(pointer[2:])
         return pointer
 
-    def _process_mouse_common(self, proto, wid, opointer, *args):
-        pointer = self._adjust_pointer(proto, wid, opointer)
+    def _process_mouse_common(self, proto, device_id, wid, opointer, props=None):
+        pointer = self._adjust_pointer(proto, device_id, wid, opointer)
         if not pointer:
             return None
-        #TODO: adjust args too
-        if self.do_process_mouse_common(proto, wid, pointer, *args):
+        if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
             return pointer
         return None
 
-    def do_process_mouse_common(self, proto, wid, pointer, *args):
+    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
         return True
 
     def _process_button_action(self, proto, packet):
@@ -385,6 +385,36 @@ class InputServer(StubServerMixin):
     def _update_modifiers(self, proto, wid, modifiers):
         """ servers subclasses may change the modifiers state """
 
+    def _process_pointer(self, proto, packet):
+        #v5 packet format
+        mouselog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
+                 proto, packet, self.readonly, self.ui_driver)
+        if self.readonly:
+            return
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        device_id, seq, wid, pdata, props = packet[1:6]
+        if device_id>=0:
+            highest_seq = self.pointer_sequence.get(device_id, 0)
+            if 0<=seq<=highest_seq:
+                mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+                return
+            self.pointer_sequence[device_id] = seq
+        pointer = pdata[:2]
+        if ss.pointer_relative and len(pdata)>=4:
+            ss.mouse_last_relative_position = pdata[2:4]
+        ss.mouse_last_position = pointer
+        if self.ui_driver and self.ui_driver!=ss.uuid:
+            return
+        ss.user_event()
+        self.last_mouse_user = ss.uuid
+        if self._process_mouse_common(proto, device_id, wid, pdata, props):
+            modifiers = props.get("modifiers")
+            if modifiers is not None:
+                self._update_modifiers(proto, wid, modifiers)
+        
+
     def _process_pointer_position(self, proto, packet):
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
@@ -402,7 +432,11 @@ class InputServer(StubServerMixin):
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
-        if self._process_mouse_common(proto, wid, pdata, *packet[5:]):
+        props = {}
+        device_id = -1
+        if len(packet)>=6:
+            device_id = packet[5]
+        if self._process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
 
 
@@ -439,6 +473,7 @@ class InputServer(StubServerMixin):
             "keymap-changed"            : self._process_keymap,
             #mouse:
             "button-action"             : self._process_button_action,
+            "pointer"                   : self._process_pointer,
             "pointer-position"          : self._process_pointer_position,
             #setup:
             "input-devices"             : self._process_input_devices,

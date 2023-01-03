@@ -165,7 +165,7 @@ class ShadowServer(GTKShadowServerBase):
             self.refresh_registered = False
 
 
-    def do_process_mouse_common(self, proto, wid, pointer, *args):
+    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
         if proto not in self._server_sources:
             return False
         assert wid in self._id_to_window
@@ -183,7 +183,8 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
-        pointer = self._process_mouse_common(proto, wid, pointer)
+        device_id = -1
+        pointer = self._process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
             self.button_action(wid, pointer, button, pressed, -1, *args)
 

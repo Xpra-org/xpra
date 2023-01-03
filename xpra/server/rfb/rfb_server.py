@@ -142,7 +142,8 @@ class RFBServer:
         wid = self._get_rfb_desktop_wid()
         def process_pointer_event():
             mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
-            self._move_pointer(wid, (x, y))
+            device_id = -1
+            self._move_pointer(device_id, wid, (x, y))
             if buttons!=self.rfb_buttons:
                 #figure out which buttons have changed:
                 for button in range(8):

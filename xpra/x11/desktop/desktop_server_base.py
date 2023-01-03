@@ -264,7 +264,8 @@ class DesktopServerBase(DesktopServerBaseClass):
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
-            if self._process_mouse_common(proto, pwid, pointer):
+            device_id = -1
+            if self._process_mouse_common(proto, device_id, pwid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
@@ -290,12 +291,12 @@ class DesktopServerBase(DesktopServerBaseClass):
             self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _adjust_pointer(self, proto, wid, pointer):
+    def _adjust_pointer(self, proto, device_id, wid, pointer):
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)
             return None
-        pointer = super()._adjust_pointer(proto, wid, pointer)
+        pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
         #maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]
@@ -305,14 +306,14 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.restore_cursor(proto)
         return pointer
 
-    def _move_pointer(self, wid, pos, *args):
+    def _move_pointer(self, device_id, wid, pos, props=None):
         if wid>=0:
             window = self._id_to_window.get(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
                 return
         with xsync:
-            X11ServerBase._move_pointer(self, wid, pos, -1, *args)
+            X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
 
     def _process_close_window(self, proto, packet):

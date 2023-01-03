@@ -1060,8 +1060,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     #some clients may send the OR window wid
                     #this causes focus issues (see #1999)
                     pwid = -1
+                device_id = -1
                 mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
-                if self._process_mouse_common(proto, pwid, pointer):
+                if self._process_mouse_common(proto, device_id, pwid, pointer):
                     #only update modifiers if the window is in focus:
                     if self._has_focus==wid:
                         self._update_modifiers(proto, wid, modifiers)
@@ -1154,7 +1155,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
-    def _move_pointer(self, wid, pos, *args):
+    def _move_pointer(self, device_id, wid, pos, props=None):
         if wid>0 and (self.last_raised!=wid or ALWAYS_RAISE_WINDOW):
             window = self._lookup_window(wid)
             if not window:
@@ -1164,7 +1165,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 mouselog("raising %s", window)
                 with xswallow:
                     window.raise_window()
-        super()._move_pointer(wid, pos, *args)
+        super()._move_pointer(device_id, wid, pos, props)
 
 
     def _process_close_window(self, proto, packet):

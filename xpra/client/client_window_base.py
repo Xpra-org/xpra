@@ -941,8 +941,8 @@ class ClientWindowBase(ClientWidgetBase):
         wid = self.get_mouse_event_wid(*pointer_data)
         mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
                  event, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
-        packet = ("pointer-position", wid, pointer_data, modifiers, buttons)
-        self._client.send_mouse_position(packet)
+        device_id = 0
+        self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
 
     def _device_info(self, event):
         try:

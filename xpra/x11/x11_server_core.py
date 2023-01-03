@@ -62,8 +62,8 @@ class XTestPointerDevice:
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, screen_no, x, y, *_args):
-        mouselog("xtest_fake_motion(%i, %s, %s)", screen_no, x, y)
+    def move_pointer(self, screen_no, x, y, props):
+        mouselog("xtest_fake_motion%s", (screen_no, x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(screen_no, x, y)
 
@@ -942,9 +942,11 @@ class X11ServerCore(GTKServerBase):
         if not ss:
             return
         wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
+        device_id = -1
+        props = {}
         self.record_wheel_event(wid, button)
         with xsync:
-            if self.do_process_mouse_common(proto, wid, pointer):
+            if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
                 self.last_mouse_user = ss.uuid
                 self._update_modifiers(proto, wid, modifiers)
                 self.pointer_device.wheel_motion(button, distance/1000.0)   #pylint: disable=no-member
@@ -974,31 +976,31 @@ class X11ServerCore(GTKServerBase):
                 mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
-    def _move_pointer(self, wid, pos, deviceid=-1, *args):
+    def _move_pointer(self, device_id, wid, pos, props=None):
         #(this is called within an xswallow context)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
-        self.device_move_pointer(wid, (x, y), deviceid)
+        self.device_move_pointer(device_id, wid, (x, y), props)
 
-    def device_move_pointer(self, wid, pos, deviceid=-1, *args):
+    def device_move_pointer(self, device_id, wid, pos, props):
         screen_no = -1
-        device = self.get_pointer_device(deviceid)
+        device = self.get_pointer_device(device_id)
         x, y = pos
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s",
-                 wid, pos, deviceid, screen_no, device, (x, y))
+                 wid, pos, device_id, screen_no, device, (x, y))
         try:
-            device.move_pointer(screen_no, x, y, *args)
+            device.move_pointer(screen_no, x, y, props)
         except Exception as e:
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             mouselog.estr(e)
 
-    def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
-        mouselog("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
+    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
+        mouselog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
         if self.readonly:
             return False
         pos = self.root_window.get_pointer()[-3:-1]
         if (pointer and pos!=pointer[:2]) or self.input_devices=="xi":
             with xswallow:
-                self._move_pointer(wid, pointer, deviceid, *args)
+                self._move_pointer(device_id, wid, pointer, props)
         return True
 
     def _update_modifiers(self, proto, wid, modifiers):
@@ -1016,7 +1018,9 @@ class X11ServerCore(GTKServerBase):
                                  modifiers, _buttons=(), deviceid=-1, *_args):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
-        if self._process_mouse_common(proto, wid, pointer, deviceid):
+        device_id = -1
+        props = {}
+        if self._process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(wid, pointer, button, pressed, deviceid)
 
     def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):

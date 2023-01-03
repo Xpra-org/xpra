@@ -117,7 +117,8 @@ class DBUS_Server(DBUS_Server_Base):
     def MovePointer(self, wid, x, y):
         wid, x, y = ni(wid), ni(x), ni(y)
         self.log(".MovePointer(%i, %i, %i)", wid, x, y)
-        self.server._move_pointer(ni(wid), (ni(x), ni(y)))
+        device_id = -1
+        self.server._move_pointer(device_id, ni(wid), (ni(x), ni(y)))
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def MouseClick(self, button, pressed):

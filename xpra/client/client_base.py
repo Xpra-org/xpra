@@ -131,6 +131,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._protocol = None
         self._priority_packets = []
         self._ordinary_packets = []
+        self._pointer_sequence = {}
         self._mouse_position = None
         self._mouse_position_pending = None
         self._mouse_position_send_time = 0
@@ -138,6 +139,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_timer = 0
         self._aliases = {}
         #server state and caps:
+        self.server_packet_handlers = [] #["pointer"]
         self.connection_established = False
         self.completed_startup = False
         self.uuid = get_user_uuid()
@@ -543,7 +545,29 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.cancel_send_mouse_position_timer()
         self.have_more()
 
-    def send_mouse_position(self, packet):
+    def next_pointer_sequence(self, device_id):
+        if device_id<0:
+            #unspecified device, don't bother with sequence numbers
+            return 0
+        seq = self._pointer_sequence.get(device_id, 0)+1
+        self._pointer_sequence[device_id] = seq
+        return seq
+
+    def send_mouse_position(self, device_id, wid, pos, modifiers=None, buttons=None, props=None):
+        if "pointer" in self.server_packet_handlers:
+            #v5 packet type, most attributes are optional:
+            attrs = props or {}
+            if modifiers is not None:
+                attrs["modifiers"] = modifiers
+            if buttons is not None:
+                attrs["buttons"] = buttons
+            seq = self.next_pointer_sequence(device_id)
+            packet = ("pointer", device_id, seq, wid, pos, attrs)
+        else:
+            #pre v5 packet format:
+            packet = ("pointer-position", wid, pos, modifiers or (), buttons or ())
+            if props:
+                packet += props.values()
         if self._mouse_position_timer:
             self._mouse_position_pending = packet
             return

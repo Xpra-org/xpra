@@ -265,7 +265,7 @@ class GTKServerBase(ServerBase):
         """ overriden by X11 seamless and desktop servers """
 
 
-    def _move_pointer(self, _wid, pos, *_args):
+    def _move_pointer(self, device_id, wid, pos, props=None):
         x, y = pos
         display = Gdk.Display.get_default()
         display.warp_pointer(display.get_default_screen(), x, y)

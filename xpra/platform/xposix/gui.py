@@ -730,8 +730,9 @@ class XI2_Window:
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event, device, wid, window._client._focused, window._id, event.device, pointer_data, modifiers, buttons)
-            packet = ["pointer-position", wid, pointer_data, modifiers, buttons] + self.get_pointer_extra_args(event)
-            client.send_mouse_position(packet)
+            device_id = 0
+            props = self.get_pointer_extra_args(event)
+            client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
         #now see if we have anything to send as a wheel event:
         if dx!=0 or dy!=0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)
@@ -743,18 +744,19 @@ class XI2_Window:
             return int(f*1000000), 1000000
         def dictscaled(d):
             return dict((k,intscaled(v)) for k,v in d.items())
-        raw_valuators = {}
+        #mouselog("raw(%s)=%s", raw_event_name, raw)
+        #IMPORTANT: do not change the insertion order of the keys in the props dictionary!
+        #(pre v5 servers rely on positional packets generated using a dictionary iterator)
+        props = {
+            "device" : event.device,
+            }
+        for k in ("x", "y", "x_root", "y_root"):
+            props[k] = intscaled(getattr(event, k))
+        props["valuators"] = dictscaled(event.valuators or {})
         raw_event_name = event.name.replace("XI_", "XI_Raw")    #ie: XI_Motion -> XI_RawMotion
         raw = self.XI2.find_event(raw_event_name, event.serial)
-        #mouselog("raw(%s)=%s", raw_event_name, raw)
-        if raw:
-            raw_valuators = raw.raw_valuators
-        args = [event.device]
-        for x in ("x", "y", "x_root", "y_root"):
-            args.append(intscaled(getattr(event, x)))
-        for v in (event.valuators, raw_valuators):
-            args.append(dictscaled(v))
-        return args
+        props["raw-valuators"] = dictscaled(raw.raw_valuators if raw else {})
+        return props
 
 
 class ClientExtras:

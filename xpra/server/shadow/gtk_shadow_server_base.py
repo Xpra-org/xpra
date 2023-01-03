@@ -282,12 +282,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_window(window)
 
 
-    def _adjust_pointer(self, proto, wid, opointer):
+    def _adjust_pointer(self, proto, device_id, wid, opointer):
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)
             return None
-        pointer = super()._adjust_pointer(proto, wid, opointer)
+        pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
         #the window may be at an offset (multi-window for multi-monitor):
         wx, wy, ww, wh = window.get_geometry()
         #or maybe the pointer is off-screen:

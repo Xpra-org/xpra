@@ -576,10 +576,8 @@ class WindowClient(StubClientMixin):
             traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
             if tray:
                 modifiers = self.get_current_modifiers()
-                buttons = []
-                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
-                traylog("pointer_packet=%s", pointer_packet)
-                self.send_mouse_position(pointer_packet)
+                device_id = -1
+                self.send_mouse_position(device_id, wid, self.cp(x, y), modifiers)
         def do_tray_geometry(*args):
             #tell the "ClientTray" where it now lives
             #which should also update the location on the server if it has changed
