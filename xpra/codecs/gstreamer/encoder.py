@@ -5,7 +5,6 @@
 
 import os
 
-from xpra.os_util import hexstr
 from xpra.util import parse_simple_dict
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
