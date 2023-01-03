@@ -208,8 +208,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
 
 
 
-def main():
+def main(argv):
     try:
+        if "-v" in argv or "--verbose" in argv:
+            log.enable_debug()
         opengl_props, gl_client_window_module = get_gl_client_window_module(True)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         gl_client_window_class = gl_client_window_module.GLClientWindow
@@ -228,5 +230,5 @@ def main():
         return 1
 
 if __name__ == "__main__":
-    r = main()
+    r = main(sys.argv)
     sys.exit(r)
