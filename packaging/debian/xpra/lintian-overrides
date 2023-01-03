@@ -1,0 +1,13 @@
+# This is just where / how cups backends are installed properly:
+xpra: non-standard-executable-perm usr/lib/cups/backend/xpraforwarder
+xpra: executable-is-not-world-readable usr/lib/cups/backend/xpraforwarder
+xpra: executable-in-usr-lib usr/lib/cups/backend/xpraforwarder
+
+# These files are part of Xpra internal logic
+xpra: executable-in-usr-lib usr/libexec/xpra/auth_dialog
+xpra: executable-in-usr-lib usr/libexec/xpra/gnome-open
+xpra: executable-in-usr-lib usr/libexec/xpra/gvfs-open
+xpra: executable-in-usr-lib usr/libexec/xpra/xdg-open
+
+# We get the libc6 dependency from python and the 'xpra' package anyway:
+xpra-codecs-nvidia: missing-dependency-on-libc
