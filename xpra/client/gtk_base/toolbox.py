@@ -21,7 +21,7 @@ from xpra.gtk_common.gtk_util import (
     label,
     )
 from xpra.platform.paths import get_python_execfile_command
-from xpra.os_util import WIN32, is_X11
+from xpra.os_util import WIN32, OSX, is_X11
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -91,7 +91,11 @@ class ToolboxGUI(Gtk.Window):
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)
             for button in buttons:
-                hbox.add(self.button(*button))
+                if button:
+                    hbox.add(self.button(*button))
+
+        #some things don't work on wayland:
+        wox11 = WIN32 or OSX or (os.environ.get("GDK_BACKEND", "")=="x11" or is_X11())
 
         addhbox("Colors:", (
             ("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"),
@@ -101,7 +105,7 @@ class ToolboxGUI(Gtk.Window):
         addhbox("Transparency and Rendering", (
             ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"),
             ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"),
-            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py"),
+            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py", wox11),
             ))
         addhbox("Widgets:", (
             ("Text Entry", "Simple text entry widget", epath+"text_entry.py"),
@@ -122,11 +126,8 @@ class ToolboxGUI(Gtk.Window):
             ))
         addhbox("Geometry:", (
             ("Size constraints", "Specify window geometry size contraints", epath+"window_geometry_hints.py"),
+            ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py", wox11),
             ))
-        if is_X11():
-            addhbox("X11:", (
-                ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py"),
-                ))
         addhbox("Keyboard and Clipboard:", (
             ("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"),
             ("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"),
@@ -142,7 +143,7 @@ class ToolboxGUI(Gtk.Window):
     def label(self, text):
         return label(text, font="sans 14")
 
-    def button(self, label_str, tooltip, relpath):
+    def button(self, label_str, tooltip, relpath, enabled=True):
         def cb(_btn):
             cp = os.path.dirname(__file__)
             script = os.path.join(cp, relpath)
@@ -156,9 +157,11 @@ class ToolboxGUI(Gtk.Window):
                     return
             cmd = get_python_execfile_command()+[script]
             exec_command(cmd)
-        return imagebutton(label_str, None,
+        ib = imagebutton(label_str, None,
                            tooltip, clicked_callback=cb,
                            icon_size=48)
+        ib.set_sensitive(enabled)
+        return ib
 
     def quit(self, *args):
         log("quit%s", args)
