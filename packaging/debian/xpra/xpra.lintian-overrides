@@ -8,3 +8,6 @@ executable-in-usr-lib usr/libexec/xpra/auth_dialog
 executable-in-usr-lib usr/libexec/xpra/gnome-open
 executable-in-usr-lib usr/libexec/xpra/gvfs-open
 executable-in-usr-lib usr/libexec/xpra/xdg-open
+
+# We get the libc6 dependency from python and the 'xpra' package anyway:
+missing-dependency-on-libc usr/lib/python3/dist-packages/xpra/codecs/nvidia/*/*.so*
