@@ -71,7 +71,6 @@ Depends: xpra
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
           ,python3-opencv
-Depends: python3 (>= 3.6)
 Description: Picture and video codecs
  for the xpra server and client.
 
@@ -186,6 +185,7 @@ Description: tool to detach/reattach running X programs
 Package: xpra-audio
 Architecture: any
 Depends: xpra
+        ,python3 (>= 3.6)
         ,pulseaudio
         ,gstreamer1.0-pulseaudio
         ,pulseaudio-utils
