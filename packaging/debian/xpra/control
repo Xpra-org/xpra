@@ -55,6 +55,7 @@ Package: xpra-codecs-nvidia
 Architecture: any
 Depends: xpra
         ,python3-pycuda
+        ,python3 (>= 3.6)
 Recommends: libnvidia-encode1
             ,libnvjpeg
             ,libnvidia-fbc1 [amd64]
@@ -66,9 +67,11 @@ Package: xpra-codecs
 Architecture: any
 Depends: xpra
         ,${codecs:Depends}
+        ,python3 (>= 3.6)
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
           ,python3-opencv
+Depends: python3 (>= 3.6)
 Description: the picture and video codecs
  for the xpra server and client.
 
