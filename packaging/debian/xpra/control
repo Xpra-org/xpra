@@ -59,7 +59,7 @@ Depends: xpra
 Recommends: libnvidia-encode1
             ,libnvjpeg
             ,libnvidia-fbc1 [amd64]
-Description: the proprietary nvidia picture and video codecs
+Description: Proprietary nvidia picture and video codecs
  for the xpra server and client: nvfbc, nvjpeg and nvenc.
 
 
@@ -72,7 +72,7 @@ Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
           ,python3-opencv
 Depends: python3 (>= 3.6)
-Description: the picture and video codecs
+Description: Picture and video codecs
  for the xpra server and client.
 
 
@@ -200,5 +200,5 @@ Recommends: gstreamer1.0-tools
 #                  ^^ removesilence
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-Description: the components required for xpra audio forwarding,
+Description: Components required for xpra audio forwarding,
  used by both client and servers.
