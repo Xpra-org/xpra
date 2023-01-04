@@ -585,15 +585,16 @@ class ShadowServer(GTKShadowServerBase):
     def fake_key(self, keycode, press):
         fake_key(keycode, press)
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
-        self._update_modifiers(proto, wid, modifiers)
+    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+        if "modifiers" in props:
+            self._update_modifiers(proto, wid, props.get("modifiers"))
         device_id = -1
         pointer = self._process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
             self.get_server_source(proto).user_event()
-            self.button_action(wid, pointer, button, pressed, -1, *args)
+            self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, device_id, wid, pointer, button, pressed, props):
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)

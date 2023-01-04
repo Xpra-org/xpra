@@ -21,7 +21,7 @@ log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
-DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer").split(",")
+DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
 
 
 class XpraQuicConnection(Connection):

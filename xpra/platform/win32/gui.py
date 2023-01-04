@@ -597,7 +597,8 @@ def add_window_hooks(window):
                         deltax = units
                         deltay = 0
                     pointer = window.get_mouse_position()
-                    client.wheel_event(wid, deltax, deltay, pointer)
+                    device_id = -1
+                    client.wheel_event(device_id, wid, deltax, deltay, pointer)
             def mousewheel(_hwnd, _event, wParam, lParam):
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0

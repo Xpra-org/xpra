@@ -412,18 +412,18 @@ class WindowClient(StubClientMixin):
                     value = None
                 show_pointer_overlay(value)
 
-    def send_wheel_delta(self, wid, button, distance, pointer=None, *args):
+    def send_wheel_delta(self, device_id, wid, button, distance, pointer=None, props=None):
         modifiers = self.get_current_modifiers()
         buttons = []
-        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s",
-                 wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
+        mouselog("send_wheel_deltas% precise wheel=%s, modifiers=%s, pointer=%s",
+                 (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             #send the exact value multiplied by 1000 (as an int)
             idist = round(distance*1000)
             if abs(idist)>0:
                 packet =  ["wheel-motion", wid,
                            button, idist,
-                           pointer, modifiers, buttons] + list(args)
+                           pointer, modifiers, buttons] + list((props or {}).values())
                 mouselog("send_wheel_delta(..) %s", packet)
                 self.send_positional(packet)
             return 0
@@ -436,8 +436,8 @@ class WindowClient(StubClientMixin):
                 scaled_distance = math.sqrt(scaled_distance)
             steps = round(scaled_distance)
             for _ in range(steps):
-                self.send_button(wid, button, True, pointer, modifiers, buttons)
-                self.send_button(wid, button, False, pointer, modifiers, buttons)
+                for state in True, False:
+                    self.send_button(device_id, wid, button, state, pointer, modifiers, buttons, props)
             #return remainder:
             scaled_remainder = steps
             if MOUSE_SCROLL_SQRT_SCALE:
@@ -449,7 +449,7 @@ class WindowClient(StubClientMixin):
             return float(distance) - signed_remain_distance
 
 
-    def wheel_event(self, wid, deltax=0, deltay=0, pointer=(), deviceid=0):
+    def wheel_event(self, device_id=-1, wid=0, deltax=0, deltay=0, pointer=(), props=None):
         #this is a different entry point for mouse wheel events,
         #which provides finer grained deltas (if supported by the server)
         #accumulate deltas:
@@ -457,22 +457,51 @@ class WindowClient(StubClientMixin):
         self.wheel_deltay += deltay
         button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
         if button>0:
-            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, pointer, deviceid)
+            self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
         button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
         if button>0:
-            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, pointer, deviceid)
+            self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
         mouselog("wheel_event%s new deltas=%s,%s",
-                 (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
+                 (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
-    def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
+    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props):
         pressed_state = self._button_state.get(button, False)
         if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
             return
+        #map wheel buttons via translation table to support inverted axes:
+        server_button = button
+        if button>3:
+            server_button = self.wheel_map.get(button, -1)
+        server_buttons = []
+        for b in buttons:
+            if b>3:
+                sb = self.wheel_map.get(button)
+                if not sb:
+                    continue
+                b = sb
+            server_buttons.append(b)
         self._button_state[button] = pressed
-        packet =  ["button-action", wid,
-                   button, pressed,
-                   pointer, modifiers, buttons] + list(args)
+        if "pointer-button" in self.server_packet_types:
+            props = props or {}
+            if modifiers is not None:
+                props["modifiers"] = modifiers
+            props["buttons"] = server_buttons
+            if server_button!=button:
+                props["raw-button"] = button
+            if server_buttons!=buttons:
+                props["raw-buttons"] = buttons
+            seq = self.next_pointer_sequence(device_id)
+            packet =  ["pointer-button", device_id, seq, wid,
+                       server_button, pressed, pointer, props]
+        else:
+            if server_button==-1:
+                return
+            packet =  ["button-action", wid,
+                       server_button, pressed,
+                       pointer, modifiers, server_buttons]
+            if props:
+                packet += list(props.values())
         mouselog("button packet: %s", packet)
         self.send_positional(packet)
 

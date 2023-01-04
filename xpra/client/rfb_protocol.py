@@ -81,7 +81,7 @@ class RFBClientProtocol(RFBProtocol):
         self.do_send_pointer_event(button_mask, x, y)
 
     def send_button_action(self, packet):
-        log.warn("send_button_action(%s)", packet)
+        log("send_button_action(%s)", packet)
         if not self.check_wid(packet[1]):
             return
         #["button-action", wid, button, pressed, (x, y), modifiers, buttons]

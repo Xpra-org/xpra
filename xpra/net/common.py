@@ -54,7 +54,9 @@ PACKET_TYPES = [
     "configure-override-redirect", "lost-window", "window-icon",
     "draw",
     "eos", "cursor", "bell",
+    #pointer motion and events:
     "pointer-position", "pointer",
+    "button-action", "pointer-button",
     "pointer-grab", "pointer-ungrab",
     "webcam-stop", "webcam-ack",
     "set-clipboard-enabled", "clipboard-token", "clipboard-request",

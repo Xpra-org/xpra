@@ -67,8 +67,8 @@ class XTestPointerDevice:
         with xsync:
             X11Keyboard.xtest_fake_motion(screen_no, x, y)
 
-    def click(self, button, pressed, *_args):
-        mouselog("xtest_fake_button(%i, %s)", button, pressed)
+    def click(self, button, pressed, props):
+        mouselog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
 
@@ -1014,27 +1014,24 @@ class X11ServerCore(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer,
-                                 modifiers, _buttons=(), deviceid=-1, *_args):
-        self._update_modifiers(proto, wid, modifiers)
-        #TODO: pass extra args
-        device_id = -1
+    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+        if "modifiers" in props:
+            self._update_modifiers(proto, wid, props.get("modifiers"))
         props = {}
         if self._process_mouse_common(proto, device_id, wid, pointer, props):
-            self.button_action(wid, pointer, button, pressed, deviceid)
+            self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):
-        device = self.get_pointer_device(deviceid)
-        assert device, "pointer device %s not found" % deviceid
+    def button_action(self, device_id, wid, pointer, button, pressed, props):
+        device = self.get_pointer_device(device_id)
+        assert device, "pointer device %s not found" % device_id
         if button in (4, 5) and wid:
             self.record_wheel_event(wid, button)
         try:
-            mouselog("%s%s", device.click, (button, pressed, args))
+            mouselog("%s%s", device.click, (button, pressed, props))
             with xsync:
-                device.click(button, pressed, *args)
+                device.click(button, pressed, props)
         except XError:
-            mouselog("button_action(%s, %s, %s, %s, %s, %s)",
-                     wid, pointer, button, pressed, deviceid, args, exc_info=True)
+            mouselog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
             mouselog.error("Error: failed (un)press mouse button %s", button)
 
     def record_wheel_event(self, wid, button):

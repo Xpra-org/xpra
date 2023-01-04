@@ -669,8 +669,8 @@ class XI2_Window:
                 return
         button = event.detail
         depressed = (event.name == "XI_ButtonPress")
-        args = self.get_pointer_extra_args(event)
-        window._button_action(button, event, depressed, *args)
+        props = self.get_pointer_extra_args(event)
+        window._button_action(button, event, depressed, props)
 
     def do_xi_motion(self, event, device):
         window = self.window
@@ -727,17 +727,17 @@ class XI2_Window:
             #whatever happens, update our motion cached values:
             mv.update(event.valuators)
         #send plain motion first, if any:
+        props = self.get_pointer_extra_args(event)
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event, device, wid, window._client._focused, window._id, event.device, pointer_data, modifiers, buttons)
             device_id = 0
-            props = self.get_pointer_extra_args(event)
             client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
         #now see if we have anything to send as a wheel event:
         if dx!=0 or dy!=0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)
             #normalize (xinput is always using 15 degrees?)
-            client.wheel_event(wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, pointer_data, event.device)
+            client.wheel_event(event.device, wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, pointer_data, props)
 
     def get_pointer_extra_args(self, event):
         def intscaled(f):

@@ -366,6 +366,25 @@ class InputServer(StubServerMixin):
     def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
         return True
 
+    def _process_pointer_button(self, proto, packet):
+        mouselog("process_pointer_button(%s, %s)", proto, packet)
+        if self.readonly:
+            return
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        ss.user_event()
+        self.last_mouse_user = ss.uuid
+        self.set_ui_driver(ss)
+        device_id, seq, wid, button, pressed, pointer, props = packet[1:8]
+        if device_id>=0:
+            highest_seq = self.pointer_sequence.get(device_id, 0)
+            if 0<=seq<=highest_seq:
+                mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+                return
+            self.pointer_sequence[device_id] = seq
+        self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
+
     def _process_button_action(self, proto, packet):
         mouselog("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
@@ -376,9 +395,15 @@ class InputServer(StubServerMixin):
         ss.user_event()
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
-        self.do_process_button_action(proto, *packet[1:])
+        wid, button, pressed, pointer, modifiers, buttons = packet[1:7]
+        device_id = 0
+        props = {
+            "modifiers" : modifiers,
+            "buttons" : buttons,
+            }
+        self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
+    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
         """ all servers should implement this method """
 
 
@@ -472,9 +497,10 @@ class InputServer(StubServerMixin):
             "layout-changed"            : self._process_layout,
             "keymap-changed"            : self._process_keymap,
             #mouse:
-            "button-action"             : self._process_button_action,
-            "pointer"                   : self._process_pointer,
-            "pointer-position"          : self._process_pointer_position,
+            "pointer-button"            : self._process_pointer_button,     #v5
+            "button-action"             : self._process_button_action,      #pre v5
+            "pointer"                   : self._process_pointer,            #v5
+            "pointer-position"          : self._process_pointer_position,   #pre v5
             #setup:
             "input-devices"             : self._process_input_devices,
             })

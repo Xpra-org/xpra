@@ -59,7 +59,7 @@ class UInputDevice:
             if v<=(2, 2):
                 self.wheel_motion(4, 1)
 
-    def click(self, button, pressed, *_args):
+    def click(self, button, pressed, props):
         #this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
         #MOUSE_WHEEL_CLICK_COUNT=360
         #MOUSE_WHEEL_CLICK_ANGLE=1

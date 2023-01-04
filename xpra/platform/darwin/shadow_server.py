@@ -181,14 +181,14 @@ class ShadowServer(GTKShadowServerBase):
         #this causes crashes, don't do it!
         #CG.CFRelease(e)
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
-        self._update_modifiers(proto, wid, modifiers)
-        device_id = -1
+    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+        if "modifiers" in props:
+            self._update_modifiers(proto, wid, props.get("modifiers"))
         pointer = self._process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
-            self.button_action(wid, pointer, button, pressed, -1, *args)
+            self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, wid, pointer, button, pressed, _deviceid=-1, *_args):
+    def button_action(self, device_id, wid, pointer, button, pressed, props):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well

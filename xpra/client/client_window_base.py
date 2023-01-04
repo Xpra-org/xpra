@@ -950,34 +950,23 @@ class ClientWindowBase(ClientWidgetBase):
         except AttributeError:
             return ""
 
-    def _button_action(self, button, event, depressed, *args):
+    def _button_action(self, button, event, depressed, props=None):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
                  button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
-        #map wheel buttons via translation table to support inverted axes:
-        server_button = button
-        if button>3:
-            server_button = self._client.wheel_map.get(button)
-            if not server_button:
-                return
-        server_buttons = []
-        for b in buttons:
-            if b>3:
-                sb = self._client.wheel_map.get(button)
-                if not sb:
-                    continue
-                b = sb
-            server_buttons.append(b)
-        def send_button(pressed):
-            self._client.send_button(wid, server_button, pressed, pointer_data, modifiers, server_buttons, *args)
+        device_id = 0
+        def send_button(pressed, **kwargs):
+            sprops = props or {}
+            sprops.update(kwargs)
+            self._client.send_button(device_id, wid, button, pressed, pointer_data, modifiers, buttons, sprops)
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
             #(needed for some dialogs on win32):
-            send_button(True)
+            send_button(True, synthetic=True)
         self.button_state[button] = depressed
         send_button(depressed)
 

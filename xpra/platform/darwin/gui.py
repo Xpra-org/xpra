@@ -578,7 +578,8 @@ class Delegate(NSObject):
             client = window._client
             wid = window._id
             pointer = window.get_mouse_position()
-            client.wheel_event(wid, dx, dy, pointer)
+            device_id = -1
+            client.wheel_event(device_id, wid, dx, dy, pointer)
         return True
 
     @objc.python_method
