@@ -139,7 +139,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_timer = 0
         self._aliases = {}
         #server state and caps:
-        self.server_packet_handlers = [] #["pointer"]
+        self.server_packet_types = ()
         self.connection_established = False
         self.completed_startup = False
         self.uuid = get_user_uuid()
@@ -554,7 +554,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return seq
 
     def send_mouse_position(self, device_id, wid, pos, modifiers=None, buttons=None, props=None):
-        if "pointer" in self.server_packet_handlers:
+        if "pointer" in self.server_packet_types:
             #v5 packet type, most attributes are optional:
             attrs = props or {}
             if modifiers is not None:
@@ -1059,6 +1059,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
+        self.server_packet_types = caps.strtupleget("packet-types")
         return True
 
     def parse_encryption_capabilities(self, caps : typedict) -> bool:

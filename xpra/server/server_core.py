@@ -2183,6 +2183,7 @@ class ServerCore:
                 "readonly-server"   : True,
                 "readonly"          : self.readonly,
                 "server-log"        : os.environ.get("XPRA_SERVER_LOG", ""),
+                "packet-types"      : tuple(self._aliases.values()),
                 })
         if source is None or "versions" in source.wants:
             capabilities["uuid"] = get_user_uuid()
