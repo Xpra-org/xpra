@@ -143,8 +143,8 @@ class CommandConnectClient(GObjectXpraClient):
                   "windows", "webcam", "keyboard", "mouse", "network-state",
                   ):
             self.hello_extra[x] = False
-            #for newer versions, it is easier:
-            self.hello_extra["wants"] = []
+        #for newer versions, it is easier:
+        self.hello_extra["wants"] = []
 
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
