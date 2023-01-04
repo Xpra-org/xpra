@@ -82,6 +82,7 @@ class ClientConnection(StubSourceMixin):
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
 
+        self.client_packet_types = ()
         self.setting_changed = setting_changed
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
@@ -115,7 +116,7 @@ class ClientConnection(StubSourceMixin):
         #what we send back in hello packet:
         self.ui_client = True
         #default 'wants' is not including "events" or "default_cursor":
-        self.wants = ["aliases", "encodings", "versions", "features", "display"]
+        self.wants = ["aliases", "encodings", "versions", "features", "display", "packet-types"]
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
@@ -357,6 +358,7 @@ class ClientConnection(StubSourceMixin):
                 "jitter"            : self.jitter,
                 "adapter-type"      : self.adapter_type,
                 "ssh-auth-sock"     : self.ssh_auth_sock,
+                "packet-types"      : self.client_packet_types,
                 "bandwidth-limit"   : {
                     "detection"     : self.bandwidth_detection,
                     "actual"        : self.soft_bandwidth_limit or 0,

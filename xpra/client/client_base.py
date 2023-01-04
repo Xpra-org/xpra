@@ -393,6 +393,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 hello["challenge"] = True
             else:
                 hello.update(self.make_hello())
+            hello.setdefault("wants", []).append("packet-types")
         except InitExit as e:
             log.error("error preparing connection:")
             log.estr(e)
@@ -433,6 +434,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "username"              : self.username,    #for authentication
                 "compression_level"     : self.compression_level,
                 "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
+                "packet-types"          : tuple(self._aliases.values()),
                 })
         if self.display:
             capabilities["display"] = self.display
@@ -1060,6 +1062,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
         self.server_packet_types = caps.strtupleget("packet-types")
+        netlog(f"self.server_packet_types={self.server_packet_types}")
         return True
 
     def parse_encryption_capabilities(self, caps : typedict) -> bool:
