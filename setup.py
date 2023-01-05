@@ -2201,7 +2201,7 @@ if (nvidia_ENABLED and cuda_kernels_ENABLED) or (is_Debian() or is_Ubuntu()):
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
-tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvenc,cuda")
+tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
