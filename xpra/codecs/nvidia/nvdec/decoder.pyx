@@ -203,6 +203,28 @@ DECODE_STATUS_STR = {
     cuvidDecodeStatus_Error_Concealed : "error-concealed",
     }
 
+CODEC_NAMES = {
+    cudaVideoCodec_MPEG1    : "mpeg1",
+    cudaVideoCodec_MPEG2    : "mpeg2",
+    cudaVideoCodec_MPEG4    : "mpeg4",
+    cudaVideoCodec_VC1      : "vc1",
+    cudaVideoCodec_H264     : "h264",
+    cudaVideoCodec_JPEG     : "jpeg",
+    cudaVideoCodec_H264_SVC : "h264-svc",
+    cudaVideoCodec_H264_MVC : "h264-mvc",
+    cudaVideoCodec_HEVC     : "hevc",
+    cudaVideoCodec_VP8      : "vp8",
+    cudaVideoCodec_VP9      : "vp9",
+    cudaVideoCodec_AV1      : "av1",
+    }
+
+CHROMA_NAMES = {
+    cudaVideoChromaFormat_Monochrome    : "monochrome",
+    cudaVideoChromaFormat_420           : "420",
+    cudaVideoChromaFormat_422           : "422",
+    cudaVideoChromaFormat_444           : "444",
+    }
+
 
 def init_module():
     log("nvdec.init_module()")
@@ -402,23 +424,45 @@ def selftest(full=False):
     cdef CUresult r
     cdef Decoder decoder
 
+    codec_ok = []
+    codec_failed = []
     with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
 
-        memset(&caps, 0, sizeof(CUVIDDECODECAPS))
-        caps.eCodecType = cudaVideoCodec_H264_SVC
-        caps.eChromaFormat = cudaVideoChromaFormat_420
-        caps.nBitDepthMinus8 = 0
-        r = cuvidGetDecoderCaps(&caps)
-        if r:
-            raise RuntimeError(f"decoder caps for H264 returned error {r}")
-        if not caps.bIsSupported:
-            raise RuntimeError(f"H264 is not supported on this GPU")
-        if caps.nMaxWidth<4096 or caps.nMaxHeight<4096:
-            raise RuntimeError(f"H264 maximum dimension is only {caps.nMaxWidth}x{caps.nMaxHeight}")
-        if not (caps.nOutputFormatMask & (1<<cudaVideoSurfaceFormat_YUV444)):
-            raise RuntimeError(f"H264 cannot be decoded to YUV444 on this GPU")
-
-        decoder = Decoder()
-        decoder.init_context("h264", 512, 256, "YUV420P")
-        decoder.clean()
+        for codec_i, codec_name in CODEC_NAMES.items():
+            chroma_ok= []
+            chroma_failed = []
+            for chroma_i, chroma_name in CHROMA_NAMES.items():
+                memset(&caps, 0, sizeof(CUVIDDECODECAPS))
+                caps.eCodecType = codec_i
+                caps.eChromaFormat = chroma_i
+                caps.nBitDepthMinus8 = 0
+                r = cuvidGetDecoderCaps(&caps)
+                if r:
+                    chroma_failed.append(chroma_name)
+                    log(f"decoder caps for {codec_name} + {chroma_name} returned error {r}")
+                    continue
+                if not caps.bIsSupported:
+                    chroma_failed.append(chroma_name)
+                    log(f"{codec_name} + {chroma_name} is not supported on this GPU")
+                    continue
+                if caps.nMaxWidth<4096 or caps.nMaxHeight<4096:
+                    chroma_failed.append(chroma_name)
+                    log(f"{codec_name} maximum dimension is only {caps.nMaxWidth}x{caps.nMaxHeight}")
+                    continue
+                if not (caps.nOutputFormatMask & (1<<cudaVideoSurfaceFormat_YUV444)):
+                    chroma_failed.append(chroma_name)
+                    log(f"{codec_name} cannot be decoded to on this GPU")
+                    continue
+                chroma_ok.append(chroma_name)
+            if chroma_ok:
+                codec_ok.append(codec_name)
+            else:
+                codec_failed.append(codec_name)
+        log.info(f"codecs failed: {codec_failed}")
+        log.info(f"codecs supported: {codec_ok}")
+        #decoder = Decoder()
+        #decoder.init_context("h264", 512, 256, "YUV420P")
+        #decoder.clean()
+        if "h264" not in codec_ok:
+            raise RuntimeError("no h264 decoding")
