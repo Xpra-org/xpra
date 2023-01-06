@@ -24,7 +24,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, repr_ellipsized, envbool
+from xpra.util import csv, ellipsizer, repr_ellipsized, envbool
 from xpra.os_util import bytestostr, strtobytes
 from xpra.gtk_common.gobject_compat import import_glib
 
