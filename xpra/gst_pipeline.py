@@ -10,6 +10,8 @@ from time import monotonic
 
 from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 Gst = import_gst()
+if not Gst:
+    raise ImportError("GStreamer bindings not found")
 from gi.repository import GLib, GObject
 
 from xpra.util import AtomicInteger, noerr, first_time
