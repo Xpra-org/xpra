@@ -69,16 +69,9 @@ If you have an unusually large display configuration (multiple monitors), you ma
 <details>
   <summary>versions required</summary>
 
-Most recent distributions now ship compatible packages: Xorg version 1.12 or later, dummy driver version 0.3.5 or later; though some may have issues with non world-readable binaries
-</details>
-<details>
-  <summary>patches</summary>
+Most recent distributions now ship compatible packages: Xorg version 1.12 or later, dummy driver version 0.3.5 or later; though some may have issues with non world-readable binaries.
 
-* [Constant-DPI](../blob/master/packaging/rpm/0002-Constant-DPI.patch)
-* [pointer-limits](../blob/master/packaging/rpm/0003-fix-pointer-limits.patch) to fix unresponsive clicks after resizing up - see [#349](https://github.com/Xpra-org/xpra/issues/349)
-
-The dummy packages in the xpra repositories include those patches.
-</details>
+Starting with dummy version 0.4.0, only one optional patch is added to the version found in the xpra repositories: https://github.com/Xpra-org/xpra/blob/master/packaging/rpm/patches/0006-Dummy-Disconnect.patch
 <details>
   <summary>libGL Driver Conflicts</summary>
 
