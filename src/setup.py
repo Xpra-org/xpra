@@ -121,8 +121,18 @@ def pkg_config_version(req_version, pkgname):
     r, out, _ = get_status_output(cmd)
     if r!=0 or not out:
         return False
-    from distutils.version import LooseVersion
-    return LooseVersion(out)>=LooseVersion(req_version)
+    out = out.rstrip("\n\r")
+    #workaround for libx264 invalid version numbers:
+    #ie: "0.163.x" or "0.164.3094M"
+    while out[-1].isalpha() or out[-1]==".":
+        out = out[:-1]
+    # pylint: disable=import-outside-toplevel
+    try:
+        from packaging.version import parse
+        return parse(out)>=parse(req_version)
+    except ImportError:
+        from distutils.version import LooseVersion  # pylint: disable=deprecated-module
+        return LooseVersion(out)>=LooseVersion(req_version)
 
 def is_RH():
     try:
