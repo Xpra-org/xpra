@@ -763,6 +763,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def has_transparency(self):
+        if not envbool("XPRA_ALPHA", True):
+            return False
         screen = screen_get_default()
         if screen is None:
             return is_Wayland()
