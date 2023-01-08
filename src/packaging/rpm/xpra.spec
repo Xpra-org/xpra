@@ -7,7 +7,9 @@
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
+%if ! 0%{el9}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %{!?xpra_revision_no: %define xpra_revision_no 1}
@@ -96,6 +98,25 @@ Requires:			python2-xpra-server = %{version}-%{release}
 #no audio by default on centos7:
 #Requires:			python2-xpra-audio = %{version}-%{release}
 %endif
+BuildRequires:		pam-devel
+BuildRequires:		pkgconfig
+BuildRequires:		gcc
+BuildRequires:		gcc-c++
+BuildRequires:		libxkbfile-devel
+BuildRequires:		libXtst-devel
+BuildRequires:		libXfixes-devel
+BuildRequires:		libXcomposite-devel
+BuildRequires:		libXdamage-devel
+BuildRequires:		libXrandr-devel
+BuildRequires:		libXext-devel
+%if 0%{?fedora}%{?el8}%{?el9}
+Requires:		libwebp
+BuildRequires:		libwebp-devel
+%endif
+BuildRequires:		libyuv-devel
+BuildRequires:		turbojpeg-devel
+BuildRequires:		x264-xpra-devel
+BuildRequires:		ffmpeg-xpra-devel
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
@@ -206,6 +227,7 @@ BuildRequires:		system-backgrounds
 %description html5
 This package contains Xpra's HTML5 client.
 
+%if ! 0%{el9}
 %package -n python2-xpra
 Summary:			python2 build of xpra
 Group:				Networking
@@ -244,14 +266,9 @@ Recommends:			python2-dbus
 %endif
 %{Recommends}:		python2-netifaces
 %{Suggests}:		python2-cryptography
-BuildRequires:		pkgconfig
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
 BuildRequires:		python2-Cython
 BuildRequires:		python2
 %if 0%{?fedora}%{?el8}
-Requires:			libwebp
-BuildRequires:		libwebp-devel
 BuildRequires:		python2-setuptools
 %if 0%{?run_tests}
 BuildRequires:		python2-numpy
@@ -267,24 +284,13 @@ Requires:			libwebp-xpra
 BuildRequires:		libwebp-xpra-devel
 BuildRequires:		python-setuptools
 %endif
-BuildRequires:		libxkbfile-devel
-BuildRequires:		libXtst-devel
-BuildRequires:		libXfixes-devel
-BuildRequires:		libXcomposite-devel
-BuildRequires:		libXdamage-devel
-BuildRequires:		libXrandr-devel
-BuildRequires:		libXext-devel
 BuildRequires:		pygtk2-devel
 BuildRequires:		pygobject2-devel
-BuildRequires:		libyuv-devel
-BuildRequires:		turbojpeg-devel
 %if 0%{?el7}
 BuildRequires:		libvpx-xpra-devel
 %else
 BuildRequires:		libvpx-devel
 %endif
-BuildRequires:		x264-xpra-devel
-BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
 BuildRequires:		python2-pillow
 BuildRequires:		python2-rencode
@@ -371,11 +377,10 @@ Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
 %endif
-BuildRequires:		pam-devel
-BuildRequires:		gcc
 BuildRequires:		python2-Cython
 %description -n python2-xpra-server
 This package contains the python2 xpra server.
+%endif
 
 #optional python3 packages:
 %if %{with_python3}
@@ -411,11 +416,6 @@ Recommends:         python3-ldap3
 Recommends:         python3-brotli
 #Suggests:           python3-cpuinfo
 Requires:			libwebp
-BuildRequires:		libwebp-devel
-BuildRequires:		libyuv-devel
-BuildRequires:		turbojpeg-devel
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
 BuildRequires:		python3
 BuildRequires:		python3-devel
 BuildRequires:		python3-Cython
@@ -551,15 +551,19 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
+%if ! 0%{el9}
 	--without-html5 --without-printing --without-cuda_kernels
+%endif
 popd
 %endif
 
+%if ! 0%{el9}
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python2} setup.py build \
 	%{build_args}
+%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -578,6 +582,7 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
+%if ! 0%{el9}
 pushd xpra-%{version}-python2
 %{__python2} setup.py install \
 	%{build_args} \
@@ -586,6 +591,7 @@ pushd xpra-%{version}-python2
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
+%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -602,7 +608,9 @@ popd
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
 	%{build_args} \
+%if ! 0%{el9}
 	--without-html5 --without-printing --without-cuda_kernels \
+%endif
 	--prefix /usr --skip-build --root %{buildroot}
 popd
 #fix permissions on shared objects
@@ -693,6 +701,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/*.pp
 %endif
 
+%if ! 0%{el9}
 %files -n python2-xpra
 %{python2_sitearch}/xpra/buffers
 %{python2_sitearch}/xpra/clipboard
@@ -718,6 +727,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n python2-xpra-server
 %{python2_sitearch}/xpra/server
+%endif
 
 %if %{with_python3}
 %files -n python3-xpra
