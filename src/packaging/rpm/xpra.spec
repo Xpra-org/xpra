@@ -550,10 +550,10 @@ pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
-	%{build_args} \
 %if ! 0%{el9}
-	--without-html5 --without-printing --without-cuda_kernels
+	--without-html5 --without-printing --without-cuda_kernels \
 %endif
+	%{build_args}
 popd
 %endif
 
@@ -563,7 +563,6 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python2} setup.py build \
 	%{build_args}
-%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -578,6 +577,7 @@ do
 done
 %endif
 popd
+%endif
 
 
 %install
@@ -591,7 +591,6 @@ pushd xpra-%{version}-python2
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
-%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -604,6 +603,8 @@ do
 done
 %endif
 popd
+%endif
+
 %if %{with_python3}
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
