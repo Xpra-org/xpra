@@ -85,7 +85,7 @@ Patch1:				selinux-nomap.patch
 Patch2:				centos7-oldturbojpeg.patch
 %endif
 Requires:			xpra-html5
-%if 0%{?fedora}%{?el8}
+%if 0%{?fedora}%{?el8}%{?el9}
 Requires:			python3-xpra-client = %{version}-%{release}
 Requires:			python3-xpra-server = %{version}-%{release}
 %endif
@@ -145,7 +145,7 @@ BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
 #without this, the system tray is unusable with gnome!
-%if 0%{?el8}
+%if 0%{?el8}%{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
 %description common-client
@@ -173,7 +173,7 @@ Requires(postun):	systemd-units
 %{Recommends}:		which
 %{Recommends}:		libfakeXinerama
 %{Recommends}:		mesa-dri-drivers
-%if 0%{?fedora}%{?el8}
+%if 0%{?fedora}%{?el8}{?el9}
 #allows the server to use software opengl:
 %{Recommends}:		mesa-libOSMesa
 %endif
@@ -207,20 +207,20 @@ Summary:			Xpra HTML5 client
 Group:				Networking
 BuildArch:			noarch
 Conflicts:			xpra < 2.1
-%if 0%{?fedora}%{?el8}
+%if 0%{?fedora}%{?el8}{?el9}
 BuildRequires:		uglify-js
 %endif
 %if 0%{?fedora}
 BuildRequires:		js-jquery
 Requires:			js-jquery
 %endif
-%if 0%{?el7}%{?el8}
+%if 0%{?el7}%{?el8}{?el9}
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
 BuildRequires:		system-logos
 %{Recommends}:          system-logos
 %endif
-%if 0%{?el8}
+%if 0%{?el8}{?el9}
 BuildRequires:		system-backgrounds
 %{Recommends}:          system-backgrounds
 %endif
@@ -471,7 +471,7 @@ Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
 #without this, the system tray is unusable!
-%if 0%{?el8}
+%if 0%{?el8}{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
 %if 0%{?fedora}
@@ -788,7 +788,7 @@ popd
 
 
 %post common-server
-%if 0%{?fedora}%{?el8}
+%if 0%{?fedora}%{?el8}%{?el9}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
