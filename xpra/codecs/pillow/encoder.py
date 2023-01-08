@@ -105,13 +105,14 @@ def encode(coding, image, quality, speed, supports_transparency):
                 palette.append((g>>8) & 0xFF)
                 palette.append((b>>8) & 0xFF)
             bpp = 8
+        pil_import_format = pixel_format.replace("A", "a")
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
-        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
         if palette:
             im.putpalette(palette)
             im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
