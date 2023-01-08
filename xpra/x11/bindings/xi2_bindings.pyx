@@ -15,6 +15,7 @@ import collections
 from xpra.log import Logger
 log = Logger("x11", "bindings", "xinput")
 
+from xpra.gtk_common.error import xlog
 from xpra.x11.common import X11Event
 from xpra.os_util import hexstr
 
@@ -483,7 +484,11 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         XISelectEvents(self.display, win, evmasks, 1)
         XFlush(self.display)
 
-    def parse_xi_event(self, display, uintptr_t _cookie):
+    def parse_xi_event(self, display, _cookie):
+        with xlog:
+            return self.do_parse_xi_event(display, _cookie)
+
+    cdef do_parse_xi_event(self, display, uintptr_t _cookie):
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
         cdef XIDeviceEvent *device_e
         cdef XIHierarchyEvent *hierarchy_e
