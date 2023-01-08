@@ -1145,7 +1145,8 @@ def connect_or_fail(display_desc, opts):
         raise
     except Exception as e:
         get_util_logger().debug("failed to connect", exc_info=True)
-        raise InitException("connection failed: %s" % e)
+        einfo = str(e) or type(e)
+        raise InitException("connection failed: %s" % einfo)
 
 
 def socket_connect(dtype, host, port):
