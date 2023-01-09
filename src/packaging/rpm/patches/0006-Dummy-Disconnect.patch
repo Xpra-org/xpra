@@ -1,0 +1,47 @@
+--- a/src/dummy_driver.c	2022-04-06 00:16:37.000000000 +0700
++++ b/src/dummy_driver.c	2022-04-15 20:52:08.243929337 +0700
+@@ -86,6 +86,8 @@
+ #define WIDTH_MM_NAME  "WIDTH_MM"
+ Atom height_mm_atom = 0;
+ #define HEIGHT_MM_NAME "HEIGHT_MM"
++Atom suspended_atom = 0;
++#define SUSPENDED_NAME "SUSPENDED"
+ 
+ /*
+  * This contains the functions needed by the server after loading the driver
+@@ -307,16 +309,19 @@
+         width_mm_atom = MakeAtom(WIDTH_MM_NAME, strlen(WIDTH_MM_NAME), 1);
+     if (!ValidAtom(height_mm_atom))
+         height_mm_atom = MakeAtom(HEIGHT_MM_NAME, strlen(HEIGHT_MM_NAME), 1);
++    if (!ValidAtom(suspended_atom))
++    	suspended_atom = MakeAtom(SUSPENDED_NAME, strlen(SUSPENDED_NAME), 1);
+ 
+     dummy_output_register_prop(output, width_mm_atom, 0);
+     dummy_output_register_prop(output, height_mm_atom, 0);
++    dummy_output_register_prop(output, suspended_atom, 0);
+ }
+ 
+ static Bool dummy_output_set_property(xf86OutputPtr output, Atom property,
+         RRPropertyValuePtr value)
+ {
+ 
+-    if (property == width_mm_atom || property == height_mm_atom) {
++    if (property == width_mm_atom || property == height_mm_atom || property == suspended_atom) {
+         INT32 val;
+ 
+         if (value->type != XA_INTEGER || value->format != 32 ||
+@@ -330,6 +335,14 @@
+             output->mm_width = val;
+         else if (property == height_mm_atom)
+             output->mm_height = val;
++        else if (property == suspended_atom) {
++            int index = (int64_t)output->driver_private;
++            DUMMYPtr dPtr = DUMMYPTR(output->scrn);
++            if (val)
++                dPtr->connected_outputs &= ~(1 << index);
++            else
++            	dPtr->connected_outputs |= 1 << index;
++        }
+         return TRUE;
+     }
+     return TRUE;
