@@ -269,8 +269,8 @@ Recommends:			python2-dns
 Recommends: 		        python2-kerberos
 Recommends:         		python2-gssapi
 #webcam:
+%{Suggests}:			python2-opencv
 Recommends:			python2-inotify
-Recommends:			python2-opencv
 Recommends:			python2-avahi
 Recommends:         		python2-ldap
 Recommends:         		python2-ldap3
