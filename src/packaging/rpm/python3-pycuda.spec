@@ -3,9 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%{!?__python3: %define __python3 python3}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-
 #we don't want to depend on libcuda via RPM dependencies
 #so that we can install NVidia drivers without using RPM packages:
 %define __requires_exclude ^libcuda.*$
@@ -13,14 +10,19 @@
 %define _disable_source_fetch 0
 %global debug_package %{nil}
 
+%define STUBS_DIR targets/x86_64-linux/lib/stubs/
+%ifarch aarch64
+%define STUBS_DIR targets/sbsa-linux/lib/stubs/
+%endif
+
 Name:           python3-pycuda
-Version:        2021.1
+Version:        2022.2.2
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:       	https://files.pythonhosted.org/packages/5a/56/4682a5118a234d15aa1c8768a528aac4858c7b04d2674e18d586d3dfda04/pycuda-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/78/09/9df5358ffb74d225243b56a65ffe196de481fcd8f731f55e41f2d5d36015/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -45,7 +47,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ab87312d0fc349d9c17294a087bb9615cffcf966ad7b115f5b051008a48dd6ed" ]; then
+if [ "${sha256}" != "cd92e7246bb45ac3452955a110714112674cdf3b4a9e2f4ff25a4159c684e6bb" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -62,12 +64,12 @@ CUDA=/opt/cuda
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
-LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py build
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py build
 #make
 
 %install
 CUDA=/opt/cuda
-LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
 %clean
 rm -rf %{buildroot}
@@ -78,6 +80,22 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.2.2-1
+- new upstream release
+
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.2.1-1
+- new upstream release
+
+* Tue Nov 22 2022 Antoine Martin <antoine@xpra.org> - 2022.2-1
+- new upstream release
+- remove context cleanup failures patch (merged)
+
+* Tue Aug 16 2022 Antoine Martin <antoine@xpra.org> - 2022.1-2
+- add patch to show context cleanup failures
+
+* Sat Jun 25 2022 Antoine Martin <antoine@xpra.org> - 2022.1-1
+- new upstream release
+
 * Sun May 02 2021 Antoine Martin <antoine@xpra.org> - 2021.1-1
 - new upstream release
 

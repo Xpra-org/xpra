@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
 
 Name:           python3-pytools
-Version:        2021.2.6
+Version:        2022.1.13
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/49/5b/136e5688da9bbd915ee8190bfd6a007fc0b19d71f26d5a2ab4b737b2eeb4/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/48/d8/93d4dc493e5ee107ae181a918a8f5e8f117a1bcdafc6aa70eadb6be49cd5/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
@@ -33,7 +33,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "02160d723ff481349dae9c733477a34b04661190519cb1c84b985d549eee416d" ]; then
+if [ "${sha256}" != "c2f98359f6f281fb9d06136cdfb825a1984571598c8b437f8d6815ab80a04149" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -60,6 +60,15 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.1.13-1
+- new upstream release
+
+* Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> - 2021.2.9-1
+- new upstream release
+
+* Sun Oct 03 2021 Antoine Martin <antoine@xpra.org> - 2021.2.8-1
+- new upstream release
+
 * Sun Mar 28 2021 Antoine Martin <antoine@xpra.org> - 2021.2.6-1
 - new upstream release
 

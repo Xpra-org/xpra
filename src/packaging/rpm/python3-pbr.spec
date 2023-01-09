@@ -1,15 +1,13 @@
-%{!?__python3: %define __python3 python3}
-%{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %define _disable_source_fetch 0
 %global debug_package %{nil}
 
 Name:           python3-pbr
-Version:        5.6.0
+Version:        5.11.0
 Release:        1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
-Source0:        https://files.pythonhosted.org/packages/35/8c/69ed04ae31ad498c9bdea55766ed4c0c72de596e75ac0d70b58aa25e0acf/pbr-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/52/fb/630d52aaca8fc7634a0711b6ae12a0e828b6f9264bd8051225025c3ed075/pbr-%{version}.tar.gz
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
@@ -18,10 +16,10 @@ PBR is a library that injects some useful and sensible default behaviors into yo
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "42df03e7797b796625b1029c0400279c7c34fd7df24a7d7818a1abb5b38710dd" ]; then
+if [ "${sha256}" != "b97bc6695b2aff02144133c2e7399d5885223d42b7912ffaec2ca3898e673bfe" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -qn pbr-%{version}
 
 %build
@@ -35,5 +33,11 @@ CFLAGS="%{optflags}" %{__python3} setup.py build
 %{_bindir}/pbr
 
 %changelog
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 5.11.0-1
+- new upstream release
+
+* Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> - 5.9.0-1
+- new upstream release
+
 * Wed May 26 2021 Antoine Martin <antoine@xpra.org> - 5.6.0-1
 - initial packaging for xpra python3 builds

@@ -1,7 +1,5 @@
 # Remove private provides from .so files in the python_sitearch directory
-%global __provides_exclude_from ^%{python2_sitearch}/.*\\.so$
-%{!?__python3: %define __python3 python3}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+
 %define _disable_source_fetch 0
 
 Name:           python3-rencode
@@ -31,7 +29,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -qn rencode-%{version}
 %patch0 -p1
 %patch1 -p1
@@ -62,7 +60,7 @@ popd
 * Wed Sep 01 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-11.xpra1
 - bump release number to ensure EPEL version is not installed
 
-* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
+* Thu Aug 05 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
 - fix DoS decoding invalid typecode in lists or dictionaries
 
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-3.xpra1
