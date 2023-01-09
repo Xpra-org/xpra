@@ -2,7 +2,7 @@
 
 Summary: A portable x86 assembler which uses Intel-like syntax
 Name:    nasm
-Version: 2.15.03
+Version: 2.16
 Release: 1%{?dist}
 License: BSD
 URL:     http://www.nasm.us
@@ -30,7 +30,7 @@ include linker, library manager, loader, and information dump.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "c0c39a305f08ccf0c5c6edba4294dd2851b3925b6d9642dd1efd62f72829822f" ]; then
+if [ "${sha256}" != "f05e2dc04bdb075487207d775770e9e508e250e63da8bf6c769976d66dd55249" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -65,5 +65,11 @@ make all %{?_smp_mflags}
 %{_mandir}/man1/ld*
 
 %changelog
+* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2.16-1
+- new upstream release
+
+* Thu Nov 04 2021 Antoine Martin <antoine@xpra.org> - 2.15.05-1
+- new upstream release
+
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 2.15.03-1
 - initial packaging for CentOS 7.x

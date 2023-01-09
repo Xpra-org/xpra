@@ -1,11 +1,11 @@
 %define _disable_source_fetch 0
-%define COMMIT 19d71f6b351fe992ae34b114eebd872c383a6bdb
+%define COMMIT 6900494d90ae095d44405cd4cc3f346971fa69c9
 %define __cmake_in_source_build 1
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.1766.20201016gita4ec5cf.1%{?dist}
+Release:	0.1832.20220629git6900494.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 #VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
@@ -24,7 +24,11 @@ Patch7:		libyuv-0007-nojpeg.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
-%if !0%{?el7}
+%if 0%{?el8}
+#CentOS 8 ships cmake with broken dependencies, fix it:
+BuildRequires:	libarchive
+%endif
+%if !0%{?el8}%{?el9}
 BuildRequires:	gtest-devel
 %endif
 
@@ -48,7 +52,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5906ff00c8956df09c0187549a3fd5cf0da40859846f49d565cc9abfca93f29a" ]; then
+if [ "${sha256}" != "d5cd10a5bd6ae8fe2be275d8c55f8bc1836b11317b9263b709650d3d551ca572" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -97,6 +101,9 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Sun Aug 07 2022 Antoine Martin <totaam@xpra.org> - 0-0.1832.20220629git6900494.1
+- new upstream git snapshot
+
 * Tue May 25 2021 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf.1
 - don't use jpeg, which also fixes CentOS 7.x builds
 
