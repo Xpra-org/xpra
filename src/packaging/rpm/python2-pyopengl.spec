@@ -10,13 +10,13 @@
 %global srcname PyOpenGL
 
 Name:           python2-pyopengl
-Version:        3.1.5
+Version:        3.1.6
 Release:        1xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746/%{srcname}-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389/%{srcname}-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/5b/01/f8fd986bc7f456f1a925ee0239f0391838ade92cdb6e5b674ffb8b86cfd6/PyOpenGL-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/8e/47/64aa665af0f7d0c2f6c4a865c1d521c3697504da971366d4dea12ce8b339/PyOpenGL-accelerate-%{version}.tar.gz
 
 Requires:       freeglut
 Obsoletes:      python-pyopengl < %{version}-%{release}
@@ -110,6 +110,9 @@ find %{buildroot}%{python2_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 7
 %{python2_sitelib}/OpenGL/Tk
 
 %changelog
+* Mon Jan 09 2023 Antoine Martin <antoine@xpra.org> - 3.1.6-1xpra1
+- new upstream release
+
 * Wed Jan 22 2020 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra1
 - new upstream release
 
