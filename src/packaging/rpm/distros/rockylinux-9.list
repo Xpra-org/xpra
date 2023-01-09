@@ -7,7 +7,6 @@ python3-puda
 python3-pynvml
 python3-pyu2f
 pangox-compat
-pygtkglext
 x264-xpra
 ffmpeg-xpra
 xpra
