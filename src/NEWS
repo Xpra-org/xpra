@@ -1,3 +1,42 @@
+v3.1.4 (2023-01-09)
+======================
+	-- major fixes:
+		- correctly wait for worker threads to terminate
+		- workaround new broken python3-uinput packages on Fedora
+		- more robust version parsing
+		- missing X11 error context in XI2 input bindings
+		- clipboard errors on Microsoft Windows (regression in 3.1.3)
+		- timestamp clamping code could swallow X11 client messages
+		- xkb rules name parsing error with Python 3
+		- add `capability` authentication module
+	-- build and packaging:
+		- support for RHEL 9.x and clones
+		- missing systray dependency on Debian and Ubuntu
+	-- network:
+		- better compatibility with newer versions: emulate the `command` Posix command
+		- websocket fixes: python2 compatibility, error handler
+		- proxy should not try to recompress strings
+		- IPv6 parsing errors
+		- support newer versions of python-cryptography
+		- workaround for missing paramiko dependency on python3-invoke (ie: Fedora)
+	-- cosmetic:
+		- more helpful connection failure messages
+		- handle config file parsing errors more gracefully
+		- free wrapper explicitly to avoid warnings in webp decoder
+		- errors in xsettings watcher
+		- avoid errors deleting the temporary print file
+		- MacOS doesn't have an `XDG_RUNTIME_DIR`
+		- catch missing python-dbus earlier
+		- avoid errors when python-xdg is not installed
+		- don't assume the peer is 32-bit when unspecified
+	-- encodings:
+		- honour `XPRA_ALPHA` environment variable in client
+		- validate x264 encoder dimensions to prevent potential crashes
+		- fix transparency saturation: use premultiplied alpha with pillow and webp
+		- numpy import race condition
+		- expose `IDR` frame type in NVENC
+
+
 v3.1.3 (2022-06-26)
 ======================
 	-- major fixes:
