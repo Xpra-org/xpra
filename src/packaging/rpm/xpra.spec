@@ -5,12 +5,20 @@
 
 %define version 3.1.3
 
+%{!?with_python2: %define with_python2 1}
+%{!?with_python3: %define with_python3 1}
+%if 0%{?el9}
+%define with_python2 0
+%endif
+
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
-%if ! 0%{el9}
+%if %{with_python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
+%if %{with_python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
 
 %{!?xpra_revision_no: %define xpra_revision_no 1}
 
@@ -19,7 +27,6 @@
 
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 0}
-%{!?with_python3: %define with_python3 1}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
@@ -85,12 +92,12 @@ Patch1:				selinux-nomap.patch
 Patch2:				centos7-oldturbojpeg.patch
 %endif
 Requires:			xpra-html5
-%if 0%{?fedora}%{?el8}%{?el9}
+%if %{with_python3}
 Requires:			python3-xpra-client = %{version}-%{release}
 Requires:			python3-xpra-server = %{version}-%{release}
-%endif
 %if 0%{?fedora}
 Requires:			python3-xpra-audio = %{version}-%{release}
+%endif
 %endif
 %if 0%{?el7}
 Requires:			python2-xpra-client = %{version}-%{release}
@@ -109,9 +116,12 @@ BuildRequires:		libXcomposite-devel
 BuildRequires:		libXdamage-devel
 BuildRequires:		libXrandr-devel
 BuildRequires:		libXext-devel
-%if 0%{?fedora}%{?el8}%{?el9}
-Requires:		libwebp
+%if 0%{?el7}
+BuildRequires:		libwebp-xpra-devel
+BuildRequires:		libvpx-xpra-devel
+%else
 BuildRequires:		libwebp-devel
+BuildRequires:		libvpx-devel
 %endif
 BuildRequires:		libyuv-devel
 BuildRequires:		turbojpeg-devel
@@ -173,7 +183,7 @@ Requires(postun):	systemd-units
 %{Recommends}:		which
 %{Recommends}:		libfakeXinerama
 %{Recommends}:		mesa-dri-drivers
-%if 0%{?fedora}%{?el8}%{?el9}
+%if ! 0%{?el7}
 #allows the server to use software opengl:
 %{Recommends}:		mesa-libOSMesa
 %endif
@@ -189,7 +199,7 @@ BuildRequires:		dbus-x11
 BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
-%if 0%{?fedora}>=34
+%if 0%{?fedora}
 BuildRequires:			xmodmap
 BuildRequires:			xrandr
 BuildRequires:			xrdb
@@ -207,16 +217,14 @@ Summary:			Xpra HTML5 client
 Group:				Networking
 BuildArch:			noarch
 Conflicts:			xpra < 2.1
-%if 0%{?fedora}%{?el8}%{?el9}
+%if ! 0%{?el7}
 BuildRequires:		uglify-js
 %endif
 %if 0%{?fedora}
 BuildRequires:		js-jquery
-Requires:			js-jquery
+Requires:		js-jquery
 %endif
 %if 0%{?el7}%{?el8}%{?el9}
-#don't depend on this package,
-#so we can also install on a pure RHEL distro:
 BuildRequires:		system-logos
 %{Recommends}:          system-logos
 %endif
@@ -227,7 +235,7 @@ BuildRequires:		system-backgrounds
 %description html5
 This package contains Xpra's HTML5 client.
 
-%if ! 0%{el9}
+%if %{with_python2}
 %package -n python2-xpra
 Summary:			python2 build of xpra
 Group:				Networking
@@ -238,11 +246,15 @@ Requires:			python2-rencode
 %if 0%{?el7}
 Requires:			python-pillow
 Requires:			libvpx-xpra
+Requires:			libwebp-xpra
 %else
 Requires:			python2-pillow
 Requires:			libvpx
+Requires:			libwebp
 Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra < 1.8
+Obsoletes:          		libvpx-xpra < 1.8
+Conflicts:			libwebp-xpra
+Obsoletes:          		libwebp-xpra < 1.8
 %endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
@@ -254,46 +266,38 @@ Recommends:			python2-numpy
 Recommends:			python2-paramiko
 Recommends:			python2-dns
 #Recommends:			python2-lzo
-Recommends:         python2-kerberos
-Recommends:         python2-gssapi
+Recommends: 		        python2-kerberos
+Recommends:         		python2-gssapi
 #webcam:
 Recommends:			python2-inotify
 Recommends:			python2-opencv
 Recommends:			python2-avahi
-Recommends:         python2-ldap
-Recommends:         python2-ldap3
+Recommends:         		python2-ldap
+Recommends:         		python2-ldap3
 Recommends:			python2-dbus
 %endif
-%{Recommends}:		python2-netifaces
-%{Suggests}:		python2-cryptography
-BuildRequires:		python2-Cython
-BuildRequires:		python2
-%if 0%{?fedora}%{?el8}
-BuildRequires:		python2-setuptools
-%if 0%{?run_tests}
-BuildRequires:		python2-numpy
-%endif
-%endif
+%{Recommends}:			python2-netifaces
+%{Suggests}:			python2-cryptography
+BuildRequires:			python2-Cython
+BuildRequires:			python2
+BuildRequires:			pygtk2-devel
+BuildRequires:			pygobject2-devel
 %if 0%{?el7}
 Requires:			numpy
 %if 0%{?run_tests}
-BuildRequires:		numpy
+BuildRequires:			numpy
 %endif
 Requires:			dbus-python
-Requires:			libwebp-xpra
-BuildRequires:		libwebp-xpra-devel
-BuildRequires:		python-setuptools
-%endif
-BuildRequires:		pygtk2-devel
-BuildRequires:		pygobject2-devel
-%if 0%{?el7}
-BuildRequires:		libvpx-xpra-devel
+BuildRequires:			python-setuptools
 %else
-BuildRequires:		libvpx-devel
+BuildRequires:			python2-setuptools
+%if 0%{?run_tests}
+BuildRequires:			python2-numpy
+%endif
 %endif
 %if 0%{?run_tests}
-BuildRequires:		python2-pillow
-BuildRequires:		python2-rencode
+BuildRequires:			python2-pillow
+BuildRequires:			python2-rencode
 %endif
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
@@ -397,7 +401,9 @@ Requires:			libyuv
 Requires:			libvpx
 Requires:			turbojpeg
 Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra < 1.8
+Obsoletes:			libvpx-xpra < 1.8
+Conflicts:			libwebp-xpra
+Obsoletes:			libwebp-xpra < 1.8
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
@@ -529,7 +535,6 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %patch2 -p1
 %endif
 
-
 popd
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}
@@ -550,19 +555,20 @@ pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
-%if ! 0%{el9}
+%if ! %{with_python2}
 	--without-html5 --without-printing --without-cuda_kernels \
 %endif
 	%{build_args}
 popd
 %endif
 
-%if ! 0%{el9}
 pushd xpra-%{version}-python2
+%if %{with_python2}
 rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python2} setup.py build \
 	%{build_args}
+%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -577,13 +583,12 @@ do
 done
 %endif
 popd
-%endif
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%if ! 0%{el9}
 pushd xpra-%{version}-python2
+%if %{with_python2}
 %{__python2} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
@@ -591,6 +596,7 @@ pushd xpra-%{version}-python2
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
+%endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -603,13 +609,12 @@ do
 done
 %endif
 popd
-%endif
 
 %if %{with_python3}
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
 	%{build_args} \
-%if ! 0%{el9}
+%if %{with_python2}
 	--without-html5 --without-printing --without-cuda_kernels \
 %endif
 	--prefix /usr --skip-build --root %{buildroot}
@@ -702,7 +707,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/*.pp
 %endif
 
-%if ! 0%{el9}
+%if %{with_python2}
 %files -n python2-xpra
 %{python2_sitearch}/xpra/buffers
 %{python2_sitearch}/xpra/clipboard
@@ -788,7 +793,7 @@ popd
 
 
 %post common-server
-%if 0%{?fedora}%{?el8}%{?el9}
+%if ! 0%{?el7}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
