@@ -37,7 +37,7 @@ def check_xdg():
     except ImportError as e:
         if first_time("load-xdg"):
             log.warn("Warning: cannot load menu data")
-            log.warn(f" {e}")
+            log.warn(" %s", e)
         return False
 
 def isvalidtype(v):

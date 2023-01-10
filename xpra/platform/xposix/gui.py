@@ -813,7 +813,7 @@ class ClientExtras(object):
         except ImportError as e:
             dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.warn("Warning: cannot setup dbus signals")
-            dbuslog.warn(f" {e}")
+            dbuslog.warn(" %s", e)
             return
 
         try:

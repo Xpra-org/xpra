@@ -28,7 +28,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self):
         return False
 
-    def authenticate(self, caps : typedict) -> bool:    #pylint: disable=arguments-differ
+    def authenticate(self, caps):
         value = caps.strget(self.property, None)
         log("capability.authenticate(..) %r=%r (value required: %r",
             self.property, value, self.value)

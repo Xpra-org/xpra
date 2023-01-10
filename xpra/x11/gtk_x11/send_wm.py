@@ -23,7 +23,7 @@ def send_wm_take_focus(target, timestamp):
     if timestamp<0:
         timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
-        raise OverflowError(f"invalid time: {timestamp:x}")
+        raise OverflowError("invalid time: %s", hex(timestamp))
     elif timestamp>0x7FFFFFFF:
         timestamp = int(0x100000000-timestamp)
         if timestamp<0x80000000:
