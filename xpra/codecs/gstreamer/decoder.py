@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
+
 from xpra.gst_common import STREAM_TYPE, GST_FORMAT_BYTES, make_buffer
 from xpra.gst_pipeline import GST_FLOW_OK
 from xpra.codecs.gstreamer.codec_common import (
@@ -11,9 +13,8 @@ from xpra.codecs.gstreamer.codec_common import (
     init_module, cleanup_module,
     )
 from xpra.util import roundup
-from xpra.log import Logger
-from gi.repository import GObject
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.log import Logger
 
 log = Logger("decoder", "gstreamer")
 
