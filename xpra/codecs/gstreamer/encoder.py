@@ -182,7 +182,10 @@ class Encoder(VideoPipeline):
         if size:
             data = buf.extract_dup(0, size)
             #log(" output=%s", hexstr(data))
-            client_info = {}
+            client_info = {
+                "frame" : self.frames,
+                }
+            self.frames += 1
             pts = normv(buf.pts)
             if pts>=0:
                 client_info["timestamp"] = pts
