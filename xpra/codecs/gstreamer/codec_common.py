@@ -72,9 +72,7 @@ class VideoPipeline(Pipeline):
             log.error("Error: unable to push image buffer")
             return None
         try:
-            r = self.frame_queue.get(timeout=2 if self.frames==0 else 1)
-            self.frames += 1
-            return r
+            return self.frame_queue.get(timeout=2 if self.frames==0 else 1)
         except Empty:
             log.error("Error: frame queue timeout")
             return None
