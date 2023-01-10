@@ -18,9 +18,8 @@ from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol.header import (
-    unpack_header, pack_header,
+    unpack_header, pack_header, find_xpra_header,
     FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
-    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML,
     )
 from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
@@ -78,64 +77,6 @@ def force_flush_queue(q):
     except Exception:
         log("force_flush_queue(%s)", q, exc_info=True)
 
-def find_xpra_header(data, index=0, max_data_size=2**16):
-    pos = data.find(b"P")
-    while pos>=0:
-        if len(data)<pos+8:
-            #not enough data to try to parse this potential header
-            return -1
-        pchar, pflags, compress, packet_index, data_size = unpack_header(data[pos:pos+8])
-        log("find_xpra_header candidate at index %i: %s", pos, (pchar, pflags, compress, packet_index, data_size))
-        if pchar==b"P" and packet_index==index and data_size<max_data_size:
-            #validate flags:
-            if compress==0 or (compress & 0xf)>0:
-                # pylint: disable=import-outside-toplevel
-                encoder_flag = pflags & (FLAGS_RENCODE | FLAGS_YAML | FLAGS_RENCODEPLUS)
-                n_flags_set = sum(1 for flag in (FLAGS_RENCODE, FLAGS_YAML, FLAGS_RENCODEPLUS) if encoder_flag & flag)
-                if encoder_flag==0 or n_flags_set==1:
-                    return pos
-        #skip to the next potential header:
-        pos = data.find(b"P", pos+1)
-        log("checking again from pos=%s", pos)
-    return -1
-
-
-def verify_packet(packet):
-    """ look for None values which may have caused the packet to fail encoding """
-    if not isinstance(packet, list):
-        return False
-    if not packet:
-        raise ValueError(f"invalid packet: {packet} ({type(packet)})")
-    tree = [f"{packet[0]!r} packet"]
-    return do_verify_packet(tree, packet)
-
-def do_verify_packet(tree, packet):
-    def err(msg):
-        log.error("%s in %s", msg, "->".join(tree))
-    def new_tree(append):
-        nt = tree[:]
-        nt.append(append)
-        return nt
-    if packet is None:
-        err("None value")
-        return False
-    r = True
-    if isinstance(packet, (list, tuple)):
-        for i, x in enumerate(packet):
-            if not do_verify_packet(new_tree(f"[{i}]"), x):
-                r = False
-    elif isinstance(packet, dict):
-        for k,v in packet.items():
-            if not do_verify_packet(new_tree(f"key for value={v!r}"), k):
-                r = False
-            if not do_verify_packet(new_tree(f"value for key={k!r}"), v):
-                r = False
-    elif isinstance(packet, (int, bool, str, bytes, memoryview)):
-        pass
-    else:
-        err(f"unsupported type: {type(packet)}")
-        r = False
-    return r
 
 
 class SocketProtocol:
@@ -651,6 +592,7 @@ class SocketProtocol:
             log.error(f"Error: failed to encode packet: {packet}", exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
+            from xpra.net.protocol.check import verify_packet
             verify_packet(packet)
             raise
         if len(main_packet)>size_check and bytestostr(packet_in[0]) not in self.large_packets:

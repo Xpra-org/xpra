@@ -40,3 +40,23 @@ _header_pack_struct = struct.Struct(b'!BBBBL')
 assert ord("P") == 80
 def pack_header(proto_flags, level, index, payload_size) -> bytes:
     return _header_pack_struct.pack(80, proto_flags, level, index, payload_size)
+
+
+def find_xpra_header(data, index=0, max_data_size=2**16):
+    pos = data.find(b"P")
+    while pos>=0:
+        if len(data)<pos+8:
+            #not enough data to try to parse this potential header
+            return -1
+        pchar, pflags, compress, packet_index, data_size = unpack_header(data[pos:pos+8])
+        if pchar==b"P" and packet_index==index and data_size<max_data_size:
+            #validate flags:
+            if compress==0 or (compress & 0xf)>0:
+                # pylint: disable=import-outside-toplevel
+                encoder_flag = pflags & (FLAGS_RENCODE | FLAGS_YAML | FLAGS_RENCODEPLUS)
+                n_flags_set = sum(1 for flag in (FLAGS_RENCODE, FLAGS_YAML, FLAGS_RENCODEPLUS) if encoder_flag & flag)
+                if encoder_flag==0 or n_flags_set==1:
+                    return pos
+        #skip to the next potential header:
+        pos = data.find(b"P", pos+1)
+    return -1
