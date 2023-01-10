@@ -31,6 +31,9 @@ fi
 %configure --disable-pdf-compression
 make all %{?_smp_mflags}
 
+%install
+%make_install
+
 %files
 %license LICENSE
 %doc AUTHORS CHANGES README.md
