@@ -11,6 +11,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import csv, envint, envbool
 from xpra.net.protocol import socket_handler
+from xpra.net.protocol.check import verify_packet
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
@@ -112,7 +113,6 @@ class ProtocolTest(unittest.TestCase):
         return p
 
     def test_verify_packet(self):
-        verify_packet = socket_handler.verify_packet
         for x in (True, 1, "hello", {}, None):
             assert verify_packet(x) is False
         assert verify_packet(["foo", 1]) is True
