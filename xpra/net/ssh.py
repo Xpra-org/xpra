@@ -235,6 +235,16 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             #it's closed already and we don't care
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
+def safe_lookup(config_obj, host):
+    try:
+        return config_obj.lookup(host)
+    except ImportError as e:
+        log("%s.lookup(%s)", config_obj, host, exc_info=True)
+        log.warn("Warning: unable to load SSH host config for %r:", host)
+        log.warn(" %s", e)
+        if isinstance(e, ModuleNotFoundError):
+            log.warn(" (looks like a 'paramiko' distribution packaging issue)")
+    return {}
 
 def ssh_paramiko_connect_to(display_desc):
     #plain socket attributes:
@@ -256,14 +266,6 @@ def ssh_paramiko_connect_to(display_desc):
             "host"  : host,
             "port"  : port,
             }
-    def safe_config_lookup(config_obj, host):
-        try:
-            return config_obj.lookup(host)
-        except ImportError as e:
-            log("%s.lookup(%s)", config_obj, host, exc_info=True)
-            log.warn("Warning: unable to load SSH host config for %r:", host)
-            log.warn(" %s", e)
-        return {}
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
@@ -278,7 +280,7 @@ def ssh_paramiko_connect_to(display_desc):
                     log("parse(%s)", user_config_file, exc_info=True)
                     log.error("Error parsing '%s':", user_config_file)
                     log.error(" %s", e)
-            host_config = safe_config_lookup(ssh_config, host)
+            host_config = safe_lookup(ssh_config, host)
             if host_config:
                 host = host_config.get("hostname", host)
                 username = host_config.get("user", username)
@@ -302,7 +304,7 @@ def ssh_paramiko_connect_to(display_desc):
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
-                                               host_config or safe_config_lookup(ssh_config, "*"),
+                                               host_config or safe_lookup(ssh_config, "*"),
                                                keyfiles)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
@@ -333,10 +335,10 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            proxy_host_config = safe_config_lookup(ssh_config, host)
+            proxy_host_config = safe_lookup(ssh_config, host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
-                                       proxy_host_config or safe_config_lookup(ssh_config, "*"),
+                                       proxy_host_config or safe_lookup(ssh_config, "*"),
                                        keyfiles)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
@@ -350,7 +352,7 @@ def ssh_paramiko_connect_to(display_desc):
                 raise InitException("SSH negotiation failed: %s" % e)
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
-                                       host_config or safe_config_lookup(ssh_config, "*"),
+                                       host_config or safe_lookup(ssh_config, "*"),
                                        keyfiles)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
@@ -380,7 +382,7 @@ def ssh_paramiko_connect_to(display_desc):
             log("start_client()", exc_info=True)
             raise InitException("SSH negotiation failed: %s" % e)
         do_ssh_paramiko_connect_to(transport, host, username, password,
-                                   host_config or safe_config_lookup(ssh_config, "*"),
+                                   host_config or safe_lookup(ssh_config, "*"),
                                    keyfiles)
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
