@@ -7,6 +7,10 @@
 
 set -e
 
+if [ ! -z "$MSYSTEM_CARCH" ]; then 
+	MSYSTEM_ARCH=$MSYSTEM_CARCH
+fi
+
 export XPKG="mingw-w64-${MSYSTEM_ARCH}-"
 PACMAN="pacman"
 #PACMAN="echo pacman"
