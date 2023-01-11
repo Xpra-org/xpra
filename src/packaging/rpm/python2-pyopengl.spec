@@ -36,12 +36,10 @@ BuildRequires:  gcc
 %if 0%{?fedora}%{?el8}
 %global __provides_exclude_from ^(%{python2_sitearch})/.*\\.so$
 Requires:       python2-numpy
-BuildRequires:  python2
 BuildRequires:  python2-setuptools
 BuildRequires:  python2-devel
 %else
 Requires:       numpy
-BuildRequires:  python
 BuildRequires:  python-setuptools
 BuildRequires:  python-devel
 %endif
