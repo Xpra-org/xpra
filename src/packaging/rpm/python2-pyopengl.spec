@@ -67,12 +67,12 @@ Provides:       python-pyopengl-tk = %{version}-%{release}
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "4107ba0d0390da5766a08c242cf0cf3404c377ed293c5f6d701e457c57ba3424" ]; then
+if [ "${sha256}" != "8ea6c8773927eda7405bffc6f5bb93be81569a7b05c8cac50cd94e969dce5e27" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
-if [ "${sha256}" != "12e5518b0216a478527c7ce5ddce623c3d0517adeb87226da767772e8b7f2f06" ]; then
+if [ "${sha256}" != "ad8a300256eca25228261de16f741e51a30f34f1e1b1cf68359f5c62dbcdcdc3" ]; then
 	echo "invalid checksum for %{SOURCE1}"
 	exit 1
 fi
