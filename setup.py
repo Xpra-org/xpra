@@ -261,6 +261,7 @@ rebuild_ENABLED         = not skip_build
 #allow some of these flags to be modified on the command line:
 CODEC_SWITCHES = [
     "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc", "nvdec",
+    "enc_proxy",
     "cuda_kernels", "cuda_rebuild",
     "nvfbc",
     "vpx", "vpl", "webp", "pillow",
