@@ -16,6 +16,8 @@ Patch0:		gtkglext-1.2.0-bz677457.diff
 Patch1:		gtkglext-1.2.0-config.diff
 Patch2:		gtkglext-1.2.0-index.patch
 
+BuildRequires:	gcc
+BuildRequires:	make
 BuildRequires:	gtk2-devel
 BuildRequires:	libGLU-devel
 BuildRequires:	libGL-devel
