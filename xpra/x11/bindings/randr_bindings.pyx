@@ -39,6 +39,7 @@ cdef extern from "X11/Xlib.h":
     # appropriate pyrex declarations, without having to untangle the typedefs
     # over and over again, here are some convenience typedefs.  (Yes, CARD32
     # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
+    ctypedef int Atom
     ctypedef CARD32 XID
 
     ctypedef int Bool
@@ -124,6 +125,22 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
+    ctypedef struct XRRMonitorInfo:
+        Atom name
+        Bool primary
+        Bool automatic
+        int noutput
+        int x
+        int y
+        int width
+        int height
+        int mwidth
+        int mheight
+        RROutput *outputs
+
+    XRRMonitorInfo *XRRGetMonitors(Display *dpy, Window window, Bool get_active, int *nmonitors)
+    void XRRFreeMonitors(XRRMonitorInfo *monitors)
+
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
 cdef RandRBindingsInstance singleton = None
@@ -145,7 +162,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "RandRBindings(%s)" % self.display_name
 
-    def check_randr(self):
+    def check_randr(self, min_version=(1, 2)):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
         log("XRRQueryExtension()=%i", r)
@@ -153,7 +170,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log("found XRandR extension")
             if XRRQueryVersion(self.display, &cmajor, &cminor):
                 log("found XRandR extension version %i.%i", cmajor, cminor)
-                if (cmajor==1 and cminor>=2) or cmajor>=2:
+                if (cmajor, cminor)>=min_version:
                     return True
         return False
 
@@ -479,3 +496,41 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         hmm = iround(h*25.4/ydpi)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)
+
+    def is_dummy16(self):
+        self.context_check()
+        #figure out if we're dealing with the dummy with randr 1.6 support
+        if not self._has_randr:
+            log("is_dummy16() no randr!")
+            return False
+        if not self.check_randr((1, 6)):
+            log(f"is_dummy16() randr version too old")
+            return False
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        try:
+            if rsc.ncrtc<16:
+                log(f"is_dummy16() only %s crtcs", rsc.ncrtc)
+                return False
+            if rsc.noutput<16:
+                log(f"is_dummy16() only %s outputs", rsc.noutput)
+                return False
+            if rsc.nmode==0:
+                log("is_dummy16() no modes!")
+                return False
+        finally:
+            XRRFreeScreenResources(rsc)
+        cdef int nmonitors
+        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+        try:
+            if not nmonitors:
+                log("is_dummy16() no monitors!")
+                return False
+            for i in range(nmonitors):
+                if monitors[i].noutput!=1:
+                    n = monitors[i].noutput
+                    log(f"is_dummy16() monitor %i has %i outputs", i, n)
+                    return False
+        finally:
+            XRRFreeMonitors(monitors)
+        return True
