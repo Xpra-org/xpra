@@ -32,6 +32,7 @@ Obsoletes:      PyOpenGL-accelerate < %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
 
+BuildRequires:  gcc
 %if 0%{?fedora}%{?el8}
 %global __provides_exclude_from ^(%{python2_sitearch})/.*\\.so$
 Requires:       python2-numpy
