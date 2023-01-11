@@ -159,12 +159,12 @@ class _codec_spec(object):
 class video_spec(_codec_spec):
 
     def __init__(self, encoding, input_colorspace, output_colorspaces, has_lossless_mode,
-                 codec_class, codec_type, **kwargs):
+                 codec_class, codec_type, min_w=2, min_h=2, **kwargs):
         self.encoding = encoding                        #ie: "h264"
         self.input_colorspace = input_colorspace
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
         self.has_lossless_mode = has_lossless_mode
-        _codec_spec.__init__(self, codec_class, codec_type, **kwargs)
+        _codec_spec.__init__(self, codec_class, codec_type, min_w=min_w, min_h=min_h, **kwargs)
         self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
     def __repr__(self):
