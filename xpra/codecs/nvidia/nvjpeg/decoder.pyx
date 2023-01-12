@@ -25,7 +25,7 @@ from xpra.codecs.nvidia.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     ERR_STR, CSS_STR,
     )
-from xpra.codecs.nvidia.cuda_context import select_device, cuda_device_context
+from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
@@ -85,11 +85,11 @@ def download_from_gpu(buf, size_t size):
 def decompress(rgb_format, img_data, options=None):
     #decompress using the default device,
     #and download the pixel data from the GPU:
-    dev = get_default_device()
+    dev = get_default_device_context()
     if not dev:
         raise RuntimeError("no device found")
     with dev as cuda_context:
-        log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
+        log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
         return decompress_and_download(rgb_format, img_data, options)
 
 def decompress_and_download(rgb_format, img_data, options=None):
@@ -233,25 +233,6 @@ def decompress_with_device(rgb_format, img_data, options=None):
     finally:
         errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
     return ImageWrapper(0, 0, width, height, pixels, rgb_format, len(rgb_format)*8, rowstride, planes=len(rgb_format))
-
-
-def get_device_context():
-    cdef double start = monotonic()
-    cuda_device_id, cuda_device = select_device()
-    if cuda_device_id<0 or not cuda_device:
-        raise Exception("failed to select a cuda device")
-    log("using device %s", cuda_device)
-    cuda_context = cuda_device_context(cuda_device_id, cuda_device)
-    cdef double end = monotonic()
-    log("device init took %.1fms", 1000*(end-start))
-    return cuda_context
-
-default_device = None
-def get_default_device():
-    global default_device
-    if default_device is None:
-        default_device = get_device_context()
-    return default_device
 
 
 def selftest(full=False):

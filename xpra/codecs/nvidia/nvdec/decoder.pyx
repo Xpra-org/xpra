@@ -6,7 +6,7 @@
 from libc.string cimport memset
 from time import monotonic
 
-from xpra.codecs.nvidia.cuda_context import select_device, cuda_device_context
+from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
 
@@ -391,24 +391,6 @@ cdef class Decoder:
             raise RuntimeError(f"GPU mapping of picture buffer error {r}")
         #CUresult cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr)
 
-def get_device_context():
-    cdef double start = monotonic()
-    cuda_device_id, cuda_device = select_device()
-    if cuda_device_id<0 or not cuda_device:
-        raise Exception("failed to select a cuda device")
-    log("using device %s", cuda_device)
-    cuda_context = cuda_device_context(cuda_device_id, cuda_device)
-    cdef double end = monotonic()
-    log("device init took %.1fms", 1000*(end-start))
-    return cuda_context
-
-default_device = None
-def get_default_device():
-    global default_device
-    if default_device is None:
-        default_device = get_device_context()
-    return default_device
-
 
 def selftest(full=False):
     from xpra.codecs.nvidia.nv_util import has_nvidia_hardware, get_nvidia_module_version
@@ -416,7 +398,7 @@ def selftest(full=False):
         raise ImportError("no nvidia GPU device found")
     get_nvidia_module_version(True)
 
-    dev = get_default_device()
+    dev = get_default_device_context()
     if not dev:
         raise RuntimeError("no device found")
 
@@ -427,7 +409,7 @@ def selftest(full=False):
     codec_ok = []
     codec_failed = []
     with dev as cuda_context:
-        log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
+        log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
 
         for codec_i, codec_name in CODEC_NAMES.items():
             chroma_ok= []

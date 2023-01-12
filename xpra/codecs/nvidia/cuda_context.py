@@ -442,6 +442,21 @@ def get_device_context(options):
     return cuda_device_context(device_id, device)
 
 
+default_device_context = None
+def get_default_device_context():
+    global default_device_context
+    if default_device_context is None:
+        start = monotonic()
+        cuda_device_id, cuda_device = select_device()
+        if cuda_device_id<0 or not cuda_device:
+            raise RuntimeError("failed to select a cuda device")
+        log("using device %s", cuda_device)
+        default_device_context = cuda_device_context(cuda_device_id, cuda_device)
+        end = monotonic()
+        log("default device context init took %.1fms", 1000*(end-start))
+    return default_device_context
+
+
 class cuda_device_context:
     __slots__ = ("device_id", "device", "context", "lock", "opengl")
     def __init__(self, device_id, device, opengl=False):
