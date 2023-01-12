@@ -2013,6 +2013,8 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
     propsys_pkgconfig = pkgconfig()
     if debug_ENABLED:
         add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-DDEBUG")
+    if WIN32:
+        add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     add_to_keywords(propsys_pkgconfig, 'extra_link_args', "-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
     cython_add(Extension("xpra.platform.win32.propsys",
                 ["xpra/platform/win32/propsys.pyx", "xpra/platform/win32/setappid.cpp"],
@@ -2099,6 +2101,7 @@ if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     if WIN32:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
+        add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     if get_gcc_version()<=[5, ]:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
     if not PYTHON3 and get_gcc_version()>=[8, 0]:
@@ -2325,20 +2328,10 @@ if webp_ENABLED:
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
+    nvjpeg_pkgconfig = pkgconfig("cuda", "nvjpeg")
+    assert skip_build or nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
     if WIN32:
-        nvjpeg_pkgconfig = pkgconfig()
-        assert cuda_path
-        cuda_include = os.path.join(cuda_path, "include")
-        cuda_bin = os.path.join(cuda_path, "bin")
-        add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-I%s" % cuda_include)
-        add_to_keywords(nvjpeg_pkgconfig, 'extra_link_args', "-L%s" % cuda_bin, "-lnvjpeg64_11")
-    else:
-        nvjpeg_pkgconfig = pkgconfig("nvjpeg")
-        assert skip_build or nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
-        cuda_pkgconfig = pkgconfig("cuda")
-        assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
-        for k, v in cuda_pkgconfig.items():
-            add_to_keywords(nvjpeg_pkgconfig, k, *v)
+        add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     cython_add(Extension("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
                          **nvjpeg_pkgconfig))
@@ -2395,6 +2388,8 @@ if csc_libyuv_ENABLED:
             remove_from_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Werror")
         elif get_gcc_version()>=[8, 0]:
             add_to_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Wno-error=register")
+    if WIN32:
+        add_to_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
                 ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
                 language="c++",
