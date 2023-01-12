@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.util import parse_simple_dict, envbool
 from xpra.codecs.codec_constants import video_spec
@@ -17,9 +18,8 @@ from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
     )
-from xpra.log import Logger
-from gi.repository import GObject
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.log import Logger
 
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
