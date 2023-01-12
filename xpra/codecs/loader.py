@@ -75,7 +75,6 @@ def codec_import_check(name, description, top_module, class_module, classnames):
         return None
     classname = None
     try:
-        #module is present
         try:
             log(f" {top_module} found, will check for {classnames} in {class_module}")
             ic =  __import__(class_module, {}, {}, classnames)
@@ -85,6 +84,13 @@ def codec_import_check(name, description, top_module, class_module, classnames):
                 log(f"{class_module}.init_module={init_module}")
                 if init_module:
                     init_module()
+
+                if log.is_debug_enabled():
+                    #try to enable debugging on the codec's own logger:
+                    module_logger = getattr(ic, "log", None)
+                    log(f"{class_module}.log={module_logger}")
+                    if module_logger:
+                        module_logger.enable_debug()
 
                 if classnames:
                     for classname in classnames:
