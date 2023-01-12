@@ -1366,9 +1366,6 @@ def get_output_colorspaces(encoding, input_colorspace):
     return out
 
 
-WIDTH_MASK = 0xFFFE
-HEIGHT_MASK = 0xFFFE
-
 #Note: these counters should be per-device, but
 #when we call get_runtime_factor(), we don't know which device is going to get used!
 #since we have load balancing, using an overall factor isn't too bad
@@ -1398,6 +1395,16 @@ def get_runtime_factor() -> float:
 
 MAX_SIZE = {}
 
+def get_width_mask(colorspace):
+    if colorspace.startswith("YUV42"):
+        return 0xFFFE
+    return 0xFFFF
+def get_height_mask(colorspace):
+    if colorspace.startswith("YUV42"):
+        return 0xFFFE
+    return 0xFFFF
+    
+
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
@@ -1406,6 +1413,8 @@ def get_spec(encoding, colorspace):
     #https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
     #https://github.com/Xpra-org/xpra/issues/1550
     min_w, min_h = 128, 128
+    width_mask = get_width_mask(colorspace)
+    height_mask = get_height_mask(colorspace)
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
@@ -1418,7 +1427,7 @@ def get_spec(encoding, colorspace):
                       min_w=min_w, min_h=min_h,
                       max_w=max_w, max_h=max_h,
                       can_scale=colorspace!="r210",
-                      width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
+                      width_mask=width_mask, height_mask=height_mask)
     cs.get_runtime_factor = get_runtime_factor
     return cs
 
@@ -1500,6 +1509,8 @@ cdef class Encoder:
     cdef object encoding
     cdef object src_format
     cdef object dst_formats
+    cdef int width_mask
+    cdef int height_mask
     cdef int scaling
     cdef int speed
     cdef int quality
@@ -1643,6 +1654,8 @@ cdef class Encoder:
         self.dst_formats = dst_formats
         self.encoding = encoding
         self.codec_name = encoding.upper()      #ie: "H264"
+        self.width_mask = get_width_mask(src_format)
+        self.height_mask = get_height_mask(src_format)
         self.preset_name = None
         self.frames = 0
         self.pixel_format = ""
@@ -2368,8 +2381,8 @@ cdef class Encoder:
         log("do_compress_image(%s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i",
             image, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
-        assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
-        assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
+        assert (w & self.width_mask)<=self.input_width, "invalid width: %s" % w
+        assert (h & self.height_mask)<=self.input_height, "invalid height: %s" % h
         assert self.inputBuffer is not None, "BUG: encoder is closed?"
 
         if self.frames==0:
