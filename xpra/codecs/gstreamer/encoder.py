@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import parse_simple_dict
+from xpra.util import parse_simple_dict, envbool
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
     import_gst, normv,
@@ -23,6 +23,8 @@ from xpra.codecs.image_wrapper import ImageWrapper
 
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
+
+NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 
 assert get_version and init_module and cleanup_module
 ENCODERS = {
@@ -137,13 +139,23 @@ class Encoder(VideoPipeline):
             }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
         #parse encoder plugin string:
-        encoder_options = ENCODERS.get(self.encoding, ())
+        encoder_options = list(ENCODERS.get(self.encoding, ()))
         encoder_str = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN")
         if not encoder_str:
             if not encoder_options:
                 raise ValueError(f"{self.encoding} is not supported here")
-            #choose the first option (ie: "vaapih264enc"):
-            encoder_str = encoder_options[0]
+            #choose the first option (ie: "vaapih264enc")
+            # but skip 'vaapih264enc' on nvidia hardware:
+            while encoder_options:
+                encoder_str = encoder_options.pop(0)
+                if NVIDIA_VAAPI or encoder_str!="vaapih264enc":
+                    break
+                try:
+                    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+                    if not has_nvidia_hardware():
+                        break
+                except ImportError:
+                    break
         parts = encoder_str.split(" ", 1)
         encoder = parts[0]
         encoder_options = DEFAULT_ENCODER_OPTIONS.get(encoder, {})
