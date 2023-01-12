@@ -167,12 +167,12 @@ class WindowVideoSource(WindowSource):
         super().init_vars()
         #these constraints get updated with real values
         #when we construct the video pipeline:
-        self.min_w = 8
-        self.min_h = 8
-        self.max_w = 16384
-        self.max_h = 16384
-        self.width_mask = 0xFFFF
-        self.height_mask = 0xFFFF
+        self.min_w : int = 8
+        self.min_h : int = 8
+        self.max_w : int = 16384
+        self.max_h : int = 16384
+        self.width_mask : int = 0xFFFF
+        self.height_mask : int = 0xFFFF
         self.actual_scaling = (1, 1)
 
         self.last_pipeline_params = None
@@ -184,10 +184,10 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = ()
         self.edge_encoding = None
         self.start_video_frame = 0
-        self.video_encoder_timer = None
-        self.b_frame_flush_timer = None
+        self.video_encoder_timer : int = 0
+        self.b_frame_flush_timer : int = 0
         self.b_frame_flush_data = None
-        self.encode_from_queue_timer = None
+        self.encode_from_queue_timer : int = 0
         self.encode_from_queue_due = 0
         self.scroll_data = None
         self.last_scroll_time = 0
@@ -957,7 +957,7 @@ class WindowVideoSource(WindowSource):
         eqt = self.encode_from_queue_timer
         avsynclog("cancel_encode_from_queue() timer=%s for wid=%i", eqt, self.wid)
         if eqt:
-            self.encode_from_queue_timer = None
+            self.encode_from_queue_timer = 0
             self.source_remove(eqt)
 
     def free_encode_queue_images(self):
@@ -983,7 +983,7 @@ class WindowVideoSource(WindowSource):
             self.encode_from_queue_timer = self.timeout_add(av_delay, self.timer_encode_from_queue)
 
     def timer_encode_from_queue(self):
-        self.encode_from_queue_timer = None
+        self.encode_from_queue_timer = 0
         self.encode_from_queue_due = 0
         self.call_in_encode_thread(True, self.encode_from_queue)
 
@@ -2322,7 +2322,7 @@ class WindowVideoSource(WindowSource):
     def cancel_video_encoder_flush_timer(self):
         bft = self.b_frame_flush_timer
         if bft:
-            self.b_frame_flush_timer = None
+            self.b_frame_flush_timer = 0
             self.source_remove(bft)
 
     def schedule_video_encoder_flush(self, ve, csc, frame, x , y, scaled_size):
@@ -2338,7 +2338,7 @@ class WindowVideoSource(WindowSource):
     def flush_video_encoder(self):
         #this runs in the UI thread as scheduled by schedule_video_encoder_flush,
         #but we want to run from the encode thread to access the encoder:
-        self.b_frame_flush_timer = None
+        self.b_frame_flush_timer = 0
         if self.b_frame_flush_data:
             self.call_in_encode_thread(True, self.do_flush_video_encoder)
 
@@ -2397,7 +2397,7 @@ class WindowVideoSource(WindowSource):
     def cancel_video_encoder_timer(self):
         vet = self.video_encoder_timer
         if vet:
-            self.video_encoder_timer = None
+            self.video_encoder_timer = 0
             self.source_remove(vet)
 
     def schedule_video_encoder_timer(self):
@@ -2412,7 +2412,7 @@ class WindowVideoSource(WindowSource):
 
     def video_encoder_timeout(self):
         videolog("video_encoder_timeout() will close video encoder=%s", self._video_encoder)
-        self.video_encoder_timer = None
+        self.video_encoder_timer = 0
         self.video_context_clean()
 
 

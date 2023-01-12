@@ -198,10 +198,10 @@ class WindowSource(WindowIconSource):
         self.av_sync_delay = av_sync_delay              #the av-sync delay we actually use
         self.av_sync_delay_target = av_sync_delay       #the av-sync delay we want at this point in time (can vary quickly)
         self.av_sync_delay_base = av_sync_delay         #the total av-sync delay we are trying to achieve (including video encoder delay)
-        self.av_sync_frame_delay = 0                    #how long frames spend in the video encoder
-        self.av_sync_timer = None
+        self.av_sync_frame_delay : int = 0                    #how long frames spend in the video encoder
+        self.av_sync_timer : int = 0
         self.encode_queue = []
-        self.encode_queue_max_size = 10
+        self.encode_queue_max_size : int = 10
         self.last_scroll_event = 0
 
         self.server_core_encodings = server_core_encodings
@@ -230,24 +230,24 @@ class WindowSource(WindowIconSource):
         self.video_helper = video_helper
         self.cuda_device_context = cuda_device_context
 
-        self.is_idle = False
-        self.is_OR = window.is_OR()
-        self.is_tray = window.is_tray()
-        self.is_shadow = window.is_shadow()
-        self.has_alpha = HAS_ALPHA and window.has_alpha()
+        self.is_idle : bool = False
+        self.is_OR : bool = window.is_OR()
+        self.is_tray : bool = window.is_tray()
+        self.is_shadow : bool = window.is_shadow()
+        self.has_alpha : bool = HAS_ALPHA and window.has_alpha()
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None
-        self.fullscreen = not self.is_tray and window.get("fullscreen")
+        self.fullscreen : bool = not self.is_tray and window.get("fullscreen")
         if default_encoding_options.get("scaling.control") is None:
             self.scaling_control = None     #means "auto"
         else:
             #ClientConnection sets defaults with the client's scaling.control value
             self.scaling_control = default_encoding_options.intget("scaling.control", 1)
         self.scaling = None
-        self.maximized = False          #set by the client!
-        self.iconic = False
-        self.content_type = ""
+        self.maximized : bool = False          #set by the client!
+        self.iconic : bool = False
+        self.content_type : str = ""
         self.window_signal_handlers = []
         #watch for changes to properties that are used to derive the content-type:
         if "content-type" in window.get_dynamic_property_names():
@@ -273,15 +273,15 @@ class WindowSource(WindowIconSource):
             self.children = None
 
         #for deciding between small regions and full screen updates:
-        self.max_small_regions = 40
-        self.max_bytes_percent = 60
-        self.small_packet_cost = 1024
+        self.max_small_regions : int = 40
+        self.max_bytes_percent : int = 60
+        self.small_packet_cost : int = 1024
         if mmap and mmap_size>0:
             #with mmap, we can move lots of data around easily
             #so favour large screen updates over small packets
-            self.max_small_regions = 10
-            self.max_bytes_percent = 25
-            self.small_packet_cost = 4096
+            self.max_small_regions : int = 10
+            self.max_bytes_percent : int = 25
+            self.small_packet_cost : int = 4096
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
 
@@ -435,8 +435,8 @@ class WindowSource(WindowIconSource):
         self.enc_nvjpeg = None
         self.mmap_write = None
         #
-        self.decode_error_refresh_timer = None
-        self.may_send_timer = None
+        self.decode_error_refresh_timer : int = 0
+        self.may_send_timer : int = 0
         self.auto_refresh_delay = 0
         self.base_auto_refresh_delay = 0
         self.min_auto_refresh_delay = 50
@@ -445,11 +445,11 @@ class WindowSource(WindowIconSource):
         self.refresh_speed = AUTO_REFRESH_SPEED
         self.refresh_event_time = 0
         self.refresh_target_time = 0
-        self.refresh_timer = None
+        self.refresh_timer : int = 0
         self.refresh_regions = []
-        self.timeout_timer = None
-        self.expire_timer = None
-        self.soft_timer = None
+        self.timeout_timer : int = 0
+        self.expire_timer : int = 0
+        self.soft_timer : int = 0
         self.soft_expired = 0
         self.max_soft_expired = MAX_SOFT_EXPIRED
         self.is_OR = False
@@ -836,7 +836,7 @@ class WindowSource(WindowIconSource):
         self.av_sync_timer = self.timeout_add(delay, self.update_av_sync_delay)
 
     def update_av_sync_delay(self):
-        self.av_sync_timer = None
+        self.av_sync_timer = 0
         delta = self.av_sync_delay_target-self.av_sync_delay
         if delta==0:
             return
@@ -1162,25 +1162,25 @@ class WindowSource(WindowIconSource):
     def cancel_expire_timer(self):
         et = self.expire_timer
         if et:
-            self.expire_timer = None
+            self.expire_timer = 0
             self.source_remove(et)
 
     def cancel_may_send_timer(self):
         mst = self.may_send_timer
         if mst:
-            self.may_send_timer = None
+            self.may_send_timer = 0
             self.source_remove(mst)
 
     def cancel_soft_timer(self):
         st = self.soft_timer
         if st:
-            self.soft_timer = None
+            self.soft_timer = 0
             self.source_remove(st)
 
     def cancel_refresh_timer(self):
         rt = self.refresh_timer
         if rt:
-            self.refresh_timer = None
+            self.refresh_timer = 0
             self.source_remove(rt)
             self.refresh_event_time = 0
             self.refresh_target_time = 0
@@ -1188,13 +1188,13 @@ class WindowSource(WindowIconSource):
     def cancel_timeout_timer(self):
         tt = self.timeout_timer
         if tt:
-            self.timeout_timer = None
+            self.timeout_timer = 0
             self.source_remove(tt)
 
     def cancel_av_sync_timer(self):
         avst = self.av_sync_timer
         if avst:
-            self.av_sync_timer = None
+            self.av_sync_timer = 0
             self.source_remove(avst)
 
 
@@ -1693,14 +1693,14 @@ class WindowSource(WindowIconSource):
         return False
 
     def delayed_region_soft_timeout(self):
-        self.soft_timer = None
+        self.soft_timer = 0
         log("delayed_region_soft_timeout() soft_expired=%i, max_soft_expired=%i",
                  self.soft_expired, self.max_soft_expired)
         self.do_send_delayed()
         return False
 
     def delayed_region_timeout(self, delayed_region_time):
-        self.timeout_timer = None
+        self.timeout_timer = 0
         delayed = self._damage_delayed
         if delayed is None:
             #delayed region got sent
@@ -1741,7 +1741,7 @@ class WindowSource(WindowIconSource):
     def _may_send_delayed(self):
         #this method is called from the timer,
         #we know we can clear it (and no need to cancel it):
-        self.may_send_timer = None
+        self.may_send_timer = 0
         self.may_send_delayed()
 
     def may_send_delayed(self):
@@ -2290,7 +2290,7 @@ class WindowSource(WindowIconSource):
             We figure out if now is the right time to do the refresh,
             and if not re-schedule.
         """
-        self.refresh_timer = None
+        self.refresh_timer = 0
         #timer is running now, clear so we don't try to cancel it somewhere else:
         #re-do some checks that may have changed:
         if not self.can_refresh():
@@ -2581,13 +2581,13 @@ class WindowSource(WindowIconSource):
             self.decode_error_refresh_timer = self.timeout_add(delay, self.decode_error_refresh)
 
     def decode_error_refresh(self):
-        self.decode_error_refresh_timer = None
+        self.decode_error_refresh_timer = 0
         self.full_quality_refresh({})
 
     def cancel_decode_error_refresh_timer(self):
         dert = self.decode_error_refresh_timer
         if dert:
-            self.decode_error_refresh_timer = None
+            self.decode_error_refresh_timer = 0
             self.source_remove(dert)
 
 
