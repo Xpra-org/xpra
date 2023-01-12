@@ -174,6 +174,17 @@ Requires:			libspng
 #BuildRequires:		oneVPL-devel
 #Requires:			oneVPL
 %endif
+#for gstreamer video encoder and decoder:
+Suggests:			python3-gstreamer1
+Suggests:			gstreamer1
+#appsrc, videoconvert:
+Suggests:			gstreamer1-plugins-base
+#vaapi:
+Suggests:			gstreamer1-vaapi
+#x264:
+Suggests:			gstreamer1-plugins-ugly
+#av1:
+Suggests:			gstreamer1-plugins-bad-free-extras
 #not available yet:
 #BuildRequires:		libevdi-devel
 #Requires:			libevdi
