@@ -257,6 +257,7 @@ def show_encoding_help(opts):
     from xpra.server.mixins.encoding_server import EncodingServer
     assert isinstance(sb, EncodingServer)
     EncodingServer.threaded_setup(sb)
+    EncodingServer.setup(sb)
     from xpra.codecs.loader import encoding_help
     for e in (x for x in HELP_ORDER if x in sb.encodings):
         print(" * "+encoding_help(e))
