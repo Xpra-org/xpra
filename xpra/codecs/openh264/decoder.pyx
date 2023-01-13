@@ -52,6 +52,7 @@ cdef extern from "wels/codec_api.h":
         pass
     cdef cppclass ISVCDecoder:
         long Initialize(const SDecodingParam* pParam)
+        long Uninitialize()
         long DecodeFrameNoDelay(const unsigned char* pSrc, const int iSrcLen,
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
 
@@ -145,6 +146,7 @@ cdef class Decoder:
         log("openh264 close context %#x", <uintptr_t> self.context)
         cdef ISVCDecoder *context = self.context
         if context:
+            context.Uninitialize()
             self.context = NULL
             WelsDestroyDecoder(context)
         self.frames = 0
