@@ -490,6 +490,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/gstreamer
 %if 0%{?fedora}
+%{python3_sitearch}/xpra/codecs/openh264
 %{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/spng
 # /xpra/codecs/vpl
