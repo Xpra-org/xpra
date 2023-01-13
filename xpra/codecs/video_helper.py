@@ -26,6 +26,7 @@ CODEC_TO_MODULE = {
     "csc_cython"    : "csc_cython.colorspace_converter",
     "csc_libyuv"    : "libyuv.colorspace_converter",
     "dec_avcodec2"  : "ffmpeg.decoder",
+    "dec_openh264"  : "openh264.decoder",
     "enc_ffmpeg"    : "ffmpeg.encoder",
     "enc_jpeg"      : "jpeg.encoder",
     "enc_webp"      : "webp.encoder",
@@ -59,7 +60,7 @@ ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc_x264", "enc_vpx", "enc_x265"
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "enc_nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("csc_swscale", "csc_cython", "csc_libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec_avcodec2", "dec_vpx", "dec_gstreamer")
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec_avcodec2", "dec_openh264", "dec_vpx", "dec_gstreamer")
 
 PREFERRED_ENCODER_ORDER = ("nvenc", "enc_nvjpeg", "enc_x264", "enc_vpx", "enc_jpeg", "enc_webp", "enc_x265", "enc_gstreamer")
 PREFERRED_DECODER_ORDER = ("dec_avcodec2", "dec_vpx", "dec_gstreamer")

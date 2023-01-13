@@ -210,6 +210,7 @@ websockets_ENABLED      = DEFAULT
 codecs_ENABLED          = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
+openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 #crashes on 32-bit windows:
 enc_x265_ENABLED        = False #(not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
@@ -373,7 +374,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     show_switch_info()
 
     if not cython_ENABLED:
-        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = False
+        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = openh264_ENABLED= False
         csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
         vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = vpl_ENABLED = False
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
@@ -1061,6 +1062,7 @@ def clean():
                    "xpra/codecs/ffmpeg/av_log.c",
                    "xpra/codecs/ffmpeg/colorspace_converter.c",
                    "xpra/codecs/ffmpeg/decoder.c",
+                   "xpra/codecs/openh264/decoder.c",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/evdi/capture.cpp",
@@ -2215,6 +2217,8 @@ toggle_packages(enc_x264_ENABLED, "xpra.codecs.x264")
 tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.x265")
 tace(enc_x265_ENABLED, "xpra.codecs.x265.encoder", "x265")
+toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
+tace(openh264_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 tace(webp_ENABLED, "xpra.codecs.webp.encoder", "libwebp")

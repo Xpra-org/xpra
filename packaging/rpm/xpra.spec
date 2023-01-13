@@ -167,6 +167,8 @@ Requires:			turbojpeg
 BuildRequires:		libyuv-devel
 Requires:			libyuv
 %if 0%{?fedora}
+BuildRequires:		openh264-devel
+Requires:			openh264
 BuildRequires:		libavif-devel
 Requires:			libavif
 BuildRequires:		libspng-devel
