@@ -230,7 +230,7 @@ class EncodingServer(StubServerMixin):
         assert ptype in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
-            )
+            ), f"invalid packet type {ptype}"
         value = int(packet[1])
         log("Setting %s to %s", ptype, value)
         fn = getattr(ss, "set_%s" % ptype.replace("-", "_"))
