@@ -331,7 +331,7 @@ Requires(preun):	systemd-units
 Requires(postun):	systemd-units
 Recommends:			xterm
 BuildRequires:		libfakeXinerama
-Suggests:			libfakeXinerama
+Recommends:			libfakeXinerama
 Recommends:			mesa-dri-drivers
 Recommends:			redhat-menus
 Recommends:			gnome-menus
