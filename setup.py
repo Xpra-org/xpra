@@ -223,7 +223,8 @@ jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.8", "vpx") and BITS==64
 vpl_ENABLED             = False     #DEFAULT and pkg_config_version("2.7", "vpl")
-enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
+ffmpeg_ENABLED          = DEFAULT and BITS==64
+enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
@@ -232,14 +233,15 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.9", "evdi")
 drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdrm")
 #ffmpeg 3.1 or later is required
-dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
-csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
+dec_avcodec2_ENABLED    = ffmpeg_ENABLED and pkg_config_version("57", "libavcodec")
+csc_swscale_ENABLED     = ffmpeg_ENABLED and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
-nvjpeg_encoder_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
-nvjpeg_decoder_ENABLED = nvjpeg_encoder_ENABLED
-nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
-nvdec_ENABLED = False
-nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
+nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
+nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
+nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
+nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
+nvdec_ENABLED           = False
+nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
 cuda_rebuild_ENABLED    = not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
@@ -261,16 +263,16 @@ rebuild_ENABLED         = not skip_build
 
 #allow some of these flags to be modified on the command line:
 CODEC_SWITCHES = [
-    "enc_x264", "enc_x265", "enc_ffmpeg", "nvenc", "nvdec",
+    "enc_x264", "enc_x265",
     "enc_proxy",
     "cuda_kernels", "cuda_rebuild",
-    "nvfbc",
+    "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
     "vpx", "vpl", "webp", "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
-    "nvjpeg_encoder", "nvjpeg_decoder", "avif", "argb",
+    "avif", "argb",
     "v4l2", "evdi", "drm",
-    "dec_avcodec2", "csc_swscale",
+    "ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg",
     "csc_cython", "csc_libyuv", "gstreamer",
     ]
 SWITCHES = [
@@ -297,6 +299,8 @@ SWITCHES = [
 #some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
+    "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder"),
+    "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     }
 
 def show_help():
@@ -361,6 +365,17 @@ def filter_argv():
         if not matched:
             filtered_args.append(arg)
 filter_argv()
+#enable any codec groups with at least one codec enabled:
+#ie: enable "nvidia" if "nvenc" is enabled
+for group, items in SWITCH_ALIAS.items():
+    if globals()[f"{group}_ENABLED"]:
+        #already enabled
+        continue
+    for item in items:
+        if globals()[f"{item}_ENABLED"]:
+            print(f"enabling {group!r} for {item!r}")
+            globals()[f"{group}_ENABLED"] = True
+            break
 sys.argv = filtered_args
 if "clean" not in sys.argv and "sdist" not in sys.argv:
     def show_switch_info():
@@ -2032,7 +2047,6 @@ if nvfbc_ENABLED:
     platform = sys.platform.rstrip("0123456789")
     ace(f"xpra.codecs.nvidia.nvfbc.fbc_capture_{platform}", "nvfbc", language="c++")
 
-nvidia_ENABLED = nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 CUDA_BIN = f"{share_xpra}/cuda"
 if nvidia_ENABLED:
@@ -2237,7 +2251,6 @@ toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 #swscale and avcodec2 use libav_common/av_log:
-ffmpeg_ENABLED = dec_avcodec2_ENABLED or csc_swscale_ENABLED or enc_ffmpeg_ENABLED
 toggle_packages(ffmpeg_ENABLED, "xpra.codecs.ffmpeg")
 tace(ffmpeg_ENABLED, "xpra.codecs.ffmpeg.av_log", "libavutil")
 tace(dec_avcodec2_ENABLED, "xpra.codecs.ffmpeg.decoder,xpra/codecs/ffmpeg/register_compat.c", "libavcodec,libavutil,libavformat")
