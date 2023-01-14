@@ -190,7 +190,7 @@ pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OS
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
-proc_ENABLED            = LINUX and has_header_file("/proc/procps.h")
+proc_ENABLED            = LINUX and has_header_file("/libproc2/pids.h")
 vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 bencode_ENABLED         = DEFAULT
@@ -2037,7 +2037,7 @@ if pam_ENABLED:
 
 #platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
-tace(proc_ENABLED, "xpra.platform.xposix.proc", "libprocps", extra_compile_args = "-Wno-error")
+tace(proc_ENABLED, "xpra.platform.xposix.proc", "libproc2", extra_compile_args = "-Wno-error")
 
 #codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
