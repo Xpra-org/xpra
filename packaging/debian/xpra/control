@@ -40,7 +40,7 @@ Build-Depends: debhelper (>= 8)
               ,dh-python
               ,libsystemd-dev
               ,libpam0g-dev
-              ,libproc2-dev
+              ,libproc2-dev | libprocps-dev
               ,liblz4-dev
               ,libbrotli-dev
               ,libqrencode-dev
@@ -105,7 +105,7 @@ Recommends: xpra-codecs
 # socket activation:
         ,libsystemd
 # query parent pid:
-        ,libproc2-dev
+        ,libproc2-0 | libprocps
 # generate QR codes for authentication and connection URLs:
         ,libqrencode4
 # control server sessions, access client desktop environment settings and properties:
