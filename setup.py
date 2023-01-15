@@ -188,9 +188,12 @@ gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc"))
 
+proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
+proc_use_libproc        = LINUX and has_header_file("/libproc2/pids.h")
+proc_ENABLED            = LINUX and (proc_use_procps or proc_use_libproc)
+
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
-proc_ENABLED            = LINUX and has_header_file("/libproc2/pids.h")
 vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 bencode_ENABLED         = DEFAULT
@@ -2037,7 +2040,8 @@ if pam_ENABLED:
 
 #platform:
 tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
-tace(proc_ENABLED, "xpra.platform.xposix.proc", "libproc2", extra_compile_args = "-Wno-error")
+tace(proc_ENABLED and proc_use_procps, "xpra.platform.xposix.proc_procps", "libprocps", extra_compile_args = "-Wno-error")
+tace(proc_ENABLED and proc_use_libproc, "xpra.platform.xposix.proc_libproc", "libproc2", extra_compile_args = "-Wno-error")
 
 #codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
