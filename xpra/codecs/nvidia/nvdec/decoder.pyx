@@ -7,11 +7,14 @@ from libc.string cimport memset
 from time import monotonic
 
 from xpra.util import csv
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.cuda_errors import cudacheck, CUDA_ERRORS
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
 
+from pycuda import driver
+import numpy
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -254,7 +257,8 @@ def get_info():
 
 CODECS = {}
 def get_encodings():
-    return ("h264", )
+    return ("jpeg", )
+    #return ("jpeg", "h264")
 
 def get_input_colorspaces(encoding):
     #return ("YUV420P", "YUV422P", "YUV444P")
@@ -275,7 +279,7 @@ cdef class Decoder:
     cdef object __weakref__
 
     def init_context(self, encoding, width, height, colorspace):
-        log("init_context%s", (encoding, width, height, colorspace))
+        log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
@@ -289,6 +293,8 @@ cdef class Decoder:
         pdci.ulNumDecodeSurfaces = 2
         if self.encoding=="h264":
             pdci.CodecType = cudaVideoCodec_H264_SVC
+        elif self.encoding=="jpeg":
+            pdci.CodecType = cudaVideoCodec_JPEG
         else:
             raise ValueError(f"invalid encoding {self.encoding!r}")
         if self.colorspace=="YUV420P":
@@ -314,8 +320,7 @@ cdef class Decoder:
         pdci.vidLock = NULL
         pdci.enableHistogram = 0
         cdef CUresult r = cuvidCreateDecoder(&self.context, &pdci)
-        if r:
-            raise RuntimeError(f"creating decoder returned error {r}")
+        cudacheck(r, "creating decoder returned error")
 
     def __repr__(self):
         return f"nvdec({self.encoding})"
@@ -365,6 +370,7 @@ cdef class Decoder:
 
 
     def decompress_image(self, data, options=None):
+        log(f"decompress_image({len(data)} bytes, {options})")
         cdef CUVIDPICPARAMS pic
         pic.PicWidthInMbs = 16      #??
         pic.FrameHeightInMbs = 16   #??
@@ -400,7 +406,33 @@ cdef class Decoder:
         cdef unsigned int pitch
         r = cuvidMapVideoFrame64(self.context, pic_idx, &dev_ptr, &pitch, &map_params)
         cudacheck(r, "GPU mapping of picture buffer error")
-        #CUresult cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr)
+        log(f"mapped picture {pic_idx} at {dev_ptr:x}, pitch={pitch}")
+        try:
+            buffer_size = self.width*self.height*3//2
+            host_buffer = driver.pagelocked_empty(buffer_size, numpy.byte)
+
+            copy = driver.Memcpy2D()
+            copy.set_src_device(dev_ptr)
+            copy.src_x_in_bytes = 0
+            copy.src_y = 0
+            copy.src_pitch = pitch
+            copy.width_in_bytes = self.width
+            copy.height = self.height*3//2
+            copy.set_dst_host(host_buffer)
+            copy.dst_x_in_bytes = 0
+            copy.dst_y = 0
+            copy.dst_pitch = self.width
+            copy(aligned=False)
+
+            rowstrides = [self.width, self.width//2, self.width//2]
+            pixels = host_buffer
+            image = ImageWrapper(0, 0, self.width, self.height,
+                                 pixels, "YUV420P", 24, rowstrides, 3, ImageWrapper.PLANAR_3)
+            self.frames += 1
+            return image
+        finally:
+            r = cuvidUnmapVideoFrame64(self.context, dev_ptr)
+            cudacheck(r, "error unmapping video frame")
 
 
 def selftest(full=False):
@@ -437,14 +469,14 @@ def selftest(full=False):
                     continue
                 if not caps.bIsSupported:
                     chroma_failed.append(chroma_name)
-                    log(f"{codec_name} + {chroma_name} is not supported on this GPU")
+                    #log(f"{codec_name} + {chroma_name} is not supported on this GPU")
                     continue
                 if caps.nMaxWidth<4096 or caps.nMaxHeight<4096:
                     chroma_failed.append(chroma_name)
                     log(f"{codec_name} maximum dimension is only {caps.nMaxWidth}x{caps.nMaxHeight}")
                     continue
                 oformats = tuple(name for sfi, name in SURFACE_NAMES.items() if caps.nOutputFormatMask & (1<<sfi))
-                log("output formats: %s", csv(oformats))
+                log(f"output formats for {codec_name} + {chroma_name}: %s", csv(oformats))
                 if "NV12" in oformats:
                     chroma_ok.append(chroma_name)
                 else:
@@ -458,8 +490,9 @@ def selftest(full=False):
         #decoder = Decoder()
         #decoder.init_context("h264", 512, 256, "YUV420P")
         #decoder.clean()
-        if "h264" not in codec_ok:
-            raise RuntimeError("no h264 decoding")
+        #if "h264" not in codec_ok and "jpeg" not in codec_ok:
+        if "jpeg" not in codec_ok:
+            raise RuntimeError("no jpeg decoding")
 
         from xpra.codecs.codec_checks import testdecoder
         from xpra.codecs.nvidia import nvdec
