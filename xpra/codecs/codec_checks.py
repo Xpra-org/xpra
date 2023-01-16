@@ -124,16 +124,20 @@ def testdecoder(decoder_module, full):
 
 def testdecoding(decoder_module, encoding, full):
     test_data_set = TEST_COMPRESSED_DATA.get(encoding)
-    if not test_data_set:
-        log("%s: no test data for %s", decoder_module.get_type(), encoding)
-        return
     for cs in decoder_module.get_input_colorspaces(encoding):
         e = decoder_module.Decoder()
         try:
-            test_data = test_data_set.get(cs)
+            if test_data_set:
+                test_data = test_data_set.get(cs)
+            elif encoding in TEST_PICTURES:
+                #maybe this is a picture format:
+                test_data = 32, 32, TEST_PICTURES[encoding][0]
+            else:
+                test_data = None
             if test_data:
                 w, h, data = test_data
             else:
+                log("%s: no test data for %s", decoder_module.get_type(), encoding)
                 w = 64
                 h = 32
                 data = None
