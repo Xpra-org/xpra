@@ -494,7 +494,7 @@ class WindowBackingBase:
                 if first_time(str(e)):
                     log.error("Error accessing cuda context", exc_info=True)
                 else:
-                    log("cuda context error, again")
+                    log(f"cuda context error, again: {e}")
         if img is None:
             if encoding=="jpeg":
                 rgb_format = "RGBX"
