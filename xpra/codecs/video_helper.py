@@ -23,6 +23,7 @@ CODEC_TO_MODULE = {
     "enc_x265"      : "x265.encoder",
     "enc_openh264"  : "openh264.encoder",
     "nvenc"         : "nvidia.nvenc",
+    "nvdec"         : "nvidia.nvdec",
     "csc_swscale"   : "ffmpeg.colorspace_converter",
     "csc_cython"    : "csc_cython.colorspace_converter",
     "csc_libyuv"    : "libyuv.colorspace_converter",
@@ -65,7 +66,7 @@ ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc", "x264", "openh264", "vpx",
 HARDWARE_ENCODER_OPTIONS = try_import_modules("enc", "nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("csc", "swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec", "avcodec2", "openh264", "vpx", "gstreamer")
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec", "avcodec2", "openh264", "vpx", "gstreamer", "nvdec")
 
 PREFERRED_ENCODER_ORDER = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
