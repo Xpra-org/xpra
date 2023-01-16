@@ -12,7 +12,7 @@ from time import monotonic
 
 from xpra.util import csv, roundup, envbool
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvidia.nvfbc.cuda_image_wrapper import CUDAImageWrapper
+from xpra.codecs.nvidia.cuda_image_wrapper import CUDAImageWrapper
 from xpra.codecs.nvidia.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger

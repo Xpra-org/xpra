@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 
-log = Logger("cuda", "nvfbc")
+log = Logger("cuda")
 
 with numpy_import_lock:
     import numpy
@@ -94,6 +94,6 @@ class CUDAImageWrapper(ImageWrapper):
     def clean(self):
         try:
             self.wait_for_stream()
-        except driver.LogicError:  #pylint: disable=no-member
+        except driver.LogicError:  #pylint: disable=no-member @UndefinedVariable
             log("%s.clean()", self, exc_info=True)
         self.free()
