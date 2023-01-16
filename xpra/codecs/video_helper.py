@@ -47,9 +47,13 @@ def has_codec_module(module_name):
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
-def try_import_modules(*codec_names):
+def autoprefix(prefix, name):
+    return name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name
+
+def try_import_modules(prefix, *codec_names):
     names = []
     for codec_name in codec_names:
+        codec_name = autoprefix(prefix, codec_name)
         module_name = CODEC_TO_MODULE[codec_name]
         if has_codec_module(module_name):
             names.append(codec_name)
@@ -57,14 +61,13 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc_x264", "enc_openh264", "enc_vpx", "enc_x265", "nvenc", "enc_ffmpeg", "enc_nvjpeg", "enc_jpeg", "enc_webp", "enc_gstreamer")
-HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "enc_nvjpeg")
-ALL_CSC_MODULE_OPTIONS = try_import_modules("csc_swscale", "csc_cython", "csc_libyuv")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc", "x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
+HARDWARE_ENCODER_OPTIONS = try_import_modules("enc", "nvenc", "nvjpeg")
+ALL_CSC_MODULE_OPTIONS = try_import_modules("csc", "swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec_avcodec2", "dec_openh264", "dec_vpx", "dec_gstreamer")
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec", "avcodec2", "openh264", "vpx", "gstreamer")
 
-PREFERRED_ENCODER_ORDER = ("nvenc", "enc_nvjpeg", "enc_x264", "enc_vpx", "enc_jpeg", "enc_webp", "enc_x265", "enc_gstreamer")
-PREFERRED_DECODER_ORDER = ("dec_avcodec2", "dec_vpx", "dec_gstreamer")
+PREFERRED_ENCODER_ORDER = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
@@ -75,20 +78,13 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 
 
 def get_encoder_module_name(x):
-    if x.find("enc")>=0:
-        return x                #ie: "nvenc" or "enc_vpx"
-    return "enc_"+x             #ie: "enc_x264"
+    return autoprefix("enc", x)
 
 def get_decoder_module_name(x):
-    if x.find("dec")>=0:
-        return x                #ie: "nvenc" or "enc_vpx"
-    return "dec_"+x         #ie: "dec_vpx"
+    return autoprefix("dec", x)
 
 def get_csc_module_name(x):
-    if x.startswith("csc_"):
-        return x
-    return "csc_"+x             #ie: "csc_swscale"
-
+    return autoprefix("csc", x)
 
 
 def get_DEFAULT_VIDEO_ENCODERS():
@@ -149,7 +145,7 @@ class VideoHelper:
     def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        def filt(name, inlist, all_list):
+        def filt(prefix, name, inlist, all_list):
             exclist = list(x[1:] for x in inlist if x and x.startswith("-"))
             inclist = list(x for x in inlist if x and not x.startswith("-"))
             if "all" in inclist:
@@ -158,10 +154,10 @@ class VideoHelper:
                 notfound = tuple(x for x in (exclist+inclist) if x and x not in all_list)
                 if notfound:
                     log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))
-            return tuple(x for x in inclist if x not in exclist)
-        self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
-        self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
-        self.video_decoders = filt("video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
+            return tuple(autoprefix(prefix, x) for x in inclist if x not in exclist)
+        self.video_encoders = filt("enc", "video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
+        self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
+        self.video_decoders = filt("dec", "video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%r, %r, %r) video encoders=%s, csc=%s, video decoders=%s",
             csv(video_encoders), csv(csc_modules), csv(video_decoders),
             csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
