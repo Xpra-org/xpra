@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,6 +21,7 @@ CODEC_TO_MODULE = {
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
     "enc_x265"      : "x265.encoder",
+    "enc_openh264"  : "openh264.encoder",
     "nvenc"         : "nvidia.nvenc",
     "csc_swscale"   : "ffmpeg.colorspace_converter",
     "csc_cython"    : "csc_cython.colorspace_converter",
@@ -56,7 +57,7 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc_x264", "enc_vpx", "enc_x265", "nvenc", "enc_ffmpeg", "enc_nvjpeg", "enc_jpeg", "enc_webp", "enc_gstreamer")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc_x264", "enc_openh264", "enc_vpx", "enc_x265", "nvenc", "enc_ffmpeg", "enc_nvjpeg", "enc_jpeg", "enc_webp", "enc_gstreamer")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "enc_nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("csc_swscale", "csc_cython", "csc_libyuv")
 NO_GFX_CSC_OPTIONS = []

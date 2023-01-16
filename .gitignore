@@ -113,6 +113,7 @@ tests/unittests/test-file*
 /xpra/codecs/ffmpeg/decoder.c
 /xpra/codecs/ffmpeg/av_log.c
 /xpra/codecs/openh264/decoder.cpp
+/xpra/codecs/openh264/encoder.cpp
 /xpra/codecs/x264/encoder.c
 /xpra/codecs/x265/encoder.c
 /xpra/codecs/spng/decoder.c

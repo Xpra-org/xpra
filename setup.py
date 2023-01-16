@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -214,6 +214,8 @@ codecs_ENABLED          = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
+openh264_decoder_ENABLED = openh264_ENABLED
+openh264_encoder_ENABLED = openh264_ENABLED
 #crashes on 32-bit windows:
 enc_x265_ENABLED        = False #(not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
@@ -269,6 +271,7 @@ CODEC_SWITCHES = [
     "enc_x264", "enc_x265",
     "enc_proxy",
     "cuda_kernels", "cuda_rebuild",
+    "openh264", "openh264_decoder", "openh264_encoder",
     "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
     "vpx", "vpl", "webp", "pillow",
     "spng_decoder", "spng_encoder",
@@ -302,6 +305,7 @@ SWITCHES = [
 #some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
+    "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder"),
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     }
@@ -1081,6 +1085,7 @@ def clean():
                    "xpra/codecs/ffmpeg/av_log.c",
                    "xpra/codecs/ffmpeg/colorspace_converter.c",
                    "xpra/codecs/ffmpeg/decoder.c",
+                   "xpra/codecs/openh264/encoder.c",
                    "xpra/codecs/openh264/decoder.c",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/v4l2/constants.pxi",
@@ -2237,7 +2242,8 @@ tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.x265")
 tace(enc_x265_ENABLED, "xpra.codecs.x265.encoder", "x265")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
-tace(openh264_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
+tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
+tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 tace(webp_ENABLED, "xpra.codecs.webp.encoder", "libwebp")

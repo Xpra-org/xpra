@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,7 +37,7 @@ def filt(*values):
 
 CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_vpl", "enc_gstreamer")
+ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_ffmpeg", "enc_vpl", "enc_gstreamer")
 DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2", "dec_openh264", "nvdec")
 SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
@@ -194,6 +194,7 @@ CODEC_OPTIONS = {
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
     "enc_x264"      : ("x264 encoder",      "x264",         "encoder", "Encoder"),
     "enc_x265"      : ("x265 encoder",      "x265",         "encoder", "Encoder"),
+    "enc_openh264"  : ("openh264 encoder",  "openh264",     "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_ffmpeg"    : ("ffmpeg encoder",    "ffmpeg",       "encoder", "Encoder"),
     "enc_vpl"       : ("oneVPL encoder",    "vpl",          "encoder", "Encoder"),
