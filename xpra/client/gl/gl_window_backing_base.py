@@ -66,7 +66,7 @@ from xpra.client.window_backing_base import (
     WEBP_PILLOW, SCROLL_ENCODING,
     )
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
-from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
+from xpra.client.gl.gl_colorspace_conversions import YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader
 from xpra.client.gl.gl_spinner import draw_spinner
 from xpra.log import Logger
 
@@ -218,9 +218,9 @@ TEX_FPS = 7
 N_TEXTURES = 8
 
 # Shader number assignment
-YUV2RGB_SHADER = 0
-RGBP2RGB_SHADER = 1
-YUV2RGB_FULL_SHADER = 2
+YUV_to_RGB_SHADER = 0
+RGBP_to_RGB_SHADER = 1
+YUV_to_RGB_FULL_SHADER = 2
 
 
 """
@@ -467,9 +467,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.shaders = [ 1, 2, 3 ]
         glGenProgramsARB(3, self.shaders)
         for name, progid, progstr in (
-            ("YUV2RGB",     YUV2RGB_SHADER,         YUV2RGB_shader),
-            ("YUV2RGBFULL", YUV2RGB_FULL_SHADER,    YUV2RGB_FULL_shader),
-            ("RGBP2RGB",    RGBP2RGB_SHADER,        RGBP2RGB_shader),
+            ("YUV2RGB",     YUV_to_RGB_SHADER,         YUV_to_RGB_shader),
+            ("YUV2RGBFULL", YUV_to_RGB_FULL_SHADER,    YUV_to_RGB_FULL_shader),
+            ("RGBP2RGB",    RGBP_to_RGB_SHADER,        RGBP_to_RGB_shader),
             ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
             glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
@@ -543,7 +543,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_init_shaders()
 
         # Bind program 0 for YUV painting by default
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV_to_RGB_SHADER])
         self.gl_setup = True
         log("gl_init(%s) done", skip_fbo)
 
@@ -1061,7 +1061,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, encoding, img,
+            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL_SHADER, flush, encoding, img,
                           x, y, w, h, width, height, options, callbacks)
             return
         if encoding=="jpeg":
@@ -1158,7 +1158,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img,
+            self.idle_add(self.gl_paint_planar, YUV_to_RGB_SHADER, flush, "webp", img,
                           x, y, w, h, width, height, options, callbacks)
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1171,7 +1171,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "avif", img,
+            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL_SHADER, flush, "avif", img,
                           x, y, w, h, width, height, options, callbacks)
         else:
             self.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
@@ -1275,9 +1275,9 @@ class GLWindowBackingBase(WindowBackingBase):
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         if pixel_format.startswith("GBRP"):
-            shader = RGBP2RGB_SHADER
+            shader = RGBP_to_RGB_SHADER
         else:
-            shader = YUV2RGB_SHADER
+            shader = YUV_to_RGB_SHADER
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
                       x, y, enc_width, enc_height, width, height, options, callbacks)
 
@@ -1389,7 +1389,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
+    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV_to_RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"):
