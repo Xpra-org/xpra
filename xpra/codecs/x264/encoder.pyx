@@ -419,12 +419,11 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRX", "RGB")
-    height_mask = 0xFFFF
-    width_mask = 0xFFFE
-    if colorspace in ("YUV444P", "BGRX"):
-        width_mask = 0xFFFF
-    if colorspace in ("YUV420P", "YUV422P"):
-        height_mask = 0xFFFE
+    height_mask = width_mask = 0xFFFF
+    if colorspace not in ("YUV444P", "BGRX"):
+        width_mask = 0xFFFE
+        if colorspace=="YUV420P":
+            height_mask = 0xFFFE
     return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
                       has_lossless_mode=has_lossless_mode,
                       codec_class=Encoder, codec_type=get_type(),
@@ -499,7 +498,7 @@ cdef class Encoder:
     cdef object __weakref__
 
     def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
-        log("enc_x264.init_context%s", (width, height, src_format, encoding, options))
+        log("enc_x264.init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
@@ -509,7 +508,7 @@ cdef class Encoder:
         assert options.intget("scaled-height", height)==height, "x264 encoder does not handle scaling"
         if width%2!=0 and src_format not in ("BGRX", "YUV444P"):
             raise ValueError(f"invalid odd width {width} for {src_format}")
-        if height%2!=0 and src_format in ("YUV420P", "YUV422P"):
+        if height%2!=0 and src_format=="YUV420P":
             raise ValueError(f"invalid odd height {height} for {src_format}")
         self.width = width
         self.height = height
@@ -543,6 +542,7 @@ cdef class Encoder:
             log("using profile=%s", bytestostr(self.profile))
         self.init_encoder(options)
         gen = generation.increase()
+        self.file = None
         if SAVE_TO_FILE is not None:
             filename = SAVE_TO_FILE+"x264-"+str(gen)+".%s" % encoding
             self.file = open(filename, "wb")
@@ -696,7 +696,6 @@ cdef class Encoder:
             "src_format"    : self.src_format,
             "csc_format"    : self.csc_format,
             "content-type"  : self.content_type,
-            "version"       : get_version(),
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
             "bandwidth-limit" : int(self.bandwidth_limit),
