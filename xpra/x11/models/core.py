@@ -40,11 +40,9 @@ if not XRes.check_xres():
     log.warn("Warning: X Resource Extension missing or too old")
     XRes = None
 
-try:
-    from xpra.platform.xposix.proc import get_parent_pid
-except ImportError:
+from xpra.platform.xposix.proc import get_parent_pid
+if get_parent_pid is None:
     log("proc.get_parent_pid is not available", exc_info=True)
-    get_parent_pid = None
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
