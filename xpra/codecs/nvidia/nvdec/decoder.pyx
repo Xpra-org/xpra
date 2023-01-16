@@ -6,6 +6,7 @@
 from libc.string cimport memset
 from time import monotonic
 
+from xpra.util import csv
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
@@ -225,6 +226,13 @@ CHROMA_NAMES = {
     cudaVideoChromaFormat_444           : "444",
     }
 
+SURFACE_NAMES = {
+    cudaVideoSurfaceFormat_NV12     : "NV12",
+    cudaVideoSurfaceFormat_P016     : "P016",
+    cudaVideoSurfaceFormat_YUV444   : "YUV444P",
+    cudaVideoSurfaceFormat_YUV444_16Bit : "YUV444P16",
+    }
+
 
 def init_module():
     log("nvdec.init_module()")
@@ -247,52 +255,55 @@ def get_encodings():
     return ("h264", )
 
 def get_input_colorspaces(encoding):
-    return ("YUV420P", "YUV422P", "YUV444P")
+    #return ("YUV420P", "YUV422P", "YUV444P")
+    return ("YUV420P", )
 
 def get_output_colorspace(encoding, csc):
-    #same as input
-    return csc
+    return "NV12"
 
 
 cdef class Decoder:
     cdef unsigned int width
     cdef unsigned int height
     cdef unsigned long frames
-    cdef object dst_format
+    cdef object colorspace
     cdef object encoding
     cdef CUvideodecoder context
 
     cdef object __weakref__
 
     def init_context(self, encoding, width, height, colorspace):
+        log("init_context%s", (encoding, width, height, colorspace))
         self.encoding = encoding
-        self.dst_format = colorspace
+        self.colorspace = colorspace
         self.width = width
         self.height = height
-        self.dst_format = colorspace
+        self.init_nvdec()
+
+    def init_nvdec(self):
         cdef CUVIDDECODECREATEINFO pdci
         pdci.ulWidth = self.width
         pdci.ulHeight = self.height
         pdci.ulNumDecodeSurfaces = 2
-        if encoding=="h264":
+        if self.encoding=="h264":
             pdci.CodecType = cudaVideoCodec_H264_SVC
         else:
-            raise ValueError(f"invalid encoding {encoding!r}")
-        if colorspace=="YUV420P":
+            raise ValueError(f"invalid encoding {self.encoding!r}")
+        if self.colorspace=="YUV420P":
             pdci.ChromaFormat = cudaVideoChromaFormat_420
-        elif colorspace=="YUV422P":
+        elif self.colorspace=="YUV422P":
             pdci.ChromaFormat = cudaVideoChromaFormat_422
-        elif colorspace=="YUV444P":
+        elif self.colorspace=="YUV444P":
             pdci.ChromaFormat = cudaVideoChromaFormat_444
         else:
-            raise ValueError(f"invalid colorspace {colorspace!r}")
+            raise ValueError(f"invalid colorspace {self.colorspace!r}")
         pdci.ulCreationFlags = cudaVideoCreate_PreferCUDA
         #cudaVideoCreate_PreferCUVID     #Use dedicated video engines directly
         pdci.bitDepthMinus8 = 0
         pdci.ulIntraDecodeOnly = 0
         pdci.ulMaxWidth = roundup(self.width, 16)
         pdci.ulMaxHeight = roundup(self.height, 16)
-        pdci.OutputFormat = cudaVideoSurfaceFormat_YUV444
+        pdci.OutputFormat = cudaVideoSurfaceFormat_NV12
         #cudaVideoSurfaceFormat_YUV444_16Bit
         pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave
         pdci.ulTargetWidth = roundup(self.width, 2)
@@ -314,11 +325,11 @@ cdef class Decoder:
                 "height"    : self.height,
                 "encoding"  : self.encoding,
                 "frames"    : int(self.frames),
-                "colorspace": self.dst_format,
+                "colorspace": self.colorspace,
                 }
 
     def get_colorspace(self) -> str:
-        return self.dst_format
+        return self.colorspace
 
     def get_width(self) -> int:
         return self.width
@@ -347,7 +358,7 @@ cdef class Decoder:
             self.context = NULL
         self.width = 0
         self.height = 0
-        self.dst_format = ""
+        self.colorspace = ""
         self.encoding = ""
 
 
@@ -406,7 +417,7 @@ def selftest(full=False):
     cdef CUresult r
     cdef Decoder decoder
 
-    codec_ok = []
+    codec_ok = {}
     codec_failed = []
     with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
@@ -432,19 +443,24 @@ def selftest(full=False):
                     chroma_failed.append(chroma_name)
                     log(f"{codec_name} maximum dimension is only {caps.nMaxWidth}x{caps.nMaxHeight}")
                     continue
-                if not (caps.nOutputFormatMask & (1<<cudaVideoSurfaceFormat_YUV444)):
-                    chroma_failed.append(chroma_name)
-                    log(f"{codec_name} cannot be decoded to on this GPU")
-                    continue
-                chroma_ok.append(chroma_name)
+                oformats = tuple(name for sfi, name in SURFACE_NAMES.items() if caps.nOutputFormatMask & (1<<sfi))
+                log("output formats: %s", csv(oformats))
+                if "NV12" in oformats:
+                    chroma_ok.append(chroma_name)
+                else:
+                    log(f"{codec_name} does not support NV12 surface")
             if chroma_ok:
-                codec_ok.append(codec_name)
+                codec_ok[codec_name] = chroma_ok
             else:
                 codec_failed.append(codec_name)
-        log.info(f"codecs failed: {codec_failed}")
-        log.info(f"codecs supported: {codec_ok}")
+        log(f"codecs failed: {codec_failed}")
+        log(f"codecs supported: {codec_ok}")
         #decoder = Decoder()
         #decoder.init_context("h264", 512, 256, "YUV420P")
         #decoder.clean()
         if "h264" not in codec_ok:
             raise RuntimeError("no h264 decoding")
+
+        from xpra.codecs.codec_checks import testdecoder
+        from xpra.codecs.nvidia import nvdec
+        testdecoder(nvdec.decoder, full)
