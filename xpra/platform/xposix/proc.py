@@ -20,6 +20,10 @@ def main(argv):
             print("`get_parent_pid` is not available!")
             return 1
         print(f"using `get_parent_pid`={get_parent_pid}")
+        try:
+            print(f"from {get_parent_pid.__module__}")
+        except AttributeError:  #`__module__` is CPython only?
+            pass
         for pid_str in argv[1:]:
             try:
                 pid = int(pid_str)
