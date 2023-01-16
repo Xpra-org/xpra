@@ -91,8 +91,7 @@ def load_content_type_defs() -> dict:
         content_type_defs = _load_dict_dirs("content-type", parse_content_types)
         if GUESS_CONTENT:
             #add env defs:
-            for entries in CONTENT_TYPE_DEFS.split(","):
-                content_type_defs.update(parse_content_types(entries))
+            content_type_defs.update(parse_content_types(CONTENT_TYPE_DEFS.split(",")))
     return content_type_defs
 
 def parse_content_types(lines) -> dict:
