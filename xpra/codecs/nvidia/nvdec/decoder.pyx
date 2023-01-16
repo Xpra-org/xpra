@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ from libc.string cimport memset
 from time import monotonic
 
 from xpra.util import csv
+from xpra.codecs.nvidia.cuda_errors import cudacheck, CUDA_ERRORS
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
@@ -251,6 +252,7 @@ def get_info():
         "version"   : get_version(),
         }
 
+CODECS = {}
 def get_encodings():
     return ("h264", )
 
@@ -375,8 +377,7 @@ cdef class Decoder:
         pic.intra_pic_flag = self.frames==0
         self.frames += 1
         cdef CUresult r = cuvidDecodePicture(self.context, &pic)
-        if r:
-            raise RuntimeError(f"GPU picture decoding returned error {r}")
+        cudacheck(r, "GPU picture decoding returned error")
         cdef CUVIDGETDECODESTATUS status
         cdef int pic_idx = 0
         r = cuvidGetDecodeStatus(self.context, pic_idx, &status)
@@ -398,8 +399,7 @@ cdef class Decoder:
         cdef unsigned long long dev_ptr
         cdef unsigned int pitch
         r = cuvidMapVideoFrame64(self.context, pic_idx, &dev_ptr, &pitch, &map_params)
-        if not r:
-            raise RuntimeError(f"GPU mapping of picture buffer error {r}")
+        cudacheck(r, "GPU mapping of picture buffer error")
         #CUresult cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr)
 
 
@@ -433,7 +433,7 @@ def selftest(full=False):
                 r = cuvidGetDecoderCaps(&caps)
                 if r:
                     chroma_failed.append(chroma_name)
-                    log(f"decoder caps for {codec_name} + {chroma_name} returned error {r}")
+                    log(f"decoder caps for {codec_name} + {chroma_name} returned error %s", CUDA_ERRORS.get(r, r))
                     continue
                 if not caps.bIsSupported:
                     chroma_failed.append(chroma_name)
