@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from time import monotonic
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
-from xpra.util import typedict
+from xpra.util import typedict, csv
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
@@ -42,6 +42,22 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    uint8_t* dst_y, int dst_stride_y,
                    uint8_t* dst_uv, int dst_stride_uv,
                    int width, int height) nogil
+
+    int NV12ToRGB24(const uint8_t* src_y, int src_stride_y,
+                    const uint8_t* src_uv, int src_stride_uv,
+                    uint8_t* dst_rgb24, int dst_stride_rgb24,
+                    int width, int height) nogil
+
+    int NV12ToARGB(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_uv, int src_stride_uv,
+                   uint8_t* dst_argb, int dst_stride_argb,
+                   int width, int height) nogil
+
+    int NV12ToABGR(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_uv,int src_stride_uv,
+                   uint8_t* dst_abgr, int dst_stride_abgr,
+                   int width, int height) nogil
+
 
 
 cdef extern from "libyuv/scale.h" namespace "libyuv":
@@ -119,32 +135,31 @@ def get_version() -> tuple:
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
-IN_COLORSPACES = ("BGRX", )
-OUT_COLORSPACES = ("YUV420P", "NV12")
+COLORSPACES = {
+    "BGRX" : ("YUV420P", "NV12"),
+    "NV12" : ("RGB", "BGRX", "RGBX"),
+    }
 def get_info():
-    global IN_COLORSPACES, OUT_COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"           : get_version(),
-        "input-formats"     : IN_COLORSPACES,
-        "output-formats"    : OUT_COLORSPACES,
+        "formats"           : COLORSPACES,
         "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
         }
 
 def get_input_colorspaces():
-    return IN_COLORSPACES
+    return tuple(COLORSPACES.keys())
 
 def get_output_colorspaces(input_colorspace):
-    assert input_colorspace in IN_COLORSPACES
-    return OUT_COLORSPACES
+    return COLORSPACES.get(input_colorspace, ())
 
 
 def get_spec(in_colorspace, out_colorspace):
-    assert in_colorspace in IN_COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, IN_COLORSPACES)
-    assert out_colorspace in OUT_COLORSPACES, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, OUT_COLORSPACES)
+    assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
+    assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=True,
+                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
@@ -259,40 +274,54 @@ cdef class ColorspaceConverter:
                            int dst_width, int dst_height, dst_format, options:typedict=None):
         log("libyuv.ColorspaceConverter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
-        assert src_format=="BGRX", "invalid source format: %s" % src_format
-        self.src_format = "BGRX"
-        if dst_format=="YUV420P":
-            self.dst_format = "YUV420P"
-            self.planes = 3
-            self.yuv_scaling = int(src_width!=dst_width or src_height!=dst_height)
-            self.rgb_scaling = False
-        elif dst_format=="NV12":
-            self.dst_format = "NV12"
-            self.planes = 2
-            self.yuv_scaling = False
-            self.rgb_scaling = int(src_width!=dst_width or src_height!=dst_height)
-        else:
-            raise Exception("invalid destination format: %s" % dst_format)
+        if src_format not in COLORSPACES:
+            raise ValueError(f"invalid input colorspace: {src_format}, must be one of " + csv(COLORSPACES.keys()))
+        if dst_format not in COLORSPACES[src_format]:
+            raise ValueError(f"invalid output colorspace {dst_format} for {src_format} input, must be one of " + csv(COLORSPACES.get(src_format, ())))
+        self.src_format = src_format
+        self.dst_format = dst_format
         cdef int speed = typedict(options or {}).intget("speed", 100)
         self.filtermode = get_filtermode(speed)
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
-        #pre-calculate unscaled YUV plane heights:
         self.out_buffer_size = 0
         self.scaled_buffer_size = 0
+        self.time = 0
+        self.frames = 0
+        self.output_buffer = NULL
+        if dst_format=="YUV420P":
+            self.planes = 3
+            self.yuv_scaling = int(src_width!=dst_width or src_height!=dst_height)
+            self.rgb_scaling = False
+            self.init_yuv_output()
+        elif dst_format=="NV12":
+            self.planes = 2
+            self.yuv_scaling = False
+            self.rgb_scaling = int(src_width!=dst_width or src_height!=dst_height)
+            self.init_yuv_output()
+        elif dst_format in ("RGB", "BGRX", "RGBX"):
+            self.planes = 1
+            self.yuv_scaling = False
+            self.rgb_scaling = False
+            self.out_buffer_size = dst_width*len(dst_format)*dst_height
+        else:
+            raise Exception("invalid destination format: %s" % dst_format)
+
+    def init_yuv_output(self):
+        #pre-calculate unscaled YUV plane heights:
         divs = get_subsampling_divs(self.dst_format)
         for i in range(self.planes):
             xdiv, ydiv = divs[i]
             if self.rgb_scaling:
                 #we scale before csc to the dst size:
-                self.out_width[i]   = dst_width // xdiv
-                self.out_height[i]  = dst_height // ydiv
+                self.out_width[i]   = self.dst_width // xdiv
+                self.out_height[i]  = self.dst_height // ydiv
             else:
                 #we don't scale, so the size is the src size:
-                self.out_width[i]   = src_width // xdiv
-                self.out_height[i]  = src_height // ydiv
+                self.out_width[i]   = self.src_width // xdiv
+                self.out_height[i]  = self.src_height // ydiv
             self.out_stride[i]  = roundup(self.out_width[i], ALIGN)
             self.out_size[i]    = self.out_stride[i] * self.out_height[i]
             self.out_offsets[i] = self.out_buffer_size
@@ -302,8 +331,8 @@ cdef class ColorspaceConverter:
             #(why two and not just one? libyuv will do this for input data with odd height)
             self.out_buffer_size += roundupl(self.out_size[i] + 2*self.out_stride[i], ALIGN)
             if self.yuv_scaling:
-                self.scaled_width[i]    = dst_width // xdiv
-                self.scaled_height[i]   = dst_height // ydiv
+                self.scaled_width[i]    = self.dst_width // xdiv
+                self.scaled_height[i]   = self.dst_height // ydiv
                 self.scaled_stride[i]   = roundup(self.scaled_width[i], ALIGN)
                 self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
                 self.scaled_offsets[i]  = self.scaled_buffer_size
@@ -313,12 +342,8 @@ cdef class ColorspaceConverter:
             self.output_buffer = <uint8_t *> memalign(self.out_buffer_size)
             if self.output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
-        else:
-            self.output_buffer = NULL
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
-        self.time = 0
-        self.frames = 0
 
     def get_info(self) -> dict:
         info = get_info()
@@ -358,7 +383,7 @@ cdef class ColorspaceConverter:
     def get_src_height(self) -> int:
         return self.src_height
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
     def get_dst_width(self) -> int:
@@ -367,7 +392,7 @@ cdef class ColorspaceConverter:
     def get_dst_height(self) -> int:
         return self.dst_height
 
-    def get_dst_format(self):
+    def get_dst_format(self) -> str:
         return self.dst_format
 
     def get_type(self) -> str:
@@ -399,6 +424,69 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
+        if self.src_format=="BGRX":
+            return self.convert_bgrx_image(image)
+        elif self.src_format=="NV12":
+            return self.convert_nv12_image(image)
+        else:
+            raise RuntimeError(f"invalid source format {self.src_format}")
+
+    def convert_nv12_image(self, image):
+        cdef double start = monotonic()
+        cdef int iplanes = image.get_planes()
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        if iplanes!=2:
+            raise ValueError(f"invalid plane input format: {iplanes}")
+        if self.dst_format not in ("RGB", "BGRX", "RGBX"):
+            raise ValueError(f"invalid dst format {self.dst_format}")
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        cdef int y_stride = strides[0]
+        cdef int uv_stride = strides[1]
+        cdef int Bpp = len(self.dst_format)
+        cdef int rowstride = self.dst_width*Bpp
+        cdef MemBuf rgb_buffer = getbuf(rowstride*height)
+        cdef uintptr_t y, uv
+        cdef uint8_t *rgb
+        cdef int r = 0
+        with buffer_context(pixels[0]) as y_buf:
+            y = <uintptr_t> int(y_buf)
+            with buffer_context(pixels[1]) as uv_buf:
+                uv = <uintptr_t> int(uv_buf)
+                rgb_buffer = getbuf(self.out_buffer_size)
+                if not rgb_buffer:
+                    raise Exception("failed to allocate %i bytes for output buffer" % (self.out_buffer_size))
+                rgb = <uint8_t*> rgb_buffer.get_mem()
+                if self.dst_format=="RGB":
+                    with nogil:
+                        r = NV12ToRGB24(<const uint8_t*> y, y_stride,
+                                        <const uint8_t*> uv, uv_stride,
+                                        rgb, rowstride,
+                                        width, height)
+                elif self.dst_format=="BGRX":
+                    with nogil:
+                        r = NV12ToARGB(<const uint8_t*> y, y_stride,
+                                        <const uint8_t*> uv, uv_stride,
+                                        rgb, rowstride,
+                                        width, height)
+                elif self.dst_format=="RGBX":
+                    with nogil:
+                        r = NV12ToABGR(<const uint8_t*> y, y_stride,
+                                        <const uint8_t*> uv, uv_stride,
+                                        rgb, rowstride,
+                                        width, height)
+                else:
+                    raise RuntimeError(f"unexpected dst format {self.dst_format}")
+        if r!=0:
+            raise RuntimeError(f"libyuv NV12ToRGB failed and returned {r}")
+        cdef double elapsed = monotonic()-start
+        log(f"libyuv.NV12 to {self.dst_format} took %.1fms", 1000.0*elapsed)
+        self.time += elapsed
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height,
+                            rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+
+    def convert_bgrx_image(self, image):
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer
@@ -406,9 +494,9 @@ cdef class ColorspaceConverter:
         cdef int i
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
         cdef int width = image.get_width()
         cdef int height = image.get_height()
+        assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
         assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
         assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
         if self.rgb_scaling:
@@ -491,10 +579,8 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.libyuv import colorspace_converter
     maxw, maxh = MAX_WIDTH, MAX_HEIGHT
-    in_csc = get_input_colorspaces()
-    out_csc = get_output_colorspaces(in_csc[0])
-    testcsc(colorspace_converter, True, full, in_csc, out_csc)
+    testcsc(colorspace_converter, True, full)
     if full:
-        mw, mh = get_csc_max_size(colorspace_converter, in_csc, out_csc, limit_w=32768, limit_h=32768)
+        mw, mh = get_csc_max_size(colorspace_converter, limit_w=32768, limit_h=32768)
         MAX_WIDTH = min(maxw, mw)
         MAX_HEIGHT = min(maxh, mh)
