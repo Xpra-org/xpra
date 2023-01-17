@@ -13,8 +13,12 @@ from xpra.log import Logger
 log = Logger("cuda")
 
 with numpy_import_lock:
-    import numpy
-    from pycuda import driver       #@UnresolvedImport
+    from numpy import byte  # @UnresolvedImport
+    from pycuda.driver import (
+        pagelocked_empty,   #@UnresolvedImport
+        memcpy_dtoh_async,  #@UnresolvedImport
+        LogicError,         #@UnresolvedImport
+        )
 
 
 class CUDAImageWrapper(ImageWrapper):
@@ -39,8 +43,8 @@ class CUDAImageWrapper(ImageWrapper):
         assert self.cuda_device_buffer, "bug: no device buffer"
         start = monotonic()
         ctx.push()
-        host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)   #pylint: disable=no-member
-        driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream) #pylint: disable=no-member
+        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)   #pylint: disable=no-member
+        memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream) #pylint: disable=no-member
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
         elapsed = monotonic()-start
@@ -94,6 +98,6 @@ class CUDAImageWrapper(ImageWrapper):
     def clean(self):
         try:
             self.wait_for_stream()
-        except driver.LogicError:  #pylint: disable=no-member @UndefinedVariable
+        except LogicError:  #pylint: disable=no-member @UndefinedVariable
             log("%s.clean()", self, exc_info=True)
         self.free()
