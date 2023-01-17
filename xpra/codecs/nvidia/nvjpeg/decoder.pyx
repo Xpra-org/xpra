@@ -53,7 +53,7 @@ def get_type() -> str:
     return "nvjpeg"
 
 def get_encodings():
-    return ("jpeg", )   #TODO: "jpega"
+    return ("jpeg", "jpega")
 
 def get_info():
     info = {"version"   : get_version()}
@@ -72,7 +72,6 @@ class NVJPEG_Exception(Exception):
     pass
 
 
-
 def download_from_gpu(buf, size_t size):
     log("nvjpeg download_from_gpu%s", (buf, size))
     start = monotonic()
@@ -87,7 +86,7 @@ def decompress(rgb_format, img_data, options=None):
     #and download the pixel data from the GPU:
     dev = get_default_device_context()
     if not dev:
-        raise RuntimeError("no device found")
+        raise RuntimeError("no cuda device found")
     with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
         return decompress_and_download(rgb_format, img_data, options)
