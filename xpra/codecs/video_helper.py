@@ -151,13 +151,14 @@ class VideoHelper:
             if "all" in inclist:
                 inclist = all_list
             else:
-                notfound = tuple(x for x in (exclist+inclist) if x and x not in all_list)
+                notfound = tuple(x for x in (exclist+inclist) if x and autoprefix(prefix, x) not in all_list)
                 unknown = tuple(x for x in notfound if autoprefix(prefix, x) not in CODEC_TO_MODULE)
                 if unknown:
                     log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
                     notfound = tuple(x for x in notfound if x not in unknown)
                 if notfound:
                     log.warn("Warning: %s not found: %s", name, csv(notfound))
+                    log.warn(" only: %s", csv(all_list))
             return tuple(autoprefix(prefix, x) for x in inclist if x not in exclist)
         self.video_encoders = filt("enc", "video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
