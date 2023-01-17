@@ -293,6 +293,8 @@ def get_codec_error(name):
     return codec_errors.get(name)
 
 def get_codec(name):
+    if name not in CODEC_OPTIONS:
+        log.warn(f"Warning: invalid codec name {name}")
     return codecs.get(name)
 
 def get_codec_version(name):
