@@ -65,13 +65,11 @@ def try_import_modules(prefix, *codec_names):
 ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc", "x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("enc", "nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("csc", "swscale", "cython", "libyuv")
-NO_GFX_CSC_OPTIONS = []
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec", "avcodec2", "openh264", "vpx", "gstreamer", "nvdec")
 
 PREFERRED_ENCODER_ORDER = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
-log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
 log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 #for client side, using the gfx card for csc is a bit silly:
 #use it for OpenGL or don't use it at all
@@ -147,14 +145,19 @@ class VideoHelper:
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
         def filt(prefix, name, inlist, all_list):
+            inlist = inlist or ()
             exclist = list(x[1:] for x in inlist if x and x.startswith("-"))
             inclist = list(x for x in inlist if x and not x.startswith("-"))
             if "all" in inclist:
                 inclist = all_list
             else:
                 notfound = tuple(x for x in (exclist+inclist) if x and x not in all_list)
+                unknown = tuple(x for x in notfound if autoprefix(prefix, x) not in CODEC_TO_MODULE)
+                if unknown:
+                    log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
+                    notfound = tuple(x for x in notfound if x not in unknown)
                 if notfound:
-                    log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))
+                    log.warn("Warning: %s not found: %s", name, csv(notfound))
             return tuple(autoprefix(prefix, x) for x in inclist if x not in exclist)
         self.video_encoders = filt("enc", "video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
