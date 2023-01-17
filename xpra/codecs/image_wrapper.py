@@ -27,23 +27,23 @@ class ImageWrapper:
         PLANAR_4    : "4_PLANES",
         }
 
-    def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride : int,
+    def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
                  bytesperpixel : int=4, planes : int=PACKED, thread_safe : bool=True, palette=None):
-        self.x = x
-        self.y = y
-        self.target_x = x
-        self.target_y = y
-        self.width = width
-        self.height = height
+        self.x : int = x
+        self.y : int  = y
+        self.target_x : int  = x
+        self.target_y : int  = y
+        self.width : int  = width
+        self.height : int  = height
         self.pixels = pixels
-        self.pixel_format = pixel_format
-        self.depth = depth
+        self.pixel_format : str = pixel_format
+        self.depth : int  = depth
         self.rowstride = rowstride
-        self.bytesperpixel = bytesperpixel
-        self.planes = planes
-        self.thread_safe = thread_safe
-        self.freed = False
-        self.timestamp = int(monotonic()*1000)
+        self.bytesperpixel : int = bytesperpixel
+        self.planes : int = planes
+        self.thread_safe : bool = thread_safe
+        self.freed : bool = False
+        self.timestamp : int = int(monotonic()*1000)
         self.palette = palette
         assert x>=0 and y>=0 and width>0 and height>0
 
@@ -84,7 +84,7 @@ class ImageWrapper:
     def get_height(self) -> int:
         return self.height
 
-    def get_rowstride(self) -> int:
+    def get_rowstride(self):
         return self.rowstride
 
     def get_depth(self) -> int:
