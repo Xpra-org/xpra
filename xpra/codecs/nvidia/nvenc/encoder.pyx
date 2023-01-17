@@ -1400,7 +1400,7 @@ def get_width_mask(colorspace):
         return 0xFFFE
     return 0xFFFF
 def get_height_mask(colorspace):
-    if colorspace.startswith("YUV42"):
+    if colorspace=="YUV420":
         return 0xFFFE
     return 0xFFFF
     
