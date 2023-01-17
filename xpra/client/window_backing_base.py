@@ -157,6 +157,7 @@ class WindowBackingBase:
         self.spng_decoder = get_codec("dec_spng")
         self.avif_decoder = get_codec("dec_avif")
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
+        self.nvdec_decoder = get_codec("nvdec")
         self.cuda_context = None
         self.draw_needs_refresh = True
         self.repaint_all = REPAINT_ALL
@@ -483,19 +484,44 @@ class WindowBackingBase:
     def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
+    def nvdec_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+        if not self.nvdec_decoder or width<32 or height<32:
+            return None
+        if encoding not in self.nvdec_decoder.get_encodings():
+            return None
+        try:
+            with self.assign_cuda_context(False):
+                return self.nvdec_decoder.decompress_and_download(encoding, img_data, width, height, options)
+        except Exception as e:
+            if first_time(str(e)):
+                log.error("Error accessing cuda context", exc_info=True)
+            else:
+                log(f"cuda context error, again: {e}")
+        return None
+
+    def nvjpeg_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+        if not self.nvjpeg_decoder or width<32 or height<32:
+            return None
+        if encoding not in self.nvjpeg_decoder.get_encodings():
+            return None
+        try:
+            with self.assign_cuda_context(False):
+                return self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
+        except Exception as e:
+            if first_time(str(e)):
+                log.error("Error accessing cuda context", exc_info=True)
+            else:
+                log(f"cuda context error, again: {e}")
+        return None
+
+    def nv_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+        #log(f"nv_decode {encoding}: nvjpeg={self.nvjpeg_decoder}, nvdec={self.nvdec_decoder}")
+        return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options, callbacks) or \
+            self.nvdec_decode(encoding, img_data, x, y, width, height, options, callbacks)
+
     def do_paint_jpeg(self, encoding, img_data, x, y, width, height, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
-        log("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
-        img = None
-        if self.nvjpeg_decoder and not alpha_offset:
-            try:
-                with self.assign_cuda_context(False):
-                    img = self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
-            except Exception as e:
-                if first_time(str(e)):
-                    log.error("Error accessing cuda context", exc_info=True)
-                else:
-                    log(f"cuda context error, again: {e}")
+        img = self.nv_decode(encoding, img_data, x, y, width, height, options, callbacks)
         if img is None:
             if encoding=="jpeg":
                 rgb_format = "RGBX"
@@ -509,6 +535,10 @@ class WindowBackingBase:
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
+        if rgb_format in ("NV12", "YUV420P"):
+            enc_width, enc_height = options.intpair("scaled_size", (width, height))
+            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            return
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                   x, y, w, h, width, height, rowstride, options, callbacks)
 
@@ -729,10 +759,10 @@ class WindowBackingBase:
                 return
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc", "YUV420P")
-            #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
-            assert input_colorspace in decoder_colorspaces, "decoder %s does not support %s for %s" % (
-                decoder_module.get_type(), input_colorspace, coding)
+            if input_colorspace not in decoder_colorspaces:
+                raise RuntimeError(f"decoder {decoder_module.get_type()}"+
+                                   f" does not support {input_colorspace} for {coding}")
 
             vd = self._video_decoder
             if vd:

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from libc.string cimport memset
+from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from time import monotonic
 
 from xpra.util import csv
@@ -13,7 +14,9 @@ from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
 
-from pycuda import driver
+#we can import pycuda safely here,
+#because importing cuda_context will have imported it with the lock
+from pycuda.driver import Memcpy2D, mem_alloc_pitch, memcpy_dtoh
 import numpy
 
 cdef inline int roundup(int n, int m):
@@ -255,10 +258,9 @@ def get_info():
         "version"   : get_version(),
         }
 
-CODECS = {}
 def get_encodings():
-    return ("jpeg", )
     #return ("jpeg", "h264")
+    return ("jpeg", )
 
 def get_input_colorspaces(encoding):
     #return ("YUV420P", "YUV422P", "YUV444P")
@@ -408,31 +410,70 @@ cdef class Decoder:
         cudacheck(r, "GPU mapping of picture buffer error")
         log(f"mapped picture {pic_idx} at {dev_ptr:x}, pitch={pitch}")
         try:
-            buffer_size = self.width*self.height*3//2
-            host_buffer = driver.pagelocked_empty(buffer_size, numpy.byte)
-
-            copy = driver.Memcpy2D()
+            yuv_buf, yuv_pitch = mem_alloc_pitch(self.width, self.height*3//2, 4)
+            copy = Memcpy2D()
             copy.set_src_device(dev_ptr)
             copy.src_x_in_bytes = 0
             copy.src_y = 0
             copy.src_pitch = pitch
             copy.width_in_bytes = self.width
             copy.height = self.height*3//2
-            copy.set_dst_host(host_buffer)
+            copy.set_dst_device(yuv_buf)
             copy.dst_x_in_bytes = 0
             copy.dst_y = 0
-            copy.dst_pitch = self.width
+            copy.dst_pitch = yuv_pitch
             copy(aligned=False)
-
-            rowstrides = [self.width, self.width//2, self.width//2]
-            pixels = host_buffer
+            rowstrides = [yuv_pitch, yuv_pitch]
             image = ImageWrapper(0, 0, self.width, self.height,
-                                 pixels, "YUV420P", 24, rowstrides, 3, ImageWrapper.PLANAR_3)
+                                 yuv_buf, "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2)
             self.frames += 1
             return image
         finally:
             r = cuvidUnmapVideoFrame64(self.context, dev_ptr)
             cudacheck(r, "error unmapping video frame")
+
+
+def download_from_gpu(buf, size_t size):
+    log("nvdec download_from_gpu%s", (buf, size))
+    start = monotonic()
+    cdef MemBuf pixels = getbuf(size, False)
+    memcpy_dtoh(pixels, buf)
+    end = monotonic()
+    log("nvdec downloaded %i bytes in %ims", size, 1000*(end-start))
+    return pixels
+
+def decompress(encoding, img_data, width, height, rgb_format, options=None):
+    #decompress using the default device,
+    #and download the pixel data from the GPU:
+    dev = get_default_device_context()
+    if not dev:
+        raise RuntimeError("no cuda device found")
+    with dev as cuda_context:
+        log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
+        return decompress_and_download(encoding, img_data, rgb_format, options)
+
+def decompress_and_download(encoding, img_data, width, height, options=None):
+    img = decompress_with_device(encoding, img_data, width, height, options)
+    cuda_buffer = img.get_pixels()
+    rowstrides = img.get_rowstride()
+    assert img.get_pixel_format()=="NV12"
+    assert len(rowstrides)==2
+    y_size = rowstrides[0]*img.get_height()
+    uv_size = rowstrides[1]*img.get_height()//2
+    nv12_buf = download_from_gpu(cuda_buffer, y_size+uv_size)
+    pixels = memoryview(nv12_buf)
+    planes = pixels[:y_size], pixels[y_size:y_size+uv_size]
+    cuda_buffer.free()
+    img.set_pixels(planes)
+    return img
+
+def decompress_with_device(encoding, img_data, width, height, options=None):
+    cdef Decoder decoder = Decoder()
+    try:
+        decoder.init_context(encoding, width, height, "YUV420P")
+        return decoder.decompress_image(img_data, options)
+    finally:
+        decoder.clean()
 
 
 def selftest(full=False):

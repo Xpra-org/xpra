@@ -103,9 +103,10 @@ class Encodings(StubClientMixin):
             #try to load the fast png decoder:
             load_codec("dec_spng")
         if "jpeg" in ae:
-            #try to load the fast jpeg decoder:
+            #try to load the fast jpeg decoders:
             load_codec("dec_jpeg")
             load_codec("dec_nvjpeg")
+            load_codec("nvdec")
         if "webp" in ae:
             #try to load the fast webp decoder:
             load_codec("dec_webp")
