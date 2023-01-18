@@ -147,7 +147,7 @@ class WebSocketClient(QuicConnectionProtocol):
                 log.warn(f"Warning: stream {sub} not found in {self._websockets}")
                 return
             subtype = hdict.get("stream-type")
-            log.info(f"new substream {stream_id} for {subtype}")
+            log.info(f"new quic substream {stream_id} for {subtype} packets")
             self._websockets[stream_id] = websocket
         websocket.http_event_received(event)
 
