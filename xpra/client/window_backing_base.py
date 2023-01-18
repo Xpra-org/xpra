@@ -485,7 +485,7 @@ class WindowBackingBase:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
     def nvdec_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
-        if not self.nvdec_decoder or width<32 or height<32:
+        if not self.nvdec_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvdec_decoder.get_encodings():
             return None
@@ -500,7 +500,7 @@ class WindowBackingBase:
         return None
 
     def nvjpeg_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
-        if not self.nvjpeg_decoder or width<32 or height<32:
+        if not self.nvjpeg_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvjpeg_decoder.get_encodings():
             return None
