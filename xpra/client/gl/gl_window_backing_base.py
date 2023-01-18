@@ -1,13 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 from time import monotonic
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -467,13 +467,17 @@ class GLWindowBackingBase(WindowBackingBase):
         self.shaders = [ 1, 2, 3 ]
         glGenProgramsARB(3, self.shaders)
         for name, progid, progstr in (
-            ("YUV2RGB",     YUV_to_RGB_SHADER,         YUV_to_RGB_shader),
-            ("YUV2RGBFULL", YUV_to_RGB_FULL_SHADER,    YUV_to_RGB_FULL_shader),
-            ("RGBP2RGB",    RGBP_to_RGB_SHADER,        RGBP_to_RGB_shader),
+            ("YUV_to_RGB",      YUV_to_RGB_SHADER,      YUV_to_RGB_shader),
+            ("YUV_to_RGBFULL",  YUV_to_RGB_FULL_SHADER, YUV_to_RGB_FULL_shader),
+            ("RGBP_to_RGB",     RGBP_to_RGB_SHADER,     RGBP_to_RGB_shader),
             ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
-            glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
-            err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
+            try:
+                glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
+            except Exception as e:
+                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB) or str(e)
+            else:
+                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
             if err:
                 log.error("OpenGL shader %s failed:", name)
                 log.error(" %s", err)
@@ -1051,11 +1055,12 @@ class GLWindowBackingBase(WindowBackingBase):
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
     def do_paint_jpeg(self, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
-        if self.nvjpeg_decoder and NVJPEG:
-            def paint_nvjpeg(gl_context):
-                self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
-            self.idle_add(self.with_gl_context, paint_nvjpeg)
-            return
+        if width>=16 and height>=16:
+            if self.nvjpeg_decoder and NVJPEG:
+                def paint_nvjpeg(gl_context):
+                    self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
+                self.idle_add(self.with_gl_context, paint_nvjpeg)
+                return
         if JPEG_YUV and width>=2 and height>=2 and encoding=="jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
             flush = options.intget("flush", 0)
@@ -1077,6 +1082,38 @@ class GLWindowBackingBase(WindowBackingBase):
         self.idle_add(self.do_paint_rgb, rgb_format, img.get_pixels(), x, y, w, h, width, height,
                       img.get_rowstride(), options, callbacks)
 
+    def cuda_buffer_to_pbo(self, cuda_buffer, rowstride, src_y, height, stream):
+        #must be called with an active cuda context, and from the UI thread
+        self.gl_init()
+        pbo = glGenBuffers(1)
+        size = rowstride*height
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+        #pylint: disable=import-outside-toplevel
+        from pycuda.driver import Memcpy2D   #pylint: disable=no-name-in-module
+        from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
+        cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
+        log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
+        mapping = cuda_pbo.map(stream)
+        ptr, msize = mapping.device_ptr_and_size()
+        if msize<size:
+            raise ValueError(f"registered buffer size {msize} too small for pbo size {size}")
+        log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
+        copy = Memcpy2D()
+        copy.src_pitch = rowstride
+        copy.src_y = src_y
+        copy.set_src_device(cuda_buffer)
+        copy.dst_pitch = rowstride
+        copy.set_dst_device(ptr)
+        copy.width_in_bytes = rowstride
+        copy.height = height
+        copy(stream)
+        mapping.unmap(stream)
+        stream.synchronize()
+        cuda_pbo.unregister()
+        return pbo
+
     def paint_nvjpeg(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         with self.assign_cuda_context(True):
             #we can import pycuda safely here,
@@ -1085,37 +1122,16 @@ class GLWindowBackingBase(WindowBackingBase):
             stream = Stream()
             options["stream"] = stream
             img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
-            log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
+            log("paint_nvjpeg: gl_context=%s, img=%s, downloading buffer to pbo", gl_context, img)
+            rgb_format = img.get_pixel_format()
+            if rgb_format not in ("RGB", "BGR", "RGBA", "BGRA"):
+                raise ValueError(f"unexpected rgb format {rgb_format}")
             #'pixels' is a cuda buffer:
             cuda_buffer = img.get_pixels()
-            size = img.get_rowstride()*img.get_height()
-
-            self.gl_init()
-            pbo = glGenBuffers(1)
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
-            #pylint: disable=import-outside-toplevel
-            from pycuda.driver import memcpy_dtod_async   #pylint: disable=no-name-in-module
-            from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
-            cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
-            log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
-            mapping = cuda_pbo.map(stream)
-            ptr, msize = mapping.device_ptr_and_size()
-            if msize<size:
-                raise ValueError(f"registered buffer size {msize} too small for pbo size {size}")
-            log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
-            memcpy_dtod_async(ptr, cuda_buffer, size, stream)
-            mapping.unmap(stream)
-            cuda_pbo.unregister()
+            pbo = self.cuda_buffer_to_pbo(cuda_buffer, img.get_rowstride(), 0, img.get_height(), stream)
             cuda_buffer.free()
-            stream.synchronize()
 
-        rgb_format = img.get_pixel_format()
-        if rgb_format not in ("RGB", "BGR", "RGBA", "BGRA"):
-            raise ValueError(f"unexpected rgb format {rgb_format}")
         pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
-
         target = GL_TEXTURE_RECTANGLE_ARB
         glEnable(target)
         glBindTexture(target, self.textures[TEX_RGB])
@@ -1336,13 +1352,19 @@ class GLWindowBackingBase(WindowBackingBase):
 
         upload_format = PIXEL_FORMAT_TO_DATATYPE[pixel_format]
         divs = get_subsampling_divs(pixel_format)
+        BPP = 2 if pixel_format.endswith("P16") else 1
+        textures = (
+            (GL_TEXTURE0, TEX_Y),
+            (GL_TEXTURE1, TEX_U),
+            (GL_TEXTURE2, TEX_V),
+            )
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
                            pixel_format, self.pixel_format, (width, height), self.texture_size)
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
             # Create textures of the same size as the window's
-            for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
+            for texture, index in textures:
                 (div_w, div_h) = divs[index]
                 glActiveTexture(texture)
                 target = GL_TEXTURE_RECTANGLE_ARB
@@ -1358,13 +1380,13 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        BPP = 2 if pixel_format.endswith("P16") else 1
-        assert len(rowstrides)==3 and len(img_data)==3
-        for texture, index, tex_name in (
-            (GL_TEXTURE0, TEX_Y, pixel_format[0:1]*BPP),
-            (GL_TEXTURE1, TEX_U, pixel_format[1:2]*BPP),
-            (GL_TEXTURE2, TEX_V, pixel_format[2:3]*BPP),
-            ):
+        if len(rowstrides)!=len(divs) or len(img_data)!=len(divs):
+            raise RuntimeError(f"invalid number of planes for {pixel_format}")
+        for texture, index in textures:
+            #"YUV420P" -> ("Y", "U", "V")
+            #"GBRP16" -> ("GG", "BB", "RR")
+            tex_name = list(pixel_format)[index]
+            tex_name *= BPP
             div_w, div_h = divs[index]
             w = width//div_w
             h = height//div_h
