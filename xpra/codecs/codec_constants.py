@@ -44,6 +44,8 @@ LOSSY_PIXEL_FORMATS = {
     }
 
 PIXEL_SUBSAMPLING = {
+    #NV12 is actually subsampled horizontally too - just like YUV420P
+    #(but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),

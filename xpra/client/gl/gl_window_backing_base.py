@@ -17,7 +17,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
-    GL_LUMINANCE, GL_LINEAR,
+    GL_LINEAR, GL_RED, GL_RG, GL_R8, GL_R16, GL_LUMINANCE,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
@@ -66,7 +66,9 @@ from xpra.client.window_backing_base import (
     WEBP_PILLOW, SCROLL_ENCODING,
     )
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
-from xpra.client.gl.gl_colorspace_conversions import YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader
+from xpra.client.gl.gl_colorspace_conversions import (
+    YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader, NV12_to_RGB_shader,
+    )
 from xpra.client.gl.gl_spinner import draw_spinner
 from xpra.log import Logger
 
@@ -84,6 +86,7 @@ FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
 NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
+NVDEC = envbool("XPRA_OPENGL_NVDEC", True)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -108,7 +111,21 @@ PIXEL_FORMAT_TO_CONSTANT = {
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
     }
-PIXEL_FORMAT_TO_DATATYPE = {
+PIXEL_INTERNAL_FORMAT = {
+    #defaults to: GL_R8, GL_R8, GL_R8
+    #(meaning: 3 planes, 8 bits each)
+    #override for formats that use 16 bit per channel:
+    "GBRP" : (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),    #invalid according to the spec! (only value that works)
+    "GBRP16" : (GL_R16, GL_R16, GL_R16),
+    "YUV444P10" : (GL_R16, GL_R16, GL_R16),
+    "YUV444P16" : (GL_R16, GL_R16, GL_R16),
+    }
+PIXEL_DATA_FORMAT = {
+    #defaults to: (GL_RED, GL_RED, GL_RED))
+    #(meaning: uploading one channel at a time)
+    "NV12"  : (GL_RED, GL_RG),  #Y is one channel, UV contains two channels
+    }
+PIXEL_UPLOAD_FORMAT = {
     "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
     "R210"  : GL_UNSIGNED_INT_10_10_10_2,
     "RGB565": GL_UNSIGNED_SHORT_5_6_5,
@@ -119,13 +136,15 @@ PIXEL_FORMAT_TO_DATATYPE = {
     "BGRX"  : GL_UNSIGNED_BYTE,
     "RGBA"  : GL_UNSIGNED_BYTE,
     "RGBX"  : GL_UNSIGNED_BYTE,
-    "YUV420P" : GL_UNSIGNED_BYTE,
-    "YUV422P" : GL_UNSIGNED_BYTE,
-    "YUV444P" : GL_UNSIGNED_BYTE,
-    "GBRP"  : GL_UNSIGNED_BYTE,
-    "GBRP16" : GL_UNSIGNED_SHORT,
-    "YUV444P10" : GL_UNSIGNED_SHORT,
-    "YUV444P16" : GL_UNSIGNED_SHORT,
+    #planar formats:
+    "NV12"  : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV420P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV422P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV444P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "GBRP"  : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "GBRP16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV444P10" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV444P16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
@@ -222,6 +241,7 @@ N_TEXTURES = 8
 YUV_to_RGB_SHADER = 0
 RGBP_to_RGB_SHADER = 1
 YUV_to_RGB_FULL_SHADER = 2
+NV12_to_RGB_SHADER = 3
 
 
 """
@@ -236,7 +256,7 @@ or offscreen window movement.
 """
 class GLWindowBackingBase(WindowBackingBase):
 
-    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
+    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
@@ -468,12 +488,13 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_init_shaders(self):
         assert self.shaders is None
         # Create and assign fragment programs
-        self.shaders = [ 1, 2, 3 ]
-        glGenProgramsARB(3, self.shaders)
+        self.shaders = [ 1, 2, 3, 4 ]
+        glGenProgramsARB(4, self.shaders)
         for name, progid, progstr in (
             ("YUV_to_RGB",      YUV_to_RGB_SHADER,      YUV_to_RGB_shader),
             ("YUV_to_RGBFULL",  YUV_to_RGB_FULL_SHADER, YUV_to_RGB_FULL_shader),
             ("RGBP_to_RGB",     RGBP_to_RGB_SHADER,     RGBP_to_RGB_shader),
+            ("NV12_to_RGB",     NV12_to_RGB_SHADER,     NV12_to_RGB_shader),
             ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
             try:
@@ -1057,11 +1078,17 @@ class GLWindowBackingBase(WindowBackingBase):
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
     def do_paint_jpeg(self, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
+        #log(f"do_paint_jpeg {width}x{height} NVJPEG={NVJPEG}/{self.nvjpeg_decoder}, NVDEC={NVDEC}/{self.nvdec_decoder}")
         if width>=16 and height>=16:
             if self.nvjpeg_decoder and NVJPEG:
                 def paint_nvjpeg(gl_context):
                     self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
                 self.idle_add(self.with_gl_context, paint_nvjpeg)
+                return
+            if self.nvdec_decoder and NVDEC and encoding in self.nvdec_decoder.get_encodings():
+                def paint_nvdec(gl_context):
+                    self.paint_nvdec(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
+                self.idle_add(self.with_gl_context, paint_nvdec)
                 return
         if JPEG_YUV and width>=2 and height>=2 and encoding=="jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
@@ -1115,6 +1142,35 @@ class GLWindowBackingBase(WindowBackingBase):
         stream.synchronize()
         cuda_pbo.unregister()
         return pbo
+
+    def paint_nvdec(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
+        with self.assign_cuda_context(True):
+            #we can import pycuda safely here,
+            #because `self.assign_cuda_context` will have imported it with the lock:
+            from pycuda.driver import Stream  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            stream = Stream()
+            options["stream"] = stream
+            img = self.nvdec_decoder.decompress_with_device(encoding, img_data, width, height, options)
+            log("paint_nvdec: gl_context=%s, img=%s, downloading buffer to pbo", gl_context, img)
+            pixel_format = img.get_pixel_format()
+            if pixel_format not in ("NV12", ):
+                raise ValueError(f"unexpected pixel format {pixel_format}")
+            #'pixels' is a cuda buffer with 2 planes: Y then UV
+            cuda_buffer = img.get_pixels()
+            strides = img.get_rowstride()
+            height = img.get_height()
+            y_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[0], 0, height, stream)
+            uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], height, height//2, stream)
+            cuda_buffer.free()
+            img.set_pixels((y_pbo, uv_pbo))
+
+        flush = options.intget("flush", 0)
+        w = img.get_width()
+        h = img.get_height()
+        options["pbo"] = True
+        self.do_gl_paint_planar(gl_context, NV12_to_RGB_SHADER, flush, encoding, img,
+                           x, y, w, h, width, height,
+                           options, callbacks)
 
     def paint_nvjpeg(self, gl_context, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         with self.assign_cuda_context(True):
@@ -1227,7 +1283,7 @@ class GLWindowBackingBase(WindowBackingBase):
             pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
             if pformat is None:
                 raise ValueError(f"could not find pixel format for {rgb_format!r}")
-            ptype = PIXEL_FORMAT_TO_DATATYPE.get(rgb_format)
+            ptype = PIXEL_UPLOAD_FORMAT.get(rgb_format)
             if pformat is None:
                 raise ValueError(f"could not find pixel type for {rgb_format!r}")
 
@@ -1303,6 +1359,8 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         if pixel_format.startswith("GBRP"):
             shader = RGBP_to_RGB_SHADER
+        elif pixel_format=="NV12":
+            shader = NV12_to_RGB_SHADER
         else:
             shader = YUV_to_RGB_SHADER
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
@@ -1323,15 +1381,15 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"):
+            if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
                 raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
             if not context:
-                log("%s._do_paint_rgb(..) no context!", self)
+                log("%s._do_paint_rgb(..) no OpenGL context!", self)
                 fire_paint_callbacks(callbacks, False, "failed to get a gl context")
                 return
             self.gl_init()
             scaling = enc_width!=width or enc_height!=height
-            self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling)
+            self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=options.get("pbo"))
 
             # Update FBO texture
             x_scale, y_scale = 1, 1
@@ -1357,18 +1415,20 @@ class GLWindowBackingBase(WindowBackingBase):
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
-    def update_planar_textures(self, width : int, height : int, img, pixel_format, scaling=False):
+    def update_planar_textures(self, width : int, height : int, img, pixel_format, scaling=False, pbo=False):
         assert self.textures is not None, "no OpenGL textures!"
-        log("%s.update_planar_textures%s", self, (width, height, img, pixel_format))
-
-        upload_format = PIXEL_FORMAT_TO_DATATYPE[pixel_format]
+        upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
+        internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
+        data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED))
         divs = get_subsampling_divs(pixel_format)
         BPP = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
+        #textures: usually 3, but only 2 for "NV12"
         textures = (
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
-            )
+            )[:len(divs)]
+        log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
                            pixel_format, self.pixel_format, (width, height), self.texture_size)
@@ -1385,7 +1445,9 @@ class GLWindowBackingBase(WindowBackingBase):
                     mag_filter = GL_LINEAR
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, upload_format, None)
+
+                iformat = internal_formats[index]
+                glTexImage2D(target, 0, iformat, width//div_w, height//div_h, 0, GL_RED, GL_UNSIGNED_BYTE, None)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
@@ -1396,10 +1458,21 @@ class GLWindowBackingBase(WindowBackingBase):
         for texture, index in textures:
             #"YUV420P" -> ("Y", "U", "V")
             #"GBRP16" -> ("GG", "BB", "RR")
-            tex_name = list(pixel_format)[index]
-            tex_name *= BPP
+            #"NV12" -> ("Y", "UV")
+            plane_name = {
+                "NV12" : ("Y", "UV"),
+                }.get(pixel_format, list(pixel_format))[index]
+            tex_name = plane_name * BPP
+            dformat = data_formats[index]       #data format: ie: GL_RED
+            uformat = upload_formats[index]     #upload format: ie: UNSIGNED_BYTE
+            rowstride = rowstrides[index]
             div_w, div_h = divs[index]
             w = width//div_w
+            if dformat==GL_RG:
+                #uploading 2 components
+                w //= 2
+            elif dformat!=GL_RED:
+                raise RuntimeError(f"unexpected data format {dformat} for {pixel_format}")
             h = height//div_h
             if w==0 or h==0:
                 log.error(f"Error: zero dimension {w}x{h} for {pixel_format} planar texture {tex_name}")
@@ -1409,41 +1482,57 @@ class GLWindowBackingBase(WindowBackingBase):
 
             target = GL_TEXTURE_RECTANGLE_ARB
             glBindTexture(target, self.textures[index])
-            self.set_alignment(w, rowstrides[index], tex_name)
-            upload, pixel_data = self.pixels_for_upload(img_data[index])
-            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s",
-                index, divs[index], rowstrides[index], w, h, len(pixel_data), upload)
+            self.set_alignment(w, rowstride, tex_name)
+            plane = img_data[index]
+            if pbo:
+                upload = "pbo"
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, plane)
+                pixel_data = None
+                size = rowstride*h
+            else:
+                upload, pixel_data = self.pixels_for_upload(plane)
+                size = len(pixel_data)
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except Exception:
                 pass
-            glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, upload_format, pixel_data)
+            log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "+
+                f"data={size} bytes, upload={upload}, format={dformat}, type={uformat}")
+            glTexSubImage2D(target, 0, 0, 0, w, h, dformat, uformat, pixel_data)
             glBindTexture(target, 0)
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
     def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV_to_RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             #not ready to render yet
             return
+        divs = get_subsampling_divs(self.pixel_format)
+        textures = (
+            (GL_TEXTURE0, TEX_Y),
+            (GL_TEXTURE1, TEX_U),
+            (GL_TEXTURE2, TEX_V),
+            )[:len(divs)]
         self.gl_marker("painting planar update, format %s", self.pixel_format)
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
-        for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
+        for texture, index in textures:
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
-        divs = get_subsampling_divs(self.pixel_format)
         log("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((0, 0), (0, rh), (rw, rh), (rw, 0)):
             ax = min(tw, x)
             ay = min(th, y)
-            for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
-                (div_w, div_h) = divs[index]
+            for texture, index in textures:
+                div_w, div_h = divs[index]
+                #if index==1 and self.pixel_format=="NV12":
+                #    div_w *= 2
                 glMultiTexCoord2i(texture, ax//div_w, ay//div_h)
             glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
         glEnd()

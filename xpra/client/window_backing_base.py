@@ -674,7 +674,7 @@ class WindowBackingBase:
 
 
     def make_csc(self, src_width, src_height, src_format,
-                       dst_width, dst_height, dst_format_options, speed):
+                       dst_width, dst_height, dst_format_options, speed=50):
         in_options = CSC_OPTIONS.get(src_format, {})
         if not in_options:
             log.error(f"Error: no csc options for {src_format!r} input, only found:")

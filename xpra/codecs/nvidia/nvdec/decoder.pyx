@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from libc.string cimport memset
+from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from time import monotonic
 
@@ -402,8 +403,9 @@ cdef class Decoder:
         #map it as a CUDA buffer:
         cdef CUVIDPROCPARAMS map_params
         memset(&map_params, 0, sizeof(CUVIDPROCPARAMS))
-        #stream = options.get("stream")
-        map_params.output_stream = NULL
+        stream = (options or {}).get("stream", None)
+        if stream:
+            map_params.output_stream = <CUstream> (<uintptr_t> stream.handle)
         cdef unsigned long long dev_ptr
         cdef unsigned int pitch
         r = cuvidMapVideoFrame64(self.context, pic_idx, &dev_ptr, &pitch, &map_params)
