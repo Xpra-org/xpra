@@ -411,17 +411,20 @@ class GLWindowBackingBase(WindowBackingBase):
         log(*msg)
         if not bool(glStringMarkerGREMEDY):
             return
-        s = str(msg)
+        try:
+            s = msg[0] % msg[1:]
+        except:
+            s = str(msg)
         from ctypes import c_char_p  # pylint: disable=import-outside-toplevel
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
     def gl_frame_terminator(self):
-        log("%s.gl_frame_terminator()", self)
         # Mark the end of the frame
         # This makes the debug output more readable especially when doing single-buffered rendering
         if not bool(glFrameTerminatorGREMEDY):
             return
+        log("glFrameTerminatorGREMEDY()")
         glFrameTerminatorGREMEDY()
 
     def gl_init_debug(self):
@@ -740,12 +743,11 @@ class GLWindowBackingBase(WindowBackingBase):
             #paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
         self.pending_fbo_paint = []
-        log("do_present_fbo: painting %s", rectangles)
 
         if SAVE_BUFFERS:
             self.save_FBO()
 
-        self.gl_marker("Presenting FBO on screen")
+        self.gl_marker("presenting FBO on screen, rectangles=%s", rectangles)
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
@@ -816,7 +818,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(0, 0, bw, bh)
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.do_present_fbo() done", self)
 
@@ -1044,8 +1045,8 @@ class GLWindowBackingBase(WindowBackingBase):
             row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
         glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
         glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
-        self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i",
-                       (width, rowstride, pixel_format), row_length, alignment)
+        #self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i",
+        #               (width, rowstride, pixel_format), row_length, alignment)
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
@@ -1391,8 +1392,8 @@ class GLWindowBackingBase(WindowBackingBase):
             w = width//div_w
             h = height//div_h
             if w==0 or h==0:
-                log.error("Error: zero dimension %ix%i for %s planar texture %s", w, h, pixel_format, tex_name)
-                log.error(" screen update %s dropped", (width, height))
+                log.error(f"Error: zero dimension {w}x{h} for {pixel_format} planar texture {tex_name}")
+                log.error(f" screen update {width}x{height} dropped, div={div_w}x{div_h}")
                 continue
             glActiveTexture(texture)
 
