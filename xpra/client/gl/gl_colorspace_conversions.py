@@ -140,29 +140,36 @@ END
 # 6 instructions, 2 R-regs
 """
 
-NV12_to_Y_shader = b"""!!ARBfp1.0
+NV12_to_RGB_shader = b"""!!ARBfp1.0
 # cgc version 3.0.0016, build date Feb 13 2011
 # command line args: -profile arbfp1
-# source file: ./nv12.cg
+# source file: ./nv.cg
 #vendor NVIDIA Corporation
 #version 3.0.0.16
 #profile arbfp1
 #program main
 #semantic main.IN
 #var float2 IN.texcoord1 : $vin.TEXCOORD0 : TEX0 : 0 : 1
-#var float2 IN.texcoord2 : $vin.TEXCOORD1 :  : 0 : 0
+#var float2 IN.texcoord2 : $vin.TEXCOORD1 : TEX1 : 0 : 1
 #var samplerRECT IN.texture1 : TEXUNIT0 : texunit 0 : 0 : 1
-#var samplerRECT IN.texture2 : TEXUNIT1 : texunit 1 : 0 : 0
+#var samplerRECT IN.texture2 : TEXUNIT1 : texunit 1 : 0 : 1
 #var float4 IN.color : $vin.COLOR0 : COL0 : 0 : 1
 #var float4 main.color : $vout.COLOR0 : COL : -1 : 1
-#const c[0] = 0.0625
-PARAM c[1] = { { 0.0625 } };
+#const c[0] = 1 1.732 0 0.5
+#const c[1] = 1 -0.336 -0.69800001
+#const c[2] = 1 0 1.3710001
+PARAM c[3] = { { 1, 1.732, 0, 0.5 },
+        { 1, -0.336, -0.69800001 },
+        { 1, 0, 1.3710001 } };
 TEMP R0;
+TEMP R1;
+TEX R1.xw, fragment.texcoord[1], texture[1], RECT;
 TEX R0.x, fragment.texcoord[0], texture[0], RECT;
-ADD result.color.xyz, R0.x, -c[0].x;
+ADD R0.yz, R1.xxww, -c[0].w;
+DP3 result.color.z, R0, c[0];
+DP3 result.color.y, R0, c[1];
+DP3 result.color.x, R0, c[2];
 MOV result.color.w, fragment.color.primary;
 END
-# 3 instructions, 1 R-regs
+# 7 instructions, 2 R-regs
 """
-
-NV12_to_RGB_shader = NV12_to_Y_shader

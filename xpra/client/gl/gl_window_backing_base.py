@@ -17,7 +17,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
-    GL_LINEAR, GL_RED, GL_RG, GL_R8, GL_R16, GL_LUMINANCE,
+    GL_LINEAR, GL_RED, GL_RG, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
@@ -115,6 +115,7 @@ PIXEL_INTERNAL_FORMAT = {
     #defaults to: GL_R8, GL_R8, GL_R8
     #(meaning: 3 planes, 8 bits each)
     #override for formats that use 16 bit per channel:
+    "NV12" : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),
     "GBRP" : (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),    #invalid according to the spec! (only value that works)
     "GBRP16" : (GL_R16, GL_R16, GL_R16),
     "YUV444P10" : (GL_R16, GL_R16, GL_R16),
@@ -123,7 +124,7 @@ PIXEL_INTERNAL_FORMAT = {
 PIXEL_DATA_FORMAT = {
     #defaults to: (GL_RED, GL_RED, GL_RED))
     #(meaning: uploading one channel at a time)
-    "NV12"  : (GL_RED, GL_RG),  #Y is one channel, UV contains two channels
+    "NV12"  : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  #Y is one channel, UV contains two channels
     }
 PIXEL_UPLOAD_FORMAT = {
     "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
@@ -1447,7 +1448,9 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
                 iformat = internal_formats[index]
-                glTexImage2D(target, 0, iformat, width//div_w, height//div_h, 0, GL_RED, GL_UNSIGNED_BYTE, None)
+                dformat = data_formats[index]
+                uformat = upload_formats[index]     #upload format: ie: UNSIGNED_BYTE
+                glTexImage2D(target, 0, iformat, width//div_w, height//div_h, 0, dformat, uformat, None)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
@@ -1468,10 +1471,10 @@ class GLWindowBackingBase(WindowBackingBase):
             rowstride = rowstrides[index]
             div_w, div_h = divs[index]
             w = width//div_w
-            if dformat==GL_RG:
+            if dformat==GL_LUMINANCE_ALPHA:
                 #uploading 2 components
                 w //= 2
-            elif dformat!=GL_RED:
+            elif dformat not in (GL_RED, GL_LUMINANCE):
                 raise RuntimeError(f"unexpected data format {dformat} for {pixel_format}")
             h = height//div_h
             if w==0 or h==0:
@@ -1531,8 +1534,10 @@ class GLWindowBackingBase(WindowBackingBase):
             ay = min(th, y)
             for texture, index in textures:
                 div_w, div_h = divs[index]
-                #if index==1 and self.pixel_format=="NV12":
-                #    div_w *= 2
+                #same as GL_LUMINANCE_ALPHA in update_planar_textures,
+                #NV12's second plane combines `U` and `V`:
+                if index==1 and self.pixel_format=="NV12":
+                    div_w *= 2
                 glMultiTexCoord2i(texture, ax//div_w, ay//div_h)
             glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
         glEnd()
