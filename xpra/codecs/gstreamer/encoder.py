@@ -25,6 +25,8 @@ Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
+CODECS = os.environ.get("XPRA_GSTREAMER_ENCODINGS", "h264,av1").split(",")
+
 
 assert get_version and init_module and cleanup_module
 ENCODERS = {
