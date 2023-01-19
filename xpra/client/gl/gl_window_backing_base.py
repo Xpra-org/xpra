@@ -78,6 +78,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
+FORCE_VIDEO_PIXEL_FORMAT = os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT")
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
@@ -1286,6 +1287,15 @@ class GLWindowBackingBase(WindowBackingBase):
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
+        if FORCE_VIDEO_PIXEL_FORMAT:
+            cd = self.make_csc(enc_width, enc_height, pixel_format,
+                                width, height, (FORCE_VIDEO_PIXEL_FORMAT, ))
+            img = cd.convert_image(img)
+            pixel_format = img.get_pixel_format()
+            log.warn(f"converting to {pixel_format} using {cd}")
+            log.warn(f" img={img}")
+            log.warn(f" rowstride={img.get_rowstride()}, {pixel_format}")
+            cd.clean()
         if pixel_format in ("GBRP10", "YUV444P10"):
             #call superclass to handle csc
             #which will end up calling paint rgb with r210 data
