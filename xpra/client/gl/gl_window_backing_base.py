@@ -1353,7 +1353,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         upload_format = PIXEL_FORMAT_TO_DATATYPE[pixel_format]
         divs = get_subsampling_divs(pixel_format)
-        BPP = 2 if pixel_format.endswith("P16") else 1
+        BPP = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
         textures = (
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
