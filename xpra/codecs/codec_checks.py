@@ -65,13 +65,13 @@ TEST_COMPRESSED_DATA = {
             (24, 16) : (
                 unhex("1003009d012a1800100000070885858899848800281013ad501fc01fd01050122780feffbb029ffffa2546bd18c06f7ffe8951fffe8951af46301bdfffa22a00"),
                 ),
-            (128, 128) : {
+            (128, 128) : (
                 unhex("b006009d012a800080000207088585888584880b820275ba24807f007f0040dff6a07ce9d1d66cd9b366cd9b366cd9b366cd9b366cd9b366cd9b366cd9b1e0fefb55e3ff7faadbb71ff775ffdfeab6edc7fdb8c12734b780"),
                 unhex("9103000810a400180018b7f40c0003555800ac0056002b0015800ac0055ff8fef5275ffe99e376dfcf8fffa678ddb7f37000"),
                 unhex("9103000810a400180018b7f40c0003555800ac0056002b0015800ac0055ff8fef5275ffe99e376dfcf8fffa678ddb7f37000"),
                 unhex("9103000810a400180018b7f40c0003555800ac0056002b0015800ac0055ff8fef5275ffe99e376dfcf8fffa678ddb7f37000"),
                 unhex("9103000810a400180018b7f40c0003555800ac0056002b0015800ac0055ff8fef5275ffe99e376dfcf8fffa678ddb7f37000"),
-                }
+                )
             },
         },
     "vp9" : {
@@ -79,13 +79,13 @@ TEST_COMPRESSED_DATA = {
             (24, 16) : (
                 unhex("8249834200017000f60038241c18000000200000047ffffffba9da00059fffffff753b413bffffffeea7680000"),
                 ),
-            #(128, 128) : {
-            #    unhex("824983420007f007f60c38241c18900000f047d8fd620cdbe9cd6f5721d7b400006b31c5aa6ce921164007ec134d6336dae2f48372f5c44a826c5b54a60ff0451c1b136691c51b2830f807c83155903eeb2d0926d4f000"),
-            #    unhex("860040929c444f8000037000005a0480"),
-            #    unhex("860040929c444f8000037000005a0480"),
-            #    unhex("860040929c344c8000037000005a0480"),
-            #    unhex("860040929c2c49e000037000005a0480"),
-            #    }
+            (128, 128) : (
+                unhex("824983420007f007f60c38241c18900000f047d8fd620cdbe9cd6f5721d7b400006b31c5aa6ce921164007ec134d6336dae2f48372f5c44a826c5b54a60ff0451c1b136691c51b2830f807c83155903eeb2d0926d4f000"),
+                unhex("860040929c444f8000037000005a0480"),
+                unhex("860040929c444f8000037000005a0480"),
+                unhex("860040929c344c8000037000005a0480"),
+                unhex("860040929c2c49e000037000005a0480"),
+                ),
             },
         "YUV444P" : {
             (24, 16) : (
@@ -146,7 +146,7 @@ TEST_COMPRESSED_DATA = {
                 unhex("b30020494e2227c00001807000002b7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98fffffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa7d5fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa600"),
                 unhex("b30020494e2227c00001807000002b7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98fffffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa7d5fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa600"),
                 )
-            }
+            },
         },
     "av1" : {
         "YUV420P" : {
@@ -275,11 +275,11 @@ def testdecoding(decoder_module, encoding, full):
             for size, frames in test_data.items():
                 w, h = size
                 if w<min_w or h<min_h:
-                    log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h}")
+                    log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h})")
                     continue
                 e.init_context(encoding, w, h, cs)
                 if frames:
-                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames")
+                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}")
                     for i, data in enumerate(frames):
                         log(f"frame {i+1} is {len(data or ()):5} bytes")
                         image = e.decompress_image(data)
