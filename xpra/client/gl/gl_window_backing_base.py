@@ -17,7 +17,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
-    GL_LINEAR, GL_RED, GL_RG, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
+    GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
@@ -58,7 +58,7 @@ from xpra.os_util import (
     POSIX, OSX,
     DummyContextManager,
     )
-from xpra.util import envint, envbool, repr_ellipsized, first_time
+from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import (
@@ -1148,7 +1148,7 @@ class GLWindowBackingBase(WindowBackingBase):
         with self.assign_cuda_context(True):
             #we can import pycuda safely here,
             #because `self.assign_cuda_context` will have imported it with the lock:
-            from pycuda.driver import Stream  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            from pycuda.driver import Stream, LogicError  # @UnresolvedImport pylint: disable=import-outside-toplevel
             stream = Stream()
             options["stream"] = stream
             img = self.nvdec_decoder.decompress_with_device(encoding, img_data, width, height, options)
@@ -1160,9 +1160,16 @@ class GLWindowBackingBase(WindowBackingBase):
             cuda_buffer = img.get_pixels()
             strides = img.get_rowstride()
             height = img.get_height()
-            y_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[0], 0, height, stream)
-            uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], height, height//2, stream)
-            cuda_buffer.free()
+            try:
+                y_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[0], 0, height, stream)
+                uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], height, height//2, stream)
+            except LogicError as e:
+                #disable nvdec from now on:
+                self.nvdec_decoder = None
+                log("paint_nvdec%s", (gl_context, encoding, img_data, x, y, width, height, options, callbacks))
+                raise RuntimeError(f"failed to download nvdec cuda buffer to pbo: {e}")
+            finally:
+                cuda_buffer.free()
             img.set_pixels((y_pbo, uv_pbo))
 
         flush = options.intget("flush", 0)
