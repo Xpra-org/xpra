@@ -412,14 +412,14 @@ cdef class Decoder:
         cudacheck(r, "GPU mapping of picture buffer error")
         log(f"mapped picture {pic_idx} at {dev_ptr:x}, pitch={pitch}")
         try:
-            yuv_buf, yuv_pitch = mem_alloc_pitch(self.width, self.height*3//2, 4)
+            yuv_buf, yuv_pitch = mem_alloc_pitch(self.width, roundup(self.height, 2)*3//2, 4)
             copy = Memcpy2D()
             copy.set_src_device(dev_ptr)
             copy.src_x_in_bytes = 0
             copy.src_y = 0
             copy.src_pitch = pitch
             copy.width_in_bytes = self.width
-            copy.height = self.height*3//2
+            copy.height = roundup(self.height, 2)*3//2
             copy.set_dst_device(yuv_buf)
             copy.dst_x_in_bytes = 0
             copy.dst_y = 0
@@ -458,13 +458,17 @@ def decompress_and_download(encoding, img_data, width, height, options=None):
     img = decompress_with_device(encoding, img_data, width, height, options)
     cuda_buffer = img.get_pixels()
     rowstrides = img.get_rowstride()
+    assert len(rowstrides)==2 and rowstrides[0]==rowstrides[1]
+    stride = rowstrides[0]
     assert img.get_pixel_format()=="NV12"
-    assert len(rowstrides)==2
-    y_size = rowstrides[0]*img.get_height()
-    uv_size = rowstrides[1]*img.get_height()//2
-    nv12_buf = download_from_gpu(cuda_buffer, y_size+uv_size)
+    height = img.get_height()
+    size = roundup(height, 2)*stride*3//2
+    y_size = stride*height
+    uv_start = roundup(height, 2)*stride
+    uv_size = stride*(height//2)
+    nv12_buf = download_from_gpu(cuda_buffer, size)
     pixels = memoryview(nv12_buf)
-    planes = pixels[:y_size], pixels[y_size:y_size+uv_size]
+    planes = pixels[:y_size], pixels[uv_start:uv_start+uv_size]
     cuda_buffer.free()
     img.set_pixels(planes)
     return img

@@ -1162,7 +1162,7 @@ class GLWindowBackingBase(WindowBackingBase):
             height = img.get_height()
             try:
                 y_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[0], 0, height, stream)
-                uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], height, height//2, stream)
+                uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], roundup(height, 2), height//2, stream)
             except LogicError as e:
                 #disable nvdec from now on:
                 self.nvdec_decoder = None
