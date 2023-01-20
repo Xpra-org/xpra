@@ -175,6 +175,7 @@ def testdecoder(decoder_module, full):
 def testdecoding(decoder_module, encoding, full):
     test_data_set = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
+        min_w, min_h = decoder_module.get_min_size(encoding)
         e = decoder_module.Decoder()
         try:
             test_data = None
@@ -188,6 +189,9 @@ def testdecoding(decoder_module, encoding, full):
                 test_data = {(64, 32) : None}
             for size, frames in test_data.items():
                 w, h = size
+                if w<min_w or h<min_h:
+                    log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min sizes is {min_w}x{min_h}")
+                    continue
                 e.init_context(encoding, w, h, cs)
                 if frames:
                     log("%s: testing %s / %s with %s bytes of data",

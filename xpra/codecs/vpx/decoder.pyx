@@ -124,6 +124,9 @@ def get_type():
 def get_encodings():
     return CODECS
 
+def get_min_size(encoding):
+    return 16, 16
+
 def get_input_colorspaces(encoding):
     assert encoding in CODECS
     return COLORSPACES.get(encoding)

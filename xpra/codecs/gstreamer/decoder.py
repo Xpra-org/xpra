@@ -25,6 +25,9 @@ CODECS = ("vp8", "h264", "av1")
 def get_encodings():
     return CODECS
 
+def get_min_size(encoding):
+    return 16, 16
+
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
     return ("YUV420P", )

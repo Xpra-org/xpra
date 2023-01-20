@@ -241,6 +241,8 @@ SURFACE_NAMES = {
     cudaVideoSurfaceFormat_YUV444_16Bit : "YUV444P16",
     }
 
+MIN_SIZES = {}
+
 
 def init_module():
     log("nvdec.init_module()")
@@ -258,6 +260,9 @@ def get_info():
     return {
         "version"   : get_version(),
         }
+
+def get_min_size(encoding):
+    return MIN_SIZES.get(encoding, (48, 16))
 
 def get_encodings():
     #return ("jpeg", "h264")
@@ -293,7 +298,7 @@ cdef class Decoder:
         cdef CUVIDDECODECREATEINFO pdci
         pdci.ulWidth = self.width
         pdci.ulHeight = self.height
-        pdci.ulNumDecodeSurfaces = 2
+        pdci.ulNumDecodeSurfaces = 10
         if self.encoding=="h264":
             pdci.CodecType = cudaVideoCodec_H264_SVC
         elif self.encoding=="jpeg":
@@ -312,14 +317,14 @@ cdef class Decoder:
         #cudaVideoCreate_PreferCUVID     #Use dedicated video engines directly
         pdci.bitDepthMinus8 = 0
         pdci.ulIntraDecodeOnly = 0
-        pdci.ulMaxWidth = roundup(self.width, 16)
-        pdci.ulMaxHeight = roundup(self.height, 16)
+        pdci.ulMaxWidth = self.width
+        pdci.ulMaxHeight = self.height
         pdci.OutputFormat = cudaVideoSurfaceFormat_NV12
         #cudaVideoSurfaceFormat_YUV444_16Bit
-        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave
-        pdci.ulTargetWidth = roundup(self.width, 2)
-        pdci.ulTargetHeight = roundup(self.height, 2)
-        pdci.ulNumOutputSurfaces = 1
+        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Bob #cudaVideoDeinterlaceMode_Weave
+        pdci.ulTargetWidth = self.width
+        pdci.ulTargetHeight = self.height
+        pdci.ulNumOutputSurfaces = 5
         pdci.vidLock = NULL
         pdci.enableHistogram = 0
         cdef CUresult r = cuvidCreateDecoder(&self.context, &pdci)
@@ -502,6 +507,7 @@ def selftest(full=False):
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
 
         for codec_i, codec_name in CODEC_NAMES.items():
+            min_w = min_h = 0
             chroma_ok= []
             chroma_failed = []
             for chroma_i, chroma_name in CHROMA_NAMES.items():
@@ -525,15 +531,21 @@ def selftest(full=False):
                 oformats = tuple(name for sfi, name in SURFACE_NAMES.items() if caps.nOutputFormatMask & (1<<sfi))
                 log(f"output formats for {codec_name} + {chroma_name}: %s", csv(oformats))
                 if "NV12" in oformats:
+                    if min_w==0 or caps.nMinWidth>min_w:
+                        min_w = caps.nMinWidth
+                    if min_h==0 or caps.nMinHeight>min_h:
+                        min_h = caps.nMinHeight
                     chroma_ok.append(chroma_name)
                 else:
                     log(f"{codec_name} does not support NV12 surface")
             if chroma_ok:
                 codec_ok[codec_name] = chroma_ok
+                MIN_SIZES[codec_name] = (min_w, min_h)
             else:
                 codec_failed.append(codec_name)
         log(f"codecs failed: {codec_failed}")
         log(f"codecs supported: {codec_ok}")
+        log(f"minimum sizes: {MIN_SIZES}")
         #decoder = Decoder()
         #decoder.init_context("h264", 512, 256, "YUV420P")
         #decoder.clean()

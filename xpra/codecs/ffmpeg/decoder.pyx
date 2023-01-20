@@ -601,6 +601,9 @@ def get_encodings():
     global CODECS
     return CODECS
 
+def get_min_size(encoding):
+    return 16, 16
+
 def get_input_colorspaces(encoding):
     if encoding not in CODECS:
         return []
