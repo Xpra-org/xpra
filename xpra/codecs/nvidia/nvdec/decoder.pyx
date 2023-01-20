@@ -267,10 +267,8 @@ def get_min_size(encoding):
     return MIN_SIZES.get(encoding, (48, 16))
 
 def get_encodings():
-    #return ("jpeg", "h264")
-    #return ("jpeg", "vp8", "vp9")
-    return ("jpeg", "vp9")
-    #return ("jpeg", )
+    #return ("jpeg", "h264", "vp8", "vp9")
+    return ("jpeg", )
 
 def get_input_colorspaces(encoding):
     #return ("YUV420P", "YUV422P", "YUV444P")
@@ -304,26 +302,26 @@ cdef class Decoder:
 
     def init_nvdec(self):
         cdef CUVIDDECODECREATEINFO pdci
+        memset(&pdci, 0, sizeof(CUVIDDECODECREATEINFO))
         pdci.ulWidth = self.width
         pdci.ulHeight = self.height
         pdci.ulNumDecodeSurfaces = 20
+        pdci.ulNumOutputSurfaces = 1
         pdci.CodecType = CODEC_MAP[self.encoding]
         pdci.ChromaFormat = CS_CHROMA[self.colorspace]
-        pdci.ulCreationFlags = cudaVideoCreate_Default #cudaVideoCreate_PreferCUVID #cudaVideoCreate_PreferCUDA
-        #cudaVideoCreate_PreferCUVID     #Use dedicated video engines directly
+        pdci.OutputFormat = cudaVideoSurfaceFormat_NV12 #cudaVideoSurfaceFormat_YUV444_16Bit
         pdci.bitDepthMinus8 = 0
+        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave
+        pdci.ulCreationFlags = cudaVideoCreate_PreferCUVID  #Use dedicated video engines directly
         pdci.ulIntraDecodeOnly = 0
         pdci.ulMaxWidth = self.width
         pdci.ulMaxHeight = self.height
         #pdci.display_area.left = 0
         #pdci.display_area.top = 0
         #pdci.display_area.right = self.width
-        #pdci.display_area.bottom= self.height
-        pdci.OutputFormat = cudaVideoSurfaceFormat_NV12 #cudaVideoSurfaceFormat_YUV444_16Bit
+        #pdci.display_area.bottom = self.height
         pdci.ulTargetWidth = self.width
         pdci.ulTargetHeight = self.height
-        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave
-        pdci.ulNumOutputSurfaces = 1
         pdci.vidLock = NULL
         pdci.enableHistogram = 0
         #pdci.target_rect.left = 0
