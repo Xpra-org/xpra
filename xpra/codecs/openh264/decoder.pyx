@@ -84,6 +84,9 @@ def get_info():
 def get_encodings():
     return ("h264", )
 
+def get_min_size(encoding):
+    return 32, 32
+
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())

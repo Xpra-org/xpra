@@ -246,5 +246,6 @@ def selftest(full=False):
             raise ImportError("no nvidia GPU device found")
     from xpra.codecs.codec_checks import TEST_PICTURES
     #options = {"cuda-device-context" : get_device_context()}
-    for bdata in TEST_PICTURES["jpeg"]:
-        decompress("RGB", bdata)
+    for size, samples in TEST_PICTURES["jpeg"].items():
+        for bdata in samples:
+            decompress("RGB", bdata)

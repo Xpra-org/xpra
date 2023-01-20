@@ -136,5 +136,6 @@ def decompress(data):
 def selftest(full=False):
     log("spng version %s selftest" % (get_version(),))
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
-    for cdata in TEST_PICTURES["png"]:
-        assert decompress(cdata)
+    for size, samples in TEST_PICTURES["png"].items():
+        for cdata in samples:
+            assert decompress(cdata), f"failed to decompress {size} png"

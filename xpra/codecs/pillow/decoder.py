@@ -179,31 +179,34 @@ def selftest(_full=False):
     global ENCODINGS
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
     #test data generated using the encoder:
-    for encoding, testimages in TEST_PICTURES.items():
+    for encoding, test_data in TEST_PICTURES.items():
         if encoding not in ENCODINGS:
             #removed already
             continue
-        for cdata in testimages:
-            try:
-                buf = BytesIO(cdata)
-                img = PIL.Image.open(buf)
-                assert img, "failed to open image data"
-                raw_data = img.tobytes("raw", img.mode)
-                assert raw_data
-                #now try with junk:
-                cdata = b"ABCD"+cdata
-                buf = BytesIO(cdata)
+        for size, samples in test_data.items():
+            log(f"testing {encoding} at size {size} with {len(samples)} samples")
+            for i, cdata in enumerate(samples):
                 try:
+                    log(f"testing sample {i}: {len(cdata):5} bytes")
+                    buf = BytesIO(cdata)
                     img = PIL.Image.open(buf)
-                    log.warn("Pillow failed to generate an error parsing invalid input")
+                    assert img, "failed to open image data"
+                    raw_data = img.tobytes("raw", img.mode)
+                    assert raw_data
+                    #now try with junk:
+                    cdata = b"ABCD"+cdata
+                    buf = BytesIO(cdata)
+                    try:
+                        img = PIL.Image.open(buf)
+                        log.warn("Pillow failed to generate an error parsing invalid input")
+                    except Exception as e:
+                        log("correctly raised exception for invalid input: %s", e)
                 except Exception as e:
-                    log("correctly raised exception for invalid input: %s", e)
-            except Exception as e:
-                log("selftest:", exc_info=True)
-                log.error("Pillow error decoding %s with data:", encoding)
-                log.error(" %r", cdata)
-                log.error(" %s", e, exc_info=True)
-                ENCODINGS = tuple(x for x in ENCODINGS if x!=encoding)
+                    log("selftest:", exc_info=True)
+                    log.error("Pillow error decoding %s with data:", encoding)
+                    log.error(" %r", cdata)
+                    log.error(" %s", e, exc_info=True)
+                    ENCODINGS = tuple(x for x in ENCODINGS if x!=encoding)
 
 
 if __name__ == "__main__":

@@ -104,6 +104,12 @@ cdef extern from "cuviddec.h":
         cudaVideoSurfaceFormat_YUV444_16Bit             #16 bit Planar YUV [Y plane followed by U and V planes].
                                                         #Can be used for 10 bit(6LSB bits 0), 12 bit (4LSB bits 0)
 
+    ctypedef struct rect:
+        short left
+        short top
+        short right
+        short bottom
+
     ctypedef struct CUVIDDECODECREATEINFO:
         unsigned long ulWidth               #IN: Coded sequence width in pixels
         unsigned long ulHeight              #IN: Coded sequence height in pixels
@@ -120,12 +126,7 @@ cdef extern from "cuviddec.h":
         unsigned long ulMaxWidth            #Coded sequence max width in pixels used with reconfigure Decoder
         unsigned long ulMaxHeight           #IN: Coded sequence max height in pixels used with reconfigure Decoder
         unsigned long Reserved1             #Reserved for future use - set to zero
-        #struct {
-        #    short left;
-        #    short top;
-        #    short right;
-        #    short bottom;
-        #} display_area;
+        rect display_area
         cudaVideoSurfaceFormat OutputFormat         #IN: cudaVideoSurfaceFormat_XXX
         cudaVideoDeinterlaceMode DeinterlaceMode    #IN: cudaVideoDeinterlaceMode_XXX
         unsigned long ulTargetWidth                 #IN: Post-processed output width (Should be aligned to 2)
@@ -133,12 +134,7 @@ cdef extern from "cuviddec.h":
         unsigned long ulNumOutputSurfaces           #IN: Maximum number of output surfaces simultaneously mapped
         CUvideoctxlock vidLock                      #IN: If non-NULL, context lock used for synchronizing ownership of
                                                     #the cuda context. Needed for cudaVideoCreate_PreferCUDA decode
-        #struct {
-        #    short left;
-        #    short top;
-        #    short right;
-        #    short bottom;
-        #} target_rect;
+        rect target_rect
         unsigned long enableHistogram               #IN: enable histogram output, if supported
         unsigned long Reserved2[4]                  #Reserved for future use - set to zero
 
@@ -241,6 +237,12 @@ SURFACE_NAMES = {
     cudaVideoSurfaceFormat_YUV444_16Bit : "YUV444P16",
     }
 
+CODEC_MAP = dict((v,k) for k,v in CODEC_NAMES.items())
+CS_CHROMA = {
+    "YUV420P" : cudaVideoChromaFormat_420,
+    "YUV422P" : cudaVideoChromaFormat_422,
+    "YUV444P" : cudaVideoChromaFormat_444,
+    }
 MIN_SIZES = {}
 
 
@@ -266,7 +268,9 @@ def get_min_size(encoding):
 
 def get_encodings():
     #return ("jpeg", "h264")
-    return ("jpeg", )
+    #return ("jpeg", "vp8", "vp9")
+    return ("jpeg", "vp9")
+    #return ("jpeg", )
 
 def get_input_colorspaces(encoding):
     #return ("YUV420P", "YUV422P", "YUV444P")
@@ -288,6 +292,10 @@ cdef class Decoder:
 
     def init_context(self, encoding, width, height, colorspace):
         log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
+        if encoding not in CODEC_MAP:
+            raise ValueError(f"invalid encoding {encoding} for nvdec")
+        if colorspace not in CS_CHROMA:
+            raise ValueError(f"invalid colorspace {colorspace} for nvdec")
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
@@ -298,35 +306,30 @@ cdef class Decoder:
         cdef CUVIDDECODECREATEINFO pdci
         pdci.ulWidth = self.width
         pdci.ulHeight = self.height
-        pdci.ulNumDecodeSurfaces = 10
-        if self.encoding=="h264":
-            pdci.CodecType = cudaVideoCodec_H264_SVC
-        elif self.encoding=="jpeg":
-            pdci.CodecType = cudaVideoCodec_JPEG
-        else:
-            raise ValueError(f"invalid encoding {self.encoding!r}")
-        if self.colorspace=="YUV420P":
-            pdci.ChromaFormat = cudaVideoChromaFormat_420
-        elif self.colorspace=="YUV422P":
-            pdci.ChromaFormat = cudaVideoChromaFormat_422
-        elif self.colorspace=="YUV444P":
-            pdci.ChromaFormat = cudaVideoChromaFormat_444
-        else:
-            raise ValueError(f"invalid colorspace {self.colorspace!r}")
-        pdci.ulCreationFlags = cudaVideoCreate_PreferCUDA
+        pdci.ulNumDecodeSurfaces = 20
+        pdci.CodecType = CODEC_MAP[self.encoding]
+        pdci.ChromaFormat = CS_CHROMA[self.colorspace]
+        pdci.ulCreationFlags = cudaVideoCreate_Default #cudaVideoCreate_PreferCUVID #cudaVideoCreate_PreferCUDA
         #cudaVideoCreate_PreferCUVID     #Use dedicated video engines directly
         pdci.bitDepthMinus8 = 0
         pdci.ulIntraDecodeOnly = 0
         pdci.ulMaxWidth = self.width
         pdci.ulMaxHeight = self.height
-        pdci.OutputFormat = cudaVideoSurfaceFormat_NV12
-        #cudaVideoSurfaceFormat_YUV444_16Bit
-        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Bob #cudaVideoDeinterlaceMode_Weave
+        #pdci.display_area.left = 0
+        #pdci.display_area.top = 0
+        #pdci.display_area.right = self.width
+        #pdci.display_area.bottom= self.height
+        pdci.OutputFormat = cudaVideoSurfaceFormat_NV12 #cudaVideoSurfaceFormat_YUV444_16Bit
         pdci.ulTargetWidth = self.width
         pdci.ulTargetHeight = self.height
-        pdci.ulNumOutputSurfaces = 5
+        pdci.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave
+        pdci.ulNumOutputSurfaces = 1
         pdci.vidLock = NULL
         pdci.enableHistogram = 0
+        #pdci.target_rect.left = 0
+        #pdci.target_rect.top = 0
+        #pdci.target_rect.right = self.width
+        #pdci.target_rect.bottom = self.height
         cdef CUresult r = cuvidCreateDecoder(&self.context, &pdci)
         cudacheck(r, "creating decoder returned error")
 
