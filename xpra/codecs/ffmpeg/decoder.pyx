@@ -598,7 +598,6 @@ def get_info():
         }
 
 def get_encodings():
-    global CODECS
     return CODECS
 
 def get_min_size(encoding):
@@ -1037,8 +1036,7 @@ cdef class Decoder:
 
 
 def selftest(full=False):
-    global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.ffmpeg import decoder
     with SilenceAVWarningsContext():
-        CODECS = testdecoder(decoder, full)
+        decoder.CODECS = testdecoder(decoder, full)
