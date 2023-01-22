@@ -16,7 +16,7 @@ This functionality shares most of the code with the [file transfers](./FileTrans
 * forwarding is only supported to a Posix server, support for MS Windows and MacOS _servers_ may be added in the future
 * do not use socket authentication on your local sockets (see [#1286])
 * MacOS clients use Postscript (#995), other clients use PDF for transport
-* MacOS [shadow server](./ShadowServer) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
+* MacOS [shadow server](../Usage/Shadow-Server) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
 
 
 ## Implementation
@@ -36,7 +36,7 @@ The HTML5 client is written in Javascript so it does not have access to the prin
 
 * run the [printing.py](../../xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
 * you can use the same script to print files, ie: `./xpra/platform/printing.py /path/to/yourfile.pdf`
-* run the client and server with the `-d printing` debug flags (see [debug logging](./Logging))
+* run the client and server with the `-d printing` debug flags (see [debug logging](../Usage/Logging))
 * look for the cups backend messages in your system log (ie: with journald: `sudo journalctl -f -t xpraforwarder`)
 * for debugging the cups server backend, run: `cupsctl --debug-logging`
 </details>
