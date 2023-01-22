@@ -288,7 +288,7 @@ def testdecoding(decoder_module, encoding, full):
     test_data_set = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
-        e = decoder_module.Decoder()
+        decoder = decoder_module.Decoder()
         try:
             test_data = {}
             if test_data_set:
@@ -303,16 +303,24 @@ def testdecoding(decoder_module, encoding, full):
                 if w<min_w or h<min_h:
                     log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h})")
                     continue
-                e.init_context(encoding, w, h, cs)
+                try:
+                    decoder.init_context(encoding, w, h, cs)
+                except Exception as e:
+                    log.error(f"Error creating context {encoding} {w}x{h} {cs}")
+                    raise
                 if frames:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}")
                     for i, data in enumerate(frames):
-                        log(f"frame {i+1} is {len(data or ()):5} bytes")
-                        image = e.decompress_image(data)
-                        assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
-                        assert image.get_width()==w, "expected image of width %s but got %s" % (w, image.get_width())
-                        assert image.get_height()==h, "expected image of height %s but got %s" % (h, image.get_height())
-                        log(f" test passed for {w}x{h} {encoding} - {cs}")
+                        try:
+                            log(f"frame {i+1} is {len(data or ()):5} bytes")
+                            image = decoder.decompress_image(data)
+                            assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
+                            assert image.get_width()==w, "expected image of width %s but got %s" % (w, image.get_width())
+                            assert image.get_height()==h, "expected image of height %s but got %s" % (h, image.get_height())
+                            log(f" test passed for {w}x{h} {encoding} - {cs}")
+                        except Exception as e:
+                            log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
+                            raise
                 if full:
                     log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
                     #test failures:
@@ -323,7 +331,7 @@ def testdecoding(decoder_module, encoding, full):
                     if image is not None:
                         raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
         finally:
-            e.clean()
+            decoder.clean()
 
 
 def testencoder(encoder_module, full):
