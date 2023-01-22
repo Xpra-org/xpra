@@ -420,7 +420,7 @@ def get_min_size(encoding):
 
 #CODECS = ("jpeg", "h264", "vp8", "vp9")
 #CODECS = ("jpeg", "vp8", "vp9", "h264")
-CODECS = ("jpeg", )
+CODECS = ("jpeg", "h264")
 def get_encodings():
     return CODECS
 
@@ -605,26 +605,27 @@ cdef class Decoder:
     def decode_data(self, data, options=None):
         log(f"decompress_image({len(data)} bytes, {options})")
         cdef CUVIDPICPARAMS pic
+        cdef CUVIDH264PICPARAMS *h264
         memset(&pic, 0, sizeof(CUVIDPICPARAMS))
         if self.encoding=="jpeg":
-            pic.PicWidthInMbs = 16
-            pic.FrameHeightInMbs = 16
+            pass
         elif self.encoding=="h264":
             #extracted using the gstreamer codec
+            h264 = &pic.CodecSpecific.h264
             pic.PicWidthInMbs = roundup(self.width, 16)//16
             pic.FrameHeightInMbs = roundup(self.height, 16)//16
-            pic.CodecSpecific.h264.log2_max_pic_order_cnt_lsb_minus4 = 2
-            pic.CodecSpecific.h264.frame_mbs_only_flag = 1
-            pic.CodecSpecific.h264.direct_8x8_inference_flag = 1
-            pic.CodecSpecific.h264.num_ref_frames = 4
-            pic.CodecSpecific.h264.entropy_coding_mode_flag = 1
-            pic.CodecSpecific.h264.num_ref_idx_l0_active_minus1 = 2
-            pic.CodecSpecific.h264.weighted_pred_flag = 1
-            pic.CodecSpecific.h264.weighted_bipred_idc = 2
-            pic.CodecSpecific.h264.deblocking_filter_control_present_flag = 1
-            pic.CodecSpecific.h264.transform_8x8_mode_flag = 1
-            pic.CodecSpecific.h264.chroma_qp_index_offset = 4294967294
-            pic.CodecSpecific.h264.second_chroma_qp_index_offset = 4294967294
+            #h264.log2_max_pic_order_cnt_lsb_minus4 = 2
+            #h264.frame_mbs_only_flag = 1
+            #h264.direct_8x8_inference_flag = 1
+            #h264.num_ref_frames = 4
+            #h264.entropy_coding_mode_flag = 1
+            h264.num_ref_idx_l0_active_minus1 = 2
+            h264.weighted_pred_flag = 1
+            h264.weighted_bipred_idc = 2
+            h264.deblocking_filter_control_present_flag = 1
+            #h264.transform_8x8_mode_flag = 1
+            #h264.chroma_qp_index_offset = 4294967294
+            #h264.second_chroma_qp_index_offset = 4294967294
         else:
             raise RuntimeError(f"{self.encoding} is not implemented yet")
 
@@ -656,10 +657,11 @@ cdef class Decoder:
             cuvidDecodeStatus_Error_Concealed,
             ):
             if r in DECODE_STATUS_STR:
-                raise RuntimeError(f"GPU decoding status returned error {sinfo}")
+                raise RuntimeError(f"GPU decoding status returned error {sinfo!r}")
             cudacheck(r, "GPU picture decoding status error")
         #map it as a CUDA buffer:
         cdef CUVIDPROCPARAMS map_params
+        map_params.progressive_frame = 1
         memset(&map_params, 0, sizeof(CUVIDPROCPARAMS))
         stream = (options or {}).get("stream", None)
         if stream:
@@ -813,4 +815,4 @@ def selftest(full=False):
 
         from xpra.codecs.codec_checks import testdecoder
         from xpra.codecs.nvidia import nvdec
-        nvdec.CODECS = testdecoder(nvdec.decoder, full)
+        nvdec.decoder.CODECS = testdecoder(nvdec.decoder, full)
