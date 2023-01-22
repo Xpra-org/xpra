@@ -55,8 +55,9 @@ class Test_CSC_Colorspace(unittest.TestCase):
         in_csc = "YUV420P"
         if in_csc not in encoder_module.get_input_colorspaces(encoding):
             raise Exception(f"{encoder_module} does not support {in_csc} as input")
-        if in_csc!=decoder_module.get_output_colorspace(encoding, in_csc):
-            raise Exception(f"{decoder_module} does not support {in_csc} as output for {in_csc}")
+        out_csc = decoder_module.get_output_colorspace(encoding, in_csc)
+        if in_csc!=out_csc:
+            raise Exception(f"{decoder_module} does not support {in_csc} as output for {encoding} {in_csc} input, only {out_csc}")
         encoder = encoder_module.Encoder()
         options = typedict({"max-delayed" : 0})
         encoder.init_context(encoding, width, height, in_csc, options)
