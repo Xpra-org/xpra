@@ -2,7 +2,7 @@
 
 This feature allows printers connected to the client to show as virtual printers on the server so that printing can transparently be forwarded back to the client's printer(s).
 
-This functionality shares most of the code with the [file transfers](./FileTransfers.md), as the print job is first rendered to a file before being sent to the client.
+This functionality shares most of the code with the [file transfers](./File-Transfers.md), as the print job is first rendered to a file before being sent to the client.
 
 ## Installation and platform support
 * MS Windows and MacOS clients should work out of the box
