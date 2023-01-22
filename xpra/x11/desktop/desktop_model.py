@@ -61,6 +61,9 @@ class ScreenDesktopModel(DesktopModelBase):
             with xsync:
                 ow, oh = RandR.get_screen_size()
             with xsync:
+                if RandR.is_dummy16() and (rw, rh) not in RandR.get_screen_sizes():
+                    RandR.add_screen_size(rw, rh)
+            with xsync:
                 if not RandR.set_screen_size(rw, rh):
                     geomlog.warn("Warning: failed to resize vfb")
                     return
