@@ -192,7 +192,7 @@ CUDA_ERRORS = {
 
 def cudacheck(r, fn=None):
     if r:
-        msg = CUDA_ERRORS.get(r, "unknown error")
+        msg = CUDA_ERRORS.get(r, f"unknown error {r}")
         if fn:
-            msg = fn+": "+msg
+            msg = fn+f": {msg!r}"
         raise RuntimeError(msg)
