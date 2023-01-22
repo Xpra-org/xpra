@@ -51,7 +51,7 @@ SAMPLE_YUV420P_IMAGES = {
 class Test_CSC_Colorspace(unittest.TestCase):
 
     def _test_YUV420P(self, encoding, encoder_module, decoder_module, yuvdata,
-                      width=16, height=16):
+                      width=128, height=128):
         in_csc = "YUV420P"
         if in_csc not in encoder_module.get_input_colorspaces(encoding):
             raise Exception(f"{encoder_module} does not support {in_csc} as input")

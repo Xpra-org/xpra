@@ -265,7 +265,7 @@ def selftest(full=False):
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import hexstr
     from xpra.codecs.codec_checks import make_test_image
-    img = make_test_image("BGRA", 32, 32)
+    img = make_test_image("BGRA", 128, 128)
     if full:
         vrange = (0, 50, 100)
     else:
