@@ -391,7 +391,7 @@ def load_xdg_menu_data():
         if menu:
             break
     if menu is None:
-        if error:
+        if error and first_time("xdg-menu-error"):
             log.error("Error parsing xdg menu data:")
             log.error(" %s", error)
             log.error(" this is either a bug in python-xdg,")
