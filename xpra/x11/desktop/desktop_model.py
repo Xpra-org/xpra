@@ -60,7 +60,12 @@ class ScreenDesktopModel(DesktopModelBase):
         try:
             with xsync:
                 ow, oh = RandR.get_screen_size()
-            w, h = self.set_screen_size(rw, rh, False)
+            with xsync:
+                if not RandR.set_screen_size(rw, rh):
+                    geomlog.warn("Warning: failed to resize vfb")
+                    return
+            with xsync:
+                w, h = RandR.get_screen_size()
             if (ow, oh) == (w, h):
                 #this is already the resolution we have,
                 #but the client has other ideas,
