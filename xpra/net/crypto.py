@@ -64,11 +64,12 @@ def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
     if cryptography:
-        return
+        return cryptography
     try:
         if getattr(sys, 'frozen', False) or OSX:
             patch_crypto_be_discovery()
         import cryptography as pc
+        cryptography = pc
         MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CFB,CTR").split(",")
               if x in ("CBC", "GCM", "CFB", "CTR"))
         KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
@@ -82,14 +83,15 @@ def crypto_backend_init():
         from cryptography.hazmat.primitives import hashes
         assert Cipher and algorithms and modes and hashes
         validate_backend()
-        cryptography = pc
-        return
+        return cryptography
     except ImportError:
         log("crypto backend init failure", exc_info=True)
         log.error("Error: cannot import python-cryptography")
     except Exception:
         log.error("Error: cannot initialize python-cryptography", exc_info=True)
+    cryptography = None
     CIPHERS = MODES = KEY_HASHES = KEY_STRETCHING = ()
+    return None
 
 def patch_crypto_be_discovery():
     """

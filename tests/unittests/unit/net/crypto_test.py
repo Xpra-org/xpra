@@ -114,7 +114,7 @@ class TestCrypto(unittest.TestCase):
 
 
     def setUp(self):
-        crypto_backend_init()
+        assert crypto_backend_init(), "failed to initialize python-cryptography"
 
 
 def main():
