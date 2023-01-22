@@ -242,14 +242,14 @@ def make_test_image(pixel_format, w, h):
         Bpp = roundup(depth, 8)//8
         nplanes = len(divs)
         ydiv = divs[0]  #always (1, 1)
-        y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp)
+        y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp, 0x20)
         udiv = divs[1]
-        u = makebuf(w//udiv[0]*h//udiv[1]*Bpp)
+        u = makebuf(w//udiv[0]*h//udiv[1]*Bpp, 0x80)
         planes = [y, u]
         strides = [w//ydiv[0]*Bpp, w//udiv[0]*Bpp]
         if nplanes==3:
             vdiv = divs[2]
-            v = makebuf(w//vdiv[0]*h//vdiv[1]*Bpp)
+            v = makebuf(w//vdiv[0]*h//vdiv[1]*Bpp, 0x80)
             planes.append(v)
             strides.append(w//vdiv[0]*Bpp)
         image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
