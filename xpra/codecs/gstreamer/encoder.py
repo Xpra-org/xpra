@@ -96,8 +96,8 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    cpu_cost = 20 if "vaapih264enc" else 100
-    gpu_cost = 80 if "vaapih264enc" else 0
+    cpu_cost = 20 if encoding=="vaapih264enc" else 100
+    gpu_cost = 80 if encoding=="vaapih264enc" else 0
     return video_spec(encoding=encoding, input_colorspace=colorspace,
                       output_colorspaces=get_output_colorspaces(encoding, colorspace),
                       has_lossless_mode=False,
