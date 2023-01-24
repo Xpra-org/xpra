@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.util import parse_simple_dict, envbool
+from xpra.util import parse_simple_dict, envbool, csv
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
     import_gst, normv,
@@ -25,7 +25,6 @@ Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
-CODECS = os.environ.get("XPRA_GSTREAMER_ENCODINGS", "h264,av1").split(",")
 
 
 assert get_version and init_module and cleanup_module
@@ -53,6 +52,14 @@ DEFAULT_ENCODER_OPTIONS = {
         "key-int-max"   : 15,
         "intra-refresh" : True,
         },
+    "vp8enc" : {
+        "deadline"      : 1,
+        "error-resilient" : 0,
+        },
+    "vp9enc" : {
+        "deadline"      : 1,
+        "error-resilient" : 0,
+        },
     #"svtav1enc" : {
     #    "speed"         : 12,
     #    "gop-size"      : 251,
@@ -78,35 +85,38 @@ DEFAULT_ENCODER_OPTIONS = {
     }
 
 
-CODECS = ("h264", "av1")
+COLORSPACES = {}
 def get_encodings():
-    return CODECS
+    return tuple(COLORSPACES.keys())
 
 def get_input_colorspaces(encoding):
-    assert encoding in get_encodings()
-    return ("YUV420P", )
-    #return ("YUV420P", "BGRX", )
+    colorspaces = COLORSPACES.get(encoding)
+    assert colorspaces, f"invalid input colorspace for {encoding}"
+    return tuple(colorspaces.keys())
 
 def get_output_colorspaces(encoding, input_colorspace):
-    assert encoding in get_encodings()
-    assert input_colorspace in get_input_colorspaces(encoding)
-    return ("YUV420P", )
+    colorspaces = COLORSPACES.get(encoding)
+    assert colorspaces, f"invalid input colorspace for {encoding}"
+    out_colorspaces = colorspaces.get(input_colorspace)
+    assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
+    return out_colorspaces
 
-def make_spec(element, encoding, colorspace, cpu_cost=50, gpu_cost=50):
+def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
     def factory():
         #let the user override options using an env var:
         enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
         if enc_options_str:
             encoder_options = parse_simple_dict(enc_options_str)
+            log(f"user overriden options for {element}: {encoder_options}")
         else:
             encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
         e = Encoder()
         e.encoder_element = element
         e.encoder_options = encoder_options or {}
         return e
-    return video_spec(
-        encoding=encoding, input_colorspace=colorspace,
-        output_colorspaces=get_output_colorspaces(encoding, colorspace),
+    spec = video_spec(
+        encoding=encoding, input_colorspace=cs_in,
+        output_colorspaces=css_out,
         has_lossless_mode=False,
         codec_class=factory, codec_type=get_type(),
         quality=40, speed=40,
@@ -114,20 +124,50 @@ def make_spec(element, encoding, colorspace, cpu_cost=50, gpu_cost=50):
         width_mask=0xFFFE, height_mask=0xFFFE,
         min_w=64, min_h=64,
         max_w=4096, max_h=4096)
+    spec.gstreamer_element = element
+    return spec
 
+SPECS = {}
 def get_specs(encoding, colorspace):
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    specs = []
-    try:
-        from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
-        nv = has_nvidia_hardware()
-    except ImportError:
-        nv = False
-    if not nv:
-        specs.append(make_spec("vaapih264enc", encoding, colorspace, 20, 100))
-    specs.append(make_spec("x264enc", encoding, colorspace, 100, 0))
-    return specs
+    colorspaces = SPECS.get(encoding)
+    assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
+    assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
+    return colorspaces.get(colorspace)
+
+def init_all_specs(*exclude):
+    #by default, try to enable everything
+    #the self-tests should disable what isn't available / doesn't work
+    specs = {}
+    colorspaces = {}
+    def add(element, encoding, cs_in, css_out, *args):
+        if element in exclude:
+            return
+        #add spec:
+        spec = make_spec(element, encoding, cs_in, css_out, *args)
+        specs.setdefault(encoding, {}).setdefault(cs_in, []).append(spec)
+        #update colorspaces map (add new output colorspaces - if any):
+        cur = colorspaces.setdefault(encoding, {}).setdefault(cs_in, [])
+        for v in css_out:
+            if v not in cur:
+                cur.append(v)
+    vaapi = True
+    if not NVIDIA_VAAPI:
+        try:
+            from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+            vaapi = not has_nvidia_hardware()
+        except ImportError:
+            pass
+    if vaapi:
+        add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
+    add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
+    add("x264enc", "h264", "BGRX", ("YUV444P", ), 100, 0)
+    add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
+    add("vp8enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
+    #add: nvh264enc, nvh265enc ?
+    global SPECS, COLORSPACES
+    SPECS = specs
+    COLORSPACES = colorspaces
+init_all_specs()
 
 
 class Encoder(VideoPipeline):
@@ -241,6 +281,20 @@ GObject.type_register(Encoder)
 
 def selftest(full=False):
     log("gstreamer encoder selftest: %s", get_info())
-    from xpra.codecs.codec_checks import testencoder
-    from xpra.codecs.gstreamer import encoder
-    encoder.CODECS = testencoder(encoder, full)
+    from xpra.codecs.codec_checks import test_encoder_spec, DEFAULT_TEST_SIZE
+    W, H = DEFAULT_TEST_SIZE
+    #test individual specs
+    skip = []
+    log(f"will self test: {SPECS}")
+    for encoding, cs_map in SPECS.items():
+        for cs_in, specs in cs_map.items():
+            for spec in specs:
+                try:
+                    test_encoder_spec(spec.codec_class, encoding, cs_in, spec.output_colorspaces, W, H)
+                    log(f"{spec.gstreamer_element} {encoding} {cs_in} -> {spec.output_colorspaces} passed")
+                except Exception as e:
+                    log("test_encoder_spec", exc_info=True)
+                    log.warn(f"Warning: gstreamer {spec.gstreamer_element!r} encoder failed")
+                    log.warn(f" {e}")
+                    skip.append(spec.gstreamer_element)
+    init_all_specs(*skip)

@@ -19,6 +19,9 @@ TEST_LIMIT_W, TEST_LIMIT_H = 8192, 8192
 def unhex(s):
     return binascii.unhexlify(s.replace(" ", "").replace("\n", "").replace("\r", ""))
 
+
+DEFAULT_TEST_SIZE = 128, 128
+
 #this test data was generated using a 24x16 blank image as input
 TEST_COMPRESSED_DATA = {
     "h264": {
@@ -353,8 +356,7 @@ def testencoder(encoder_module, full):
 
 def testencoding(encoder_module, encoding, full):
     #test a bit bigger so we exercise more code:
-    W = 128
-    H = 128
+    W, H = DEFAULT_TEST_SIZE
     do_testencoding(encoder_module, encoding, W, H, full)
 
 def get_encoder_max_sizes(encoder_module):
@@ -424,57 +426,61 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             for spec in encoder_module.get_specs(encoding, cs_in):
-                e = spec.codec_class()
+                test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
+
+def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+    try:
+        e = encoder_class()
+        etype = e.get_type()
+        options = typedict({
+            #"b-frames" : True,
+            "dst-formats" : [cs_out],
+            "quality" : 50,
+            "speed" : 50,
+            })
+        e.init_context(encoding, W, H, cs_in, options)
+        for i in range(5):
+            image = make_test_image(cs_in, W, H)
+            v = e.compress_image(image)
+            if v is None:
+                raise Exception("%s compression failed" % encoding)
+            data, meta = v
+            if not data:
+                delayed = meta.get("delayed", 0)
+                assert delayed>0, "data is empty and there are no delayed frames!"
+                if i>0:
+                    #now we should get one:
+                    data, meta = e.flush(delayed)
+        del image
+        assert data is not None, "None data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
+        assert data, "no compressed data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
+        assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
+        log("%s: %s / %s / %s passed", etype, encoding, cs_in, cs_out)
+        #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
+        #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
+        #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
+        if full:
+            wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX", "r210") if x!=cs_in]
+            #log("wrong formats (not %s): %s", cs_in, wrong_formats)
+            if wrong_formats:
+                wrong_format = wrong_formats[0]
                 try:
-                    options = typedict({
-                        #"b-frames" : True,
-                        "dst-formats" : [cs_out],
-                        "quality" : 50,
-                        "speed" : 50,
-                        })
-                    e.init_context(encoding, W, H, cs_in, options)
-                    for i in range(5):
-                        image = make_test_image(cs_in, W, H)
-                        v = e.compress_image(image)
-                        if v is None:
-                            raise Exception("%s compression failed" % encoding)
-                        data, meta = v
-                        if not data:
-                            delayed = meta.get("delayed", 0)
-                            assert delayed>0, "data is empty and there are no delayed frames!"
-                            if i>0:
-                                #now we should get one:
-                                data, meta = e.flush(delayed)
-                    del image
-                    assert data is not None, "None data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
-                    assert data, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
-                    assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
-                    log("%s: %s / %s / %s passed", encoder_module, encoding, cs_in, cs_out)
-                    #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
-                    #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
-                    #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
-                    if full:
-                        wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX", "r210") if x!=cs_in]
-                        #log("wrong formats (not %s): %s", cs_in, wrong_formats)
-                        if wrong_formats:
-                            wrong_format = wrong_formats[0]
-                            try:
-                                image = make_test_image(wrong_format, W, H)
-                                out = e.compress_image(None, image, options=options)
-                            except Exception:
-                                out = None
-                            assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (encoder_module.get_type(), encoding, wrong_format, cs_in, cs_out)
-                        for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
-                            if w>limit_w or h>limit_h:
-                                continue
-                            try:
-                                image = make_test_image(cs_in, w, h)
-                                out = e.compress_image(None, image, options=options)
-                            except Exception:
-                                out = None
-                            assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), e.get_info(), encoding, w, h, W, H)
-                finally:
-                    e.clean()
+                    image = make_test_image(wrong_format, W, H)
+                    out = e.compress_image(None, image, options=options)
+                except Exception:
+                    out = None
+                assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (etype, encoding, wrong_format, cs_in, cs_out)
+            for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
+                if w>limit_w or h>limit_h:
+                    continue
+                try:
+                    image = make_test_image(cs_in, w, h)
+                    out = e.compress_image(None, image, options=options)
+                except Exception:
+                    out = None
+                assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (etype, e.get_info(), encoding, w, h, W, H)
+    finally:
+        e.clean()
 
 
 def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=None):
