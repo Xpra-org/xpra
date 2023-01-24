@@ -3159,12 +3159,10 @@ def selftest(full=False):
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
     v = get_nvidia_module_version(True)
-    assert NVENCAPI_MAJOR_VERSION>=7, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
+    assert NVENCAPI_MAJOR_VERSION>=9, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
     if v:
         NVENC_UNSUPPORTED_DRIVER_VERSION = envbool("XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION", False)
-        #SDK 7.0 requires version 367 or later
-        #SDK 7.1 requires version 375 or later
-        if v<(375, 0):
+        if v<(400, 0):
             if not NVENC_UNSUPPORTED_DRIVER_VERSION:
                 raise ImportError("unsupported NVidia driver version %s\nuse XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION=1 to force enable it" % pver(v))
     #this is expensive, so don't run it unless "full" is set:
