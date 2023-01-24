@@ -373,17 +373,19 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in INPUT_PIXEL_FORMATS
     return (input_colorspace, )
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding=="webp"
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.codec_constants import video_spec
-    return video_spec(encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
-                      codec_class=Encoder, codec_type="webp",
-                      setup_cost=0, cpu_cost=100, gpu_cost=0,
-                      min_w=16, min_h=16, max_w=4*1024, max_h=4*1024,
-                      can_scale=True,
-                      score_boost=-50,
-                      )
+    return (
+        video_spec(
+            encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
+            codec_class=Encoder, codec_type="webp",
+            setup_cost=0, cpu_cost=100, gpu_cost=0,
+            min_w=16, min_h=16, max_w=4*1024, max_h=4*1024,
+            can_scale=True,
+            score_boost=-50),
+        )
 
 
 def webp_check(int ret):

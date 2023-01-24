@@ -413,7 +413,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
 MAX_WIDTH, MAX_HEIGHT = 8192, 4096
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -424,12 +424,16 @@ def get_spec(encoding, colorspace):
         width_mask = 0xFFFE
         if colorspace=="YUV420P":
             height_mask = 0xFFFE
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
-                      has_lossless_mode=has_lossless_mode,
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=60+40*int(has_lossless_mode), speed=60,
-                      size_efficiency=60,
-                      setup_cost=20, width_mask=width_mask, height_mask=height_mask, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+    return (
+        video_spec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
+            has_lossless_mode=has_lossless_mode,
+            codec_class=Encoder, codec_type=get_type(),
+            quality=60+40*int(has_lossless_mode), speed=60,
+            size_efficiency=60,
+            setup_cost=20, width_mask=width_mask, height_mask=height_mask,
+            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
+        )
 
 
 #maps a log level to one of our logger functions:

@@ -307,8 +307,9 @@ class VideoHelper:
             colorspaces = encoder_module.get_input_colorspaces(encoding)
             log(" %9s  input colorspaces for %5s: %s", encoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
-                spec = encoder_module.get_spec(encoding, colorspace)
-                self.add_encoder_spec(encoding, colorspace, spec)
+                specs = encoder_module.get_specs(encoding, colorspace)
+                for spec in specs:
+                    self.add_encoder_spec(encoding, colorspace, spec)
         log("video encoder options: %s", self._video_encoder_specs)
 
     def add_encoder_spec(self, encoding, colorspace, spec):

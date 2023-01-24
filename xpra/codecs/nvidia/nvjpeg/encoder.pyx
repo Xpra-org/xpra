@@ -142,17 +142,20 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in get_input_colorspaces(encoding)
     return NVJPEG_INPUT_FORMATS[encoding]
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.codec_constants import video_spec
-    return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
-                      has_lossless_mode=False,
-                      codec_class=Encoder, codec_type="jpeg",
-                      setup_cost=20, cpu_cost=0, gpu_cost=100,
-                      min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
-                      can_scale=True,
-                      score_boost=-50)
+    return (
+        video_spec(
+            "jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
+            has_lossless_mode=False,
+            codec_class=Encoder, codec_type="jpeg",
+            setup_cost=20, cpu_cost=0, gpu_cost=100,
+            min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
+            can_scale=True,
+            score_boost=-50),
+        )
 
 
 cdef class Encoder:

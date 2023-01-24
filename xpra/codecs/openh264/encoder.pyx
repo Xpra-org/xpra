@@ -255,18 +255,21 @@ def get_output_colorspaces(encoding, input_colorspace):
 #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
 MAX_WIDTH, MAX_HEIGHT = 8192, 4096
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
-                      has_lossless_mode=False,
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=40, speed=20,
-                      size_efficiency=40,
-                      setup_cost=30, width_mask=0xFFFE, height_mask=0xFFFE,
-                      max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+    return (
+        video_spec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
+            has_lossless_mode=False,
+            codec_class=Encoder, codec_type=get_type(),
+            quality=40, speed=20,
+            size_efficiency=40,
+            setup_cost=30, width_mask=0xFFFE, height_mask=0xFFFE,
+            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
+        )
 
 generation = AtomicInteger()
 

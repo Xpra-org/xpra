@@ -264,7 +264,7 @@ if WIN32:
     MAX_SIZE["vp9"] = (4096, 4096)
 
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
@@ -279,12 +279,15 @@ def get_spec(encoding, colorspace):
         has_lossless_mode = colorspace.startswith("YUV444P")
         speed = 40
         quality = 50 + 50*int(has_lossless_mode)
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
-                      has_lossless_mode=has_lossless_mode,
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=quality, speed=speed,
-                      size_efficiency=60,
-                      setup_cost=20, max_w=max_w, max_h=max_h)
+    return (
+        video_spec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
+            has_lossless_mode=has_lossless_mode,
+            codec_class=Encoder, codec_type=get_type(),
+            quality=quality, speed=speed,
+            size_efficiency=60,
+            setup_cost=20, max_w=max_w, max_h=max_h),
+        )
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
@@ -670,6 +673,7 @@ cdef class Encoder:
         if self.file and size>0:
             self.file.write(img)
             self.file.flush()
+        v = img
         return img
 
     def set_encoding_speed(self, int pct):

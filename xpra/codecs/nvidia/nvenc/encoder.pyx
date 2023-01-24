@@ -1405,7 +1405,7 @@ def get_height_mask(colorspace):
     return 0xFFFF
     
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
@@ -1429,7 +1429,7 @@ def get_spec(encoding, colorspace):
                       can_scale=colorspace!="r210",
                       width_mask=width_mask, height_mask=height_mask)
     cs.get_runtime_factor = get_runtime_factor
-    return cs
+    return (cs, )
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))

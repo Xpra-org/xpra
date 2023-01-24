@@ -92,25 +92,47 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in get_input_colorspaces(encoding)
     return ("YUV420P", )
 
+def make_spec(element, encoding, colorspace, cpu_cost=50, gpu_cost=50):
+    def factory():
+        #let the user override options using an env var:
+        enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
+        if enc_options_str:
+            encoder_options = parse_simple_dict(enc_options_str)
+        else:
+            encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
+        e = Encoder()
+        e.encoder_element = element
+        e.encoder_options = encoder_options or {}
+        return e
+    return video_spec(
+        encoding=encoding, input_colorspace=colorspace,
+        output_colorspaces=get_output_colorspaces(encoding, colorspace),
+        has_lossless_mode=False,
+        codec_class=factory, codec_type=get_type(),
+        quality=40, speed=40,
+        setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
+        width_mask=0xFFFE, height_mask=0xFFFE,
+        min_w=64, min_h=64,
+        max_w=4096, max_h=4096)
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    cpu_cost = 20 if encoding=="vaapih264enc" else 100
-    gpu_cost = 80 if encoding=="vaapih264enc" else 0
-    return video_spec(encoding=encoding, input_colorspace=colorspace,
-                      output_colorspaces=get_output_colorspaces(encoding, colorspace),
-                      has_lossless_mode=False,
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=40, speed=40,
-                      setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
-                      width_mask=0xFFFE, height_mask=0xFFFE,
-                      min_w=64, min_h=64,
-                      max_w=4096, max_h=4096)
+    specs = []
+    try:
+        from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+        nv = has_nvidia_hardware()
+    except ImportError:
+        nv = False
+    if not nv:
+        specs.append(make_spec("vaapih264enc", encoding, colorspace, 20, 100))
+    specs.append(make_spec("x264enc", encoding, colorspace, 100, 0))
+    return specs
 
 
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
+
     """
     Dispatch video encoding to a gstreamer pipeline
     """
@@ -140,39 +162,14 @@ class Encoder(VideoPipeline):
             #"RGB8P"
             }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
-        #parse encoder plugin string:
-        encoder_options = list(ENCODERS.get(self.encoding, ()))
-        encoder_str = os.environ.get("XPRA_GSTREAMER_ENCODER_PLUGIN")
-        if not encoder_str:
-            if not encoder_options:
-                raise ValueError(f"{self.encoding} is not supported here")
-            #choose the first option (ie: "vaapih264enc")
-            # but skip 'vaapih264enc' on nvidia hardware:
-            while encoder_options:
-                encoder_str = encoder_options.pop(0)
-                if NVIDIA_VAAPI or encoder_str!="vaapih264enc":
-                    break
-                try:
-                    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
-                    if not has_nvidia_hardware():
-                        break
-                except ImportError:
-                    break
-        parts = encoder_str.split(" ", 1)
-        encoder = parts[0]
-        encoder_options = DEFAULT_ENCODER_OPTIONS.get(encoder, {})
-        if len(parts)==2:
-            #override encoder options:
-            encoder_options.update(parse_simple_dict(parts[1], " "))
-        encoder_str = encoder
-        if encoder_options:
-            encoder_str += " "+" ".join(f"{k}={v}" for k,v in encoder_options.items())
+        encoder_str = self.encoder_element
+        if self.encoder_options:
+            encoder_str += " "+" ".join(f"{k}={v}" for k,v in self.encoder_options.items())
         elements = [
             #"do-timestamp=1",
             f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
             "videoconvert",
             encoder_str,
-            #mp4mux
             "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
             ]
         if not self.setup_pipeline_and_bus(elements):

@@ -290,7 +290,7 @@ def get_info():
         }
 
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in CODECS, f"invalid encoding: {encoding}, must be one of "+csv(get_encodings())
     assert colorspace in get_input_colorspaces(encoding), f"invalid colorspace: {colorspace}, must be one of "+csv(get_input_colorspaces(encoding))
     #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
@@ -300,12 +300,15 @@ def get_spec(encoding, colorspace):
     has_lossless_mode = False
     speed = 50
     quality = 50
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
-                      has_lossless_mode=has_lossless_mode,
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=quality, speed=speed,
-                      size_efficiency=60,
-                      setup_cost=20, max_w=max_w, max_h=max_h)
+    return (
+        video_spec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
+            has_lossless_mode=has_lossless_mode,
+            codec_class=Encoder, codec_type=get_type(),
+            quality=quality, speed=speed,
+            size_efficiency=60,
+            setup_cost=20, max_w=max_w, max_h=max_h),
+        )
 
 
 cdef class Encoder:

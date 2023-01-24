@@ -304,13 +304,16 @@ def get_output_colorspaces(encoding, input_colorspace):
     return (input_colorspace, )
 
 
-def get_spec(encoding, colorspace):
+def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace], has_lossless_mode=False,
-                      codec_class=Encoder, codec_type=get_type(),
-                      min_w=64, min_h=64,
-                      setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
+    return (
+        video_spec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace], has_lossless_mode=False,
+            codec_class=Encoder, codec_type=get_type(),
+            min_w=64, min_h=64,
+            setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE),
+        )
 
 
 if envbool("XPRA_X265_DEBUG", False):
