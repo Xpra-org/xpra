@@ -436,6 +436,8 @@ cdef class ColorspaceConverter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
+        assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
+        assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
         if iplanes!=2:
             raise ValueError(f"invalid plane input format: {iplanes}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
