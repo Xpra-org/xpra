@@ -102,14 +102,15 @@ def parse_content_types(lines) -> dict:
         #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
         if len(parts)!=2:
             log.warn("Warning: invalid content-type definition")
-            log.warn(" %r is missing a '='", line)
+            log.warn(f" {line!r} is missing a '='")
+            raise Exception(f"line={line}")
             continue
         match_str, content_type = parts
         parts = match_str.split(":", 1)
         #ie: "title:helloworld" -> "title", "helloworld"
         if len(parts)!=2:
             log.warn("Warning: invalid content-type definition")
-            log.warn(" match string %r is missing a ':'", match_str)
+            log.warn(f" match string {match_str!r} is missing a ':'")
             continue
         #ignore comments:
         #"text    #some comments here" > "text"
@@ -119,8 +120,8 @@ def parse_content_types(lines) -> dict:
             c = re.compile(regex)
         except Exception as e:
             log.warn("Warning: invalid regular expression")
-            log.warn(" match string '%s':", regex)
-            log.warn(" %s", e)
+            log.warn(f" match string {regex!r}:")
+            log.warn(f" {e}")
             continue
         else:
             defs.setdefault(prop_name, {})[c]=(regex, content_type)
