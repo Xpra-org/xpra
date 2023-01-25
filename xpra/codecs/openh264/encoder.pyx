@@ -165,6 +165,16 @@ cdef extern from "wels/codec_app_def.h":
         int       iPicHeight        #luma picture height in y coordinate
         long long uiTimeStamp       #timestamp of the source picture, unit: millisecond
 
+    ctypedef enum WELS_LOG:
+        WELS_LOG_QUIET              #quiet mode
+        WELS_LOG_ERROR              #error log iLevel
+        WELS_LOG_WARNING            #Warning log iLevel
+        WELS_LOG_INFO               #information log iLevel
+        WELS_LOG_DEBUG              #debug log, critical algo log
+        WELS_LOG_DETAIL             #per packet/frame log
+        WELS_LOG_RESV               #resversed log iLevel
+        WELS_LOG_LEVEL_COUNT
+        WELS_LOG_DEFAULT
 
 cdef extern from "wels/codec_def.h":
     ctypedef enum EVideoFrameType:
@@ -194,8 +204,9 @@ cdef extern from "wels/codec_def.h":
         videoFormatVFlip
 
 cdef extern from "wels/codec_api.h":
+    ctypedef void *WelsTraceCallback(void* ctx, int level, const char* string)
     cdef cppclass ISVCEncoder:
-        long Initialize(const SEncParamBase* pParam)
+        long Initialize(const SEncParamBase* pParam) nogil
         long Uninitialize()
         int InitializeExt(const SEncParamExt* pParam)
         int GetDefaultParams(SEncParamExt* pParam)
@@ -274,6 +285,10 @@ def get_specs(encoding, colorspace):
 generation = AtomicInteger()
 
 
+#cdef void log_cb(void* context, int level, const char* message) nogil:
+#    pass #nothing yet
+
+
 cdef class Encoder:
     cdef unsigned long frames
     cdef ISVCEncoder *context
@@ -314,6 +329,15 @@ cdef class Encoder:
         log("WelsCreateSVCEncoder context=%#x", <uintptr_t> self.context)
         if r or self.context==NULL:
             raise Exception(f"failed to create openh264 svc encoder, error {r}")
+        cdef int trace_level = WELS_LOG_ERROR
+        self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
+        #self.context.SetOption(ENCODER_OPTION_TRACE_CALLBACK, <void*> &log_cb)
+        #self.context.SetOption(ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, NULL)
+        cdef int videoFormat = videoFormatI420
+        self.context.SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat)
+        cdef int level = LEVEL_3_0
+        self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
+
         cdef SEncParamBase param
         memset(&param, 0, sizeof(SEncParamBase))
         param.iUsageType    = SCREEN_CONTENT_REAL_TIME
@@ -322,14 +346,13 @@ cdef class Encoder:
         param.iPicHeight    = self.height
         param.iRCMode       = RC_OFF_MODE
         #param.iTargetBitrate = 5000000
-        self.context.Initialize(&param)
-        #encoder.SetOption(ENCODER_OPTION_TRACE_LEVEL, &g_LevelSetting)
-        cdef int videoFormat = videoFormatI420
-        self.context.SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat)
-        cdef int profile = PRO_MAIN
-        self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
-        cdef int level = LEVEL_3_0
-        self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
+        with nogil:
+            self.context.Initialize(&param)
+        #cdef int profile = PRO_MAIN
+        #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
+        #a void (*)(void* context, int level, const char* message) function which receives log messages
+        trace_level = WELS_LOG_WARNING
+        self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
 
 
     def clean(self):
