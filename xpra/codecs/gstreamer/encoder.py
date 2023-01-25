@@ -167,6 +167,8 @@ def init_all_specs(*exclude):
     global SPECS, COLORSPACES
     SPECS = specs
     COLORSPACES = colorspaces
+    log("init_all_specs%s SPECS={specs}", exclude, SPECS)
+    log("init_all_specs%s COLORSPACES={specs}", exclude, COLORSPACES)
 init_all_specs()
 
 
