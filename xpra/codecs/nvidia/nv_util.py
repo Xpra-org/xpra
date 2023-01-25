@@ -265,12 +265,13 @@ def get_cards(probe=True):
 
 def is_blacklisted():
     v = get_nvidia_module_version(True)
-    try:
-        if v[0]>MIN_VERSION:
-            return False
-    except Exception as e:
-        log.warn("Warning: error checking driver version:")
-        log.warn(" %s", e)
+    if v:
+        try:
+            if v[0]>MIN_VERSION:
+                return False
+        except Exception as e:
+            log.warn(f"Warning: error checking driver version {v!r}:")
+            log.warn(" %s", e)
     return None     #we don't know: unreleased / untested
 
 
@@ -370,12 +371,10 @@ def main():
         get_nvidia_module_version()
         if is_blacklisted():
             log.warn("Warning: this driver version is blacklisted")
-        log.info("NVENC license keys:")
-        for v in (0, 8):
-            keys = get_license_keys(v)
-            log.info(f"* version %s: {len(keys)} keys", v or "common")
-            for k in keys:
-                log.info(f"  {k}")
+        keys = get_license_keys()
+        log.info(f"{len(keys)} NVENC license keys")
+        for k in keys:
+            log.info(f"  {k}")
         try:
             import pynvml
             assert pynvml
