@@ -24,10 +24,10 @@ NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
 NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
 
 
-nvidia_hardware = None
+nvidia_hardware = 0
 def has_nvidia_hardware():
     global nvidia_hardware
-    if nvidia_hardware is None:
+    if nvidia_hardware==0:
         nvidia_hardware = _has_nvidia_hardware()
     log(f"has_nvidia_hardware()={nvidia_hardware}")
     return nvidia_hardware
@@ -78,8 +78,8 @@ def _has_nvidia_hardware():
             if count is not None:
                 nvmlShutdown()
     #hope for the best
-    log("has_nvidia_hardware() unable to ascertain, returning True")
-    return True
+    log("has_nvidia_hardware() unable to ascertain, returning None")
+    return None
 
 
 nvml_init_warned = False
