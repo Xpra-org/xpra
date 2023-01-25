@@ -97,6 +97,8 @@ def load_content_type_defs() -> dict:
 def parse_content_types(lines) -> dict:
     defs = {}
     for line in lines:
+        if not line:
+            continue
         parts = line.rsplit("=", 1)
         #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
         if len(parts)!=2:
