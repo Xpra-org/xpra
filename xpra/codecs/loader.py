@@ -236,6 +236,7 @@ if OSX or WIN32:
 
 def load_codec(name):
     log("load_codec(%s)", name)
+    name = name.replace("-", "_")
     if not has_codec(name):
         try:
             option = CODEC_OPTIONS[name]
@@ -391,13 +392,14 @@ def main(args):
 
         if len(args)>1:
             for x in args[1:]:
-                if x not in CODEC_OPTIONS:
-                    loose_matches = tuple(o for o in (f"enc_{x}", f"dec_{x}", f"csc_{x}") if o in CODEC_OPTIONS)
+                name = x.lower().replace("-", "_")
+                if name not in CODEC_OPTIONS:
+                    loose_matches = tuple(o for o in (f"enc_{name}", f"dec_{name}", f"csc_{name}") if o in CODEC_OPTIONS)
                     if len(loose_matches)==1:
-                        x = loose_matches[0]
+                        name = loose_matches[0]
                     elif len(loose_matches)>1:
                         log.warn(f"{x} matches: "+csv(loose_matches))
-                load_codec(x)
+                load_codec(name)
             list_codecs = args[1:]
         else:
             load_codecs(sources=True)

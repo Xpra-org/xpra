@@ -49,7 +49,7 @@ def has_codec_module(module_name):
         return False
 
 def autoprefix(prefix, name):
-    return name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name
+    return (name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name).replace("-", "_")
 
 def try_import_modules(prefix, *codec_names):
     names = []
