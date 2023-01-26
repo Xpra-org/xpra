@@ -1325,12 +1325,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 #non-opengl is slow on MacOS:
                 self.opengl_force = True
         except ImportError as e:
+            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("OpenGL accelerated rendering is not available:", e)
         except RuntimeError as e:
+            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("OpenGL support could not be enabled on this hardware:", e)
         except Exception as e:
+            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("Error loading OpenGL support:", e)
-            opengllog("init_opengl(%s)", enable_opengl, exc_info=True)
 
     def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool):
         log("get_client_window_class%s ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
