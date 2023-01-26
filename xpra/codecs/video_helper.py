@@ -9,7 +9,7 @@ import sys
 from threading import Lock
 
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
-from xpra.util import csv, engs
+from xpra.util import csv
 from xpra.log import Logger
 
 log = Logger("codec", "video")
@@ -289,8 +289,8 @@ class VideoHelper:
                 log("error on %s", x, exc_info=True)
                 log.warn("Warning: cannot add %s encoder: %s", x, e)
                 del e
-        log("found %i video encoder%s: %s",
-            len(self._video_encoder_specs), engs(self._video_encoder_specs), csv(self._video_encoder_specs))
+        log("found %i video encoder formats: %s",
+            len(self._video_encoder_specs), csv(self._video_encoder_specs))
 
     def init_video_encoder_option(self, encoder_name):
         encoder_module = get_codec(encoder_name)
@@ -363,8 +363,8 @@ class VideoHelper:
                 self.init_video_decoder_option(mod)
             except Exception:
                 log.warn("Warning: cannot add %s decoder", x, exc_info=True)
-        log("found %s video decoder%s: %s",
-            len(self._video_decoder_specs), engs(self._video_decoder_specs), csv(self._video_decoder_specs))
+        log("found %s video decoder formats: %s",
+            len(self._video_decoder_specs), csv(self._video_decoder_specs))
         log("video decoder options: %s", self._video_decoder_specs)
 
     def init_video_decoder_option(self, decoder_name):
