@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 
 import sys
 from collections import deque
@@ -140,11 +140,11 @@ class KeyboardStateInfoWindow:
         modifiers = self.mask_to_names(event.state, self.short_modifier_names)
         name = Gdk.keyval_name(event.keyval)
         text = ""
-        for v,l in ((etype, 5), (name, 24), (event.string, 4),
+        for v,l in ((etype, 5), (name, 24), (repr(event.string), 8),
                     (event.keyval, 10), (event.hardware_keycode, 10),
-                    (event.is_modifier, 2), (event.group, 2),
-                    (modifiers, -1)):
-            s = str(v).replace("\n", "\\n").replace("\r", "\\r")
+                    (event.is_modifier, 2), (event.group, 5),
+                    (csv(modifiers), -1)):
+            s = str(v)
             if l>0:
                 s = s.ljust(l)
             text += s
