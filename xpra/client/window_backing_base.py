@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
@@ -782,8 +782,8 @@ class WindowBackingBase:
                              vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                videolog("paint_with_video_decoder: new %s(%s,%s,%s)",
-                    decoder_module.Decoder, width, height, input_colorspace)
+                videolog("paint_with_video_decoder: new %s%s",
+                    decoder_module.Decoder, (coding, enc_width, enc_height, input_colorspace))
                 vd = decoder_module.Decoder()
                 vd.init_context(coding, enc_width, enc_height, input_colorspace)
                 self._video_decoder = vd
