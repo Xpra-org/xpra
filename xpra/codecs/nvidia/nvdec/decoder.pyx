@@ -5,8 +5,12 @@
 
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t
+from libc.stdio cimport printf
+from xpra.util import AtomicInteger
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf #pylint: disable=syntax-error
-from time import monotonic
+from time import monotonic, sleep
+from weakref import WeakValueDictionary
+from threading import Event
 
 from xpra.util import csv
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -419,8 +423,7 @@ def get_min_size(encoding):
     return MIN_SIZES.get(encoding, (48, 16))
 
 #CODECS = ("jpeg", "h264", "vp8", "vp9")
-#CODECS = ("jpeg", "vp8", "vp9", "h264")
-CODECS = ("jpeg", "h264")
+CODECS = ("jpeg", )
 def get_encodings():
     return CODECS
 
@@ -433,43 +436,50 @@ def get_output_colorspace(encoding, csc):
 
 
 cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf):
-    print("seq_cb codec=", vf.codec)
-    #print(" frame_rate=%s", vf.frame_rate.)
-    print(" progressive_sequence=", vf.progressive_sequence)
-    print(" bit_depth_luma_minus8=", vf.bit_depth_luma_minus8)
-    print(" bit_depth_chroma_minus8=", vf.bit_depth_chroma_minus8)
-    print(" min_num_decode_surfaces=", vf.min_num_decode_surfaces)
-    print(" coded_width=", vf.coded_width)
-    print(" coded_height=", vf.coded_height)
-    #print(" display_area=%s", vf.display_area)
-    print(" chroma_format=", CHROMA_NAMES.get(vf.chroma_format, vf.chroma_format))
-    print(" bitrate=", vf.bitrate)
-    return 1
+    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
+    return decoder.sequence_callback(vf)
 
 cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp):
-    print("decode_cb")
-    return 1
+    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
+    return decoder.decode_callback(pp)
 
 cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi):
-    print("display_cb")
-    return 1
+    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
+    return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
 cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op):
-    print("getop_cb")
+    #av1 specific, we don't care
     return 1
 
 cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg):
-    print("getseimsg_cb")
+    log(f"getseimsg_cb {seimsg.sei_message_count} sei messages")
+    #void *pSEIData                  #OUT: SEI Message Data
+    #CUSEIMESSAGE *pSEIMessage       #OUT: SEI Message Info
+    #unsigned int sei_message_count  #OUT: SEI Message Count
+    #unsigned int picIdx             #OUT: SEI Message Pic Index
     return 1
 
+
+sequence = AtomicInteger()
+decoders = WeakValueDictionary()
+
+
+#note: the C api is event based but we want synchronous behaviour
+#so we use an event to ensure that the data we feed produces an image as output
+#this will need to be changed to support B-frames 
 cdef class Decoder:
     cdef unsigned int width
     cdef unsigned int height
     cdef unsigned long frames
+    cdef unsigned long sequence
     cdef object colorspace
     cdef object encoding
     cdef CUvideodecoder context
     cdef CUvideoparser parser
+    cdef CUstream stream
+    cdef object event
+    cdef object buffer
+    cdef object image
 
     cdef object __weakref__
 
@@ -479,15 +489,23 @@ cdef class Decoder:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
         if colorspace not in CS_CHROMA:
             raise ValueError(f"invalid colorspace {colorspace} for nvdec")
+        self.sequence = sequence.increase()
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
         self.height = height
-        if self.encoding!="jpeg":
+        self.event = Event()        #set each time the data has been parsed / processed
+        self.stream = <CUstream> 0
+        self.buffer = None
+        self.image = None
+        if self.encoding=="jpeg":
+            self.init_decoder()
+        else:
             self.init_parser()
-        self.init_decoder()
+        decoders[self.sequence] = self
 
     def init_parser(self):
+        log("init_parser()")
         cdef CUVIDPARSERPARAMS pp
         memset(&pp, 0, sizeof(CUVIDPARSERPARAMS))
         pp.CodecType = CODEC_MAP[self.encoding]
@@ -495,16 +513,47 @@ cdef class Decoder:
         #pp.ulClockRate                #IN: Timestamp units in Hz (0=default=10000000Hz)
         pp.ulErrorThreshold = 100
         pp.ulMaxDisplayDelay = 0        #0=no delay
-        pp.pUserData = NULL
+        pp.pUserData = <void *> self.sequence
         pp.pfnSequenceCallback = seq_cb
         pp.pfnDecodePicture = decode_cb
         pp.pfnDisplayPicture = display_cb
         pp.pfnGetOperatingPoint = getop_cb
         pp.pfnGetSEIMsg = getseimsg_cb
-        cdef CUresult r = cuvidCreateVideoParser(&self.parser, &pp)
+        cdef CUresult r
+        r = cuvidCreateVideoParser(&self.parser, &pp)
+        log(f"cuvidCreateVideoParser()={r}")
         cudacheck(r, "creating parser returned error")
 
-    def init_decoder(self):
+    cdef sequence_callback(self, CUVIDEOFORMAT *vf):
+        encoding = CODEC_NAMES.get(vf.codec, vf.codec)
+        log("sequence_callback codec=%s", encoding)
+    #print(" frame_rate=%s", vf.frame_rate.)
+        log(" progressive_sequence=%s", vf.progressive_sequence)
+        log(" bit_depth_luma_minus8=%s, bit_depth_chroma_minus8=%s",
+            vf.bit_depth_luma_minus8, vf.bit_depth_chroma_minus8)
+        log(" min_num_decode_surfaces=%s, bitrate=%s", vf.min_num_decode_surfaces, vf.bitrate)
+        log(" coded size: %sx%s", vf.coded_width, vf.coded_height)
+        #print(" display_area=%s", vf.display_area)
+        log(" chroma_format=%s", CHROMA_NAMES.get(vf.chroma_format, vf.chroma_format))
+        if encoding!=self.encoding:
+            log.error(f"Error: expected {self.encoding!r} but parser found {encoding!r}")
+            return 0
+        self.init_decoder(vf.min_num_decode_surfaces)
+        self.event.set()
+        return vf.min_num_decode_surfaces
+
+    cdef int decode_callback(self, CUVIDPICPARAMS *pp):
+        log("decode_callback(..)")
+        self.decode_data(pp)
+        return 1
+
+    cdef int display_callback(self, int picture_index, CUvideotimestamp timestamp):
+        log("display_callback(%s, %s)", picture_index, timestamp)
+        self.image = self.get_output_image(picture_index)
+        return int(self.image is not None)
+
+    def init_decoder(self, int decode_surfaces=2):
+        log(f"init_decoder({decode_surfaces})")
         cdef CUVIDDECODECREATEINFO pdci
         memset(&pdci, 0, sizeof(CUVIDDECODECREATEINFO))
         pdci.CodecType = CODEC_MAP[self.encoding]
@@ -515,7 +564,7 @@ cdef class Decoder:
         #cudaVideoCreate_Default
         pdci.ulCreationFlags = cudaVideoCreate_PreferCUVID  #Use dedicated video engines directly
         pdci.ulIntraDecodeOnly = 0
-        pdci.ulNumDecodeSurfaces = 20
+        pdci.ulNumDecodeSurfaces = decode_surfaces
         pdci.ulNumOutputSurfaces = 1
         #geometry:
         pdci.ulWidth = self.width
@@ -535,6 +584,7 @@ cdef class Decoder:
         pdci.vidLock = NULL
         pdci.enableHistogram = 0
         cdef CUresult r = cuvidCreateDecoder(&self.context, &pdci)
+        log(f"cuvidCreateDecoder(..)={r}")
         cudacheck(r, "creating decoder returned error")
 
     def __repr__(self):
@@ -573,104 +623,99 @@ cdef class Decoder:
 
     def clean(self):
         cdef CUresult r = 0
+        self.event.set()
         if self.parser!=NULL:
+            self.flush()
             r = cuvidDestroyVideoParser(self.parser)
             if r:
-                log.warn(f"Warning: error {r} destroying parser")
+                log.warn(f"Warning: error %r destroying parser", CUDA_ERRORS.get(r, r))
             self.parser = NULL
         if self.context!=NULL:
             r = cuvidDestroyDecoder(self.context)
             if r:
-                log.warn(f"Warning: error {r} destroying decoder")
+                log.warn(f"Warning: error %r destroying decoder", CUDA_ERRORS.get(r, r))
             self.context = NULL
         self.width = 0
         self.height = 0
         self.colorspace = ""
         self.encoding = ""
 
-
     def decompress_image(self, data, options=None):
+        log(f"nvdec.decompress_image({len(data)} bytes, {options})")
         cdef CUresult r
         cdef CUVIDSOURCEDATAPACKET packet
-        if self.parser:
-            memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET))
-            packet.flags = CUVID_PKT_ENDOFPICTURE
-            with buffer_context(data) as bc:
-                packet.payload_size = len(bc)
-                packet.payload = <const unsigned char*> (<uintptr_t> int(bc))
-                r = cuvidParseVideoData(self.parser, &packet)
-                #cudacheck(r, "parsing error")
-        return self.decode_data(data)
-
-    def decode_data(self, data, options=None):
-        log(f"decompress_image({len(data)} bytes, {options})")
         cdef CUVIDPICPARAMS pic
-        cdef CUVIDH264PICPARAMS *h264
-        memset(&pic, 0, sizeof(CUVIDPICPARAMS))
-        if self.encoding=="jpeg":
-            pass
-        elif self.encoding=="h264":
-            #extracted using the gstreamer codec
-            h264 = &pic.CodecSpecific.h264
-            pic.PicWidthInMbs = roundup(self.width, 16)//16
-            pic.FrameHeightInMbs = roundup(self.height, 16)//16
-            #h264.log2_max_pic_order_cnt_lsb_minus4 = 2
-            #h264.frame_mbs_only_flag = 1
-            #h264.direct_8x8_inference_flag = 1
-            #h264.num_ref_frames = 4
-            #h264.entropy_coding_mode_flag = 1
-            h264.num_ref_idx_l0_active_minus1 = 2
-            h264.weighted_pred_flag = 1
-            h264.weighted_bipred_idc = 2
-            h264.deblocking_filter_control_present_flag = 1
-            #h264.transform_8x8_mode_flag = 1
-            #h264.chroma_qp_index_offset = 4294967294
-            #h264.second_chroma_qp_index_offset = 4294967294
-        else:
-            raise RuntimeError(f"{self.encoding} is not implemented yet")
+        try:
+            self.image = None
+            stream = (options or {}).get("stream", None)
+            if stream:
+                self.stream = <CUstream> (<uintptr_t> stream.handle)
+            with buffer_context(data) as bc:
+                self.buffer = bc
+                if self.parser:
+                    self.event.clear()
+                    memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET))
+                    packet.flags = CUVID_PKT_ENDOFPICTURE   #| CUVID_PKT_TIMESTAMP
+                    packet.timestamp = 0
+                    packet.payload_size = len(bc)
+                    packet.payload = <const unsigned char*> (<uintptr_t> int(bc))
+                    r = cuvidParseVideoData(self.parser, &packet)
+                    log(f"cuvidParseVideoData(..)={r}")
+                    cudacheck(r, "parsing error")
+                    if not self.event.wait(1):
+                        raise RuntimeError("parsing timed out")
+                    return self.image
+                else:
+                    #no need: just use a blank pic params:
+                    memset(&pic, 0, sizeof(CUVIDPICPARAMS))
+                    self.decode_data(&pic)
+                    return self.get_output_image()
+        finally:
+            self.buffer = None
+            self.stream = <CUstream> 0
 
-        cdef unsigned int slice_offset = 0
-        pic.pSliceDataOffsets = <const unsigned int *> &slice_offset
-        pic.CurrPicIdx = self.frames
-        pic.field_pic_flag = 0
-        pic.nNumSlices = 1
-        pic.ref_pic_flag = 1
-        pic.intra_pic_flag = self.frames==0
+    cdef decode_data(self, CUVIDPICPARAMS *pic):
+        log(f"decode_data({len(self.buffer)} bytes)")
         self.frames += 1
         cdef CUresult r = 0
-        with buffer_context(data) as bc:
-            pic.nBitstreamDataLen = len(data)
-            pic.pBitstreamData = <const unsigned char*> (<uintptr_t> int(bc))
-            with nogil:
-                r = cuvidDecodePicture(self.context, &pic)
+        pic.nBitstreamDataLen = len(self.buffer)
+        pic.pBitstreamData = <const unsigned char*> (<uintptr_t> int(self.buffer))
+        with nogil:
+            r = cuvidDecodePicture(self.context, pic)
         log(f"cuvidDecodePicture()={r}")
         cudacheck(r, "GPU picture decoding returned error")
         cdef CUVIDGETDECODESTATUS status
         memset(&status, 0, sizeof(CUVIDGETDECODESTATUS))
-        cdef int pic_idx = 0
+        cdef int pic_idx = pic.CurrPicIdx
+        #start = monotonic()
         r = cuvidGetDecodeStatus(self.context, pic_idx, &status)
+        #while status.decodeStatus==cuvidDecodeStatus_InProgress:
+        #    sleep(0.001)
+        #    r = cuvidGetDecodeStatus(self.context, pic_idx, &status)
+        #    log("waiting for decode")
+        #end = monotonic()
         sinfo = DECODE_STATUS_STR.get(status.decodeStatus, status.decodeStatus)
         log(f"decompress_image: status={sinfo}")
-        if status.decodeStatus not in (
-            cuvidDecodeStatus_InProgress,
-            cuvidDecodeStatus_Success,
-            cuvidDecodeStatus_Error_Concealed,
-            ):
-            if r in DECODE_STATUS_STR:
-                raise RuntimeError(f"GPU decoding status returned error {sinfo!r}")
-            cudacheck(r, "GPU picture decoding status error")
+        #if status.decodeStatus not in (
+        #    cuvidDecodeStatus_InProgress,
+        #    cuvidDecodeStatus_Success,
+        #    cuvidDecodeStatus_Error_Concealed,
+        #    ):
+        #    if r in DECODE_STATUS_STR:
+        #        raise RuntimeError(f"GPU decoding status returned error {sinfo!r}")
+        #    cudacheck(r, "GPU picture decoding status error")
+
+    def get_output_image(self, int pic_idx=0):
         #map it as a CUDA buffer:
         cdef CUVIDPROCPARAMS map_params
         map_params.progressive_frame = 1
         memset(&map_params, 0, sizeof(CUVIDPROCPARAMS))
-        stream = (options or {}).get("stream", None)
-        if stream:
-            map_params.output_stream = <CUstream> (<uintptr_t> stream.handle)
+        map_params.output_stream = self.stream
         cdef unsigned long long dev_ptr
         cdef unsigned int pitch
         r = cuvidMapVideoFrame64(self.context, pic_idx, &dev_ptr, &pitch, &map_params)
         cudacheck(r, "GPU mapping of picture buffer error")
-        log(f"mapped picture {pic_idx} at {dev_ptr:x}, pitch={pitch}, stream={stream}")
+        log(f"mapped picture {pic_idx} at {dev_ptr:x}, pitch={pitch}, stream=%s", <uintptr_t> self.stream)
         try:
             yuv_buf, yuv_pitch = mem_alloc_pitch(self.width, roundup(self.height, 2)*3//2, 4)
             copy = Memcpy2D()
@@ -689,10 +734,23 @@ cdef class Decoder:
             image = ImageWrapper(0, 0, self.width, self.height,
                                  yuv_buf, "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2)
             self.frames += 1
+            self.event.set()
             return image
         finally:
             r = cuvidUnmapVideoFrame64(self.context, dev_ptr)
             cudacheck(r, "error unmapping video frame")
+
+    cdef flush(self):
+        cdef CUVIDSOURCEDATAPACKET packet
+        cdef CUresult r
+        if self.parser:
+            memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET))
+            r = cuvidParseVideoData(self.parser, &packet)
+            packet.payload_size = 0
+            packet.payload = NULL
+            packet.flags = CUVID_PKT_ENDOFSTREAM
+            r = cuvidParseVideoData(self.parser, &packet)
+            log(f"cuvidParseVideoData(..)={r}")
 
 
 def download_from_gpu(buf, size_t size):
@@ -806,13 +864,9 @@ def selftest(full=False):
         log(f"codecs failed: {codec_failed}")
         log(f"codecs supported: {codec_ok}")
         log(f"minimum sizes: {MIN_SIZES}")
-        #decoder = Decoder()
-        #decoder.init_context("h264", 512, 256, "YUV420P")
-        #decoder.clean()
-        #if "h264" not in codec_ok and "jpeg" not in codec_ok:
-        if "jpeg" not in codec_ok:
-            raise RuntimeError("no jpeg decoding")
-
         from xpra.codecs.codec_checks import testdecoder
         from xpra.codecs.nvidia import nvdec
         nvdec.decoder.CODECS = testdecoder(nvdec.decoder, full)
+        log(f"validated encodings: {nvdec.decoder.CODECS}")
+        if not nvdec.decoder.CODECS:
+            raise RuntimeError("no encodings supported")
