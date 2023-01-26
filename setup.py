@@ -613,7 +613,7 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
     pkgc.update(kwargs)
     if WIN32 and kwargs.get("language", "")=="c++":
         #all C++ modules trigger an address warning in the module initialization code:
-        add_to_keywords.append(pkgc, "extra_compile_args", "-Wno-error=address")
+        add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=address")
     add_cython_ext(modname, src, **pkgc)
 
 def tace(toggle, *args, **kwargs):
