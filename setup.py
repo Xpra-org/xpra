@@ -611,6 +611,9 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
                 value = (value, )
             add_to_keywords(pkgc, addto, *value)
     pkgc.update(kwargs)
+    if WIN32 and kwargs.get("language", "")=="c++":
+        #all C++ modules trigger an address warning in the module initialization code:
+        add_to_keywords.append(pkgc, "extra_compile_args", "-Wno-error=address")
     add_cython_ext(modname, src, **pkgc)
 
 def tace(toggle, *args, **kwargs):
@@ -1977,12 +1980,8 @@ toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
-    extra_compile_args = []
-    if WIN32:
-        extra_compile_args.append("-Wno-error=address")
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
-        extra_compile_args=extra_compile_args,
         extra_link_args = ("-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
         )
 
@@ -2252,8 +2251,7 @@ tace(libav_common, "xpra.codecs.libav_common.av_log", "libavutil")
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 tace(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2.decoder,xpra/codecs/dec_avcodec2/register_compat.c", "libavcodec,libavutil,libavformat")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter", "libyuv", language="c++",
-        extra_compile_args = ("-Wno-error=address", ) if WIN32 else ())
+tace(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv.colorspace_converter", "libyuv", language="c++")
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 tace(csc_swscale_ENABLED, "xpra.codecs.csc_swscale.colorspace_converter", "libswscale,libavutil")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
