@@ -9,12 +9,14 @@
 from time import monotonic
 
 from xpra.os_util import bytestostr
-from xpra.util import typedict, net_utf8
+from xpra.util import typedict, net_utf8, envbool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 keylog = Logger("keyboard")
 mouselog = Logger("mouse")
+
+INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 
 
 class InputServer(StubServerMixin):
@@ -379,7 +381,7 @@ class InputServer(StubServerMixin):
         device_id, seq, wid, button, pressed, pointer, props = packet[1:8]
         if device_id>=0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
-            if 0<=seq<=highest_seq:
+            if INPUT_SEQ_NO and 0<=seq<=highest_seq:
                 mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
                 return
             self.pointer_sequence[device_id] = seq
@@ -422,7 +424,7 @@ class InputServer(StubServerMixin):
         device_id, seq, wid, pdata, props = packet[1:6]
         if device_id>=0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
-            if 0<=seq<=highest_seq:
+            if INPUT_SEQ_NO and 0<=seq<=highest_seq:
                 mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
                 return
             self.pointer_sequence[device_id] = seq
