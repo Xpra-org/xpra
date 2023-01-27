@@ -6,6 +6,7 @@
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import WIN32, OSX
 from xpra.util import parse_simple_dict, envbool, csv
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
@@ -28,10 +29,6 @@ NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 
 
 assert get_version and init_module and cleanup_module
-ENCODERS = {
-    "h264"  : ("vaapih264enc", "x264enc"),
-    "av1"   : ("av1enc", ),
-    }
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes" : 0,
@@ -150,8 +147,8 @@ def init_all_specs(*exclude):
         for v in css_out:
             if v not in cur:
                 cur.append(v)
-    vaapi = True
-    if not NVIDIA_VAAPI:
+    vaapi = False
+    if NVIDIA_VAAPI:
         try:
             from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
             vaapi = not has_nvidia_hardware()
@@ -162,7 +159,7 @@ def init_all_specs(*exclude):
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
     add("x264enc", "h264", "BGRX", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
-    add("vp8enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
+    add("vp9enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
     #add: nvh264enc, nvh265enc ?
     global SPECS, COLORSPACES
     SPECS = specs
