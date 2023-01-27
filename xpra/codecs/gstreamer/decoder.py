@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,6 +12,7 @@ from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
     )
+from xpra.os_util import WIN32
 from xpra.util import roundup
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -21,7 +22,11 @@ log = Logger("decoder", "gstreamer")
 assert get_version and get_type and init_module and cleanup_module
 
 
-CODECS = ("vp8", "h264", "av1")
+if WIN32:
+    CODECS = ("vp9", "vp8", "av1")
+else:
+    CODECS = ("vp9", "vp8", "h264", "av1")
+
 def get_encodings():
     return CODECS
 
@@ -50,17 +55,17 @@ class Decoder(VideoPipeline):
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = "I420"
         IMAGE_CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format}"
-        if self.encoding=="vp8":
-            stream_caps = f"video/x-vp8,width={self.width},height={self.height}"
-            decode = ["vp8dec"]
-        elif self.encoding=="h264":
-            stream_caps = f"video/x-h264,profile=main,stream-format=avc,alignment=au,width={self.width},height={self.height}"
+        if self.encoding in ("vp8", "vp9"):
+            stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
+            decode = [f"{self.encoding}dec"]
+        elif self.encoding=="h264" and not WIN32:
+            stream_caps = f"video/x-{self.encoding},profile=main,stream-format=avc,alignment=au,width={self.width},height={self.height}"
             #decode = ["vaapih264dec"]
             #decode = ["openh264dec"]
-            decode = ["avdec_h264"]
+            decode = [f"avdec_{self.encoding}"]
         elif self.encoding=="av1":
-            stream_caps = f"video/x-av1,width={self.width},height={self.height}"
-            decode = ["av1dec"]
+            stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
+            decode = [f"{self.encoding}dec"]
         else:
             raise RuntimeError(f"invalid encoding {self.encoding}")
         elements = [
