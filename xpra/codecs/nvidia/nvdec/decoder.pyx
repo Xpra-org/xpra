@@ -513,7 +513,7 @@ cdef class Decoder:
         #pp.ulClockRate                #IN: Timestamp units in Hz (0=default=10000000Hz)
         pp.ulErrorThreshold = 100
         pp.ulMaxDisplayDelay = 0        #0=no delay
-        pp.pUserData = <void *> self.sequence
+        pp.pUserData = <void *> (<uintptr_t> self.sequence)
         pp.pfnSequenceCallback = seq_cb
         pp.pfnDecodePicture = decode_cb
         pp.pfnDisplayPicture = display_cb
