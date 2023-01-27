@@ -56,6 +56,8 @@ DEFAULT_ENCODER_OPTIONS = {
     "vp9enc" : {
         "deadline"      : 1,
         "error-resilient" : 0,
+        "lag-in-frames" : 0,
+        "cpu-used"      : 16,
         },
     #"svtav1enc" : {
     #    "speed"         : 12,
