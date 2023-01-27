@@ -8,7 +8,7 @@ import sys
 import os.path
 
 from xpra.util import envbool, csv
-from xpra.os_util import OSX, LINUX, WIN32
+from xpra.os_util import OSX, WIN32
 from xpra.codecs.codec_constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
