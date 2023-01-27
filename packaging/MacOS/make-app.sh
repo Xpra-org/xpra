@@ -352,6 +352,8 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	KEEP="./gstreamer-1.0.keep"
 	mkdir ${KEEP}
 	PLUGINS="app audio coreelements cutter removesilence faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska"
+	#video support:
+	PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale"
 	for x in $PLUGINS; do
 		echo "* keeping "$x
 		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
