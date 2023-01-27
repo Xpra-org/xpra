@@ -440,13 +440,12 @@ def get_default_source():
     return None
 
 def get_sink_plugins():
-    SINKS = []
+    SINKS = ["autoaudiosink"]
     if OSX:
         SINKS.append("osxaudiosink")
     elif WIN32:
         SINKS.append("directsoundsink")
         SINKS.append("wasapisink")
-    SINKS.append("autoaudiosink")
     try:
         from xpra.sound.pulseaudio.pulseaudio_util import has_pa
         if has_pa():
