@@ -2964,7 +2964,7 @@ cdef class Encoder:
 _init_message = False
 def init_module():
     from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
-    if has_nvidia_hardware() if False:
+    if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
