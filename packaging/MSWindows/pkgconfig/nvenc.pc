@@ -1,13 +1,8 @@
-# pkg-config file for NVENC
-prefix=/mingw64
-exec_prefix=${prefix}
-libdir=${prefix}/lib/nvenc/Lib/x64/
-includedir=${prefix}/lib/nvenc/Interface
+libdir=C:/msys64/mingw64/lib/nvenc12/Lib/x64/
+includedir=C:/msys64/mingw64/lib/nvenc12/Interface
 
 Name: nvenc
 Description: NVIDIA NVENC Video Encoder
-Version: 11
-Requires:
-Conflicts:
-Libs: -L${libdir}
-Cflags: -I${includedir} -Wno-error=deprecated-declarations -Wno-error=address
+Version: 12
+Libs: -L${libdir} -lnvEncodeAPI
+Cflags: -I${includedir} -Wno-deprecated-declarations

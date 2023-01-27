@@ -5,6 +5,6 @@ includedir=${cuda_prefix}/include
 
 Name: nvjpeg
 Description: Library for the nvjpeg GPU compression
-Version: 11
+Version: 12
 Cflags: -I${includedir} -Wno-error
-Libs: -L${libdir} -lnvjpeg64_11
+Libs: -L${libdir} -lnvjpeg64_12
