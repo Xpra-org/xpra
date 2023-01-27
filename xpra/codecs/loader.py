@@ -179,7 +179,7 @@ def xpra_codec_import(name, description, top_module, class_module, classname):
             version_name = name[4:]
         add_codec_version(version_name, xpra_class_module)
 
-osname = "linux" if LINUX else os.name.rstrip("0123456789")
+platformname = sys.platform.rstrip("0123456789")
 
 CODEC_OPTIONS = {
     #encoders:
@@ -220,7 +220,7 @@ CODEC_OPTIONS = {
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
-    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"fbc_capture_{osname}", "NvFBC_SysCapture"),
+    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"fbc_capture_{platformname}", "NvFBC_SysCapture"),
     }
 
 NOLOAD = []
