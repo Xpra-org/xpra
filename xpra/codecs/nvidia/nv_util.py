@@ -43,19 +43,20 @@ def _has_nvidia_hardware():
     except OSError:
         log(f"failed to query {NVIDIA_PROC_FILE!r}", exc_info=True)
     # pylint: disable=import-outside-toplevel
-    #the drm module should also be quick:
-    try:
-        from xpra.codecs.drm import drm
-        info = drm.query()
-        for dev_info in info.values():
-            dev_name = dev_info.get("name", "").lower()
-            if dev_name.find("nouveau")>=0:
-                continue
-            if dev_name.find("nvidia")>=0:
-                log(f"has_nvidia_hardware() found nvidia drm device: {dev_info}")
-                return True
-    except ImportError as e:
-        log(f"has_nvidia_hardware() cannot use drm module: {e}")
+    if POSIX:
+        #the drm module should also be quick:
+        try:
+            from xpra.codecs.drm import drm
+            info = drm.query()
+            for dev_info in info.values():
+                dev_name = dev_info.get("name", "").lower()
+                if dev_name.find("nouveau")>=0:
+                    continue
+                if dev_name.find("nvidia")>=0:
+                    log(f"has_nvidia_hardware() found nvidia drm device: {dev_info}")
+                    return True
+        except ImportError as e:
+            log(f"has_nvidia_hardware() cannot use drm module: {e}")
     try:
         import pynvml
         assert pynvml
