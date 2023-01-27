@@ -388,6 +388,7 @@ cdef inline raiseNvFBC(NVFBCRESULT ret, msg):
 
 
 NvFBC = None
+cdef NvU32 version = 0
 def init_nvfbc_library():
     global NvFBC
     if NvFBC is not None:
@@ -414,6 +415,9 @@ def init_nvfbc_library():
     NvFBC.NvFBC_SetGlobalFlags.restype = wintypes.INT
     NvFBC.NvFBC_Enable.argtypes = [wintypes.INT]
     NvFBC.NvFBC_Enable.restype = wintypes.INT
+    cdef NVFBCRESULT res = NvFBC.NvFBC_GetSDKVersion(cvp(<uintptr_t> &version))
+    log("NvFBC_GetSDKVersion()=%i version=%i", res, version)
+    raiseNvFBC(res, "NvFBC_GetSDKVersion")
     return NvFBC
 
 def unload_library():
@@ -515,12 +519,6 @@ cdef get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
         }
 
 def get_version():
-    global NvFBC
-    assert NvFBC
-    cdef NvU32 version = 0
-    cdef NVFBCRESULT res = NvFBC.NvFBC_GetSDKVersion(cvp(<uintptr_t> &version))
-    log("NvFBC_GetSDKVersion()=%i version=%i", res, version)
-    raiseNvFBC(res, "NvFBC_GetSDKVersion")
     return version
 
 def get_type():
