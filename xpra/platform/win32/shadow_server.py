@@ -67,7 +67,6 @@ BUTTON_EVENTS = {
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
-NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 
 
 def get_root_window_size():
@@ -181,25 +180,19 @@ def init_capture(w, h, pixel_depth=32):
     capture = None
     if SHADOW_NVFBC:
         try:
-            from xpra.codecs.nvfbc.fbc_capture_win import init_nvfbc_library
+            from xpra.codecs.nvfbc.capture import get_capture_instance
+            capture = get_capture_instance()
         except ImportError:
             log("NvFBC capture is not available", exc_info=True)
-        else:
+            capture = None
+        if capture:
             try:
-                if init_nvfbc_library():
-                    log("NVFBC_CUDA=%s", NVFBC_CUDA)
-                    pixel_format = {
-                        24  : "RGB",
-                        32  : "BGRX",
-                        30  : "r210",
-                        }[pixel_depth]
-                    if NVFBC_CUDA:
-                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_CUDACapture #@UnresolvedImport
-                        capture = NvFBC_CUDACapture()
-                    else:
-                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture  #@UnresolvedImport
-                        capture = NvFBC_SysCapture()
-                    capture.init_context(w, h, pixel_format)
+                pixel_format = {
+                    24  : "RGB",
+                    32  : "BGRX",
+                    30  : "r210",
+                    }[pixel_depth]
+                capture.init_context(w, h, pixel_format)
             except Exception as e:
                 capture = None
                 log("NvFBC_Capture", exc_info=True)
@@ -207,7 +200,8 @@ def init_capture(w, h, pixel_depth=32):
                 for x in str(e).replace(". ", ":").split(":"):
                     if x.strip() and x!="nvfbc":
                         log.warn(" %s", x.strip())
-                log.warn(" xpra is using the slower GDI capture code")
+                if SHADOW_GDI:
+                    log.warn(" xpra will be using the slower GDI capture code")
                 del e
     if not capture:
         if SHADOW_GDI:

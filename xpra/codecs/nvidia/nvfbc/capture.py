@@ -17,6 +17,26 @@ log = Logger("encoder", "nvfbc")
 USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
 
 
+def get_capture_module():
+    from xpra.os_util import WIN32, LINUX
+    if WIN32:
+        from xpra.codecs.nvfbc import fbc_capture_win   #@UnresolvedImport @UnusedImport
+        return fbc_capture_win
+    if LINUX:
+        from xpra.codecs.nvfbc import fbc_capture_linux #@UnresolvedImport @Reimport
+        return fbc_capture_linux
+    return None
+
+def get_capture_instance(cuda=USE_NVFBC_CUDA):
+    fbc_module = get_capture_module()
+    if not fbc_module:
+        return None
+    fbc_module.init_nvfbc_library()
+    if cuda:
+        return fbc_capture.NvFBC_CUDACapture()     #@UndefinedVariable
+    return fbc_capture.NvFBC_SysCapture()      #@UndefinedVariable
+
+
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
@@ -26,24 +46,17 @@ def main():
     with program_context("NvFBC-Capture", "NvFBC Capture"):
         from xpra.platform.paths import get_download_dir
         from xpra.util import print_nested_dict
-        from xpra.os_util import WIN32, LINUX
-        if WIN32:
-            from xpra.codecs.nvfbc import fbc_capture_win as fbc_capture      #@UnresolvedImport @UnusedImport
-        elif LINUX:
-            from xpra.codecs.nvfbc import fbc_capture_linux as fbc_capture      #@UnresolvedImport @Reimport
-        else:
-            raise Exception("nvfbc is not support on %s" % sys.platform)
+        fbc_capture = get_capture_module()
+        if not fbc_capture:
+            raise RuntimeError("nvfbc is not supported on this platform")
         fbc_capture.init_module()
         log.info("Info:")
         print_nested_dict(fbc_capture.get_info(), print_fn=log.info)
         log.info("Status:")
         print_nested_dict(fbc_capture.get_status(), print_fn=log.info)
         try:
-            log("creating test capture class")
-            if USE_NVFBC_CUDA:
-                c = fbc_capture.NvFBC_CUDACapture()     #@UndefinedVariable
-            else:
-                c = fbc_capture.NvFBC_SysCapture()      #@UndefinedVariable
+            log("creating test capture instance")
+            c = get_capture_instance()
             log("Capture=%s", c)
             c.init_context()
             assert c.refresh()

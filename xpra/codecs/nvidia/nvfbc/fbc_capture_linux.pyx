@@ -339,12 +339,13 @@ cdef NVFBC_API_FUNCTION_LIST function_list
 INIT_DONE = False
 def init_nvfbc_library():
     global INIT_DONE
-    assert not INIT_DONE
-    memset(&function_list, 0, sizeof(NVFBC_API_FUNCTION_LIST))
-    function_list.dwVersion = NVFBC_VERSION
-    cdef NVFBCSTATUS ret = NvFBCCreateInstance(&function_list)
-    log("NvFBCCreateInstance(%#x)=%s", <uintptr_t> &function_list, ret)
-    raiseNvFBC(0, ret, "NvFBCCreateInstance")
+    cdef NVFBCSTATUS ret
+    if not INIT_DONE:
+        memset(&function_list, 0, sizeof(NVFBC_API_FUNCTION_LIST))
+        function_list.dwVersion = NVFBC_VERSION
+        ret = NvFBCCreateInstance(&function_list)
+        log("NvFBCCreateInstance(%#x)=%s", <uintptr_t> &function_list, ret)
+        raiseNvFBC(0, ret, "NvFBCCreateInstance")
     INIT_DONE = True
 
 def unload_library():

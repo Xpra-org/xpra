@@ -29,16 +29,16 @@ log = Logger("x11", "shadow")
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
 USE_NVFBC = envbool("XPRA_NVFBC", True)
-USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
+nvfbc = None
 if USE_NVFBC:
     try:
-        from xpra.codecs.nvfbc.fbc_capture_linux import (        #@UnresolvedImport
-            init_module, NvFBC_SysCapture, NvFBC_CUDACapture,
-            )
-        init_module()
+        from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
+        nvfbc = get_capture_module()
+        if nvfbc:
+            nvfbc.init_nvfbc_library()
     except Exception:
         log("NvFBC Capture is not available", exc_info=True)
-        USE_NVFBC = False
+        nvfbc = None
 
 
 def window_matches(wspec, model_class):
@@ -247,11 +247,7 @@ def setup_capture(window):
     capture = None
     if USE_NVFBC:
         try:
-            log(f"setup_capture({window}) USE_NVFBC_CUDA={USE_NVFBC_CUDA}")
-            if USE_NVFBC_CUDA:
-                capture = NvFBC_CUDACapture()
-            else:
-                capture = NvFBC_SysCapture()
+            capture = get_capture_instance()
             capture.init_context(ww, wh)
             capture.refresh()
             image = capture.get_image(0, 0, ww, wh)
