@@ -1511,6 +1511,7 @@ if WIN32:
             add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
+            add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
