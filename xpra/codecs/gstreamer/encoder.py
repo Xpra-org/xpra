@@ -6,7 +6,6 @@
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.os_util import WIN32, OSX
 from xpra.util import parse_simple_dict, envbool, csv
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
