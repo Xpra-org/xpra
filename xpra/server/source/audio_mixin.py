@@ -267,38 +267,42 @@ class AudioMixin(StubSourceMixin):
                            "sequence"      : sequence,
                         })
 
+    def new_stream_sound(self):
+        if not NEW_STREAM_SOUND:
+            return
+        from xpra.platform.paths import get_resources_dir   # pylint: disable=import-outside-toplevel
+        sample = os.path.join(get_resources_dir(), "bell.wav")
+        log(f"new_stream_sound() sample={sample}, exists={os.path.exists(sample)}")
+        if not os.path.exists(sample):
+            return
+        cmd = [
+            "gst-launch-1.0", "-q",
+            "filesrc", f"location={sample}",
+            "!", "decodebin",
+            "!", "audioconvert",
+            "!", "autoaudiosink",
+            ]
+        cmd_str = " ".join(cmd)
+        try:
+            proc = subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+            log(f"Popen({cmd_str})={proc}")
+            from xpra.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
+            getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
+            def stop_new_stream_notification():
+                if self.new_stream_timers.pop(proc, None):
+                    self.stop_new_stream_notification(proc)
+            timer = self.timeout_add(NEW_STREAM_SOUND_STOP*1000, stop_new_stream_notification)
+            self.new_stream_timers[proc] = timer
+        except Exception as e:
+            log(f"new_stream_sound() error playing new stream sound", exc_info=True)
+            log.error("Error playing new-stream sound")
+            log.error(f" using: {cmd_str}:")
+            log.estr(e)
+
 
     def new_stream(self, sound_source, codec):
-        if NEW_STREAM_SOUND:
-            try:
-                from xpra.platform.paths import get_resources_dir   # pylint: disable=import-outside-toplevel
-                sample = os.path.join(get_resources_dir(), "bell.wav")
-                log("new_stream(%s, %s) sample=%s, exists=%s", sound_source, codec, sample, os.path.exists(sample))
-                if os.path.exists(sample):
-                    if POSIX:
-                        sink = "alsasink"
-                    else:
-                        sink = "autoaudiosink"
-                    cmd = [
-                        "gst-launch-1.0", "-q",
-                        "filesrc", f"location={sample}",
-                        "!", "decodebin",
-                        "!", "audioconvert",
-                        "!", sink]
-                    proc = subprocess.Popen(cmd)  # pylint: disable=consider-using-with
-                    log("Popen(%s)=%s", cmd, proc)
-                    from xpra.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
-                    getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
-                    def stop_new_stream_notification():
-                        if self.new_stream_timers.pop(proc, None):
-                            self.stop_new_stream_notification(proc)
-                    timer = self.timeout_add(NEW_STREAM_SOUND_STOP*1000, stop_new_stream_notification)
-                    self.new_stream_timers[proc] = timer
-            except Exception as e:
-                log("new_stream(%s, %s) error playing new stream sound", sound_source, codec, exc_info=True)
-                log.error("Error playing new-stream bell sound:")
-                log.estr(e)
         log("new_stream(%s, %s)", sound_source, codec)
+        self.new_stream_sound()
         if self.sound_source!=sound_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
