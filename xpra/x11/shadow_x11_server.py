@@ -29,6 +29,7 @@ log = Logger("x11", "shadow")
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
 USE_NVFBC = envbool("XPRA_NVFBC", True)
+USE_GSTREAMER = envbool("XPRA_GSTREAMER_SHADOW", False)
 nvfbc = None
 if USE_NVFBC:
     try:
@@ -255,6 +256,16 @@ def setup_capture(window):
         except Exception as e:
             log("get_image() NvFBC test failed", exc_info=True)
             log(f"not using {capture}: {e}")
+            capture = None
+    if not capture and USE_GSTREAMER:
+        try:
+            from xpra.codecs.gstreamer.capture import Capture
+            capture = Capture(xid=window.get_xid(), width=ww, height=wh)
+            capture.start()
+        except ImportError:
+            log(f"not using X11 capture using gstreamer: {e}")
+        except Exception:
+            log(f"not using X11 capture using gstreamer", exc_info=True)
             capture = None
     if not capture and USE_XSHM:
         try:
