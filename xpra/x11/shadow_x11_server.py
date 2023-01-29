@@ -260,8 +260,8 @@ def setup_capture(window):
         try:
             from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
             XImage = XImageBindings()
-        except ImportError:
-            pass
+        except ImportError as e:
+            log(f"not using X11 capture using bindings: {e}")
         else:
             if XImage.has_XShm():
                 capture = XImageCapture(window.get_xid())
