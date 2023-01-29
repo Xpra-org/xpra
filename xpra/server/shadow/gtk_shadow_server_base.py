@@ -116,7 +116,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                     #capture doesn't have any screen updates,
                     #so we can skip calling damage
                     #(this shortcut is only used with nvfbc)
-                    return False
+                    return True
             except TransientCodecException as e:
                 log("refresh()", exc_info=True)
                 log.warn("Warning: transient codec exception:")
