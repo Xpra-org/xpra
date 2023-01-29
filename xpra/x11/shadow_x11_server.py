@@ -292,7 +292,7 @@ class X11ShadowModel(RootWindowModel):
 
     def __repr__(self):
         info = ", OR" if self.override_redirect else ""
-        return f"X11ShadowModel({self.capture} : {self.geometry:24x} : {self.xid:x}{info})"
+        return f"X11ShadowModel({self.capture} : {self.geometry} : {self.xid:x}{info})"
 
 
 #FIXME: warning: this class inherits from ServerBase twice..
