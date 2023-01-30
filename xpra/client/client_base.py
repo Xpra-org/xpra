@@ -71,6 +71,7 @@ MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
+LEGACY_PACKET_TYPES = envbool("XPRA_LEGACY_PACKET_TYPES", True)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
@@ -1061,7 +1062,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
-        self.server_packet_types = caps.strtupleget("packet-types")
+        if not LEGACY_PACKET_TYPES:
+            self.server_packet_types = caps.strtupleget("packet-types")
         netlog(f"self.server_packet_types={self.server_packet_types}")
         return True
 
