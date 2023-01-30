@@ -271,8 +271,7 @@ class DisplayManager(StubServerMixin):
         return w, h
 
     def configure_best_screen_size(self):
-        root_w, root_h = self.get_root_window_size()
-        return root_w, root_h
+        return self.get_root_window_size()
 
 
     def apply_refresh_rate(self, ss):

@@ -218,8 +218,7 @@ class GTKServerBase(ServerBase):
         return max_w, max_h
 
     def configure_best_screen_size(self):
-        root_w, root_h = get_root_size()
-        return root_w, root_h
+        return self.get_root_window_size()
 
     def calculate_workarea(self, maxw, maxh):
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
