@@ -798,6 +798,29 @@ class X11ServerCore(GTKServerBase):
             screenlog.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return root_w, root_h
 
+
+    def mirror_client_monitor_layout(self):
+        with xsync:
+            assert RandR.is_dummy16(), "cannot match monitor layout without RandR 1.6"
+        #if we have a single UI client,
+        #see if we can emulate its monitor geometry exactly
+        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+        screenlog("%i sources=%s", len(sss), sss)
+        if len(sss)!=1:
+            return None
+        ss = sss[0]
+        mdef = ss.get_monitor_definitions()
+        if not mdef:
+            return None
+        screenlog(f"monitor definition from client {ss}: {mdef}")
+        from xpra.common import adjust_monitor_refresh_rate
+        mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
+        screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
+        with xlog:
+            RandR.set_crtc_config(mdef)
+        return mdef
+
+
     def notify_dpi_warning(self, body):
         sources = tuple(self._server_sources.values())
         if len(sources)==1:

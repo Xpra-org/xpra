@@ -423,6 +423,8 @@ class UIXpraClient(ClientBaseClass):
             u("platform",           get_platform_info())
             u("opengl",             self.opengl_props)
             caps["session-type"] = get_session_type()
+        if self.desktop_fullscreen:
+            caps["desktop-fullscreen"] = True
         return caps
 
 

@@ -11,7 +11,7 @@ import signal
 import math
 from time import monotonic, sleep
 from collections import deque
-from gi.repository import GObject, Gdk, GdkX11
+from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
@@ -324,56 +324,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
               (desired_w, desired_h, bigger), self.randr, self.randr_exact_size, d16)
         if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
-            #if we have a single UI client,
-            #see if we can emulate its monitor geometry exactly
-            sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-            screenlog("%i sources=%s", len(sss), sss)
-            if len(sss)==1:
-                ss = sss[0]
-                #perhaps it supplied its "monitors" definition?
-                mdef = ss.monitors
-                if mdef:
-                    #generate a monitor name if we don't have one yet:
-                    for monitor in mdef.values():
-                        name = monitor.get("name")
-                        if name:
-                            continue
-                        manufacturer = monitor.get("manufacturer")
-                        model = monitor.get("model")
-                        if not name:
-                            if manufacturer and model:
-                                #ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
-                                if model.startswith(manufacturer):
-                                    name = model
-                                else:
-                                    name = f"{manufacturer} {model}"
-                            else:
-                                name = manufacturer or model
-                        if name:
-                            monitor["name"] = name
-                else:
-                    #no? try to extract it from the legacy "screen_sizes" data:
-                    #(ie: pre v4.4 clients)
-                    screenlog(f"screen sizes for {ss}: {ss.screen_sizes}")
-                    if ss.screen_sizes and len(ss.screen_sizes[0])>6:
-                        monitors = ss.screen_sizes[0][5]
-                        mdef = {}
-                        for i, m in enumerate(monitors):
-                            mdef[i] = {
-                                "name"      : bytestostr(m[0]),
-                                #"primary"?
-                                #"automatic" : True?
-                                "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
-                                "width-mm"  : round(m[5]),
-                                "height-mm" : round(m[6]),
-                                }
-                if mdef:
-                    screenlog("monitor definition from client: %s", mdef)
-                    mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
-                    screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
-                    with xlog:
-                        X11RandR.set_crtc_config(mdef)
-                    return (desired_w, desired_h)
+            if self.mirror_client_monitor_layout():
+                return desired_w, desired_h
         return super().set_screen_size(desired_w, desired_h, bigger)
 
 

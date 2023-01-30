@@ -39,6 +39,7 @@ class XpraMonitorServer(DesktopServerBase):
         super().__init__()
         self.session_type = "monitor"
         self.reconfigure_timer = 0
+        self.reconfigure_locked = False
 
     def server_init(self):
         super().server_init()
@@ -69,11 +70,36 @@ class XpraMonitorServer(DesktopServerBase):
 
 
     def configure_best_screen_size(self):
-        #don't try to match the client
-        from gi.repository import Gdk
-        screen = Gdk.Screen.get_default()
-        root = screen.get_root_window()
-        return root.get_geometry()[2:4]
+        def current():
+            #don't try to match the client
+            from gi.repository import Gdk  # @UnresolvedImport
+            screen = Gdk.Screen.get_default()
+            root = screen.get_root_window()
+            return root.get_geometry()[2:4]
+        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+        log.warn(f"configure_best_screen_size() sources={sss}")
+        if len(sss)!=1:
+            screenlog.info("screen used by %i clients:", len(sss))
+            return current()
+        ss = sss[0]
+        if not getattr(ss, "desktop_fullscreen", False):
+            return current()
+        #try to match this client's layout:
+        log.warn(f"will try to mirror")
+        #prevent this monitor layout change
+        #from triggering a call to via reconfigure_monitors via reconfigure:
+        try:
+            self.reconfigure_locked = True
+            mdef = self.mirror_client_monitor_layout()
+            if mdef:
+                self.setting_changed("monitors", mdef)
+        except Exception:
+            log.warn("Warning: failed to mirror client monitor layout", exc_info=True)
+            self.reconfigure_locked = False
+        def unlock():
+            self.reconfigure_locked = False
+        self.timeout_add(1000, unlock)
+        return current()
 
 
     def load_existing_windows(self):
@@ -147,7 +173,7 @@ class XpraMonitorServer(DesktopServerBase):
                 mdef.update((k, v) for k,v in output_info.items() if k in ("primary", "automatic", "name"))
                 mdefs[i] = mdef
                 screenlog("do_reconfigure() %i: %s", i, mdef)
-            if self.sync_monitors_to_models(mdefs):
+            if self.sync_monitors_to_models(mdefs) and not self.reconfigure_locked:
                 self.reconfigure_monitors()
         self.refresh_all_windows()
 

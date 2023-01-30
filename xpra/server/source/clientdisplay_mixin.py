@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import bytestostr
 from xpra.util import get_screen_info, envint, first_time, typedict, net_utf8
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -28,6 +29,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_mode_size = None
         self.desktop_size_unscaled = None
         self.desktop_size_server = None
+        self.desktop_fullscreen = False
         self.screen_sizes = ()
         self.monitors = {}
         self.screen_resize_bigger = True
@@ -64,6 +66,7 @@ class ClientDisplayMixin(StubSourceMixin):
                 self.desktop_size = None
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
+        self.desktop_fullscreen = c.boolget("desktop-fullscreen")
         self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
@@ -91,8 +94,23 @@ class ClientDisplayMixin(StubSourceMixin):
                     "model"         : td.strget,
                     "subpixel-layout" : td.strget,
                     "workarea"      : td.inttupleget,
+                    "name"          : td.strget,
                     }.items():
                     vdef[attr] = conv(attr)
+                #generate a name if we don't have one:
+                name = vdef.get("name")
+                if not name:
+                    manufacturer = vdef.get("manufacturer")
+                    model = vdef.get("model")
+                    if manufacturer and model:
+                        #ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
+                        if model.startswith(manufacturer):
+                            name = model
+                        else:
+                            name = f"{manufacturer} {model}"
+                    else:
+                        name = manufacturer or model or f"{i}"
+                    vdef["name"] = name
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
     def set_screen_sizes(self, screen_sizes):
@@ -155,3 +173,25 @@ class ClientDisplayMixin(StubSourceMixin):
     def show_desktop(self, show):
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
+
+
+    def get_monitor_definitions(self):
+        if self.monitors:
+            return self.monitors
+        #no? try to extract it from the legacy "screen_sizes" data:
+        #(ie: pre v4.4 clients)
+        log(f"screen sizes for {self}: {self.screen_sizes}")
+        if not self.screen_sizes or len(self.screen_sizes[0])<=6:
+            return None
+        monitors = self.screen_sizes[0][5]
+        mdef = {}
+        for i, m in enumerate(monitors):
+            mdef[i] = {
+                "name"      : bytestostr(m[0]),
+                #"primary"?
+                #"automatic" : True?
+                "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
+                "width-mm"  : round(m[5]),
+                "height-mm" : round(m[6]),
+                }
+        return mdef
