@@ -415,7 +415,7 @@ class WindowClient(StubClientMixin):
     def send_wheel_delta(self, device_id, wid, button, distance, pointer=None, props=None):
         modifiers = self.get_current_modifiers()
         buttons = []
-        mouselog("send_wheel_deltas% precise wheel=%s, modifiers=%s, pointer=%s",
+        mouselog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
                  (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             #send the exact value multiplied by 1000 (as an int)
