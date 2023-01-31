@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://xpra.org
+Suites: bionic
+Components: main
+Signed-By: /usr/share/keyrings/xpra.asc
