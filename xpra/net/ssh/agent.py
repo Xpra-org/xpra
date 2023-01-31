@@ -100,6 +100,7 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
     try:
         os.symlink(auth_sock, agent_uuid_sockpath)
     except OSError as e:
+        sshlog(f"os.link({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
         sshlog.error("Error creating ssh agent socket symlink")
         sshlog.estr(e)
         return None
