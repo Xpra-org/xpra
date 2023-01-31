@@ -16,7 +16,7 @@ from xpra.os_util import (
     use_gui_prompt, is_main_thread,
     )
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
-from xpra.exit_codes import EXIT_UNSUPPORTED
+from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 
 log = Logger("exec", "auth")
@@ -74,7 +74,7 @@ def run_pinentry(extra_args):
     pinentry_cmd = get_pinentry_command() or "pinentry"
     proc = popen_pinentry(pinentry_cmd)
     if not proc:
-        raise InitExit(EXIT_UNSUPPORTED, "cannot run pinentry")
+        raise InitExit(ExitCode.UNSUPPORTED, "cannot run pinentry")
     return do_run_pinentry(proc, get_input, process_output)
 
 def do_run_pinentry(proc, get_input, process_output):

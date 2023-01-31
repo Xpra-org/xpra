@@ -20,10 +20,7 @@ from xpra.scripts.pinentry_wrapper import input_pass, confirm
 from xpra.net.ssh.util import nogssapi_context, get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.make_thread import start_thread
-from xpra.exit_codes import (
-    EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE,
-    EXIT_CONNECTION_FAILED,
-    )
+from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     bytestostr, load_binary_file,
     umask_context,
@@ -200,7 +197,7 @@ def connect_to(display_desc):
 
     def fail(msg):
         log("connect_to(%s)", display_desc, exc_info=True)
-        raise InitExit(EXIT_SSH_FAILURE, msg) from None
+        raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
@@ -232,7 +229,7 @@ def connect_to(display_desc):
                 try:
                     port = int(port)
                 except (TypeError, ValueError):
-                    raise InitExit(EXIT_SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
+                    raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
                     log(f"found proxycommand={proxycommand!r} for host {host!r}")
@@ -421,7 +418,7 @@ def do_connect(chan, host, username, password,
         transport.start_client()
     except SSHException as e:
         log("SSH negotiation failed", exc_info=True)
-        raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
+        raise InitExit(ExitCode.SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
     return do_connect_to(transport, host, username, password,
                                       host_config, keyfiles, paramiko_config, auth_modes)
 
@@ -520,10 +517,10 @@ keymd5(host_key),
                         ]
                     sys.stderr.write(os.linesep.join(qinfo))
                     transport.close()
-                    raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
+                    raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
                 if not confirm(qinfo):
                     transport.close()
-                    raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
+                    raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
                 log.info("host key confirmed")
             else:
                 assert (not keys) or (host_key.get_name() not in keys)
@@ -539,7 +536,7 @@ keymd5(host_key),
                 adddnscheckinfo(qinfo)
                 if not confirm(qinfo):
                     transport.close()
-                    raise InitExit(EXIT_SSH_KEY_FAILURE, f"Unknown SSH host {host!r}")
+                    raise InitExit(ExitCode.SSH_KEY_FAILURE, f"Unknown SSH host {host!r}")
                 log.info("host key confirmed")
             if configbool("addkey", ADD_KEY):
                 try:
@@ -758,7 +755,7 @@ keymd5(host_key),
 
 class SSHAuthenticationError(InitExit):
     def __init__(self, host, errors):
-        super().__init__(EXIT_CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
+        super().__init__(ExitCode.CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
 def run_test_command(transport, cmd):
@@ -769,7 +766,7 @@ def run_test_command(transport, cmd):
         chan.set_name(f"run-test:{cmd}")
     except SSHException as e:
         log("open_session", exc_info=True)
-        raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
+        raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
     chan.exec_command(cmd)
     log(f"exec_command({cmd!r}) returned")
     start = monotonic()
@@ -911,7 +908,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitExit(EXIT_SSH_FAILURE, f"failed to open SSH session: {e}") from None
+            raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
         else:
             agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
             log(f"paramiko agent_option={agent_option}")

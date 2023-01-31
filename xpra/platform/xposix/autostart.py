@@ -7,7 +7,7 @@ import os
 
 from shutil import copy2
 from xpra.scripts.config import InitExit
-from xpra.exit_codes import EXIT_FILE_NOT_FOUND
+from xpra.exit_codes import ExitCode
 from xpra.platform.xposix.paths import do_get_resources_dir
 
 
@@ -36,7 +36,7 @@ def set_autostart(enabled):
         #find the file to copy there:
         autostart = os.path.join(do_get_resources_dir(), "autostart.desktop")
         if not os.path.exists(autostart):
-            raise InitExit(EXIT_FILE_NOT_FOUND, f"{autostart!r} file not found")
+            raise InitExit(ExitCode.FILE_NOT_FOUND, f"{autostart!r} file not found")
         copy2(autostart, target)
     else:
         os.unlink(target)

@@ -8,7 +8,7 @@ from random import randint
 
 from xpra.util import envbool, typedict
 from xpra.os_util import get_int_uuid
-from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -77,7 +77,7 @@ class MmapClient(StubClientMixin):
                 log.error(" expected '%#x'", token)
                 log.error(" found '%#x'", mmap_token)
                 self.mmap_enabled = False
-                self.quit(EXIT_MMAP_TOKEN_FAILURE)
+                self.quit(ExitCode.MMAP_TOKEN_FAILURE)
                 return
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:

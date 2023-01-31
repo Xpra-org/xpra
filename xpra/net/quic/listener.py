@@ -29,7 +29,7 @@ from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.scripts.config import InitExit
-from xpra.exit_codes import EXIT_SSL_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.util import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
@@ -206,9 +206,9 @@ def listen_quic(sock, xpra_server, socket_options : dict):
     cert = ssl_socket_options.get("cert")
     key = ssl_socket_options.get("key")
     if not cert:
-        raise InitExit(EXIT_SSL_FAILURE, "missing ssl certificate")
+        raise InitExit(ExitCode.SSL_FAILURE, "missing ssl certificate")
     if not key:
-        raise InitExit(EXIT_SSL_FAILURE, "missing ssl key")
+        raise InitExit(ExitCode.SSL_FAILURE, "missing ssl key")
     retry = socket_options.get("retry", False)
     t = get_threaded_loop()
     t.call(do_listen(sock, xpra_server, cert, key, retry))

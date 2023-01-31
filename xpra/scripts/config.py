@@ -1463,8 +1463,8 @@ def fixup_encodings(options):
     encodings = remove_dupes(encodings)
     invalid = tuple(e.lstrip("-") for e in encodings if e.lstrip("-") not in PREFERRED_ENCODING_ORDER)
     if invalid:
-        from xpra.exit_codes import EXIT_UNSUPPORTED
-        raise InitExit(EXIT_UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
+        from xpra.exit_codes import ExitCode
+        raise InitExit(ExitCode.UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
     #now we have a list of encodings, but some of them may be prefixed with "-"
     for rm in tuple(e for e in encodings if e.startswith("-")):
         while True:

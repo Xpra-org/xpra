@@ -10,10 +10,7 @@ from ctypes import Structure, c_uint8, sizeof
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
-from xpra.exit_codes import (
-    EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
-    EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
-    )
+from xpra.exit_codes import ExitCode
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
@@ -439,7 +436,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
         log("create_tcp_socket%s", (host, iport), exc_info=True)
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
     def cleanup_tcp_socket():
         log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
@@ -476,7 +473,7 @@ def setup_quic_socket(host, port):
         import aioquic
         assert common and aioquic
     except ImportError as e:
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"cannot use quic sockets: {e}") from None
     return setup_udp_socket(host, port, "quic")
 
@@ -486,7 +483,7 @@ def setup_udp_socket(host, iport, socktype):
         udp_socket = create_udp_socket(host, iport)
     except Exception as e:
         log("create_udp_socket%s", (host, iport), exc_info=True)
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
     def cleanup_udp_socket():
         log.info("closing %s socket %s:%s", socktype, host, iport)
@@ -534,7 +531,7 @@ def setup_vsock_socket(cid, iport):
         from xpra.net.vsock.vsock import bind_vsocket     #@UnresolvedImport
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup vsock socket on {cid}:{iport} {e}") from None
     def cleanup_vsock_socket():
         log.info("closing vsock socket %s:%s", cid, iport)
@@ -599,7 +596,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
         if WIN32:
             socket_dirs = [""]
         elif not session_dir:
-            raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+            raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                            "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra, norm_makepath
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
@@ -666,7 +663,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
                     if state==DotXpra.INACCESSIBLE:
                         raise InitException(f"An xpra server is already running at {sockpath!r}\n")
-                    raise InitExit(EXIT_SERVER_ALREADY_EXISTS,
+                    raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
                                    f"You already have an xpra server running at {sockpath!r}\n"
                                    "  (did you want 'xpra upgrade'?)")
             #remove exisiting sockets if clobber is set,
@@ -803,7 +800,7 @@ def handle_socket_error(sockpath, sperms, e):
     else:
         log.error("Error: failed to create socket '%s':", sockpath)
         log.estr(e)
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to create socket {sockpath}")
 
 def import_zeroconf():
@@ -987,7 +984,7 @@ def ssl_handshake(ssl_sock):
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
         if SSLEOFError and isinstance(e, SSLEOFError):
             return None
-        status = EXIT_SSL_FAILURE
+        status = ExitCode.SSL_FAILURE
         SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
         if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
             verify_code = getattr(e, "verify_code", 0)
@@ -996,7 +993,7 @@ def ssl_handshake(ssl_sock):
                 msg = getattr(e, "verify_message") or (e.args[1].split(":", 2)[2])
             except (ValueError, IndexError):
                 msg = str(e)
-            status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
+            status = ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE
             ssllog("host failed SSL verification: %s", msg)
             raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
         raise InitExit(status, f"SSL handshake failed: {e}") from None
@@ -1160,7 +1157,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
         if SSLEOFError and isinstance(e, SSLEOFError):
             return None
-        raise InitExit(EXIT_SSL_FAILURE, f"Cannot wrap socket {tcp_socket}: {e}") from None
+        raise InitExit(ExitCode.SSL_FAILURE, f"Cannot wrap socket {tcp_socket}: {e}") from None
     return ssl_sock
 
 

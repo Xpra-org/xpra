@@ -5,7 +5,7 @@
 
 from time import monotonic
 
-from xpra.exit_codes import EXIT_INTERNAL_ERROR
+from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
     get_vrefresh,
@@ -305,7 +305,7 @@ class DisplayClient(StubClientMixin):
         if maxw<=0 or maxh<=0 or maxw>=32768 or maxh>=32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
-            self.quit(EXIT_INTERNAL_ERROR)
+            self.quit(ExitCode.INTERNAL_ERROR)
             raise SystemExit(message)
         if maxw>=16384 or maxh>=16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)

@@ -47,13 +47,7 @@ from xpra.util import (
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
-from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
-        EXIT_PASSWORD_REQUIRED, EXIT_INCOMPATIBLE_VERSION,
-        EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE, EXIT_CONNECTION_FAILED,
-        EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
-        EXIT_AUTHENTICATION_FAILED,
-        EXIT_STR,
-        )
+from xpra.exit_codes import ExitCode, EXIT_STR
 
 log = Logger("client")
 netlog = Logger("network")
@@ -398,11 +392,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         except InitExit as e:
             log.error("error preparing connection:")
             log.estr(e)
-            self.quit(EXIT_INTERNAL_ERROR)
+            self.quit(ExitCode.INTERNAL_ERROR)
             return
         except Exception as e:
             log.error("error preparing connection: %s", e, exc_info=True)
-            self.quit(EXIT_INTERNAL_ERROR)
+            self.quit(ExitCode.INTERNAL_ERROR)
             return
         if challenge_response:
             hello["challenge_response"] = challenge_response
@@ -417,7 +411,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def verify_connected(self):
         if not self.connection_established:
             #server has not said hello yet
-            self.warn_and_quit(EXIT_TIMEOUT, "connection timed out")
+            self.warn_and_quit(ExitCode.TIMEOUT, "connection timed out")
 
 
     def make_hello_base(self):
@@ -696,11 +690,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for x in extra_info:
             log.warn(f" {x}")
         if AUTHENTICATION_FAILED in extra_info:
-            self.quit(EXIT_AUTHENTICATION_FAILED)
+            self.quit(ExitCode.AUTHENTICATION_FAILED)
         elif CONNECTION_ERROR in extra_info or not self.completed_startup:
-            self.quit(EXIT_CONNECTION_FAILED)
+            self.quit(ExitCode.CONNECTION_FAILED)
         else:
-            self.quit(EXIT_FAILURE)
+            self.quit(ExitCode.FAILURE)
 
     def server_disconnect(self, reason, *extra_info):
         self.quit(self.server_disconnect_exit_code(reason, *extra_info))
@@ -715,10 +709,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for x in extra_info:
             l(" %s", x)
         if reason==SERVER_UPGRADE:
-            return EXIT_UPGRADE
+            return ExitCode.UPGRADE
         if AUTHENTICATION_FAILED in extra_info:
-            return EXIT_AUTHENTICATION_FAILED
-        return EXIT_OK
+            return ExitCode.AUTHENTICATION_FAILED
+        return ExitCode.OK
 
 
     def _process_connection_lost(self, _packet):
@@ -732,11 +726,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error("  or the session was not found")
             if c!="unknown" or not e.startswith("rencode"):
                 netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
-            exit_code = EXIT_CONNECTION_FAILED
+            exit_code = ExitCode.CONNECTION_FAILED
         elif not self.completed_startup:
-            exit_code = EXIT_CONNECTION_FAILED
+            exit_code = ExitCode.CONNECTION_FAILED
         else:
-            exit_code = EXIT_CONNECTION_LOST
+            exit_code = ExitCode.CONNECTION_LOST
         if self.exit_code is None:
             exit_str = EXIT_STR.get(exit_code,
                                     str(exit_code)).lower().replace("_", " ").replace("connection", "Connection")
@@ -782,7 +776,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 authlog.estr(e)
                 continue
         authlog.warn("Warning: failed to connect, authentication required")
-        self.idle_add(self.disconnect_and_quit, EXIT_PASSWORD_REQUIRED, "authentication required")
+        self.idle_add(self.disconnect_and_quit, ExitCode.PASSWORD_REQUIRED, "authentication required")
 
     def pop_challenge_handler(self, digest=None):
         #find the challenge handler most suitable for this digest type,
@@ -841,7 +835,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
             if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
-                self.auth_error(EXIT_ENCRYPTION,
+                self.auth_error(ExitCode.ENCRYPTION,
                                 f"server requested {digest!r} digest, cowardly refusing to use it without encryption",
                                 "invalid digest")
                 return False
@@ -850,7 +844,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             salt_digest = bytestostr(packet[4])
         if salt_digest in ("xor", "des"):
             if not LEGACY_SALT_DIGEST:
-                self.auth_error(EXIT_INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
+                self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
                 return False
             log.warn(f"Warning: server using legacy support for {salt_digest!r} salt digest")
         return True
@@ -867,7 +861,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def send_challenge_reply(self, packet, value):
         if not value:
-            self.auth_error(EXIT_PASSWORD_REQUIRED,
+            self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
             return
         encryption = self.get_encryption()
@@ -910,7 +904,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         challenge_response = gendigest(actual_digest, password, salt)
         if not challenge_response:
             log(f"invalid digest module {actual_digest!r}")
-            self.auth_error(EXIT_UNSUPPORTED,
+            self.auth_error(ExitCode.UNSUPPORTED,
                             f"server requested {actual_digest} digest but it is not supported", "invalid digest")
             return
         authlog(f"{actual_digest}({obsc(password)!r}, {salt!r})={obsc(challenge_response)!r}")
@@ -942,7 +936,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #either from hello response or from challenge packet:
         self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
         def fail(msg):
-            self.warn_and_quit(EXIT_ENCRYPTION, msg)
+            self.warn_and_quit(ExitCode.ENCRYPTION, msg)
             return False
         if key_stretch!="PBKDF2":
             return fail(f"unsupported key stretching {key_stretch}")
@@ -1004,7 +998,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                   len(key or ""))
         if key:
             return key.strip(b"\n\r")
-        raise InitExit(EXIT_ENCRYPTION, "no encryption key")
+        raise InitExit(ExitCode.ENCRYPTION, "no encryption key")
 
     def _process_hello(self, packet):
         if LOG_HELLO:
@@ -1014,18 +1008,18 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not self.password_sent and self.has_password():
             p = self._protocol
             if not p or p.TYPE=="xpra":
-                self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
+                self.warn_and_quit(ExitCode.NO_AUTHENTICATION, "the server did not request our password")
                 return
         try:
             caps = typedict(packet[1])
             netlog("processing hello from server: %s", ellipsizer(caps))
             if not self.server_connection_established(caps):
-                self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
+                self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
             else:
                 self.connection_established = True
         except Exception as e:
             netlog.info("error in hello packet", exc_info=True)
-            self.warn_and_quit(EXIT_FAILURE, f"error processing hello packet from server: {e}")
+            self.warn_and_quit(ExitCode.FAILURE, f"error processing hello packet from server: {e}")
 
 
     def server_connection_established(self, caps : typedict) -> bool:
@@ -1096,12 +1090,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from xpra.net.socket_util import guess_packet_type #pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(data)
         p = self._protocol
-        exit_code = EXIT_PACKET_FAILURE
+        exit_code = ExitCode.PACKET_FAILURE
         pcount = p.input_packetcount if p else 0
         data = bytestostr(data).strip("\n\r")
         show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
         if pcount<=1:
-            exit_code = EXIT_CONNECTION_FAILED
+            exit_code = ExitCode.CONNECTION_FAILED
             netlog.error("Error: failed to connect")
         else:
             netlog.error("Error: received an invalid packet")
@@ -1133,9 +1127,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         netlog.info(f"Received invalid packet: {message}")
         netlog(" data: %s", ellipsizer(data))
         p = self._protocol
-        exit_code = EXIT_PACKET_FAILURE
+        exit_code = ExitCode.PACKET_FAILURE
         if not p or p.input_packetcount<=1:
-            exit_code = EXIT_CONNECTION_FAILED
+            exit_code = ExitCode.CONNECTION_FAILED
         self.quit(exit_code)
 
 

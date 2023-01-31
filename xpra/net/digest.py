@@ -78,7 +78,7 @@ def gendigest(digest, password, salt):
     if not digestmod:
         log("invalid digest module '%s'", digest)
         return None
-        #warn_server_and_exit(EXIT_UNSUPPORTED,
+        #warn_server_and_exit(ExitCode.UNSUPPORTED,
         #    "server requested digest '%s' but it is not supported" % digest, "invalid digest")
     v = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
     return v

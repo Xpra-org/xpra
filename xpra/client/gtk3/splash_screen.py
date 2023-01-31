@@ -12,7 +12,7 @@ from gi.repository import Gtk, Gdk, GLib, Pango  # @UnresolvedImport
 from xpra import __version__
 from xpra.util import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
-from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
+from xpra.exit_codes import ExitCode
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
@@ -137,7 +137,7 @@ class SplashScreen(Gtk.Window):
     def timeout(self):
         log("timeout()")
         self.timeout_timer = None
-        self.exit_code = EXIT_TIMEOUT
+        self.exit_code = ExitCode.TIMEOUT
         self.show_progress_value(100)
         self.progress_bar.set_text("timeout")
         self.progress_bar.set_show_text(True)
@@ -166,7 +166,7 @@ class SplashScreen(Gtk.Window):
         while self.exit_code is None:
             line = sys.stdin.readline()
             if not line:
-                self.exit_code = EXIT_CONNECTION_LOST
+                self.exit_code = ExitCode.CONNECTION_LOST
                 self.exit()
                 break
             GLib.idle_add(self.handle_stdin_line, line)

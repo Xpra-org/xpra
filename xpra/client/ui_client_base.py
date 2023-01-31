@@ -30,7 +30,7 @@ from xpra.util import (
     AUTHENTICATION_FAILED,
     )
 from xpra.scripts.config import parse_bool
-from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_CONNECTION_LOST, EXIT_AUTHENTICATION_FAILED
+from xpra.exit_codes import ExitCode
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
 from xpra.log import Logger, get_info as get_log_info
@@ -357,16 +357,16 @@ class UIXpraClient(ClientBaseClass):
             body = "\n".join(info)
             if AUTHENTICATION_FAILED in info and not self.connection_established:
                 title = "Authentication failed"
-                self.exit_code = EXIT_AUTHENTICATION_FAILED
+                self.exit_code = ExitCode.AUTHENTICATION_FAILED
             if self.connection_established and self.completed_startup:
                 title = "Xpra Session Disconnected: %s" % reason
-                self.exit_code = EXIT_CONNECTION_LOST
+                self.exit_code = ExitCode.CONNECTION_LOST
             elif self.connection_established:
                 title = "Connection failed during startup: %s" % reason
-                self.exit_code = EXIT_CONNECTION_FAILED
+                self.exit_code = ExitCode.CONNECTION_FAILED
             else:
                 title = "Connection failed: %s" % reason
-                self.exit_code = EXIT_CONNECTION_FAILED
+                self.exit_code = ExitCode.CONNECTION_FAILED
             self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
                             title, body, icon_name="disconnected")
             #show text notification then quit:

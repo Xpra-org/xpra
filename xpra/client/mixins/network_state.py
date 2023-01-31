@@ -11,7 +11,7 @@ from collections import deque
 
 from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
-from xpra.exit_codes import EXIT_CONNECTION_LOST
+from xpra.exit_codes import ExitCode
 from xpra.net.packet_encoding import ALL_ENCODERS
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
@@ -278,7 +278,7 @@ class NetworkState(StubClientMixin):
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
             #no point trying to use disconnect_and_quit() to tell the server here..
-            self.warn_and_quit(EXIT_CONNECTION_LOST, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
+            self.warn_and_quit(ExitCode.CONNECTION_LOST, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self):
         p = self._protocol

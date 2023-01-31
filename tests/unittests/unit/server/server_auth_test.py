@@ -8,10 +8,7 @@ import os
 import unittest
 
 from xpra.os_util import pollwait, strtobytes, OSX, POSIX
-from xpra.exit_codes import (
-    EXIT_OK, EXIT_AUTHENTICATION_FAILED, EXIT_CONNECTION_FAILED,
-    EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION,
-    )
+from xpra.exit_codes import ExitCode
 from unit.server_test_util import ServerTestUtil, estr, log
 
 
@@ -47,27 +44,27 @@ class ServerAuthTest(ServerTestUtil):
             raise RuntimeError(f"expected info client to return {estr(exit_code)} but got {estr(r)}")
 
     def test_fail(self):
-        self._test_auth("fail", "", EXIT_CONNECTION_FAILED)
+        self._test_auth("fail", "", ExitCode.CONNECTION_FAILED)
 
     def test_reject(self):
-        self._test_auth("reject", "", EXIT_PASSWORD_REQUIRED)
+        self._test_auth("reject", "", ExitCode.PASSWORD_REQUIRED)
 
     def test_none(self):
-        self._test_auth("none", "", EXIT_OK)
-        self._test_auth("none", "", EXIT_NO_AUTHENTICATION, "foo")
+        self._test_auth("none", "", ExitCode.OK)
+        self._test_auth("none", "", ExitCode.NO_AUTHENTICATION, "foo")
 
     def test_allow(self):
-        self._test_auth("allow", "", EXIT_PASSWORD_REQUIRED)
-        self._test_auth("allow", "", EXIT_OK, "foo")
+        self._test_auth("allow", "", ExitCode.PASSWORD_REQUIRED)
+        self._test_auth("allow", "", ExitCode.OK, "foo")
 
     def test_file(self):
         from xpra.os_util import get_hex_uuid
         password = get_hex_uuid()
         f = self._temp_file(strtobytes(password))
-        self._test_auth("file", "", EXIT_PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", EXIT_PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", EXIT_OK, password)
-        self._test_auth(f"file:filename={f.name}", "", EXIT_AUTHENTICATION_FAILED, password+"A")
+        self._test_auth("file", "", ExitCode.PASSWORD_REQUIRED)
+        self._test_auth(f"file:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
+        self._test_auth(f"file:filename={f.name}", "", ExitCode.OK, password)
+        self._test_auth(f"file:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
         f.close()
 
     def test_multifile(self):
@@ -78,10 +75,10 @@ class ServerAuthTest(ServerTestUtil):
         displays = ""
         data = "%s|%s|%i|%i|%s||" % (username, password, os.getuid(), os.getgid(), displays)
         f = self._temp_file(strtobytes(data))
-        self._test_auth("multifile", "", EXIT_PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", EXIT_PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", EXIT_OK, password)
-        self._test_auth(f"multifile:filename={f.name}", "", EXIT_AUTHENTICATION_FAILED, password+"A")
+        self._test_auth("multifile", "", ExitCode.PASSWORD_REQUIRED)
+        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
+        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.OK, password)
+        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
         f.close()
 
 

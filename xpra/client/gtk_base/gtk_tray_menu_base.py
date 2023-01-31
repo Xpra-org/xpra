@@ -24,7 +24,7 @@ from xpra.client.gtk_base.menu_helper import (
     ll, set_sensitive, ensure_item_selected,
     make_encodingsmenu, make_min_auto_menu,
     )
-from xpra.client.client_base import EXIT_OK
+from xpra.client.client_base import ExitCode
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.simple_stats import std_unit_dec
 from xpra.client import mixin_features
@@ -1552,7 +1552,7 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_disconnectmenuitem(self):
         def menu_quit(*_args):
-            self.client.disconnect_and_quit(EXIT_OK, CLIENT_EXIT)
+            self.client.disconnect_and_quit(ExitCode.OK, CLIENT_EXIT)
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 
 

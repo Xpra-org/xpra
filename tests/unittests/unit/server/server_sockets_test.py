@@ -13,7 +13,7 @@ from subprocess import Popen
 
 from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.net.net_util import get_free_tcp_port
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
@@ -104,7 +104,7 @@ class ServerSocketsTest(ServerTestUtil):
             if r is None:
                 client.terminate()
             if monotonic()-start>SUBPROCESS_WAIT:
-                if exit_code==EXIT_CONNECTION_FAILED:
+                if exit_code==ExitCode.CONNECTION_FAILED:
                     return
                 raise Exception(f"version client failed to connect, returned {estr(r)}")
         #try to connect
@@ -133,20 +133,20 @@ class ServerSocketsTest(ServerTestUtil):
         pollwait(server, 10)
 
     def test_default_socket(self):
-        self._test_connect(["--bind=auto,auth=allow"], [], b"hello", DISPLAY_PREFIX, EXIT_OK)
+        self._test_connect(["--bind=auto,auth=allow"], [], b"hello", DISPLAY_PREFIX, ExitCode.OK)
 
     def test_tcp_socket(self):
         port = get_free_tcp_port()
         self._test_connect([f"--bind-tcp=0.0.0.0:{port},auth=allow"], [], b"hello",
-                           f"tcp://127.0.0.1:{port}/", EXIT_OK)
+                           f"tcp://127.0.0.1:{port}/", ExitCode.OK)
         port = get_free_tcp_port()
         self._test_connect([f"--bind-tcp=0.0.0.0:{port},auth=allow"], [], b"hello",
-                           f"ws://127.0.0.1:{port}/", EXIT_OK)
+                           f"ws://127.0.0.1:{port}/", ExitCode.OK)
 
     def test_ws_socket(self):
         port = get_free_tcp_port()
         self._test_connect([f"--bind-ws=0.0.0.0:{port},auth=allow"], [], b"hello",
-                           f"ws://127.0.0.1:{port}/", EXIT_OK)
+                           f"ws://127.0.0.1:{port}/", ExitCode.OK)
 
     def _gen_ssl(self):
         tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
@@ -204,8 +204,8 @@ class ServerSocketsTest(ServerTestUtil):
                 noverify = "--ssl-server-verify-mode=none"
                 nohostname = "--ssl-check-hostname=no"
                 #asyncio makes it too difficult to emit the correct exception here:
-                #we should be getting EXIT_SSL_CERTIFICATE_VERIFY_FAILURE..
-                tc(EXIT_CONNECTION_FAILED)
+                #we should be getting ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE..
+                tc(ExitCode.CONNECTION_FAILED)
                 tc(0, noverify, nohostname)
             finally:
                 if server:
@@ -247,19 +247,19 @@ class ServerSocketsTest(ServerTestUtil):
                     self.verify_connect(f"{mode}://foo:bar@127.0.0.1:{port}/", exit_code, *client_args)
                 noverify = "--ssl-server-verify-mode=none"
                 #connect to ssl socket:
-                tc("ssl", ssl_port, EXIT_OK, noverify)
+                tc("ssl", ssl_port, ExitCode.OK, noverify)
                 #tcp socket should upgrade to ssl:
-                tc("ssl", tcp_port, EXIT_OK, noverify)
+                tc("ssl", tcp_port, ExitCode.OK, noverify)
                 #tcp socket should upgrade to ws and ssl:
-                tc("wss", tcp_port, EXIT_OK, noverify)
+                tc("wss", tcp_port, ExitCode.OK, noverify)
                 #ws socket should upgrade to ssl:
-                tc("wss", ws_port, EXIT_OK, noverify)
+                tc("wss", ws_port, ExitCode.OK, noverify)
 
                 #self signed cert should fail without noverify:
-                tc("ssl", ssl_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("ssl", tcp_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("wss", ws_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("wss", wss_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("ssl", ssl_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("ssl", tcp_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("wss", ws_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("wss", wss_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
             finally:
                 if server:
                     server.terminate()
@@ -278,13 +278,13 @@ class ServerSocketsTest(ServerTestUtil):
                 "--sessions-dir=%s" % tmpsessionsdir,
             ]
         log_gap()
-        def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=EXIT_OK):
+        def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=ExitCode.OK):
             self._test_connect(server_args, client_args, None, prefix, exit_code)
         try:
             #it should not be found by default
             #since we only use hidden temporary locations
             #for both sessions-dir and socket-dir(s):
-            t(exit_code=EXIT_CONNECTION_FAILED)
+            t(exit_code=ExitCode.CONNECTION_FAILED)
             #specifying the socket-dir(s) should work:
             for d in (tmpsocketdir1, tmpsocketdir2):
                 t(["--socket-dir=%s" % d])

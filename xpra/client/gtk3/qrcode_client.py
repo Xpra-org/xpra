@@ -8,7 +8,7 @@ from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.util import typedict, noerr, envbool
 from xpra.os_util import SIGNAMES, bytestostr
-from xpra.exit_codes import EXIT_PACKET_FAILURE, EXIT_OK
+from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.client_base import XpraClientBase
@@ -42,7 +42,7 @@ class QRCodeClient(InfoXpraClient):
         sockets = dpath(caps, "network", "sockets")
         if not sockets:
             log.error("Error: network.sockets path not found in server info response")
-            super().quit(EXIT_PACKET_FAILURE)
+            super().quit(ExitCode.PACKET_FAILURE)
             return
         #this will also prevent timeouts:
         self._protocol.close()
@@ -85,14 +85,14 @@ class QRCodeClient(InfoXpraClient):
         else:
             noerr(sys.stdout.write, "no addresses found")
             noerr(sys.stdout.flush)
-            super().quit(EXIT_OK)
+            super().quit(ExitCode.OK)
 
     def exit_loop(self):
         Gtk.main_quit()
 
     def quit(self, exit_code=0):
         #only exit if we encountered an error
-        #InfoXpraClient calls quit(EXIT_OK) on connection-lost
+        #InfoXpraClient calls quit(ExitCode.OK) on connection-lost
         #but we don't want to exit then
         if exit_code!=0:
             super().quit(exit_code)

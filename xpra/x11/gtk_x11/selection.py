@@ -22,7 +22,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     )
-from xpra.exit_codes import EXIT_TIMEOUT
+from xpra.exit_codes import ExitCode
 from xpra.util import envint
 from xpra.log import Logger
 
@@ -151,7 +151,7 @@ class ManagerSelection(GObject.GObject):
         self.exit_timer = None
         log.error("selection timeout")
         log.error(" the current owner did not exit")
-        sys.exit(EXIT_TIMEOUT)
+        sys.exit(ExitCode.TIMEOUT)
 
     def _owner_change(self, clipboard, event):
         log("owner_change(%s, %s)", clipboard, event)

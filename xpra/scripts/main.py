@@ -25,15 +25,7 @@ from xpra.util import (
     noerr, sorted_nicely, typedict,
     DEFAULT_PORTS,
     )
-from xpra.exit_codes import (
-    EXIT_STR,
-    EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
-    EXIT_NO_DISPLAY,
-    EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
-    EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
-    EXIT_SOCKET_CREATION_ERROR,
-    RETRY_EXIT_CODES,
-    )
+from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, EXIT_STR
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand,
@@ -314,13 +306,13 @@ def check_gtk():
     assert Gtk
     r = Gtk.init_check(None)
     if not r[0]:
-        raise InitExit(EXIT_NO_DISPLAY, "failed to initialize Gtk, no display?")
+        raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
     check_display()
 
 def check_display():
     from xpra.platform.gui import can_access_display
     if not can_access_display():    # pragma: no cover
-        raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
+        raise InitExit(ExitCode.NO_DISPLAY, "cannot access display")
 
 def use_systemd_run(s):
     if not SYSTEMD_RUN or not POSIX or OSX:
@@ -662,7 +654,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return toolbox.main()
     elif mode == "initenv":
         if not POSIX:
-            raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
+            raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
         from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
         script = xpra_runner_shell_script(script_file, os.getcwd())
         write_runner_shell_scripts(script, False)
@@ -885,7 +877,7 @@ def connect_or_fail(display_desc, opts):
     try:
         return connect_to(display_desc, opts)
     except ConnectionClosedException as e:
-        raise InitExit(EXIT_CONNECTION_FAILED, str(e)) from None
+        raise InitExit(ExitCode.CONNECTION_FAILED, str(e)) from None
     except InitException:
         raise
     except InitExit:
@@ -912,7 +904,7 @@ def proxy_connect(options):
         "HTTP"      : socks.HTTP,
         }.get(ptype, socks.SOCKS5)
     if not proxy_type:
-        raise InitExit(EXIT_UNSUPPORTED, f"unsupported proxy type {ptype!r}")
+        raise InitExit(ExitCode.UNSUPPORTED, f"unsupported proxy type {ptype!r}")
     host = to.strget("proxy-host")
     port = to.intget("proxy-port", 1080)
     rdns = to.boolget("proxy-rdns", True)
@@ -945,7 +937,7 @@ def retry_socket_connect(options):
         retry += 1
         time.sleep(1)
     dtype = options["type"]
-    raise InitExit(EXIT_CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
+    raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
     dtype = display_desc["type"]
@@ -992,7 +984,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype == "socket":
         if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
-            raise InitExit(EXIT_UNSUPPORTED, "unix domain sockets are not available on this operating system")
+            raise InitExit(ExitCode.UNSUPPORTED, "unix domain sockets are not available on this operating system")
         def sockpathfail_cb(msg):
             raise InitException(msg)
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
@@ -1004,7 +996,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         except Exception as e:
             get_util_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
             noerr(sock.close)
-            raise InitExit(EXIT_CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
+            raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
@@ -1074,7 +1066,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             import aioquic
             assert aioquic
         except ImportError as e:
-            raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+            raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"cannot use quic sockets: {e}") from None
         conn = quic_connect(host, port, path,
                      ssl_cert, ssl_key, ssl_key_password,
@@ -1105,7 +1097,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             try:
                 from xpra.net.websockets.common import client_upgrade
             except ImportError as e:    # pragma: no cover
-                raise InitExit(EXIT_UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
+                raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
             else:
                 display_path = display_desc_to_display_path(display_desc)
                 client_upgrade(conn.read, conn.write, host, port, display_path)
@@ -1168,7 +1160,7 @@ def run_send_file(extra_args):
         else:
             filelog.info(f"sent {f!r}")
     if errors:
-        return EXIT_FAILURE
+        return ExitCode.FAILURE
     return 0
 
 def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
@@ -1278,7 +1270,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
             Popen(args=cmdline, executable=script_file)
             #we can't keep re-spawning ourselves without freeing memory,
             #so exit the current process with "no error":
-            return EXIT_OK
+            return ExitCode.OK
         log("execv%s", (script_file, cmdline))
         os.execv(script_file, cmdline)
     return r
@@ -1307,7 +1299,7 @@ def connect_to_server(app, display_desc, opts):
         except InitInfo as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, EXIT_OK)
+            GLib.idle_add(app.quit, ExitCode.OK)
         except InitExit as e:
             from xpra.net.socket_util import ssl_retry
             ssllog = Logger("ssl")
@@ -1323,11 +1315,11 @@ def connect_to_server(app, display_desc, opts):
         except InitException as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
+            GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
         except Exception as e:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Error: failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
+            GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
         from xpra.make_thread import start_thread
@@ -1888,20 +1880,20 @@ def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
         app = get_client_app(script_file, cmdline, error_cb, options, args, "request-%s" % mode)
         r = do_run_client(app)
         #OK or got a signal:
-        NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
+        NO_RETRY = [ExitCode.OK] + list(range(128, 128+16))
         #TODO: honour "--attach=yes"
         if app.completed_startup:
             #if we had connected to the session,
             #we can ignore more error codes:
             NO_RETRY += [
-                EXIT_CONNECTION_LOST,
-                EXIT_REMOTE_ERROR,
-                EXIT_INTERNAL_ERROR,
-                EXIT_FILE_TOO_BIG,
+                ExitCode.CONNECTION_LOST,
+                ExitCode.REMOTE_ERROR,
+                ExitCode.INTERNAL_ERROR,
+                ExitCode.FILE_TOO_BIG,
                 ]
         if r in NO_RETRY:
             return r
-        if r==EXIT_FAILURE:
+        if r==ExitCode.FAILURE:
             err = "unknown general failure"
         else:
             err = EXIT_STR.get(r, r)
@@ -2894,7 +2886,7 @@ def _browser_open(what, *path_options):
             import webbrowser
             webbrowser.open_new_tab("file://%s" % af)
             return 0
-    raise InitExit(EXIT_FAILURE, "%s not found!" % what)
+    raise InitExit(ExitCode.FAILURE, "%s not found!" % what)
 
 
 def run_desktop_greeter():
@@ -3168,7 +3160,7 @@ def run_clean_sockets(opts, args):
 
 def run_recover(script_file, cmdline, error_cb, options, args, defaults):
     if not POSIX or OSX:
-        raise InitExit(EXIT_UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
+        raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
     assert POSIX and not OSX
     no_gtk()
     display_descr = {}
@@ -3198,14 +3190,14 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
         dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
         if not dead_displays:
             print("No dead displays found, see 'xpra displays'")
-            return EXIT_NO_DISPLAY
+            return ExitCode.NO_DISPLAY
         if len(dead_displays)>1:
             if ALL:
                 return recover_many(dead_displays)
             print("More than one 'DEAD' display found, see 'xpra displays'")
             print(" you can use 'xpra recover all',")
             print(" or specify a display")
-            return EXIT_NO_DISPLAY
+            return ExitCode.NO_DISPLAY
         display = dead_displays[0]
         descr = displays[display]
     args = [display]
@@ -3242,7 +3234,7 @@ def run_displays(args):
 
 def run_clean_displays(args):
     if not POSIX or OSX:
-        raise InitExit(EXIT_UNSUPPORTED, "clean-displays is not supported on this platform")
+        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
     displays = get_displays_info()
     dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
     if not dead_displays:
@@ -3415,7 +3407,7 @@ def display_wm_info(args):
         #just use the current one
         pass
     else:
-        raise InitExit(EXIT_NO_DISPLAY, "you must specify a display")
+        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
     with OSEnvContext():
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
@@ -3663,7 +3655,7 @@ def run_auth(_options, args):
     #see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)
     if not main_fn:
-        raise InitExit(EXIT_UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
+        raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__]+args[1:]
     return main_fn(argv)
 

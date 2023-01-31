@@ -15,7 +15,7 @@ from xpra.net.socket_util import create_sockets, add_listen_socket, accept_conne
 from xpra.net.net_util import get_network_caps
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
-from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
@@ -194,7 +194,7 @@ class NetworkListener(StubClientMixin):
                 hello_reply(self.get_id_info())
             elif request=="detach":
                 def protocol_closed():
-                    self.disconnect_and_quit(EXIT_OK, "network request")
+                    self.disconnect_and_quit(ExitCode.OK, "network request")
                 proto.send_disconnect([DETACH_REQUEST], done_callback=protocol_closed)
                 return
             elif request=="version":
@@ -219,10 +219,10 @@ class NetworkListener(StubClientMixin):
                 def process_control():
                     try:
                         self._process_control(["control"]+list(command))
-                        code = EXIT_OK
+                        code = ExitCode.OK
                         response = "done"
                     except Exception as e:
-                        code = EXIT_FAILURE
+                        code = ExitCode.FAILURE
                         response = str(e)
                     hello_reply({"command_response"  : (code, response)})
                 self.idle_add(process_control)

@@ -8,7 +8,7 @@ from xpra.version_util import version_compat_check
 from xpra.os_util import bytestostr
 from xpra.util import typedict, get_util_logger
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
-from xpra.exit_codes import EXIT_INCOMPATIBLE_VERSION
+from xpra.exit_codes import ExitCode
 
 
 def get_remote_lib_versions(c : typedict,
@@ -95,7 +95,7 @@ class ServerInfoMixin(StubClientMixin):
             self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:
-            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION,
+            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION,
                                "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
         return True

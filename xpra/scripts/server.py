@@ -33,7 +33,7 @@ from xpra.scripts.config import (
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH
-from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE, EXIT_UPGRADE
+from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     force_quit,
@@ -666,7 +666,7 @@ def request_exit(uri):
             noerr(stderr.write, "Error: failed to 'exit' the server to upgrade\n")
             noerr(stderr.write, f" {e}\n")
         return False
-    return p.poll() in (EXIT_OK, EXIT_UPGRADE)
+    return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
@@ -1244,7 +1244,7 @@ def _do_run_server(script_file, cmdline,
 
     if not check_xvfb(1):
         noerr(stderr.write, "vfb failed to start, exiting\n")
-        return EXIT_VFB_ERROR
+        return ExitCode.VFB_ERROR
 
     if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
         os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
@@ -1277,7 +1277,7 @@ def _do_run_server(script_file, cmdline,
 
     if not check_xvfb():
         noerr(stderr.write, "vfb failed to start, exiting\n")
-        return EXIT_VFB_ERROR
+        return ExitCode.VFB_ERROR
 
     if ROOT and (uid!=0 or gid!=0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
@@ -1448,7 +1448,7 @@ def _do_run_server(script_file, cmdline,
         for m in str(e).split("\n"):
             log.info("%s", m)
         server_not_started(str(e))
-        return EXIT_OK
+        return ExitCode.OK
     except InitExit as e:
         for m in str(e).split("\n"):
             log.info("%s", m)
@@ -1460,13 +1460,13 @@ def _do_run_server(script_file, cmdline,
         for m in str(e).split("\n"):
             log.info(" %s", m)
         server_not_started(str(e))
-        return EXIT_FAILURE
+        return ExitCode.FAILURE
     except Exception as e:
         log.error("Error: cannot start the %s server", app.session_type, exc_info=True)
         log.error(str(e))
         log.info("")
         server_not_started(str(e))
-        return EXIT_FAILURE
+        return ExitCode.FAILURE
 
     ######################################################################
     if opts.attach is True:
@@ -1481,7 +1481,7 @@ def _do_run_server(script_file, cmdline,
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         app.cleanup()
-        r = EXIT_OK
+        r = ExitCode.OK
     except Exception:
         log.error("server error", exc_info=True)
         app.cleanup()

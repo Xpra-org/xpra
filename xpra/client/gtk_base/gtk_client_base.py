@@ -36,7 +36,7 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow,
     GRAB_STATUS_STRING,
     )
-from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
+from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -332,7 +332,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not values:
             if errs and errs[0].startswith("ERR 83886179"):
                 #ie 'ERR 83886179 Operation cancelled <Pinentry>'
-                raise InitExit(EXIT_PASSWORD_REQUIRED, errs[0][len("ERR 83886179"):])
+                raise InitExit(ExitCode.PASSWORD_REQUIRED, errs[0][len("ERR 83886179"):])
             return None
         return values[0]
 
@@ -390,7 +390,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 values.append(None)
                 #for those responses, we assume that the user wants to abort authentication:
                 if response in (Gtk.ResponseType.CLOSE, Gtk.ResponseType.REJECT, Gtk.ResponseType.DELETE_EVENT):
-                    self.disconnect_and_quit(EXIT_PASSWORD_REQUIRED, "password entry was cancelled")
+                    self.disconnect_and_quit(ExitCode.PASSWORD_REQUIRED, "password entry was cancelled")
             else:
                 values.append(password)
             wait.set()

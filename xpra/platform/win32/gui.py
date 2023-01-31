@@ -16,7 +16,7 @@ from ctypes import CDLL, pythonapi, py_object
 from ctypes.util import find_library
 
 from xpra.client import mixin_features
-from xpra.exit_codes import EXIT_OK
+from xpra.exit_codes import ExitCode
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
@@ -1208,7 +1208,7 @@ class ClientExtras:
             reason = "logoff"
         else:
             return
-        c.disconnect_and_quit(EXIT_OK, reason)
+        c.disconnect_and_quit(ExitCode.OK, reason)
 
     def session_change_event(self, event, session):
         event_name = WTS_SESSION_EVENTS.get(event, event)

@@ -10,7 +10,7 @@ from xpra.util import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
-from xpra.exit_codes import EXIT_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
@@ -80,7 +80,7 @@ class ShadowServer(GTKShadowServerBase):
                     CG.kCGWindowImageDefault)
         if image is None:
             log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
-            raise InitExit(EXIT_FAILURE, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
+            raise InitExit(ExitCode.FAILURE, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
         patch_pixels_to_bytes()
         self.refresh_count = 0
         self.refresh_rectangle_count = 0

@@ -14,7 +14,7 @@ from xpra.scripts.main import (
     )
 from xpra.net.bytestreams import ConnectionClosedException
 from xpra.make_thread import start_thread
-from xpra.exit_codes import EXIT_SSH_FAILURE
+from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     bytestostr,
     restore_script_env, get_saved_env,
@@ -129,7 +129,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
         cmd_info = " ".join(repr(x) for x in cmd)
-        raise InitExit(EXIT_SSH_FAILURE,
+        raise InitExit(ExitCode.SSH_FAILURE,
                        f"Error running ssh command {cmd_info!r}: {e}") from None
     def abort_test(action):
         """ if ssh dies, we don't need to try to read/write from its sockets """

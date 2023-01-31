@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, GLib
+from gi.repository import GObject, GLib  # @UnresolvedImport
 
 from xpra.scripts.config import InitExit
-from xpra.exit_codes import EXIT_DEVICE_NOT_FOUND
+from xpra.exit_codes import ExitCode
 from xpra.x11.shadow_x11_server import ShadowX11Server
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -61,7 +61,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
             log.warn("Warning: ensure that the 'evdi' kernel module is loaded")
         devices = find_evdi_devices()
         if not devices:
-            raise InitExit(EXIT_DEVICE_NOT_FOUND, "no evdi devices found")
+            raise InitExit(ExitCode.DEVICE_NOT_FOUND, "no evdi devices found")
 
 
     def no_windows(self):
