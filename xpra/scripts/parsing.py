@@ -33,6 +33,7 @@ MODE_ALIAS = {
     "start-monitor"     : "monitor",
     "start-expand"      : "expand",
     "start-shadow"      : "shadow",
+    "start-shadow-screen" : "shadow-screen",
     }
 
 def enabled_str(v, true_str="yes", false_str="no") -> str:
@@ -715,7 +716,7 @@ def get_server_modes():
             "start-monitor",
             ]
     else:
-        server_modes = ["shadow"]
+        server_modes = ["shadow", "shadow-screen"]
     server_modes += ["upgrade"]
     return server_modes
 
@@ -735,6 +736,7 @@ def get_usage():
             "upgrade-desktop [DISPLAY]",
             "recover [DISPLAY]",
             "shadow [DISPLAY]",
+            "shadow-screen [DISPLAY]",
             ]
 
     command_options += [
@@ -1775,7 +1777,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
-        "shadow", "proxy",
+        "shadow", "shadow-screen", "proxy",
         "listen", "launcher",
         "bug-report", "encoding", "gui-info",
         )

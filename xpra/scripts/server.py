@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -313,9 +313,11 @@ def make_server(clobber):
     from xpra.x11.server import XpraServer
     return XpraServer(clobber)
 
-def make_shadow_server():
+def make_shadow_server(multi_window=False):
     from xpra.platform.shadow_server import ShadowServer
-    return ShadowServer()
+    ss = ShadowServer()
+    ss.multi_window = multi_window
+    return ss
 
 def make_proxy_server():
     from xpra.platform.proxy_server import ProxyServer
@@ -625,7 +627,7 @@ def is_splash_enabled(mode, daemon, splash, display):
     if xdisplay:
         #make sure that the display isn't the one we're running against,
         #unless we're shadowing it
-        return xdisplay!=display or mode=="shadow"
+        return xdisplay!=display or mode.startswith("shadow")
     if mode=="proxy":
         return False
     if os.environ.get("XDG_SESSION_DESKTOP"):
@@ -642,6 +644,7 @@ MODE_TO_NAME = {
     "upgrade-desktop"   : "Desktop Upgrade",
     "upgrade-monitor"   : "Monitor Upgrade",
     "shadow"            : "Shadow",
+    "shadow-screen"     : "Shadow Screen",
     "proxy"             : "Proxy",
     }
 
@@ -667,7 +670,7 @@ def request_exit(uri):
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
-        "seamless", "desktop", "monitor", "expand", "shadow",
+        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
         )
@@ -738,7 +741,7 @@ def _do_run_server(script_file, cmdline,
     starting_monitor = mode=="monitor"
     expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
-    shadowing = mode == "shadow"
+    shadowing = mode.startswith("shadow")
     proxying  = mode == "proxy"
 
     if not proxying and POSIX and not OSX:
@@ -1395,7 +1398,7 @@ def _do_run_server(script_file, cmdline,
 
     progress(80, "initializing server")
     if shadowing:
-        app = make_shadow_server()
+        app = make_shadow_server(multi_window=mode=="shadow")
     elif proxying:
         app = make_proxy_server()
     elif expanding:

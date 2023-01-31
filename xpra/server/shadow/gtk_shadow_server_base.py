@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -59,6 +59,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
+        self.multi_window = True
         #for managing the systray
         self.tray_menu = None
         self.tray_menu_shown = False
@@ -199,7 +200,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
         monitors = self.get_shadow_monitors()
         match_str = None
-        multi_window = MULTI_WINDOW
         geometries = None
         if "=" in self.display_options:
             #parse the display options as a dictionary:
@@ -209,7 +209,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 self.window_matches = windows.split("/")
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
-            multi_window = parse_bool("multi-window", opt_dict.get("multi-window", multi_window))
+            self.multi_window = parse_bool("multi-window", opt_dict.get("multi-window", self.multi_window))
             geometries_str = opt_dict.get("geometry")
             if geometries_str:
                 geometries = parse_geometries(geometries_str)
@@ -218,7 +218,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 geometries = parse_geometries(self.display_options)
             except Exception:
                 match_str = self.display_options
-        if not multi_window or geometries:
+        log(f"makeRootWindowModels() multi_window={self.multi_window}")
+        if not self.multi_window or geometries:
             for geometry in (geometries or (self.root.get_geometry()[:4],)):
                 model = model_class(self.root, self.capture, display_name, geometry)
                 models.append(model)

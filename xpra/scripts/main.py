@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -205,7 +205,8 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "seamless", "desktop", "monitor", "expand", "shadow",
+        "seamless", "desktop", "monitor", "expand",
+        "shadow", "shadow-screen",
         "recover",
         "attach", "listen", "proxy",
         "_sound_record", "_sound_play",
@@ -360,7 +361,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
-    if mode=="shadow" and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
+    if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         #are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name
         if get_desktop_name() is None:
@@ -376,7 +377,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
             except KeyboardInterrupt:
                 return 128+signal.SIGINT
     if mode in (
-        "seamless", "desktop", "shadow", "expand",
+        "seamless", "desktop", "shadow", "shadow-screen", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         ) and not display_is_remote and use_systemd_run(options.systemd_run):
         #make sure we run via the same interpreter,
@@ -429,14 +430,14 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         #"attach" does it when it received the session name from the server
         if mode not in (
             "attach", "listen",
-            "seamless", "desktop", "shadow", "expand",
+            "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "proxy",
             ) and not mode.startswith("upgrade"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
-        "seamless", "desktop", "shadow", "expand",
+        "seamless", "desktop", "shadow", "shadow-screen", "expand",
         "attach", "listen",
         "recover",
         ) or mode.startswith("upgrade") or mode.startswith("request-"):
@@ -451,7 +452,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
-    if mode in ("seamless", "desktop", "monitor", "expand", "shadow") and display_is_remote:
+    if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
         return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
@@ -473,7 +474,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in (
-        "seamless", "desktop", "monitor", "expand", "shadow",
+        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "proxy",
         ):
@@ -1940,7 +1941,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             if display.replace(".", "").isnumeric():
                 #numeric displays are X11 display names:
                 display = f":{display}"
-            if mode=="shadow" and geometry:
+            if mode.startswith("shadow") and geometry:
                 display += f",{geometry}"
             if pos>=0:
                 proxy_args[pos] = display
@@ -2414,7 +2415,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     mode = MODE_ALIAS.get(mode, mode)
-    if mode not in ("seamless", "desktop", "monitor", "expand", "shadow"):
+    if mode not in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
         raise ValueError(f"invalid mode {mode!r}")
     if len(args) not in (0, 1):
         raise InitException(f"{mode}: expected 0 or 1 arguments but got {len(args)}: {args}")
@@ -2426,7 +2427,7 @@ def start_server_subprocess(script_file, args, mode, opts,
             #let the server get one from Xorg via displayfd:
             display_name = 'S' + str(os.getpid())
     else:
-        if mode not in ("expand", "shadow"):
+        if mode not in ("expand", "shadow", "shadow-screen"):
             raise ValueError(f"invalid mode {mode!r}")
         display_name = pick_shadow_display(dotxpra, args, uid, gid)
         #we now know the display name, so add it:
@@ -2443,7 +2444,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         else:
             matching_display = display_name
     if WIN32:
-        if mode!="shadow":
+        if not mode.startswith("shadow"):
             raise ValueError(f"invalid mode {mode!r} for MS Windows")
         assert display_name
         return proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name)
@@ -2469,7 +2470,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         from xpra.os_util import get_hex_uuid
         new_server_uuid = get_hex_uuid()
         cmd.append(f"--env=XPRA_PROXY_START_UUID={new_server_uuid}")
-    if mode=="shadow" and OSX:
+    if mode.startswith("shadow") and OSX:
         start_macos_shadow(cmd, env, cwd)
         proc = None
     else:
@@ -2636,13 +2637,13 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         "_proxy_shadow_start"   : "shadow",
         }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
     server_mode = MODE_ALIAS.get(server_mode, server_mode)
-    if mode!="_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "expand"):
+    if mode!="_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "shadow-screen", "expand"):
         attach = parse_bool("attach", opts.attach)
         state = None
         if attach is not False:
             #maybe this server already exists?
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-            if not args and server_mode in ("shadow", "expand"):
+            if not args and server_mode in ("shadow", "shadow-screen", "expand"):
                 try:
                     display_name = pick_shadow_display(dotxpra, args)
                     args = [display_name]
@@ -2685,7 +2686,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
     if not display:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args, cmdline)
-    if display and server_mode!="shadow":
+    if display and not server_mode.startswith("shadow"):
         display_name = display_name or display.get("display") or display.get("display_name")
         try:
             from xpra.net.ssh.agent import setup_proxy_ssh_socket
@@ -3210,7 +3211,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
     args = [display]
     #figure out what mode was used:
     mode = descr.get("xpra-server-mode", "seamless")
-    for m in ("seamless", "desktop", "proxy", "shadow"):
+    for m in ("seamless", "desktop", "proxy", "shadow", "shadow-screen"):
         if mode.find(m)>=0:
             mode = m
             break
