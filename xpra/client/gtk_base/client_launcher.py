@@ -400,6 +400,7 @@ class ApplicationWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
         self.autoconnect = Gtk.CheckButton("Auto-connect")
         self.autoconnect.set_active(False)
+        self.autoconnect.set_tooltip_text("Connect without opening this launcher when opening the session file")
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.autoconnect)
         hbox.pack_start(al)
