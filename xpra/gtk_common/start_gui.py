@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import time
 import os.path
 import subprocess
 
-from gi.repository import Gtk, Gdk, Pango, GLib
+from gi.repository import Gtk, Gdk, Pango, GLib  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
@@ -152,7 +152,7 @@ class StartSession(Gtk.Window):
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
         self.address_box.pack_start(xal(self.mode_combo), False)
-        for mode in ("SSH", "TCP", "SSL", "WS", "WSS"):
+        for mode in ("SSH", "TCP", "SSL", "WS", "WSS", "QUIC"):
             self.mode_combo.append_text(mode)
         self.mode_combo.set_active(0)
         self.mode_combo.connect("changed", self.mode_changed)
