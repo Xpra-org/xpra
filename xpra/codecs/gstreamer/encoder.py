@@ -100,23 +100,23 @@ def get_output_colorspaces(encoding, input_colorspace):
     return out_colorspaces
 
 def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
-    def factory():
-        #let the user override options using an env var:
-        enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
-        if enc_options_str:
-            encoder_options = parse_simple_dict(enc_options_str)
-            log(f"user overriden options for {element}: {encoder_options}")
-        else:
-            encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
-        e = Encoder()
-        e.encoder_element = element
-        e.encoder_options = encoder_options or {}
-        return e
+    #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
+    #each with different pipeline arguments based on the make_spec parameters:
+    enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
+    if enc_options_str:
+        encoder_options = parse_simple_dict(enc_options_str)
+        log(f"user overriden options for {element}: {encoder_options}")
+    else:
+        encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
+    class ElementEncoder(Encoder):
+        pass
+    ElementEncoder.encoder_element = element
+    ElementEncoder.encoder_options = encoder_options or {}
     spec = video_spec(
         encoding=encoding, input_colorspace=cs_in,
         output_colorspaces=css_out,
         has_lossless_mode=False,
-        codec_class=factory, codec_type=get_type(),
+        codec_class=ElementEncoder, codec_type=get_type(),
         quality=40, speed=40,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
         width_mask=0xFFFE, height_mask=0xFFFE,
@@ -167,7 +167,6 @@ def init_all_specs(*exclude):
     COLORSPACES = colorspaces
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
-init_all_specs()
 
 
 class Encoder(VideoPipeline):
@@ -298,3 +297,5 @@ def selftest(full=False):
                     log.warn(f" {e}")
                     skip.append(spec.gstreamer_element)
     init_all_specs(*skip)
+
+init_all_specs()
