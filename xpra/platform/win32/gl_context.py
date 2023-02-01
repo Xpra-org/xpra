@@ -3,7 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import sizeof, byref, FormatError
+from ctypes import sizeof, byref, cast, c_void_p, FormatError
+from ctypes.wintypes import LPCWSTR
 
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.platform.win32.gui import get_window_handle
@@ -13,7 +14,7 @@ from xpra.platform.win32.constants import (
     )
 from xpra.platform.win32.common import (
     GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat,
-    BeginPaint, EndPaint, DestroyWindow, UnregisterClassA,
+    BeginPaint, EndPaint, DestroyWindow, UnregisterClassW,
     GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcA, WNDPROC, WNDCLASSEX
     )
 from xpra.platform.win32.glwin32 import (
@@ -118,8 +119,11 @@ class WGLContext(object):
             if hwnd:
                 if not DestroyWindow(hwnd):
                     log.warn("Warning: failed to destroy temporary OpenGL test window")
-            if not UnregisterClassA(classname, hInst):
+            latom = c_void_p(reg_atom)
+            if not UnregisterClassW(cast(latom, LPCWSTR), hInst):
                 log.warn("Warning: failed to unregister class for OpenGL test window")
+                log.warn(" for class %r and module handle %#x:", classname, hInst or 0)
+                log.warn(" '%s'", FormatError())
 
     def get_bit_depth(self):
         return 0
