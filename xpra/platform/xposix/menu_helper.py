@@ -367,16 +367,36 @@ def load_xdg_menu_data():
     #see ticket #2340,
     #invalid values for XDG_CONFIG_DIRS can cause problems,
     #so try unsetting it if we can't load the menus with it:
+    default_xdg = f"{sys.prefix}/etc/xdg".replace("/usr/etc", "/etc")
+    xdg_home = os.environ.get("XDG_CONFIG_HOME")
     for cd in (False, True):
         with OSEnvContext():
-            if cd:
-                if not os.environ.pop("XDG_CONFIG_DIRS", ""):
-                    #was already unset
-                    continue
+            if cd is True and not os.environ.pop("XDG_CONFIG_DIRS", ""):
+                #was already unset
+                continue
             #see ticket #2174,
             #things may break if the prefix is not set,
             #and it isn't set when logging in via ssh
-            for prefix in (None, "", "gnome-", "kde-"):
+            #so we have to guess!
+            config_dirs = []
+            #XDG_CONFIG_HOME takes precendence so add it first:
+            if xdg_home:
+                config_dirs.append(f"{xdg_home}/xdg")
+            for d in os.environ.get("XDG_CONFIG_DIRS", default_xdg).split(":"):
+                if d not in config_dirs:
+                    config_dirs.append(d)
+            prefixes = [None, ""]
+            desktop = os.environ.get("XDG_SESSION_DESKTOP", "")
+            if desktop:
+                prefixes.append(f"{desktop}-")      #ie: "gnome-"
+            for d in config_dirs:
+                for path in glob.glob(f"{d}/menus/*applications.menu"):
+                    filename = os.path.basename(path)               #ie: "gnome-applications.menu"
+                    prefix = filename[:-len("applications.menu")]   #ie: "gnome-"
+                    if prefix not in prefixes:
+                        prefixes.append(prefix)
+            log(f"load_xdg_menu_data() will try prefixes {prefixes} from config directories {config_dirs}")
+            for prefix in prefixes:
                 if prefix is not None:
                     os.environ["XDG_MENU_PREFIX"] = prefix
                 try:
