@@ -256,6 +256,14 @@ class Encoder(VideoPipeline):
             self.frame_queue.put((data, client_info))
         return GST_FLOW_OK
 
+
+    def wrap(self, data):
+        mf = Gst.MemoryFlags
+        return Gst.Buffer.new_wrapped_full(
+            mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
+            data, len(data),
+            0, None, None)
+
     def compress_image(self, image, options=None):
         if image.get_planes()==ImageWrapper.PACKED:
             data = image.get_pixels()
@@ -266,22 +274,7 @@ class Encoder(VideoPipeline):
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        mf = Gst.MemoryFlags
-        buf = Gst.Buffer.new_wrapped_full(
-            mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
-            data,
-            len(data),
-            0,
-            None,
-            None)
-        #duration = normv(0)
-        #if duration>0:
-        #    buf.duration = duration
-        #buf.size = size
-        #buf.timestamp = timestamp
-        #buf.offset = offset
-        #buf.offset_end = offset_end
-        return self.process_buffer(buf)
+        return self.process_buffer(self.wrap(data))
 
 GObject.type_register(Encoder)
 
