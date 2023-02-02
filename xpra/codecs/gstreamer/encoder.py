@@ -82,6 +82,7 @@ DEFAULT_ENCODER_OPTIONS = {
         }
     }
 
+PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
 COLORSPACES = {}
 def get_encodings():
@@ -110,6 +111,10 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
         encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
     class ElementEncoder(Encoder):
         pass
+    if cs_in in PACKED_RGB_FORMATS:
+        width_mask = height_mask = 0xFFFF
+    else:
+        width_mask = height_mask = 0xFFFE
     ElementEncoder.encoder_element = element
     ElementEncoder.encoder_options = encoder_options or {}
     spec = video_spec(
@@ -119,7 +124,7 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
         codec_class=ElementEncoder, codec_type=get_type(),
         quality=40, speed=40,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
-        width_mask=0xFFFE, height_mask=0xFFFE,
+        width_mask=width_mask, height_mask=height_mask,
         min_w=64, min_h=64,
         max_w=4096, max_h=4096)
     spec.gstreamer_element = element
@@ -201,6 +206,9 @@ class Encoder(VideoPipeline):
             #"RGB8P"
             }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
+        #this would only guess the rowstride - actual input images may well be different!
+        #if self.colorspace in PACKED_RGB_FORMATS:
+        #    CAPS += f",rowstride={self.width*len(self.colorspace)}"
         encoder_str = self.encoder_element
         if self.encoder_options:
             encoder_str += " "+" ".join(f"{k}={v}" for k,v in self.encoder_options.items())
