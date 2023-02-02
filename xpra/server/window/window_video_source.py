@@ -1916,7 +1916,7 @@ class WindowVideoSource(WindowSource):
                 #(the other servers already copy the pixels from the "real" screen buffer)
                 #TODO: use a separate flag? (ximage uses this flag to know if it is safe
                 # to call image.free from another thread - which is theoretically more restrictive)
-                newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
+                newstride = roundup(image.get_width()*image.get_bytesperpixel(), 2)
                 image.restride(newstride)
                 stride = image.get_rowstride()
             bpp = image.get_bytesperpixel()
@@ -2259,6 +2259,8 @@ class WindowVideoSource(WindowSource):
             return None
         data, client_options = ret
         end = monotonic()
+        if LOG_ENCODERS or compresslog.is_debug_enabled():
+            client_options["csc-type"] = csce.get_type() if csce else "none"
 
         #populate client options:
         frame = client_options.get("frame", 0)
