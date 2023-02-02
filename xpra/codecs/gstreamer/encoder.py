@@ -6,7 +6,7 @@
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.util import parse_simple_dict, envbool, csv
+from xpra.util import parse_simple_dict, envbool, csv, roundup
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
     import_gst, normv,
@@ -206,9 +206,6 @@ class Encoder(VideoPipeline):
             #"RGB8P"
             }[self.colorspace] 
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
-        #this would only guess the rowstride - actual input images may well be different!
-        #if self.colorspace in PACKED_RGB_FORMATS:
-        #    CAPS += f",rowstride={self.width*len(self.colorspace)}"
         encoder_str = self.encoder_element
         if self.encoder_options:
             encoder_str += " "+" ".join(f"{k}={v}" for k,v in self.encoder_options.items())
@@ -267,6 +264,11 @@ class Encoder(VideoPipeline):
     def compress_image(self, image, options=None):
         if image.get_planes()==ImageWrapper.PACKED:
             data = image.get_pixels()
+            rowstride = image.get_rowstride()
+            want_rowstride = roundup(self.width, 2)*len(self.colorspace)
+            if rowstride!=want_rowstride:
+                if not image.restride(want_rowstride):
+                    raise RuntimeError(f"failed to restride image from {rowstride}to {want_rowstride}")
         else:
             #merge all planes into a single buffer:
             data = b"".join(image.get_pixels())
