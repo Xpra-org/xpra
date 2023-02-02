@@ -137,7 +137,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show)*16)
         gl_icon = get_icon_filename("opengl", ext="png")
         icon_data = None
-        if os.path.exists(gl_icon):
+        if gl_icon:
             try:
                 from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
             except ImportError as e:
