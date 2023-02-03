@@ -17,6 +17,7 @@ from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
+from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
@@ -65,8 +66,9 @@ BUTTON_EVENTS = {
                  }
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
-SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
-SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
+NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
+GDI = envbool("XPRA_SHADOW_GDI", True)
+GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
 def get_root_window_size():
@@ -177,15 +179,13 @@ def get_cursor_data(hCursor):
 
 
 def init_capture(w, h, pixel_depth=32):
-    capture = None
-    if SHADOW_NVFBC:
+    if NVFBC:
         try:
             from xpra.codecs.nvfbc.capture import get_capture_instance
             capture = get_capture_instance()
         except ImportError:
             log("NvFBC capture is not available", exc_info=True)
-            capture = None
-        if capture:
+        else:
             try:
                 pixel_format = {
                     24  : "RGB",
@@ -193,23 +193,38 @@ def init_capture(w, h, pixel_depth=32):
                     30  : "r210",
                     }[pixel_depth]
                 capture.init_context(w, h, pixel_format)
+                return capture
             except Exception as e:
-                capture = None
                 log("NvFBC_Capture", exc_info=True)
                 log.warn("Warning: NvFBC screen capture initialization failed:")
                 for x in str(e).replace(". ", ":").split(":"):
                     if x.strip() and x!="nvfbc":
                         log.warn(" %s", x.strip())
-                if SHADOW_GDI:
-                    log.warn(" xpra will be using the slower GDI capture code")
-                del e
-    if not capture:
-        if SHADOW_GDI:
-            capture = GDICapture()
-        if not capture:
-            raise Exception("no screen capture methods enabled (GDI capture is disabled)")
-    log("init_capture()=%s", capture)
-    return capture
+    if GSTREAMER:
+        try:
+            from xpra.codecs.gstreamer.capture import Capture
+        except ImportError:
+            log("no GStreamer capture", exc_info=True)
+        else:
+            capture_elements = [
+                "d3d11screencapturesrc",
+                "dx9screencapsrc",
+                #"gdiscreencapsrc",
+                ]
+            for el in capture_elements:
+                log(f"testing gstreamer capture using {el}")
+                try:
+                    capture = Capture(el, pixel_format="BGRX", width=w, height=h)
+                    capture.start()
+                    image = capture.get_image(0, 0, w, h)
+                    if image:
+                        log(f"using gstreamer element {el}")
+                        return capture
+                except Exception:
+                    log(f"gstreamer failed to capture the screen using {el}", exc_info=True)
+    if GDI:
+        return GDICapture()
+    return GTKImageCapture(None)
 
 
 class SeamlessRootWindowModel(RootWindowModel):
