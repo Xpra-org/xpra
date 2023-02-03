@@ -37,14 +37,7 @@ class Capture(Pipeline):
         self.frames : int = 0
         self.framerate : int  = 10
         self.image = Queue(maxsize=1)
-        el = element
-        if xid>=0:
-            el += f" xid={xid} startx=0 starty=0"
-        if width>0:
-            el += f" endx={width}"
-        if height>0:
-            el += f" endy={height}"
-        self.create_pipeline(el)
+        self.create_pipeline(element)
 
     def create_pipeline(self, capture_element:str="ximagesrc"):
         #CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"

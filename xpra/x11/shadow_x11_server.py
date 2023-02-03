@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,12 +26,12 @@ from xpra.log import Logger
 
 log = Logger("x11", "shadow")
 
-USE_XSHM = envbool("XPRA_XSHM", True)
-POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
-USE_NVFBC = envbool("XPRA_NVFBC", True)
-USE_GSTREAMER = envbool("XPRA_GSTREAMER_SHADOW", False)
+XSHM = envbool("XPRA_SHADOW_XSHM", True)
+POLL_CURSOR = envint("XPRA_SHADOW_POLL_CURSOR", 20)
+NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
+GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", False)
 nvfbc = None
-if USE_NVFBC:
+if NVFBC:
     try:
         from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
         nvfbc = get_capture_module()
@@ -39,6 +39,7 @@ if USE_NVFBC:
             nvfbc.init_nvfbc_library()
     except Exception:
         log("NvFBC Capture is not available", exc_info=True)
+        NVFBC = False
         nvfbc = None
 
 
@@ -182,7 +183,7 @@ class XImageCapture:
         self.xwindow = xwindow
         from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
         self.XImage = XImageBindings()
-        assert USE_XSHM and self.XImage.has_XShm(), "no XShm support"
+        assert XSHM and self.XImage.has_XShm(), "no XShm support"
         if is_Wayland():
             log.warn("Warning: shadow servers do not support Wayland")
             log.warn(" please switch to X11 for shadow support")
@@ -240,34 +241,43 @@ class XImageCapture:
         finally:
             end = monotonic()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s",
-                width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
+                width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][XSHM])
 
 
 def setup_capture(window):
     ww, wh = window.get_geometry()[2:4]
     capture = None
-    if USE_NVFBC:
+    if NVFBC:
         try:
             capture = get_capture_instance()
             capture.init_context(ww, wh)
             capture.refresh()
             image = capture.get_image(0, 0, ww, wh)
             assert image, "test capture failed"
+            return capture
         except Exception as e:
             log("get_image() NvFBC test failed", exc_info=True)
             log(f"not using {capture}: {e}")
             capture = None
-    if not capture and USE_GSTREAMER:
+    if GSTREAMER:
         try:
             from xpra.codecs.gstreamer.capture import Capture
-            capture = Capture(xid=window.get_xid(), width=ww, height=wh)
+            xid = window.get_xid()
+            el = "ximagesrc"
+            if xid>=0:
+                el += f" xid={xid} startx=0 starty=0"
+            if ww>0:
+                el += f" endx={ww}"
+            if wh>0:
+                el += f" endy={wh}"
+            capture = Capture(el, width=ww, height=wh)
             capture.start()
+            return capture
         except ImportError:
             log(f"not using X11 capture using gstreamer: {e}")
         except Exception:
             log(f"not using X11 capture using gstreamer", exc_info=True)
-            capture = None
-    if not capture and USE_XSHM:
+    if XSHM:
         try:
             from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
             XImage = XImageBindings()
@@ -276,10 +286,8 @@ def setup_capture(window):
         else:
             if XImage.has_XShm():
                 capture = XImageCapture(window.get_xid())
-    if not capture:
-        capture = GTKImageCapture(window)
-    log(f"setup_capture({window})={capture}")
-    return capture
+                return capture
+    return GTKImageCapture(window)
 
 
 class X11ShadowModel(RootWindowModel):
@@ -348,7 +356,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
 
     def setup_capture(self):
-        return setup_capture(self.root)
+        capture = setup_capture(self.root)
+        log(f"setup_capture({self.root})={capture}")
+        return capture
+
 
     def get_root_window_model_class(self):
         return X11ShadowModel
@@ -448,6 +459,7 @@ def snapshot(filename):
     capture.refresh()
     w, h = get_root_size()
     image = capture.get_image(0, 0, w, h)
+    log(f"snapshot: {capture.get_image}(0, 0, {w}, {h})={image}")
     from PIL import Image
     fmt = image.get_pixel_format().replace("X", "A")
     pixels = memoryview_to_bytes(image.get_pixels())
