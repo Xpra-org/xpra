@@ -1,5 +1,5 @@
 Types: deb
 URIs: https://xpra.org/beta
 Suites: sid
-Components: focal
+Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
