@@ -150,6 +150,17 @@ ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 print(f"ARCH={ARCH}")
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
+if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
+    # sys.prefix is where the Python interpreter is installed. This may be very different from where
+    # the C/C++ headers are installed. So do some guessing here:
+
+    ALWAYS_INCLUDE_DIRS = ["/usr/include", "/usr/local/include"]
+    for d in ALWAYS_INCLUDE_DIRS:
+        if os.path.isdir(d) and d not in INCLUDE_DIRS:
+            INCLUDE_DIRS.append(d)
+
+print("using INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
+
 CPP = os.environ.get("CPP", "cpp")
 print(f"CPP={CPP}")
 
