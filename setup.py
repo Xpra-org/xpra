@@ -1394,7 +1394,7 @@ if WIN32:
                            "autodetect",
                            #video codecs:
                            "vpx", "x264", "aom", "openh264", "d3d11", "winscreencap",
-                           "videoconvert", "videorate", "videoscale",
+                           "videoconvertscale", "videorate",
                            )
             add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
             #END OF SOUND
