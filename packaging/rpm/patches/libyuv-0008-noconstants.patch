@@ -1,0 +1,13 @@
+--- a/CMakeLists.txt	2023-02-03 12:16:54.752877069 +0700
++++ b/CMakeLists.txt	2023-02-03 12:17:01.433830386 +0700
+@@ -35,10 +35,6 @@
+ 
+ SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES VERSION "0.0.0" SOVERSION 0 )
+ 
+-# this creates the yuvconstants tool
+-ADD_EXECUTABLE      ( yuvconstants ${ly_base_dir}/util/yuvconstants.c )
+-TARGET_LINK_LIBRARIES  ( yuvconstants ${ly_lib_static} )
+-
+ if(TEST)
+   find_library(GTEST_LIBRARY gtest)
+   if(GTEST_LIBRARY STREQUAL "GTEST_LIBRARY-NOTFOUND")
