@@ -272,7 +272,10 @@ def setup_capture(window):
                 el += f" endy={wh}"
             capture = Capture(el, width=ww, height=wh)
             capture.start()
-            return capture
+            image = capture.get_image(0, 0, ww, wh)
+            if image:
+                return capture
+            log("gstreamer capture failed to return an image")
         except ImportError:
             log(f"not using X11 capture using gstreamer: {e}")
         except Exception:

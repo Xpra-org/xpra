@@ -29,7 +29,7 @@ class Capture(Pipeline):
     __gsignals__ = Pipeline.__generic_signals__.copy()
 
     def __init__(self, element : str="ximagesrc", pixel_format : str="BGRX",
-                 xid : int=-1, width : int=0, height : int=0):
+                 width : int=0, height : int=0):
         super().__init__()
         self.pixel_format : str = pixel_format
         self.width : int = width
