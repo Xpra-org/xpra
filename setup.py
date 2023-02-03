@@ -313,8 +313,8 @@ SWITCH_ALIAS = {
 def show_help():
     setup()
     print("Xpra specific build and install switches:")
-    for x in SWITCHES:
-        d = vars()[f"{x}_ENABLED"]
+    for x in sorted(SWITCHES):
+        d = globals()[f"{x}_ENABLED"]
         with_str = f"  --with-{x}"
         without_str = f"  --without-{x}"
         if d is True or d is False:
