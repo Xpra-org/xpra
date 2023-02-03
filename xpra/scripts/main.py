@@ -104,6 +104,8 @@ def main(script_file, cmdline):
     os.environ["GDK_DPI_SCALE"] = "1"
     if WIN32 and os.environ.get("GDK_WIN32_DISABLE_HIDPI") is None:
         os.environ["GDK_WIN32_DISABLE_HIDPI"] = "1"
+    if WIN32 and os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
+        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
     #client side decorations break window geometry,
     #disable this "feature" unless explicitly enabled:
     if os.environ.get("GTK_CSD") is None:
