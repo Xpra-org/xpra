@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import re
 from time import monotonic
-from ctypes import (
-    create_string_buffer, create_unicode_buffer,
-    sizeof, byref, addressof, c_ulong,
-    )
-from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
+from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
+from ctypes.wintypes import RECT, POINT, BYTE
 
-from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
@@ -24,6 +20,7 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.win32_events import get_win32_event_listener, POWER_EVENTS
+from xpra.platform.win32.shadow_cursor import get_cursor_data
 from xpra.platform.win32.gdi_screen_capture import GDICapture
 from xpra.log import Logger
 
@@ -35,10 +32,6 @@ from xpra.platform.win32.common import (
     GetWindowThreadProcessId,
     GetSystemMetrics,
     SetPhysicalCursorPos, GetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
-    GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject,
-    ReleaseDC, DeleteDC, DrawIconEx, GetBitmapBits,
-    GetIconInfo, ICONINFO, Bitmap, GetIconInfoExW, ICONINFOEXW,
-    GetObjectA,
     GetKeyboardState, SetKeyboardState,
     EnumDisplayMonitors, GetMonitorInfo,
     mouse_event,
@@ -82,100 +75,6 @@ def get_monitors():
         mi = GetMonitorInfo(m)
         monitors.append(mi)
     return monitors
-
-
-def get_cursor_data(hCursor):
-    #w, h = get_fixed_cursor_size()
-    if not hCursor:
-        return None
-    x, y = 0, 0
-    dc = None
-    memdc = None
-    bitmap = None
-    old_handle = None
-    pixels = None
-    try:
-        ii = ICONINFO()
-        ii.cbSize = sizeof(ICONINFO)
-        if not GetIconInfo(hCursor, byref(ii)):
-            raise WindowsError()    #@UndefinedVariable
-        x = ii.xHotspot
-        y = ii.yHotspot
-        cursorlog("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
-                  hCursor, x, y, ii.hbmColor or 0, ii.hbmMask or 0)
-        if not ii.hbmColor:
-            #FIXME: we don't handle black and white cursors
-            return None
-        iie = ICONINFOEXW()
-        iie.cbSize = sizeof(ICONINFOEXW)
-        if not GetIconInfoExW(hCursor, byref(iie)):
-            raise WindowsError()    #@UndefinedVariable
-        name = iie.szResName[:MAX_PATH]
-        cursorlog("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
-        bm = Bitmap()
-        if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
-            raise WindowsError()    #@UndefinedVariable
-        cursorlog("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
-                  bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
-        w = bm.bmWidth
-        h = bm.bmHeight
-        dc = GetDC(None)
-        assert dc, "failed to get a drawing context"
-        memdc = CreateCompatibleDC(dc)
-        assert memdc, "failed to get a compatible drawing context from %s" % dc
-        bitmap = CreateCompatibleBitmap(dc, w, h)
-        assert bitmap, "failed to get a compatible bitmap from %s" % dc
-        old_handle = SelectObject(memdc, bitmap)
-
-        #check if icon is animated:
-        UINT_MAX = 2**32-1
-        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, UINT_MAX, 0, 0):
-            cursorlog("cursor is animated!")
-
-        #if not DrawIcon(memdc, 0, 0, hCursor):
-        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, win32con.DI_NORMAL):
-            raise WindowsError()    #@UndefinedVariable
-
-        buf_size = bm.bmWidthBytes*h
-        buf = create_string_buffer(b"", buf_size)
-        r = GetBitmapBits(bitmap, buf_size, byref(buf))
-        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)=%i", hCursor, bitmap, buf_size, addressof(buf), r)
-        if not r:
-            cursorlog.error("Error: failed to copy screen bitmap data")
-            return None
-        elif r!=buf_size:
-            cursorlog.warn("Warning: invalid cursor buffer size, got %i bytes but expected %i", r, buf_size)
-            return None
-        else:
-            #32-bit data:
-            pixels = bytearray(strtobytes(buf.raw))
-            has_alpha = False
-            has_pixels = False
-            for i in range(len(pixels)//4):
-                has_pixels = has_pixels or pixels[i*4]!=0 or pixels[i*4+1]!=0 or pixels[i*4+2]!=0
-                has_alpha = has_alpha or pixels[i*4+3]!=0
-                if has_pixels and has_alpha:
-                    break
-            if has_pixels and not has_alpha:
-                #generate missing alpha - don't ask me why
-                for i in range(len(pixels)//4):
-                    if pixels[i*4]!=0 or pixels[i*4+1]!=0 or pixels[i*4+2]!=0:
-                        pixels[i*4+3] = 0xff
-        return [0, 0, w, h, x, y, hCursor, bytes(pixels), strtobytes(name)]
-    except Exception as e:
-        cursorlog("get_cursor_data(%#x)", hCursor, exc_info=True)
-        cursorlog.error("Error: failed to grab cursor:")
-        cursorlog.error(" %s", str(e) or type(e))
-        return None
-    finally:
-        if old_handle:
-            SelectObject(memdc, old_handle)
-        if bitmap:
-            DeleteObject(bitmap)
-        if memdc:
-            DeleteDC(memdc)
-        if dc:
-            ReleaseDC(None, dc)
 
 
 def init_capture(w, h, pixel_depth=32):
