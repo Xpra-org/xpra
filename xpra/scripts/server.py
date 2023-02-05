@@ -36,6 +36,7 @@ from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
+    is_Wayland,
     force_quit,
     which,
     get_saved_env, get_saved_env_var,
@@ -314,10 +315,12 @@ def make_server(clobber):
     return XpraServer(clobber)
 
 def make_shadow_server(multi_window=False):
-    from xpra.platform.shadow_server import ShadowServer
-    ss = ShadowServer()
-    ss.multi_window = multi_window
-    return ss
+    if envbool("XPRA_SHADOW_SCREENCAST", is_Wayland()):
+        #try screen casting
+        from xpra.platform.xposix.fdscreencast import ScreenCast
+        return ScreenCast(multi_window)
+    from xpra.x11.shadow_x11_server import ShadowX11Server
+    return ShadowX11Server(multi_window)
 
 def make_proxy_server():
     from xpra.platform.proxy_server import ProxyServer
