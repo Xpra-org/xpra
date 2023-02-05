@@ -131,7 +131,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def make_hello(self, _source):
         return {"shadow" : True}
 
-    def get_info(self, _proto=None):
+    def get_info(self, _proto=None, *args):
         info = {
             "sharing"       : self.sharing is not False,
             "refresh-delay" : self.refresh_delay,
