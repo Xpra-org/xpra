@@ -6,6 +6,7 @@
 
 import os
 import subprocess
+from shutil import which
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -271,12 +272,13 @@ class AudioMixin(StubSourceMixin):
         if not NEW_STREAM_SOUND:
             return
         from xpra.platform.paths import get_resources_dir   # pylint: disable=import-outside-toplevel
-        sample = os.path.join(get_resources_dir(), "bell.wav")
+        sample = os.path.abspath(os.path.normpath(os.path.join(get_resources_dir(), "bell.wav")))
         log(f"new_stream_sound() sample={sample}, exists={os.path.exists(sample)}")
         if not os.path.exists(sample):
             return
+        gst_launch = os.path.abspath(os.path.normpath(which("gst-launch-1.0") or "gst-launch-1.0"))
         cmd = [
-            "gst-launch-1.0", "-q",
+            gst_launch, "-q",
             "filesrc", f"location={sample}",
             "!", "decodebin",
             "!", "audioconvert",
