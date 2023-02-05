@@ -293,8 +293,10 @@ class InputServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        ss.keyboard_config.sync = bool(packet[1])
-        keylog("toggled keyboard-sync to %s for %s", self.keyboard_config.sync, ss)
+        kc = ss.keyboard_config
+        if kc:
+            kc.sync = bool(packet[1])
+            keylog("toggled keyboard-sync to %s for %s", kc.sync, ss)
 
     def _keys_changed(self, *_args):
         if not self.keymap_changing:
