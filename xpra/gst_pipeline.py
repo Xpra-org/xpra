@@ -271,6 +271,8 @@ class Pipeline(GObject.GObject):
                                     self.gstlogwarn(" %s", lp)
                         else:
                             self.gstlogwarn("                  %s", l.strip("\n\r"))
+        elif t in (Gst.MessageType.NEED_CONTEXT, Gst.MessageType.HAVE_CONTEXT):
+            log("context message: %s", message)
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
