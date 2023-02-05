@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from shutil import which
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -270,15 +271,16 @@ class AudioMixin(StubSourceMixin):
         if NEW_STREAM_SOUND:
             try:
                 from xpra.platform.paths import get_resources_dir
-                sample = os.path.join(get_resources_dir(), "bell.wav")
+                sample = os.path.abspath(os.path.normpath(os.path.join(get_resources_dir(), "bell.wav")))
                 log("new_stream(%s, %s) sample=%s, exists=%s", sound_source, codec, sample, os.path.exists(sample))
                 if os.path.exists(sample):
                     if POSIX:
                         sink = "alsasink"
                     else:
                         sink = "autoaudiosink"
+                    gst_launch = os.path.abspath(os.path.normpath(which("gst-launch-1.0") or "gst-launch-1.0"))
                     cmd = [
-                        "gst-launch-1.0", "-q",
+                        gst_launch, "-q",
                         "filesrc", "location=%s" % sample,
                         "!", "decodebin",
                         "!", "audioconvert",
