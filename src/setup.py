@@ -261,7 +261,7 @@ if HELP:
     setup()
     print("Xpra specific build and install switches:")
     for x in SWITCHES:
-        d = vars()["%s_ENABLED" % x]
+        d = globals()["%s_ENABLED" % x]
         with_str = "  --with-%s" % x
         without_str = "  --without-%s" % x
         if d is True or d is False:
