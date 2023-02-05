@@ -13,7 +13,7 @@ from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
-from xpra.util import net_utf8, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import net_utf8, typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
 log = Logger("window")
@@ -300,13 +300,19 @@ class ClientWindowBase(ClientWidgetBase):
             #perform metadata variable substitutions:
             #full of py3k unicode headaches that don't need to be
             UNKNOWN_MACHINE = "<unknown machine>"
+            remote_hostname = getattr(self._client, "_remote_hostname", None)
+            remote_display = getattr(self._client, "_remote_display", None)
+            if remote_display:
+                #ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
+                remote_display = remote_display.replace("\\", "-")
             default_values = {
                 "title"           : "<untitled window>",
                 "client-machine"  : UNKNOWN_MACHINE,
                 "windowid"        : str(self._id),
-                "server-machine"  : getattr(self._client, "_remote_hostname", None) or UNKNOWN_MACHINE,
-                "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
+                "server-machine"  : std(remote_hostname) or UNKNOWN_MACHINE,
+                "server-display"  : std(remote_display) or "<unknown display>",
                 }
+            metalog(f"default values: {default_values}")
             def validhostname(value):
                 if value not in (
                     "localhost",
