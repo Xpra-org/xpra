@@ -62,7 +62,7 @@ class KeyboardConfigBase:
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))
         log.warn("Warning: %s does not implement get_keycode!", type(self))
-        return -1
+        return -1, 0
 
     def is_modifier(self, _keycode):
         #should be overriden in subclasses
