@@ -7,6 +7,7 @@ import os.path
 from io import BytesIO
 
 from xpra.util import first_time
+from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")
@@ -73,3 +74,71 @@ def image_data(img):
     buf.close()
     w,h = img.size
     return ("png", w, h, data)
+
+
+def get_notification_icon(icon_string):
+    #this method *must* be called from the UI thread
+    #since we may end up calling svg_to_png which uses Cairo
+    #
+    #the string may be:
+    # * a path which we will load using pillow
+    # * a name we lookup in the current theme
+    if not icon_string:
+        return ()
+    MAX_SIZE = 256
+    img = None
+    from PIL import Image  #pylint: disable=import-outside-toplevel
+    if os.path.isabs(icon_string):
+        if os.path.exists(icon_string) and os.path.isfile(icon_string):
+            try:
+                if icon_string.endswith(".svg"):
+                    from xpra.codecs.icon_util import svg_to_png  #pylint: disable=import-outside-toplevel
+                    svg_data = load_binary_file(icon_string)
+                    png_data = svg_to_png(icon_string, svg_data, MAX_SIZE, MAX_SIZE)
+                    return "png", MAX_SIZE, MAX_SIZE, png_data
+                #should we be using pillow.decoder.open_only here? meh
+                img = Image.open(icon_string)
+            except Exception as e:
+                log("%s(%s)", Image.open, icon_string)
+                log.warn("Warning: unable to load notification icon file")
+                log.warn(" '%s'", icon_string)
+                log.warn(" %s", e)
+            else:
+                w, h = img.size
+        if not img:
+            #we failed to load it using the absolute path,
+            #so try to locate this icon without the path or extension:
+            icon_string = os.path.splitext(os.path.basename(icon_string))[0]
+    if not img:
+        #try to find it in the theme:
+        try:
+            import gi
+            gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+            from gi.repository import Gtk  #pylint: disable=no-name-in-module
+            theme = Gtk.IconTheme.get_default()
+        except ImportError:
+            theme = None
+        if theme:
+            try:
+                icon = theme.load_icon(icon_string, Gtk.IconSize.BUTTON, 0)
+            except Exception as e:
+                log("failed to load icon '%s' from default theme: %s", icon_string, e)
+            else:
+                data = icon.get_pixels()
+                w = icon.get_width()
+                h = icon.get_height()
+                rowstride = icon.get_rowstride()
+                mode = "RGB"
+                if icon.get_has_alpha():
+                    mode = "RGBA"
+                img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
+    if img:
+        if w>MAX_SIZE or h>MAX_SIZE:
+            img = img.resize((MAX_SIZE, MAX_SIZE), Image.ANTIALIAS)
+            w = h = MAX_SIZE
+        buf = BytesIO()
+        img.save(buf, "PNG")
+        cpixels = buf.getvalue()
+        buf.close()
+        return "png", w, h, cpixels
+    return ()
