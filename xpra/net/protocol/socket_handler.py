@@ -1087,19 +1087,22 @@ class SocketProtocol:
             log("flush_then_close: already closed")
             done()
             return
+        def writelockrelease():
+            wl = self._write_lock
+            try:
+                if wl:
+                    wl.release()
+            except Exception as e:
+                log(f"error releasing the write lock: {e}")
         def wait_for_queue(timeout=10):
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
                 #write queue still has stuff in it..
                 if timeout<=0:
                     log("flush_then_close: queue still busy, closing without sending the last packet")
-                    wl = self._write_lock
-                    try:
-                        if wl:
-                            wl.release()
-                    finally:
-                        self.close()
-                        done()
+                    writelockrelease()
+                    self.close()
+                    done()
                 else:
                     log("flush_then_close: still waiting for queue to flush")
                     self.timeout_add(100, wait_for_queue, timeout-1)
@@ -1112,14 +1115,8 @@ class SocketProtocol:
                 def close_and_release():
                     log("flush_then_close: wait_for_packet_sent() close_and_release()")
                     self.close()
-                    wl = self._write_lock
-                    try:
-                        if wl:
-                            wl.release()
-                    except Exception as e:
-                        log(f"error releasing the write lock: {e}")
-                    finally:
-                        done()
+                    writelockrelease()
+                    done()
                 def wait_for_packet_sent():
                     log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
                         self._write_queue.empty(), self._closed)
