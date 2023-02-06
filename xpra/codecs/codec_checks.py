@@ -291,26 +291,26 @@ def testdecoding(decoder_module, encoding, full):
     test_data_set = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
-        decoder = decoder_module.Decoder()
-        try:
-            test_data = {}
-            if test_data_set:
-                test_data = test_data_set.get(cs, {})
-            elif encoding in TEST_PICTURES:
-                #maybe this is a picture format:
-                test_data = TEST_PICTURES[encoding]
-            #add a context init test, without any data to decode:
-            test_data.setdefault((256, 128), [])
-            for size, frames in test_data.items():
-                w, h = size
-                if w<min_w or h<min_h:
-                    log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h})")
-                    continue
-                try:
-                    decoder.init_context(encoding, w, h, cs)
-                except Exception as e:
-                    log.error(f"Error creating context {encoding} {w}x{h} {cs}")
-                    raise
+        test_data = {}
+        if test_data_set:
+            test_data = test_data_set.get(cs, {})
+        elif encoding in TEST_PICTURES:
+            #maybe this is a picture format:
+            test_data = TEST_PICTURES[encoding]
+        #add a context init test, without any data to decode:
+        test_data.setdefault((256, 128), [])
+        for size, frames in test_data.items():
+            w, h = size
+            if w<min_w or h<min_h:
+                log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h})")
+                continue
+            try:
+                decoder = decoder_module.Decoder()
+                decoder.init_context(encoding, w, h, cs)
+            except Exception as e:
+                log.error(f"Error creating context {encoding} {w}x{h} {cs}")
+                raise
+            try:
                 if frames:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}")
                     for i, data in enumerate(frames):
@@ -333,8 +333,8 @@ def testdecoding(decoder_module, encoding, full):
                         image = None
                     if image is not None:
                         raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
-        finally:
-            decoder.clean()
+            finally:
+                decoder.clean()
 
 
 def testencoder(encoder_module, full):
