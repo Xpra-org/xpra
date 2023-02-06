@@ -1116,6 +1116,8 @@ class SocketProtocol:
                     try:
                         if wl:
                             wl.release()
+                    except Exception as e:
+                        log(f"error releasing the write lock: {e}")
                     finally:
                         done()
                 def wait_for_packet_sent():
