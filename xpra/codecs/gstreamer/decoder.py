@@ -5,7 +5,7 @@
 
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.gst_common import STREAM_TYPE, GST_FORMAT_BYTES, make_buffer
+from xpra.gst_common import STREAM_TYPE, GST_FORMAT_BYTES, make_buffer, has_plugins
 from xpra.gst_pipeline import GST_FLOW_OK
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
@@ -22,10 +22,18 @@ log = Logger("decoder", "gstreamer")
 assert get_version and get_type and init_module and cleanup_module
 
 
-if WIN32:
-    CODECS = ("vp9", "vp8", "av1")
-else:
-    CODECS = ("vp9", "vp8", "h264", "av1")
+def find_codecs(options):
+    codecs = []
+    for encoding, elements in options.items():
+        if any(has_plugins(x) for x in elements):
+            codecs.append(encoding)
+    return tuple(codecs)
+
+codec_options = dict((enc, (f"{enc}dec", )) for enc in ("vp8", "vp9", "av1"))
+if not WIN32:
+    codec_options["h264"] = ("avdec_h264", )
+CODECS = find_codecs(codec_options)
+
 
 def get_encodings():
     return CODECS
