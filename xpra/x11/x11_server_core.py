@@ -462,26 +462,23 @@ class X11ServerCore(GTKServerBase):
     def set_keymap(self, server_source, force=False):
         if self.readonly:
             return
-        try:
-            #prevent _keys_changed() from firing:
-            #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
-            self.keymap_changing = True
 
-            #if sharing, don't set the keymap, translate the existing one:
-            other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=server_source and s.ui_client]
-            translate_only = len(other_ui_clients)>0
-            with xsync:
-                server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)    #pylint: disable=access-member-before-definition
-                self.keyboard_config = server_source.keyboard_config
-        finally:
-            # re-enable via idle_add to give all the pending
+        def reenable_keymap_changes(*args):
+            keylog("reenable_keymap_changes(%s)", args)
+            self.keymap_changing_timer = 0
+            self._keys_changed()
+        #prevent _keys_changed() from firing:
+        #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
+        if not self.keymap_changing_timer:
+            # use idle_add to give all the pending
             # events a chance to run first (and get ignored)
-            def reenable_keymap_changes(*args):
-                keylog("reenable_keymap_changes(%s)", args)
-                self.keymap_changing = False
-                self._keys_changed()
-            self.idle_add(reenable_keymap_changes)
-
+            self.keymap_changing_timer = self.timeout_add(100, reenable_keymap_changes)
+        #if sharing, don't set the keymap, translate the existing one:
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=server_source and s.ui_client]
+        translate_only = len(other_ui_clients)>0
+        with xsync:
+            server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)    #pylint: disable=access-member-before-definition
+            self.keyboard_config = server_source.keyboard_config
 
     def clear_keys_pressed(self):
         if self.readonly:

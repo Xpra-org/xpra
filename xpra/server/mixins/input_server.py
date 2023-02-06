@@ -33,7 +33,7 @@ class InputServer(StubServerMixin):
 
         self.mod_meanings = {}
         self.keyboard_config = None
-        self.keymap_changing = False            #to ignore events when we know we are changing the configuration
+        self.keymap_changing_timer = 0  #to ignore events when we know we are changing the configuration
         self.key_repeat = None
         #ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
@@ -312,8 +312,8 @@ class InputServer(StubServerMixin):
             keylog("toggled keyboard-sync to %s for %s", kc.sync, ss)
 
     def _keys_changed(self):
-        keylog("input server: the keymap has been changed, keymap_changing=%s", self.keymap_changing)
-        if not self.keymap_changing:
+        keylog("input server: the keymap has been changed, keymap_changing_timer=%s", self.keymap_changing_timer)
+        if not self.keymap_changing_timer:
             for ss in self._server_sources.values():
                 if hasattr(ss, "keys_changed"):
                     ss.keys_changed()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,9 +22,7 @@ from xpra.common import FULL_INFO
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, get_root_size,
-    )
+from xpra.gtk_common.gtk_util import get_gtk_version_info, get_root_size
 from xpra.log import Logger
 
 UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
@@ -59,14 +57,18 @@ class GTKServerBase(ServerBase):
         #this event can fire many times in succession
         #throttle how many times we call self._keys_changed()
         def keys_changed(*_args):
-            if self.keymap_changing:
+            if self.keymap_changing_timer:
                 return
-            self.keymap_changing = True
             def do_keys_changed():
                 self._keys_changed()
-                self.keymap_changing = False
-            self.timeout_add(500, do_keys_changed)
+                self.keymap_changing_timer = 0
+            self.keymap_changing_timer = self.timeout_add(500, do_keys_changed)
         keymap.connect("keys-changed", keys_changed)
+
+    def stop_keymap_timer(self):
+        kct = self.keymap_changing_timer
+        if kct:
+            self.source_remove(kct)
 
     def install_signal_handlers(self, callback):
         sstr = self.get_server_mode()+" server"
@@ -84,6 +86,7 @@ class GTKServerBase(ServerBase):
 
     def late_cleanup(self):
         log("GTKServerBase.late_cleanup()")
+        self.stop_keymap_timer()
         super().late_cleanup()
         self.stop_ui_watcher()
         self.close_gtk_display()
