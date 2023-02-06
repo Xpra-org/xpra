@@ -315,12 +315,8 @@ def make_server(clobber):
     return XpraServer(clobber)
 
 def make_shadow_server(multi_window=False):
-    if envbool("XPRA_SHADOW_SCREENCAST", is_Wayland()):
-        #try screen casting
-        from xpra.platform.xposix.fdscreencast import ScreenCast
-        return ScreenCast(multi_window)
-    from xpra.x11.shadow_x11_server import ShadowX11Server
-    return ShadowX11Server(multi_window)
+    from xpra.platform.shadow_server import ShadowServer
+    return ShadowServer(multi_window)
 
 def make_proxy_server():
     from xpra.platform.proxy_server import ProxyServer
