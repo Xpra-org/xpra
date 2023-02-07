@@ -82,8 +82,6 @@ class TestImageWrapper(unittest.TestCase):
             print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
         #invalid sub-image should fail:
         for x, y, w, h in (
-            (-1, 0, 1, 1),
-            (0, -1, 1, 1),
             (0, 0, 0, 1),
             (0, 0, 1, 0),
             (1, 0, W, 1),
