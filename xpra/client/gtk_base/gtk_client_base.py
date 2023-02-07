@@ -1156,6 +1156,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         DISABLE = "1"
         def notify_callback(event, nid, action_id, *args):
             log("notify_callback(%s, %s, %s, %s)", event, nid, action_id, args)
+            if event=="notification-close":
+                return
             if event!="notification-action":
                 log.warn(f"Warning: unexpected event {event}")
                 return
