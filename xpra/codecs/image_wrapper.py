@@ -45,7 +45,8 @@ class ImageWrapper:
         self.freed : bool = False
         self.timestamp : int = int(monotonic()*1000)
         self.palette = palette
-        assert x>=0 and y>=0 and width>0 and height>0
+        if width<=0 or height<=0:
+            raise ValueError(f"invalid geometry {x},{y},{width},{height}")
 
     def _cn(self):
         try:
