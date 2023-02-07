@@ -7,6 +7,7 @@ from queue import Queue, Empty, Full
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gst_common import  import_gst
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
 from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
@@ -27,6 +28,7 @@ class Capture(Pipeline):
     Uses a GStreamer pipeline to capture the screen
     """
     __gsignals__ = Pipeline.__generic_signals__.copy()
+    __gsignals__["new-image"] = one_arg_signal
 
     def __init__(self, element : str="ximagesrc", pixel_format : str="BGRX",
                  width : int=0, height : int=0):
@@ -38,14 +40,15 @@ class Capture(Pipeline):
         self.framerate : int  = 10
         self.image = Queue(maxsize=1)
         self.create_pipeline(element)
+        assert width>0 and height>0
 
     def create_pipeline(self, capture_element:str="ximagesrc"):
         #CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
             capture_element,   #ie: ximagesrc
-            f"video/x-raw,framerate={self.framerate}/1",
+            #f"video/x-raw,framerate={self.framerate}/1",
             "videoconvert",
-            "videorate",
+            #"videorate",
             #"videoscale ! video/x-raw,width=800,height=600 ! autovideosink
             "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
             ]
@@ -77,6 +80,8 @@ class Capture(Pipeline):
                 self.image.put_nowait(image)
             except Full:
                 log("image queue is already full")
+            else:
+                self.emit("new-image", self.frames)
         return GST_FLOW_OK
 
     def on_new_preroll(self, _appsink):
@@ -85,6 +90,8 @@ class Capture(Pipeline):
 
     def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0):
         log("get_image%s", (x, y, width, height))
+        if self.state=="stopped":
+            return None
         try:
             return self.image.get(timeout=5)
         except Empty:

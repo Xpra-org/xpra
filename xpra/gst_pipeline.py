@@ -12,7 +12,7 @@ from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 Gst = import_gst()
 if not Gst:
     raise ImportError("GStreamer bindings not found")
-from gi.repository import GLib, GObject
+from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import AtomicInteger, noerr, first_time
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -273,6 +273,9 @@ class Pipeline(GObject.GObject):
                             self.gstlogwarn("                  %s", l.strip("\n\r"))
         elif t in (Gst.MessageType.NEED_CONTEXT, Gst.MessageType.HAVE_CONTEXT):
             log("context message: %s", message)
+        elif t == Gst.MessageType.QOS:
+            qos = message.parse_qos()
+            log.warn(f"qos={qos}")
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()

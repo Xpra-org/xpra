@@ -9,9 +9,11 @@ import re
 from enum import IntEnum
 
 from xpra.exit_codes import ExitCode
+from xpra.util import typedict
 from xpra.dbus.common import loop_init, init_session_bus
+from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture
-#from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.log import Logger
 
@@ -21,7 +23,7 @@ BASE_REQUEST_PATH = "/org/freedesktop/portal/desktop/request"
 PORTAL_REQUEST = "org.freedesktop.portal.Request"
 PORTAL_DESKTOP_INTERFACE = "org.freedesktop.portal.Desktop"
 PORTAL_DESKTOP_PATH = "/org/freedesktop/portal/desktop"
-SCREENCAST_IFACE = 'org.freedesktop.portal.ScreenCast'
+SCREENCAST_IFACE = "org.freedesktop.portal.ScreenCast"
 
 loop_init()
 bus = init_session_bus()
@@ -43,16 +45,39 @@ class ScreenCast(GTKShadowServerBase):
         self.session_handler = 0
         self.portal_interface = None
         self.dbus_sender_name : str = re.sub(r'\.', r'_', bus.get_unique_name()[1:])
+        self.portal_interface = bus.get_object(PORTAL_DESKTOP_INTERFACE, PORTAL_DESKTOP_PATH)
+        log(f"setup_capture() self.portal_interface={self.portal_interface}")
 
     #def init(self, opts):
     #    GTKShadowServerBase.init(self, opts)
+
+    def notify_new_user(self, ss):
+        log("notify_new_user() start capture")
+        super().notify_new_user(ss)
+        if not self._window_to_id:
+            self.dbus_request_screenscast()
+
+    def last_client_exited(self):
+        super().last_client_exited()
+        c = self.capture
+        if c:
+            self.capture = None
+            c.stop()
+
+
+    def makeRootWindowModels(self):
+        log("makeRootWindowModels()")
+        return []
+
+    def makeDynamicWindowModels(self):
+        log("makeDynamicWindowModels()")
+        return []
 
     def set_keymap(self, server_source, force=False):
         log.info("keymap support not implemented in pipewire screencast shadow server")
 
     def setup_capture(self):
-        self.portal_interface = bus.get_object(PORTAL_DESKTOP_INTERFACE, PORTAL_DESKTOP_PATH)
-        log(f"setup_capture() self.portal_interface={self.portal_interface}")
+        pass
 
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
@@ -62,7 +87,7 @@ class ScreenCast(GTKShadowServerBase):
         self.start_capture()
 
     def start_capture(self):
-        self.dbus_request_screenscast()
+        pass
 
     def screen_cast_call(self, method, callback, *args, options={}):
         #generate a new token and path:
@@ -92,16 +117,17 @@ class ScreenCast(GTKShadowServerBase):
             )
 
     def on_create_session_response(self, response, results):
-        if response != 0:
-            log.error("Error: failed to create the session:")
-            log.error(f" {response}, {results}")
+        r = int(response)
+        res = typedict(dbus_to_native(results))
+        if r:
+            log.error("on_create_session_response", (response, results))
+            log.error(f"Error {r} creating the session")
             self.quit(ExitCode.UNSUPPORTED)
             return
-        self.session_handle = results.get("session_handle")
-        log("on_create_session_response%s session_handle=%s", (response, results), self.session_handle)
+        self.session_handle = res.strget("session_handle")
+        log("on_create_session_response%s session_handle=%s", (r, res), self.session_handle)
         if not self.session_handle:
-            log.error("Error: failed to create the session:")
-            log.error(" missing session handle")
+            log.error("Error: missing session handle creating the session")
             self.quit(ExitCode.UNSUPPORTED)
             return
         from dbus.types import UInt32
@@ -109,7 +135,7 @@ class ScreenCast(GTKShadowServerBase):
             "multiple"  : self.multi_window,
             "types"     : UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
             }
-        log(f"on_create_session_response calling {self.portal_interface.SelectSources} with options={options}")
+        log(f"on_create_session_response calling SelectSources with options={options}")
         self.screen_cast_call(
             self.portal_interface.SelectSources,
             self.on_select_sources_response,
@@ -117,12 +143,14 @@ class ScreenCast(GTKShadowServerBase):
             options=options)
 
     def on_select_sources_response(self, response, results):
-        if response != 0:
-            log.error("Error: failed to select sources:")
-            log.error(f" {response}, {results}")
+        r = int(response)
+        res = typedict(dbus_to_native(results))
+        if r:
+            log("on_select_sources_response%s", (response, results))
+            log.error(f"Error {r} selecting sources")
             self.quit(ExitCode.UNSUPPORTED)
             return
-        log(f"on_select_sources_response sources selected, results={results}")
+        log(f"on_select_sources_response sources selected, results={res}")
         self.screen_cast_call(
             self.portal_interface.Start,
             self.on_start_response,
@@ -130,19 +158,26 @@ class ScreenCast(GTKShadowServerBase):
             "")
 
     def on_start_response(self, response, results):
-        if response != 0:
-            log.error("Error: failed to start capture:")
-            log.error(f" {response}, {results}")
+        r = int(response)
+        res = typedict(dbus_to_native(results))
+        if r:
+            log.error("on_start_response%s", (response, results))
+            log.error(f"Error {r} starting the screen capture")
             self.quit(ExitCode.UNSUPPORTED)
             return
-        streams = results.get("streams")
+        streams = res.tupleget("streams")
         if not streams:
             log.error("Error: failed to start capture:")
             log.error(" missing streams")
             self.quit(ExitCode.UNSUPPORTED)
             return
+        log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
-            self.start_pipewire_capture(node_id, props)
+            #start_thread(self.start_pipewire_capture,
+            #             f"start-pipewire-capture-{node_id}",
+            #             daemon=True,
+            #             args = (node_id, typedict(props)))
+            self.start_pipewire_capture(node_id, typedict(props))
 
     def start_pipewire_capture(self, node_id, props):
         log(f"start_pipewire_capture({node_id}, {props})")
@@ -152,20 +187,49 @@ class ScreenCast(GTKShadowServerBase):
                                                              empty_dict,
                                                              dbus_interface=SCREENCAST_IFACE)
         fd = fd_object.take()
+        #from gi.repository import Gst
+        #pipeline = Gst.parse_launch('pipewiresrc fd=%d path=%u ! videoconvert ! xvimagesink'%(fd, node_id))
+        #pipeline.set_state(Gst.State.PLAYING)
+        #def on_gst_message(*args):
+        #    log.info(f"on_gst_message{args}")
+        #pipeline.get_bus().connect('message', on_gst_message)
+        #return
+        x, y = props.inttupleget("position", (0, 0))
+        w, h = props.inttupleget("size", (0, 0))
         el = f"pipewiresrc fd={fd} path={node_id}"
-        self.capture = Capture(el)
-        self.capture.start()
+        self.capture = Capture(el, pixel_format="BGRX", width=w, height=h)
         self.capture.connect("state-changed", self.capture_state_changed)
         self.capture.connect("error", self.capture_error)
+        self.capture.connect("new-image", self.capture_new_image)
+        self.capture.start()
+        source_type = props.intget("source_type")
+        title = f"{AvailableSourceTypes(source_type)} {node_id}"
+        geometry = (x, y, w, h)
+        model = RootWindowModel(self.root, self.capture, title, geometry)
+        #must be called from the main thread:
+        log(f"new model: {model}")
+        self.idle_add(self._add_new_window, model)
+
+    def capture_new_image(self, capture, frame):
+        log(f"capture_new_image({capture}, {frame})")
 
     def capture_error(self, *args):
         log.warn(f"capture_error{args}")
+        self.quit(ExitCode.INTERNAL_ERROR)
 
     def capture_state_changed(self, *args):
-        log.warn(f"capture_state_changed{args}")
+        log.info(f"capture_state_changed{args}")
 
     def stop_capture(self):
         c = self.capture
         if c:
             self.capture = None
             c.clean()
+
+
+    def _move_pointer(self, device_id, wid, pos, props=None):
+        #x, y = pos
+        pass
+
+    def do_process_button_action(self, *args):
+        pass
