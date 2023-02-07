@@ -359,6 +359,11 @@ class WindowSource(WindowIconSource):
     def __repr__(self):
         return f"WindowSource({self.wid} : {self.window_dimensions})"
 
+    def ui_thread_check(self):
+        ct = threading.current_thread()
+        if ct != self.ui_thread:
+            raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")
+
 
     def add_encoder(self, encoding, encoder):
         log("add_encoder(%s, %s)", encoding, encoder)
@@ -684,7 +689,7 @@ class WindowSource(WindowIconSource):
         self.suspended = True
 
     def resume(self):
-        assert self.ui_thread == threading.current_thread()
+        self.ui_thread_check()
         self.cancel_damage()
         self.statistics.reset()
         self.suspended = False
@@ -693,7 +698,7 @@ class WindowSource(WindowIconSource):
             self.send_window_icon()
 
     def refresh(self, options=None):
-        assert self.ui_thread == threading.current_thread()
+        self.ui_thread_check()
         w, h = self.window.get_dimensions()
         self.damage(0, 0, w, h, options)
 
@@ -1480,7 +1485,7 @@ class WindowSource(WindowIconSource):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
-        assert self.ui_thread == threading.current_thread()
+        self.ui_thread_check()
         if self.suspended:
             return
         if w==0 or h==0:
@@ -1846,7 +1851,7 @@ class WindowSource(WindowIconSource):
         """
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
-        assert self.ui_thread == threading.current_thread()
+        self.ui_thread_check()
         if not self.window.is_managed():
             return
         self.window.acknowledge_changes()
@@ -2018,7 +2023,7 @@ class WindowSource(WindowIconSource):
 
 
     def get_damage_image(self, x, y, w, h):
-        assert self.ui_thread == threading.current_thread()
+        self.ui_thread_check()
         def nodata(msg, *args):
             log("get_damage_image: "+msg, *args)
             return None
