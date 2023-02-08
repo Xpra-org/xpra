@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -46,6 +46,9 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
                        GObject.ParamFlags.READABLE),
         "wm-name": (GObject.TYPE_PYOBJECT,
                        "The name of the window manager or session manager", "",
+                       GObject.ParamFlags.READABLE),
+        "title": (GObject.TYPE_PYOBJECT,
+                       "The name of this desktop or monitor", "",
                        GObject.ParamFlags.READABLE),
         "icons": (GObject.TYPE_PYOBJECT,
                        "The icon of the window manager or session manager", "",
