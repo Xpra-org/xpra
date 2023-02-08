@@ -77,7 +77,7 @@ class XpraMonitorServer(DesktopServerBase):
             root = screen.get_root_window()
             return root.get_geometry()[2:4]
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        log.warn(f"configure_best_screen_size() sources={sss}")
+        log(f"configure_best_screen_size() sources={sss}")
         if len(sss)!=1:
             screenlog.info("screen used by %i clients:", len(sss))
             return current()
@@ -85,7 +85,7 @@ class XpraMonitorServer(DesktopServerBase):
         if not getattr(ss, "desktop_fullscreen", False):
             return current()
         #try to match this client's layout:
-        log.warn(f"will try to mirror")
+        log(f"will try to mirror")
         #prevent this monitor layout change
         #from triggering a call to via reconfigure_monitors via reconfigure:
         try:
@@ -94,7 +94,7 @@ class XpraMonitorServer(DesktopServerBase):
             if mdef:
                 self.setting_changed("monitors", mdef)
         except Exception:
-            log.warn("Warning: failed to mirror client monitor layout", exc_info=True)
+            log("Warning: failed to mirror client monitor layout", exc_info=True)
             self.reconfigure_locked = False
         def unlock():
             self.reconfigure_locked = False
