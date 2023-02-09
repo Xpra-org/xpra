@@ -247,13 +247,12 @@ class WindowSource(WindowIconSource):
         self.scaling = None
         self.maximized : bool = False          #set by the client!
         self.iconic : bool = False
-        self.content_type : str = ""
         self.window_signal_handlers = []
         #watch for changes to properties that are used to derive the content-type:
+        self.content_type : str = window.get("content-type", "")
         if "content-type" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-type", self.content_type_changed)
             self.window_signal_handlers.append(sid)
-        self.content_type_changed(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
@@ -272,16 +271,6 @@ class WindowSource(WindowIconSource):
         else:
             self.children = None
 
-        #for deciding between small regions and full screen updates:
-        self.max_small_regions : int = 40
-        self.max_bytes_percent : int = 60
-        self.small_packet_cost : int = 1024
-        if mmap and mmap_size>0:
-            #with mmap, we can move lots of data around easily
-            #so favour large screen updates over small packets
-            self.max_small_regions : int = 10
-            self.max_bytes_percent : int = 25
-            self.small_packet_cost : int = 4096
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
 
@@ -466,11 +455,11 @@ class WindowSource(WindowIconSource):
         self.scaling_control = None
         self.scaling = None
         self.maximized = False
-        #
         self.bandwidth_limit = 0
-        self.max_small_regions = 0
-        self.max_bytes_percent = 0
-        self.small_packet_cost = 0
+        #for deciding between small regions and full screen updates:
+        self.max_small_regions : int = 40
+        self.max_bytes_percent : int = 60
+        self.small_packet_cost : int = 1024
         #
         self._encoding_quality = []
         self._encoding_quality_info = {}
@@ -720,6 +709,7 @@ class WindowSource(WindowIconSource):
         self.fullscreen = self.window.get_property("fullscreen")
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
+        return True
 
     def _iconic_changed(self, _window, *_args):
         self.iconic = self.window.get_property("iconic")
@@ -727,10 +717,12 @@ class WindowSource(WindowIconSource):
             self.go_idle()
         else:
             self.no_idle()
+        return True
 
     def content_type_changed(self, window, *args):
         self.content_type = window.get("content-type", "")
         log("content_type_changed(%s, %s) content-type=%s", window, args, self.content_type)
+        self.reconfigure(True)
         return True
 
     def quality_changed(self, window, *args):
@@ -769,8 +761,10 @@ class WindowSource(WindowIconSource):
         #filter out stuff we don't care about
         #to see if there is anything to set at all,
         #and if not, don't bother doing the potentially expensive update_encoding_selection()
-        for k in ("workspace", b"workspace", "screen", b"screen"):
+        for k in ("workspace", "screen"):
             properties.pop(k, None)
+            #for legacy packet encoders:
+            properties.pop(k.encode("latin1"), None)
         if properties:
             self.do_set_client_properties(properties)
 
@@ -944,6 +938,21 @@ class WindowSource(WindowIconSource):
                 #so we can more easily downscale at this end:
                 max_rgb_threshold = 1024
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
+        #for deciding between small regions and full screen updates:
+        self.max_small_regions : int = 40
+        self.max_bytes_percent : int = 60
+        self.small_packet_cost : int = 1024
+        if self._mmap and self._mmap_size>0:
+            #with mmap, we can move lots of data around easily
+            #so favour large screen updates over small packets
+            self.max_small_regions : int = 10
+            self.max_bytes_percent : int = 25
+            self.small_packet_cost : int = 4096
+        elif self.content_type=="desktop":
+            #in desktop mode, many areas will be updating
+            #so favour large screen updates
+            self.max_small_regions : int = 20
+            self.max_bytes_percent : int = 40
         self.assign_encoding_getter()
         log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i",
                         force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
