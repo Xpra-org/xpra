@@ -832,12 +832,12 @@ class Protocol:
     def invalid_header(self, proto, data, msg="invalid packet header"):
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, proto, data, msg=""):
+    def _invalid_header(self, proto, data, msg="invalid packet header"):
         log("invalid_header(%s, %s bytes: '%s', %s)",
                proto, len(data or ""), msg, ellipsizer(data))
         guess = guess_packet_type(data)
         if guess:
-            err = f"invalid packet format: {guess}"
+            err = f"{msg}: {guess}"
         else:
             err = "%s: 0x%s" % (msg, hexstr(data[:HEADER_SIZE]))
             if len(data)>1:
