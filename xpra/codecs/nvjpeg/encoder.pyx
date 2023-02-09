@@ -148,7 +148,7 @@ def get_spec(encoding, colorspace):
     from xpra.codecs.codec_constants import video_spec
     return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
                       has_lossless_mode=False,
-                      codec_class=Encoder, codec_type="jpeg",
+                      codec_class=Encoder, codec_type="nvjpeg",
                       setup_cost=20, cpu_cost=0, gpu_cost=100,
                       min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
                       can_scale=True,
