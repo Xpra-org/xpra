@@ -289,24 +289,29 @@ class WindowVideoSource(WindowSource):
                 return x.codec_type
             except AttributeError:
                 return repr(x)
+        ei = {
+            ""        : specinfo(encoder_spec),
+            "width"   : enc_width,
+            "height"  : enc_height,
+            }
+        if encoder_scaling!=(1, 1):
+            ei["scaling"] = encoder_scaling
         pi  = {
                "score"             : score,
-               "scaling"           : scaling,
                "format"            : str(enc_in_format),
-               "encoder"           : {
-                                      ""        : specinfo(encoder_spec),
-                                      "scaling" : encoder_scaling,
-                                      "width"   : enc_width,
-                                      "height"  : enc_height,
-                                      },
+               "encoder"           : ei,
                }
+        if scaling!=(1, 1):
+            pi["scaling"] = scaling
         if csc_spec:
-            pi["csc"] = {
-                         ""         : specinfo(csc_spec),
-                         "scaling"  : csc_scaling,
-                         "width"    : csc_width,
-                         "height"   : csc_height,
-                         }
+            csci = {
+                ""         : specinfo(csc_spec),
+                "width"    : csc_width,
+                "height"   : csc_height,
+                }
+            if csc_scaling!=(1, 1):
+                csci["scaling"] = csc_scaling
+            pi["csc"] = csci
         else:
             pi["csc"] = "None"
         return pi
