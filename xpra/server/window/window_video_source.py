@@ -475,18 +475,32 @@ class WindowVideoSource(WindowSource):
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
-        video_hint = self.content_type.find("video")>=0
-
+        video_hint = int(self.content_type.find("video")>=0)
+        if self.pixel_format:
+            #if we have a hardware video encoder, use video more:
+            self.update_pipeline_scores()
+            scores = self.last_pipeline_scores
+            if scores:
+                for i, score_data in enumerate(scores):
+                    encoder_spec = score_data[-1]
+                    if encoder_spec.gpu_cost > encoder_spec.cpu_cost:
+                        video_hint += 1+int(i==0)
+                        break
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
         sr = self.video_subregion.rectangle
         if sr:
             videomin = min(videomin, sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
-        elif not text_hint:
-            videomin = min(640*480, cww*cwh)
+        elif text_hint:
+            #TEXT_USE_VIDEO must be set,
+            #but only use video if the whole area changed:
+            videomin = cww*cwh
+        else:
+            videomin = min(640*480, cww*cwh) // (1+video_hint*2)
+        #log(f"ww={ww}, wh={wh}, rgbmax={rgbmax}, videohint={video_hint} videomin={videomin}, sr={sr}, pixel_count={pixel_count}")
         if pixel_count<=rgbmax or cww<8 or cwh<8:
-            return nonvideo(info="low pixel count")
+            return nonvideo(info=f"low pixel count {pixel_count}")
 
         if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
             return nonvideo(info=f"{current_encoding} not a supported video encoding")
@@ -1049,12 +1063,75 @@ class WindowVideoSource(WindowSource):
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         self.idle_add(self.schedule_encode_from_queue, first_due)
 
+
+    def update_encoding_video_subregion(self):
+        """
+        We may need to update the video subregion based on the change in encoding,
+        this may result in rectangle(s) being added or removed from the refresh list
+        as video region is managed separately.
+        """
+        vs = self.video_subregion
+        if not vs:
+            return
+        if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
+            self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
+            (self.content_type.find("text")>=0 and TEXT_USE_VIDEO) or \
+            self._mmap_size>0:
+            #cannot use video subregions
+            #FIXME: small race if a refresh timer is due when we change encoding - meh
+            vs.reset()
+            return
+        old = vs.rectangle
+        ww, wh = self.window_dimensions
+        vs.identify_video_subregion(
+            ww, wh,
+            self.statistics.damage_events_count,
+            self.statistics.last_damage_events,
+            self.statistics.last_resized,
+            self.children)
+        newrect = vs.rectangle
+        if ((newrect is None) ^ (old is None)) or newrect!=old:
+            if old is None and newrect and newrect.get_geometry()==(0, 0, ww, wh):
+                #not actually changed!
+                #the region is the whole window
+                pass
+            elif newrect is None and old and old.get_geometry()==(0, 0, ww, wh):
+                #not actually changed!
+                #the region is the whole window
+                pass
+            else:
+                videolog("video subregion was %s, now %s (window size: %i,%i)", old, newrect, ww, wh)
+                self.cleanup_codecs()
+        if newrect:
+            #remove this from regular refresh:
+            if old is None or old!=newrect:
+                refreshlog("identified new video region: %s", newrect)
+                #figure out if the new region had pending regular refreshes:
+                subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
+                if old:
+                    #we don't bother subtracting new and old (too complicated)
+                    refreshlog("scheduling refresh of old region: %s", old)
+                    #this may also schedule a refresh:
+                    super().add_refresh_region(old)
+                super().remove_refresh_region(newrect)
+                if not self.refresh_regions:
+                    self.cancel_refresh_timer()
+                if subregion_needs_refresh:
+                    vs.add_video_refresh(newrect)
+            else:
+                refreshlog("video region unchanged: %s - no change in refresh", newrect)
+        elif old:
+            #add old region to regular refresh:
+            refreshlog("video region cleared, scheduling refresh of old region: %s", old)
+            self.add_refresh_region(old)
+            vs.cancel_refresh_timer()
+
     def update_encoding_options(self, force_reload=False):
         """
             This is called when we want to force a full re-init (force_reload=True)
             or from the timer that allows to tune the quality and speed.
             (this tuning is done in WindowSource.reconfigure)
-            Here we re-evaluate if the pipeline we are currently using
+            Here we re-evaluate if the csc and video pipeline we are currently using
             is really the best one, and if not we invalidate it.
             This uses get_video_pipeline_options() to get a list of pipeline
             options with a score for each.
@@ -1062,64 +1139,15 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         super().update_encoding_options(force_reload)
-        vs = self.video_subregion
-        if vs:
-            if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
-                self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
-                self.content_type.find("text")>=0 or \
-                self._mmap_size>0:
-                #cannot use video subregions
-                #FIXME: small race if a refresh timer is due when we change encoding - meh
-                vs.reset()
-            else:
-                old = vs.rectangle
-                ww, wh = self.window_dimensions
-                vs.identify_video_subregion(ww, wh,
-                                            self.statistics.damage_events_count,
-                                            self.statistics.last_damage_events,
-                                            self.statistics.last_resized,
-                                            self.children)
-                newrect = vs.rectangle
-                if ((newrect is None) ^ (old is None)) or newrect!=old:
-                    if old is None and newrect and newrect.get_geometry()==(0, 0, ww, wh):
-                        #not actually changed!
-                        #the region is the whole window
-                        pass
-                    elif newrect is None and old and old.get_geometry()==(0, 0, ww, wh):
-                        #not actually changed!
-                        #the region is the whole window
-                        pass
-                    else:
-                        videolog("video subregion was %s, now %s (window size: %i,%i)", old, newrect, ww, wh)
-                        self.cleanup_codecs()
-                if newrect:
-                    #remove this from regular refresh:
-                    if old is None or old!=newrect:
-                        refreshlog("identified new video region: %s", newrect)
-                        #figure out if the new region had pending regular refreshes:
-                        subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
-                        if old:
-                            #we don't bother subtracting new and old (too complicated)
-                            refreshlog("scheduling refresh of old region: %s", old)
-                            #this may also schedule a refresh:
-                            super().add_refresh_region(old)
-                        super().remove_refresh_region(newrect)
-                        if not self.refresh_regions:
-                            self.cancel_refresh_timer()
-                        if subregion_needs_refresh:
-                            vs.add_video_refresh(newrect)
-                    else:
-                        refreshlog("video region unchanged: %s - no change in refresh", newrect)
-                elif old:
-                    #add old region to regular refresh:
-                    refreshlog("video region cleared, scheduling refresh of old region: %s", old)
-                    self.add_refresh_region(old)
-                    vs.cancel_refresh_timer()
+        self.update_encoding_video_subregion()
         if force_reload:
             self.cleanup_codecs()
-        self.check_pipeline_score(force_reload)
+        self.update_pipeline_scores(force_reload)
+        if not self.verify_csc_and_encoder() and not force_reload:
+            self.cleanup_codecs()
+        self._last_pipeline_check = monotonic()
 
-    def check_pipeline_score(self, force_reload):
+    def update_pipeline_scores(self, force_reload=False):
         """
             Calculate pipeline scores using get_video_pipeline_options(),
             and schedule the cleanup of the current video pipeline elements
@@ -1127,19 +1155,15 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
+        #start with simple sanity checks:
         if self._mmap_size>0:
             scorelog("cannot score: mmap enabled")
             return
-        if self.content_type.find("text")>=0 and self.non_video_encodings:
-            scorelog("no pipelines for content-type %r", self.content_type)
+        if self.is_cancelled():
+            scorelog("cannot score: cancelled state")
             return
-        elapsed = monotonic()-self._last_pipeline_check
-        max_elapsed = 0.75
-        if self.is_idle:
-            max_elapsed = 60
-        if not force_reload and elapsed<max_elapsed:
-            scorelog("cannot score: only %ims since last check (idle=%s)", 1000*elapsed, self.is_idle)
-            #already checked not long ago
+        if self.content_type.find("text")>=0 and self.non_video_encodings and not TEXT_USE_VIDEO:
+            scorelog("no pipelines for content-type %r", self.content_type)
             return
         if not self.pixel_format:
             scorelog("cannot score: no pixel format!")
@@ -1151,10 +1175,6 @@ class WindowVideoSource(WindowSource):
             #it duplicates some of these same checks
             scorelog(*info)
             self.cleanup_codecs()
-        #do some sanity checks to see if there is any point in finding a suitable video encoding pipeline:
-        if self._sequence<2 or self.is_cancelled():
-            #too early, or too late!
-            return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
         #which video encodings to evaluate:
         if self.encoding in ("auto", "grayscale"):
             if not self.common_video_encodings:
@@ -1174,66 +1194,86 @@ class WindowVideoSource(WindowSource):
                 w = r.width & self.width_mask
                 h = r.height & self.width_mask
         if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
-            return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)",
-                                w, h, self.min_w, self.min_h, self.max_w, self.max_h)
-        #if monotonic()-self.statistics.last_resized<0.500:
-        #    return checknovideo("resized just %.1f seconds ago", monotonic()-self.statistics.last_resized)
+            checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)",
+                         w, h, self.min_w, self.min_h, self.max_w, self.max_h)
+            return
+        #more sanity checks to see if there is any point in finding a suitable video encoding pipeline:
+        if self._sequence<2:
+            #too early, or too late!
+            checknovideo(f"not scoring: sequence={self._sequence}")
+            return
 
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
         csce = self._csc_encoder
         if ve is not None and ve.is_closed():
-            scorelog("cannot score: video encoder %s is closed or closing", ve)
+            scorelog(f"cannot score: video encoder {ve} is closed or closing")
             return
         if csce is not None and csce.is_closed():
-            scorelog("cannot score: csc %s is closed or closing", csce)
+            scorelog(f"cannot score: csc {csce} is closed or closing")
             return
 
-        scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format, force_reload)
+        elapsed = monotonic()-self._last_pipeline_check
+        max_elapsed = 0.75
+        if self.is_idle:
+            max_elapsed = 60
+        if not force_reload and elapsed<max_elapsed and self.last_pipeline_params==(eval_encodings, w, h, self.pixel_format):
+            #keep existing scores
+            scorelog(" cannot score: only %ims since last check (idle=%s)", 1000*elapsed, self.is_idle)
+            return
+
+        scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format)
+        scorelog(f"update_pipeline_scores({force_reload})={scores}")
+
+    def verify_csc_and_encoder(self):
+        """
+        returns True only if the current video encoder and optional csc encoder
+        match the best pipeline option.
+        """
+        scores = self.last_pipeline_scores
+        scorelog("verify_csc_and_encoder() scores=%s", scores)
         if not scores:
-            scorelog("check_pipeline_score(%s) no pipeline options found!", force_reload)
-            return
-
-        scorelog("check_pipeline_score(%s) best=%s", force_reload, scores[0])
+            return False
         _, _, _, csc_width, csc_height, csc_spec, enc_in_format, _, enc_width, enc_height, encoder_spec = scores[0]
-        clean = False
+        csce = self._csc_encoder
         if csce:
             if csc_spec is None:
-                scorelog("check_pipeline_score(%s) csc is no longer needed: %s",
-                         force_reload, scores[0])
-                clean = True
-            elif csce.get_dst_format()!=enc_in_format:
-                scorelog("check_pipeline_score(%s) change of csc output format from %s to %s",
-                         force_reload, csce.get_dst_format(), enc_in_format)
-                clean = True
-            elif csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
-                scorelog("check_pipeline_score(%s) change of csc input dimensions from %ix%i to %ix%i",
-                         force_reload, csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
-                clean = True
-            elif csce.get_dst_width()!=enc_width or csce.get_dst_height()!=enc_height:
-                scorelog("check_pipeline_score(%s) change of csc ouput dimensions from %ix%i to %ix%i",
-                         force_reload, csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
-                clean = True
-        if ve is None or clean:
-            pass    #nothing to check or clean
-        elif ve.get_src_format()!=enc_in_format:
-            scorelog("check_pipeline_score(%s) change of video input format from %s to %s",
-                     force_reload, ve.get_src_format(), enc_in_format)
-            clean = True
-        elif ve.get_width()!=enc_width or ve.get_height()!=enc_height:
-            scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i",
-                     force_reload, ve.get_width(), ve.get_height(), enc_width, enc_height)
-            clean = True
-        elif not isinstance(ve, encoder_spec.codec_class):
-            scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s",
-                     force_reload, type(ve), scores[0])
-            clean = True
-        if clean:
-            self.video_context_clean()
-        self._last_pipeline_check = monotonic()
+                scorelog(f" csc {csce} is no longer needed")
+                return False
+            if csce.is_closed():
+                scorelog(f" csc {csce} is closed")
+                return False
+            if csce.get_dst_format()!=enc_in_format:
+                scorelog(f" change of csc output format from {csce.get_dst_format()} to {enc_in_format}")
+                return False
+            if csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
+                scorelog(f" change of csc input dimensions from %ix%i to %ix%i",
+                         csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
+                return False
+            if csce.get_dst_width()!=enc_width or csce.get_dst_height()!=enc_height:
+                scorelog(" change of csc ouput dimensions from %ix%i to %ix%i",
+                         csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
+                return False
+        ve = self._video_encoder
+        if ve:
+            if ve.is_closed():
+                scorelog(f" {ve} is closed")
+                return False
+            if ve.get_src_format()!=enc_in_format:
+                scorelog(" change of video input format from %s to %s",
+                         ve.get_src_format(), enc_in_format)
+                return False
+            if ve.get_width()!=enc_width or ve.get_height()!=enc_height:
+                scorelog(" change of video input dimensions from %ix%i to %ix%i",
+                         ve.get_width(), ve.get_height(), enc_width, enc_height)
+                return False
+            if not isinstance(ve, encoder_spec.codec_class):
+                scorelog(f" found a better video encoder class than {type(ve)}: {encoder_spec.codec_class}")
+                return False
+        #everything is still valid:
+        return True
 
-
-    def get_video_pipeline_options(self, encodings, width, height, src_format, force_refresh=False):
+    def get_video_pipeline_options(self, encodings, width, height, src_format):
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
@@ -1248,14 +1288,6 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        if not force_refresh and (monotonic()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encodings, width, height, src_format):
-            #keep existing scores
-            scorelog("get_video_pipeline_options%s using cached values from %ims ago",
-                     (encodings, width, height, src_format, force_refresh), 1000.0*(monotonic()-self.last_pipeline_time))
-            return self.last_pipeline_scores
-        scorelog("get_video_pipeline_options%s last params=%s, full_csc_modes=%s",
-                 (encodings, width, height, src_format, force_refresh), self.last_pipeline_params, self.full_csc_modes)
-
         vh = self.video_helper
         if vh is None:
             return ()       #closing down
