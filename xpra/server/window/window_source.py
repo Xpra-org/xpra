@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -365,8 +365,8 @@ class WindowSource(WindowIconSource):
             raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")
 
 
-    def add_encoder(self, encoding, encoder):
-        log("add_encoder(%s, %s)", encoding, encoder)
+    def insert_encoder(self, encoding, encoder):
+        log("insert_encoder(%s, %s)", encoding, encoder)
         self._all_encoders.setdefault(encoding, []).insert(0, encoder)
         self._encoders[encoding] = encoder
 
@@ -386,7 +386,7 @@ class WindowSource(WindowIconSource):
                 return None
             for encoding in encoder.get_encodings():
                 if encoding in self.server_core_encodings:
-                    self.add_encoder(encoding, encoder.encode)
+                    self.insert_encoder(encoding, encoder.encode)
                     if encoding not in picture_encodings:
                         picture_encodings.append(encoding)
             return encoder
@@ -403,7 +403,7 @@ class WindowSource(WindowIconSource):
                     log.warn("Warning: cannot use mmap, no write method support")
             else:
                 self.mmap_write = mmap_write
-                self.add_encoder("mmap", self.mmap_encode)
+                self.insert_encoder("mmap", self.mmap_encode)
         if not FORCE_PILLOW or not pillow:
             #prefer these native encoders over the Pillow version:
             add("enc_spng")
