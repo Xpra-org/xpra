@@ -355,17 +355,29 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
+    def send_error(self, code, message=None, explain=None):
+        try:
+            super().send_error(code, message, explain)
+        except OSError:
+            log(f"failed to send {code} error - maybe some of the headers were already sent?", exc_info=True)
+
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
         path = self.path.split("?",1)[0].split("#",1)[0]
         #strip path after second slash:
-        while path.rfind("/", 1)>0:
-            path = path[:path.rfind("/", 1)]
-        script = self.script_paths.get(path)
-        log("send_head() script(%s)=%s", path, script)
+        script_path = path
+        while script_path.rfind("/", 1)>0:
+            script_path = script_path[:script_path.rfind("/", 1)]
+        script = self.script_paths.get(script_path)
+        log("send_head() script(%s)=%s", script_path, script)
         if script:
             log("request for %s handled using %s", path, script)
-            code, headers, body = script(self)
+            try:
+                code, headers, body = script(path)
+            except Exception as e:
+                log.error(f"Error calling script {script}", script, exc_info=True)
+                self.send_error(500, "Server error")
+                return None
             self.send_response(code)
             self.extra_headers.update(headers or {})
             self.end_headers()
@@ -409,9 +421,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 log.error(" %s", emsg.rsplit(":", 1)[0])
             else:
                 log.estr(e)
-            try:
-                self.send_error(404, "File not found")
-            except OSError:
-                log("failed to send 404 error - maybe some of the headers were already sent?", exc_info=True)
+            self.send_error(404, "File not found")
             return None
         return content

@@ -1611,7 +1611,7 @@ class ServerCore:
 
     def http_desktop_menu_icon_request(self, path):
         def invalid_path():
-            httplog("invalid menu-icon request path '%s'", path)
+            httplog("invalid desktop menu-icon request path '%s'", path)
             return 404, None, None
         parts = unquote(path).split("/DesktopMenuIcon/", 1)
         #ie: "/menu-icon/wmname" -> ['', 'sessionname']
