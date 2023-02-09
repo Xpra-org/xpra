@@ -1338,19 +1338,19 @@ class WindowVideoSource(WindowSource):
             except ValueError:
                 encoding_score_delta = 0
             encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
+            no_match = []
             def add_scores(info, csc_spec, enc_in_format):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
-                    scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
+                    no_match.append(info)
                     return
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
                     #ensure that the output of the encoder can be processed by the client:
                     matches = tuple(x for x in encoder_spec.output_colorspaces if x in supported_csc_modes)
                     if not matches or self.is_cancelled():
-                        scorelog(" no matches for %s (%s and %s) - %s",
-                                 encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes, info)
+                        no_match.append(encoder_spec.codec_type+" "+info)
                         continue
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
@@ -1374,7 +1374,7 @@ class WindowVideoSource(WindowSource):
                         scorelog(" no score data for %s",
                                  (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:
-                add_scores("direct (no csc)", None, src_format)
+                add_scores(f"direct (no csc) {src_format}", None, src_format)
 
             #now add those that require a csc step:
             csc_specs = vh.get_csc_specs(src_format)
@@ -1386,6 +1386,7 @@ class WindowVideoSource(WindowSource):
                     if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
                         for csc_spec in l:
                             add_scores(f"via {out_csc}", csc_spec, out_csc)
+            scorelog("no matching colorspace specs for %s: %s", encoding, no_match)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         if self.is_cancelled():
