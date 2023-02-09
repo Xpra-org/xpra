@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -176,8 +176,7 @@ class WindowBackingBase:
         if self._alpha_enabled:
             return self.RGB_MODES
         #remove modes with alpha:
-        return list(filter(lambda mode : mode.find("A")<0,
-                            ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]))
+        return tuple(filter(lambda mode : mode.find("A")<0, self.RGB_MODES))
 
 
     def get_info(self):
