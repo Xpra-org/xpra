@@ -126,7 +126,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             return {}
         return {propname : v}
     if propname == "xid":
-        return {propname : hex(raw() or 0)}
+        return {propname : raw() or 0}
     if propname in ("group-leader", "transient-for", "parent"):
         ref_window = raw()
         if not ref_window:

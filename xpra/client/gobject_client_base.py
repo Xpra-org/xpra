@@ -317,6 +317,11 @@ class InfoXpraClient(CommandConnectClient):
                         return w
                     v = fixvalue(v)
                     k = fixvalue(k)
+                    if k.endswith("xid"):
+                        try:
+                            v = hex(int(v))
+                        except:
+                            pass
                     print_fn(f"{k}={nonl(v)}")
             else:
                 print_nested_dict(caps, print_fn=print_fn)
