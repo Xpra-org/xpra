@@ -61,7 +61,7 @@ class KeyboardConfigBase(object):
         from xpra.log import Logger
         log = Logger("keyboard")
         log.warn("Warning: %s does not implement get_keycode!", type(self))
-        return -1
+        return -1, 0
 
     def is_modifier(self, _keycode):
         #should be overriden in subclass

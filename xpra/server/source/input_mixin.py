@@ -120,7 +120,7 @@ class InputMixin(StubSourceMixin):
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
-            return -1
+            return -1, 0
         return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keystr, group)
 
 
