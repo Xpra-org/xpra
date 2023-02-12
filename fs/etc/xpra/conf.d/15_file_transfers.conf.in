@@ -16,7 +16,7 @@ open-url = auto
 #download-path = /tmp
 
 # File size limit
-file-size-limit = 100M
+file-size-limit = 1G
 
 # How to open files:
 #open-command = /usr/bin/xdg-open
