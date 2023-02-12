@@ -354,30 +354,29 @@ class WindowSource(WindowIconSource):
             raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")
 
 
-    def insert_encoder(self, encoding, encoder):
-        log("insert_encoder(%s, %s)", encoding, encoder)
-        self._all_encoders.setdefault(encoding, []).insert(0, encoder)
-        self._encoders[encoding] = encoder
+    def insert_encoder(self, encoder_name, encoding, encode_fn):
+        log(f"insert_encoder({encoder_name}, {encoding}, {encode_fn})")
+        self._all_encoders.setdefault(encoding, []).insert(0, encode_fn)
+        self._encoders[encoding] = encode_fn
 
-    def append_encoder(self, encoding, encoder):
-        log("append_encoder(%s, %s)", encoding, encoder)
-        self._all_encoders.setdefault(encoding, []).append(encoder)
+    def append_encoder(self, encoding, encode_fn):
+        log("append_encoder(%s, %s)", encoding, encode_fn)
+        self._all_encoders.setdefault(encoding, []).append(encode_fn)
         if encoding not in self._encoders:
-            self._encoders[encoding] = encoder
+            self._encoders[encoding] = encode_fn
 
     def init_encoders(self):
         self._all_encoders = {}
         self._encoders = {}
-        picture_encodings = []
+        picture_encodings = set()
         def add(encoder_name):
             encoder = get_codec(encoder_name)
             if not encoder:
                 return None
             for encoding in encoder.get_encodings():
                 if encoding in self.server_core_encodings:
-                    self.insert_encoder(encoding, encoder.encode)
-                    if encoding not in picture_encodings:
-                        picture_encodings.append(encoding)
+                    self.insert_encoder(encoder_name, encoding, encoder.encode)
+            picture_encodings.update(encoder.get_encodings())
             return encoder
         rgb = add("enc_rgb")
         if not rgb:
@@ -392,7 +391,7 @@ class WindowSource(WindowIconSource):
                     log.warn("Warning: cannot use mmap, no write method support")
             else:
                 self.mmap_write = mmap_write
-                self.insert_encoder("mmap", self.mmap_encode)
+                self.insert_encoder("mmap", "mmap", self.mmap_encode)
         if not FORCE_PILLOW or not pillow:
             #prefer these native encoders over the Pillow version:
             add("enc_spng")
@@ -402,7 +401,7 @@ class WindowSource(WindowIconSource):
             #prefer nvjpeg over all the other jpeg encoders:
             log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
             if self.cuda_device_context:
-                self.enc_nvjpeg = add("enc_nvjpeg")
+                add("enc_nvjpeg")
         self.picture_encodings = tuple(picture_encodings)
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
         self.update_encoding_selection(self.encoding, init=True)
@@ -426,7 +425,6 @@ class WindowSource(WindowIconSource):
         self.suspended = False
         self.strict = STRICT_MODE
         self.decoder_speed = typedict()
-        self.enc_nvjpeg = None
         self.mmap_write = None
         #
         self.decode_error_refresh_timer : int = 0
@@ -1087,6 +1085,8 @@ class WindowSource(WindowIconSource):
 
     def do_get_auto_encoding(self, w, h, options, current_encoding, encoding_options):
         co = encoding_options
+        if not co:
+            raise ValueError("no options to choose from")
         depth = self.image_depth
         grayscale = self.encoding=="grayscale"
         alpha = self._want_alpha or self.is_tray
@@ -1127,7 +1127,10 @@ class WindowSource(WindowIconSource):
             return "avif"
         if current_encoding in co:
             return current_encoding
-        return next(x for x in co if x!="rgb")
+        try:
+            return next(x for x in co if x!="rgb")
+        except StopIteration:
+            return co[0]
 
     def get_current_or_rgb(self, pixel_count, *_args):
         if pixel_count<self._rgb_auto_threshold:

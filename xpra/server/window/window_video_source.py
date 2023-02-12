@@ -134,10 +134,12 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder = None
         self._video_encoder = None
         self._last_pipeline_check = 0
+        def add(enc, encode_fn):
+            self.insert_encoder(enc, enc, encode_fn)
         if has_codec("csc_libyuv"):
             #need libyuv to be able to handle 'grayscale' video:
             #(to convert ARGB to grayscale)
-            self.insert_encoder("grayscale", self.video_encode)
+            add("grayscale", self.video_encode)
         if self._mmap_size>0:
             self.non_video_encodings = ()
             self.common_video_encodings = ()
@@ -149,16 +151,18 @@ class WindowVideoSource(WindowSource):
             video_enabled.append(x)
         #video_encode() is used for more than just video encoders:
         #(always enable it and let it fall through)
-        self.insert_encoder("auto", self.video_encode)
+        add("auto", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
                                          if x in nv_common)
+        log("init_encoders() non-video-encodings(%s, %s, %s)=%s",
+            self.server_core_encodings, self.core_encodings, self.video_encodings, self.non_video_encodings)
         self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
                                             if x in self.video_encodings and x in self.core_encodings)
         if "scroll" in self.server_core_encodings:
-            self.insert_encoder("scroll", self.scroll_encode)
+            add("scroll", self.scroll_encode)
 
     def __repr__(self):
         return f"WindowVideoSource({self.wid} : {self.window_dimensions})"
@@ -182,6 +186,7 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = ()
         self.common_video_encodings = ()
         self.non_video_encodings = ()
+        self.video_fallback_encodings = {}
         self.edge_encoding = None
         self.start_video_frame = 0
         self.video_encoder_timer : int = 0
@@ -390,6 +395,16 @@ class WindowVideoSource(WindowSource):
             #ensure we re-init the codecs asap:
             self.cleanup_codecs()
         super().set_new_encoding(encoding, strict)
+
+    def insert_encoder(self, encoder_name, encoding, encode_fn):
+        super().insert_encoder(encoder_name, encoding, encode_fn)
+        #we don't want to use nvjpeg as fallback,
+        #because it requires a GPU context
+        #and the fallback should be reliable.
+        #also, we only want picture encodings here,
+        #and filtering using EDGE_ENCODING_ORDER gives us that.
+        if encoder_name!="nvjpeg" and encoding in EDGE_ENCODING_ORDER:
+            self.video_fallback_encodings.setdefault(encoding, []).insert(0, encode_fn)
 
     def update_encoding_selection(self, encoding=None, exclude=None, init=False):
         #override so we don't use encodings that don't have valid csc modes:
@@ -2149,10 +2164,12 @@ class WindowVideoSource(WindowSource):
             videolog.warn(f" for {image} of window {self.wid}")
         w = image.get_width()
         h = image.get_height()
-        encoding = self.do_get_auto_encoding(w, h, options, None, self.non_video_encodings)
+        fallback_encodings = tuple(set(self.non_video_encodings).intersection(self.video_fallback_encodings.keys()))
+        log("fallback encodings(%s, %s)=%s", self.non_video_encodings, self.video_fallback_encodings, fallback_encodings)
+        encoding = self.do_get_auto_encoding(w, h, options, None, fallback_encodings)
         if not encoding:
             return None
-        encode_fn = self._encoders[encoding]
+        encode_fn = self.video_fallback_encodings[encoding][0]
         return encode_fn(encoding, image, options)
 
     def video_encode(self, encoding, image, options : dict):
