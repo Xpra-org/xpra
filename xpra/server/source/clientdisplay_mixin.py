@@ -148,8 +148,8 @@ class ClientDisplayMixin(StubSourceMixin):
                     log.warn(" using %ix%i mm", wmm, hmm)
                 screen = list(screen)
                 #make sure values are integers:
-                for j in range(4):
-                    screen[j] = round(screen[j])
+                screen[1] = round(sw)
+                screen[2] = round(sh)
                 screen[3] = wmm
                 screen[4] = hmm
                 self.screen_sizes[i] = tuple(screen)
