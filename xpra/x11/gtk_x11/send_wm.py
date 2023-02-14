@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,9 +26,7 @@ def send_wm_take_focus(target, timestamp=CurrentTime):
         raise OverflowError(f"invalid time: {timestamp:x}")
     elif timestamp>0x7FFFFFFF:
         timestamp = int(0x100000000-timestamp)
-        if timestamp<0x80000000:
-            timestamp = -timestamp
-        else:
+        if timestamp>=0x80000000:
             timestamp -= 0x80000000
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
