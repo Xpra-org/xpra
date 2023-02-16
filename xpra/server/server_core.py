@@ -56,7 +56,7 @@ from xpra.os_util import (
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, hexstr,
-    POSIX, BITS,
+    POSIX,
     parse_encoded_bin_data, load_binary_file,
     osexpand,
     )
@@ -751,7 +751,7 @@ class ServerCore:
         add_work_item(self.do_print_run_info)
 
     def do_print_run_info(self):
-        log.info("xpra %s version %s %i-bit", self.get_server_mode(), full_version_str(), BITS)
+        log.info("xpra %s server version %s", self.get_server_mode(), full_version_str())
         try:
             pinfo = get_platform_info()
             osinfo = " on " + platform_name(sys.platform,
