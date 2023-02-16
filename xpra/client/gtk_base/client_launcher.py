@@ -797,7 +797,7 @@ class ApplicationWindow:
         self.client.init_ui(self.config)
         self.client.username = display_desc.get("username")
         def handshake_complete(*_args):
-            self.client.show_progress(100, "connection established")
+            self.client.show_progress(100, "Session connected")
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
@@ -839,7 +839,7 @@ class ApplicationWindow:
         self.client.display_desc = display_desc
         self.client.init_ui(self.config)
         self.client.setup_connection(conn)
-        self.set_info_text("Connection established")
+        self.set_info_text("Network connection established")
         log("start_XpraClient() client initialized")
 
         if self.config.password:
