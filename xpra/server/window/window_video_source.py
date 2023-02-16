@@ -375,7 +375,8 @@ class WindowVideoSource(WindowSource):
                 else:
                     l = log
                 l("client does not support any csc modes with %s", x)
-        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
+        enc_options = tuple(x for x in self.video_encodings if x in self.core_encodings and x in self._encoders)
+        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in enc_options]
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         WindowSource.update_encoding_selection(self, encoding, exclude, init)
