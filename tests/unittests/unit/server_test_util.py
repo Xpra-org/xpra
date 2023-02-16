@@ -12,7 +12,7 @@ import subprocess
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
 from xpra.os_util import pollwait, WIN32
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import exit_str
 from xpra.platform.dotxpra import DotXpra, DISPLAY_PREFIX
 from xpra.log import Logger
 
@@ -28,10 +28,7 @@ def log_gap(N=10):
 
 
 def estr(r):
-    s = EXIT_STR.get(r)
-    if s:
-        return "%s : %s" % (r, s)
-    return str(r)
+    return exit_str(r)
 
 
 class ServerTestUtil(ProcessTestUtil):
@@ -145,7 +142,7 @@ class ServerTestUtil(ProcessTestUtil):
             time.sleep(1)
         if r!=0:
             self.show_proc_error(version, "version check failed for %s, returned %s" % (
-                display, EXIT_STR.get(r, r)))
+                display, exit_str(r)))
         return server_proc
 
     def stop_server(self, server_proc, subcommand, *connect_args):

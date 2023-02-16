@@ -47,7 +47,7 @@ from xpra.util import (
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
-from xpra.exit_codes import ExitCode, EXIT_STR
+from xpra.exit_codes import ExitCode, exit_str
 
 log = Logger("client")
 netlog = Logger("network")
@@ -732,8 +732,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         else:
             exit_code = ExitCode.CONNECTION_LOST
         if self.exit_code is None:
-            exit_str = EXIT_STR.get(exit_code,
-                                    str(exit_code)).lower().replace("_", " ").replace("connection", "Connection")
+            exit_str = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, exit_str)
 
 

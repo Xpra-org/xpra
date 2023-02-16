@@ -18,7 +18,7 @@ from xpra.os_util import (
     bytestostr, strtobytes,
     POSIX, SIGNAMES,
     )
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import ExitCode
 from xpra.make_thread import start_thread
 from xpra.client.gobject_client_base import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
@@ -179,11 +179,12 @@ class TopClient:
             if exit_code!=0:
                 attr = curses.color_pair(RED)
                 txt += f" with error code {exit_code}"
-                if exit_code in EXIT_STR:
-                    estr = EXIT_STR.get(exit_code, "").replace("_", " ")
+                try:
+                    estr = ExitCode(exit_code).name
                     txt += f" ({estr})"
-                elif (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
-                    txt += f" ({SIGNAMES[exit_code-128]})"
+                except ValueError:
+                    if (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
+                        txt += f" ({SIGNAMES[exit_code-128]})"
             self.message = monotonic(), txt, attr
         finally:
             self.setup()

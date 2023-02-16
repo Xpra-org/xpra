@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012, 2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #
@@ -42,7 +42,7 @@ import time
 import os.path
 from subprocess import Popen, PIPE, STDOUT
 
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import exit_str
 from xpra.gtk_common.gtk_util import get_root_size
 from xpra.log import Logger
 
@@ -59,7 +59,7 @@ def getoutput(cmd, env=None):
     code = process.poll()
     if code!=0:
         raise Exception("command '%s' returned error code %i: %s, out=%s, err=%s" %
-                        (cmd, code, EXIT_STR.get(code), out, err))
+                        (cmd, code, exit_str(code), out, err))
     return out
 
 def get_config(config_name):

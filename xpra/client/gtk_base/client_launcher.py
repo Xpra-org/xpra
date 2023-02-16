@@ -39,7 +39,7 @@ from xpra.scripts.main import (
     configure_network, configure_env, configure_logging,
     )
 from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args
-from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
+from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, exit_str
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
 
@@ -865,7 +865,7 @@ class ApplicationWindow:
 
         def reconnect(exit_code):
             log("reconnect(%s) config reconnect=%s",
-                EXIT_STR.get(exit_code, exit_code), self.config.reconnect)
+                exit_str(exit_code), self.config.reconnect)
             if not self.config.reconnect or exit_code not in RETRY_EXIT_CODES:
                 return False
             self.clean_client()
@@ -894,6 +894,8 @@ class ApplicationWindow:
                 return
             if self.exit_code is None:
                 self.exit_code = exit_code
+                estr = exit_str(exit_code)
+                self.set_info_text(estr, exit_code!=ExitCode.OK)
             handle_client_quit(self.exit_code==0)
 
         self.client.warn_and_quit = warn_and_quit_override

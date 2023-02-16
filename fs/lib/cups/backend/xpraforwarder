@@ -119,9 +119,8 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
     if r==0:
         write_back("INFO: forwarding")
     else:
-        from xpra.exit_codes import EXIT_STR
-        errstr = EXIT_STR.get(r, r)
-        write_back(f"ERROR: contacting the xpra server: {errstr!r}")
+        from xpra.exit_codes import exit_str
+        write_back(f"ERROR: contacting the xpra server: {exit_str(r)!r}")
     return r
 
 

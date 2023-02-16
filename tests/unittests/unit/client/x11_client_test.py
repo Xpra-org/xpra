@@ -10,7 +10,7 @@ import uuid
 import unittest
 
 from xpra.util import envint
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import exit_str
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.platform.paths import get_download_dir
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
@@ -27,10 +27,10 @@ class X11ClientTest(X11ClientTestUtil):
         server = self.check_start_server(display, *server_args)
         xvfb1, client1 = self.run_client(display, *client_args)
         r = pollwait(client1, CLIENT_TIMEOUT)
-        assert r is None, "client1 exited with code %s" % EXIT_STR.get(r, r)
+        assert r is None, "client1 exited with code %s" % exit_str(r)
         xvfb2, client2 = self.run_client(display, *client_args)
         r = pollwait(client2, CLIENT_TIMEOUT)
-        assert r is None, "client2 exited with code %s" % EXIT_STR.get(r, r)
+        assert r is None, "client2 exited with code %s" % exit_str(r)
         if disconnect:
             #starting a second client should disconnect the first when not sharing
             assert pollwait(client1, 2) is not None, "the first client should have been disconnected"

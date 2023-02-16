@@ -9,7 +9,7 @@ import tempfile
 
 from xpra.util import envbool
 from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import exit_str
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
 
@@ -122,7 +122,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             client = self.run_xpra(cmd)
             r = pollwait(client, 20)
             assert r==0, "info client failed and returned %s: '%s' for server with args=%s" % \
-                (r, EXIT_STR.get(r, r), args)
+                (r, exit_str(r), args)
 
             client_kwargs = {}
             if not (WIN32 or OSX):
@@ -152,7 +152,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 r = pollwait(gui_client, 10)
                 if r is not None:
                     self.show_proc_error(gui_client,
-                                         "gui client terminated early and returned %i : '%s' for server with args=%s" % (r, EXIT_STR.get(r, r), args))
+                                         "gui client terminated early and returned %i : '%s' for server with args=%s" % (r, exit_str(r), args))
 
             if self.display:
                 self.stop_server(server, "exit", *connect_args)

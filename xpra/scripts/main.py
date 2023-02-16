@@ -25,7 +25,7 @@ from xpra.util import (
     noerr, sorted_nicely, typedict,
     DEFAULT_PORTS,
     )
-from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, EXIT_STR
+from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand,
@@ -1252,7 +1252,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
     app = get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode)
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
-        warn("%s, reconnecting" % EXIT_STR.get(r, r))
+        warn("%s, reconnecting" % exit_str(r))
         log = Logger("exec")
         if WIN32:
             #the cx_Freeze wrapper changes the cwd to the directory containing the exe,
@@ -1898,7 +1898,7 @@ def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
         if r==ExitCode.FAILURE:
             err = "unknown general failure"
         else:
-            err = EXIT_STR.get(r, r)
+            err = exit_str(r)
     except Exception as e:
         log = Logger("proxy")
         log("failed to start via proxy", exc_info=True)
@@ -2016,7 +2016,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         raise
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
-        warn("%s, reconnecting" % EXIT_STR.get(r, r))
+        warn("%s, reconnecting" % exit_str(r))
         args = list(cmdline)
         #modify the 'mode' in the command line:
         try:

@@ -19,7 +19,7 @@ from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
 from xpra.child_reaper import getChildReaper
-from xpra.exit_codes import EXIT_STR
+from xpra.exit_codes import exit_str
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
     imagebutton, get_icon_pixbuf,
@@ -374,7 +374,7 @@ class SessionsGUI(Gtk.Window):
             if key in self.clients_disconnecting:
                 self.clients_disconnecting.remove(key)
             elif c not in (0, None):
-                self.warning.set_text(EXIT_STR.get(c, "exit code %s" % c).replace("_", " "))
+                self.warning.set_text(exit_str(c).replace("_", " "))
             client_proc = self.clients.pop(key, None)
             if client_proc:
                 def update():
