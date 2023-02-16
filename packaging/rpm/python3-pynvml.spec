@@ -8,7 +8,7 @@
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        11.515.84
+Version:        11.525.84
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
