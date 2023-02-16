@@ -153,7 +153,7 @@ def init_all_specs(*exclude):
         for v in css_out:
             if v not in cur:
                 cur.append(v)
-    vaapi = False
+    vaapi = True
     if NVIDIA_VAAPI:
         try:
             from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
