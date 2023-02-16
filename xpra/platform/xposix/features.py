@@ -47,4 +47,6 @@ OPEN_COMMAND = ["/usr/bin/xdg-open"]
 
 INPUT_DEVICES = ["auto", "xi", "uinput"]
 
+SOURCE = ["/etc/profile"]
+
 COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

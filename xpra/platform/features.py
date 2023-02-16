@@ -16,7 +16,7 @@ AUTOSTART = False
 
 INPUT_DEVICES = ["auto"]
 
-SOURCE = ["/etc/profile"]
+SOURCE = []
 
 SYSTEM_PROXY_SOCKET = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
