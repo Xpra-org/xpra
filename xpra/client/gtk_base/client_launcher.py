@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2009-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 # @UnresolvedImport pylint: disable=wrong-import-position
-from gi.repository import Pango, GLib, Gtk, GdkPixbuf
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -537,8 +537,7 @@ class ApplicationWindow:
             if e:
                 err_text.append(text)
         log(f"validate({args}) err_text={err_text}, errs={errs}")
-        self.set_info_text(csv(err_text))
-        self.set_info_color(len(err_text)>0)
+        self.set_info_text(csv(err_text), bool(err_text))
         self.connect_btn.set_sensitive(len(err_text)==0)
         return errs
 
@@ -638,13 +637,13 @@ class ApplicationWindow:
             self.set_widget_fg_color(self.info, False)
             self.set_widget_bg_color(widget, False)
 
-    def set_info_text(self, text):
+    def set_info_text(self, text, is_error=False):
         if self.info:
-            GLib.idle_add(self.info.set_text, text)
-
-    def set_info_color(self, is_error=False):
-        self.set_widget_fg_color(self.info, is_error)
-
+            def do_set_info():
+                self.info.set_text(text)
+                self.info.set_selectable(is_error)
+                self.set_widget_fg_color(self.info, is_error)
+            GLib.idle_add(do_set_info)
 
     def set_sensitive(self, s):
         GLib.idle_add(self.window.set_sensitive, s)
@@ -692,8 +691,7 @@ class ApplicationWindow:
             self.set_sensitive(True)
             if not self.current_error:
                 self.current_error = t
-                self.set_info_color(True)
-                self.set_info_text(t)
+                self.set_info_text(t, True)
             self.window.show()
             self.window.present()
         GLib.idle_add(ui_handle_exception)
@@ -807,8 +805,7 @@ class ApplicationWindow:
         log(f"ssh_failed({message})")
         if not self.current_error:
             self.current_error = message
-            self.set_info_text(message)
-            self.set_info_color(True)
+            self.set_info_text(message, True)
 
     def do_connect_builtin(self, display_desc):
         log(f"do_connect_builtin({display_desc})")
@@ -887,8 +884,7 @@ class ApplicationWindow:
             err = exit_code!=0 or password_warning
             if not self.current_error:
                 self.current_error = warning
-                self.set_info_color(err)
-                self.set_info_text(warning)
+                self.set_info_text(warning, err)
             handle_client_quit(not err)
 
         def quit_override(exit_code):
@@ -935,20 +931,10 @@ class ApplicationWindow:
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
-        if is_error:
-            color_obj = red
-        else:
-            color_obj = white
-        if color_obj:
-            GLib.idle_add(widget.modify_base, Gtk.StateType.NORMAL, color_obj)
+        widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
 
     def set_widget_fg_color(self, widget, is_error=False):
-        if is_error:
-            color_obj = red
-        else:
-            color_obj = black
-        if color_obj:
-            GLib.idle_add(widget.modify_fg, Gtk.StateType.NORMAL, color_obj)
+        widget.modify_fg(Gtk.StateType.NORMAL, red if is_error else black)
 
 
     def update_options_from_gui(self):
