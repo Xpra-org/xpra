@@ -84,6 +84,7 @@ DEFAULT_ENCODER_OPTIONS = {
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
+assert get_type #all codecs must define this function
 COLORSPACES = {}
 def get_encodings():
     return tuple(COLORSPACES.keys())
@@ -100,6 +101,13 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
     return out_colorspaces
 
+def ElementEncoderClass(element, options=None):
+    class ElementEncoder(Encoder):
+        pass
+    ElementEncoder.encoder_element = element
+    ElementEncoder.encoder_options = options or {}
+    return ElementEncoder
+
 def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
     #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     #each with different pipeline arguments based on the make_spec parameters:
@@ -109,19 +117,15 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
         log(f"user overriden options for {element}: {encoder_options}")
     else:
         encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
-    class ElementEncoder(Encoder):
-        pass
     if cs_in in PACKED_RGB_FORMATS:
         width_mask = height_mask = 0xFFFF
     else:
         width_mask = height_mask = 0xFFFE
-    ElementEncoder.encoder_element = element
-    ElementEncoder.encoder_options = encoder_options or {}
     spec = video_spec(
         encoding=encoding, input_colorspace=cs_in,
         output_colorspaces=css_out,
         has_lossless_mode=False,
-        codec_class=ElementEncoder, codec_type=f"gstreamer-{element}",
+        codec_class=ElementEncoderClass(element, encoder_options), codec_type=f"gstreamer-{element}",
         quality=40, speed=40,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
         width_mask=width_mask, height_mask=height_mask,
