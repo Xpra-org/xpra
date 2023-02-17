@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,6 +63,9 @@ def get_subsampling_divs(pixel_format):
     if pixel_format not in PIXEL_SUBSAMPLING:
         raise Exception(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING.get(pixel_format)
+
+def preforder(encodings):
+    return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encodings)
 
 
 RGB_FORMATS = (

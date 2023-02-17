@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1815,11 +1815,11 @@ When unspecified, all the available codecs are allowed and the first one is used
 
 def validated_encodings(encodings):
     try:
-        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+        from xpra.codecs.codec_constants import preforder
     except ImportError:
         return []
     lower_encodings = [x.lower() for x in encodings]
-    validated = [x for x in PREFERRED_ENCODING_ORDER if x.lower() in lower_encodings]
+    validated = preforder(lower_encodings)
     if not validated:
         raise InitException("no valid encodings specified")
     return validated

@@ -25,7 +25,7 @@ from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
 from xpra.log import Logger
@@ -145,10 +145,10 @@ class WindowVideoSource(WindowSource):
             self.common_video_encodings = ()
             return
         #make sure we actually have encoders for these:
-        enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
-        self.video_encodings = tuple(x for x in self.video_helper.get_encodings() if x in enc_options)
+        self.video_encodings = preforder(self.video_helper.get_encodings())
+        self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
         video_enabled = []
-        for x in self.video_encodings:
+        for x in self.common_video_encodings:
             self.append_encoder(x, self.video_encode)
             video_enabled.append(x)
         #video_encode() is used for more than just video encoders:
@@ -156,13 +156,13 @@ class WindowVideoSource(WindowSource):
         add("auto", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
+        enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
         nv_common = (enc_options & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
-                                         if x in nv_common)
-        log("init_encoders() non-video-encodings(%s, %s, %s)=%s",
-            self.server_core_encodings, self.core_encodings, self.video_encodings, self.non_video_encodings)
-        self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
-                                            if x in self.video_encodings and x in self.core_encodings)
+        self.non_video_encodings = preforder(nv_common)
+        log(f"init_encoders() server core encodings={self.server_core_encodings}, client core encodings={self.core_encodings}")
+        log(f" video encodings={self.video_encodings}")
+        log(f" common video encodings={self.common_video_encodings}")
+        log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
 
@@ -429,8 +429,7 @@ class WindowVideoSource(WindowSource):
                 else:
                     log(*msg_args)
                 log(" csc modes=%", self.full_csc_modes)
-        self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
-                                            if x in self.video_encodings and x in self.core_encodings)
+        self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
@@ -449,7 +448,7 @@ class WindowVideoSource(WindowSource):
         #encodings may have changed, so redo this:
         nv_common = set(self.picture_encodings) & set(self.core_encodings)
         log("nv_common(%s & %s)=%s", self.picture_encodings, self.core_encodings, nv_common)
-        self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in nv_common)
+        self.non_video_encodings = preforder(nv_common)
         if not VIDEO_SKIP_EDGE:
             try:
                 self.edge_encoding = next(x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings)

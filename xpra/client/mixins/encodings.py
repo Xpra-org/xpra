@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+from xpra.codecs.codec_constants import preforder
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
@@ -57,7 +57,7 @@ def get_core_encodings():
         if encoding not in core_encodings:
             core_encodings.append(encoding)
     #remove duplicates and use preferred encoding order:
-    return [x for x in PREFERRED_ENCODING_ORDER if x in set(core_encodings)]
+    return preforder(core_encodings)
 
 
 class Encodings(StubClientMixin):
@@ -281,7 +281,7 @@ class Encodings(StubClientMixin):
             cenc.append("rgb")
         if "grayscale" not in cenc:
             cenc.append("grayscale")
-        return [x for x in PREFERRED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
+        return preforder(x for x in cenc if x not in ("rgb32", "rgb24"))
 
     def get_cursor_encodings(self):
         e = ["raw"]

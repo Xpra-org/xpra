@@ -24,7 +24,7 @@ from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all
 from xpra.simple_stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
+from xpra.codecs.codec_constants import preforder, LOSSY_PIXEL_FORMATS
 from xpra.net.compression import use
 from xpra.log import Logger
 
@@ -866,7 +866,7 @@ class WindowSource(WindowIconSource):
             self.get_best_encoding = self.encoding_is_mmap
             return
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
-        self.common_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in common_encodings)
+        self.common_encodings = preforder(common_encodings)
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
                 csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
@@ -893,7 +893,7 @@ class WindowSource(WindowIconSource):
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:
             are = tuple(x for x in self.common_encodings if x in ropts) or self.common_encodings
-        self.auto_refresh_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in are)
+        self.auto_refresh_encodings = preforder(are)
         log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s",
             self.client_refresh_encodings, self.auto_refresh_encodings)
         self.update_quality()

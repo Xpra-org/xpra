@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.scripts.config import parse_bool_or_int
 from xpra.os_util import bytestostr, OSX
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+from xpra.codecs.codec_constants import preforder
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -185,7 +185,7 @@ class EncodingServer(StubServerMixin):
                                    if (x.startswith("png") or x.startswith("rgb") or x=="webp"))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
-        pref = [x for x in PREFERRED_ENCODING_ORDER if x in self.encodings]
+        pref = preforder(self.encodings)
         if pref:
             self.default_encoding = pref[0]
         else:
