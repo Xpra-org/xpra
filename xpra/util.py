@@ -610,8 +610,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             #only show it again if different from the screen workarea
             if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
                 add_workarea(info, dwork_x, dwork_y, dwork_width, dwork_height)
-        log.warn(f"sorted_monitors={sorted_monitors}, info={info}")
-        if len(sorted_monitors)==1 and len(info)==1 and info[0].strip()=="Canvas":
+        if len(sorted_monitors)==1 and len(info)==1 and info[0].strip() in ("Canvas", "DUMMY0"):
             #no point in logging just `Canvas` on its own
             continue
         istr = (" ".join(info)).rstrip(" ")
