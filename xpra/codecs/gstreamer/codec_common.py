@@ -117,7 +117,7 @@ class VideoPipeline(Pipeline):
         return "gstreamer"
 
     def clean(self):
-        super().stop()
+        super().cleanup()
         self.width = 0
         self.height = 0
         self.colorspace = None
