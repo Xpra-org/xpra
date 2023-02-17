@@ -281,7 +281,7 @@ class Encodings(StubClientMixin):
             cenc.append("rgb")
         if "grayscale" not in cenc:
             cenc.append("grayscale")
-        return preforder(x for x in cenc if x not in ("rgb32", "rgb24"))
+        return preforder(filter(lambda x : x not in ("rgb32", "rgb24"), cenc))
 
     def get_cursor_encodings(self):
         e = ["raw"]
@@ -303,11 +303,13 @@ class Encodings(StubClientMixin):
         if encoding=="auto":
             self.encoding = ""
         else:
-            assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
+            encodings = self.get_encodings()
+            if encoding not in encodings:
+                raise ValueError(f"encoding {encoding} is not supported - only {csv(encodings)!r}")
             if encoding not in self.server_encodings:
-                log.error("Error: encoding %s is not supported by the server", encoding)
+                log.error(f"Error: encoding {encoding} is not supported by the server")
                 log.error(" the only encodings allowed are:")
-                log.error(" %s", csv(self.server_encodings))
+                log.error(f" "+csv(self.server_encodings))
                 return
             self.encoding = encoding
         self.send("encoding", self.encoding)

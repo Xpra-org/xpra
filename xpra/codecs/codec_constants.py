@@ -65,7 +65,8 @@ def get_subsampling_divs(pixel_format):
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
 def preforder(encodings):
-    return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encodings)
+    encs = set(encodings)
+    return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
 
 
 RGB_FORMATS = (
