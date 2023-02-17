@@ -510,7 +510,8 @@ class cuda_device_context:
 
 
     def __repr__(self):
-        return f"cuda_device_context({self.device_id} - {self.lock._is_owned()})"
+        extra = " - locked" if self.lock._is_owned() else ""
+        return f"cuda_device_context({self.device_id}{extra})"
 
     def get_info(self):
         info = {
