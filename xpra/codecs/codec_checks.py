@@ -429,6 +429,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
 
 def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+    e = None
     try:
         e = encoder_class()
         etype = e.get_type()
@@ -480,7 +481,8 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
                     out = None
                 assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (etype, e.get_info(), encoding, w, h, W, H)
     finally:
-        e.clean()
+        if e:
+            e.clean()
 
 
 def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=None):
