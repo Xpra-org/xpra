@@ -176,6 +176,12 @@ def init_all_specs(*exclude):
 
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
+    encoder_element = "unset"
+
+    def __repr__(self):
+        if self.colorspace is None:
+            return f"gstreamer-{self.encoder_element}(uninitialized)"
+        return f"gstreamer-{self.encoder_element}({self.colorspace} - {self.width}x{self.height})"
 
     """
     Dispatch video encoding to a gstreamer pipeline
