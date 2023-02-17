@@ -477,7 +477,7 @@ class WindowVideoSource(WindowSource):
             if qdiff:
                 quality = options.get("quality", self._current_quality) + qdiff
                 options["quality"] = max(self._fixed_min_quality, min(self._fixed_max_quality, quality))
-            log("nonvideo(%s, %s)", qdiff, info)
+            videolog("nonvideo(%s, %s)", qdiff, info)
             return WindowSource.get_auto_encoding(self, ww, wh, options)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
@@ -505,6 +505,7 @@ class WindowVideoSource(WindowSource):
                 for i, score_data in enumerate(scores):
                     encoder_spec = score_data[-1]
                     if encoder_spec.gpu_cost > encoder_spec.cpu_cost:
+                        videolog(f"found GPU accelerated encoder {encoder_spec}")
                         video_hint += 1+int(i==0)
                         break
         rgbmax = self._rgb_auto_threshold
