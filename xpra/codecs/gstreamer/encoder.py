@@ -121,7 +121,7 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
         encoding=encoding, input_colorspace=cs_in,
         output_colorspaces=css_out,
         has_lossless_mode=False,
-        codec_class=ElementEncoder, codec_type=get_type(),
+        codec_class=ElementEncoder, codec_type=f"gstreamer-{element}",
         quality=40, speed=40,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
         width_mask=width_mask, height_mask=height_mask,
