@@ -126,7 +126,7 @@ class _codec_spec:
                         "can_scale",
                         "max_instances"]
         #not exported:
-        self.instances = weakref.WeakKeyDictionary()
+        self.instances = weakref.WeakSet()
         self._all_fields = list(self._exported_fields)+["instances"]
 
 
@@ -136,13 +136,19 @@ class _codec_spec:
         log = Logger("encoding")
         cur = self.get_instance_count()
         if (self.max_instances>0 and cur>=self.max_instances) or cur>=_codec_spec.WARN_LIMIT:
-            instances = tuple(self.instances.keys())
-            log.warn("Warning: already %s active instances of %s: %s",
-                     cur, self.codec_class, instances)
+            instances = tuple(self.instances)
+            log.warn(f"Warning: already {cur} active instances of {self.codec_class}:")
+            try:
+                import gc
+                for i in instances:
+                    refs = gc.get_referrers(i)
+                    log.warn(f" referers({i})={refs}")
+            except Exception:
+                pass
         else:
             log("make_instance() %s - instance count=%s", self.codec_type, cur)
         v = self.codec_class()
-        self.instances[v] = True
+        self.instances.add(v)
         return v
 
 
