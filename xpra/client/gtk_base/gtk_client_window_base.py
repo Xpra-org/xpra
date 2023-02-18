@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -265,18 +265,18 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
         self._monitor = None
-        self._frozen = False
+        self._frozen : bool = False
         self._focus_latest = None
         self._ondeiconify = []
         self._follow = None
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
-        self.window_state_timer = None
-        self.send_iconify_timer = None
-        self.remove_pointer_overlay_timer = None
-        self.show_pointer_overlay_timer = None
-        self.moveresize_timer = None
+        self.window_state_timer : int = 0
+        self.send_iconify_timer : int = 0
+        self.remove_pointer_overlay_timer : int = 0
+        self.show_pointer_overlay_timer : int = 0
+        self.moveresize_timer : int = 0
         self.moveresize_event = None
         #add platform hooks
         self.connect_after("realize", self.on_realize)
@@ -1033,14 +1033,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.window_state_timer = self.timeout_add(25, self.send_updated_window_state)
 
     def send_updated_window_state(self):
-        self.window_state_timer = None
+        self.window_state_timer = 0
         if self._window_state and self.get_window():
             self.send_configure_event(True)
 
     def cancel_window_state_timer(self):
         wst = self.window_state_timer
         if wst:
-            self.window_state_timer = None
+            self.window_state_timer = 0
             self.source_remove(wst)
 
 
@@ -1058,7 +1058,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.send_iconify_timer = self.timeout_add(delay, self.send_iconify)
 
     def send_iconify(self):
-        self.send_iconify_timer = None
+        self.send_iconify_timer = 0
         if self._iconified:
             self.send("unmap-window", self._id, True, self._window_state)
             #we have sent the window-state already:
@@ -1068,7 +1068,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def cancel_send_iconifiy_timer(self):
         sit = self.send_iconify_timer
         if sit:
-            self.send_iconify_timer = None
+            self.send_iconify_timer = 0
             self.source_remove(sit)
 
 
@@ -1611,14 +1611,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     # pointer overlay handling
     def cancel_remove_pointer_overlay_timer(self):
         rpot = self.remove_pointer_overlay_timer
+        mouselog(f"cancel_remove_pointer_overlay_timer() timer={rpot}")
         if rpot:
-            self.remove_pointer_overlay_timer = None
+            self.remove_pointer_overlay_timer = 0
             self.source_remove(rpot)
 
     def cancel_show_pointer_overlay_timer(self):
         rsot = self.show_pointer_overlay_timer
+        mouselog(f"cancel_show_pointer_overlay_timer() timer={rsot}")
         if rsot:
-            self.show_pointer_overlay_timer = None
+            self.show_pointer_overlay_timer = 0
             self.source_remove(rsot)
 
     def show_pointer_overlay(self, pos):
@@ -1645,7 +1647,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def do_show_pointer_overlay(self, prev):
         #queue a draw event at the previous and current position of the pointer
         #(so the backend will repaint / overlay the cursor image there)
-        self.show_pointer_overlay_timer = None
+        self.show_pointer_overlay_timer = 0
         b = self._backing
         if not b:
             return
@@ -1671,7 +1673,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #clear it shortly after:
             self.cancel_remove_pointer_overlay_timer()
             def remove_pointer_overlay():
-                self.remove_pointer_overlay_timer = None
+                mouselog("remove_pointer_overlay()")
+                self.remove_pointer_overlay_timer = 0
                 self.show_pointer_overlay(None)
             self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
@@ -1773,11 +1776,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def cancel_moveresize_timer(self):
         mrt = self.moveresize_timer
         if mrt:
-            self.moveresize_timer = None
+            self.moveresize_timer = 0
             self.source_remove(mrt)
 
     def do_moveresize(self):
-        self.moveresize_timer = None
+        self.moveresize_timer = 0
         mrd = self.moveresize_data
         geomlog("do_moveresize() data=%s", mrd)
         if not mrd:
