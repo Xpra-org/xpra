@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.platform.gui import get_wm_name
 from xpra.x11.desktop.model_base import DesktopModelBase
@@ -56,7 +56,7 @@ class MonitorDesktopModel(DesktopModelBase):
         if self.name:
             if not title:
                 return self.name
-            title += " on %s" % self.name
+            title += f" on {self.name}"
         return title
 
     def get_geometry(self):
