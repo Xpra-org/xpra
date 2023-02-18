@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
 from xpra.x11.desktop.desktop_server_base import DesktopServerBase
@@ -214,6 +214,7 @@ class XpraMonitorServer(DesktopServerBase):
         super().do_add_new_window_common(wid, model)
         model.managed_connect("client-contents-changed", self._contents_changed)
         model.managed_connect("resized", self.monitor_resized)
+        model.managed_connect("motion", self._motion_signaled)
         return model
 
     def monitor_resized(self, model):

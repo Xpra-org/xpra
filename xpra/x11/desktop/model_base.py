@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
-from gi.repository import GObject, Gdk, GLib
+from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
@@ -30,6 +30,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     __common_gsignals__.update({
                          "resized"                  : no_arg_signal,
                          "client-contents-changed"  : one_arg_signal,
+                         "motion"                   : one_arg_signal,
+                         "xpra-motion-event"        : one_arg_signal,
                          })
 
     __gproperties__ = {
@@ -75,7 +77,9 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def setup(self):
         WindowDamageHandler.setup(self)
-        self._depth = X11Window.get_depth(self.client_window.get_xid())
+        xid = self.client_window.get_xid()
+        self._depth = X11Window.get_depth(xid)
+        X11Window.addDefaultEvents(xid)
         self._managed = True
         self._setup_done = True
 
@@ -152,6 +156,9 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def do_xpra_damage_event(self, event):
         self.emit("client-contents-changed", event)
+
+    def do_xpra_motion_event(self, event):
+        self.emit("motion", event)
 
 
     def resize(self, w, h):

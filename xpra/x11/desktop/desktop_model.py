@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
@@ -15,7 +15,6 @@ RandR = RandRBindings()
 
 geomlog = Logger("server", "window", "geometry")
 screenlog = Logger("screen")
-
 
 
 class ScreenDesktopModel(DesktopModelBase):

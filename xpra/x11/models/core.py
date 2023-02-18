@@ -7,7 +7,7 @@
 import os
 import signal
 from socket import gethostname
-from gi.repository import GObject, Gdk, GLib
+from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import bytestostr, get_proc_cmdline

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject, Gdk, Gio
+from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
 from xpra.server import server_features
@@ -292,8 +292,10 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def _adjust_pointer(self, proto, device_id, wid, pointer):
+        mouselog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
         if not window:
+            mouselog("adjust pointer: no window, suspending cursor")
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
@@ -301,6 +303,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]
         if x<0 or x>=ww or y<0 or y>=wh:
+            mouselog("adjust pointer: pointer outside desktop, suspending cursor")
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)

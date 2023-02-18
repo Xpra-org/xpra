@@ -125,6 +125,7 @@ class XpraDesktopServer(DesktopServerBase):
             super().do_add_new_window_common(1, model)
             model.managed_connect("client-contents-changed", self._contents_changed)
             model.managed_connect("resized", self.send_updated_screen_size)
+            model.managed_connect("motion", self._motion_signaled)
 
     def send_updated_screen_size(self, model):
         #the vfb has been resized
