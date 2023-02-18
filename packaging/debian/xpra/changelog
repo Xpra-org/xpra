@@ -1,17 +1,51 @@
 xpra (4.4.4-1) UNRELEASED; urgency=low
-  * TODO
+  * major fixes:
+    - focus change failures, errors with OR windows
+    - dpi validation failures
+    - honour dpi when setting initial resolution
+    - match the requested desktop size exactly
+    - XI2 errors
+    - try harder to find a valid menu prefix
+    - OpenGL failures due to misplaced icons
+  * network:
+    - generic `version` requests
+    - remote start error on encodings option
+    - remote start error when display is not specified
+    - silence OpenSSL3 + pycryptography legacy warning
+    - distinguish network vs session connected state
+    - parsing of ssh key files environment variable
+  * misc, compatibility:
+    - avoid errors when there is no keyboard config
+    - fallback keycode mapping errors
+    - play new client sample on MS Windows shadow servers 
+    - missing refresh timer with some shadow servers
+    - content-type environment variable parsing
+    - `HTTP` proxy type
+    - unused field prevented serialization
+  * platforms, packaging and build:
+    - build errors with latest Python
+    - build warnings with C++ modules on MS Windows
+    - pycuda errors locating the CUDA path
+    - use symlinks for CUDA path on MS Windows
+    - builds without CUDA
+    - lintian path updates
+    - remove reference to outdated path
+    - version update script lost track of cups backend
+    - test used incorrect command line arguments
+  * encodings:
+    - restore ability to switch encoding at runtime
+    - load all codecs before showing the list
+    - enable faster codecs in some corner cases
+    - only enable an encoding if we have an encoder for it
+    - add encoding help entry for `jpega`
+    - differentiate `nvjpeg` from plain `jpeg` encoder
+  * cosmetic:
+    - log buggy dpi values
+    - clarify tray vs system-tray
+    - log the packet header failure message
+    - logging formatting error
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2022 19:33:03 +0700
-
-xpra (4.4.4-1) UNRELEASED; urgency=low
-  * TODO
-
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2022 19:31:15 +0700
-
-xpra (4.4.4-1) UNRELEASED; urgency=low
-  * TODO
-
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2022 19:29:33 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 18 Feb 2023 22:40:56 +0700
 
 xpra (4.4.3-1) UNRELEASED; urgency=low
   * platforms, packaging and build:

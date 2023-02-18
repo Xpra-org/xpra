@@ -1,13 +1,51 @@
 # Changelog
 
-## [4.4.4] 2022-12-06
-* TODO
-
-## [4.4.4] 2022-12-06
-* TODO
-
-## [4.4.4] 2022-12-06
-* TODO
+## [4.4.4] 2023-02-18
+* major fixes:
+    * focus [change failures](https://github.com/Xpra-org/xpra/commit/1f12618fccf62516e0c6e71c7b3a87fc18f287cb), [errors with OR windows](https://github.com/Xpra-org/xpra/commit/0137db7f29243d0a1417e56398499b58776d379c)
+    * [dpi validation failures](https://github.com/Xpra-org/xpra/commit/cb6ac21da03a19660217d456607676334d4eeda1)
+    * [honour dpi when setting initial resolution](https://github.com/Xpra-org/xpra/commit/bee52599d1969b963ca341f5eebfba175738d729)
+    * [match the requested desktop size exactly](https://github.com/Xpra-org/xpra/commit/6093b14c78b66596bd148d5c743a10c27eff6092)
+    * [XI2 errors](https://github.com/Xpra-org/xpra/commit/f2e9710ad903a3dd8f86b9528e2e4bf418fd36f0)
+    * [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/5fb14adb96c083c7a7f8f5ad951a64d50563365d)
+    * [OpenGL failures due to misplaced icons](https://github.com/Xpra-org/xpra/commit/fe8a95d870ba931a58709d6007069f4157372d5e)
+* network:
+    * [generic `version` requests](https://github.com/Xpra-org/xpra/commit/4ac138a12bfc96e54fe869694b71f9d450993413)
+    * [remote start error on encodings option](https://github.com/Xpra-org/xpra/commit/d6dd10c36f618cf8821312cb8235f7f2d3ab2ddf)
+    * [remote start error when display is not specified](https://github.com/Xpra-org/xpra/commit/5fabc7787b22db8a50f6371b052901538e9cc948)
+    * [silence OpenSSL3 + pycryptography legacy warning](https://github.com/Xpra-org/xpra/commit/c00302f29c29b65d5b4c4b0e0dc4e63941d8d0b9)
+    * [distinguish network vs session connected state](https://github.com/Xpra-org/xpra/commit/b75e4fa9c19f2b94a25b0eeba78f9a5c6e5b0b33)
+    * [parsing of ssh key files environment variable](https://github.com/Xpra-org/xpra/commit/924dbe172cbaf5b3c451694625a2633093529d2b)
+* misc, compatibility:
+    * [avoid errors when there is no keyboard config](https://github.com/Xpra-org/xpra/commit/d9dba90460f7ae492dd741730888b9ebdd596009)
+    * [fallback keycode mapping errors](https://github.com/Xpra-org/xpra/commit/b5dd76e9f222e6e32f37dba6b80640266a8777ae)
+    * [play new client sample on MS Windows shadow servers](https://github.com/Xpra-org/xpra/commit/b95d2048a2c615affd07a412bc5eaaf3b23071e1) 
+    * [missing refresh timer with some shadow servers](https://github.com/Xpra-org/xpra/commit/9d0e661ffff39b37eb784e20d344e7b7afd522ff)
+    * [content-type environment variable parsing](https://github.com/Xpra-org/xpra/commit/8aee194776133c3d82838326391d4ca19fdf12fd)
+    * [`HTTP` proxy type](https://github.com/Xpra-org/xpra/commit/cc1a1fa922b39b8a684eb243df1be942b3d409f8)
+    * [unused field prevented serialization](https://github.com/Xpra-org/xpra/commit/7206fce761ac522aa2b2774508310bd84a2e5f0c)
+* platforms, packaging and build:
+    * [build errors with latest Python](https://github.com/Xpra-org/xpra/commit/0c12d0d636e222b22752a995fe345703ba97bb52)
+    * [build warnings with C++ modules on MS Windows](https://github.com/Xpra-org/xpra/commit/c90ddb7167c0009ce9d8bab1e3693194b7b20c9d)
+    * [pycuda errors locating the CUDA path](https://github.com/Xpra-org/xpra/commit/5fabc7787b22db8a50f6371b052901538e9cc948)
+    * [use symlinks for CUDA path on MS Windows](https://github.com/Xpra-org/xpra/commit/f3140b3826f3a6b1df3d56422d35dc970076fee1)
+    * [builds without CUDA](https://github.com/Xpra-org/xpra/commit/d4ff2b0a6a966dffdc1856ea5d3cc5a57f2239bf)
+    * [lintian path updates](https://github.com/Xpra-org/xpra/commit/ac92b754d9e0e30302e659443c1f4ebe319eefa9)
+    * [remove reference to outdated path](https://github.com/Xpra-org/xpra/commit/d77ab1d7dab4bda5ef0fb8a5ee71c528b2fed493)
+    * [version update script lost track of cups backend](https://github.com/Xpra-org/xpra/commit/b68cefaa6708498ce0b73cbc15e2229e6cbfb312)
+    * [test used incorrect command line arguments](https://github.com/Xpra-org/xpra/commit/457728619f64603926e2e28d9700aea9d834f4f0)
+* encodings:
+    * [restore ability to switch encoding at runtime](https://github.com/Xpra-org/xpra/commit/d0c923c732d2117dba4fd334b73cd810a0badaae)
+    * [load all codecs before showing the list](https://github.com/Xpra-org/xpra/commit/fc246caaf47e7185346d2377ad1ace3a01668c72)
+    * [enable faster codecs in some corner cases](https://github.com/Xpra-org/xpra/commit/ac2ca38a3a9835b1705693b316526ece20ad37ca)
+    * [only enable an encoding if we have an encoder for it](https://github.com/Xpra-org/xpra/commit/d1495cb41f36a411a63ded578ddd1191728a29dd)
+    * [add encoding help entry for `jpega`](https://github.com/Xpra-org/xpra/commit/63b6400f390f74e29c24c246275987797460fa91)
+    * [differentiate `nvjpeg` from plain `jpeg` encoder](https://github.com/Xpra-org/xpra/commit/a7f66089072b5fb8edac3874d169b2e914bc8576)
+* cosmetic:
+    * [log buggy dpi values](https://github.com/Xpra-org/xpra/commit/6e5c268f093040bd9b14c66db61d50a5946147eb)
+    * [clarify tray vs system-tray](https://github.com/Xpra-org/xpra/commit/1658770c3e9cf482030fc09d69e43a5edb6f92a7)
+    * [log the packet header failure message](https://github.com/Xpra-org/xpra/commit/992e0c38cf9c5d22337e4c2f1fdb6a18b2b67797)
+    * [logging formatting error](https://github.com/Xpra-org/xpra/commit/1dcd3c1bae9899c99f9ffd0022af73cfa017a4ba)
 
 ## [4.4.3] 2022-11-27
 * platforms, packaging and build:
