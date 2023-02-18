@@ -1,41 +1,57 @@
 xpra (3.1.4-1) UNRELEASED; urgency=low
   * major fixes:
-   -  correctly wait for worker threads to terminate
-   -  workaround new broken python3-uinput packages on Fedora
-   -  more robust version parsing
-   -  missing X11 error context in XI2 input bindings
-   -  clipboard errors on Microsoft Windows (regression in 3.1.3)
-   -  timestamp clamping code could swallow X11 client messages
-   -  xkb rules name parsing error with Python 3
-   -  add `capability` authentication module
-  * build and packaging:
-   -  support for RHEL 9.x and clones
-   -  missing systray dependency on Debian and Ubuntu
+   - correctly wait for worker threads to terminate
+   - workaround new broken python3-uinput packages on Fedora
+   - more robust version parsing
+   - missing X11 error context in XI2 input bindings
+   - clipboard errors on Microsoft Windows (regression in 3.1.3)
+   - timestamp clamping code could swallow X11 client messages
+   - add `capability` authentication module
+   - match display size exactly with RandR 1.6
+  * keyboard:
+   - xkb rules name parsing error with Python 3
+   - avoid errors when there is no keyboard config
+   - fallback keycode mapping errors
+  * build, packaging and platforms:
+   - support for RHEL 9.x and clones
+   - missing systray dependency on Debian and Ubuntu
+   - build errors with latest Python
+   - MS Windows `unregister` class reliably
+   - MS Windows errors building the C++ modules
+   - use symlinks for CUDA path on MS Windows
+   - use standardized paths for new repo build scripts
+   - missing checksums and dependencies for some RPM spec files
+   - Python2 compatibility fixes
   * network:
-   -  better compatibility with newer versions: emulate the `command` Posix command
-   -  websocket fixes: python2 compatibility, error handler
-   -  proxy should not try to recompress strings
-   -  IPv6 parsing errors
-   -  support newer versions of python-cryptography
-   -  workaround for missing paramiko dependency on python3-invoke (ie: Fedora)
+   - better compatibility with newer versions: emulate the `command` Posix command
+   - handle version generic requests
+   - websocket fixes: python2 compatibility, error handler
+   - proxy should not try to recompress strings
+   - IPv6 parsing errors
+   - support newer versions of python-cryptography
+   - silence OpenSSL3 + pycryptography legacy warning
+   - workaround for missing paramiko dependency on python3-invoke (ie: Fedora)
+   - safer paramiko lookup functions
   * cosmetic:
-   -  more helpful connection failure messages
-   -  handle config file parsing errors more gracefully
-   -  free wrapper explicitly to avoid warnings in webp decoder
-   -  errors in xsettings watcher
-   -  avoid errors deleting the temporary print file
-   -  MacOS doesn't have an `XDG_RUNTIME_DIR`
-   -  catch missing python-dbus earlier
-   -  avoid errors when python-xdg is not installed
-   -  don't assume the peer is 32-bit when unspecified
+   - more helpful connection failure messages
+   - handle config file parsing errors more gracefully
+   - free wrapper explicitly to avoid warnings in webp decoder
+   - errors in xsettings watcher
+   - avoid errors deleting the temporary print file
+   - MacOS doesn't have an `XDG_RUNTIME_DIR`
+   - catch missing python-dbus earlier
+   - avoid errors when python-xdg is not installed
+   - don't assume the peer is 32-bit when unspecified
   * encodings:
-   -  honour `XPRA_ALPHA` environment variable in client
-   -  validate x264 encoder dimensions to prevent potential crashes
-   -  fix transparency saturation: use premultiplied alpha with pillow and webp
-   -  numpy import race condition
-   -  expose `IDR` frame type in NVENC
+   - only enable an encoding if we have an encoder for it
+   - avoid video for small sizes
+   - honour `XPRA_ALPHA` environment variable in client
+   - validate x264 encoder dimensions to prevent potential crashes
+   - fix transparency saturation: use premultiplied alpha with pillow and webp
+   - numpy import race condition
+   - expose `IDR` frame type in NVENC
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 09 Jan 2023 18:08:18 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 18 Feb 2023 23:38:15 +0700
 
 xpra (3.1.3-1) UNRELEASED; urgency=low
   * major fixes:
