@@ -1817,7 +1817,7 @@ class ServerCore:
             return
 
         log("process_hello: capabilities=%s", capabilities)
-        if c.boolget("version_request"):
+        if c.strget("request")=="version" or c.boolget("version_request"):
             self.send_version_info(proto, c.boolget("full-version-request"))
             return
         #verify version:
