@@ -446,12 +446,13 @@ def get_sink_plugins():
     elif WIN32:
         SINKS.append("directsoundsink")
         SINKS.append("wasapisink")
-    try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
-        if has_pa():
-            SINKS.append("pulsesink")
-    except ImportError as e:
-        log("get_sink_plugins() no pulsesink: %s", e)
+    if POSIX and not OSX:
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+            if has_pa():
+                SINKS.append("pulsesink")
+        except ImportError as e:
+            log("get_sink_plugins() no pulsesink: %s", e)
     if POSIX:
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
@@ -464,16 +465,17 @@ def get_default_sink_plugin():
             log.error("invalid default sound sink: '%s' is not in %s", sink, csv(sinks))
         else:
             return sink
-    try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
-        if has_pa():
-            s = get_pactl_server()
-            if not s:
-                log("cannot connect to pulseaudio server?")
-            else:
-                return "pulsesink"
-    except ImportError as e:
-        log("get_default_sink_plugin() no pulsesink: %s", e)
+    if POSIX and not OSX:
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            if has_pa():
+                s = get_pactl_server()
+                if not s:
+                    log("cannot connect to pulseaudio server?")
+                else:
+                    return "pulsesink"
+        except ImportError as e:
+            log("get_default_sink_plugin() no pulsesink: %s", e)
     for sink in sinks:
         if has_plugins(sink):
             return sink
@@ -497,15 +499,16 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
     if not device:
         return {}
     #make sure it is not muted:
-    try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
-        if has_pa():
-            if input_or_output is True or want_monitor_device:
-                set_source_mute(device, mute=False)
-            elif input_or_output is False:
-                set_sink_mute(device, mute=False)
-    except Exception as e:
-        log("device %s may still be muted: %s", device, e)
+    if POSIX and not OSX:
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
+            if has_pa():
+                if input_or_output is True or want_monitor_device:
+                    set_source_mute(device, mute=False)
+                elif input_or_output is False:
+                    set_sink_mute(device, mute=False)
+        except Exception as e:
+            log("device %s may still be muted: %s", device, e)
     return {"device" : bytestostr(device)}
 
 def get_pulse_device(device_name_match=None, want_monitor_device=True,
@@ -708,13 +711,12 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
 # to avoid sound loops for example)
 DEFAULT_SRC_PLUGIN_OPTIONS = {
     "test"                  : get_test_defaults,
-    "pulse"                 : get_pulse_source_defaults,
     "direct"                : get_directsound_source_defaults,
     }
-
-DEFAULT_SINK_PLUGIN_OPTIONS = {
-    "pulse"                 : get_pulse_sink_defaults,
-    }
+DEFAULT_SINK_PLUGIN_OPTIONS = {}
+if POSIX and not OSX:
+    DEFAULT_SINK_PLUGIN_OPTIONS["pulse"] = get_pulse_sink_defaults
+    DEFAULT_SRC_PLUGIN_OPTIONS["pulse"] = get_pulse_source_defaults
 
 
 
