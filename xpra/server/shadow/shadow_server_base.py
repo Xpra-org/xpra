@@ -312,29 +312,29 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def poll_pointer_position(self):
         x, y = self.get_pointer_position()
-        #find the window model containing the pointer:
-        if self.pointer_last_position!=(x, y):
-            self.pointer_last_position = (x, y)
-            rwm = None
-            wid = None
-            rx, ry = 0, 0
-            for wid, window in self._id_to_window.items():
-                wx, wy, ww, wh = window.geometry
-                if wx<=x<(wx+ww) and wy<=y<(wy+wh):
-                    rwm = window
-                    rx = x-wx
-                    ry = y-wy
-                    break
-            if rwm:
-                mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
-                for ss in self._server_sources.values():
-                    um = getattr(ss, "update_mouse", None)
-                    if um:
-                        um(wid, x, y, rx, ry)
-            else:
-                mouselog("poll_pointer_position() model not found for position=%s", (x, y))
-        else:
+        if self.pointer_last_position==(x, y):
             mouselog("poll_pointer_position() unchanged position=%s", (x, y))
+            return
+        self.pointer_last_position = (x, y)
+        rwm = None
+        wid = None
+        rx, ry = 0, 0
+        #find the window model containing the pointer:
+        for wid, window in self._id_to_window.items():
+            wx, wy, ww, wh = window.geometry
+            if wx<=x<(wx+ww) and wy<=y<(wy+wh):
+                rwm = window
+                rx = x-wx
+                ry = y-wy
+                break
+        if not rwm:
+            mouselog("poll_pointer_position() model not found for position=%s", (x, y))
+            return
+        mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
+        for ss in self._server_sources.values():
+            um = getattr(ss, "update_mouse", None)
+            if um:
+                um(wid, x, y, rx, ry)
 
 
     def poll_cursor(self):
