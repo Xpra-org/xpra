@@ -424,6 +424,11 @@ def unload_library():
     global NvFBC
     NvFBC = None
 
+def set_enabled(enabled : bool=True):
+    lib = init_nvfbc_library()
+    r = lib.NvFBC_Enable(int(enabled))
+    raiseNvFBC(r, "NvFBC_Enable")
+
 
 def get_status(int adapter=0):
     global NvFBC
@@ -450,6 +455,16 @@ def get_status(int adapter=0):
 def check_status():
     status = get_status()
     if not status.get("capture-possible"):
+        try:
+            set_enabled(True)
+            #re-query the status:
+            status = get_status()
+            if status.get("capture-possible"):
+                log.info("NvFBC capture has been enabled")
+        except Exception as e:
+            log.info("NvFBC capture cannot be enabled")
+            log.info(f" {e}")
+            log.info(f" you may need to run `NvFBC_capture.exe enable` as administrator")
         raise Exception("NvFBC status error: capture is not possible")
     if status.get("currently-capturing"):
         raise TransientCodecException("NvFBC status error: currently capturing")

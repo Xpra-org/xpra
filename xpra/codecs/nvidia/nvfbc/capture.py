@@ -9,7 +9,7 @@ import time
 import os.path
 
 from xpra.util import envbool
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, WIN32, LINUX
 from xpra.log import Logger, add_debug_category
 
 log = Logger("encoder", "nvfbc")
@@ -18,7 +18,6 @@ USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
 
 
 def get_capture_module():
-    from xpra.os_util import WIN32, LINUX
     if WIN32:
         from xpra.codecs.nvidia.nvfbc import fbc_capture_win   #@UnresolvedImport @UnusedImport
         return fbc_capture_win
@@ -37,8 +36,8 @@ def get_capture_instance(cuda=USE_NVFBC_CUDA):
     return fbc_module.NvFBC_SysCapture()      #@UndefinedVariable
 
 
-def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
+def main(argv):
+    if "-v" in argv or "--verbose" in argv:
         log.enable_debug()
         add_debug_category("nvfbc")
 
@@ -50,6 +49,20 @@ def main():
         if not fbc_capture:
             raise RuntimeError("nvfbc is not supported on this platform")
         fbc_capture.init_module()
+        if WIN32:
+            try:
+                if "enable" in argv[1:]:
+                    fbc_capture.set_enabled(True)
+                    log.info("nvfbc capture enabled")
+                elif "disable" in argv[1:]:
+                    fbc_capture.set_enabled(False)
+                    log.info("nvfbc capture disabled")
+            except Exception as e:
+                log(f"set_enabled for {argv} failed", exc_info=True)
+                log.error("Error: cannot enable or disable NvFBC:")
+                log.estr(e)
+                log.error(" you may need to run this command as administrator")
+                return 1
         log.info("Info:")
         print_nested_dict(fbc_capture.get_info(), print_fn=log.info)
         log.info("Status:")
@@ -87,4 +100,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
