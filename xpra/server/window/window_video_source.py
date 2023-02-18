@@ -143,10 +143,13 @@ class WindowVideoSource(WindowSource):
             self.common_video_encodings = ()
             return
         #make sure we actually have encoders for these:
-        enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
-        self.video_encodings = tuple(x for x in self.video_helper.get_encodings() if x in enc_options)
+        def preforder(encodings):
+            encs = set(encodings)
+            return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
+        self.video_encodings = preforder(self.video_helper.get_encodings())
+        self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
         video_enabled = []
-        for x in self.video_encodings:
+        for x in self.common_video_encodings:
             self.append_encoder(x, self.video_encode)
             video_enabled.append(x)
         #video_encode() is used for more than just video encoders:
@@ -154,11 +157,13 @@ class WindowVideoSource(WindowSource):
         self.add_encoder("auto", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
+        enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
         nv_common = (enc_options & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
-                                         if x in nv_common)
-        self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
-                                            if x in self.video_encodings and x in self.core_encodings)
+        self.non_video_encodings = preforder(nv_common)
+        log(f"init_encoders() server core encodings={self.server_core_encodings}, client core encodings={self.core_encodings}")
+        log(f" video encodings={self.video_encodings}")
+        log(f" common video encodings={self.common_video_encodings}")
+        log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             self.add_encoder("scroll", self.scroll_encode)
 
