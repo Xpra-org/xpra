@@ -6,6 +6,7 @@
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import WIN32, OSX
 from xpra.util import parse_simple_dict, envbool, csv, roundup
 from xpra.codecs.codec_constants import video_spec
 from xpra.gst_common import (
@@ -25,6 +26,7 @@ Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
+VAAPI = envbool("XPRA_GSTREAMER_VAAPI", not (WIN32 or OSX))
 
 
 assert get_version and init_module and cleanup_module
@@ -157,13 +159,14 @@ def init_all_specs(*exclude):
         for v in css_out:
             if v not in cur:
                 cur.append(v)
-    vaapi = True
-    if NVIDIA_VAAPI:
+    vaapi = VAAPI
+    if VAAPI and not NVIDIA_VAAPI:
         try:
             from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
             vaapi = not has_nvidia_hardware()
         except ImportError:
             pass
+    log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
         add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
