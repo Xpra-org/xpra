@@ -71,7 +71,8 @@ class OSXRootCapture:
 
 class ShadowServer(GTKShadowServerBase):
 
-    def __init__(self):
+    def __init__(self, multi_window=True):
+        super().__init__(multi_window)
         #sanity check:
         check_display()
         image = CG.CGWindowListCreateImage(CG.CGRectInfinite,
