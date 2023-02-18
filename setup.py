@@ -1895,8 +1895,6 @@ if WIN32 or OSX:
         external_includes += [
             "cffi", "_cffi_backend",
             "cryptography", "idna", "idna.idnadata", "appdirs",
-            "pkg_resources._vendor.packaging", "pkg_resources._vendor.packaging.requirements",
-            "pkg_resources._vendor.pyparsing",
             ]
         add_modules("cryptography.hazmat.bindings._openssl",
                     "cryptography.hazmat.bindings._constant_time",
