@@ -80,7 +80,7 @@ def get_monitors():
 def init_capture(w, h, pixel_depth=32):
     if NVFBC:
         try:
-            from xpra.codecs.nvfbc.capture import get_capture_instance
+            from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
             capture = get_capture_instance()
         except ImportError:
             log("NvFBC capture is not available", exc_info=True)
