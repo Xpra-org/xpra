@@ -207,7 +207,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet):
+    def _process_exit_server(self, _proto, packet=()):
         reason = SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet)>1:
@@ -217,7 +217,7 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
-    def _process_shutdown_server(self, _proto, _packet):
+    def _process_shutdown_server(self, _proto, _packet=()):
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
@@ -329,6 +329,12 @@ class ServerBase(ServerBaseClass):
 
         if is_req("detach"):
             self.disconnect_client(proto, DONE, "%i other clients have been disconnected" % disconnected)
+            return
+        if is_req("exit"):
+            self._process_exit_server(proto)
+            return
+        if is_req("stop"):
+            self._process_shutdown_server(proto)
             return
 
         if not request and ui_client:
