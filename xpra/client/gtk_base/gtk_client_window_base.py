@@ -1671,15 +1671,20 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             x, y, w, h = abs_coords(*value[2:5])
             self.repaint(x, y, w, h)
             #clear it shortly after:
-            self.cancel_remove_pointer_overlay_timer()
-            def remove_pointer_overlay():
-                mouselog("remove_pointer_overlay()")
-                self.remove_pointer_overlay_timer = 0
-                self.show_pointer_overlay(None)
-            self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
+            self.schedule_remove_pointer_overlay()
         if prev:
             x, y, w, h = abs_coords(*prev[2:5])
             self.repaint(x, y, w, h)
+
+    def schedule_remove_pointer_overlay(self, delay=CURSOR_IDLE_TIMEOUT*1000):
+        mouselog(f"schedule_remove_pointer_overlay({delay})")
+        self.cancel_remove_pointer_overlay_timer()
+        self.remove_pointer_overlay_timer = self.timeout_add(delay, self.remove_pointer_overlay)
+
+    def remove_pointer_overlay(self):
+        mouselog("remove_pointer_overlay()")
+        self.remove_pointer_overlay_timer = 0
+        self.show_pointer_overlay(None)
 
 
     def _do_button_press_event(self, event):
@@ -1697,6 +1702,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #Gtk.Window.do_motion_notify_event(self, event)
         if self.moveresize_event:
             self.motion_moveresize(event)
+        self.cancel_remove_pointer_overlay_timer()
+        self.remove_pointer_overlay()
         ClientWindowBase._do_motion_notify_event(self, event)
 
     def motion_moveresize(self, event):
