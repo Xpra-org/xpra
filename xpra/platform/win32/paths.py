@@ -242,7 +242,7 @@ def _get_xpra_exe_command(*cmd_options):
             if os.path.exists(py):
                 if cmd.lower() in ("python", "python3"):
                     return [py]
-                #ie: /e/Xpra/trunk/src/dist/scripts/xpra
+                #ie: /e/Xpra/trunk/src/dist/xpra
                 script = os.path.join(os.getcwd(), "scripts", cmd.lower())
                 if os.path.exists(script) and os.path.isfile(script):
                     return [py, script]
