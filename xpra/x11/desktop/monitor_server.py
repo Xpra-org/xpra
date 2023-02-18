@@ -35,7 +35,7 @@ class XpraMonitorServer(DesktopServerBase):
     def __init__(self):
         with xsync:
             if not RandR.is_dummy16():
-                raise InitException("the vfb cannot virtualize monitors")
+                raise InitException("the vfb cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
         self.session_type = "monitor"
         self.reconfigure_timer = 0
