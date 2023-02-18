@@ -246,7 +246,6 @@ class ScreenshotXpraClient(CommandConnectClient):
     def __init__(self, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
         super().__init__(opts)
-        self.hello_extra["screenshot_request"] = True
         self.hello_extra["request"] = "screenshot"
 
     def timeout(self, *_args):
@@ -281,7 +280,6 @@ class InfoXpraClient(CommandConnectClient):
 
     def __init__(self, opts):
         super().__init__(opts)
-        self.hello_extra["info_request"] = True
         self.hello_extra["request"] = "info"
         if FLATTEN_INFO>=1:
             self.hello_extra["info-namespace"] = True
@@ -359,9 +357,6 @@ class ConnectTestXpraClient(CommandConnectClient):
             "request"                   : "connect_test",
             #tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
-            #older servers don't know about connect-test,
-            #pretend that we're interested in info:
-            "info_request"              : True,
             "info-namespace"            : True,
             })
         self.hello_extra.update(kwargs)
@@ -607,7 +602,6 @@ class VersionXpraClient(HelloRequestClient):
 
     def hello_request(self):
         return {
-            "version_request"       : True,
             "request"               : "version",
             "full-version-request"  : True,
             }
@@ -715,7 +709,6 @@ class PrintClient(SendCommandConnectClient):
         capabilities = super().make_hello()
         capabilities.setdefault("wants", []).append("features")
         capabilities["wants_features"] = True   #so we know if printing is supported or not
-        capabilities["print_request"] = True    #marker to skip full setup
         capabilities["request"] = "print"
         return capabilities
 
@@ -728,7 +721,6 @@ class ExitXpraClient(HelloRequestClient):
 
     def hello_request(self):
         return {
-            "exit_request"  : True,
             "request"       : "exit",
             }
 
@@ -741,16 +733,17 @@ class StopXpraClient(HelloRequestClient):
 
     def hello_request(self):
         return {
-            "stop_request"  : True,
             "request"       : "stop",
             }
 
     def do_command(self, caps : typedict):
         if not self.server_client_shutdown:
             log.error("Error: cannot shutdown this server")
-            log.error(" the feature is disable on the server")
-            self.quit(ExitCode.FAILURE)
+            log.error(" the feature is disabled on the server")
+            self.quit(ExitCode.UNSUPPORTED)
             return
+        #with newer (v5) servers, the "stop" request should have done it,
+        #but let's try harder for older servers:
         self.timeout_add(1000, self.send_shutdown_server)
         #self.idle_add(self.send_shutdown_server)
         #not exiting the client here,
@@ -763,7 +756,6 @@ class DetachXpraClient(HelloRequestClient):
 
     def hello_request(self):
         return {
-            "detach_request"    : True,
             "request"           : "detach",
             }
 
