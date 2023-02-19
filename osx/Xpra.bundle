@@ -9,6 +9,8 @@
 		<run-install-name-tool/>
 
 		<launcher-script>${project}/Helpers/Launcher</launcher-script>
+
+		<gtk>gtk+-3.0</gtk>
 	</meta>
 
 	<plist>${project}/Info.plist</plist>
