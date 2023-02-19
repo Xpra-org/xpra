@@ -50,7 +50,7 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 ## Build all the libraries
 ```shell
 jhbuild bootstrap-gtk-osx
-jhbuild build
+SETUPTOOLS_USE_DISTUTILS=stdlib jhbuild build
 ```
 
 ## Build and Package Xpra
