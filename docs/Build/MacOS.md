@@ -10,6 +10,7 @@ This step is optional and only needed if curl fails to validate SSL connections.
 ```shell
 curl -k -sSL http://curl.haxx.se/ca/cacert.pem >> cacert.pem
 export CURL_CA_BUNDLE=`pwd`/cacert.pem
+export SSL_CERT_FILE=`pwd`/cacert.pem
 ```
 On some older versions of MacOS, you may also need:
 ```shell
@@ -23,7 +24,7 @@ At least initially.
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
 ```shell
-curl https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/gtk-osx-setup.sh
+curl https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/gtk-osx-setup.sh
 sh gtk-osx-setup.sh
 ```
 This will have installed `jhbuild` in `~/.new_local/bin`, so let's add this to our `$PATH`:
