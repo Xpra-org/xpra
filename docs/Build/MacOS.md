@@ -51,6 +51,11 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 ```shell
 jhbuild bootstrap-gtk-osx
 SETUPTOOLS_USE_DISTUTILS=stdlib jhbuild build
+#some python libraries have to be installed via pip:
+jhbuild shell
+pip3 install --prefix /Users/macos/gtk/inst/ packaging
+pip3 install --prefix /Users/macos/gtk/inst/ parsing
+pip3 install --prefix /Users/macos/gtk/inst/ typing_extensions
 ```
 
 ## Build and Package Xpra
