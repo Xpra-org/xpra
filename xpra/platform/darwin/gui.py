@@ -584,10 +584,10 @@ class Delegate(NSObject):
     @objc.python_method
     def register_sleep_handlers(self):
         log("register_sleep_handlers()")
-        workspace          = NSWorkspace.sharedWorkspace()
-        notificationCenter = workspace.notificationCenter()
+        self.workspace          = NSWorkspace.sharedWorkspace()
+        self.notificationCenter = self.workspace.notificationCenter()
         def add_observer(fn, val):
-            notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
+            self.notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
         #NSWorkspaceWillPowerOffNotification
         add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
         add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
