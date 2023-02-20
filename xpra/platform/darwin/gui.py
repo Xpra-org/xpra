@@ -46,7 +46,7 @@ notifylog = Logger("osx", "notify")
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
-EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", False)
+EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 OSX_WHEEL_DIVISOR = envint("XPRA_OSX_WHEEL_DIVISOR", 10)
@@ -130,7 +130,8 @@ class OSX_Notifier(NotifierBase):
 
     def do_show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon,
                        summary, body, actions, hints, expire_timeout, icon):
-        notification = NSUserNotification.alloc().init()
+        notification = NSUserNotification.alloc()
+        notification.init()
         notification.setTitle_(summary)
         notification.setInformativeText_(body)
         notification.setIdentifier_("%s" % nid)
@@ -534,20 +535,15 @@ def register_URL_handler(handler):
     # it impossible to use kAE*
     fourCharToInt = lambda code: struct.unpack(b'>l', code)[0]
 
-    urlh = GURLHandler.alloc().init().retain()
+    urlh = GURLHandler.alloc()
+    urlh.init()
+    urlh.retain()
     manager = NSAppleEventManager.sharedAppleEventManager()
     manager.setEventHandler_andSelector_forEventClass_andEventID_(
         urlh, 'handleEvent:withReplyEvent:',
         fourCharToInt(b'GURL'), fourCharToInt(b'GURL')
         )
 
-
-class ExampleAppDelegate(NSObject):
-    def applicationDidFinishLaunching_(self, aNotification):
-        print("Hello, World!")
-
-    def sayHello_(self, sender):
-        print("Hello again, World!")
 
 class AppDelegate(NSObject):
 
@@ -730,7 +726,9 @@ class ClientExtras:
     def setup_event_listener(self):
         self.shared_app = NSApplication.sharedApplication()
         log(f"setup_event_listener() delegate={self.delegate}, shared app={self.shared_app}")
-        self.delegate = AppDelegate.alloc().init().retain()
+        self.delegate = AppDelegate.alloc()
+        self.delegate.init()
+        self.delegate.retain()
         if self.client and False:
             self.delegate.callbacks.update({
                 "sleep" : self.client.suspend,
