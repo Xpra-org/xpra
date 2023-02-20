@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -99,7 +99,9 @@ def get_max_texture_size() -> int:
 
 
 def check_PyOpenGL_support(force_enable) -> dict:
-    props = {}
+    props = {
+        "platform"  : sys.platform,
+        }
     def unsafe():
         props["safe"] = False
     # pylint: disable=import-outside-toplevel
