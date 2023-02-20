@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,10 @@ BLACKLIST = {
         #"Humper",
         #to disable nvidia, uncomment this:
         #"NVIDIA Corporation",
-        ]
+        ],
+    "platform"  : [
+        "darwin",           #latest builds fail to render on MacOS
+        ],
     }
 
 
