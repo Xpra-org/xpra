@@ -179,12 +179,13 @@ PACKET_KIND = {
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
 
-if VPX_ENCODER_ABI_VERSION<=23:
+if VPX_ENCODER_ABI_VERSION<=23 or OSX:
     CODECS = ("vp8", )
 else:
     CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
-COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
+if "vp9" in CODECS:
+    COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
 #as of libvpx 1.8:
 VP9_RANGE = 4
