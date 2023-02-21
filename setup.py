@@ -238,7 +238,6 @@ jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.8", "vpx") and BITS==64
-vpl_ENABLED             = False     #DEFAULT and pkg_config_version("2.7", "vpl")
 ffmpeg_ENABLED          = DEFAULT and BITS==64
 enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
@@ -284,7 +283,7 @@ CODEC_SWITCHES = [
     "cuda_kernels", "cuda_rebuild",
     "openh264", "openh264_decoder", "openh264_encoder",
     "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
-    "vpx", "vpl", "webp", "pillow",
+    "vpx", "webp", "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
     "avif", "argb",
@@ -409,7 +408,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     if not cython_ENABLED:
         enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = openh264_ENABLED= False
         csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
-        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = vpl_ENABLED = False
+        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
         spng_decoder_ENABLED = spng_encoder_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
@@ -1079,7 +1078,6 @@ def clean():
                    "xpra/buffers/cyxor.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/vpl/encoder.c",
                    "xpra/codecs/nvidia/nvenc/encoder.c",
                    "xpra/codecs/nvidia/nvdec/decoder.c",
                    "xpra/codecs/nvidia/nvfbc/fbc_capture_linux.cpp",
@@ -2284,8 +2282,6 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-toggle_packages(vpl_ENABLED, "xpra.codecs.vpl")
-tace(vpl_ENABLED, "xpra.codecs.vpl.encoder", "vpl")
 toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")

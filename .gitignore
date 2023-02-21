@@ -130,7 +130,6 @@ tests/unittests/test-file*
 /xpra/codecs/v4l2/pusher.c
 /xpra/codecs/vpx/decoder.c
 /xpra/codecs/vpx/encoder.c
-/xpra/codecs/vpl/encoder.c
 /xpra/codecs/webp/encoder.c
 /xpra/codecs/webp/decoder.c
 /xpra/codecs/avif/encoder.c
