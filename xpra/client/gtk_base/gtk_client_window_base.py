@@ -126,8 +126,8 @@ except ImportError:
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
 
 AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
-AUTOGRAB_WITH_FOCUS = envbool("AUTOGRAB_WITH_FOCUS", False)
-AUTOGRAB_WITH_POINTER = envbool("AUTOGRAB_WITH_POINTER", True)
+AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
+AUTOGRAB_WITH_POINTER = envbool("XPRA_AUTOGRAB_WITH_POINTER", True)
 
 
 def parse_padding_colors(colors_str):
