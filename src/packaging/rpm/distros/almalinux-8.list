@@ -11,6 +11,8 @@ python3-lz4
 python3-Cython
 python3-pbr
 python3-rencode
+python3-pytools
+python3-pycuda
 python3-pynvml
 python3-pyu2f
 python3-uinput
