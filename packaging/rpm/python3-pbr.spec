@@ -33,10 +33,7 @@ CFLAGS="%{optflags}" %{__python3} setup.py build
 %{_bindir}/pbr
 
 %changelog
-* Fri Feb 03 2023 Antoine Martin <antoine@xpra.org> - 5.11.1-1
-- new upstream release
-
-* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 5.11.0-1
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 5.11.1-1
 - new upstream release
 
 * Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> - 5.9.0-1
