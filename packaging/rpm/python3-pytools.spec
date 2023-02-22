@@ -2,7 +2,7 @@
 
 Name:           python3-pytools
 Version:        2022.1.14
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
@@ -60,6 +60,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Feb 22 2022 Antoine Martin <antoine@xpra.org> - 2022.1.14-1
+- new upstream release
+
 * Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.1.13-1
 - new upstream release
 
