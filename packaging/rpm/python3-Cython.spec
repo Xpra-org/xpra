@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
 
 Name:		python3-Cython
-Version:	3.0.0a11
+Version:	0.29.33
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/2e/a7/f20fa91d9de799f8e19bacf225bc993b8a53b5fc6f41ffa20d64f0850579/Cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/dc/f6/e8e302f9942cbebede88b1a0c33d0be3a738c3ac37abae87254d58ffc51c/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python3
 
@@ -21,7 +21,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "e4672491fb31546b9abb63677f638e738085dc9321398170956ef6fbfc0e1726" ]; then
+if [ "${sha256}" != "5040764c4a4d2ce964a395da24f0d1ae58144995dab92c6b96f44c3f4d72286a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -52,8 +52,8 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
-* Mon Sep 19 2022 Antoine Martin <antoine@xpra.org> 3.0.0a11-1
-- switch to 3.0 branch to support python 3.11
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> 0.29.33-1
+- new upstream release
 
 * Wed May 18 2022 Antoine Martin <antoine@xpra.org> 0.29.30-1
 - new upstream release
