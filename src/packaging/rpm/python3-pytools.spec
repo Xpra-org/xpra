@@ -1,13 +1,14 @@
 %define _disable_source_fetch 0
 
 Name:           python3-pytools
-Version:        2022.1.14
+#Warning: version 2022.1.14 breaks python 3.6
+Version:        2022.1.13
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/b5/00/b7350b62803926f1d8fbbcaa50e38bcc93354aa73894c13155825eec897f/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/48/d8/93d4dc493e5ee107ae181a918a8f5e8f117a1bcdafc6aa70eadb6be49cd5/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
@@ -33,7 +34,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "41017371610bb2a03685597c5285205e6597c7f177383d95c8b871244b12c14e" ]; then
+if [ "${sha256}" != "c2f98359f6f281fb9d06136cdfb825a1984571598c8b437f8d6815ab80a04149" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
