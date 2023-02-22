@@ -201,12 +201,6 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> 5.1.2-1
-- new upstream release
-
-* Fri Sep 23 2022 Antoine Martin <antoine@xpra.org> 5.1.1-1
-- new upstream release
-
 * Sat Aug 06 2022 Antoine Martin <antoine@xpra.org> 5.1-1
 - new upstream release
 
