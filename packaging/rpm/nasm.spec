@@ -2,7 +2,7 @@
 
 Summary: A portable x86 assembler which uses Intel-like syntax
 Name:    nasm
-Version: 2.16
+Version: 2.16.01
 Release: 1%{?dist}
 License: BSD
 URL:     http://www.nasm.us
@@ -21,14 +21,14 @@ instruction mnemonics and syntax.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "f05e2dc04bdb075487207d775770e9e508e250e63da8bf6c769976d66dd55249" ]; then
+if [ "${sha256}" != "c77745f4802375efeee2ec5c0ad6b7f037ea9c87c92b149a9637ff099f162558" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %autosetup
 
 %build
-%configure --disable-pdf-compression
+%configure
 make all %{?_smp_mflags}
 
 %install
@@ -43,8 +43,9 @@ make all %{?_smp_mflags}
 %{_mandir}/man1/ndisasm*
 
 %changelog
-* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2.16-1
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 2.16.01-1
 - new upstream release
+- rdoff package removed
 
 * Thu Nov 04 2021 Antoine Martin <antoine@xpra.org> - 2.15.05-1
 - new upstream release
