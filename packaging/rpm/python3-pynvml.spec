@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        11.525.84
+Version:        11.515.84
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
@@ -48,10 +48,7 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
-* Fri Feb 03 2023 Antoine Martin <antoine@xpra.org> - 11.515.84-1
-- new upstream release
-
-* Fri Sep 23 2022 Antoine Martin <antoine@xpra.org> - 11.515.75-1
+* Wed Feb 22 2022 Antoine Martin <antoine@xpra.org> - 11.515.84-1
 - new upstream release
 
 * Fri Jun 10 2022 Antoine Martin <antoine@xpra.org> - 11.515.48-1
