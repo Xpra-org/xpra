@@ -2,12 +2,12 @@
 %global debug_package %{nil}
 
 Name:           python3-pbr
-Version:        5.11.0
+Version:        5.11.1
 Release:        1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
-Source0:        https://files.pythonhosted.org/packages/52/fb/630d52aaca8fc7634a0711b6ae12a0e828b6f9264bd8051225025c3ed075/pbr-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/02/d8/acee75603f31e27c51134a858e0dea28d321770c5eedb9d1d673eb7d3817/pbr-%{version}.tar.gz
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
@@ -16,7 +16,7 @@ PBR is a library that injects some useful and sensible default behaviors into yo
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "b97bc6695b2aff02144133c2e7399d5885223d42b7912ffaec2ca3898e673bfe" ]; then
+if [ "${sha256}" != "aefc51675b0b533d56bb5fd1c8c6c0522fe31896679882e1c4c63d5e4a0fccb3" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -33,7 +33,7 @@ CFLAGS="%{optflags}" %{__python3} setup.py build
 %{_bindir}/pbr
 
 %changelog
-* Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 5.11.0-1
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 5.11.1-1
 - new upstream release
 
 * Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> - 5.9.0-1
