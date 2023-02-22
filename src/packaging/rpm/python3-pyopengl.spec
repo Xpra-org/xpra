@@ -6,15 +6,14 @@
 %global srcname PyOpenGL
 
 Name:           python3-pyopengl
-Version:        3.1.6
-Release:        1xpra1%{?dist}
+Version:        3.1.5
+Release:        1xpra2%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/5b/01/f8fd986bc7f456f1a925ee0239f0391838ade92cdb6e5b674ffb8b86cfd6/PyOpenGL-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/8e/47/64aa665af0f7d0c2f6c4a865c1d521c3697504da971366d4dea12ce8b339/PyOpenGL-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746/%{srcname}-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389/%{srcname}-accelerate-%{version}.tar.gz
 
-BuildRequires:  gcc
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-numpy
@@ -49,12 +48,12 @@ Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "8ea6c8773927eda7405bffc6f5bb93be81569a7b05c8cac50cd94e969dce5e27" ]; then
+if [ "${sha256}" != "4107ba0d0390da5766a08c242cf0cf3404c377ed293c5f6d701e457c57ba3424" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
-if [ "${sha256}" != "ad8a300256eca25228261de16f741e51a30f34f1e1b1cf68359f5c62dbcdcdc3" ]; then
+if [ "${sha256}" != "12e5518b0216a478527c7ce5ddce623c3d0517adeb87226da767772e8b7f2f06" ]; then
 	echo "invalid checksum for %{SOURCE1}"
 	exit 1
 fi
@@ -100,9 +99,6 @@ popd
 
 
 %changelog
-* Sat Jan 07 2023 Antoine Martin <antoine@xpra.org> - 3.1.6-1xpra1
-- new upstream release
-
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra2
 - verify source checksum
 
