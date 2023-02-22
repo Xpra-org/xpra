@@ -58,7 +58,7 @@ PYTHONPATH=$RPM_BUILD_ROOT%{python3_sitearch} %{__python3} -c "import lz4"
 
 
 %changelog
-* Mon Jan 09 2023 Antoine Martin <antoine@xpra.org> - 4.3.2-1
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 4.3.2-1
 - new upstream release
 
 * Sat Aug 06 2022 Antoine Martin <antoine@xpra.org> - 4.0.2-1
