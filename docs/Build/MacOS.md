@@ -24,7 +24,8 @@ At least initially.
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
 ```shell
-curl https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/gtk-osx-setup.sh
+curl -o ~/gtk-osx-setup.sh \
+     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/gtk-osx-setup.sh
 sh gtk-osx-setup.sh
 ```
 This will have installed `jhbuild` in `~/.new_local/bin`, so let's add this to our `$PATH`:
