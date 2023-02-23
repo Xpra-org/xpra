@@ -40,13 +40,14 @@ export PATH=$PATH:~/.new_local/bin/
 curl -o ~/.cache/jhbuildrc-custom \
      https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom-xpra
 ```
+</details>
+
 Bootstrap:
 ```shell
 jhbuild bootstrap-gtk-osx
 ```
 
 Optional: install [pandoc](https://pandoc.org/installing.html#macos)
-</details>
 
 ## Build all the libraries
 ```shell
