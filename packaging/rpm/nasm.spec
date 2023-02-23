@@ -2,12 +2,11 @@
 
 Summary: A portable x86 assembler which uses Intel-like syntax
 Name:    nasm
-Version: 2.15.05
+Version: 2.16.01
 Release: 1%{?dist}
 License: BSD
 URL:     http://www.nasm.us
 Source0: https://www.nasm.us/pub/nasm/releasebuilds/%{version}/%{name}-%{version}.tar.xz
-Patch0:  nasm-SourceSans-font-name.patch
 
 BuildRequires: perl(Env)
 BuildRequires: autoconf
@@ -15,33 +14,25 @@ BuildRequires: automake
 BuildRequires: gcc
 BuildRequires: make
 
-%package rdoff
-Summary: Tools for the RDOFF binary format, sometimes used with NASM
-
 %description
 NASM is the Netwide Assembler, a free portable assembler for the Intel
 80x86 microprocessor series, using primarily the traditional Intel
 instruction mnemonics and syntax.
 
-%description rdoff
-Tools for the operating-system independent RDOFF binary format, which
-is sometimes used with the Netwide Assembler (NASM). These tools
-include linker, library manager, loader, and information dump.
-
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3caf6729c1073bf96629b57cee31eeb54f4f8129b01902c73428836550b30a3f" ]; then
+if [ "${sha256}" != "c77745f4802375efeee2ec5c0ad6b7f037ea9c87c92b149a9637ff099f162558" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%autosetup -p1
+%autosetup
 
 %build
 %configure
 make all %{?_smp_mflags}
 
 %install
-%make_install install_rdf
+%make_install
 
 %files
 %license LICENSE
@@ -51,20 +42,11 @@ make all %{?_smp_mflags}
 %{_mandir}/man1/nasm*
 %{_mandir}/man1/ndisasm*
 
-%files rdoff
-%{_bindir}/ldrdf
-%{_bindir}/rdf2bin
-%{_bindir}/rdf2ihx
-%{_bindir}/rdf2com
-%{_bindir}/rdfdump
-%{_bindir}/rdflib
-%{_bindir}/rdx
-%{_bindir}/rdf2ith
-%{_bindir}/rdf2srec
-%{_mandir}/man1/rd*
-%{_mandir}/man1/ld*
-
 %changelog
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 2.16.01-1
+- new upstream release
+- rdoff package removed
+
 * Thu Nov 04 2021 Antoine Martin <antoine@xpra.org> - 2.15.05-1
 - new upstream release
 
