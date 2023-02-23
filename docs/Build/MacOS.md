@@ -52,7 +52,7 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 ## Build all the libraries
 ```shell
 jhbuild update
-jhbuild build
+SETUPTOOLS_USE_DISTUTILS=stdlib jhbuild build
 #some python libraries have to be installed via pip in a jhbuild shell:
 jhbuild shell
 pip3 install --prefix $JHBUILD_PREFIX packaging
