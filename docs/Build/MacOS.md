@@ -52,12 +52,12 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 ## Build all the libraries
 ```shell
 jhbuild update
-SETUPTOOLS_USE_DISTUTILS=stdlib jhbuild build
-#some python libraries have to be installed via pip:
+jhbuild build
+#some python libraries have to be installed via pip in a jhbuild shell:
 jhbuild shell
-pip3 install --prefix /Users/macos/gtk/inst/ packaging
-pip3 install --prefix /Users/macos/gtk/inst/ parsing
-pip3 install --prefix /Users/macos/gtk/inst/ typing_extensions
+pip3 install --prefix $JHBUILD_PREFIX packaging
+pip3 install --prefix $JHBUILD_PREFIX parsing
+pip3 install --prefix $JHBUILD_PREFIX typing_extensions
 ```
 
 ## Build and Package Xpra
