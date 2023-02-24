@@ -379,6 +379,7 @@ class SoundSink(SoundPipeline):
             #"processing-deadline",
             "qos", "render-delay", "sync",
             "throttle-time", "ts-offset",
+            ignore_missing=True
             )
         return info
 

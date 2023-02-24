@@ -295,7 +295,7 @@ class Pipeline(GObject.GObject):
         log("do_parse_element_message%s", (message, name, props))
 
 
-    def get_element_properties(self, element, *properties):
+    def get_element_properties(self, element, *properties, ignore_missing=False):
         info = {}
         for x in properties:
             try:
@@ -303,7 +303,7 @@ class Pipeline(GObject.GObject):
                 if v>=0:
                     info[x] = v
             except TypeError as e:
-                if first_time("gst-property-%s" % x):
+                if not ignore_missing and first_time("gst-property-%s" % x):
                     log("'%s' not found in %r", x, self)
                     log.warn("Warning: %s", e)
             except Exception as e:
