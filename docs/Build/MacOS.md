@@ -59,6 +59,7 @@ pip3 install --prefix $JHBUILD_PREFIX packaging
 pip3 install --prefix $JHBUILD_PREFIX parsing
 pip3 install --prefix $JHBUILD_PREFIX typing_extensions
 ```
+(building from the 3.1.x branch also requires `lz4` and `numpy`)
 
 ## Build and Package Xpra
 ```shell
