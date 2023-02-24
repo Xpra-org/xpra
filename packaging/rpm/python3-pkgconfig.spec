@@ -32,6 +32,11 @@ If pkg-config is not on the path, raises EnvironmentError.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "deb4163ef11f75b520d822d9505c1f462761b4309b1bb713d08689759ea8b899" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %autosetup -n %{srcname}-%{version}
 # We need to keep egg-info as a directory
 # https://github.com/sdispater/poetry/issues/866
