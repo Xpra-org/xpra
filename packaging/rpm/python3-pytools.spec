@@ -60,7 +60,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Wed Feb 22 2022 Antoine Martin <antoine@xpra.org> - 2022.1.14-1
+* Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 2022.1.14-1
 - new upstream release
 
 * Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.1.13-1
