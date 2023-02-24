@@ -1,11 +1,11 @@
 %define _disable_source_fetch 0
 %global srcname pkgconfig
-%{?python_provide:%python_provide python3-%{srcname}}
 
 Name:           python3-%{srcname}
 Version:        1.5.5
 Release:        1%{?dist}
 Summary:        Python interface to the pkg-config command line tool
+%{?python_provide:%python_provide python3-%{srcname}}
 
 License:        MIT
 URL:            https://github.com/matze/pkgconfig
