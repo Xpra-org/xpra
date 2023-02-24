@@ -4,7 +4,7 @@ if [ -z "${DYLD_FALLBACK_LIBRARY_PATH}" ]; then
 	export DYLD_FALLBACK_LIBRARY_PATH="${JHBUILD_PREFIX}/lib/"
 fi
 
-PYTHON="${PYTHON:=python}"
+export PYTHON="${PYTHON:=python3}"
 PYTHON_MAJOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
 PYTHON_MINOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
 
