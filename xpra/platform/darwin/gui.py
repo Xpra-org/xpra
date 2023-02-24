@@ -44,6 +44,7 @@ notifylog = Logger("osx", "notify")
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
+EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", False)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 WHEEL = envbool("XPRA_WHEEL", True)
@@ -775,10 +776,11 @@ class ClientExtras(object):
         self.client = None
 
     def ready(self):
-        try:
-            self.setup_event_listener()
-        except:
-            log.error("Error setting up OSX event listener", exc_info=True)
+        if EVENT_LISTENER:
+            try:
+                self.setup_event_listener()
+            except:
+                log.error("Error setting up OSX event listener", exc_info=True)
 
     def setup_event_listener(self):
         log("setup_event_listener()")
