@@ -1,21 +1,38 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
 from xpra.os_util import PYTHON3
-from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
+from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE, FLAGS_RENCODEPLUS
 from xpra.util import envbool
 
 log = Logger("network", "protocol")
 
 #those are also modified from the command line switch:
 use_rencode = envbool("XPRA_USE_RENCODER", True)
+use_rencodeplus = envbool("XPRA_USE_RENCODEPLUS", True)
 use_bencode = envbool("XPRA_USE_BENCODER", True)
 use_yaml    = envbool("XPRA_USE_YAML", True)
+
+
+has_rencodeplus = False
+rencodeplus_dumps, rencodeplus_loads, rencodeplus_version = None, None, None
+def init_rencodeplus():
+    global use_rencodeplus, has_rencodeplus, rencodeplus_dumps, rencodeplus_loads, rencodeplus_version
+    try:
+        from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
+        rencodeplus_dumps = rencodeplus.dumps
+        rencodeplus_loads = rencodeplus.loads
+        rencodeplus_version = rencodeplus.__version__
+        has_rencodeplus = True
+    except ImportError:
+        return
+    use_rencodeplus = has_rencodeplus and use_rencodeplus
+    log.warn("init_rencodeplus() use_rencodeplus=%s", use_rencodeplus)
 
 
 has_rencode = None
@@ -92,10 +109,14 @@ def init_yaml():
     log("packet encoding: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
 
 def init():
+    init_rencodeplus()
     init_rencode()
     init_bencode()
     init_yaml()
 init()
+
+def do_rencodeplus(data):
+    return rencodeplus_dumps(data), FLAGS_RENCODEPLUS
 
 def do_bencode(data):
     return bencode(data), FLAGS_BENCODE
@@ -108,6 +129,10 @@ def do_yaml(data):
 
 
 def get_packet_encoding_caps():
+    rp = {"" : use_rencodeplus}
+    if has_rencodeplus:
+        assert rencode_version is not None
+        rp["version"]    = rencodeplus_version
     r = {"" : use_rencode}
     if has_rencode:
         assert rencode_version is not None
@@ -121,6 +146,7 @@ def get_packet_encoding_caps():
         assert yaml_version is not None
         y["version"] = yaml_version
     return {
+            "rencodeplus"           : rp,
             "rencode"               : r,
             "bencode"               : b,
             "yaml"                  : y,
@@ -128,12 +154,13 @@ def get_packet_encoding_caps():
 
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ("rencode", "bencode", "yaml")
+ALL_ENCODERS = ("rencode", "bencode", "rencodeplus", "yaml")
 
 #order for performance:
-PERFORMANCE_ORDER = ["rencode", "bencode", "yaml"]
+PERFORMANCE_ORDER = ["rencodeplus", "rencode", "bencode", "yaml"]
 
 _ENCODERS = {
+             "rencodeplus" : do_rencodeplus, 
              "rencode"   : do_rencode,
              "bencode"   : do_bencode,
              "yaml"      : do_yaml,
@@ -141,13 +168,15 @@ _ENCODERS = {
 
 def get_enabled_encoders(order=ALL_ENCODERS):
     enabled = [x for x,b in {
+                "rencodeplus"           : use_rencodeplus,
                 "rencode"               : use_rencode,
                 "bencode"               : use_bencode,
                 "yaml"                  : use_yaml,
                 }.items() if b]
-    log("get_enabled_encoders(%s) enabled=%s", order, enabled)
+    r = [x for x in order if x in enabled]
+    log.warn("get_enabled_encoders(%s)=%s enabled=%s", order, r, enabled)
     #order them:
-    return [x for x in order if x in enabled]
+    return r
 
 
 def get_encoder(e):
@@ -164,6 +193,8 @@ def get_encoder_name(e):
 
 
 def get_packet_encoding_type(protocol_flags):
+    if protocol_flags & FLAGS_RENCODEPLUS:
+        return "rencodeplus"
     if protocol_flags & FLAGS_RENCODE:
         return "rencode"
     if protocol_flags & FLAGS_YAML:
@@ -184,6 +215,12 @@ class InvalidPacketEncodingException(Exception):
 def decode(data, protocol_flags):
     if isinstance(data, memoryview):
         data = data.tobytes()
+    if protocol_flags & FLAGS_RENCODEPLUS:
+        if not has_rencodeplus:
+            raise InvalidPacketEncodingException("rencodeplus is not available")
+        if not use_rencodeplus:
+            raise InvalidPacketEncodingException("rencodeplus is disabled")
+        return list(rencodeplus_loads(data))
     if protocol_flags & FLAGS_RENCODE:
         if not has_rencode:
             raise InvalidPacketEncodingException("rencode is not available")
