@@ -927,6 +927,9 @@ fi
     avoid errors when there is no keyboard config
     fallback keycode mapping errors
 - build, packaging and platforms:
+    support the latest version of gtk-mac-bundler
+    pyobjc crash workarounds
+    Cython 3.0.0b1 compatibility
     support for RHEL 9.x and clones
     missing systray dependency on Debian and Ubuntu
     build errors with latest Python
@@ -937,6 +940,7 @@ fi
     missing checksums and dependencies for some RPM spec files
     Python2 compatibility fixes
 - network:
+    add rencodeplus
     better compatibility with newer versions: emulate the `command` Posix command
     handle version generic requests
     websocket fixes: python2 compatibility, error handler
