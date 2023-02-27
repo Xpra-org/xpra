@@ -511,6 +511,16 @@ if "pdf-doc" in sys.argv:
     sys.exit(0)
 
 if sys.argv[1]=="unittests":
+    #do we need to patch for older versions of Cython?
+    try:
+        import cython
+        cv = int(cython.__version__.split('.')[0])
+    except (ValueError, ImportError):
+        cv = 0
+    if cv!=0:
+        print(f"WARNING: applying `cython0.patch` to support Cython {cv}")
+        cmd = ["patch", "-p1", "--input", "./packaging/debian/xpra/patches/cython0.patch"]
+        subprocess.Popen(cmd).wait(10)
     os.execv("./tests/unittests/run", ["run"] + sys.argv[2:])
 assert "unittests" not in sys.argv, sys.argv
 
