@@ -1,0 +1,20 @@
+diff --git a/xpra/x11/bindings/xwait.pyx b/xpra/x11/bindings/xwait.pyx
+index f1613c16f..df5dcfefc 100644
+--- a/xpra/x11/bindings/xwait.pyx
++++ b/xpra/x11/bindings/xwait.pyx
+@@ -33,13 +33,13 @@ cdef end(msg, int code = exit_code):
+     exit_event.set()
+ 
+ 
+-cdef int x11_io_error_handler(Display *display) noexcept:
++cdef int x11_io_error_handler(Display *display):
+     global message
+     message = b"X11 fatal IO error"
+     exit_code = 0
+     return 0
+ 
+-cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept:
++cdef int x11_error_handler(Display *display, XErrorEvent *event):
+     #X11 error handler called (ignored)
+     return 0
+ 
