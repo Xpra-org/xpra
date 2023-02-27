@@ -23,6 +23,10 @@ xpra (4.4.4-1) UNRELEASED; urgency=low
     - `HTTP` proxy type
     - unused field prevented serialization
   * platforms, packaging and build:
+    - support the latest version of gtk-mac-bundler
+    - Cython 3.0.0b1 compatibility
+    - pyobjc crash workarounds
+    - library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
     - build errors with latest Python
     - build warnings with C++ modules on MS Windows
     - pycuda errors locating the CUDA path
@@ -45,7 +49,7 @@ xpra (4.4.4-1) UNRELEASED; urgency=low
     - log the packet header failure message
     - logging formatting error
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 18 Feb 2023 22:40:56 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Feb 2023 00:36:59 +0700
 
 xpra (4.4.3-1) UNRELEASED; urgency=low
   * platforms, packaging and build:

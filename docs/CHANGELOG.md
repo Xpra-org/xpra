@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.4] 2023-02-18
+## [4.4.4] 2023-02-28
 * major fixes:
     * focus [change failures](https://github.com/Xpra-org/xpra/commit/1f12618fccf62516e0c6e71c7b3a87fc18f287cb), [errors with OR windows](https://github.com/Xpra-org/xpra/commit/0137db7f29243d0a1417e56398499b58776d379c)
     * [dpi validation failures](https://github.com/Xpra-org/xpra/commit/cb6ac21da03a19660217d456607676334d4eeda1)
@@ -25,6 +25,10 @@
     * [`HTTP` proxy type](https://github.com/Xpra-org/xpra/commit/cc1a1fa922b39b8a684eb243df1be942b3d409f8)
     * [unused field prevented serialization](https://github.com/Xpra-org/xpra/commit/7206fce761ac522aa2b2774508310bd84a2e5f0c)
 * platforms, packaging and build:
+    * [support](https://github.com/Xpra-org/xpra/commit/d5d6c6927eb529f2846024897b84e1d41b4d6931) the [latest version of gtk-mac-bundler](https://github.com/Xpra-org/xpra/commit/c3e4fd2d945463810b7b504c2d748aa1b6eff975)
+    * [Cython 3.0.0b1 compatibility](https://github.com/Xpra-org/xpra/commit/9b4d2e65c73eefd0619160f15ac7b9b50c96b98c)
+    * pyobjc crash workarounds: [NSWorkspace](https://github.com/Xpra-org/xpra/commit/0b9801d7b69efdc388097c2f0339eed625b05e1e), [event listener](https://github.com/Xpra-org/xpra/commit/06b9d9089a7cfb95c9275e2fe0f74a8b2548985f)
+    * library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
     * [build errors with latest Python](https://github.com/Xpra-org/xpra/commit/0c12d0d636e222b22752a995fe345703ba97bb52)
     * [build warnings with C++ modules on MS Windows](https://github.com/Xpra-org/xpra/commit/c90ddb7167c0009ce9d8bab1e3693194b7b20c9d)
     * [pycuda errors locating the CUDA path](https://github.com/Xpra-org/xpra/commit/5fabc7787b22db8a50f6371b052901538e9cc948)

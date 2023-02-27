@@ -638,7 +638,7 @@ fi
 
 
 %changelog
-* Sat Feb 18 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
+* Tue Feb 28 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
 - major fixes:
    focus change failures, errors with OR windows
    dpi validation failures
@@ -663,6 +663,10 @@ fi
    `HTTP` proxy type
    unused field prevented serialization
 - platforms, packaging and build:
+   support the latest version of gtk-mac-bundler
+   Cython 3.0.0b1 compatibility
+   pyobjc crash workarounds
+   library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
    build errors with latest Python
    build warnings with C++ modules on MS Windows
    pycuda errors locating the CUDA path
