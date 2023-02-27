@@ -435,23 +435,23 @@ def get_output_colorspace(encoding, csc):
     return "NV12"
 
 
-cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf):
+cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) noexcept:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.sequence_callback(vf)
 
-cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp):
+cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) noexcept:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.decode_callback(pp)
 
-cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi):
+cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) noexcept:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
-cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op):
+cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) noexcept:
     #av1 specific, we don't care
     return 1
 
-cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg):
+cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) noexcept:
     log(f"getseimsg_cb {seimsg.sei_message_count} sei messages")
     #void *pSEIData                  #OUT: SEI Message Data
     #CUSEIMESSAGE *pSEIMessage       #OUT: SEI Message Info

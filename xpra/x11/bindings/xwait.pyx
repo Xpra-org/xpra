@@ -33,13 +33,13 @@ cdef end(msg, int code = exit_code):
     exit_event.set()
 
 
-cdef int x11_io_error_handler(Display *display):
+cdef int x11_io_error_handler(Display *display) noexcept:
     global message
     message = b"X11 fatal IO error"
     exit_code = 0
     return 0
 
-cdef int x11_error_handler(Display *display, XErrorEvent *event):
+cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept:
     #X11 error handler called (ignored)
     return 0
 

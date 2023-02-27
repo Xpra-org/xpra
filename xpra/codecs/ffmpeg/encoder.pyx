@@ -1161,7 +1161,7 @@ cdef list_options(void *obj, const AVClass *av_class, int skip=1):
         list_options(child, child_class, skip-1)
 
 
-cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
+cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) noexcept:
     global GEN_TO_ENCODER
     encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
     #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
