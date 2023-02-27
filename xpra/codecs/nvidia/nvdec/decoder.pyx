@@ -99,9 +99,9 @@ cdef extern from "nvcuvid.h":
                                     #-1=unpaired field)                                                                        */
         CUvideotimestamp timestamp  #OUT: Presentation time stamp
 
-    ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *)
-    ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *)
-    ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *)
+    ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *) except 0
+    ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *) except 0
+    ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *) except 0
     ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*)
     ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *)
 
@@ -435,15 +435,15 @@ def get_output_colorspace(encoding, csc):
     return "NV12"
 
 
-cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) noexcept:
+cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.sequence_callback(vf)
 
-cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) noexcept:
+cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.decode_callback(pp)
 
-cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) noexcept:
+cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
