@@ -53,8 +53,8 @@ if [ "$MATCH" != "0" ]; then
 else
 	#do we need to patch for older versions of Cython?
 	CM=`python3 -c "import cython;print(cython.__version__.split('.')[0])"`
-	if [ "${CM}" == "2" ]; then
-		echo "cython2.patch" >> packaging/debian/xpra/patches/series
+	if [ "${CM}" == "0" ]; then
+		echo "cython0.patch" >> packaging/debian/xpra/patches/series
 	fi
 	if [ `arch` == "aarch64" ]; then
 		debuild --no-lintian -us -uc -b
