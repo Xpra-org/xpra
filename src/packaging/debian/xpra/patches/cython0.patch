@@ -1,0 +1,26 @@
+diff --git b/xpra/codecs/enc_ffmpeg/encoder.pyx a/xpra/codecs/enc_ffmpeg/encoder.pyx
+index a488711e2..f7912fbcf 100644
+--- b/xpra/codecs/enc_ffmpeg/encoder.pyx
++++ a/xpra/codecs/enc_ffmpeg/encoder.pyx
+@@ -710,7 +710,7 @@ cdef list_options(void *obj, const AVClass *av_class):
+         list_options(child, child_class)
+ 
+ 
+-cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) noexcept:
++cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
+     global GEN_TO_ENCODER
+     encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
+     #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
+diff --git b/xpra/x11/gtk3/gdk_bindings.pyx a/xpra/x11/gtk3/gdk_bindings.pyx
+index 4948aef6c..af37c3181 100644
+--- b/xpra/x11/gtk3/gdk_bindings.pyx
++++ a/xpra/x11/gtk3/gdk_bindings.pyx
+@@ -1049,7 +1049,7 @@ cdef object _gw(display, Window xwin):
+ 
+ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
+                                     GdkEvent * gdk_event,
+-                                    void * userdata) noexcept with gil:
++                                    void * userdata) with gil:
+     cdef object event_args
+     cdef object pyev
+     cdef double start = monotonic_time()
