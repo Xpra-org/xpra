@@ -837,7 +837,7 @@ cdef object _gw(display, Window xwin):
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     GdkEvent * gdk_event,
-                                    void * userdata) with gil:
+                                    void * userdata) noexcept with gil:
     cdef object event_args
     cdef object pyev
     cdef double start = monotonic()

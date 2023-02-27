@@ -1,0 +1,46 @@
+diff --git b/xpra/codecs/enc_ffmpeg/encoder.pyx a/xpra/codecs/enc_ffmpeg/encoder.pyx
+index b499dd9b0..b8e914bf2 100644
+--- b/xpra/codecs/enc_ffmpeg/encoder.pyx
++++ a/xpra/codecs/enc_ffmpeg/encoder.pyx
+@@ -1161,7 +1161,7 @@ cdef list_options(void *obj, const AVClass *av_class, int skip=1):
+         list_options(child, child_class, skip-1)
+ 
+ 
+-cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) noexcept:
++cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
+     global GEN_TO_ENCODER
+     encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
+     #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
+diff --git b/xpra/x11/bindings/xwait.pyx a/xpra/x11/bindings/xwait.pyx
+index f1613c16f..df5dcfefc 100644
+--- b/xpra/x11/bindings/xwait.pyx
++++ a/xpra/x11/bindings/xwait.pyx
+@@ -33,13 +33,13 @@ cdef end(msg, int code = exit_code):
+     exit_event.set()
+ 
+ 
+-cdef int x11_io_error_handler(Display *display) noexcept:
++cdef int x11_io_error_handler(Display *display):
+     global message
+     message = b"X11 fatal IO error"
+     exit_code = 0
+     return 0
+ 
+-cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept:
++cdef int x11_error_handler(Display *display, XErrorEvent *event):
+     #X11 error handler called (ignored)
+     return 0
+ 
+diff --git b/xpra/x11/gtk3/gdk_bindings.pyx a/xpra/x11/gtk3/gdk_bindings.pyx
+index dc887cc20..110cac70f 100644
+--- b/xpra/x11/gtk3/gdk_bindings.pyx
++++ a/xpra/x11/gtk3/gdk_bindings.pyx
+@@ -837,7 +837,7 @@ cdef object _gw(display, Window xwin):
+ 
+ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
+                                     GdkEvent * gdk_event,
+-                                    void * userdata) noexcept with gil:
++                                    void * userdata) with gil:
+     cdef object event_args
+     cdef object pyev
+     cdef double start = monotonic()
