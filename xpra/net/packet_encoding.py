@@ -174,7 +174,7 @@ def get_enabled_encoders(order=ALL_ENCODERS):
                 "yaml"                  : use_yaml,
                 }.items() if b]
     r = [x for x in order if x in enabled]
-    log.warn("get_enabled_encoders(%s)=%s enabled=%s", order, r, enabled)
+    log("get_enabled_encoders(%s)=%s enabled=%s", order, r, enabled)
     #order them:
     return r
 
