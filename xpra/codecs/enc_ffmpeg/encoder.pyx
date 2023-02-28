@@ -165,7 +165,7 @@ cdef extern from "libavcodec/avcodec.h":
     int AV_CODEC_FLAG_PASS2
     int AV_CODEC_FLAG_GRAY
     int AV_CODEC_FLAG_PSNR
-    int AV_CODEC_FLAG_TRUNCATED
+    #int AV_CODEC_FLAG_TRUNCATED
     int AV_CODEC_FLAG_INTERLACED_DCT
     int AV_CODEC_FLAG_GLOBAL_HEADER
 
@@ -173,7 +173,7 @@ cdef extern from "libavcodec/avcodec.h":
 
     int AV_CODEC_CAP_DRAW_HORIZ_BAND
     int AV_CODEC_CAP_DR1
-    int AV_CODEC_CAP_TRUNCATED
+    #int AV_CODEC_CAP_TRUNCATED
     int AV_CODEC_CAP_DELAY
     int AV_CODEC_CAP_SMALL_LAST_FRAME
     int AV_CODEC_CAP_SUBFRAMES
@@ -182,10 +182,10 @@ cdef extern from "libavcodec/avcodec.h":
     int AV_CODEC_CAP_FRAME_THREADS
     int AV_CODEC_CAP_SLICE_THREADS
     int AV_CODEC_CAP_PARAM_CHANGE
-    int AV_CODEC_CAP_AUTO_THREADS
+    #int AV_CODEC_CAP_AUTO_THREADS
     int AV_CODEC_CAP_VARIABLE_FRAME_SIZE
-    int AV_CODEC_CAP_INTRA_ONLY
-    int AV_CODEC_CAP_LOSSLESS
+    #int AV_CODEC_CAP_INTRA_ONLY
+    #int AV_CODEC_CAP_LOSSLESS
 
     ctypedef struct AVFrame:
         uint8_t     **data
@@ -541,7 +541,7 @@ cdef extern from "libavformat/avformat.h":
     int AVFMT_FLAG_FLUSH_PACKETS    #Flush the AVIOContext every packet
     int AVFMT_FLAG_BITEXACT
     int AVFMT_FLAG_SORT_DTS         #try to interleave outputted packets by dts (using this flag can slow demuxing down)
-    int AVFMT_FLAG_PRIV_OPT         #Enable use of private options by delaying codec open (this could be made default once all code is converted)
+    #int AVFMT_FLAG_PRIV_OPT         #Enable use of private options by delaying codec open (this could be made default once all code is converted)
     int AVFMT_FLAG_FAST_SEEK        #Enable fast, but inaccurate seeks for some formats
 
     int AVFMT_NOFILE                #Demuxer will use avio_open, no opened file should be provided by the caller
@@ -728,7 +728,7 @@ CODEC_FLAGS = {
     AV_CODEC_FLAG_PASS2              : "PASS2",
     AV_CODEC_FLAG_GRAY               : "GRAY",
     AV_CODEC_FLAG_PSNR               : "PSNR",
-    AV_CODEC_FLAG_TRUNCATED          : "TRUNCATED",
+    #AV_CODEC_FLAG_TRUNCATED          : "TRUNCATED",
     AV_CODEC_FLAG_INTERLACED_DCT     : "INTERLACED_DCT",
     AV_CODEC_FLAG_GLOBAL_HEADER      : "GLOBAL_HEADER",
     }
@@ -750,7 +750,7 @@ FMT_FLAGS = {
     AVFMT_FLAG_FLUSH_PACKETS   : "FLUSH_PACKETS",
     AVFMT_FLAG_BITEXACT        : "BITEXACT",
     AVFMT_FLAG_SORT_DTS        : "SORT_DTS",
-    AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
+    #AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
     AVFMT_FLAG_FAST_SEEK       : "FAST_SEEK",
     }
 
@@ -778,7 +778,7 @@ AVFMT = {
 CAPS = {
     AV_CODEC_CAP_DRAW_HORIZ_BAND        : "DRAW_HORIZ_BAND",
     AV_CODEC_CAP_DR1                    : "DR1",
-    AV_CODEC_CAP_TRUNCATED              : "TRUNCATED",
+    #AV_CODEC_CAP_TRUNCATED              : "TRUNCATED",
     AV_CODEC_CAP_DELAY                  : "DELAY",
     AV_CODEC_CAP_SMALL_LAST_FRAME       : "SMALL_LAST_FRAME",
     AV_CODEC_CAP_SUBFRAMES              : "SUBFRAMES",
@@ -787,10 +787,10 @@ CAPS = {
     AV_CODEC_CAP_FRAME_THREADS          : "FRAME_THREADS",
     AV_CODEC_CAP_SLICE_THREADS          : "SLICE_THREADS",
     AV_CODEC_CAP_PARAM_CHANGE           : "PARAM_CHANGE",
-    AV_CODEC_CAP_AUTO_THREADS           : "AUTO_THREADS",
+    #AV_CODEC_CAP_AUTO_THREADS           : "AUTO_THREADS",
     AV_CODEC_CAP_VARIABLE_FRAME_SIZE    : "VARIABLE_FRAME_SIZE",
-    AV_CODEC_CAP_INTRA_ONLY             : "INTRA_ONLY",
-    AV_CODEC_CAP_LOSSLESS               : "LOSSLESS",
+    #AV_CODEC_CAP_INTRA_ONLY             : "INTRA_ONLY",
+    #AV_CODEC_CAP_LOSSLESS               : "LOSSLESS",
     }
 log("CODEC_CAP:")
 print_nested_dict(dict((hex(abs(k)),v) for k,v in CAPS.items()), print_fn=log.debug)
