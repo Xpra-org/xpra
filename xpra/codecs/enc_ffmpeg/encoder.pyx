@@ -203,7 +203,7 @@ cdef extern from "libavcodec/avcodec.h":
         int width
         int height
         AVPixelFormat pix_fmt
-        int thread_safe_callbacks
+        #int thread_safe_callbacks
         int thread_count
         int thread_type
         int flags
@@ -898,7 +898,7 @@ cdef class Encoder(object):
         self.video_ctx.height = self.height
         self.video_ctx.bit_rate = max(200000, self.width*self.height*4) #4 bits per pixel
         self.video_ctx.pix_fmt = self.pix_fmt
-        self.video_ctx.thread_safe_callbacks = 1
+        #self.video_ctx.thread_safe_callbacks = 1
         #if oformat.flags & AVFMT_GLOBALHEADER:
         if self.encoding not in ("mpeg1", "mpeg2"):
             self.video_ctx.thread_type = THREAD_TYPE
