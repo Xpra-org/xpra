@@ -38,7 +38,7 @@ BLACKLIST = {
         #"NVIDIA Corporation",
         ],
     "platform"  : [
-        "darwin",           #latest builds fail to render on MacOS
+        #"darwin",
         ],
     }
 
