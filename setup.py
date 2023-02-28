@@ -669,10 +669,16 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
     pkgc = pkgconfig(*pkgconfig_names, optimize=optimize)
     for addto in ("extra_link_args", "extra_compile_args"):
         value = kwargs.pop(addto, None)
-        if value is not None:
+        if value:
             if isinstance(value, str):
                 value = (value, )
             add_to_keywords(pkgc, addto, *value)
+            for v in value:
+                if v.startswith("-Wno-error="):
+                    #make sure to remove the corresponding switch that may enable it:
+                    warning = v.split("-Wno-error=", 1)[1]
+                    if remove_from_keywords(pkgc, addto, f"-W{warning}"):
+                        print(f"removed -W{warning} for {modname}")
     pkgc.update(kwargs)
     if WIN32 and kwargs.get("language", "")=="c++":
         #all C++ modules trigger an address warning in the module initialization code:
@@ -695,8 +701,11 @@ def add_to_keywords(kw, key, *args):
         values.append(arg)
 def remove_from_keywords(kw, key, value):
     values = kw.get(key)
+    i = 0
     while values and value in values:
         values.remove(value)
+        i += 1
+    return i
 
 
 def checkdirs(*dirs):
@@ -2300,9 +2309,20 @@ toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
 #network:
+#workaround this warning on MS Windows with Cython 3.0.0b1:
+# "warning: comparison of integer expressions of different signedness: 'long unsigned int' and 'long int' [-Wsign-compare]"
+#simply adding -Wno-error=sign-compare is not enough:
+try:
+    import cython
+    print(f"found Cython version {cython.__version__}")
+    cv = int(cython.__version__.split('.')[0])
+except (ValueError, ImportError):
+    print(f"WARNING: unable to detect Cython version")
+    cv = 0
+ECA_WIN32SIGN = ["-Wno-error"] if (WIN32 and cv==3) else []
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
-tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3)
+tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
@@ -2317,7 +2337,7 @@ toggle_packages(ssh_ENABLED, "xpra.net.ssh")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(qrencode_ENABLED, "xpra.net.qrcode")
-tace(qrencode_ENABLED, "xpra.net.qrcode.qrencode", extra_link_args="-lqrencode", extra_compile_args=["-Wno-error=sign-compare"] if WIN32 else [])
+tace(qrencode_ENABLED, "xpra.net.qrcode.qrencode", extra_link_args="-lqrencode", extra_compile_args=ECA_WIN32SIGN)
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
 toggle_packages(vsock_ENABLED, "xpra.net.vsock")
 tace(vsock_ENABLED, "xpra.net.vsock.vsock")
