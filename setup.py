@@ -2265,8 +2265,16 @@ toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 
 #network:
+try:
+    import cython
+    print(f"found Cython version {cython.__version__}")
+    cv = int(cython.__version__.split('.')[0])
+except (ValueError, ImportError):
+    print(f"WARNING: unable to detect Cython version")
+    cv = 0
+ECA_WIN32SIGN = ["-Wno-error"] if (WIN32 and cv==3) else []
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
-tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3)
+tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
@@ -2276,7 +2284,7 @@ toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
-tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode")
+tace(qrencode_ENABLED, "xpra.net.qrencode", extra_link_args="-lqrencode", extra_compile_args=ECA_WIN32SIGN)
 tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
 tace(vsock_ENABLED, "xpra.net.vsock")
 tace(lz4_ENABLED, "xpra.net.lz4", "liblz4")
