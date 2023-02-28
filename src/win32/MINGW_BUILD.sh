@@ -27,7 +27,7 @@ export PYTHONIOENCODING=UTF-8
 
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
-BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
+BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x265 --without-cuda_rebuild"
 
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
