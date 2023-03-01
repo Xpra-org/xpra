@@ -22,7 +22,6 @@ from xpra.server.window.window_source import (
     LOG_ENCODERS,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
-from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
@@ -1965,6 +1964,7 @@ class WindowVideoSource(WindowSource):
         try:
             start = monotonic()
             if not scroll_data:
+                from xpra.server.window.motion import ScrollData #@UnresolvedImport
                 scroll_data = ScrollData()
                 self.scroll_data = scroll_data
                 scrolllog("new scroll data: %s", scroll_data)

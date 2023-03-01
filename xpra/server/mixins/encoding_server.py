@@ -139,12 +139,12 @@ class EncodingServer(StubServerMixin):
 
         add_encodings("rgb24", "rgb32")
         try:
-            from xpra.server.window.motion import ScrollData
+            from xpra.server.window.motion import ScrollData  # @UnresolvedImport
             assert ScrollData
             add_encoding("scroll")
-        except ImportError as e:
+        except (ImportError, TypeError) as e:
             log.error("Error: 'scroll' encoding is not available")
-            log.estr(" %s", e)
+            log.estr(e)
         lossless = []
         if "scroll" in self.allowed_encodings and "scroll" not in self.lossless_mode_encodings:
             #scroll is lossless, but it also uses other picture codecs
