@@ -644,7 +644,26 @@ def checkdirs(*dirs):
 
 def CC_is_clang():
     cc = os.environ.get("CC", "gcc")
-    return cc.find("clang")>=0
+    if cc.find("clang")>=0:
+        return True
+    r, _, err = get_status_output([cc, "-v"])
+    if r!=0:
+        #not sure!
+        return False
+    V_LINE = "Apple clang version "
+    tmp_version = []
+    for line in err.splitlines():
+        if not line.startswith(V_LINE):
+            continue
+        v_str = line[len(V_LINE):].strip().split(" ")[0]
+        for p in v_str.split("."):
+            try:
+                tmp_version.append(int(p))
+            except ValueError:
+                break
+            print("found Apple clang version: %s" % ".".join(str(x) for x in tmp_version))
+            return True
+    return False
 
 GCC_VERSION = ()
 def get_gcc_version():
@@ -1950,7 +1969,8 @@ if gtk_x11_ENABLED:
     ace("xpra.x11.gtk3.gdk_display_source", "gdk-3.0")
     ace("xpra.x11.gtk3.gdk_bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage")
 
-tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo")
+tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo",
+     extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
 
 
 
