@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.4] 2023-02-28
+## [4.4.4] 2023-03-01
 * major fixes:
     * focus [change failures](https://github.com/Xpra-org/xpra/commit/1f12618fccf62516e0c6e71c7b3a87fc18f287cb), [errors with OR windows](https://github.com/Xpra-org/xpra/commit/0137db7f29243d0a1417e56398499b58776d379c)
     * [dpi validation failures](https://github.com/Xpra-org/xpra/commit/cb6ac21da03a19660217d456607676334d4eeda1)
@@ -26,8 +26,9 @@
     * [unused field prevented serialization](https://github.com/Xpra-org/xpra/commit/7206fce761ac522aa2b2774508310bd84a2e5f0c)
 * platforms, packaging and build:
     * [support](https://github.com/Xpra-org/xpra/commit/d5d6c6927eb529f2846024897b84e1d41b4d6931) the [latest version of gtk-mac-bundler](https://github.com/Xpra-org/xpra/commit/c3e4fd2d945463810b7b504c2d748aa1b6eff975)
-    * [Cython 3.0.0b1 compatibility](https://github.com/Xpra-org/xpra/commit/9b4d2e65c73eefd0619160f15ac7b9b50c96b98c)
+    * [Cython 3.0.0b1 compatibility](https://github.com/Xpra-org/xpra/commit/9b4d2e65c73eefd0619160f15ac7b9b50c96b98c) and [warnings](https://github.com/Xpra-org/xpra/commit/9f657419fdf20c20515ba5bc40d283284816adf1) for [evdi](https://github.com/Xpra-org/xpra/commit/b7481ea7d2ec1717f3ac6cd41a82f65812df62b5) [build](https://github.com/Xpra-org/xpra/commit/ca8c13991428ec348695b9b78d240a5644b07c3a), [C++11](https://github.com/Xpra-org/xpra/commit/6f10807ae7963102d62f0ec664c7cd6381f37f0d), etc
     * pyobjc crash workarounds: [NSWorkspace](https://github.com/Xpra-org/xpra/commit/0b9801d7b69efdc388097c2f0339eed625b05e1e), [event listener](https://github.com/Xpra-org/xpra/commit/06b9d9089a7cfb95c9275e2fe0f74a8b2548985f)
+    * [clang compatibility](https://github.com/Xpra-org/xpra/commit/bba4c1d9a26504e7a39fc656dd70186a2b2b70e3)
     * library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
     * [build errors with latest Python](https://github.com/Xpra-org/xpra/commit/0c12d0d636e222b22752a995fe345703ba97bb52)
     * [build warnings with C++ modules on MS Windows](https://github.com/Xpra-org/xpra/commit/c90ddb7167c0009ce9d8bab1e3693194b7b20c9d)
@@ -50,6 +51,7 @@
     * [clarify tray vs system-tray](https://github.com/Xpra-org/xpra/commit/1658770c3e9cf482030fc09d69e43a5edb6f92a7)
     * [log the packet header failure message](https://github.com/Xpra-org/xpra/commit/992e0c38cf9c5d22337e4c2f1fdb6a18b2b67797)
     * [logging formatting error](https://github.com/Xpra-org/xpra/commit/1dcd3c1bae9899c99f9ffd0022af73cfa017a4ba)
+    * [ignore empty content-type lines](https://github.com/Xpra-org/xpra/commit/9d08beda01fa6339abb92bba66cb3923d02f1539)
 
 ## [4.4.3] 2022-11-27
 * platforms, packaging and build:

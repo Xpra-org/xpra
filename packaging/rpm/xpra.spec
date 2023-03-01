@@ -638,7 +638,7 @@ fi
 
 
 %changelog
-* Tue Feb 28 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
+* Wed Mar 01 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
 - major fixes:
    focus change failures, errors with OR windows
    dpi validation failures
@@ -664,8 +664,9 @@ fi
    unused field prevented serialization
 - platforms, packaging and build:
    support the latest version of gtk-mac-bundler
-   Cython 3.0.0b1 compatibility
+   Cython 3.0.0b1 compatibility and warnings for evdi build, C++11, etc
    pyobjc crash workarounds
+   clang compatibility
    library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
    build errors with latest Python
    build warnings with C++ modules on MS Windows
@@ -688,6 +689,7 @@ fi
    clarify tray vs system-tray
    log the packet header failure message
    logging formatting error
+   ignore empty content-type lines
 
 * Sun Nov 27 2022 Antoine Martin <antoine@xpra.org> 4.4.3-10
 - platforms, packaging and build:
