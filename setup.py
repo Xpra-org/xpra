@@ -1978,7 +1978,6 @@ tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3c
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
 
 
-
 #build tests, but don't install them:
 toggle_packages(tests_ENABLED, "unit")
 
@@ -2245,7 +2244,7 @@ toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 
-tace(evdi_ENABLED, "xpra.codecs.evdi.capture,xpra/codecs/evdi/evdi_compat.c", "evdi", language="c++")
+tace(evdi_ENABLED, "xpra.codecs.evdi.capture", "evdi", language="c++")
 toggle_packages(drm_ENABLED, "xpra.codecs.drm")
 tace(drm_ENABLED, "xpra.codecs.drm.drm", "libdrm")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")

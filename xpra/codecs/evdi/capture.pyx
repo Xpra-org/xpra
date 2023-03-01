@@ -125,7 +125,7 @@ cdef extern from "evdi_lib.h":
     evdi_selectable evdi_get_event_ready(evdi_handle handle)
     void evdi_set_logging(evdi_logging evdi_logging)
 
-cdef extern from "evdi_compat.c":
+cdef extern from "evdi_compat.h":
     void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
           const unsigned int edid_length,
           const uint32_t pixel_area_limit,
