@@ -688,6 +688,8 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
         #all C++ modules trigger an address warning in the module initialization code:
         if WIN32:
             add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=address")
+    if get_clang_version()>=(14, ):
+        add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=unreachable-code-fallthrough")
     add_cython_ext(modname, src, **pkgc)
 
 def tace(toggle, *args, **kwargs):
@@ -722,24 +724,34 @@ def CC_is_clang():
     cc = os.environ.get("CC", "gcc")
     if cc.find("clang")>=0:
         return True
+    return get_clang_version()>(0, )
+
+clang_version = None
+def get_clang_version():
+    global clang_version
+    if clang_version is not None:
+        return clang_version
+    cc = os.environ.get("CC", "gcc")
     r, _, err = get_status_output([cc, "-v"])
+    clang_version = (0, )
     if r!=0:
         #not sure!
-        return False
-    V_LINE = "Apple clang version "
-    tmp_version = []
+        return clang_version
     for line in err.splitlines():
-        if not line.startswith(V_LINE):
-            continue
-        v_str = line[len(V_LINE):].strip().split(" ")[0]
-        for p in v_str.split("."):
-            try:
-                tmp_version.append(int(p))
-            except ValueError:
-                break
-            print("found Apple clang version: %s" % ".".join(str(x) for x in tmp_version))
-            return True
-    return False
+        for v_line in ("Apple clang version", "clang version"):
+            if line.startswith(v_line):
+                v_str = line[len(v_line):].strip().split(" ")[0]
+                tmp_version = []
+                for p in v_str.split("."):
+                    try:
+                        tmp_version.append(int(p))
+                    except ValueError:
+                        break
+                print(f"found {v_line}: %s" % ".".join(str(x) for x in tmp_version))
+                clang_version = tuple(tmp_version)
+                return clang_version
+    #not found!
+    return clang_version
 
 
 def get_dummy_driver_version():
@@ -1105,7 +1117,7 @@ def clean():
                    "xpra/x11/bindings/ximage.c",
                    "xpra/x11/bindings/xi2_bindings.c",
                    "xpra/platform/win32/propsys.cpp",
-                   "xpra/platform/darwin/gdk_bindings.c",
+                   "xpra/platform/darwin/gdk3_bindings.c",
                    "xpra/platform/xposix/sd_listen.c",
                    "xpra/platform/xposix/netdev_query.c",
                    "xpra/platform/xposix/proc_libproc.c",
