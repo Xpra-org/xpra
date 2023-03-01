@@ -199,9 +199,9 @@ class X11ServerBase(X11ServerCore):
         xtest = XTestPointerDevice()
         ox, oy = 100, 100
         with xlog:
-            xtest.move_pointer(0, ox, oy)
+            xtest.move_pointer(ox, oy)
         nx, ny = 200, 200
-        self.pointer_device.move_pointer(0, nx, ny)
+        self.pointer_device.move_pointer(nx, ny)
         def verify_uinput_moved():
             pos = None  #@UnusedVariable
             with xswallow:
