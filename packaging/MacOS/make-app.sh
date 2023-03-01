@@ -170,7 +170,7 @@ if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
 	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
 fi
 #we have to make sure we use python2 here (not ported yet):
-PYTHON=${PYTHON} ~/.local/bin/gtk-mac-bundler Xpra.bundle
+gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
 	echo "ERROR: gtk-mac-bundler failed"
 	exit 1
