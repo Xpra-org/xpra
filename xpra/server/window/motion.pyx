@@ -121,7 +121,7 @@ cdef class ScrollData:
             assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
             with nogil:
                 for i in range(height):
-                    a2[i] = <uint64_t> xxh3(buf, row_len)
+                    a2[i] = xxh3(buf, row_len)
                     buf += rowstride
 
 

@@ -7,14 +7,15 @@
 # xxhash wrapper
 
 #cython: wraparound=False
+from libc.stdint cimport uint64_t
 
 cdef extern from "xxhash.h":
-    ctypedef unsigned long long XXH64_hash_t
+    ctypedef uint64_t XXH64_hash_t
     #XXH64_hash_t XXH64(const void* input, size_t length, unsigned long long seed) nogil
     XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
 
 #cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:
 #    return XXH64(input, length, seed)
 
-cdef XXH64_hash_t xxh3(const void* input, size_t length) nogil:
+cdef uint64_t xxh3(const void* input, size_t length) nogil:
     return XXH3_64bits(input, length)
