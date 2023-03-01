@@ -124,8 +124,8 @@ class UInputPointerDevice(UInputDevice):
     def __repr__(self):
         return "UInput pointer device %s" % self.device_path
 
-    def move_pointer(self, x, y, props):
-        log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y)
+    def move_pointer(self, x, y, props=None):
+        log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         #calculate delta:
         with xsync:
             cx, cy = X11Keyboard.query_pointer()
