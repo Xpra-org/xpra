@@ -153,7 +153,7 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	sed -i '' -e "s+pygtk/2.0+cairo+g" Xpra.bundle
 fi
 #we have to make sure we use python2 here (not ported yet):
-PYTHON="${PYTHON}" ~/.local/bin/gtk-mac-bundler Xpra.bundle
+gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
 	echo "ERROR: gtk-mac-bundler failed"
 	exit 1
