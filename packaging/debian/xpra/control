@@ -35,7 +35,7 @@ Build-Depends: debhelper (>= 8)
               ,dh-python
               ,libsystemd-dev
               ,libpam0g-dev
-              ,libprocps-dev
+              ,libproc2-dev | libprocps-dev
               ,liblz4-dev
               ,libbrotli-dev
               ,libqrencode-dev
