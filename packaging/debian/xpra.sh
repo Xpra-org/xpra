@@ -51,11 +51,6 @@ MATCH=`find $REPO_ARCH_PATH/ -name "${DEB_FILENAME}" | wc -l`
 if [ "$MATCH" != "0" ]; then
 	echo "package already exists"
 else
-	#do we need to patch for older versions of Cython?
-	CM=`python3 -c "import cython;print(cython.__version__.split('.')[0])"`
-	if [ "${CM}" == "0" ]; then
-		echo "cython0.patch" >> packaging/debian/xpra/patches/series
-	fi
 	if [ `arch` == "aarch64" ]; then
 		debuild --no-lintian -us -uc -b
 	else
