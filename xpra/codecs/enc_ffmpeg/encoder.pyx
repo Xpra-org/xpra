@@ -106,7 +106,7 @@ cdef extern from "libavformat/avio.h":
     AVIOContext *avio_alloc_context(unsigned char *buffer, int buffer_size, int write_flag,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size) except -1,
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 
 
@@ -710,7 +710,7 @@ cdef list_options(void *obj, const AVClass *av_class):
         list_options(child, child_class)
 
 
-cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) noexcept:
+cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) except -1:
     global GEN_TO_ENCODER
     encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
     #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
