@@ -97,19 +97,19 @@ packages to be installed):
 .SS :DISPLAY[,OPTIONS]
 Local displays: this is the simplest form and is only valid for the
 current local displays of the current user.
-.SS tcp://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
+.SS tcp://[[USERNAME][:PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
 TCP mode uses port numbers and not display numbers. If multiple displays
 are available through a single TCP port (ie: using a proxy server),
 then one can also specify the display number after the port number.
-.SS ssl://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
+.SS ssl://[[USERNAME][:PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
 SSL adds a secure socket layer on top of the TCP mode.
-.SS vsock://[[USERNAME]:[PASSWORD]@]HOST:PORT[/?OPTIONS]
+.SS vsock://[[USERNAME][:PASSWORD]@]HOST:PORT[/?OPTIONS]
 Almost identical to the TCP mode, but using AF_VSOCK for transport.
-.SS ws://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
+.SS ws://[[USERNAME][:PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
 Connect using websocket protocol.
-.SS wss://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
+.SS wss://[[USERNAME][:PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
 Connect using secure websocket protocol. (websocket with SSL)
-.SS ssh://[[USERNAME]:[PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?OPTIONS]
+.SS ssh://[[USERNAME][:PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?OPTIONS]
 Connect using secure shell. (SSH)
 
 Further SSH options can be specified using the \fB--ssh\fP command line option.
@@ -129,7 +129,7 @@ separator.
 The password need only be specified when the server authentication module
 requires it.
 .P
-.SS vnc://[[USERNAME]:[PASSWORD]@]HOST[:VNC_PORT]/
+.SS vnc://[[USERNAME][:PASSWORD]@]HOST[:VNC_PORT]/
 Connect using ther RFB protocol. (aka VNC)
 This mode only works against VNC servers or an xpra server in desktop or
 shadow mode.
