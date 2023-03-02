@@ -102,8 +102,8 @@ cdef extern from "nvcuvid.h":
     ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *) except 0
     ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *) except 0
     ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *) except 0
-    ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*)
-    ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *)
+    ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*) except 0
+    ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *) except 0
 
     ctypedef struct CUVIDEOFORMATEX:
         pass
@@ -447,11 +447,11 @@ cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
-cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) noexcept:
+cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) except 0:
     #av1 specific, we don't care
     return 1
 
-cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) noexcept:
+cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) except 0:
     log(f"getseimsg_cb {seimsg.sei_message_count} sei messages")
     #void *pSEIData                  #OUT: SEI Message Data
     #CUSEIMESSAGE *pSEIMessage       #OUT: SEI Message Info
