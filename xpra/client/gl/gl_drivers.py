@@ -38,7 +38,7 @@ BLACKLIST = {
         #"NVIDIA Corporation",
         ],
     "platform"  : [
-        #"darwin",
+        "darwin",
         ],
     }
 
