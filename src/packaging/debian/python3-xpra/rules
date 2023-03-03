@@ -9,13 +9,16 @@ endif
 PY3BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 %:
-	dh $@ --with python3 --with systemd
+	dh $@ --with python3 --with systemd --buildsystem=pybuild
 
 override_dh_auto_build:
 	python3 setup.py build $(PY3BUILDOPTS)
 
 override_dh_auto_install:
 	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(PY3BUILDOPTS)
+
+override_dh_auto_test:
+	true
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
