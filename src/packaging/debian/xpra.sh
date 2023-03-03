@@ -1,6 +1,8 @@
 #!/bin/bash
 
 eval `dpkg-architecture -s`
+#figure out the distribution's codename:
+CODENAME=`lsb_release -c | awk '{print $2}'`
 
 #find the latest version we can build:
 XPRA_TAR_XZ=`ls ../pkgs/xpra-3.1*.tar.xz | grep -v html5 | sort -V | tail -n 1`
@@ -13,14 +15,21 @@ dirname=`echo ${XPRA_TAR_XZ} | sed 's+../pkgs/++g' | sed 's/.tar.xz//'`
 rm -fr "./${dirname}"
 tar -Jxf ${XPRA_TAR_XZ}
 pushd "./${dirname}"
-ln -sf packaging/debian/xpra ./debian
+echo "building ${dirname} for ${CODENAME} on ${DEB_BUILD_ARCH}"
+
+echo "${CODENAME}" | egrep -q "xenial|bionic|squeeze|buster"
+if [ "$?" == "0" ]; then
+	echo "python2 and python3 builds"
+	ln -sf packaging/debian/xpra ./debian
+else
+	echo "python3 build only"
+	ln -sf packaging/debian/python3-xpra ./debian
+fi
 
 #the control file has a few distribution specific entries
 #ie:
 # '#buster:         ,libturbojpeg0'
 #we uncomment the lines for this specific distro (by adding a new line after "#$DISTRO:"):
-#first figure out the distribution's codename:
-CODENAME=`lsb_release -c | awk '{print $2}'`
 #ie: CODENAME=bionic
 perl -i.bak -pe "s/#${CODENAME}:/#${CODENAME}:\\n/g" debian/control
 
