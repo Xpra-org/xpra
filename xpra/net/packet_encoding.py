@@ -32,7 +32,7 @@ def init_rencodeplus():
     except ImportError:
         return
     use_rencodeplus = has_rencodeplus and use_rencodeplus
-    log.warn("init_rencodeplus() use_rencodeplus=%s", use_rencodeplus)
+    log("init_rencodeplus() use_rencodeplus=%s", use_rencodeplus)
 
 
 has_rencode = None
