@@ -18,6 +18,7 @@ LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
 LDAP_TRACE_LEVEL = envint("XPRA_LDAP_TRACE_LEVEL")
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 LDAP_ENCODING = os.environ.get("XPRA_LDAP_ENCODING", "utf-8")
+LDAP_USERNAME_FORMAT = os.environ.get("XPRA_LDAP_USERNAME_FORMAT", "cn=%username, o=%domain")
 
 
 class Authenticator(SysAuthenticatorBase):
@@ -35,7 +36,7 @@ class Authenticator(SysAuthenticatorBase):
         else:
             default_port = 389
         self.port = int(kwargs.pop("port", default_port))
-        self.username_format = kwargs.pop("username_format", "cn=%username, o=%domain")
+        self.username_format = kwargs.pop("username_format", LDAP_USERNAME_FORMAT)
         #self.username_format = kwargs.pop("username_format", "%username@%domain")
         super().__init__(**kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
