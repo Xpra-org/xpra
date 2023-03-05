@@ -912,7 +912,7 @@ fi
 
 
 %changelog
-* Sat Feb 18 2023 Antoine Martin <antoine@xpra.org> 3.1.4-10.1xpra1
+* Sun Mar 05 2023 Antoine Martin <antoine@xpra.org> 3.1.4-10.1xpra1
 - major fixes:
     correctly wait for worker threads to terminate
     workaround new broken python3-uinput packages on Fedora
@@ -928,10 +928,13 @@ fi
     fallback keycode mapping errors
 - build, packaging and platforms:
     support the latest version of gtk-mac-bundler
-    pyobjc crash workarounds
+    pyobjc libffi crash workarounds
     Cython 3.0.0b1 compatibility
+    ffmpeg v6 compatibility
     support for RHEL 9.x and clones
     missing systray dependency on Debian and Ubuntu
+    build only python3-xpra DEBs for newer distributions
+    DEBs switched to pybuild
     build errors with latest Python
     MS Windows `unregister` class reliably
     MS Windows errors building the C++ modules
@@ -939,6 +942,7 @@ fi
     use standardized paths for new repo build scripts
     missing checksums and dependencies for some RPM spec files
     Python2 compatibility fixes
+    make it possible to override build options on MacOS
 - network:
     add rencodeplus
     better compatibility with newer versions: emulate the `command` Posix command
@@ -950,6 +954,7 @@ fi
     silence OpenSSL3 + pycryptography legacy warning
     workaround for missing paramiko dependency on python3-invoke (ie: Fedora)
     safer paramiko lookup functions
+    ldap 'username_format' option can be set using an environment variable
 - cosmetic:
     more helpful connection failure messages
     handle config file parsing errors more gracefully
