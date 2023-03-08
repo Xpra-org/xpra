@@ -1345,7 +1345,16 @@ class ServerCore(object):
         return {
             "/Status"       : self.http_status_request,
             "/Info"         : self.http_info_request,
+            "/Sessions"     : self.http_404,
+            "/Displays"     : self.http_404,
+            "/Menu"         : self.http_404,
+            "/MenuIcon"     : self.http_404,
+            "/DesktopMenu"  : self.http_404,
+            "/DesktopMenuIcon" : self.http_404,
             }
+
+    def http_404(self, handler):
+        self.send_http_response(self, handler)
 
     def start_http_socket(self, socktype, conn, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
@@ -1420,7 +1429,7 @@ class ServerCore(object):
     def http_status_request(self, handler):
         return self.send_http_response(handler, "ready")
 
-    def send_http_response(self, handler, content, content_type="text/plain"):
+    def send_http_response(self, handler, content=None, content_type="text/plain"):
         if content is None:
             handler.send_response(404)
         else:
