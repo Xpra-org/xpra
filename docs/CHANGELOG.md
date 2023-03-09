@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.4] 2023-03-01
+## [4.4.4] 2023-03-09
 * major fixes:
     * focus [change failures](https://github.com/Xpra-org/xpra/commit/1f12618fccf62516e0c6e71c7b3a87fc18f287cb), [errors with OR windows](https://github.com/Xpra-org/xpra/commit/0137db7f29243d0a1417e56398499b58776d379c)
     * [dpi validation failures](https://github.com/Xpra-org/xpra/commit/cb6ac21da03a19660217d456607676334d4eeda1)
@@ -24,18 +24,22 @@
     * [content-type environment variable parsing](https://github.com/Xpra-org/xpra/commit/8aee194776133c3d82838326391d4ca19fdf12fd)
     * [`HTTP` proxy type](https://github.com/Xpra-org/xpra/commit/cc1a1fa922b39b8a684eb243df1be942b3d409f8)
     * [unused field prevented serialization](https://github.com/Xpra-org/xpra/commit/7206fce761ac522aa2b2774508310bd84a2e5f0c)
+    * [support environment configuration for ldap authentication module](https://github.com/Xpra-org/xpra/commit/69c47ff2afce15f7b1216d457dd19b2377bf94c3)
 * platforms, packaging and build:
     * [support](https://github.com/Xpra-org/xpra/commit/d5d6c6927eb529f2846024897b84e1d41b4d6931) the [latest version of gtk-mac-bundler](https://github.com/Xpra-org/xpra/commit/c3e4fd2d945463810b7b504c2d748aa1b6eff975)
     * [Cython 3.0.0b1 compatibility](https://github.com/Xpra-org/xpra/commit/9b4d2e65c73eefd0619160f15ac7b9b50c96b98c) and [warnings](https://github.com/Xpra-org/xpra/commit/9f657419fdf20c20515ba5bc40d283284816adf1) for [evdi](https://github.com/Xpra-org/xpra/commit/b7481ea7d2ec1717f3ac6cd41a82f65812df62b5) [build](https://github.com/Xpra-org/xpra/commit/ca8c13991428ec348695b9b78d240a5644b07c3a), [C++11](https://github.com/Xpra-org/xpra/commit/6f10807ae7963102d62f0ec664c7cd6381f37f0d), etc
     * pyobjc crash workarounds: [NSWorkspace](https://github.com/Xpra-org/xpra/commit/0b9801d7b69efdc388097c2f0339eed625b05e1e), [event listener](https://github.com/Xpra-org/xpra/commit/06b9d9089a7cfb95c9275e2fe0f74a8b2548985f)
     * [clang compatibility](https://github.com/Xpra-org/xpra/commit/bba4c1d9a26504e7a39fc656dd70186a2b2b70e3)
+    * [workaround for OpenGL support with GTK3 on MacOS](https://github.com/Xpra-org/xpra/commit/d772a66e346965b9b7dd7c38104ba0f85c24a96c)
     * library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
+    * [clipboard errors on MacOS past a certain size](https://github.com/Xpra-org/xpra/commit/dd264aca572cca242a7087d2eadb02050f9dee18)
     * [build errors with latest Python](https://github.com/Xpra-org/xpra/commit/0c12d0d636e222b22752a995fe345703ba97bb52)
     * [build warnings with C++ modules on MS Windows](https://github.com/Xpra-org/xpra/commit/c90ddb7167c0009ce9d8bab1e3693194b7b20c9d)
     * [pycuda errors locating the CUDA path](https://github.com/Xpra-org/xpra/commit/5fabc7787b22db8a50f6371b052901538e9cc948)
     * [use symlinks for CUDA path on MS Windows](https://github.com/Xpra-org/xpra/commit/f3140b3826f3a6b1df3d56422d35dc970076fee1)
     * [builds without CUDA](https://github.com/Xpra-org/xpra/commit/d4ff2b0a6a966dffdc1856ea5d3cc5a57f2239bf)
     * [lintian path updates](https://github.com/Xpra-org/xpra/commit/ac92b754d9e0e30302e659443c1f4ebe319eefa9)
+    * [libproc build errors on Debian](https://github.com/Xpra-org/xpra/commit/f881f505383ca3f1811e7d608d38c66cde87b0ac)
     * [remove reference to outdated path](https://github.com/Xpra-org/xpra/commit/d77ab1d7dab4bda5ef0fb8a5ee71c528b2fed493)
     * [version update script lost track of cups backend](https://github.com/Xpra-org/xpra/commit/b68cefaa6708498ce0b73cbc15e2229e6cbfb312)
     * [test used incorrect command line arguments](https://github.com/Xpra-org/xpra/commit/457728619f64603926e2e28d9700aea9d834f4f0)

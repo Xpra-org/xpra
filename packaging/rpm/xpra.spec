@@ -638,7 +638,7 @@ fi
 
 
 %changelog
-* Wed Mar 01 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
+* Thu Mar 09 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
 - major fixes:
    focus change failures, errors with OR windows
    dpi validation failures
@@ -662,18 +662,22 @@ fi
    content-type environment variable parsing
    `HTTP` proxy type
    unused field prevented serialization
+   support environment configuration for ldap authentication module
 - platforms, packaging and build:
    support the latest version of gtk-mac-bundler
    Cython 3.0.0b1 compatibility and warnings for evdi build, C++11, etc
    pyobjc crash workarounds
    clang compatibility
+   workaround for OpenGL support with GTK3 on MacOS
    library updates for binary builds (MacOS and MS Windows): OpenSSL 3, ffmpeg
+   clipboard errors on MacOS past a certain size
    build errors with latest Python
    build warnings with C++ modules on MS Windows
    pycuda errors locating the CUDA path
    use symlinks for CUDA path on MS Windows
    builds without CUDA
    lintian path updates
+   libproc build errors on Debian
    remove reference to outdated path
    version update script lost track of cups backend
    test used incorrect command line arguments
