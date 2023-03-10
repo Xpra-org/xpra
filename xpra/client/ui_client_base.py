@@ -490,7 +490,7 @@ class UIXpraClient(ClientBaseClass):
         bits = c.intget("python.bits", 0)
         bitsstr = "" if bits==0 else f" {bits}-bit"
         log.info(f"Xpra {mode} server version {std(r)}{bitsstr}")
-        if i:
+        if i and i!="unknown":
             log.info(f" running on {std(i)}")
         if c.boolget("desktop") or c.boolget("shadow"):
             v = c.intpair("actual_desktop_size")
