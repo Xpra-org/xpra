@@ -35,7 +35,7 @@ DEFAULT_ENCODER_OPTIONS = {
         "max-bframes" : 0,
         "tune"  : 3,    #low-power
         #"rate-control" : 8, #qvbr
-        "compliance-mode" : 1,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
+        "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
         #"keyframe-period"   : 9999,
         "prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
         #"quality-factor" : 10,
