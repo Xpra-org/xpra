@@ -5,13 +5,16 @@
 
 from queue import Queue, Empty
 
-from xpra.util import typedict
+from xpra.util import typedict, envint
 from xpra.gst_common import import_gst
 from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
 from xpra.log import Logger
 
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
+
+FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
+FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 1)
 
 
 def get_version():
@@ -71,10 +74,11 @@ class VideoPipeline(Pipeline):
         if r!=GST_FLOW_OK:
             log.error("Error: unable to push image buffer")
             return None
+        timeout = FRAME_QUEUE_INITIAL_TIMEOUT if self.frames==0 else FRAME_QUEUE_TIMEOUT
         try:
-            return self.frame_queue.get(timeout=2 if self.frames==0 else 1)
+            return self.frame_queue.get(timeout=timeout)
         except Empty:
-            log.error("Error: frame queue timeout")
+            log.error(f"Error: frame queue timeout ({timeout}s)")
             return None
 
 
