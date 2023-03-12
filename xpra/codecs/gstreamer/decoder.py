@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gst_common import STREAM_TYPE, GST_FORMAT_BYTES, make_buffer, has_plugins
@@ -24,14 +25,25 @@ assert get_version and get_type and init_module and cleanup_module
 
 def find_codecs(options):
     codecs = []
-    for encoding, elements in options.items():
-        if any(has_plugins(x) for x in elements):
+    for encoding, element in options.items():
+        if has_plugins(element):
             codecs.append(encoding)
     return tuple(codecs)
 
-codec_options = dict((enc, (f"{enc}dec", )) for enc in ("vp8", "vp9", "av1"))
+
+DEFAULT_MAPPINGS = "vp8:vp8dec,vp9:vp9dec"
 if not WIN32:
-    codec_options["h264"] = ("avdec_h264", )
+    DEFAULT_MAPPINGS += ",av1:av1dec,h264:avdec_h264"
+
+dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS", DEFAULT_MAPPINGS)
+codec_options = {}
+for mapping in dm.split(","):   #ie: mapping="vp8:vp8dec"
+    try:
+        enc, element = mapping.split(":", 1)
+    except IndexError:
+        log.warn(f"Warning: invalid decoder mapping {mapping}")
+    else:
+        codec_options[enc] = element    #ie: codec_options["vp8"] = "vp8dec"
 CODECS = find_codecs(codec_options)
 
 
