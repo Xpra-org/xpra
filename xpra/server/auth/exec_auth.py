@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 from subprocess import Popen
 from gi.repository import GLib
 
-from xpra.util import envint, typedict
-from xpra.os_util import OSX
+from xpra.util import envint, typedict, alnum, std, first_time
+from xpra.os_util import OSX, shellsub
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
@@ -16,31 +17,36 @@ from xpra.platform.features import EXECUTABLE_EXTENSION
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
 
+def get_default_auth_dialog():
+    if os.name == "posix":
+        auth_dialog = "/usr/libexec/xpra/auth_dialog"
+    else:
+        from xpra.platform.paths import get_app_dir  #pylint: disable=import-outside-toplevel
+        auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
+    if EXECUTABLE_EXTENSION:
+        #ie: add ".exe" on MS Windows
+        auth_dialog += "."+EXECUTABLE_EXTENSION
+    log(f"auth_dialog={auth_dialog!r}")
+    if not os.path.exists(auth_dialog) and first_time("auth-dialog-not-found"):
+        log.warn(f"Warning: authentication dialog command {auth_dialog!r} does not exist")
+    return auth_dialog
+
+
 class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
-        log("exec.Authenticator(%s)", kwargs)
-        self.command = kwargs.pop("command", "")
+        log(f"exec.Authenticator({kwargs})")
+        self.command = shlex.split(kwargs.pop("command", "${auth_dialog} ${info} ${timeout}"))
         self.timeout = kwargs.pop("timeout", TIMEOUT)
         self.timer = None
         self.proc = None
         self.timeout_event = False
         if not self.command:
-            if os.name == "posix":
-                auth_dialog = "/usr/libexec/xpra/auth_dialog"
-            else:
-                from xpra.platform.paths import get_app_dir  #pylint: disable=import-outside-toplevel
-                auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
-            if EXECUTABLE_EXTENSION:
-                #ie: add ".exe" on MS Windows
-                auth_dialog += ".%s" % EXECUTABLE_EXTENSION
-            log("auth_dialog=%s", auth_dialog)
-            if os.path.exists(auth_dialog):
-                self.command = auth_dialog
-        assert self.command, "exec authentication module is not configured correctly: no command specified"
+            self.command = get_default_auth_dialog()
         connection = kwargs.get("connection")
-        log("exec connection info: %s", connection)
-        assert connection, "connection object is missing"
+        if not connection:
+            raise ValueError("connection object is missing")
+        log(f"exec connection info: {connection}")
         self.connection_str = str(connection)
         super().__init__(**kwargs)
 
@@ -48,42 +54,58 @@ class Authenticator(SysAuthenticator):
         return False
 
     def authenticate(self, caps : typedict) -> bool:
-        info = "Connection request from %s" % self.connection_str
-        cmd = [self.command, info, str(self.timeout)]
-        with Popen(cmd) as proc:
-            self.proc = proc
-            log("authenticate(..) Popen(%s)=%s", cmd, proc)
-            #if required, make sure we kill the command when it times out:
-            if self.timeout>0:
-                self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
-                if not OSX:
-                    #python on macos may set a 0 returncode when we use poll()
-                    #so we cannot use the ChildReaper on macos,
-                    #and we can't cancel the timer
-                    getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+        info = f"Connection request from {self.connection_str}"
+        subs = {
+            "auth_dialog"   : get_default_auth_dialog(),
+            "info"          : info,
+            "timeout"       : self.timeout,
+            "username"      : alnum(self.username),
+            "prompt"        : std(self.prompt),
+            }
+        cmd = tuple(shellsub(v, subs) for v in self.command)
+        log(f"authenticate(..) shellsub({self.command}={cmd}")
+        #[self.command, info, str(self.timeout)]
+        try:
+            with Popen(cmd) as proc:
+                self.proc = proc
+                log(f"authenticate(..) Popen({cmd})={proc}")
+                #if required, make sure we kill the command when it times out:
+                if self.timeout>0:
+                    self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
+                    if not OSX:
+                        #python on macos may set a 0 returncode when we use poll()
+                        #so we cannot use the ChildReaper on macos,
+                        #and we can't cancel the timer
+                        getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+        except OSError as e:
+            log(f"error running {cmd!r}", exc_info=True)
+            log.error("Error: cannot run exec authentication module command")
+            log.error(f" {cmd!r}")
+            log.estr(e)
+            return False
         v = proc.returncode
-        log("authenticate(..) returncode(%s)=%s", cmd, v)
+        log(f"authenticate(..) returncode({cmd})={v}")
         if self.timeout_event:
             return False
         return v==0
 
     def command_ended(self, *args):
         t = self.timer
-        log("exec auth.command_ended%s timer=%s", args, t)
+        log(f"exec auth.command_ended{args} timer={t}")
         if t:
             self.timer = None
             GLib.source_remove(t)
 
     def command_timedout(self):
         proc = self.proc
-        log("exec auth.command_timedout() proc=%s", proc)
+        log(f"exec auth.command_timedout() proc={proc}")
         self.timeout_event = True
         self.timer = None
         if proc:
             try:
                 proc.terminate()
             except Exception:
-                log("error trying to terminate exec auth process %s", proc, exc_info=True)
+                log(f"error trying to terminate exec auth process {proc}", exc_info=True)
 
     def __repr__(self):
         return "exec"
