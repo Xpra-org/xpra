@@ -732,8 +732,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         else:
             exit_code = ExitCode.CONNECTION_LOST
         if self.exit_code is None:
-            exit_str = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
-            self.warn_and_quit(exit_code, exit_str)
+            msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
+            self.warn_and_quit(exit_code, msg)
 
 
     ########################################
