@@ -604,11 +604,13 @@ def shellsub(s, subs=None):
         for var,value in subs.items():
             try:
                 if isinstance(s, bytes):
-                    s = s.replace(f"${var}".encode(), str(value).encode())
-                    s = s.replace(("${%s}" % var).encode(), str(value).encode())
+                    vbin = str(value).encode()
+                    s = s.replace(f"${var}".encode(), vbin)
+                    s = s.replace(("${%s}" % var).encode(), vbin)
                 else:
-                    s = s.replace(f"${var}", str(value))
-                    s = s.replace("${%s}" % var, str(value))
+                    vstr = str(value)
+                    s = s.replace(f"${var}", vstr)
+                    s = s.replace("${%s}" % var, vstr)
             except (TypeError, ValueError):
                 raise Exception(f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}") from None
     return s
