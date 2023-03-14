@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -8,7 +8,7 @@
 import os.path
 from time import monotonic
 
-from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict
+from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict, SESSION_BUSY
 from xpra.os_util import load_binary_file
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
@@ -670,10 +670,27 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"lock set to {self.lock}"
 
     def control_command_set_sharing(self, sharing):
-        self.sharing = parse_bool("sharing", sharing)
+        sharing = parse_bool("sharing", sharing)
+        message = f"sharing set to {self.sharing}"
+        if sharing==self.sharing:
+            return message
+        self.sharing = sharing
         self.setting_changed("sharing", sharing is not False)
         self.setting_changed("sharing-toggle", sharing is None)
-        return f"sharing set to {self.sharing}"
+        if not sharing:
+            #there can only be one ui client now,
+            #disconnect all but the first ui_client:
+            #(using the 'counter' value to figure out who was first connected)
+            ui_clients = dict((getattr(ss, "counter", 0), proto)
+                              for proto, ss in tuple(self._server_sources.items())
+                              if getattr(ss, "ui_client", False))
+            n = len(ui_clients)
+            if n>1:
+                for c in sorted(ui_clients)[1:]:
+                    proto = ui_clients[c]
+                    self.disconnect_client(proto, SESSION_BUSY, "this session is no longer shared")
+                message += f", disconnected {n-1} clients"
+        return message
 
     def control_command_set_ui_driver(self, uuid):
         ss = [s for s in self._server_sources.values() if s.uuid==uuid]
