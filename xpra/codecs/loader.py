@@ -387,6 +387,8 @@ def main(args):
         if verbose:
             format_string = LOG_FORMAT
             log.enable_debug()
+            from xpra.codecs.codec_checks import log as check_log
+            check_log.enable_debug()
         enable_color(format_string=format_string)
 
         if len(args)>1:
