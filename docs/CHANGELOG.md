@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.4.5] 2023-03-14
+* TODO
+
 ## [4.4.4] 2023-03-09
 * major fixes:
     * focus [change failures](https://github.com/Xpra-org/xpra/commit/1f12618fccf62516e0c6e71c7b3a87fc18f287cb), [errors with OR windows](https://github.com/Xpra-org/xpra/commit/0137db7f29243d0a1417e56398499b58776d379c)
