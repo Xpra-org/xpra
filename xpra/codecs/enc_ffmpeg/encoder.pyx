@@ -1699,7 +1699,7 @@ cdef class Encoder:
             assert len(istrides)==self.nplanes, "image strides does not have %i values! (found %s)" % (self.nplanes, len(istrides))
             #populate the avframe:
             ret = av_frame_make_writable(self.av_frame)
-            if not ret!=0:
+            if ret<0:
                 raise Exception(av_error_str(ret))
             for i in range(4):
                 if i<self.nplanes:
