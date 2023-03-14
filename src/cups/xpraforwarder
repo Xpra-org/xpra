@@ -7,7 +7,7 @@
 # It is based on pdf2email by Georde Notaras.
 #
 # Copyright (c) George Notaras <George [D.O.T.] Notaras [A.T.] gmail [D.O.T.] com>
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 #
 # License: GPLv2
 #
@@ -42,7 +42,7 @@ except ImportError:
     from urllib.parse import urlparse, parse_qs
 
 
-__version__ = "3.1.4"
+__version__ = "3.1.5"
 
 
 #Writes a syslog entry (msg) at the default facility:

@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.4
+%define version 3.1.5
 
 %{!?with_python2: %define with_python2 1}
 %{!?with_python3: %define with_python3 1}
@@ -912,6 +912,9 @@ fi
 
 
 %changelog
+* Tue Mar 14 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
+- TODO
+
 * Sun Mar 05 2023 Antoine Martin <antoine@xpra.org> 3.1.4-10.1xpra1
 - major fixes:
     correctly wait for worker threads to terminate
