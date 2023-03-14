@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -38,6 +38,9 @@ from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 DEF NVJPEG_MAX_COMPONENT = 4
 
 
+#we could easily use ctypes here:
+#(this would change from a compile time to runtime failure
+# if the library + headers are not present)
 cdef extern from "nvjpeg.h":
     ctypedef void* cudaStream_t
     nvjpegStatus_t nvjpegDecode(nvjpegHandle_t handle, nvjpegJpegState_t jpeg_handle,
