@@ -1701,9 +1701,6 @@ cdef class Encoder:
             assert len(pixels)==self.nplanes, "image pixels does not have %i planes! (found %s)" % (self.nplanes, len(pixels))
             assert len(istrides)==self.nplanes, "image strides does not have %i values! (found %s)" % (self.nplanes, len(istrides))
             #populate the avframe:
-            ret = av_frame_make_writable(self.av_frame)
-            if ret<0:
-                raise Exception(av_error_str(ret))
             for i in range(4):
                 if i<self.nplanes:
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
