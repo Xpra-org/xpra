@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import weakref
 
 
@@ -67,6 +68,15 @@ def get_subsampling_divs(pixel_format):
 def preforder(encodings):
     encs = set(encodings)
     return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
+
+
+def get_profile(options, encoding="h264", csc_mode="YUV420P", default_profile="constrained-baseline"):
+    return (
+        options.strget(f"{encoding}.{csc_mode}.profile") or
+        options.strget(f"{encoding}.profile") or
+        os.environ.get(f"XPRA_{encoding.upper()}_{csc_mode}_PROFILE") or
+        default_profile
+        )
 
 
 RGB_FORMATS = (

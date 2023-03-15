@@ -13,7 +13,7 @@ log = Logger("encoder", "x264")
 
 from xpra.util import envint, envbool, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
-from xpra.codecs.codec_constants import video_spec
+from xpra.codecs.codec_constants import video_spec, get_profile
 from collections import deque
 
 from libc.string cimport memset
@@ -24,7 +24,6 @@ MAX_DELAYED_FRAMES = envint("XPRA_X264_MAX_DELAYED_FRAMES", 4)
 THREADS = envint("XPRA_X264_THREADS", min(4, max(1, os.cpu_count()//2)))
 MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
-PROFILE = os.environ.get("XPRA_X264_PROFILE")
 SUPPORT_24BPP = envbool("XPRA_X264_SUPPORT_24BPP")
 SUPPORT_30BPP = envbool("XPRA_X264_SUPPORT_30BPP", True)
 TUNE = os.environ.get("XPRA_X264_TUNE")
@@ -468,18 +467,6 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     logger("X264: %r", s)
 
 
-cdef _get_profile(options, csc_mode):
-    #use the environment as default if present:
-    profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
-    #now see if the client has requested a different value:
-    profile = options.strget("h264.%s.profile" % csc_mode, profile)
-    if profile is None:
-        profile = options.strget("h264.profile", profile)
-    if profile is None:
-        return None
-    return profile
-
-
 cdef class Encoder:
     cdef unsigned long frames
     cdef x264_t *context
@@ -545,7 +532,7 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
-        self.profile = _get_profile(options, self.src_format)
+        self.profile = get_profile(options, csc_mode=self.src_format, default_profile=os.environ.get("XPRA_X264_PROFILE"))
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)

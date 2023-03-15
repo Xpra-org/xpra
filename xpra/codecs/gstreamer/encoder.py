@@ -8,7 +8,7 @@ from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import parse_simple_dict, envbool, csv, roundup
-from xpra.codecs.codec_constants import video_spec
+from xpra.codecs.codec_constants import video_spec, get_profile
 from xpra.gst_common import (
     import_gst, normv,
     STREAM_TYPE, BUFFER_FORMAT,
@@ -180,14 +180,6 @@ def init_all_specs(*exclude):
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
 
-def get_profile(options, csc_mode, default_profile="constrained-baseline"):
-    return (
-        options.strget(f"h264.{csc_mode}.profile") or
-        options.strget("h264.profile") or
-        os.environ.get(f"XPRA_X264_{csc_mode}_PROFILE") or
-        default_profile
-        )
-
 
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
@@ -237,7 +229,7 @@ class Encoder(VideoPipeline):
             encoder_str,
             ]
         if self.encoding=="h264":
-            profile = get_profile(options, self.colorspace)
+            profile = get_profile(options, self.encoding, self.colorspace, "constrained-baseline")
             elements.append(f"video/x-{self.encoding},profile={profile},stream-format=avc,alignment=au")
         elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
