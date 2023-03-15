@@ -1928,13 +1928,6 @@ class ServerCore:
         #skip the authentication module we have "passed" already:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
 
-        client_expects_challenge = c.strget("challenge") is not None
-        if client_expects_challenge and not remaining_authenticators:
-            authlog.warn("Warning: client expects an authentication challenge,")
-            authlog.warn(" sending a fake one")
-            send_fake_challenge()
-            return
-
         authlog("processing authentication with %s, remaining=%s, digest_modes=%s, salt_digest_modes=%s",
                 proto.authenticators, remaining_authenticators, digest_modes, salt_digest_modes)
         #verify each remaining authenticator:
@@ -1943,18 +1936,18 @@ class ServerCore:
                 authlog(f"authenticator[{index}]={authenticator} (already passed)")
                 continue
             req = authenticator.requires_challenge()
-            sent = authenticator.challenge_sent
-            authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={sent}")
+            csent = authenticator.challenge_sent
+            authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
             if not req:
                 #this authentication module does not need a challenge
-                #(ie: "peercred" or "none")
+                #(ie: "peercred", "exec" or "none")
                 if not authenticator.authenticate(c):
                     auth_failed(f"{authenticator} authentication failed")
                     return
                 authenticator.passed = True
                 authlog(f"authentication passed for {authenticator} (no challenge provided)")
                 continue
-            if not authenticator.challenge_sent:
+            if not csent:
                 #we'll re-schedule this when we call send_challenge()
                 #as the authentication module is free to take its time
                 self.cancel_verify_connection_accepted(proto)
@@ -1992,7 +1985,13 @@ class ServerCore:
             if not authenticator.authenticate(c):
                 auth_failed(AUTHENTICATION_FAILED)
                 return
-        authlog("all authentication modules passed")
+        client_expects_challenge = c.strget("challenge") is not None
+        if client_expects_challenge:
+            authlog.warn("Warning: client expects an authentication challenge,")
+            authlog.warn(" sending a fake one")
+            send_fake_challenge()
+            return
+        authlog(f"all {len(proto.authenticators)} authentication modules passed")
         capabilities = packet[1]
         c = typedict(capabilities)
         self.auth_verified(proto, c, auth_caps)
