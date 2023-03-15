@@ -556,10 +556,7 @@ class ServerBase(ServerBaseClass):
                 def add_encoding_caps(d):
                     updict(d, "encoding", codec_versions, "version")
                     for k,v in self.get_encoding_info().items():
-                        if k=="":
-                            k = "encodings"
-                        else:
-                            k = f"encodings.{k}"
+                        k = "encodings" if not k else f"encodings.{k}"
                         d[k] = v
                 if server_source.encodings_packet:
                     #we can send it later,
