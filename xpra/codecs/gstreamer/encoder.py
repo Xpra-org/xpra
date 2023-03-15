@@ -240,7 +240,7 @@ class Encoder(VideoPipeline):
             encoder_str,
             ]
         if self.encoding=="h264":
-            profile = get_profile(self.colorspace) or "constrained-baseline"
+            profile = get_profile(options, self.colorspace) or "constrained-baseline"
             elements.append(f"video/x-{self.encoding},profile={profile},stream-format=avc,alignment=au")
         elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
