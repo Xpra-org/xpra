@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,14 +9,15 @@
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.os_util import strtobytes, bytestostr, hexstr
-from xpra.util import parse_simple_dict
+from xpra.util import parse_simple_dict, typedict
 from xpra.net.digest import verify_digest
 
 
 def parse_auth_line(line):
     ldata = line.split(b"|")
-    assert len(ldata)>=2, "not enough fields: %i" % (len(ldata))
-    log("found %s fields", len(ldata))
+    if len(ldata)<2:
+        raise ValueError(f"not enough fields: {len(ldata)}")
+    log(f"found {len(ldata)} fields")
     #parse fields:
     username = ldata[0]
     password = ldata[1]
@@ -53,7 +54,7 @@ class Authenticator(FileAuthenticatorBase):
         for line in data.splitlines():
             i += 1
             line = line.strip()
-            log("line %s: %s", i, line)
+            log(f"line {i}: {line!r}")
             if not line or line.startswith(b"#"):
                 continue
             try:
@@ -61,16 +62,16 @@ class Authenticator(FileAuthenticatorBase):
                 if v:
                     username, password, uid, gid, displays, env_options, session_options = v
                     if username in auth_data:
-                        log.error("Error: duplicate entry for username '%s' in '%s'", username, self.password_filename)
+                        log.error(f"Error: duplicate entry for username {username!r} in {self.password_filename!r}")
                     else:
                         auth_data[username] = password, uid, gid, displays, env_options, session_options
             except Exception as e:
                 log("parsing error", exc_info=True)
-                log.error("Error parsing password file '%s' at line %i:", self.password_filename, i)
-                log.error(" '%s'", bytestostr(line))
+                log.error(f"Error parsing password file {self.password_filename!r} at line {i}:")
+                log.error(f" '{bytestostr(line)}'")
                 log.estr(e)
                 continue
-        log("parsed auth data from file %s: %s", self.password_filename, auth_data)
+        log(f"parsed auth data from file {self.password_filename!r}: {auth_data}")
         return auth_data
 
     def get_auth_info(self):
@@ -81,13 +82,15 @@ class Authenticator(FileAuthenticatorBase):
 
     def get_password(self):
         entry = self.get_auth_info()
-        log("get_password() found entry=%s", entry)
+        log(f"get_password() found entry={entry}")
         if entry is None:
             return None
         return entry[0]
 
-    def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
-        log("authenticate_hmac(%r, %r)", challenge_response, client_salt)
+    def authenticate_hmac(self, caps : typedict) -> bool:
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
+        log(f"multifile_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")
         self.sessions = None
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
@@ -97,7 +100,7 @@ class Authenticator(FileAuthenticatorBase):
         entry = self.get_auth_info()
         if entry is None:
             log.warn("Warning: authentication failed")
-            log.warn(" no password for '%s' in '%s'", self.username, self.password_filename)
+            log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return None
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry

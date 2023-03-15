@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,25 +7,28 @@
 
 from xpra.net.digest import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, log
-from xpra.util import obsc
+from xpra.util import obsc, typedict
 
 
 class Authenticator(FileAuthenticatorBase):
 
-    def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
-        log("file_auth.authenticate_hmac(%r, %r)", challenge_response, client_salt)
+    def authenticate_hmac(self, caps : typedict) -> bool:
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
+        log(f"file_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
         salt = self.get_response_salt(client_salt)
         password = self.get_password()
-        log("authenticate_hmac() get_password()=%s", obsc(password))
+        log("authenticate_hmac() get_password()="+obsc(password))
         if not password:
             log.warn("Warning: authentication failed")
-            log.warn(" no password for '%s' in '%s'", self.username, self.password_filename)
+            log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return False
+        log.error(f"verify_digest({self.digest}, {password}, {salt}, {challenge_response})")
         if not verify_digest(self.digest, password, salt, challenge_response):
-            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
+            log.warn(f"Warning: {self.digest!r} challenge for {self.username!r} does not match")
             return False
         return True
 
