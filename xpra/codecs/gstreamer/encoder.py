@@ -180,6 +180,17 @@ def init_all_specs(*exclude):
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
 
+def get_profile(options, csc_mode):
+    #use the environment as default if present:
+    profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
+    #now see if the client has requested a different value:
+    profile = options.strget("h264.%s.profile" % csc_mode, profile)
+    if profile is None:
+        profile = options.strget("h264.profile", profile)
+    if profile is None:
+        return None
+    return profile
+
 
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
@@ -217,7 +228,7 @@ class Encoder(VideoPipeline):
             "XBGR"      : "xBGR",
             "YUV400"    : "GRAY8",
             #"RGB8P"
-            }[self.colorspace] 
+            }[self.colorspace]
         CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
         encoder_str = self.encoder_element
         if self.encoder_options:
@@ -227,8 +238,11 @@ class Encoder(VideoPipeline):
             f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
             "videoconvert",
             encoder_str,
-            "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
             ]
+        if self.encoding=="h264":
+            profile = get_profile(self.colorspace) or "constrained-baseline"
+            elements.append(f"video/x-{self.encoding},profile={profile},stream-format=avc,alignment=au")
+        elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
