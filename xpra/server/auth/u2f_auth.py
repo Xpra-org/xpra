@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ import binascii
 import base64
 from hashlib import sha256
 
-from xpra.util import csv, engs
+from xpra.util import csv, engs, typedict
 from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, strtobytes, POSIX
 from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticator):
         self.public_keys = {}
         key_strs = {}
         if key_hexstring:
-            log("u2f_auth: public key from configuration=%s", key_hexstring)
+            log("u2f_auth: public key from configuration="+key_hexstring)
             key_strs["command-option"] = key_hexstring
         #try to load public keys from the user conf dir(s):
         if getuid()==0 and POSIX:
@@ -41,19 +41,19 @@ class Authenticator(SysAuthenticator):
         else:
             uid = getuid()
         conf_dirs = get_user_conf_dirs(uid)
-        log("u2f: will try to load public keys from %s", csv(conf_dirs))
+        log("u2f: will try to load public keys from "+csv(conf_dirs))
         #load public keys:
         for d in conf_dirs:
             ed = osexpand(d)
             if os.path.exists(ed) and os.path.isdir(ed):
                 pub_keyfiles = glob.glob(os.path.join(ed, "u2f*-pub.hex"))
-                log("u2f: keyfiles(%s)=%s", ed, pub_keyfiles)
+                log(f"u2f: keyfiles({ed})={pub_keyfiles}")
                 for f in sorted(pub_keyfiles):
                     key_hexstring = load_binary_file(f)
                     if key_hexstring:
                         key_hexstring = key_hexstring.rstrip(b" \n\r")
                         key_strs[f] = key_hexstring
-                        log("u2f_auth: loaded public key from file '%s': %s", f, key_hexstring)
+                        log(f"u2f_auth: loaded public key from file {f!r}: {key_hexstring}")
         #parse public key data:
         #pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives.serialization import load_der_public_key
@@ -62,19 +62,19 @@ class Authenticator(SysAuthenticator):
             try:
                 key = binascii.unhexlify(key_hexstring)
             except Exception as e:
-                log("unhexlify(%s)", key_hexstring, exc_info=True)
-                log.warn("Warning: failed to parse key '%s'", origin)
-                log.warn(" %s", e)
+                log(f"unhexlify({key_hexstring})", exc_info=True)
+                log.warn(f"Warning: failed to parse key {origin!r}")
+                log.warn(f" {e}")
                 continue
-            log("u2f: trying to load DER public key %s", repr(key))
+            log(f"u2f: trying to load DER public key {key!r}")
             if not key.startswith(PUB_KEY_DER_PREFIX):
                 key = PUB_KEY_DER_PREFIX+key
             try:
                 k = load_der_public_key(key, default_backend())
             except Exception as e:
                 log("load_der_public_key(%r)", key, exc_info=True)
-                log.warn("Warning: failed to parse key '%s'", origin)
-                log.warn(" %s", e)
+                log.warn(f"Warning: failed to parse key {origin!r}")
+                log.warn(f" {e}")
                 continue
             self.public_keys[origin] = k
         if not self.public_keys:
@@ -92,11 +92,13 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "u2f"
 
-    def authenticate_check(self, challenge_response : str, client_salt : str=None) -> bool:
-        log("authenticate_check(%s, %s)", repr(challenge_response), repr(client_salt))
+    def authenticate_check(self, caps : typedict) -> bool:
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
+        log(f"authenticate_check: response={challenge_response}, client-salt={client_salt}")
         user_presence, counter = struct.unpack(b">BI", strtobytes(challenge_response)[:5])
         sig = strtobytes(challenge_response[5:])
-        log("u2f user_presence=%s, counter=%s, signature=%s", user_presence, counter, hexstr(sig))
+        log(f"u2f user_presence={user_presence}, counter={counter}, signature={hexstr(sig)}")
         app_param = sha256(self.app_id.encode('utf8')).digest()
         server_challenge_b64 = base64.urlsafe_b64encode(self.salt).decode()
         server_challenge_b64 = server_challenge_b64.rstrip('=')
@@ -119,13 +121,13 @@ class Authenticator(SysAuthenticator):
         for origin, public_key in self.public_keys.items():
             try:
                 public_key.verify(sig, param, ec.ECDSA(hashes.SHA256()))
-                log("ECDSA SHA256 verification passed for '%s'", origin)
+                log(f"ECDSA SHA256 verification passed for {origin!r}")
                 return True
             except Exception as e:
-                log("authenticate failed for '%s' / %s", origin, public_key, exc_info=True)
+                log(f"authenticate failed for {origin!r} / {public_key}", exc_info=True)
                 errors[origin] = str(e) or type(e)
         log.error("Error: authentication failed,")
-        log.error(" checked against %i key%s", len(self.public_keys), engs(self.public_keys))
+        log.error(f" checked against {len(self.public_keys)} keys")
         for origin, error in errors.items():
-            log.error(" '%s': %s", origin, error)
+            log.error(f" {origin!r}: {error}")
         return False

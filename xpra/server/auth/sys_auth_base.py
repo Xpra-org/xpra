@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,14 +29,14 @@ def parse_uid(v) -> int:
         try:
             return int(v)
         except (TypeError, ValueError):
-            log("uid '%s' is not an int", v)
+            log(f"uid {v!r} is not an integer")
     if POSIX:
         try:
             import pwd  #pylint: disable=import-outside-toplevel
             return pwd.getpwnam(v or DEFAULT_UID).pw_uid
         except Exception as e:
-            log("parse_uid(%s)", v, exc_info=True)
-            log.error("Error: cannot find uid of '%s': %s", v, e)
+            log(f"parse_uid({v})", exc_info=True)
+            log.error(f"Error: cannot find uid of {v!r}: {e}")
         return os.getuid()
     return -1
 
@@ -45,14 +45,14 @@ def parse_gid(v) -> int:
         try:
             return int(v)
         except (TypeError, ValueError):
-            log("gid '%s' is not an int", v)
+            log(f"gid {v!r} is not an integer")
     if POSIX:
         try:
             import grp          #@UnresolvedImport pylint: disable=import-outside-toplevel
             return grp.getgrnam(v or DEFAULT_GID).gr_gid
         except Exception as e:
-            log("parse_gid(%s)", v, exc_info=True)
-            log.error("Error: cannot find gid of '%s': %s", v, e)
+            log(f"parse_gid({v})", exc_info=True)
+            log.error(f"Error: cannot find gid of {v!r}: {e}")
         return os.getgid()
     return -1
 
@@ -121,7 +121,7 @@ class SysAuthenticatorBase:
             log("authentication challenge passed for %s", self)
         return r
 
-    def do_authenticate(self, caps : typedict) -> bool:
+    def validate_caps(self, caps : typedict):
         if self.passed:
             log("invalid state: challenge has already been passed")
             return False
@@ -132,12 +132,16 @@ class SysAuthenticatorBase:
             log("invalid state: challenge has not been sent yet!")
             return False
         challenge_response = caps.strget("challenge_response")
-        client_salt = caps.strget("challenge_client_salt")
         #challenge has been sent already for this module
         if not challenge_response:
             log("invalid state: challenge already sent but no response found!")
             return False
-        return self.authenticate_check(challenge_response, client_salt)
+        return True
+
+    def do_authenticate(self, caps : typedict) -> bool:
+        if not self.validate_caps(caps):
+            return False
+        return self.authenticate_check(caps)
 
     def choose_salt_digest(self, digest_modes) -> str:
         self.salt_digest = choose_digest(digest_modes)
@@ -156,29 +160,37 @@ class SysAuthenticatorBase:
         SysAuthenticator.USED_SALT.append(salt)
         return salt
 
-    def authenticate_check(self, challenge_response : str, client_salt : str=None) -> bool:
+    def unxor_password(self, caps):
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
         salt = self.get_response_salt(client_salt)
         password = gendigest("xor", challenge_response, salt)
-        log("authenticate_check(%s, %s) response salt=%s",
-            obsc(repr(challenge_response)), repr(client_salt), repr(salt))
+        log(f"authenticate_check challenge-response=%s, client-salt={client_salt!r} response salt={salt!r}",
+            obsc(repr(challenge_response)))
+        return password
+
+    def authenticate_check(self, caps : typedict) -> bool:
+        password = self.unxor_password(caps)
         #warning: enabling logging here would log the actual system password!
         #log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
         #verify login:
         try :
             ret = self.check(password)
-            log("authenticate_check(..)=%s", ret)
+            log(f"authenticate_check(..)={ret}")
         except Exception as e:
             log("check(..)", exc_info=True)
-            log.error("Error: %s authentication check failed:", self)
+            log.error(f"Error: {self} authentication check failed:")
             log.estr(e)
             return False
         return ret
 
-    def authenticate_hmac(self, challenge_response : str, client_salt : str=None) -> bool:
+    def authenticate_hmac(self, caps : typedict) -> bool:
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
         log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
@@ -186,23 +198,23 @@ class SysAuthenticatorBase:
         salt = self.get_response_salt(client_salt)
         passwords = self.get_passwords()
         if not passwords:
-            log.warn("Warning: %s authentication failed", self)
-            log.warn(" no password defined for '%s'", self.username)
+            log.warn(f"Warning: {self} authentication failed")
+            log.warn(f" no password defined for {self.username!r}")
             return False
-        log("found %i passwords using %r", len(passwords), self)
+        log(f"found {len(passwords)} passwords using {self!r}")
         for x in passwords:
             if verify_digest(self.digest, x, salt, challenge_response):
                 self.password_used = x
                 return True
-        log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
+        log.warn(f"Warning: {self.digest} challenge for {self.username!r} does not match")
         if len(passwords)>1:
-            log.warn(" checked %i passwords", len(passwords))
+            log.warn(f" checked {len(passwords)} passwords")
         return False
 
     def get_sessions(self):
         uid = self.get_uid()
         gid = self.get_gid()
-        log("%s.get_sessions() uid=%i, gid=%i", self, uid, gid)
+        log(f"{self}.get_sessions() uid={uid}, gid={gid}")
         try:
             sockdir = DotXpra(None, self.socket_dirs, actual_username=self.username, uid=uid, gid=gid)
             results = sockdir.sockets(check_uid=uid)
@@ -210,14 +222,14 @@ class SysAuthenticatorBase:
             for state, display in results:
                 if state==DotXpra.LIVE and display not in displays:
                     displays.append(display)
-            log("sockdir=%s, results=%s, displays=%s", sockdir, results, displays)
+            log(f"sockdir={sockdir}, results={results}, displays={displays}")
         except Exception as e:
             log("get_sessions()", exc_info=True)
-            log.error("Error: cannot get the list of sessions for '%s':", self.username)
+            log.error(f"Error: cannot get the list of sessions for {self.username!r}:")
             log.estr(e)
             displays = []
         v = uid, gid, displays, {}, {}
-        log("%s.get_sessions()=%s", self, v)
+        log(f"{self}.get_sessions()={v}")
         return v
 
 
@@ -231,14 +243,14 @@ class SysAuthenticator(SysAuthenticatorBase):
                 import pwd  #pylint: disable=import-outside-toplevel
                 self.pw = pwd.getpwnam(self.username)
             except Exception:
-                log("cannot load password database entry for '%s'", self.username, exc_info=True)
+                log(f"cannot load password database entry for {self.username!r}", exc_info=True)
 
     def get_uid(self) -> int:
         if self.pw is None:
-            raise Exception("username '%s' not found" % self.username)
+            raise Exception(f"username {self.username!r} not found")
         return self.pw.pw_uid
 
     def get_gid(self) -> int:
         if self.pw is None:
-            raise Exception("username '%s' not found" % self.username)
+            raise Exception(f"username {self.username!r} not found")
         return self.pw.pw_gid

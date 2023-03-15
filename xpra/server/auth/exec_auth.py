@@ -9,7 +9,8 @@ from subprocess import Popen
 from gi.repository import GLib
 
 from xpra.util import envint, typedict, alnum, std, first_time
-from xpra.os_util import OSX, shellsub
+from xpra.os_util import OSX, shellsub, bytestostr
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
@@ -37,6 +38,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, **kwargs):
         log(f"exec.Authenticator({kwargs})")
         self.command = shlex.split(kwargs.pop("command", "${auth_dialog} ${info} ${timeout}"))
+        self.require_challenge = kwargs.pop("require-challenge", "no").lower() in TRUE_OPTIONS
         self.timeout = kwargs.pop("timeout", TIMEOUT)
         self.timer = None
         self.proc = None
@@ -51,9 +53,16 @@ class Authenticator(SysAuthenticator):
         super().__init__(**kwargs)
 
     def requires_challenge(self) -> bool:
-        return False
+        return self.require_challenge
 
-    def authenticate(self, caps : typedict) -> bool:
+    def get_challenge(self, digests):
+        assert self.require_challenge
+        if "xor" not in digests:
+            log.error("Error: kerberos authentication requires the 'xor' digest")
+            return None
+        return super().get_challenge(["xor"])
+
+    def authenticate_check(self, caps : typedict) -> bool:
         info = f"Connection request from {self.connection_str}"
         subs = {
             "auth_dialog"   : get_default_auth_dialog(),
@@ -62,6 +71,8 @@ class Authenticator(SysAuthenticator):
             "username"      : alnum(self.username),
             "prompt"        : std(self.prompt),
             }
+        if self.require_challenge:
+            subs["password"] = bytestostr(self.unxor_password(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
         log(f"authenticate(..) shellsub({self.command}={cmd}")
         #[self.command, info, str(self.timeout)]
