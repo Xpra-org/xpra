@@ -180,16 +180,13 @@ def init_all_specs(*exclude):
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
 
-def get_profile(options, csc_mode):
-    #use the environment as default if present:
-    profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
-    #now see if the client has requested a different value:
-    profile = options.strget("h264.%s.profile" % csc_mode, profile)
-    if profile is None:
-        profile = options.strget("h264.profile", profile)
-    if profile is None:
-        return None
-    return profile
+def get_profile(options, csc_mode, default_profile="constrained-baseline"):
+    return (
+        options.strget(f"h264.{csc_mode}.profile") or
+        options.strget("h264.profile") or
+        os.environ.get(f"XPRA_X264_{csc_mode}_PROFILE") or
+        default_profile
+        )
 
 
 class Encoder(VideoPipeline):
@@ -240,7 +237,7 @@ class Encoder(VideoPipeline):
             encoder_str,
             ]
         if self.encoding=="h264":
-            profile = get_profile(options, self.colorspace) or "constrained-baseline"
+            profile = get_profile(options, self.colorspace)
             elements.append(f"video/x-{self.encoding},profile={profile},stream-format=avc,alignment=au")
         elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
