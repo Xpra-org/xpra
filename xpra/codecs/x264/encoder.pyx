@@ -468,6 +468,18 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     logger("X264: %r", s)
 
 
+cdef _get_profile(options, csc_mode):
+    #use the environment as default if present:
+    profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
+    #now see if the client has requested a different value:
+    profile = options.strget("h264.%s.profile" % csc_mode, profile)
+    if profile is None:
+        profile = options.strget("h264.profile", profile)
+    if profile is None:
+        return None
+    return profile
+
+
 cdef class Encoder:
     cdef unsigned long frames
     cdef x264_t *context
@@ -533,7 +545,7 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
-        self.profile = self._get_profile(options, self.src_format)
+        self.profile = _get_profile(options, self.src_format)
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)
@@ -807,17 +819,6 @@ cdef class Encoder:
 
     def get_src_format(self):
         return self.src_format
-
-    cdef _get_profile(self, options, csc_mode):
-        #use the environment as default if present:
-        profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
-        #now see if the client has requested a different value:
-        profile = options.strget("h264.%s.profile" % csc_mode, profile)
-        if profile is None:
-            profile = options.strget("h264.profile", profile)
-        if profile is None:
-            return None
-        return strtobytes(profile)
 
 
     def compress_image(self, image, options=None):
