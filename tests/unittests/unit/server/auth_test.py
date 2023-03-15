@@ -375,12 +375,13 @@ class TestAuth(unittest.TestCase):
             return
         def exec_cmd(cmd, success=True):
             kwargs = {
-                "command"         : cmd,
+                "command"        : cmd,
                 "timeout"        : 2,
                 }
             a = self._init_auth("exec", **kwargs)
-            assert not a.requires_challenge(), "%s should not require a challenge" % a
-            assert self.capsauth(a)==success, "%s should have %s using cmd=%s" % (a, ["failed", "succeeded"][success], cmd)
+            assert not a.requires_challenge(), f"{a} should not require a challenge"
+            expected = ["failed", "succeeded"][success]
+            assert self.capsauth(a)==success, f"{a} should have {expected} using cmd={cmd}"
         exec_cmd("/bin/true", True)
         exec_cmd("/bin/false", False)
 

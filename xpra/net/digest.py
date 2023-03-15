@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 
 def get_digests():
     digests = ["xor"]
-    digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))
+    digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
                 and getattr(hashlib, x, None) is not None]
     try:
@@ -30,7 +30,7 @@ def get_digests():
     return digests
 
 def get_digest_module(digest : str):
-    log("get_digest_module(%s)", digest)
+    log(f"get_digest_module({digest})")
     if not digest or not digest.startswith("hmac"):
         return None
     try:
@@ -45,17 +45,17 @@ def get_digest_module(digest : str):
 
 def choose_digest(options) -> str:
     assert len(options)>0, "no digest options"
-    log("choose_digest(%s)", options)
+    log(f"choose_digest({options})")
     #prefer stronger hashes:
     for h in ("sha512", "sha384", "sha256", "sha224"):
-        hname = "hmac+%s" % h
+        hname = f"hmac+{h}"
         if hname in options:
             return hname
     if "xor" in options:
         return "xor"
     if "des" in options:
         return "des"
-    raise ValueError("no known digest options found in '%s'" % csv(options))
+    raise ValueError(f"no known digest options found in '{csv(options)}'")
 
 def gendigest(digest, password, salt):
     assert password and salt
@@ -76,7 +76,7 @@ def gendigest(digest, password, salt):
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
     if not digestmod:
-        log("invalid digest module '%s'", digest)
+        log(f"invalid digest module {digest!r}")
         return None
         #warn_server_and_exit(ExitCode.UNSUPPORTED,
         #    "server requested digest '%s' but it is not supported" % digest, "invalid digest")
@@ -88,16 +88,18 @@ def verify_digest(digest, password, salt, challenge_response):
         return False
     verify = gendigest(digest, password, salt)
     if not hmac.compare_digest(verify, challenge_response):
-        log("expected '%s' but got '%s'", verify, challenge_response)
+        log(f"expected {verify!r} but got {challenge_response!r}")
         return False
     return True
 
 
 def get_salt(l=64):
     #too short: we would not feed enough random data to HMAC
-    assert l>=32, "salt is too short: only %i bytes" % l
+    if l<32:
+        raise ValueError(f"salt is too short: only {l} bytes")
     #too long: limit the amount of random data we request from the system
-    assert l<1024, "salt is too long: %i bytes" % l
+    if l>=1024:
+        raise ValueError(f"salt is too long: {l} bytes")
     #all server versions support a client salt,
     #they also tell us which digest to use:
     return os.urandom(l)
