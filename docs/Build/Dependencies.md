@@ -107,3 +107,26 @@ See [audio forwarding](../Features/Audio.md)
 |[lame](http://lame.sourceforge.net/)|http://sourceforge.net/projects/lame/files/lame/|MP3 encoder|
 |[TwoLame](http://www.twolame.org/)|http://sourceforge.net/projects/twolame/files/twolame/|MP3 encoder|
 </details>
+
+<details>
+  <summary>Dependency Graphs</summary>
+
+  These graphs were generated using `jhbuild dot` on MacOS.  
+  The MacOS builds include very low level build dependencies.
+
+  ### Codecs
+  ![Codec Dependencies](./graphs/codecs.png)
+
+  ### Python3 Modules
+  ![Python 3 Modules](./graphs/python3.png)
+
+  ### GTK3
+  ![GTK 3](./graphs/python3.png)
+
+  ### Tools
+  ![Tools](./graphs/tools.png)
+
+  ### MacOS Packaging Tools
+  ![GTK 3](./graphs/packaging-tools.png)
+
+</details>
