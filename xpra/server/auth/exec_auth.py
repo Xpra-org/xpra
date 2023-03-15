@@ -6,7 +6,7 @@
 import os
 import shlex
 from subprocess import Popen
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, typedict, alnum, std, first_time
 from xpra.os_util import OSX, shellsub, bytestostr
@@ -61,6 +61,11 @@ class Authenticator(SysAuthenticator):
             log.error("Error: kerberos authentication requires the 'xor' digest")
             return None
         return super().get_challenge(["xor"])
+
+    def validate_caps(self, caps : typedict):
+        if not self.require_challenge:
+            return True
+        return super().validate_caps(caps)
 
     def authenticate_check(self, caps : typedict) -> bool:
         info = f"Connection request from {self.connection_str}"
