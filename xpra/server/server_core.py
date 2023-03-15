@@ -686,7 +686,7 @@ class ServerCore:
             else:
                 opts_value = getattr(opts, f"{x}_auth")
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
-        authlog("init_auth(..) auth=%s", self.auth_classes)
+        authlog(f"init_auth(..) auth={self.auth_classes}")
 
     def get_auth_modules(self, socket_type, auth_strs):
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
@@ -1380,14 +1380,14 @@ class ServerCore:
                 INITIAL_PADDING,
                 )
             if ENCRYPT_FIRST_PACKET:
-                authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
+                authlog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
                 password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
                 protocol.set_cipher_in(protocol.encryption,
                                        DEFAULT_IV, password,
                                        DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                                        DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.invalid_header = self.invalid_header
-        authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
+        authlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
         protocol.start()
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
@@ -1853,8 +1853,7 @@ class ServerCore:
         i = 0
         authenticators = []
         if auth_classes:
-            authlog("creating authenticators %s for %s",
-                    csv(auth_classes), socktype)
+            authlog(f"creating authenticators {csv(auth_classes)} for {socktype}")
             for auth_name, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["remote"] = remote
@@ -1872,12 +1871,12 @@ class ServerCore:
                     for o in ("self", ):
                         if o in opts:
                             raise Exception(f"illegal authentication module options {o!r}")
-                    authlog("%s : %s(%s)", auth_name, aclass, opts)
+                    authlog(f"{auth_name} : {aclass}({opts})")
                     authenticator = aclass(**opts)
                 except Exception:
-                    authlog("%s%s", aclass, (opts,), exc_info=True)
+                    authlog(f"{aclass}({opts})", exc_info=True)
                     raise
-                authlog("authenticator %i=%s", i, authenticator)
+                authlog(f"authenticator {i}={authenticator}")
                 authenticators.append(authenticator)
                 i += 1
         return tuple(authenticators)
@@ -1888,7 +1887,7 @@ class ServerCore:
 
     def auth_failed(self, proto, msg):
         authlog.warn("Warning: authentication failed")
-        authlog.warn(" %s", msg)
+        authlog.warn(f" {msg}")
         self.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto, packet, c):
@@ -1906,9 +1905,9 @@ class ServerCore:
             try:
                 proto.authenticators = self.make_authenticators(socktype, remote, conn)
             except Exception as e:
-                authlog("instantiating authenticator for %s", socktype, exc_info=True)
-                authlog.error("Error instantiating authenticators for %s:", proto.socket_type)
-                authlog.error(" %r", e)
+                authlog(f"instantiating authenticator for {socktype}", exc_info=True)
+                authlog.error(f"Error instantiating authenticators for {proto.socket_type}:")
+                authlog.estr(e)
                 auth_failed(str(e))
                 return
 
@@ -1941,11 +1940,11 @@ class ServerCore:
         #verify each remaining authenticator:
         for index, authenticator in enumerate(proto.authenticators):
             if authenticator not in remaining_authenticators:
-                authlog("authenticator[%i]=%s (already passed)", index, authenticator)
+                authlog(f"authenticator[{index}]={authenticator} (already passed)")
                 continue
             req = authenticator.requires_challenge()
-            authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s",
-                    index, authenticator, req, authenticator.challenge_sent)
+            sent = authenticator.challenge_sent
+            authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={sent}")
             if not req:
                 #this authentication module does not need a challenge
                 #(ie: "peercred" or "none")
@@ -1953,7 +1952,7 @@ class ServerCore:
                     auth_failed(f"{authenticator} authentication failed")
                     return
                 authenticator.passed = True
-                authlog("authentication passed for %s (no challenge provided)", authenticator)
+                authlog(f"authentication passed for {authenticator} (no challenge provided)")
                 continue
             if not authenticator.challenge_sent:
                 #we'll re-schedule this when we call send_challenge()
@@ -1965,18 +1964,18 @@ class ServerCore:
                     if authenticator.requires_challenge():
                         auth_failed("invalid state, unexpected challenge response")
                         return
-                    authlog.warn("Warning: authentication module '%s' does not require any credentials", authenticator)
-                    authlog.warn(" but the client %s supplied them", proto)
+                    authlog.warn(f"Warning: authentication module {authenticator!r} does not require any credentials")
+                    authlog.warn(f" but the client {proto} supplied them")
                     #fake challenge so the client will send the real hello:
                     send_fake_challenge()
                     return
                 salt, digest = challenge
                 actual_digest = digest.split(":", 1)[0]
-                authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
+                authlog(f"get_challenge({digest_modes})={hexstr(salt)}, {digest}")
                 countinfo = ""
                 if len(proto.authenticators)>1:
-                    countinfo += " (%i of %i)" % (index+1, len(proto.authenticators))
-                authlog.info(f"Authentication required by {authenticator} authenticator module%s", countinfo)
+                    countinfo += f" ({index+1} of {len(proto.authenticators)})"
+                authlog.info(f"Authentication required by {authenticator} authenticator module{countinfo}")
                 authlog.info(f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
                 if actual_digest not in digest_modes:
                     auth_failed(f"cannot proceed without {actual_digest!r} digest support")
@@ -1986,7 +1985,7 @@ class ServerCore:
                     if not LEGACY_SALT_DIGEST:
                         auth_failed(f"insecure salt digest {salt_digest!r} rejected")
                         return
-                    log.warn(f"Warning: using legacy support for {salt_digest!r} salt digest")
+                    authlog.warn(f"Warning: using legacy support for {salt_digest!r} salt digest")
                 authlog(f"sending challenge {authenticator.prompt!r}")
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
@@ -2002,7 +2001,7 @@ class ServerCore:
         command_req = tuple(net_utf8(x) for x in caps.tupleget("command_request"))
         if command_req:
             #call from UI thread:
-            authlog("auth_verified(..) command request=%s", command_req)
+            authlog(f"auth_verified(..) command request={command_req}")
             self.idle_add(self.handle_command_request, proto, *command_req)
             return
         #continue processing hello packet in UI thread:
@@ -2047,9 +2046,9 @@ class ServerCore:
             padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
             ciphers = get_ciphers()
             if cipher not in ciphers:
-                authlog.warn("Warning: unsupported cipher: %s", cipher)
+                authlog.warn(f"Warning: unsupported cipher: {cipher!r}")
                 if ciphers:
-                    authlog.warn(" should be: %s", csv(ciphers))
+                    authlog.warn(" should be: "+csv(ciphers))
                 return auth_failed("unsupported cipher")
             if key_stretch!="PBKDF2":
                 return auth_failed(f"unsupported key stretching {key_stretch!r}")
@@ -2078,21 +2077,22 @@ class ServerCore:
 
     def get_encryption_key(self, authenticators=None, keyfile=None):
         #if we have a keyfile specified, use that:
-        authlog("get_encryption_key(%s, %s)", authenticators, keyfile)
+        authlog(f"get_encryption_key({authenticators}, {keyfile})")
         if keyfile:
             authlog(f"loading encryption key from keyfile {keyfile!r}")
             v = filedata_nocrlf(keyfile)
             if v:
                 return v
-        v = os.environ.get("XPRA_ENCRYPTION_KEY")
+        KVAR = "XPRA_ENCRYPTION_KEY"
+        v = os.environ.get(KVAR)
         if v:
-            authlog("using encryption key from %s environment variable", "XPRA_ENCRYPTION_KEY")
+            authlog(f"using encryption key from {KVAR!r} environment variable")
             return v
         if authenticators:
             for authenticator in authenticators:
                 v = authenticator.get_password()
                 if v:
-                    authlog("using password from authenticator %s", authenticator)
+                    authlog(f"using password from authenticator {authenticator}")
                     return v
         return None
 
