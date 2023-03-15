@@ -546,7 +546,8 @@ class ServerBase(ServerBaseClass):
 
     def send_hello(self, server_source, root_w, root_h, server_cipher):
         capabilities = self.make_hello(server_source)
-        if "encodings" in server_source.wants and server_features.windows:
+        from xpra.server.source.encodings_mixin import EncodingsMixin
+        if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
             try:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.loader import codec_versions
