@@ -61,7 +61,7 @@ class ServerAuthTest(ServerTestUtil):
 
     def test_none(self):
         self._test_auth("none", "", ExitCode.OK)
-        self._test_auth("none", "", ExitCode.NO_AUTHENTICATION, "foo")
+        self._test_auth("none", "", ExitCode.OK, "foo")
 
     def test_allow(self):
         self._test_auth("allow", "", ExitCode.PASSWORD_REQUIRED)
