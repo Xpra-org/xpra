@@ -331,12 +331,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
 
     def get_wintitle(self, xid):
-        data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
-        if data:
-            return data.decode("latin1")
-        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
-        if data:
-            return data.decode("utf8")
+        with xswallow:
+            data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
+            if data:
+                return data.decode("latin1")
+        with xswallow:
+            data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
+            if data:
+                return data.decode("utf8")
         return None
 
     def get_wininfo(self, xid):
@@ -346,17 +348,16 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 pid = XRes.get_pid(xid)
                 if pid:
                     wininfo.append(f"pid={pid}")
-        with xswallow:
+        title = self.get_wintitle(xid)
+        if title:
+            wininfo.insert(0, title)
+            return wininfo
+        while xid:
             title = self.get_wintitle(xid)
             if title:
-                wininfo.insert(0, title)
+                wininfo.append(f"child of {title!r}")
                 return wininfo
-        with xswallow:
-            while xid:
-                title = self.get_wintitle(xid)
-                if title:
-                    wininfo.append(f"child of {title!r}")
-                    return wininfo
+            with xswallow:
                 xid = X11Window.getParent(xid)
         return wininfo
 
