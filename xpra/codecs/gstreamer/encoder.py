@@ -172,6 +172,7 @@ def init_all_specs(*exclude):
     log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
         add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
+        add("vaapih264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
     add("x264enc", "h264", "BGRX", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
