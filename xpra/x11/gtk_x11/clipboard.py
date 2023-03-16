@@ -330,7 +330,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
         if data:
             return data.decode("latin1")
-        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "STRING")
+        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
         if data:
             return data.decode("utf8")
         return None
