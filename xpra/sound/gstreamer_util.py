@@ -115,6 +115,7 @@ CODEC_OPTIONS = [
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",    None),
         (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux"),
         (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux"),
+        (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux"),
             ]
 
 MUX_OPTIONS = [
