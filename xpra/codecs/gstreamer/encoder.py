@@ -33,7 +33,7 @@ assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes" : 0,
-        "tune"  : 3,    #low-power
+        "tune"  : 1,    #low-power
         #"rate-control" : 8, #qvbr
         "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
         #"keyframe-period"   : 9999,
