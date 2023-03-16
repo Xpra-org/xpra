@@ -333,7 +333,6 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "STRING")
         if data:
             return data.decode("utf8")
-        xid = X11Window.getParent(xid)
         return None
 
     def get_wininfo(self, xid):
