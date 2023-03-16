@@ -27,7 +27,7 @@ log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 VAAPI = envbool("XPRA_GSTREAMER_VAAPI", not (WIN32 or OSX))
-
+FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,vp8,vp9").split(",")
 
 assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
@@ -149,6 +149,9 @@ def init_all_specs(*exclude):
     specs = {}
     colorspaces = {}
     def add(element, encoding, cs_in, css_out, *args):
+        if encoding not in FORMATS:
+            log(f"{encoding} not enabled - supported formats: {FORMATS}")
+            return
         if element in exclude:
             return
         #add spec:
