@@ -17,7 +17,17 @@ class ServerAuthTest(ServerTestUtil):
     def _test_auth(self, auth="fail", uri_prefix="", exit_code=0, password=None):
         display = self.find_free_display()
         log("starting test server on %s", display)
-        server = self.check_start_server(display, f"--auth={auth}", "--printing=no")
+        server = self.check_start_server(display,
+                                         f"--auth={auth}",
+                                         "--printing=no",
+                                         "--start-new-commands=no",
+                                         "--video-encoders=none",
+                                         "--csc-modules=none",
+                                         "--video-decoders=none",
+                                         "--encodings=rgb",
+                                         "--windows=no",
+                                         "--opengl=no",
+                                         )
         #we should always be able to get the version:
         client = self.run_xpra(["version", uri_prefix+display])
         assert pollwait(client, 5)==0, "version client failed to connect"
