@@ -117,7 +117,7 @@ def pkg_config_version(req_version, pkgname):
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r!=0 or not out:
         return False
-    out = out.rstrip("\n\r")
+    out = out.rstrip("\n\r").split(" ")[0]  #ie: "0.155.2917 0a84d98" -> "0.155.2917"
     #workaround for libx264 invalid version numbers:
     #ie: "0.163.x" or "0.164.3094M"
     while out[-1].isalpha() or out[-1]==".":
