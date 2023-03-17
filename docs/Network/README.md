@@ -7,7 +7,7 @@ See also: [authentication](../Usage/Authentication.md), [encryption](./Encryptio
 |Type|Bind option|Availability|Information|
 |----|-----------|---------|-----------|
 |`TCP`|`bind-tcp`|All|
-|[QUIC](https://github.com/Xpra-org/xpra/issues/3376)|`bind-quic`|All|
+|[QUIC](./QUIC.md)|`bind-quic`|All|
 |[SSL](./SSL.md)|`bind-ssl`|All|
 |[SSH](./SSH.md)|`bind-ssh`|All|
 |`WebSocket`|`bind-ws`|All|
@@ -80,6 +80,8 @@ client.latency.absmin=1
 </details>
 
 The performance of xpra will be affected by your network connection speed, in particular [bufferbloat](https://en.wikipedia.org/wiki/Bufferbloat) is known to cause severe performance degradations as xpra is quite sensitive to network jitter and latency, try to [eliminate bufferbloat in your network](https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/).
+
+QUIC should offer the lowest latency, though it may need [some tuning](https://github.com/Xpra-org/xpra/issues/3376).
 
 See [A little bump in the wire that makes your Internet faster](https://apenwarr.ca/log/?m=201808), [bufferbloat faq](https://gettys.wordpress.com/bufferbloat-faq/).
 
