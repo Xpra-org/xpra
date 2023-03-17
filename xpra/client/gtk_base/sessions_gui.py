@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,6 +20,8 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import exit_str
+from xpra.scripts.config import OPTION_TYPES
+from xpra.scripts.main import get_command_args
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
     imagebutton, get_icon_pixbuf,
@@ -37,6 +39,7 @@ class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
         super().__init__()
+        self.options = options
         self.exit_code = 0
         self.set_title(title)
         self.set_border_width(20)
@@ -363,7 +366,13 @@ class SessionsGUI(Gtk.Window):
 
     def attach(self, key, uri):
         self.warning.set_text("")
-        cmd = get_xpra_command() + ["attach", uri]
+        #preserve ssl command line arguments
+        option_types = dict((k,v) for k,v in OPTION_TYPES.items() if k.startswith("ssl"))
+        cmd = get_xpra_command() + ["attach", uri] + get_command_args(
+            self.options,
+            option_types=option_types,
+            cmdline=sys.argv,
+            )
         env = os.environ.copy()
         env["XPRA_NOTTY"] = "1"
         proc = subprocess.Popen(cmd, env=env)

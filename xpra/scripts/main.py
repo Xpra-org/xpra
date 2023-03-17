@@ -513,7 +513,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_list_mdns(error_cb, args)
     elif mode == "mdns-gui":
         check_gtk()
-        return run_mdns_gui(error_cb, options)
+        return run_mdns_gui(options)
     elif mode == "list-sessions":
         no_gtk()
         return run_list_sessions(args, options)
@@ -2524,12 +2524,19 @@ def start_server_subprocess(script_file, args, mode, opts,
     return proc, socket_path, display
 
 def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()):
+    option_types = {}
+    for x, ftype in OPTION_TYPES.items():
+        if x not in CLIENT_ONLY_OPTIONS:
+            option_types[x] = ftype
+    return get_command_args(opts, uid, gid, option_types, compat, cmdline)
+
+def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES, compat=False, cmdline=()):
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fdefaults = defaults.clone()
     fixup_options(fdefaults)
     args = []
-    for x, ftype in OPTION_TYPES.items():
-        if x in NON_COMMAND_LINE_OPTIONS or x in CLIENT_ONLY_OPTIONS:
+    for x, ftype in option_types.items():
+        if x in NON_COMMAND_LINE_OPTIONS:
             continue
         if compat and x in OPTIONS_ADDED_SINCE_V3:
             continue
@@ -2928,11 +2935,11 @@ def run_sessions_gui(options):
     from xpra.client.gtk_base import sessions_gui
     return sessions_gui.do_main(options)
 
-def run_mdns_gui(error_cb, options):
+def run_mdns_gui(options):
     from xpra.net.mdns import get_listener_class
     listener = get_listener_class()
     if not listener:
-        error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
+        raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.client.gtk_base import mdns_gui
     return mdns_gui.do_main(options)
 
