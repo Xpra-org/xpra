@@ -1,6 +1,6 @@
 # Xpra Documentation Index
 
-[FAQ](./FAQ.md)
+## [FAQ](./FAQ.md)
 
 ## [Usage](./Usage/README.md)
 
@@ -76,3 +76,7 @@ Information for developers:
 * [MacOS](./Build/MacOS.md)
 * [Other](./Build/Other.md)
 </details>
+
+---
+
+## [Sponsors](./SPONSORS.md)
