@@ -11,6 +11,7 @@
 
 import sys
 from struct import unpack, calcsize
+import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
