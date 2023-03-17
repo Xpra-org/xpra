@@ -815,7 +815,6 @@ def main():
         print("GStreamer plugins found: " + csv(apn))
         print("")
         print("GStreamer version: " + ".".join([str(x) for x in get_gst_version()]))
-        print("PyGStreamer version: " + ".".join([str(x) for x in get_pygst_version()]))
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
