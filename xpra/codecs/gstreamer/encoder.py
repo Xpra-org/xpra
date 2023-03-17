@@ -33,7 +33,7 @@ assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes" : 0,
-        "tune"  : 3,    #low-power
+        "tune"  : 1,    #low-power
         #"rate-control" : 8, #qvbr
         "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
         #"keyframe-period"   : 9999,
@@ -234,7 +234,7 @@ class Encoder(VideoPipeline):
             ]
         if self.encoding=="h264":
             profile = get_profile(options, self.encoding, self.colorspace, "constrained-baseline")
-            elements.append(f"video/x-{self.encoding},profile={profile},stream-format=avc,alignment=au")
+            elements.append(f"video/x-{self.encoding},profile={profile},alignment=au")
         elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
