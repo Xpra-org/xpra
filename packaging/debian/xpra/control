@@ -138,7 +138,8 @@ Recommends: xpra-codecs
         ,python3-xdg
         ,python3-pyinotify
 # hope that this will allow our status icon to be shown:
-        ,gir1.2-appindicator3-0.1 | gir1.2-ayatanaappindicator3
+        ,gir1.2-appindicator3-0.1
+        ,gir1.2-ayatanaappindicator3
 # to be able to resize large svg icons:
         ,gir1.2-rsvg-2.0
 # AES encryption:
