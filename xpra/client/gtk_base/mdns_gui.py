@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
@@ -38,7 +39,8 @@ class mdns_sessions(SessionsGUI):
         add(XPRA_UDP_MDNS_TYPE)
 
     def cleanup(self):
-        self.listener.stop()
+        for listener in self.listeners:
+            listener.stop()
         super().cleanup()
 
     def mdns_update(self, r_name, r_type):
