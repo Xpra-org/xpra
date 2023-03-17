@@ -385,7 +385,7 @@ def main():
                 file_name = base_dir + '/' + param['dir'] + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
             else:
                 file_name = base_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
-            print "Processing: ", file_name
+            print(f"Processing: {file_name}")
             accumulate_values(file_name, rep, param, uniqueId)
     write_html()
     print('\nCreated: charts.html\n')

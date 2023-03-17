@@ -60,7 +60,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             env["PLINK_PROTOCOL"] = "ssh"
         kwargs["stderr"] = sys.stderr
         if WIN32:
-            from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW
+            from subprocess import (
+                CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW,  # @UnresolvedImport
+                )
             startupinfo = STARTUPINFO()
             startupinfo.dwFlags |= STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE

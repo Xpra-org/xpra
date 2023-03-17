@@ -700,7 +700,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
             if pct==100:
                 #it should exit on its own, but just in case:
                 from xpra.common import SPLASH_EXIT_DELAY
-                from gi.repository import GLib
+                from gi.repository import GLib  # @UnresolvedImport
                 GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
         progress = show_progress
     else:

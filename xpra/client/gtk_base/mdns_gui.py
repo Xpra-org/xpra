@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GLib, Gtk
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class

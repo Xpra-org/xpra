@@ -10,15 +10,18 @@
 
 import os
 import subprocess
-import ctypes
-from ctypes import wintypes
+from ctypes import (
+    get_last_error, WinError, WinDLL,  # @UnresolvedImport
+    Structure, byref, POINTER, sizeof, create_unicode_buffer,
+    )
+from wintypes import BYTE, BOOL, WORD, DWORD, HANDLE, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
 
-kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-advapi32 = ctypes.WinDLL('advapi32', use_last_error=True)
+kernel32 = WinDLL('kernel32', use_last_error=True)
+advapi32 = WinDLL('advapi32', use_last_error=True)
 
 ERROR_INVALID_HANDLE = 0x0006
-INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
-INVALID_DWORD_VALUE = wintypes.DWORD(-1).value
+INVALID_HANDLE_VALUE = HANDLE(-1).value
+INVALID_DWORD_VALUE = DWORD(-1).value
 
 DEBUG_PROCESS                    = 0x00000001
 DEBUG_ONLY_THIS_PROCESS          = 0x00000002
@@ -67,11 +70,11 @@ SW_FORCEMINIMIZE   = 11
 LOGON_WITH_PROFILE        = 0x00000001
 LOGON_NETCREDENTIALS_ONLY = 0x00000002
 
-STD_INPUT_HANDLE  = wintypes.DWORD(-10).value
-STD_OUTPUT_HANDLE = wintypes.DWORD(-11).value
-STD_ERROR_HANDLE  = wintypes.DWORD(-12).value
+STD_INPUT_HANDLE  = DWORD(-10).value
+STD_OUTPUT_HANDLE = DWORD(-11).value
+STD_ERROR_HANDLE  = DWORD(-12).value
 
-class HANDLE(wintypes.HANDLE):
+class HANDLE(HANDLE):
     __slots__ = 'closed',
 
     def __int__(self):
@@ -94,14 +97,14 @@ class HANDLE(wintypes.HANDLE):
     def __repr__(self):
         return "%s(%d)" % (self.__class__.__name__, int(self))
 
-class PROCESS_INFORMATION(ctypes.Structure):
+class PROCESS_INFORMATION(Structure):
     """https://msdn.microsoft.com/en-us/library/ms684873"""
     __slots__ = '_cached_hProcess', '_cached_hThread'
 
     _fields_ = (('_hProcess',   HANDLE),
                 ('_hThread',    HANDLE),
-                ('dwProcessId', wintypes.DWORD),
-                ('dwThreadId',  wintypes.DWORD))
+                ('dwProcessId', DWORD),
+                ('dwThreadId',  DWORD))
 
     @property
     def hProcess(self):
@@ -121,75 +124,75 @@ class PROCESS_INFORMATION(ctypes.Structure):
         finally:
             self.hThread.Close()
 
-LPPROCESS_INFORMATION = ctypes.POINTER(PROCESS_INFORMATION)
+LPPROCESS_INFORMATION = POINTER(PROCESS_INFORMATION)
 
-LPBYTE = ctypes.POINTER(wintypes.BYTE)
+LPBYTE = POINTER(BYTE)
 
-class STARTUPINFO(ctypes.Structure):
+class STARTUPINFO(Structure):
     """https://msdn.microsoft.com/en-us/library/ms686331"""
-    _fields_ = (('cb',              wintypes.DWORD),
-                ('lpReserved',      wintypes.LPWSTR),
-                ('lpDesktop',       wintypes.LPWSTR),
-                ('lpTitle',         wintypes.LPWSTR),
-                ('dwX',             wintypes.DWORD),
-                ('dwY',             wintypes.DWORD),
-                ('dwXSize',         wintypes.DWORD),
-                ('dwYSize',         wintypes.DWORD),
-                ('dwXCountChars',   wintypes.DWORD),
-                ('dwYCountChars',   wintypes.DWORD),
-                ('dwFillAttribute', wintypes.DWORD),
-                ('dwFlags',         wintypes.DWORD),
-                ('wShowWindow',     wintypes.WORD),
-                ('cbReserved2',     wintypes.WORD),
+    _fields_ = (('cb',              DWORD),
+                ('lpReserved',      LPWSTR),
+                ('lpDesktop',       LPWSTR),
+                ('lpTitle',         LPWSTR),
+                ('dwX',             DWORD),
+                ('dwY',             DWORD),
+                ('dwXSize',         DWORD),
+                ('dwYSize',         DWORD),
+                ('dwXCountChars',   DWORD),
+                ('dwYCountChars',   DWORD),
+                ('dwFillAttribute', DWORD),
+                ('dwFlags',         DWORD),
+                ('wShowWindow',     WORD),
+                ('cbReserved2',     WORD),
                 ('lpReserved2',     LPBYTE),
-                ('hStdInput',       wintypes.HANDLE),
-                ('hStdOutput',      wintypes.HANDLE),
-                ('hStdError',       wintypes.HANDLE))
+                ('hStdInput',       HANDLE),
+                ('hStdOutput',      HANDLE),
+                ('hStdError',       HANDLE))
 
     def __init__(self, **kwds):
-        self.cb = ctypes.sizeof(self)
+        self.cb = sizeof(self)
         super().__init__(**kwds)
 
-class PROC_THREAD_ATTRIBUTE_LIST(ctypes.Structure):
+class PROC_THREAD_ATTRIBUTE_LIST(Structure):
     pass
 
-PPROC_THREAD_ATTRIBUTE_LIST = ctypes.POINTER(PROC_THREAD_ATTRIBUTE_LIST)
+PPROC_THREAD_ATTRIBUTE_LIST = POINTER(PROC_THREAD_ATTRIBUTE_LIST)
 
 class STARTUPINFOEX(STARTUPINFO):
     _fields_ = (('lpAttributeList', PPROC_THREAD_ATTRIBUTE_LIST),)
 
-LPSTARTUPINFO = ctypes.POINTER(STARTUPINFO)
-LPSTARTUPINFOEX = ctypes.POINTER(STARTUPINFOEX)
+LPSTARTUPINFO = POINTER(STARTUPINFO)
+LPSTARTUPINFOEX = POINTER(STARTUPINFOEX)
 
-class SECURITY_ATTRIBUTES(ctypes.Structure):
-    _fields_ = (('nLength',              wintypes.DWORD),
-                ('lpSecurityDescriptor', wintypes.LPVOID),
-                ('bInheritHandle',       wintypes.BOOL))
+class SECURITY_ATTRIBUTES(Structure):
+    _fields_ = (('nLength',              DWORD),
+                ('lpSecurityDescriptor', LPVOID),
+                ('bInheritHandle',       BOOL))
     def __init__(self, **kwds):
-        self.nLength = ctypes.sizeof(self)
+        self.nLength = sizeof(self)
         super().__init__(**kwds)
 
-LPSECURITY_ATTRIBUTES = ctypes.POINTER(SECURITY_ATTRIBUTES)
+LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 
 class HANDLE_IHV(HANDLE):
     pass
 
-class DWORD_IDV(wintypes.DWORD):
+class DWORD_IDV(DWORD):
     pass
 
 def _check_ihv(result, func, args):
     if result.value == INVALID_HANDLE_VALUE:
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise WinError(get_last_error())
     return result.value
 
 def _check_idv(result, func, args):
     if result.value == INVALID_DWORD_VALUE:
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise WinError(get_last_error())
     return result.value
 
 def _check_bool(result, func, args):
     if not result:
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise WinError(get_last_error())
     return args
 
 def WIN(func, restype, *argtypes):
@@ -203,63 +206,63 @@ def WIN(func, restype, *argtypes):
         func.errcheck = _check_bool
 
 # https://msdn.microsoft.com/en-us/library/ms724211
-WIN(kernel32.CloseHandle, wintypes.BOOL,
-    wintypes.HANDLE,) # _In_ HANDLE hObject
+WIN(kernel32.CloseHandle, BOOL,
+    HANDLE,) # _In_ HANDLE hObject
 
 # https://msdn.microsoft.com/en-us/library/ms685086
 WIN(kernel32.ResumeThread, DWORD_IDV,
-    wintypes.HANDLE,) # _In_ hThread
+    HANDLE,) # _In_ hThread
 
 # https://msdn.microsoft.com/en-us/library/ms682425
-WIN(kernel32.CreateProcessW, wintypes.BOOL,
-    wintypes.LPCWSTR,       # _In_opt_    lpApplicationName
-    wintypes.LPWSTR,        # _Inout_opt_ lpCommandLine
+WIN(kernel32.CreateProcessW, BOOL,
+    LPCWSTR,       # _In_opt_    lpApplicationName
+    LPWSTR,        # _Inout_opt_ lpCommandLine
     LPSECURITY_ATTRIBUTES,  # _In_opt_    lpProcessAttributes
     LPSECURITY_ATTRIBUTES,  # _In_opt_    lpThreadAttributes
-    wintypes.BOOL,          # _In_        bInheritHandles
-    wintypes.DWORD,         # _In_        dwCreationFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpEnvironment
-    wintypes.LPCWSTR,       # _In_opt_    lpCurrentDirectory
+    BOOL,          # _In_        bInheritHandles
+    DWORD,         # _In_        dwCreationFlags
+    LPCWSTR,       # _In_opt_    lpEnvironment
+    LPCWSTR,       # _In_opt_    lpCurrentDirectory
     LPSTARTUPINFO,          # _In_        lpStartupInfo
     LPPROCESS_INFORMATION)  # _Out_       lpProcessInformation
 
 # https://msdn.microsoft.com/en-us/library/ms682429
-WIN(advapi32.CreateProcessAsUserW, wintypes.BOOL,
-    wintypes.HANDLE,        # _In_opt_    hToken
-    wintypes.LPCWSTR,       # _In_opt_    lpApplicationName
-    wintypes.LPWSTR,        # _Inout_opt_ lpCommandLine
+WIN(advapi32.CreateProcessAsUserW, BOOL,
+    HANDLE,        # _In_opt_    hToken
+    LPCWSTR,       # _In_opt_    lpApplicationName
+    LPWSTR,        # _Inout_opt_ lpCommandLine
     LPSECURITY_ATTRIBUTES,  # _In_opt_    lpProcessAttributes
     LPSECURITY_ATTRIBUTES,  # _In_opt_    lpThreadAttributes
-    wintypes.BOOL,          # _In_        bInheritHandles
-    wintypes.DWORD,         # _In_        dwCreationFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpEnvironment
-    wintypes.LPCWSTR,       # _In_opt_    lpCurrentDirectory
+    BOOL,          # _In_        bInheritHandles
+    DWORD,         # _In_        dwCreationFlags
+    LPCWSTR,       # _In_opt_    lpEnvironment
+    LPCWSTR,       # _In_opt_    lpCurrentDirectory
     LPSTARTUPINFO,          # _In_        lpStartupInfo
     LPPROCESS_INFORMATION)  # _Out_       lpProcessInformation
 
 # https://msdn.microsoft.com/en-us/library/ms682434
-WIN(advapi32.CreateProcessWithTokenW, wintypes.BOOL,
-    wintypes.HANDLE,        # _In_        hToken
-    wintypes.DWORD,         # _In_        dwLogonFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpApplicationName
-    wintypes.LPWSTR,        # _Inout_opt_ lpCommandLine
-    wintypes.DWORD,         # _In_        dwCreationFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpEnvironment
-    wintypes.LPCWSTR,       # _In_opt_    lpCurrentDirectory
+WIN(advapi32.CreateProcessWithTokenW, BOOL,
+    HANDLE,        # _In_        hToken
+    DWORD,         # _In_        dwLogonFlags
+    LPCWSTR,       # _In_opt_    lpApplicationName
+    LPWSTR,        # _Inout_opt_ lpCommandLine
+    DWORD,         # _In_        dwCreationFlags
+    LPCWSTR,       # _In_opt_    lpEnvironment
+    LPCWSTR,       # _In_opt_    lpCurrentDirectory
     LPSTARTUPINFO,          # _In_        lpStartupInfo
     LPPROCESS_INFORMATION)  # _Out_       lpProcessInformation
 
 # https://msdn.microsoft.com/en-us/library/ms682431
-WIN(advapi32.CreateProcessWithLogonW, wintypes.BOOL,
-    wintypes.LPCWSTR,       # _In_        lpUsername
-    wintypes.LPCWSTR,       # _In_opt_    lpDomain
-    wintypes.LPCWSTR,       # _In_        lpPassword
-    wintypes.DWORD,         # _In_        dwLogonFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpApplicationName
-    wintypes.LPWSTR,        # _Inout_opt_ lpCommandLine
-    wintypes.DWORD,         # _In_        dwCreationFlags
-    wintypes.LPCWSTR,       # _In_opt_    lpEnvironment
-    wintypes.LPCWSTR,       # _In_opt_    lpCurrentDirectory
+WIN(advapi32.CreateProcessWithLogonW, BOOL,
+    LPCWSTR,       # _In_        lpUsername
+    LPCWSTR,       # _In_opt_    lpDomain
+    LPCWSTR,       # _In_        lpPassword
+    DWORD,         # _In_        dwLogonFlags
+    LPCWSTR,       # _In_opt_    lpApplicationName
+    LPWSTR,        # _Inout_opt_ lpCommandLine
+    DWORD,         # _In_        dwCreationFlags
+    LPCWSTR,       # _In_opt_    lpEnvironment
+    LPCWSTR,       # _In_opt_    lpCurrentDirectory
     LPSTARTUPINFO,          # _In_        lpStartupInfo
     LPPROCESS_INFORMATION)  # _Out_       lpProcessInformation
 
@@ -303,7 +306,7 @@ def create_environment(environ):
         items = ['%s=%s' % (k, environ[k]) for k in sorted(environ)]
         buf = '\x00'.join(items)
         length = len(buf) + 2 if buf else 1
-        return ctypes.create_unicode_buffer(buf, length)
+        return create_unicode_buffer(buf, length)
 
 def create_process(commandline=None, creationinfo=None, startupinfo=None):
     if creationinfo is None:
@@ -311,7 +314,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
 
     if startupinfo is None:
         startupinfo = STARTUPINFO()
-    elif isinstance(startupinfo, subprocess.STARTUPINFO):
+    elif isinstance(startupinfo, subprocess.STARTUPINFO):  # @UndefinedVariable
         startupinfo = STARTUPINFO(dwFlags=startupinfo.dwFlags,
                         hStdInput=startupinfo.hStdInput,
                         hStdOutput=startupinfo.hStdOutput,
@@ -330,7 +333,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             comspec = os.environ.get("ComSpec", os.path.join(
                         os.environ["SystemRoot"], "System32", "cmd.exe"))
             commandline = '"{}" /c "{}"'.format(comspec, commandline)
-        commandline = ctypes.create_unicode_buffer(commandline)
+        commandline = create_unicode_buffer(commandline)
 
     dwCreationFlags = ci.dwCreationFlags | CREATE_UNICODE_ENVIRONMENT
     lpEnvironment = create_environment(ci.lpEnvironment)
@@ -349,7 +352,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             ci.lpApplicationName, commandline,
             ci.lpProcessAttributes, ci.lpThreadAttributes, ci.bInheritHandles,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            ctypes.byref(si), ctypes.byref(pi))
+            byref(si), byref(pi))
 
     elif ci.dwCreationType == CREATION_TYPE_LOGON:
 
@@ -357,7 +360,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             ci.lpUsername, ci.lpDomain, ci.lpPassword, ci.dwLogonFlags,
             ci.lpApplicationName, commandline,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            ctypes.byref(si), ctypes.byref(pi))
+            byref(si), byref(pi))
 
     elif ci.dwCreationType == CREATION_TYPE_TOKEN:
 
@@ -365,7 +368,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             ci.hToken, ci.dwLogonFlags,
             ci.lpApplicationName, commandline,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            ctypes.byref(si), ctypes.byref(pi))
+            byref(si), byref(pi))
 
     elif ci.dwCreationType == CREATION_TYPE_USER:
 
@@ -374,7 +377,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             ci.lpApplicationName, commandline,
             ci.lpProcessAttributes, ci.lpThreadAttributes, ci.bInheritHandles,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            ctypes.byref(si), ctypes.byref(pi))
+            byref(si), byref(pi))
 
     else:
         raise ValueError('invalid process creation type')

@@ -138,7 +138,7 @@ def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=N
             listen_quic(sock, server, options)
             return None
         sources = []
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         sock.listen(5)
         def io_in_cb(sock, flags):
             log("io_in_cb(%s, %s)", sock, flags)

@@ -4,7 +4,9 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from gi.repository import GdkPixbuf
+import gi
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.tray_base import TrayBase
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
@@ -101,7 +103,9 @@ class OSXTray(TrayBase):
     def set_dock_menu(self):
         #dock menu
         log("OSXTray.set_dock_menu()")
-        from gi.repository import Gtk
+        import gi
+        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         self.dock_menu = Gtk.Menu()
         self.disconnect_dock_item = Gtk.MenuItem("Disconnect")
         self.disconnect_dock_item.connect("activate", self.quit)

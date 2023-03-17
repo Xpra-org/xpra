@@ -7,7 +7,10 @@
 import os
 import re
 
-from gi.repository import Gtk, GdkPixbuf
+import gi
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import Gtk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.util import envbool, repr_ellipsized
 from xpra.os_util import OSX, bytestostr

@@ -3,7 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, Structure, c_void_p, c_int, c_ushort, c_ulong, c_ubyte, c_char
+from ctypes import (
+    WinDLL,  # @UnresolvedImport
+    Structure, c_void_p, c_int, c_ushort, c_ulong, c_ubyte, c_char,
+    )
 from ctypes.wintypes import HANDLE, HDC, HWND, LPCSTR, BOOL, RECT
 
 HGLRC = HANDLE

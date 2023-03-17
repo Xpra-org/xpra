@@ -11,9 +11,13 @@ import sys
 def get_commonappdata_dir():
     CSIDL_COMMON_APPDATA = 35
     try:
-        import ctypes
-        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-        shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+        from ctypes import (
+            WinDLL,  # @UnresolvedImport
+            create_unicode_buffer,
+            )
+        from ctypes.wintypes import MAX_PATH
+        buf = create_unicode_buffer(MAX_PATH)
+        shell32 = WinDLL("shell32", use_last_error=True)
         SHGetFolderPath = shell32.SHGetFolderPathW
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         return buf.value

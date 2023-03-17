@@ -13,7 +13,7 @@ import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
-import cups
+from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import OSX, bytestostr
@@ -398,17 +398,17 @@ def get_printers():
     return dict((k,v) for k,v in all_printers.items() if k not in SKIPPED_PRINTERS)
 
 def get_all_printers():
-    conn = cups.Connection()
+    conn = Connection()
     printers = conn.getPrinters()
     log("pycups.get_all_printers()=%s", printers)
     return printers
 
 def get_default_printer():
-    conn = cups.Connection()
+    conn = Connection()
     return conn.getDefault()
 
 def get_printer_attributes(name):
-    conn = cups.Connection()
+    conn = Connection()
     return conn.getPrinterAttributes(name)
 
 
@@ -428,7 +428,7 @@ def print_files(printer, filenames, title, options):
         conn = None
         printpid = -1
     else:
-        conn = cups.Connection()
+        conn = Connection()
         log("calling printFiles on %s", conn)
         printpid = conn.printFiles(printer, filenames, title, actual_options)
     if printpid<=0:
@@ -445,7 +445,7 @@ def print_files(printer, filenames, title, options):
     return printpid
 
 def printing_finished(printpid):
-    conn = cups.Connection()
+    conn = Connection()
     f = conn.getJobs().get(printpid, None) is None
     log("pycups.printing_finished(%s)=%s", printpid, f)
     return f

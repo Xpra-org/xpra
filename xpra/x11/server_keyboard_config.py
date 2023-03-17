@@ -7,7 +7,9 @@
 # later version. See the file COPYING for details.
 
 import hashlib
-from gi.repository import Gdk
+import gi
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.util import csv, envbool, typedict
 from xpra.os_util import bytestostr

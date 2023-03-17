@@ -113,7 +113,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
         super().__init__(stream)
         # get file handle for the stream
         import ctypes.util
-        crtname = ctypes.util.find_msvcrt()
+        crtname = ctypes.util.find_msvcrt()  # @UndefinedVariable
         crtlib = ctypes.cdll.LoadLibrary(crtname)
         self._outhdl = crtlib._get_osfhandle(stream.fileno())   #pylint: disable=protected-access
 

@@ -6,9 +6,11 @@
 
 #@PydevCodeAnalysisIgnore
 
-from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_ubyte, addressof
-from ctypes.wintypes import DWORD, ULONG, HANDLE, BOOL, INT, BYTE, WORD
-from ctypes.wintypes import LPCSTR
+from ctypes import (
+    WinDLL,  # @UnresolvedImport
+    POINTER, Structure, Union, c_void_p, c_ubyte, addressof,
+    )
+from ctypes.wintypes import DWORD, ULONG, HANDLE, BOOL, INT, BYTE, WORD, LPCSTR
 
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 from xpra.platform.win32.common import LPSECURITY_ATTRIBUTES

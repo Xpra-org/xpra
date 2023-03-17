@@ -7,7 +7,10 @@
 import os
 import sys
 from ctypes.wintypes import HDC
-from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER
+from ctypes import (
+    WinDLL,  # @UnresolvedImport
+    c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
+    )
 
 from xpra.util import ellipsizer
 from xpra.os_util import strtobytes

@@ -95,7 +95,10 @@ def on_devmodechange(wParam, lParam):
 
 
 def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
-    from ctypes import byref, addressof, cast, WinDLL, Structure, POINTER
+    from ctypes import (
+        WinDLL,  # @UnresolvedImport
+        byref, addressof, cast, Structure, POINTER,
+        )
     from ctypes.wintypes import BYTE, BOOL, DWORD, LPCWSTR, LPBYTE, LPDWORD
 
     winspool = WinDLL('winspool.drv', use_last_error=True)
@@ -199,8 +202,8 @@ def print_files(printer, filenames, title, options):
         cwd = get_app_dir()
         command = ["PDFIUM_Print.exe", filename, printer, title]
         log("print command: %s", command)
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
         startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
         process = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd, startupinfo=startupinfo)
         process.print_filename = filename

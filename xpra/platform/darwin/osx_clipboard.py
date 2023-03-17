@@ -9,7 +9,7 @@ from AppKit import (
     NSPasteboard,       #@UnresolvedImport
     )
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
 from xpra.clipboard.clipboard_core import (
@@ -275,7 +275,9 @@ def main():
         get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
         log.info("testing pasteboard")
-        from gi.repository import Gtk
+        import gi
+        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         pasteboard = NSPasteboard.generalPasteboard()
         def nosend(*args):
             log("nosend%s", args)

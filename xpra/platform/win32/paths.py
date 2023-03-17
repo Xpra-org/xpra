@@ -6,13 +6,17 @@
 
 import os.path
 import sys
-import ctypes
 import tempfile
 import platform
+from ctypes import (
+    WinDLL,  # @UnresolvedImport
+    create_unicode_buffer
+    )
+from ctypes.wintypes import MAX_PATH
 
 from xpra.os_util import get_util_logger
 
-shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+shell32 = WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
 
 CSIDL_APPDATA = 26
@@ -23,7 +27,7 @@ CSIDL_PROFILE = 40
 
 def sh_get_folder_path(v):
     try:
-        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+        buf = create_unicode_buffer(MAX_PATH)
         SHGetFolderPath(0, v, None, 0, buf)
         if not buf.value:
             return buf.value
@@ -147,10 +151,10 @@ def do_get_user_conf_dirs(_uid):
 
 def do_get_desktop_background_paths():
     try:
-        import winreg   #@UnresolvedImport @Reimport
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx    #@UnresolvedImport @Reimport
         key_path = "Control Panel\\Desktop"
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
-        wallpaper = winreg.QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
+        key = OpenKey(HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
+        wallpaper = QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
         return [wallpaper,]
     except Exception:
         log = get_util_logger()
@@ -161,11 +165,11 @@ def do_get_desktop_background_paths():
 def do_get_download_dir():
     try:
         #values found here: https://stackoverflow.com/a/48706260
-        import winreg   #@UnresolvedImport @Reimport
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx    #@UnresolvedImport @Reimport
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
         downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
-            DOWNLOAD_PATH = winreg.QueryValueEx(key, downloads_guid)[0]
+        with OpenKey(HKEY_CURRENT_USER, sub_key) as key:
+            DOWNLOAD_PATH = QueryValueEx(key, downloads_guid)[0]
     except Exception:
         get_util_logger()("do_get_download_dir()", exc_info=True)
         #fallback to what the documentation says is the default:

@@ -8,7 +8,11 @@
 
 import os
 from time import time, monotonic
-from gi.repository import Gtk, Gdk, GdkPixbuf
+import gi
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import envbool
@@ -178,7 +182,7 @@ class GTKStatusIconTray(TrayBase):
 
 def main():
     log.enable_debug()
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     log.enable_debug()
     s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, Gtk.main_quit)
     GLib.timeout_add(1000*2, s.set_blinking, True)

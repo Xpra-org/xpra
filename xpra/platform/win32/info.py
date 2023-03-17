@@ -11,7 +11,10 @@ def get_sys_info():
 
 def get_name():
     try:
-        from ctypes import byref, create_string_buffer, WinError, get_last_error
+        from ctypes import (
+            WinError, get_last_error,  # @UnresolvedImport
+            byref, create_string_buffer,
+            )
         from ctypes.wintypes import DWORD
         from xpra.platform.win32.common import GetUserNameA
         max_len = 256

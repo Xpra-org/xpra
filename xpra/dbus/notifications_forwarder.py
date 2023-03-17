@@ -181,7 +181,7 @@ def register(notify_callback=None, close_callback=None, replace=False):
 
 def main():
     register()
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     mainloop = GLib.MainLoop()
     mainloop.run()
 

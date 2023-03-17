@@ -30,7 +30,7 @@ def main():
     from xpra.platform import program_context
     with program_context(name, name):
         notify()
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         GLib.timeout_add(60*1000, notify)
         loop = GLib.MainLoop()
         loop.run()

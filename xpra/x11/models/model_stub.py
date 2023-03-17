@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
 from xpra.log import Logger

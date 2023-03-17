@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticator):
         log("otp.Authenticator(%s)", kwargs)
         self.uid = -1
         self.gid = -1
-        import pyotp
+        import pyotp  # @UnresolvedImport
         assert pyotp
         self.issuer_name = kwargs.pop("issuer-name", "Xpra")
         self.secret = b32(kwargs.pop("secret", pyotp.random_hex()))
@@ -65,7 +65,7 @@ class Authenticator(SysAuthenticator):
         self.digest = "xor"
         self.challenge_sent = True
         if SHOW:
-            import pyotp
+            import pyotp  # @UnresolvedImport
             totp = pyotp.TOTP(self.secret)
             now = totp.now()
             log("otp current value for secret %s: %s", self.secret, now)
@@ -74,7 +74,7 @@ class Authenticator(SysAuthenticator):
 
     def check(self, password) -> bool:
         log("otp.check(%s)", obsc(password))
-        import pyotp
+        import pyotp  # @UnresolvedImport
         totp = pyotp.TOTP(self.secret)
         r = totp.verify(bytestostr(password), valid_window=self.valid_window)
         log("otp.check(%s)=%s", obsc(password), r)
@@ -99,7 +99,7 @@ def main(argv):
         username = argv[2]
     if len(argv)>=4:
         issuer_name = argv[3]
-    import pyotp
+    import pyotp  # @UnresolvedImport
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(username, issuer_name)
     log.info("provisioning_uri=%s", totp_uri)
     #qrcode module has problems - don't use it for now

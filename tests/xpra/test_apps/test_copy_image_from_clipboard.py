@@ -4,9 +4,9 @@
 
 import sys
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position @UnresolvedImport
 
 def main():
     clipboard = Gtk.Clipboard.get(Gdk.Atom.intern("CLIPBOARD", False))

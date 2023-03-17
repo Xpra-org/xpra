@@ -9,7 +9,7 @@ import sys
 import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import (
     LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,

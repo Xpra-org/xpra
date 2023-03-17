@@ -6,10 +6,8 @@
 import os
 from io import BytesIO
 from ctypes import (
-    sizeof, byref, cast, memset, memmove,
-    get_last_error, create_string_buffer,
-    WinError, FormatError,
-    c_char, c_void_p,
+    get_last_error, WinError, FormatError,  # @UnresolvedImport
+    sizeof, byref, cast, memset, memmove, create_string_buffer, c_char, c_void_p,
     )
 from gi.repository import GLib  # @UnresolvedImport
 

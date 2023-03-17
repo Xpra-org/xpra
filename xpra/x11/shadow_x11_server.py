@@ -493,7 +493,7 @@ def main(*args):
         s.geometry = geom
         return s
     from xpra.x11.gtk3 import gdk_display_source  #pylint: disable=import-outside-toplevel, no-name-in-module
-    gdk_display_source.init_gdk_display_source()
+    gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
     for w in window_matches(args, cb):
         print(f"{w}")
 

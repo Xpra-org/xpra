@@ -3,7 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib, Gtk
+import gi
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image

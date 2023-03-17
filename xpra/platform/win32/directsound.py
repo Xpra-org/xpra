@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes import WinDLL, oledll, c_int
+from ctypes import WinDLL, WINFUNCTYPE, oledll, c_int  # @UnresolvedImport
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
 
 
@@ -17,7 +17,7 @@ GetDeviceID = dsound.GetDeviceID
 #DEFINE_GUID(DSDEVID_DefaultVoicePlayback,0xDEF00002,0x9C6D,0x47Ed,0xAA,0xF1,0x4D,0xDA,0x8F,0x2B,0x5C,0x03);
 #DEFINE_GUID(DSDEVID_DefaultVoiceCapture, 0xDEF00003,0x9C6D,0x47ED,0xAA,0xF1,0x4D,0xDA,0x8F,0x2B,0x5C,0x03);
 
-LPDSENUMCALLBACK = ctypes.WINFUNCTYPE(BOOL, LPVOID, LPCWSTR, LPCWSTR, LPCVOID)
+LPDSENUMCALLBACK = WINFUNCTYPE(BOOL, LPVOID, LPCWSTR, LPCWSTR, LPCVOID)
 StringFromGUID2 = oledll.ole32.StringFromGUID2
 StringFromGUID2.restype = c_int
 StringFromGUID2.argtypes = [LPVOID, LPOLESTR, c_int]

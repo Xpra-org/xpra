@@ -46,8 +46,8 @@ class PyNotify_Notifier(NotifierBase):
 
 def main(args):
     import gi
-    gi.require_version("Gtk", "3.0")
-    from gi.repository import GLib, Gtk
+    gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+    from gi.repository import GLib, Gtk  # @UnresolvedImport
     summary = "Summary"
     body = "Body..."
     if len(args)>1:

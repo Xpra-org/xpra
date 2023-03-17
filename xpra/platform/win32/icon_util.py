@@ -4,8 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import ctypes
-from ctypes import byref, c_void_p, sizeof, create_string_buffer
+from ctypes import (
+    WinError, get_last_error,  # @UnresolvedImport
+    byref, c_void_p, sizeof, create_string_buffer, memmove,
+    )
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -42,7 +44,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         mask = CreateBitmap(w, h, 1, 1, None)
         log("CreateBitmap(%i, %i, 1, 1, None)=%#x", w, h, mask or 0)
         if not mask:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
         iconinfo = ICONINFO()
         iconinfo.fIcon = True
         iconinfo.hbmMask = mask
@@ -50,7 +52,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         hicon = CreateIconIndirect(byref(iconinfo))
         log("CreateIconIndirect()=%#x", hicon or 0)
         if not hicon:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
         return hicon
     except Exception:
         log.error("Error: failed to set tray icon", exc_info=True)
@@ -85,8 +87,8 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     finally:
         ReleaseDC(None, hdc)
     if not dataptr or not bitmap:
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise WinError(get_last_error())
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
     img_data = create_string_buffer(rgb_data)
-    ctypes.memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
+    memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
     return bitmap

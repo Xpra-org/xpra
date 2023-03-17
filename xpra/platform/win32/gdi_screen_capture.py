@@ -5,7 +5,10 @@
 # later version. See the file COPYING for details.
 
 import time
-import ctypes
+from ctypes import (
+    get_last_error, windll, # @UnresolvedImport
+    Structure, create_string_buffer, addressof, byref, c_ubyte,
+    )
 from io import BytesIO
 from PIL import Image
 
@@ -36,19 +39,18 @@ REGION_CONSTS = {
                 }
 DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", False)
 
-class PALETTEENTRY(ctypes.Structure):
+class PALETTEENTRY(Structure):
     _fields_ = [
-        ('peRed',   ctypes.c_ubyte),
-        ('peGreen', ctypes.c_ubyte),
-        ('peBlue',  ctypes.c_ubyte),
-        ('peFlags', ctypes.c_ubyte),
+        ('peRed',   c_ubyte),
+        ('peGreen', c_ubyte),
+        ('peBlue',  c_ubyte),
+        ('peFlags', c_ubyte),
         ]
 
 DWM_EC_DISABLECOMPOSITION = 0
 DWM_EC_ENABLECOMPOSITION = 1
 def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
     try:
-        from ctypes import windll
         windll.dwmapi.DwmEnableComposition(value)
         log("DwmEnableComposition(%s) succeeded", value)
         return True
@@ -72,7 +74,7 @@ def get_palette(dc):
     palette = []
     if count>0:
         buf = (PALETTEENTRY*count)()
-        r = GetSystemPaletteEntries(dc, 0, count, ctypes.byref(buf))
+        r = GetSystemPaletteEntries(dc, 0, count, byref(buf))
         for i in range(min(count, r)):
             p = buf[i]
             #we expect 16-bit values, so bit-shift them:
@@ -184,7 +186,7 @@ class GDICapture:
         log("get_image up to SelectObject (%s) took %ims", REGION_CONSTS.get(r, r), (select_time-start)*1000)
         try:
             if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY)==0:
-                e = ctypes.get_last_error()
+                e = get_last_error()
                 #rate limit the error message:
                 now = time.time()
                 if now-self.bitblt_err_time>10:
@@ -201,9 +203,9 @@ class GDICapture:
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
         rowstride = roundup(width*self.bit_depth//8, 2)
         buf_size = rowstride*height
-        pixels = ctypes.create_string_buffer(b"", buf_size)
-        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, ctypes.addressof(pixels))
-        r = GetBitmapBits(bitmap, buf_size, ctypes.byref(pixels))
+        pixels = create_string_buffer(b"", buf_size)
+        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, addressof(pixels))
+        r = GetBitmapBits(bitmap, buf_size, byref(pixels))
         if not r:
             log.error("Error: failed to copy screen bitmap data")
             self.clean_dc()

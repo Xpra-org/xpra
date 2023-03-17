@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk_common.cursor_names import cursor_types
 

@@ -10,12 +10,12 @@ import sys
 import ctypes
 import collections
 
-from ctypes import wintypes
+from ctypes import wintypes, get_last_error, WinError, WinDLL #@UnresolvedImport
 
-ntdll = ctypes.WinDLL('ntdll')
-secur32 = ctypes.WinDLL('secur32')
-kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-advapi32 = ctypes.WinDLL('advapi32', use_last_error=True)
+ntdll = WinDLL('ntdll')
+secur32 = WinDLL('secur32')
+kernel32 = WinDLL('kernel32', use_last_error=True)
+advapi32 = WinDLL('advapi32', use_last_error=True)
 
 MAX_COMPUTER_NAME_LENGTH = 15
 
@@ -404,12 +404,12 @@ LPSECURITY_ATTRIBUTES = ctypes.POINTER(SECURITY_ATTRIBUTES)
 
 def _check_status(result, func, args):
     if result.value < 0:
-        raise ctypes.WinError(result.to_error())
+        raise WinError(result.to_error())
     return args
 
 def _check_bool(result, func, args):
     if not result:
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise WinError(get_last_error())
     return args
 
 def WIN(func, restype, *argtypes):
@@ -609,7 +609,7 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
             secur32.LsaLogonUser(*args)
         except WindowsError:            #@UndefinedVariable
             if substatus.value:
-                raise ctypes.WinError(substatus.to_error()) from None
+                raise WinError(substatus.to_error()) from None
             raise
         finally:
             if profile_buffer:

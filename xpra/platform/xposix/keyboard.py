@@ -139,15 +139,19 @@ class Keyboard(KeyboardBase):
             except ImportError:
                 log("cannot parse xml", exc_info=True)
             else:
-                with open(repository, "r", encoding="latin1") as f:
-                    tree = lxml.etree.parse(f)  #pylint: disable=c-extension-no-member
-                x11_layouts = {}
-                for layout in tree.xpath("//layout"):
-                    layout = layout.xpath("./configItem/name")[0].text
-                    x11_layouts[layout] = layout
-                    #for variant in layout.xpath("./variantList/variant/configItem/name"):
-                    #    variant_name = variant.text
-                return x11_layouts
+                try:
+                    with open(repository, "r", encoding="latin1") as f:
+                        tree = lxml.etree.parse(f)  #pylint: disable=c-extension-no-member @UndefinedVariable
+                except Exception:
+                    log.error(f"Error parsing {repository}", exc_info=True)
+                else:
+                    x11_layouts = {}
+                    for layout in tree.xpath("//layout"):
+                        layout = layout.xpath("./configItem/name")[0].text
+                        x11_layouts[layout] = layout
+                        #for variant in layout.xpath("./variantList/variant/configItem/name"):
+                        #    variant_name = variant.text
+                    return x11_layouts
         from subprocess import Popen, PIPE  #pylint: disable=import-outside-toplevel
         try:
             proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)

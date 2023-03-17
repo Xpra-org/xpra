@@ -102,7 +102,7 @@ class subprocess_callee:
         self.setup_mainloop()
 
     def setup_mainloop(self):
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         self.mainloop = GLib.MainLoop()
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
@@ -300,8 +300,8 @@ def exec_kwargs() -> dict:
             # WindowsError: [Errno 6] The handle is invalid
             stderr = open(os.devnull, 'w')
         if not WIN32_SHOWWINDOW:
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
             startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
             kwargs["startupinfo"] = startupinfo
     kwargs["stderr"] = stderr
@@ -344,7 +344,7 @@ class subprocess_caller:
         #hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove

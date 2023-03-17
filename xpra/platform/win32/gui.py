@@ -9,10 +9,12 @@
 import os
 import sys
 import types
-import ctypes
-from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof  # @UnresolvedImport
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ
-from ctypes import CDLL, pythonapi, py_object
+from ctypes import (
+    WinDLL, WinError, get_last_error,  # @UnresolvedImport
+    CDLL, pythonapi, py_object,
+    CFUNCTYPE, HRESULT, c_int, c_bool, create_string_buffer, POINTER, Structure, byref, sizeof,  # @UnresolvedImport
+    )
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ, LPCWSTR
 from ctypes.util import find_library
 
 from xpra.client import mixin_features
@@ -119,8 +121,6 @@ def do_init():
 
 
 def init_appid():
-    from ctypes import HRESULT
-    from ctypes.wintypes import LPCWSTR
     SetCurrentProcessExplicitAppUserModelID = shell32.SetCurrentProcessExplicitAppUserModelID
     SetCurrentProcessExplicitAppUserModelID.restype = HRESULT
     SetCurrentProcessExplicitAppUserModelID.argtypes = [LPCWSTR]
@@ -234,7 +234,7 @@ def get_desktop_name():
     try:
         desktop = OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
         if desktop:
-            buf = ctypes.create_string_buffer(128)
+            buf = create_string_buffer(128)
             r = GetUserObjectInformationA(desktop, win32con.UOI_NAME, buf, len(buf), None)
             if r!=0:
                 desktop_name = buf.value.decode("latin1")
@@ -248,8 +248,8 @@ def get_desktop_name():
 
 def get_session_type():
     try:
-        b = ctypes.c_bool()
-        retcode = dwmapi.DwmIsCompositionEnabled(ctypes.byref(b))
+        b = c_bool()
+        retcode = dwmapi.DwmIsCompositionEnabled(byref(b))
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
         if retcode==0 and b.value:
             return "aero"
@@ -494,7 +494,7 @@ def cache_pointer_offset(self, event):
     #so we can cache the GTK position offset for synthetic wheel events
     gtk_x, gtk_y = event.x_root, event.y_root
     pos = POINT()
-    GetCursorPos(ctypes.byref(pos))
+    GetCursorPos(byref(pos))
     x, y = pos.x, pos.y
     self.win32_pointer_offset = gtk_x-x, gtk_y-y
     return gtk_x, gtk_y
@@ -1173,7 +1173,7 @@ class ClientExtras:
             ret = GetMessageA(lpmsg, 0, 0, 0)
             keylog("keyboard listener: GetMessage()=%s", ret)
             if ret==-1:
-                raise ctypes.WinError(ctypes.get_last_error())
+                raise WinError(get_last_error())
             if ret==0:
                 keylog("GetMessage()=0, exiting loop")
                 return

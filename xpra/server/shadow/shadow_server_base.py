@@ -70,7 +70,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def run(self):
         if NOTIFY_STARTUP:
-            from gi.repository import GLib
+            from gi.repository import GLib  # @UnresolvedImport
             GLib.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 

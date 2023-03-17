@@ -24,10 +24,10 @@ from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import GLib, Gtk, Pango  # pylint: disable=wrong-import-order
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+from gi.repository import GLib, Gtk, Pango  # pylint: disable=wrong-import-order @UnresolvedImport
 
 log = Logger("gtk", "file")
 

@@ -11,7 +11,9 @@
 
 import sys
 from struct import unpack, calcsize
-from gi.repository import GObject, Gtk, Gdk, GLib
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError

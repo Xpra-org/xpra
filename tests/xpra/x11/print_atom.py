@@ -5,7 +5,7 @@
 
 from xpra.os_util import bytestostr
 from xpra.x11.gtk3 import gdk_display_source    #@UnresolvedImport, @Reimport
-gdk_display_source.init_gdk_display_source()
+gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
 
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()

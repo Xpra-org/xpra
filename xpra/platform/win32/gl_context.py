@@ -3,7 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import sizeof, byref, cast, c_void_p, FormatError
+from ctypes import (
+    FormatError,  # @UnresolvedImport
+    sizeof, byref, cast, c_void_p,
+    )
 from ctypes.wintypes import LPCWSTR
 
 from xpra.client.gl.gl_check import check_PyOpenGL_support

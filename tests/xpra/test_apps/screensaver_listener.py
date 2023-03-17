@@ -22,7 +22,7 @@ def main():
         def active_changed(active):
             print("screensaver active status changed: %s" % (active, ))
         dbus_session.add_signal_receiver(active_changed, "ActiveChanged", NAME, path=PATH)
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         loop = GLib.MainLoop()
         loop.run()
 

@@ -183,8 +183,8 @@ def force_focus():
 
 def dialog_run(run_fn) -> int:
     import gi
-    gi.require_version('Gtk', '3.0')
-    from gi.repository import GLib, Gtk
+    gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+    from gi.repository import GLib, Gtk  # @UnresolvedImport
     log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
     if is_main_thread() or Gtk.main_level()==0:
         return run_fn()

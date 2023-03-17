@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 from ctypes import (
-    WinDLL, POINTER, WINFUNCTYPE,
-    GetLastError, Structure,
+    WinDLL, WINFUNCTYPE, GetLastError,  # @UnresolvedImport
+    POINTER, Structure,
     c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char,
     byref, sizeof,
     )

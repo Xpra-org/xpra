@@ -7,7 +7,7 @@
 import os.path
 from threading import Lock
 
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import (

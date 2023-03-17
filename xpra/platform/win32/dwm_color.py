@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, windll, c_int, byref, Structure, POINTER
+from ctypes import WinDLL, windll, c_int, byref, Structure, POINTER  # @UnresolvedImport
 from ctypes.wintypes import DWORD, PDWORD, PBOOL, BOOL, UINT
 
 import gi

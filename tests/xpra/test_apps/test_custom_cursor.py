@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-from gi.repository import Gtk, Gdk
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position @UnresolvedImport
 
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 

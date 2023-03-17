@@ -3,8 +3,8 @@
 from cairo import ImageSurface, Context, FORMAT_ARGB32, OPERATOR_CLEAR, OPERATOR_SOURCE
 from PIL import Image
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk #pylint: disable=wrong-import-position
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk #pylint: disable=wrong-import-position @UnresolvedImport
 
 W = 480
 H = 500

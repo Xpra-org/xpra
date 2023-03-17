@@ -17,16 +17,16 @@ the conversions for plain python types is found in prop_conv.py
 import struct
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gdk
+from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES, PROP_SIZES
 from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     get_xvisual,                #@UnresolvedImport
     )
-from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
-    X11WindowBindings,
-    PropertyError,
+from xpra.x11.bindings.window_bindings import (
+    X11WindowBindings,  # @UnresolvedImport
+    PropertyError,      # @UnresolvedImport
     )
 from xpra.gtk_common.error import xsync, XError, XSyncContext
 from xpra.util import repr_ellipsized

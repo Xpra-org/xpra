@@ -38,10 +38,10 @@ def init_rencode():
 
 def init_rencodeplus():
     from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
-    rencodeplus_dumps = rencodeplus.dumps
+    rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
-    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
+    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)  # @UndefinedVariable
 
 def init_bencode():
     from xpra.net.bencode import bencode, bdecode, __version__

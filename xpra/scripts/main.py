@@ -317,8 +317,8 @@ def isdisplaytype(args, *dtypes) -> bool:
 
 def check_gtk():
     import gi
-    gi.require_version("Gtk", "3.0")
-    from gi.repository import Gtk
+    gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+    from gi.repository import Gtk  # @UnresolvedImport
     assert Gtk
     r = Gtk.init_check(None)
     if not r[0]:
@@ -1297,7 +1297,7 @@ def connect_to_server(app, display_desc, opts):
     #before we can call connect()
     #because connect() may run a subprocess,
     #and Gdk locks up the system if the main loop is not running by then!
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     log = Logger("network")
     def do_setup_connection():
         try:
@@ -2957,7 +2957,7 @@ def run_list_mdns(error_cb, extra_args):
             error_cb("sorry, 'list-mdns' requires an mdns module")
     from xpra.net.net_util import if_indextoname
     from xpra.dbus.common import loop_init
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     loop_init()
     found = {}
     shown = set()
