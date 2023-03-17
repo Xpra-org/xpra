@@ -23,8 +23,12 @@ from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
-gi.require_version('AppIndicator3', '0.1')
-from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+try:
+    gi.require_version("AyatanaAppIndicator3", "0.1")  # @UndefinedVariable
+    from gi.repository import AyatanaAppIndicator3 as AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+except ImportError:
+    gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
+    from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
 log = Logger("tray", "posix")
 
