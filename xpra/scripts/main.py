@@ -95,10 +95,14 @@ def main(script_file, cmdline):
 
     if envbool("XPRA_NOMD5", False):
         import hashlib
-        def nomd5(*_args):
-            raise ValueError("md5 support is disabled")
-        hashlib.algorithms_available.remove("md5")
-        hashlib.md5 = nomd5
+        try:
+            hashlib.algorithms_available.remove("md5")  # @UndefinedVariable
+        except KeyError:
+            pass
+        else:
+            def nomd5(*_args):
+                raise ValueError("md5 support is disabled")
+            hashlib.md5 = nomd5
 
     if OSX and PYTHON2 and any(x in cmdline for x in ("_sound_record", "_sound_play", "_sound_query")):
         #bug 2365: force gi bindings early on macos
