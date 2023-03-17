@@ -36,7 +36,6 @@ from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
-    is_Wayland,
     force_quit,
     which,
     get_saved_env, get_saved_env_var,

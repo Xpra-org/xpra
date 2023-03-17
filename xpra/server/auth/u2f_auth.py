@@ -12,7 +12,7 @@ import binascii
 import base64
 from hashlib import sha256
 
-from xpra.util import csv, engs, typedict
+from xpra.util import csv, typedict
 from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, strtobytes, POSIX
 from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log

@@ -9,7 +9,6 @@ from math import ceil
 from time import monotonic
 
 from xpra.util import csv
-from xpra.codecs.argb.argb import argb_swap
 from xpra.codecs.image_wrapper import ImageWrapper
 
 N = 10

@@ -9,7 +9,7 @@ from xpra.log import (
     add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for,
     get_all_loggers,
     )
-from xpra.util import csv, engs
+from xpra.util import csv
 
 log = Logger("util", "command")
 

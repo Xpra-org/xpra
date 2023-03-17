@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.util import engs, envbool
+from xpra.util import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
 from xpra.log import Logger
 

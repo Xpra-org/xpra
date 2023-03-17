@@ -10,7 +10,7 @@ from shutil import which
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
+from xpra.os_util import get_machine_id, get_user_uuid, bytestostr
 from xpra.util import csv, envbool, envint, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.log import Logger
 

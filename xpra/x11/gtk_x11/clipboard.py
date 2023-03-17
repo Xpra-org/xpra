@@ -28,7 +28,7 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
 from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
-from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes
+from xpra.os_util import bytestostr, memoryview_to_bytes
 from xpra.util import csv, repr_ellipsized, ellipsizer, first_time
 from xpra.log import Logger
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, GdkX11
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib, GdkX11  # @UnresolvedImport
+assert GdkX11   #this import has side-effects!
 
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
