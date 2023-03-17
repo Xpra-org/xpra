@@ -16,9 +16,6 @@ This feature is enabled by default and can be controlled using the `--system-tra
 
 
 ## Caveats
-Unfortunately, on some platforms like `gnome-shell`, it is effectively impossible for an application to show a system tray icon.
+Unfortunately, on some platforms like `gnome-shell`, it is effectively impossible for an application to show a system tray icon without going through hoops: [enable appindicator extension](https://github.com/Xpra-org/xpra/issues/3789#issuecomment-1473639927) or `top-icons-plus`.
 
 On such platforms, users may have to use the `#+F1` to bring up xpra's menu (typically that's `Control+F1` or `Alt+F1` on some platforms) or force enable the headerbar (`headerbar=force`).
-
-System trays forwarded for remote applications will not be shown without installing an extension.
-(ie: gnome-shell requires [topicons](https://extensions.gnome.org/extension/1031/topicons/) to function properly - for more information, see [#1720](https://github.com/Xpra-org/xpra/issues/1720))
