@@ -120,10 +120,14 @@ def main(script_file, cmdline):
 
     if envbool("XPRA_NOMD5", False):
         import hashlib
-        def nomd5(*_args):
-            raise ValueError("md5 support is disabled")
-        hashlib.algorithms_available.remove("md5")
-        hashlib.md5 = nomd5
+        try:
+            hashlib.algorithms_available.remove("md5")  # @UndefinedVariable
+        except KeyError:
+            pass
+        else:
+            def nomd5(*_args):
+                raise ValueError("md5 support is disabled")
+            hashlib.md5 = nomd5
 
     def debug_exc(msg="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
