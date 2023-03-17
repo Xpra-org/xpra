@@ -218,7 +218,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.receive_chunks_in_progress = {}
         self.file_descriptors = set()
         if not getattr(self, "timeout_add", None):
-            from gi.repository import GLib  # pylint: disable=import-outside-toplevel
+            from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
             self.timeout_add = GLib.timeout_add
             self.idle_add = GLib.idle_add
             self.source_remove = GLib.source_remove

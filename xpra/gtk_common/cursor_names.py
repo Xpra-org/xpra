@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 import gi
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk  #pylint: disable=wrong-import-position
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gdk  #pylint: disable=wrong-import-position @UnresolvedImport
 
 cursor_names = {}
 cursor_types = {}

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -152,7 +152,9 @@ def main(): # pragma: no cover
 
         from xpra.gtk_common.gobject_compat import register_os_signals
 
-        from gi.repository import Gtk
+        import gi
+        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         menu = Gtk.Menu()
         item = Gtk.MenuItem(label="Top Menu Item 1")
         submenu = Gtk.Menu()

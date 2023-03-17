@@ -6,7 +6,7 @@
 
 
 def main():
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
 
     from xpra.log import Logger
     log = Logger("evdi")

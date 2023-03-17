@@ -7,9 +7,9 @@
 from time import monotonic
 from math import log as mathlog, sqrt
 
-from xpra.server.cystats import (   #@UnresolvedImport
-    queue_inspect, logp, time_weighted_average,
-    calculate_timesize_weighted_average_score,
+from xpra.server.cystats import (
+    queue_inspect, logp, time_weighted_average, #@UnresolvedImport
+    calculate_timesize_weighted_average_score,  #@UnresolvedImport
     )
 from xpra.log import Logger
 

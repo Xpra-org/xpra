@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 SIGNAL_RUN_LAST = GObject.SignalFlags.RUN_LAST
 def n_arg_signal(n):
     return (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_PYOBJECT,) * n)

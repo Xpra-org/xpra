@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.util import envint

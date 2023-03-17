@@ -1,15 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-gi.require_version("GdkPixbuf", "2.0")
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 # pylint: disable=wrong-import-position
-from gi.repository import GLib, Pango, Gtk
+from gi.repository import GLib, Pango, Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import register_os_signals

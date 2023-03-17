@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gdk
+from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP

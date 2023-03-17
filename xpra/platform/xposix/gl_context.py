@@ -100,7 +100,9 @@ class GLXContext:
         self.xdisplay = None
         self.context = None
         self.bit_depth = 0
-        from gi.repository import Gdk
+        import gi
+        gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+        from gi.repository import Gdk  # @UnresolvedImport
         display = Gdk.Display.get_default()
         if not display:
             log.warn("Warning: GLXContext: no default display")
@@ -180,7 +182,9 @@ class GLXContext:
                 "enabled"   : False,
                 "message"   : "cannot access X11 display",
                 }
-        from gi.repository import Gtk
+        import gi
+        gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         tmp = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)
         tmp.set_decorated(False)

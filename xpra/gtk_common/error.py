@@ -28,7 +28,8 @@
 # computers... does being this careful to avoid sync's actually matter?)
 
 import traceback
-from gi.repository import Gdk
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
 from xpra.os_util import is_main_thread

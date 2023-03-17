@@ -38,7 +38,9 @@ def connect_failed(_message):
     #by the time ssh fails, we may have entered the gtk main loop
     #(and more than once thanks to the clipboard code..)
     if "gi.repository.Gtk" in sys.modules:
-        from gi.repository import Gtk
+        import gi
+        gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         Gtk.main_quit()
 
 

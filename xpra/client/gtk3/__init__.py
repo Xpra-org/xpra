@@ -7,8 +7,8 @@ import gi
 
 from xpra.os_util import is_X11
 
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 
 if is_X11():
     try:

@@ -4,6 +4,6 @@
 # later version. See the file COPYING for details.
 
 import gi
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
-gi.require_version('Pango', '1.0')
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Pango', '1.0')  # @UndefinedVariable

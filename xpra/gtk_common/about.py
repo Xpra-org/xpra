@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2009-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
-from gi.repository import Gtk
+import gi
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.config import get_build_info

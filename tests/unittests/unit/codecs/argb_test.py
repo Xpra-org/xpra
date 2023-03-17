@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import unittest
 from time import monotonic
 
 from xpra.os_util import hexstr
-from xpra.codecs.argb import argb  #pylint: disable=no-name-in-module
+from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgbx, argb_to_rgba, bgra_to_rgba    #pylint: disable=no-name-in-module
 
 
 def measure_fn(fn, data, *args):
@@ -32,58 +32,58 @@ class ARGBTest(unittest.TestCase):
     def test_r210_to_rgba(self):
         cmp((0xff, 0xfe, 0x7f, 0x7e),
             (0xf9, 0xff, 0xbf, 0x55),
-            argb.r210_to_rgba, 1, 1, 4, 4,
+            r210_to_rgba, 1, 1, 4, 4,
             )
         cmp((0x17, 0x0f, 0x31, 0x8f),
             (0x3c, 0x10, 0xc5, 0xaa),
-            argb.r210_to_rgba, 1, 1, 4, 4,
+            r210_to_rgba, 1, 1, 4, 4,
             )
         w = 1920
         h = 1080
         data = bytes(bytearray(w*h*4))
-        measure_fn(argb.r210_to_rgba, data, w, h, w*4, w*4)
+        measure_fn(r210_to_rgba, data, w, h, w*4, w*4)
 
     def test_r210data_to_rgbx(self):
         cmp((0xff, 0xfe, 0x7f, 0x7e),
             (0xf9, 0xff, 0xbf, 0xff),
-            argb.r210_to_rgbx, 1, 1, 4, 4,
+            r210_to_rgbx, 1, 1, 4, 4,
             )
         cmp((0x17, 0x0f, 0x31, 0x8f),
             (0x3c, 0x10, 0xc5, 0xff),
-            argb.r210_to_rgbx, 1, 1, 4, 4,
+            r210_to_rgbx, 1, 1, 4, 4,
             )
         w = 1920
         h = 1080
         data = bytes(bytearray(w*h*4))
-        measure_fn(argb.r210_to_rgbx, data, w, h, w*4, w*4)
+        measure_fn(r210_to_rgbx, data, w, h, w*4, w*4)
 
     def test_argb_to_rgba(self):
         cmp((0xff, 0xfe, 0x7f, 0x7e),
             (0xfe, 0x7f, 0x7e, 0xff),
-            argb.argb_to_rgba,
+            argb_to_rgba,
             )
         cmp((0x17, 0x0f, 0x31, 0x8f),
             (0x0f, 0x31, 0x8f, 0x17),
-            argb.argb_to_rgba,
+            argb_to_rgba,
             )
         w = 1920
         h = 1080
         data = bytes(bytearray(w*h*4))
-        measure_fn(argb.argb_to_rgba, data)
+        measure_fn(argb_to_rgba, data)
 
     def test_bgra_to_rgba(self):
         cmp((0xff, 0xfe, 0x7f, 0x7e),
             (0x7f, 0xfe, 0xff, 0x7e),
-            argb.bgra_to_rgba,
+            bgra_to_rgba,
             )
         cmp((0x17, 0x0f, 0x31, 0x8f),
             (0x31, 0x0f, 0x17, 0x8f),
-            argb.bgra_to_rgba,
+            bgra_to_rgba,
             )
         w = 1920
         h = 1080
         data = bytes(bytearray(w*h*4))
-        measure_fn(argb.bgra_to_rgba, data)
+        measure_fn(bgra_to_rgba, data)
 
 
 def main():

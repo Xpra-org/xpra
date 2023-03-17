@@ -210,7 +210,9 @@ class DBUS_Notifier(NotifierBase):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from gi.repository import GLib, Gtk
+    import gi
+    gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+    from gi.repository import GLib, Gtk  # @UnresolvedImport
     def show():
         n = DBUS_Notifier_factory()
         #actions = ["0", "Hello", "1", "Bye"]

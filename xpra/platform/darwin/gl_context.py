@@ -125,7 +125,9 @@ class AGLContext:
                     conv, const_val = vdef              #ie (bool, NSOpenGLPFAAlphaSize)
                     v = self._get_pfa(const_val, screen)#ie: NSOpenGLPFAAlphaSize=8
                     si[name] = conv(v)                   #ie: bool(8)
-        from gi.repository import Gdk
+        import gi
+        gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+        from gi.repository import Gdk  # @UnresolvedImport
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
         with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))

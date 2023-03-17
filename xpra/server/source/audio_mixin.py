@@ -320,7 +320,7 @@ class AudioMixin(StubSourceMixin):
         self.call_update_av_sync_delay()
         #run it again after 10 seconds,
         #by that point the source info will actually be populated:
-        from gi.repository import GLib  # pylint: disable=import-outside-toplevel
+        from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
         GLib.timeout_add(10*1000, self.call_update_av_sync_delay)
 
     def call_update_av_sync_delay(self):

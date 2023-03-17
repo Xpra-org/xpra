@@ -18,7 +18,7 @@ def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal
         register_os_signal(callback, commandtype, signum)
 
 def register_os_signal(callback, commandtype="", signum=signal.SIGINT):
-    from gi.repository import GLib  #pylint: disable=import-outside-toplevel
+    from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
     signame = SIGNAMES.get(signum, str(signum))
     def write_signal():
         if commandtype is None:
@@ -74,5 +74,5 @@ def install_signal_handlers(sstr, signal_handler):
     def do_install_signal_handlers():
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
-    from gi.repository import GLib  #pylint: disable=import-outside-toplevel
+    from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
     GLib.idle_add(do_install_signal_handlers)

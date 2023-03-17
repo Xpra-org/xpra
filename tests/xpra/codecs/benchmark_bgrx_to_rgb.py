@@ -7,7 +7,7 @@
 import sys
 from time import monotonic
 
-from xpra.codecs.argb.argb import bgrx_to_rgb
+from xpra.codecs.argb.argb import bgrx_to_rgb  # @UnresolvedImport
 
 
 def measure_fn(fn, data):

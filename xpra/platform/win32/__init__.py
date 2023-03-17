@@ -12,7 +12,7 @@ import sys
 import errno
 import os.path
 import ctypes
-from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer
+from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer  # @UnresolvedImport
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
 from xpra.util import envbool
@@ -39,7 +39,7 @@ STDOUT_FILENO = 1
 STDERR_FILENO = 2
 WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", kernel32))
 
-GetConsoleCP = kernel32.GetConsoleCP
+GetConsoleCP = kernel32.GetConsoleCP  # @UndefinedVariable
 
 #redirect output if we're not running from a console:
 frozen = getattr(sys, 'frozen', False)
@@ -344,7 +344,7 @@ def setup_console_event_listener(handler, enable):
         log("SetConsoleCtrlHandler(%s, %s)=%s", handler, enable, result)
         if result==0:
             log.error("Error: could not %s console control handler:", "set" if enable else "unset")
-            log.error(" SetConsoleCtrlHandler: %r", ctypes.GetLastError())
+            log.error(" SetConsoleCtrlHandler: %r", ctypes.GetLastError())  # @UndefinedVariable
             return False
         return True
     except Exception as e:

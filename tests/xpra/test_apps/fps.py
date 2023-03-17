@@ -3,8 +3,8 @@
 from cairo import OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, GLib #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 WIDTH, HEIGHT = 640, 640

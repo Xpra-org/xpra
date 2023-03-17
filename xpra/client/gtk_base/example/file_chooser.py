@@ -7,8 +7,8 @@ from xpra.platform import program_context
 from xpra.gtk_common.gtk_util import choose_file
 
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk    #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk    #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 def main():

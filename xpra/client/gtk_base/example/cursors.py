@@ -9,9 +9,9 @@ from xpra.gtk_common.cursor_names import cursor_types  #pylint: disable=wrong-im
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 width = 400

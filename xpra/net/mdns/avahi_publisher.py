@@ -6,7 +6,7 @@
 
 # taken from the code I wrote for winswitch
 
-import avahi
+import avahi  # @UnresolvedImport
 import dbus
 try:
     from dbus.exceptions import DBusException
@@ -249,7 +249,7 @@ class AvahiPublisher:
 
 
 def main():
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     import random
     import signal
     port = int(20000*random.random())+10000

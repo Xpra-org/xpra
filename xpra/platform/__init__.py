@@ -87,7 +87,7 @@ def set_name(prgname=None, appname=None):
 def set_prgname(name):
     if not name:
         return
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     GLib.set_prgname(name)
 
 def get_prgname():
@@ -99,7 +99,7 @@ def get_prgname():
 def set_application_name(name):
     if not name:
         return
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     GLib.set_application_name(name)
 
 def get_application_name():

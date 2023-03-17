@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import avahi
+import avahi  # @UnresolvedImport
 import dbus
 
 from xpra.net.mdns import XPRA_MDNS_TYPE
@@ -115,7 +115,7 @@ def main():
     loop_init()
     listener = AvahiListener(XPRA_MDNS_TYPE, mdns_found, mdns_add, mdns_remove)
     try:
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         GLib.idle_add(listener.start)
         GLib.MainLoop().run()
     finally:

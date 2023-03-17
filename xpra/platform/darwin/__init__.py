@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,9 @@ def quit_handler(*_args):
     if exit_cb:
         exit_cb()
     else:
-        from gi.repository import Gtk
+        import gi
+        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+        from gi.repository import Gtk  # @UnresolvedImport
         Gtk.main_quit()
     return True
 
@@ -35,7 +37,7 @@ def get_OSXApplication():
     global macapp
     if macapp is None:
         import gi
-        gi.require_version('GtkosxApplication', '1.0')
+        gi.require_version('GtkosxApplication', '1.0')  # @UndefinedVariable
         from gi.repository import GtkosxApplication #@UnresolvedImport
         macapp = GtkosxApplication.Application()
         macapp.connect("NSApplicationWillTerminate", quit_handler)
