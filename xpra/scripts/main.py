@@ -123,6 +123,16 @@ def main(script_file, cmdline):
             def nomd5(*_args):
                 raise ValueError("md5 support is disabled")
             hashlib.md5 = nomd5
+    if envbool("XPRA_SHA1", False):
+        import hashlib  # @Reimport
+        try:
+            hashlib.algorithms_available.remove("sha1")  # @UndefinedVariable
+        except KeyError:
+            pass
+        else:
+            def nosha1(*_args):
+                raise ValueError("sha1 support is disabled")
+            hashlib.sha1 = nosha1
 
     def debug_exc(msg="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
