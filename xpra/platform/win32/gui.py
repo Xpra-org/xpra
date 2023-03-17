@@ -10,7 +10,7 @@ import os
 import sys
 import types
 import ctypes
-from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
+from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof  # @UnresolvedImport
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ
 from ctypes import CDLL, pythonapi, py_object
 from ctypes.util import find_library
@@ -1223,7 +1223,7 @@ class ClientExtras:
             log("will unfreeze all the windows")
             #don't unfreeze directly from here,
             #as the system may not be fully usable yet (see #997)
-            from gi.repository import GLib
+            from gi.repository import GLib  # @UnresolvedImport
             GLib.idle_add(c.unfreeze)
 
 
@@ -1300,7 +1300,7 @@ def main():
             log.enable_debug()
             win32_event_logger.enable_debug()
 
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
 
         log.info("Event loop is running")
         loop = GLib.MainLoop()

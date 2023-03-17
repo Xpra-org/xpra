@@ -8,7 +8,9 @@ import sys
 import os.path
 import subprocess
 
-from gi.repository import Gtk, Pango, GLib
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Pango', '1.0')  # @UndefinedVariable
+from gi.repository import Gtk, Pango, GLib  # @UnresolvedImport
 
 from xpra.os_util import POSIX, OSX, which
 from xpra.gtk_common.gobject_compat import register_os_signals

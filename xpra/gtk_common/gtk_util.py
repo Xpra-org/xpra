@@ -12,10 +12,10 @@ from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
 from xpra.log import Logger
 
-gi.require_version("Gdk", "3.0")
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-gi.require_version("GdkPixbuf", "2.0")
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 log = Logger("gtk", "util")

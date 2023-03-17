@@ -280,7 +280,7 @@ class Keyboard(KeyboardBase):
                 if rmenu in (0, 1):
                     self.delayed_event = (send_key_action_cb, wid, key_event)
                     #needed for altgr emulation timeouts:
-                    from gi.repository import GLib
+                    from gi.repository import GLib  # @UnresolvedImport
                     GLib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
                 return
             if key_event.keyname=="Alt_R":

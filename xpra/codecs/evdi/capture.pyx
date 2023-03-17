@@ -253,7 +253,7 @@ cdef class EvdiDevice:
     def __repr__(self):
         return f"EvdiDevice({self.device} - {self.mode.width}x{self.mode.height})"
 
-    def open(self):
+    def open(self):  # @ReservedAssignment
         if self.handle:
             raise RuntimeError("this evdi device is already open")
         self.handle = evdi_open(self.device)

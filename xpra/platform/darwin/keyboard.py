@@ -6,8 +6,8 @@
 
 import os
 import gi
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper

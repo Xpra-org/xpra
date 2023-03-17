@@ -57,7 +57,7 @@ def import_gst():
     try:
         log("import gi")
         import gi
-        gi.require_version('Gst', '1.0')
+        gi.require_version('Gst', '1.0')  # @UndefinedVariable
         from gi.repository import Gst           #@UnresolvedImport
         log("Gst=%s", Gst)
         Gst.init(None)

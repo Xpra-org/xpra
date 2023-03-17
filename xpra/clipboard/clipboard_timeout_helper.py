@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore
 from xpra.util import repr_ellipsized, ellipsizer, envint, engs

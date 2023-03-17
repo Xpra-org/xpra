@@ -11,7 +11,7 @@
 
 import os
 import signal
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
 from xpra.os_util import POSIX

@@ -13,10 +13,10 @@ from xpra.util import csv
 from xpra.gtk_common.gtk_util import TableBuilder, label, get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
-gi.require_version("Gdk", "3.0")
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import Pango, Gtk, Gdk, GLib
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+from gi.repository import Pango, Gtk, Gdk, GLib  # @UnresolvedImport
 
 
 class ClipboardInstance:

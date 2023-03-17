@@ -152,7 +152,6 @@ def main(): # pragma: no cover
 
         from xpra.gtk_common.gobject_compat import register_os_signals
 
-        import gi
         gi.require_version('Gtk', '3.0')  # @UndefinedVariable
         from gi.repository import Gtk  # @UnresolvedImport
         menu = Gtk.Menu()

@@ -20,10 +20,10 @@ from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
 from xpra.gtk_common.about import about
 
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
-gi.require_version('Pango', '1.0')
-from gi.repository import GLib, Pango, Gtk, Gdk, Gio
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('Pango', '1.0')  # @UndefinedVariable
+from gi.repository import GLib, Pango, Gtk, Gdk, Gio  # @UnresolvedImport
 
 log = Logger("client", "util")
 

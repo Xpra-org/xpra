@@ -49,7 +49,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         def noop():
             pass
         def _ChildCommandServer():
-            from gi.repository import GLib
+            from gi.repository import GLib  # @UnresolvedImport
             def idle_add(ccs, *args):
                 return GLib.idle_add(*args)
             child_command_server.ChildCommandServer.idle_add = idle_add

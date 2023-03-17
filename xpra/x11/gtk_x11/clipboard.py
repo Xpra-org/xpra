@@ -5,7 +5,7 @@
 
 import os
 import struct
-from gi.repository import GLib, GObject, Gdk
+from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal

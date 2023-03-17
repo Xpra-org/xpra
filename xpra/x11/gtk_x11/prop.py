@@ -15,6 +15,8 @@ the conversions for plain python types is found in prop_conv.py
 """
 
 import struct
+import gi
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gdk
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES, PROP_SIZES

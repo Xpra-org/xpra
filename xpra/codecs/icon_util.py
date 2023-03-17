@@ -34,8 +34,8 @@ def load_Rsvg():
     if _Rsvg is None:
         import gi  #pylint: disable=import-outside-toplevel
         try:
-            gi.require_version('Rsvg', '2.0')
-            from gi.repository import Rsvg  # pylint: disable=import-outside-toplevel
+            gi.require_version('Rsvg', '2.0')  # @UndefinedVariable
+            from gi.repository import Rsvg  # pylint: disable=import-outside-toplevel @UnresolvedImport
             log("load_Rsvg() Rsvg=%s", Rsvg)
             _Rsvg = Rsvg
         except (ValueError, ImportError) as e:

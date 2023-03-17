@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, GdkPixbuf
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from gi.repository import Gtk, GLib, GdkPixbuf  # @UnresolvedImport
 
 from xpra.net.qrcode import qrencode
 from xpra.gtk_common.gtk_util import add_close_accel

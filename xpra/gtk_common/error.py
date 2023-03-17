@@ -28,6 +28,7 @@
 # computers... does being this careful to avoid sync's actually matter?)
 
 import traceback
+import gi
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
 

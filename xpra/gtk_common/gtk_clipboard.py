@@ -4,7 +4,10 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from gi.repository import GObject, Gtk, Gdk
+import gi
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.clipboard.clipboard_core import (

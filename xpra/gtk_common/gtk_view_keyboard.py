@@ -13,10 +13,10 @@ from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import get_icon_pixbuf
 from xpra.log import enable_color, Logger
 
-gi.require_version("Gdk", "3.0")
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import GLib, Pango, Gtk, Gdk
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+from gi.repository import GLib, Pango, Gtk, Gdk  # @UnresolvedImport
 
 log = Logger("gtk", "keyboard")
 

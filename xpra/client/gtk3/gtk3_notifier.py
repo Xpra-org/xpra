@@ -6,7 +6,7 @@
 #pylint: disable=wrong-import-position
 
 import gi
-gi.require_version('Notify', '0.7')
+gi.require_version('Notify', '0.7')  # @UndefinedVariable
 from gi.repository import Notify            #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase

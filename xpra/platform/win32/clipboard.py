@@ -11,7 +11,7 @@ from ctypes import (
     WinError, FormatError,
     c_char, c_void_p,
     )
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.win32.common import (
     GetDC, ReleaseDC,

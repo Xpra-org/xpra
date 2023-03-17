@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import time
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import WindowBackingBase
