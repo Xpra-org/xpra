@@ -14,7 +14,7 @@ except ImportError:
     #not available in all versions of the bindings?
     DBusException = Exception
 
-from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
+from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, SHOW_INTERFACE
 from xpra.dbus.common import init_system_bus
 from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
 from xpra.log import Logger
@@ -52,7 +52,7 @@ class AvahiPublishers:
     and to convert the text dict into a TXT string.
     """
 
-    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
+    def __init__(self, listen_on, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("AvahiPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         try:
@@ -117,7 +117,7 @@ class AvahiPublishers:
 
 class AvahiPublisher:
 
-    def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text=(), interface=avahi.IF_UNSPEC):
+    def __init__(self, bus, name, port, stype=XPRA_TCP_MDNS_TYPE, domain="", host="", text=(), interface=avahi.IF_UNSPEC):
         log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))
         self.bus = bus
         self.name = name
@@ -256,14 +256,18 @@ def main():
     host = ""
     name = "test service"
     bus = init_system_bus()
-    publisher = AvahiPublisher(bus, name, port, stype=XPRA_MDNS_TYPE, host=host, text=("somename=somevalue",))
-    assert publisher
-    def update_rec():
-        publisher.update_txt({b"hello" : b"world"})
-    GLib.timeout_add(5*1000, update_rec)
-    def start():
-        publisher.start()
-    GLib.idle_add(start)
+    publishers = []
+    def add(service_type=XPRA_TCP_MDNS_TYPE):
+        publisher = AvahiPublisher(bus, name, port, stype=service_type, host=host, text=("somename=somevalue",))
+        publishers.append(publisher)
+        def start():
+            publisher.start()
+        def update_rec():
+            publisher.update_txt({b"hello" : b"world"})
+        GLib.idle_add(start)
+        GLib.timeout_add(5*1000, update_rec)
+    add(XPRA_TCP_MDNS_TYPE)
+    add(XPRA_UDP_MDNS_TYPE)
     signal.signal(signal.SIGTERM, exit)
     GLib.MainLoop().run()
 

@@ -6,7 +6,8 @@
 import sys
 from xpra.util import envbool
 
-XPRA_MDNS_TYPE = "_xpra._tcp."
+XPRA_TCP_MDNS_TYPE = "_xpra._tcp."
+XPRA_UDP_MDNS_TYPE = "_xpra._udp."
 RFB_MDNS_TYPE = "_rfb._tcp."
 
 AVAHI = envbool("XPRA_AVAHI", True)

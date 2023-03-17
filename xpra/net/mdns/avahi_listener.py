@@ -8,7 +8,7 @@
 import avahi  # @UnresolvedImport
 import dbus
 
-from xpra.net.mdns import XPRA_MDNS_TYPE
+from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.dbus.common import init_system_bus
 from xpra.dbus.helper import dbus_to_native
 from xpra.log import Logger
@@ -18,7 +18,7 @@ log = Logger("network", "mdns")
 
 class AvahiListener:
 
-    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+    def __init__(self, service_type=XPRA_TCP_MDNS_TYPE, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
         log("AvahiListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         try:
             self.bus = init_system_bus()
@@ -85,7 +85,7 @@ class AvahiListener:
 
         self.sbrowser = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME,
                                 self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
-                                avahi.PROTO_UNSPEC, XPRA_MDNS_TYPE, 'local', dbus.UInt32(0))),
+                                avahi.PROTO_UNSPEC, self.service_type, 'local', dbus.UInt32(0))),
                                 avahi.DBUS_INTERFACE_SERVICE_BROWSER)
         log("AvahiListener.start() service browser=%s", self.sbrowser)
         s = self.sbrowser.connect_to_signal("ItemNew", self.service_found)
@@ -113,13 +113,19 @@ def main():
 
     from xpra.dbus.common import loop_init
     loop_init()
-    listener = AvahiListener(XPRA_MDNS_TYPE, mdns_found, mdns_add, mdns_remove)
-    try:
-        from gi.repository import GLib  # @UnresolvedImport
+    from gi.repository import GLib  # @UnresolvedImport
+    listeners = []
+    def add(service_type):
+        listener = AvahiListener(service_type, mdns_found, mdns_add, mdns_remove)
+        listeners.append(listener)
         GLib.idle_add(listener.start)
+    add(XPRA_TCP_MDNS_TYPE)
+    add(XPRA_UDP_MDNS_TYPE)
+    try:
         GLib.MainLoop().run()
     finally:
-        listener.stop()
+        for listener in listeners:
+            listener.stop()
 
 
 if __name__ == "__main__":

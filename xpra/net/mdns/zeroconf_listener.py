@@ -92,19 +92,24 @@ def main():
     def mdns_update(*args):
         print("mdns_update: %s" % (args, ))
 
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     loop = GLib.MainLoop()
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
-        from xpra.net.mdns import XPRA_MDNS_TYPE
-        listener = ZeroconfListener(XPRA_MDNS_TYPE+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
-        log("listener=%s" % listener)
-        listener.start()
+        listeners = []
+        from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
+        def add(service_type):
+            listener = ZeroconfListener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
+            log(f"listener={listener}")
+            listener.start()
+        add(XPRA_TCP_MDNS_TYPE)
+        add(XPRA_UDP_MDNS_TYPE)
         try:
             loop.run()
         finally:
-            listener.stop()
+            for listener in listeners:
+                listener.stop()
 
 
 if __name__ == "__main__":

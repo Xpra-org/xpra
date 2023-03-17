@@ -9,7 +9,7 @@ gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
-from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
+from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -24,14 +24,18 @@ class mdns_sessions(SessionsGUI):
         super().__init__(options)
         listener_class = get_listener_class()
         assert listener_class
-        self.listener = listener_class(XPRA_MDNS_TYPE,
-                                       mdns_found=None,
-                                       mdns_add=self.mdns_add,
-                                       mdns_remove=self.mdns_remove,
-                                       mdns_update=self.mdns_update)
-        log("%s%s=%s", listener_class, (XPRA_MDNS_TYPE, None, self.mdns_add, self.mdns_remove), self.listener)
-        self.listener.start()
-
+        self.listeners = []
+        def add(service_type):
+            instance = listener_class(service_type,
+                                      mdns_found=None,
+                                      mdns_add=self.mdns_add,
+                                      mdns_remove=self.mdns_remove,
+                                      mdns_update=self.mdns_update)
+            log("%s%s=%s", listener_class, (service_type, None, self.mdns_add, self.mdns_remove), instance)
+            self.listeners.append(instance)
+            instance.start()
+        add(XPRA_TCP_MDNS_TYPE)
+        add(XPRA_UDP_MDNS_TYPE)
 
     def cleanup(self):
         self.listener.stop()

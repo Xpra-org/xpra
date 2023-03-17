@@ -823,7 +823,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     try:
         from xpra.net import mdns
         assert mdns
-        from xpra.net.mdns import XPRA_MDNS_TYPE, RFB_MDNS_TYPE
+        from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, RFB_MDNS_TYPE
     except ImportError as e:
         log("mdns support is not installed: %s", e)
         return ()
@@ -863,7 +863,10 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     if display_name and not (OSX or WIN32):
         name += f" {display_name}"
     mode = d.get("mode", "tcp")
-    service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
+    service_type = {
+        "rfb"   : RFB_MDNS_TYPE,
+        "quic"  : XPRA_UDP_MDNS_TYPE,
+        }.get(mode, XPRA_TCP_MDNS_TYPE)
     index = 0
     aps = []
     for host, port in listen_on:

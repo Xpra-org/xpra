@@ -2945,7 +2945,7 @@ def run_list_mdns(error_cb, extra_args):
             MDNS_WAIT = 5
     else:
         error_cb("too many arguments for mode")
-    from xpra.net.mdns import XPRA_MDNS_TYPE
+    from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
     try:
         from xpra.net.mdns.avahi_listener import AvahiListener
         listener_class = AvahiListener
@@ -2998,15 +2998,23 @@ def run_list_mdns(error_cb, extra_args):
         uq = text.strget("uuid", len(found)), username, host
         found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
         GLib.timeout_add(1000, show_new_found)
-    listener = listener_class(XPRA_MDNS_TYPE, mdns_add=mdns_add)
+    listeners = []
+    def add(service_type):
+        listener = listener_class(service_type, mdns_add=mdns_add)
+        listeners.append(listener)
+        def start():
+            listener.start()
+        GLib.idle_add(start)
+    add(XPRA_TCP_MDNS_TYPE)
+    add(XPRA_UDP_MDNS_TYPE)
     print("Looking for xpra services via mdns")
     try:
-        GLib.idle_add(listener.start)
         loop = GLib.MainLoop()
         GLib.timeout_add(MDNS_WAIT*1000, loop.quit)
         loop.run()
     finally:
-        listener.stop()
+        for listener in listeners:
+            listener.stop()
     if not found:
         print("no services found")
     else:

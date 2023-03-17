@@ -10,7 +10,7 @@ from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@Un
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.net.net_util import get_interfaces_addresses
-from xpra.net.mdns import XPRA_MDNS_TYPE
+from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.net.net_util import get_iface
 
 log = Logger("network", "mdns")
@@ -35,7 +35,7 @@ class ZeroconfPublishers:
     """
     Expose services via python zeroconf
     """
-    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
+    def __init__(self, listen_on, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
         self.ports = {}
@@ -104,7 +104,7 @@ class ZeroconfPublishers:
 
 
 class ZeroconfPublisher:
-    def __init__(self, address, host, port, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
+    def __init__(self, address, host, port, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublisher%s", (address, host, port, service_name, service_type, text_dict))
         self.address = address
         self.host = host
@@ -207,19 +207,24 @@ def main():
     host = "0.0.0.0"
     host_ports = [(host, port)]
     service_name = "test %s" % int(random.random()*100000)
-    publisher = ZeroconfPublishers(host_ports, service_name, XPRA_MDNS_TYPE, {"somename":"somevalue"})
-    from gi.repository import GLib
-    GLib.idle_add(publisher.start)
+    from gi.repository import GLib  # @UnresolvedImport
+    publishers = []
+    def add(service_type):
+        publisher = ZeroconfPublishers(host_ports, service_name, service_type, {"somename":"somevalue"})
+        GLib.idle_add(publisher.start)
+        publishers.append(publisher)
+        def update_rec():
+            publisher.update_txt({"somename": "someothervalue"})
+        GLib.timeout_add(10*1000, update_rec)
+    add(XPRA_TCP_MDNS_TYPE)
+    add(XPRA_UDP_MDNS_TYPE)
     loop = GLib.MainLoop()
     log.info("python-zeroconf version %s", zeroconf_version)
-    def update_rec():
-        publisher.update_txt({"somename": "someothervalue"})
-        return False
-    GLib.timeout_add(10*1000, update_rec)
     try:
         loop.run()
     except KeyboardInterrupt:
-        publisher.stop()
+        for publisher in publishers:
+            publisher.stop()
         loop.quit()
 
 
