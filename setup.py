@@ -398,7 +398,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     def show_switch_info():
         switches_info = {}
         for x in SWITCHES:
-            switches_info[x] = globals()["%s_ENABLED" % x]
+            switches_info[x] = globals()[f"{x}_ENABLED"]
         print("build switches:")
         for k in sorted(SWITCHES):
             v = switches_info[k]
@@ -2042,14 +2042,14 @@ if bundle_tests_ENABLED:
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
     add_modules("xpra.client")
+    add_packages("xpra.client.base")
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
 if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED or server_ENABLED, "xpra.gtk_common")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk_base", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:

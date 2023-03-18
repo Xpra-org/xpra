@@ -11,8 +11,8 @@ from xpra.os_util import SIGNAMES, bytestostr
 from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
-from xpra.client.client_base import XpraClientBase
-from xpra.client.gobject_client_base import InfoXpraClient
+from xpra.client.base.client_base import XpraClientBase
+from xpra.client.base.gobject_client_base import InfoXpraClient
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus
 from xpra.net.qrcode.gtk_qr import qr_pixbuf

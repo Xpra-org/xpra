@@ -65,6 +65,7 @@ Requires:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-codecs-extra = %{version}-%{release}
 Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Requires:			xpra-client = %{version}-%{release}
+Requires:			xpra-client-gtk3 = %{version}-%{release}
 Requires:			xpra-server = %{version}-%{release}
 %if 0%{?fedora}
 Requires:			xpra-audio = %{version}-%{release}
@@ -256,35 +257,43 @@ Group:				Networking
 #Provides:			python3-xpra-client
 Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
-Recommends:			xpra-codecs = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
 BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
+Recommends:			python3-cups
+Recommends:		    python3-pysocks
+Suggests:			sshpass
+%description client
+This package contains the xpra client.
+
+%package client-gtk3
+Summary:			GTK3 xpra client
+Group:				Networking
+Requires:			xpra-client = %{version}-%{release}
+Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			pinentry
 Recommends:			xpra-audio
-Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:         python3-psutil
-Recommends:		    python3-pysocks
 Suggests:			python3-opencv
+Suggests:			sshpass
 #without this, the system tray is unusable with gnome!
 %if 0%{?el8}%{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %else
 Suggests:			gnome-shell-extension-appindicator
 %endif
-Suggests:			sshpass
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
 BuildRequires:		zlib-devel
 %endif
 %endif
-%description client
-This package contains the xpra client.
+%description client-gtk3
+This package contains the GTK3 xpra client.
 
 
 %package server
@@ -464,34 +473,33 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
 %{python3_sitearch}/xpra/__pycache__
-%{python3_sitearch}/xpra/buffers
-%{python3_sitearch}/xpra/clipboard
-%{python3_sitearch}/xpra/notifications
+%{python3_sitearch}/xpra/buffers/
+%{python3_sitearch}/xpra/clipboard/
+%{python3_sitearch}/xpra/notifications/
 %{python3_sitearch}/xpra/codecs/__init__.py
 %{python3_sitearch}/xpra/codecs/__pycache__
-%{python3_sitearch}/xpra/codecs/argb
-%{python3_sitearch}/xpra/codecs/pillow
+%{python3_sitearch}/xpra/codecs/argb/
+%{python3_sitearch}/xpra/codecs/pillow/
 %{python3_sitearch}/xpra/codecs/codec_*.py*
 %{python3_sitearch}/xpra/codecs/icon_util.py
 %{python3_sitearch}/xpra/codecs/image_wrapper.py
 %{python3_sitearch}/xpra/codecs/loader.py
 %{python3_sitearch}/xpra/codecs/rgb_transform.py
 %{python3_sitearch}/xpra/codecs/video_helper.py
-%{python3_sitearch}/xpra/dbus
-%{python3_sitearch}/xpra/gtk_common
-%{python3_sitearch}/xpra/keyboard
-%{python3_sitearch}/xpra/net
-%{python3_sitearch}/xpra/platform
-%{python3_sitearch}/xpra/scripts
-%{python3_sitearch}/xpra/sound
-%{python3_sitearch}/xpra/x11
+%{python3_sitearch}/xpra/dbus/
+%{python3_sitearch}/xpra/gtk_common/
+%{python3_sitearch}/xpra/keyboard/
+%{python3_sitearch}/xpra/net/
+%{python3_sitearch}/xpra/platform/
+%{python3_sitearch}/xpra/scripts/
+%{python3_sitearch}/xpra/sound/
+%{python3_sitearch}/xpra/x11/
 %{python3_sitearch}/xpra/rectangle.*.so
 %{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
 
 
 %files codecs
-#%{python3_sitearch}/xpra/codecs/csc_*
 %{python3_sitearch}/xpra/codecs/drm
 %{python3_sitearch}/xpra/codecs/proxy
 #%{python3_sitearch}/xpra/codecs/evdi
@@ -507,7 +515,6 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?fedora}
 %{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/spng
-# /xpra/codecs/vpl
 %endif
 
 %files codecs-extras
@@ -526,9 +533,18 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/sound
 
 %files client
-%{python3_sitearch}/xpra/client
-%{_libexecdir}/xpra/xpra_signal_listener
+%{python3_sitearch}/xpra/client/auth/
+%{python3_sitearch}/xpra/client/base/
+%pycached %{python3_sitearch}/xpra/client/__init__.py
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
+
+%files client-gtk3
+%{python3_sitearch}/xpra/client/gui/
+%{python3_sitearch}/xpra/client/gtk_base/
+%{python3_sitearch}/xpra/client/gtk3/
+%{python3_sitearch}/xpra/client/gl/
+%{python3_sitearch}/xpra/client/mixins/
+%{_libexecdir}/xpra/xpra_signal_listener
 %config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
 %{_datadir}/applications/xpra-launcher.desktop
 %{_datadir}/applications/xpra-gui.desktop
@@ -659,6 +675,8 @@ systemctl reload dbus
 
 %post client
 /usr/bin/update-mime-database &> /dev/null || :
+
+%post client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
@@ -703,6 +721,8 @@ fi
 
 %postun client
 /usr/bin/update-mime-database &> /dev/null || :
+
+%postun client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
 	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null

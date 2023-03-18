@@ -33,7 +33,7 @@ from xpra.util import (
     envint, envbool, typedict,
     make_instance, updict, repr_ellipsized, u, noerr, first_time,
     )
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("window")
@@ -168,7 +168,7 @@ class WindowClient(StubClientMixin):
     def init(self, opts):
         if opts.system_tray:
             try:
-                from xpra.client import client_tray
+                from xpra.client.gui import client_tray
                 assert client_tray
             except ImportError:
                 log.warn("Warning: the tray forwarding module is missing")
@@ -632,7 +632,7 @@ class WindowClient(StubClientMixin):
         traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
-        from xpra.client.client_tray import ClientTray
+        from xpra.client.gui.client_tray import ClientTray
         mmap = getattr(self, "mmap", None)
         return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, mmap)
 

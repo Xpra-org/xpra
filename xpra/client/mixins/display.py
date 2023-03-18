@@ -19,7 +19,7 @@ from xpra.common import (
     adjust_monitor_refresh_rate, get_refresh_rate_for_value,
     FULL_INFO,
     )
-from xpra.client.scaling_parser import (
+from xpra.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
     )
@@ -27,7 +27,7 @@ from xpra.util import (
     envint, envbool, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("screen")

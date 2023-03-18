@@ -13,8 +13,8 @@ from cairo import (  #pylint: disable=no-name-in-module
     )
 from gi.repository import GLib, Gdk  # @UnresolvedImport
 
-from xpra.client.paint_colors import get_paint_box_color
-from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
+from xpra.client.gui.paint_colors import get_paint_box_color
+from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool
 from xpra.log import Logger

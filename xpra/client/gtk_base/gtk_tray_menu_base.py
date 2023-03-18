@@ -27,7 +27,7 @@ from xpra.client.gtk_base.menu_helper import (
 from xpra.exit_codes import ExitCode
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.simple_stats import std_unit_dec
-from xpra.client import mixin_features
+from xpra.client.gui import mixin_features
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -678,7 +678,7 @@ class GTKTrayMenuBase(MenuHelper):
     def make_scalingmenu(self):
         scaling_submenu = Gtk.Menu()
         scaling_submenu.updating = False
-        from xpra.client.scaling_parser import SCALING_OPTIONS
+        from xpra.scaling_parser import SCALING_OPTIONS
         for x in SCALING_OPTIONS:
             scaling_submenu.append(self.make_scalingvaluemenuitem(scaling_submenu, x))
         def scaling_changed(*args):

@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import envbool
-from xpra.client.tray_base import TrayBase, log
+from xpra.client.gui.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import (
     get_icon_from_file, get_pixbuf_from_data, get_default_root_window,
     )

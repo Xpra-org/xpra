@@ -7,7 +7,7 @@
 
 import os
 
-from xpra.client.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
+from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util import csv, std, envbool, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.log import Logger

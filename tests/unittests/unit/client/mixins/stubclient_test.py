@@ -10,7 +10,7 @@ import unittest
 
 from xpra.util import AdHocStruct
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 
 
 class StubClientTest(ClientMixinTest):

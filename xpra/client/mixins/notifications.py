@@ -7,7 +7,7 @@
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict, net_utf8
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("notify")

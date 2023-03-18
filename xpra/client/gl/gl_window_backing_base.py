@@ -59,9 +59,9 @@ from xpra.os_util import (
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
-from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.window_backing_base import (
+from xpra.client.gui.paint_colors import get_paint_box_color
+from xpra.client.gui.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
     WEBP_PILLOW, SCROLL_ENCODING,
     )

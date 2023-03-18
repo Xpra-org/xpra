@@ -315,6 +315,14 @@ def isdisplaytype(args, *dtypes) -> bool:
     d = args[0]
     return any((d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes))
 
+def check_gtk_client():
+    try:
+        from xpra.client import gui, gtk3
+        assert gui, gtk3
+    except ImportError as e:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, f"the xpra gui client is not installed: {e}")
+    check_gtk()
+
 def check_gtk():
     import gi
     gi.require_version("Gtk", "3.0")  # @UndefinedVariable
@@ -512,16 +520,16 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         no_gtk()
         return run_list_mdns(error_cb, args)
     elif mode == "mdns-gui":
-        check_gtk()
+        check_gtk_client()
         return run_mdns_gui(options)
     elif mode == "list-sessions":
         no_gtk()
         return run_list_sessions(args, options)
     elif mode == "sessions":
-        no_gtk()
+        check_gtk_client()
         return run_sessions_gui(options)
     elif mode == "displays":
-        no_gtk()
+        check_gtk_client()
         return run_displays(args)
     elif mode == "clean-displays":
         no_gtk()
@@ -544,22 +552,22 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         no_gtk()
         return run_wmname(args)
     elif mode == "desktop-greeter":
-        check_gtk()
+        check_gtk_client()
         return run_desktop_greeter()
     elif mode == "launcher":
-        check_gtk()
+        check_gtk_client()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
         return launcher_main(["xpra"]+args)
     elif mode == "gui":
-        check_gtk()
+        check_gtk_client()
         from xpra.gtk_common import gui
         return gui.main(cmdline)
     elif mode == "start-gui":
-        check_gtk()
+        check_gtk_client()
         from xpra.gtk_common import start_gui
         return start_gui.main(options)
     elif mode == "bug-report":
-        check_gtk()
+        check_gtk_client()
         from xpra.scripts import bug_report
         bug_report.main(["xpra"]+args)
     elif mode == "session-info":
@@ -577,19 +585,19 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.sound.wrapper import run_sound
         return run_sound(mode, error_cb, options, args)
     elif mode=="pinentry":
-        check_gtk()
+        check_gtk_client()
         from xpra.scripts.pinentry_wrapper import run_pinentry
         return run_pinentry(args)
     elif mode=="input_pass":
-        check_gtk()
+        check_gtk_client()
         from xpra.scripts.pinentry_wrapper import input_pass
         password = input_pass((args+["password"])[0])
         return len(password or "")>0
     elif mode=="_dialog":
-        check_gtk()
+        check_gtk_client()
         return run_dialog(args)
     elif mode=="_pass":
-        check_gtk()
+        check_gtk_client()
         return run_pass(args)
     elif mode=="send-file":
         check_gtk()
@@ -598,16 +606,16 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         return run_splash(args)
     elif mode=="opengl":
-        check_gtk()
+        check_gtk_client()
         return run_glcheck(options)
     elif mode=="opengl-probe":
-        check_gtk()
+        check_gtk_client()
         return run_glprobe(options)
     elif mode=="opengl-test":
-        check_gtk()
+        check_gtk_client()
         return run_glprobe(options, True)
     elif mode=="example":
-        check_gtk()
+        check_gtk_client()
         return run_example(args)
     elif mode=="autostart":
         return run_autostart(script_file, args)
@@ -665,7 +673,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.scripts import version
         return version.main()
     elif mode=="toolbox":
-        check_gtk()
+        check_gtk_client()
         from xpra.client.gtk_base import toolbox
         return toolbox.main()
     elif mode == "initenv":
@@ -1374,28 +1382,28 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
         socket_dirs += opts.client_socket_dirs or []
     dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
-        from xpra.client.gobject_client_base import ScreenshotXpraClient
+        from xpra.client.base.gobject_client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(opts, screenshot_filename)
     elif mode=="info":
-        from xpra.client.gobject_client_base import InfoXpraClient
+        from xpra.client.base.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(opts)
     elif mode=="id":
-        from xpra.client.gobject_client_base import IDXpraClient
+        from xpra.client.base.gobject_client_base import IDXpraClient
         app = IDXpraClient(opts)
     elif mode in ("show-menu", "show-about", "show-session-info"):
-        from xpra.client.gobject_client_base import RequestXpraClient
+        from xpra.client.base.gobject_client_base import RequestXpraClient
         app = RequestXpraClient(request=mode, opts=opts)
     elif mode=="connect-test":
-        from xpra.client.gobject_client_base import ConnectTestXpraClient
+        from xpra.client.base.gobject_client_base import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
     elif mode=="_monitor":
-        from xpra.client.gobject_client_base import MonitorXpraClient
+        from xpra.client.base.gobject_client_base import MonitorXpraClient
         app = MonitorXpraClient(opts)
     elif mode=="shell":
-        from xpra.client.gobject_client_base import ShellXpraClient
+        from xpra.client.base.gobject_client_base import ShellXpraClient
         app = ShellXpraClient(opts)
     elif mode=="control":
-        from xpra.client.gobject_client_base import ControlXpraClient
+        from xpra.client.base.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:
             error_cb("not enough arguments for 'control' mode, try 'help'")
         args = extra_args[1:]
@@ -1403,7 +1411,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
         app = ControlXpraClient(opts)
         app.set_command_args(args)
     elif mode=="print":
-        from xpra.client.gobject_client_base import PrintClient
+        from xpra.client.base.gobject_client_base import PrintClient
         if len(extra_args)<=1:
             error_cb("not enough arguments for 'print' mode")
         args = extra_args[1:]
@@ -1415,13 +1423,13 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
         from xpra.client.gtk3.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode=="version":
-        from xpra.client.gobject_client_base import VersionXpraClient
+        from xpra.client.base.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(opts)
     elif mode=="detach":
-        from xpra.client.gobject_client_base import DetachXpraClient
+        from xpra.client.base.gobject_client_base import DetachXpraClient
         app = DetachXpraClient(opts)
     elif request_mode and opts.attach is not True:
-        from xpra.client.gobject_client_base import RequestStartClient
+        from xpra.client.base.gobject_client_base import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = [f"socket:{opts.system_proxy_socket}"]
         app = RequestStartClient(opts)
@@ -1686,6 +1694,7 @@ def run_opengl_probe():
     return probe_message(), props
 
 def make_client(error_cb, opts):
+    check_gtk_client()
     progress_process = None
     if opts.splash is not False:
         progress_process = make_progress_process("Xpra Client v%s" % XPRA_VERSION)
@@ -1711,7 +1720,7 @@ def make_client(error_cb, opts):
                         log.warn("Warning: missing %s module", mod)
                     return False
             return True
-        from xpra.client import mixin_features
+        from xpra.client.gui import mixin_features
         mixin_features.display          = opts.windows
         mixin_features.windows          = opts.windows
         mixin_features.audio            = (bo(opts.speaker) or bo(opts.microphone)) and impcheck("sound")
@@ -1844,12 +1853,12 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
         #we can't load gtk on posix if the server is local,
         #(as we would need to unload the initial display to attach to the new one)
         if options.resize_display.lower() in TRUE_OPTIONS and (display_is_remote or OSX or not POSIX):
-            check_gtk()
+            check_gtk_client()
             bypass_no_gtk()
             #we can tell the server what size to resize to:
             from xpra.gtk_common.gtk_util import get_root_size
             root_w, root_h = get_root_size()
-            from xpra.client.scaling_parser import parse_scaling
+            from xpra.scaling_parser import parse_scaling
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
             #but don't bother if scaling is involved:
             if scaling==(1, 1):
@@ -2237,7 +2246,7 @@ def run_qrcode(args):
     return qrcode_client.main(args)
 
 def run_splash(args) -> int:
-    from xpra.client.gtk3 import splash_screen
+    from xpra import splash_screen
     return splash_screen.main(args)
 
 def run_glprobe(opts, show=False) -> int:
@@ -2844,7 +2853,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)):
 
 
 def run_top(error_cb, options, args, cmdline):
-    from xpra.client.top_client import TopClient, TopSessionClient
+    from xpra.client.base.top_client import TopClient, TopSessionClient
     app = None
     if args:
         try:
@@ -2864,7 +2873,7 @@ def run_top(error_cb, options, args, cmdline):
     return app.run()
 
 def run_session_info(error_cb, options, args, cmdline):
-    check_gtk()
+    check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
     from xpra.client.gtk_base.session_info import SessionInfoClient
     app = SessionInfoClient(options)

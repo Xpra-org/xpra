@@ -45,8 +45,8 @@ from xpra.util import (
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
     SERVER_UPGRADE, CONNECTION_ERROR, AUTHENTICATION_FAILED,
     )
-from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
-from xpra.client.mixins.fileprint_mixin import FilePrintMixin
+from xpra.client.base.serverinfo_mixin import ServerInfoMixin
+from xpra.client.base.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import ExitCode, exit_str
 
 log = Logger("client")

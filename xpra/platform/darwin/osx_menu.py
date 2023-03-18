@@ -19,7 +19,7 @@ from xpra.client.gtk_base.gtk_tray_menu_base import (
     )
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
-from xpra.client import mixin_features
+from xpra.client.gui import mixin_features
 from xpra.log import Logger
 
 log = Logger("osx", "tray", "menu")

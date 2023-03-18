@@ -10,7 +10,7 @@ from time import monotonic
 from threading import Lock
 
 from xpra.util import csv, typedict, repr_ellipsized, net_utf8
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 
 log = Logger("client")

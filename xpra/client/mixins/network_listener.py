@@ -16,7 +16,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
 

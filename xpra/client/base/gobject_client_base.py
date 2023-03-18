@@ -22,7 +22,7 @@ from xpra.os_util import (
     POSIX, OSX,
     )
 from xpra.simple_stats import std_unit
-from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
+from xpra.client.base.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 

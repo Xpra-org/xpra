@@ -17,8 +17,8 @@ from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
 from xpra.util import prettify_plug_name, typedict, envint, csv
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
-from xpra.client import mixin_features
-from xpra.client.gobject_client_base import InfoTimerClient
+from xpra.client.gui import mixin_features
+from xpra.client.base.gobject_client_base import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
     TableBuilder, imagebutton, get_gtk_version_info,
@@ -1329,7 +1329,7 @@ class SessionInfoClient(InfoTimerClient):
                 #log.info("%s.get(%s)=%s", repr_ellipsized(d), prop, repr_ellipsized(v))
                 d = typedict(v or {})
             return d
-        from xpra.client.mixins.serverinfo_mixin import get_remote_lib_versions
+        from xpra.client.base.serverinfo_mixin import get_remote_lib_versions
         features = rtdict("features")
         self.server_clipboard = features.boolget("clipboard")
         self.server_notifications = features.boolget("notifications")

@@ -19,7 +19,7 @@ from time import monotonic
 
 from xpra.util import envbool
 from xpra.os_util import osexpand
-from xpra.client.tray_base import TrayBase
+from xpra.client.gui.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 

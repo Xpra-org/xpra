@@ -17,7 +17,7 @@ from ctypes import (
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ, LPCWSTR
 from ctypes.util import find_library
 
-from xpra.client import mixin_features
+from xpra.client.gui import mixin_features
 from xpra.exit_codes import ExitCode
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks

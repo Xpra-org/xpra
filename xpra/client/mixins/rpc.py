@@ -7,7 +7,7 @@
 from time import monotonic
 from xpra.util import envint, AtomicInteger
 from xpra.util import typedict
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("client", "rpc")

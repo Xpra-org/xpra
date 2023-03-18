@@ -35,7 +35,7 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.common import KeyEvent
-from xpra.client.client_window_base import ClientWindowBase
+from xpra.client.gui.client_window_base import ClientWindowBase
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
     add_window_hooks, remove_window_hooks,

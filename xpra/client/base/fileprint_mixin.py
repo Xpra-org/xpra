@@ -5,7 +5,7 @@
 
 from xpra.util import envbool, envint, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.make_thread import start_thread
 from xpra.log import Logger
 

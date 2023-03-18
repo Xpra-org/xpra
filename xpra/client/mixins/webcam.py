@@ -13,7 +13,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.os_util import OSEnvContext, WIN32
 from xpra.util import envint, envbool, csv, typedict, XPRA_WEBCAM_NOTIFICATION_ID
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 
 
 log = Logger("webcam")

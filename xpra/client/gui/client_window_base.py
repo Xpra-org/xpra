@@ -8,9 +8,9 @@
 import os
 import re
 
-from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.client.scaling_parser import scaleup_value, scaledown_value
+from xpra.client.gui.client_widget_base import ClientWidgetBase
+from xpra.client.gui.window_backing_base import fire_paint_callbacks
+from xpra.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
 from xpra.util import net_utf8, typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES

@@ -8,8 +8,8 @@
 import os
 import sys
 
-from xpra.client.client_base import XpraClientBase
-from xpra.client.keyboard_helper import KeyboardHelper
+from xpra.client.base.client_base import XpraClientBase
+from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO
@@ -32,7 +32,7 @@ from xpra.util import (
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode
 from xpra.version_util import get_version_info_full, get_platform_info
-from xpra.client import mixin_features
+from xpra.client.gui import mixin_features
 from xpra.log import Logger, get_info as get_log_info
 
 

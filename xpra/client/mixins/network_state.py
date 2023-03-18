@@ -13,7 +13,7 @@ from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
 from xpra.exit_codes import ExitCode
 from xpra.net.packet_encoding import ALL_ENCODERS
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.log import Logger
 

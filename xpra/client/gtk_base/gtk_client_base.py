@@ -38,8 +38,8 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.client.ui_client_base import UIXpraClient
-from xpra.client.gobject_client_base import GObjectXpraClient
+from xpra.client.gui.ui_client_base import UIXpraClient
+from xpra.client.base.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.client.mixins.window_manager import WindowClient
@@ -254,7 +254,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
-        from xpra.client import mixin_features
+        from xpra.client.gui import mixin_features
         assert mixin_features.notifications
         from xpra.client.mixins.notifications import NotificationClient
         assert isinstance(self, NotificationClient)
@@ -465,7 +465,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if size>=45:
                 log.warn(f"Warning: border size is too large: {size}, clipping it")
                 size = 45
-        from xpra.client.window_border import WindowBorder
+        from xpra.client.gui.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", self.border_str, self.border)
 

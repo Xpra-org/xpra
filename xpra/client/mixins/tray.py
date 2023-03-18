@@ -7,7 +7,7 @@
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr
 from xpra.util import envint, make_instance, CLIENT_EXIT, XPRA_APP_ID
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("tray")

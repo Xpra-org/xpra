@@ -9,7 +9,7 @@ import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gdk  # @UnresolvedImport
 
-from xpra.client.keyboard_helper import KeyboardHelper, log
+from xpra.client.gui.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.os_util import is_X11
 

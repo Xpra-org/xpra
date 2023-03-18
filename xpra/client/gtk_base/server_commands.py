@@ -108,7 +108,7 @@ class ServerCommandsWindow:
                         rstr = "%s" % returncode
                     #find the windows matching this pid
                     windows = ()
-                    from xpra.client import mixin_features
+                    from xpra.client.gui import mixin_features
                     if mixin_features.windows:
                         windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
                         log(f"windows matching pid={pid}: {windows}")
