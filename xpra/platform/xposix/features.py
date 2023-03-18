@@ -11,6 +11,11 @@ from xpra.os_util import is_Wayland
 AUTOSTART = True
 
 DEFAULT_ENV = [
+    "#silence some AT-SPI and atk-bridge warnings:",
+    "NO_AT_BRIDGE=1",
+    ]
+
+DEFAULT_START_ENV = [
              "#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:",
              "UBUNTU_MENUPROXY=",
              "QT_X11_NO_NATIVE_MENUBAR=1",
@@ -29,8 +34,6 @@ DEFAULT_ENV = [
              "GTK_OVERLAY_SCROLLING=0",
              "#some versions of GTK3 honour this option, sadly not all:",
              "GTK_CSD=0",
-             "#silence some AT-SPI and atk-bridge warnings:",
-             "NO_AT_BRIDGE=1",
              ]
 
 DEFAULT_SSH_CMD = "ssh"

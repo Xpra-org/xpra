@@ -896,7 +896,7 @@ def get_defaults():
         return GLOBAL_DEFAULTS
     from xpra.platform.features import (
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
-        SOURCE, DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
+        SOURCE, DEFAULT_ENV, DEFAULT_START_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
         )
     from xpra.platform.paths import (
         get_download_dir, get_remote_run_xpra_scripts,
@@ -1138,7 +1138,7 @@ def get_defaults():
                     "start-on-last-client-exit" : [],
                     "start-child-on-last-client-exit"   : [],
                     "start-env"         : DEFAULT_ENV,
-                    "env"               : [],
+                    "env"               : DEFAULT_START_ENV,
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:

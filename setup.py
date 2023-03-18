@@ -973,12 +973,13 @@ def build_xpra_conf(install_dir):
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
         fake_xinerama = find_libfakeXinerama() or "auto"
-    from xpra.platform.features import DEFAULT_ENV, SOURCE
+    from xpra.platform.features import DEFAULT_START_ENV, DEFAULT_ENV, SOURCE
     def bstr(b):
         if b is None:
             return "auto"
         return "yes" if int(b) else "no"
-    start_env = "\n".join(f"start-env = {x}" for x in DEFAULT_ENV)
+    default_start_env = "\n".join(f"start-env = {x}" for x in DEFAULT_START_ENV)
+    default_env = "\n".join(f"env = {x}" for x in DEFAULT_ENV)
     source = "\n".join(f"source = {x}" for x in SOURCE)
     conf_dir = get_conf_dir(install_dir)
     print(f"get_conf_dir({install_dir})={conf_dir}")
@@ -1024,7 +1025,8 @@ def build_xpra_conf(install_dir):
         'ssh_command'           : "auto",
         'key_shortcuts'         : "".join(f"key-shortcut = {x}\n" for x in get_default_key_shortcuts()),
         'remote_logging'        : "both",
-        'start_env'             : start_env,
+        'start_env'             : default_start_env,
+        'env'                   : default_env,
         'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
         'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
         'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),

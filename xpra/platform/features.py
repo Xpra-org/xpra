@@ -31,6 +31,7 @@ OPEN_COMMAND = []
 
 COMMAND_SIGNALS = ()
 
+DEFAULT_START_ENV = []
 DEFAULT_ENV = []
 
 #DEFAULT_SSH_COMMAND = "paramiko"
@@ -63,6 +64,7 @@ _features_list_ = [
                    "COMMAND_SIGNALS",
                    "SOURCE",
                    "DEFAULT_ENV",
+                   "DEFAULT_START_ENV",
                    "DEFAULT_SSH_COMMAND",
                    "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
                    "CLIPBOARDS",

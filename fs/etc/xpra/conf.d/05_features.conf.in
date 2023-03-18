@@ -48,3 +48,4 @@ remote-logging = %(remote_logging)s
 # env = XPRA_USE_ALIASES=0
 # env = XPRA_DEFAULT_VFB_RESOLUTION=1920x1080
 # env = XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION=1024x768
+%(env)s
