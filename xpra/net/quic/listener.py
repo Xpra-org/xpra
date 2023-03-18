@@ -173,14 +173,20 @@ async def do_listen(sock, xpra_server, cert, key, retry):
     log(f"do_listen({sock}, {xpra_server}, {cert}, {key}, {retry})")
     def create_protocol(*args, **kwargs):
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
+    configuration = QuicConfiguration(
+        alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
+        is_client=False,
+        max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
+        quic_logger=quic_logger,
+    )
     try:
-        configuration = QuicConfiguration(
-            alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
-            is_client=False,
-            max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
-            quic_logger=quic_logger,
-        )
         configuration.load_cert_chain(cert, key)
+    except FileNotFoundError as e:
+        log(f"load_cert_chain({cert!r}, {key!r}")
+        log.error("Error: cannot create QUIC protocol")
+        log.estr(e)
+        return None
+    try:
         log(f"quic configuration={configuration}")
         session_ticket_store = SessionTicketStore()
 
