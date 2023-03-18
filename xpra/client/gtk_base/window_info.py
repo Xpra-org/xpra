@@ -219,6 +219,7 @@ class WindowInfo(Gtk.Window):
         self.bool_icon(self.focus_image, w._focused)
         self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
         fps = "n/a"
+        b = w._backing
         if b:
             update_fps = getattr(b, "update_fps", None)
             if callable(update_fps):
