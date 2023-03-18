@@ -13,6 +13,8 @@
 # Python cache:
 __pycache__/
 *.py[cod]
+# generated when building:
+xpra.egg-info
 
 # Coverage tools:
 .coverage
