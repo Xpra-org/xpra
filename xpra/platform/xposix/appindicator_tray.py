@@ -23,14 +23,16 @@ from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
+log = Logger("tray", "posix")
+
 try:
     gi.require_version("AyatanaAppIndicator3", "0.1")  # @UndefinedVariable
     from gi.repository import AyatanaAppIndicator3 as AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+    log("loaded AyatanaAppIndicator3")
 except ImportError:
     gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
     from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
-
-log = Logger("tray", "posix")
+    log("loaded AppIndicator3")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
