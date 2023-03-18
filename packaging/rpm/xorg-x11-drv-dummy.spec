@@ -38,8 +38,8 @@ if [ "${sha256}" != "e78ceae5c8c0588c7cb658f2afc3a9fac9ef665b52a75b01f8e9c5449a4
 	exit 1
 fi
 %setup -q -n %{tarball}-%{version}
-%patch2 -p1
-%patch6 -p1
+%patch -P 2 -p1
+%patch -P 6 -p1
 autoreconf -vif
 
 %build
