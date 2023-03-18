@@ -708,36 +708,30 @@ def supports_x11_server():
     except ImportError:
         return False
 
-def get_server_modes():
-    if supports_x11_server():
-        server_modes = [
-            "start",
-            "start-desktop",
-            "start-monitor",
-            ]
-    else:
-        server_modes = ["shadow", "shadow-screen"]
-    server_modes += ["upgrade"]
-    return server_modes
-
 
 def get_subcommands():
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
 def get_usage():
-    command_options = [""]
+    RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
+    command_options = [
+        "",
+        f"start [{RDISPLAY}]",
+        f"start-desktop [{RDISPLAY}]",
+        f"start-monitor [{RDISPLAY}]",
+        "shadow [DISPLAY]",
+        "shadow-screen [DISPLAY]",
+        ]
     if supports_x11_server():
         command_options += [
-            "start [DISPLAY]",
-            "start-desktop [DISPLAY]",
-            "start-monitor [DISPLAY]",
             "upgrade [DISPLAY]",
             "upgrade-desktop [DISPLAY]",
-            "recover [DISPLAY]",
-            "shadow [DISPLAY]",
-            "shadow-screen [DISPLAY]",
+            "upgrade-monitor [DISPLAY]",
             ]
+    command_options += [
+        "upgrade-shadow [DISPLAY]",
+        ]
 
     command_options += [
                         "attach [DISPLAY]",
@@ -817,8 +811,7 @@ def do_parse_cmdline(cmdline, defaults):
     #removed in 4.4:
     ignore_options(cmdline, "global-menus")
     group = optparse.OptionGroup(parser, "Server Options",
-                "These options are only relevant on the server when using the %s mode." %
-                " or ".join(["'%s'" % x for x in get_server_modes()]))
+                "These options are only relevant when starting or upgrading a server.")
     parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
     def nonedefault(v):
