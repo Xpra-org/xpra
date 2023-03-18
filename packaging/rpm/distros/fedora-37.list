@@ -3,8 +3,6 @@ libfakeXinerama
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
 python3-Cython
-python3-pbr
-python3-rencode
 python3-pycuda
 python3-pynvml
 python3-pyu2f

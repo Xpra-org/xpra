@@ -1,9 +1,0 @@
---- a/setup.py	2019-01-12 18:27:22.843589886 +0700
-+++ b/setup.py	2019-01-12 18:27:39.279470360 +0700
-@@ -92,5 +92,5 @@
-   url="https://github.com/aresch/rencode",
-   cmdclass={'build_ext': optional_build_ext},
-   ext_modules=ext_modules,
--  setup_requires=['setuptools', 'wheel'],
-+  setup_requires=['setuptools'],
- )
