@@ -7,7 +7,7 @@
 %define version 5.0
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-csc_cython --without-evdi --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-csc_cython --without-evdi --without-enc_x265	--without-cuda_rebuild
 
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
@@ -62,6 +62,7 @@ BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-html5 >= 5
 Requires:			xpra-common = %{version}-%{release}
 Requires:			xpra-codecs = %{version}-%{release}
+Recommends:			xpra-codecs-extra = %{version}-%{release}
 Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Requires:			xpra-client = %{version}-%{release}
 Requires:			xpra-server = %{version}-%{release}
@@ -148,6 +149,7 @@ This package contains the files which are shared between the xpra client and ser
 %package codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
+Suggests:			xpra-codecs-extra
 Suggests:			xpra-codecs-nvidia
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-pillow
@@ -158,18 +160,14 @@ Requires:			libvpx
 Obsoletes:          libvpx-xpra < 1.8
 BuildRequires:		libwebp-devel
 Requires:			libwebp
-BuildRequires:		x264-xpra-devel
-Requires:			x264-xpra
-BuildRequires:		ffmpeg-xpra-devel
-Requires:			ffmpeg-xpra
 BuildRequires:		turbojpeg-devel
 Requires:			turbojpeg
 BuildRequires:		libyuv-devel
 Requires:			libyuv
-#%if 0%{?fedora}>=37
-#BuildRequires:		openh264-devel
-#Requires:			openh264
-#%endif
+%if 0%{?fedora}>=37
+BuildRequires:		openh264-devel
+Requires:			openh264
+%endif
 %if 0%{?fedora}
 BuildRequires:		libavif-devel
 Requires:			libavif
@@ -178,17 +176,6 @@ Requires:			libspng
 #BuildRequires:		oneVPL-devel
 #Requires:			oneVPL
 %endif
-#for gstreamer video encoder and decoder:
-Suggests:			python3-gstreamer1
-Suggests:			gstreamer1
-#appsrc, videoconvert:
-Suggests:			gstreamer1-plugins-base
-#vaapi:
-Suggests:			gstreamer1-vaapi
-#x264:
-Suggests:			gstreamer1-plugins-ugly
-#av1:
-Suggests:			gstreamer1-plugins-bad-free-extras
 #not available yet:
 #BuildRequires:		libevdi-devel
 #Requires:			libevdi
@@ -197,6 +184,29 @@ Conflicts:			xpra-codecs-freeworld
 %description codecs
 This package contains extra picture and video codecs used by xpra clients and servers.
 
+%package codecs-extras
+Summary:			Extra picture and video codecs for xpra clients and servers.
+#before switching to EPEL / rpmfusion, we were using private libraries:
+#Conflicts:			x264-xpra
+#Conflicts:			ffmpeg-xpra
+Recommends:			x264
+BuildRequires:		x264-devel
+Recommends:			ffmpeg
+BuildRequires:		ffmpeg-devel
+#for gstreamer video encoder and decoder:
+Recommends:			python3-gstreamer1
+Recommends:			gstreamer1
+#appsrc, videoconvert:
+Recommends:			gstreamer1-plugins-base
+#vaapi:
+Recommends:			gstreamer1-vaapi
+#x264:
+Recommends:			gstreamer1-plugins-ugly
+#av1:
+Recommends:			gstreamer1-plugins-bad-free-extras
+%description codecs-extras
+This package contains extra picture and video codecs used by xpra clients and servers.
+These codecs may have patent or licensing issues.
 
 %if %{with_cuda}
 %package codecs-nvidia
@@ -285,6 +295,8 @@ Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Recommends:			xpra-client = %{version}-%{release}
 Recommends:			xpra-codecs = %{version}-%{release}
+Recommends:			xpra-codecs-extra = %{version}-%{release}
+Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
@@ -483,22 +495,24 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/drm
 %{python3_sitearch}/xpra/codecs/proxy
 #%{python3_sitearch}/xpra/codecs/evdi
-%{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
-%{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/gstreamer
-#%if 0%{?fedora}>=37
-#%{python3_sitearch}/xpra/codecs/openh264
-#%endif
+%if 0%{?fedora}>=37
+%{python3_sitearch}/xpra/codecs/openh264
+%endif
 %if 0%{?fedora}
 %{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/spng
 # /xpra/codecs/vpl
 %endif
+
+%files codecs-extras
+%{python3_sitearch}/xpra/codecs/x26?
+%{python3_sitearch}/xpra/codecs/ffmpeg
 
 %if %{with_cuda}
 %files codecs-nvidia
