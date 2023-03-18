@@ -71,6 +71,9 @@ Architecture: any
 Depends: xpra
         ,${codecs:Depends}
         ,python3 (>= 3.6)
+#bookworm:              ,libspng
+#sid:              ,libspng
+#luna:              ,libspng
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
           ,python3-opencv
