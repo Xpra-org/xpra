@@ -106,7 +106,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #trixie:        ,xserver-xorg-video-dummy
 #sid:        ,xserver-xorg-video-dummy
         ,keyboard-configuration
-Recommends: xpra-codecs
+Recommends: xpra-codecs (= 5.0)
         ,xpra-html5
 # socket activation:
         ,libsystemd
