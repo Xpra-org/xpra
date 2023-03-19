@@ -7,10 +7,10 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX
-from xpra.util import parse_simple_dict, envbool, csv, roundup
+from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time
 from xpra.codecs.codec_constants import video_spec, get_profile
 from xpra.gst_common import (
-    import_gst, normv,
+    import_gst, normv, get_all_plugin_names,
     STREAM_TYPE, BUFFER_FORMAT,
     )
 from xpra.gst_pipeline import GST_FLOW_OK
@@ -148,11 +148,15 @@ def init_all_specs(*exclude):
     #the self-tests should disable what isn't available / doesn't work
     specs = {}
     colorspaces = {}
+    missing = []
     def add(element, encoding, cs_in, css_out, *args):
         if encoding not in FORMATS:
             log(f"{encoding} not enabled - supported formats: {FORMATS}")
             return
         if element in exclude:
+            return
+        if element not in get_all_plugin_names():
+            missing.append(element)
             return
         #add spec:
         spec = make_spec(element, encoding, cs_in, css_out, *args)
@@ -183,6 +187,8 @@ def init_all_specs(*exclude):
     COLORSPACES = colorspaces
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
+    if first_time("gstreamer-encoder-missing-elements"):
+        log.info("some GStreamer elements are missing: "+csv(missing))
 
 
 class Encoder(VideoPipeline):
