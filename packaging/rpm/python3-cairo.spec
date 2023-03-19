@@ -2,7 +2,7 @@
 
 Name: pycairo
 Version: 1.20.0
-Release: 4%{?dist}
+Release: 4.1%{?dist}
 Summary: Python bindings for the cairo library
 
 License: MPLv1.1 or LGPLv2
@@ -13,7 +13,9 @@ BuildRequires: cairo-devel
 BuildRequires: gcc
 BuildRequires: pkgconfig
 BuildRequires: python3-devel
+%if !0%{?ol8}
 BuildRequires: python3-pytest
+%endif
 BuildRequires: python3-setuptools
 
 %description
@@ -50,7 +52,9 @@ fi
 %py3_install
 
 %check
+%if !0%{?ol8}
 %{__python3} setup.py test
+%endif
 
 %files -n python3-cairo
 %license COPYING*
@@ -63,6 +67,9 @@ fi
 %{_libdir}/pkgconfig/py3cairo.pc
 
 %changelog
+* Sun Mar 19 2023 Antoine Martin <antoine@xpra.org> - 1.20.0-4.1
+- don't run tests on OracleLinux 8
+
 * Tue Aug 10 2021 Mohan Boddu <mboddu@redhat.com> - 1.20.0-4
 - Rebuilt for IMA sigs, glibc 2.34, aarch64 flags
   Related: rhbz#1991688
