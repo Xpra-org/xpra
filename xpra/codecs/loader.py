@@ -88,7 +88,10 @@ def codec_import_check(name, description, top_module, class_module, classnames):
 
                 if classnames:
                     for classname in classnames:
-                        clazz = getattr(ic, classname)
+                        try:
+                            clazz = getattr(ic, classname)
+                        except AttributeError as e:
+                            raise ImportError(f"cannot find {classname!r} in {ic}") from None
                         log(f"{class_module}.{classname}={clazz}")
 
                 selftest = getattr(ic, "selftest", None)
