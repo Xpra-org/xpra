@@ -21,8 +21,11 @@ Build-Depends: debhelper (>= 8)
 # even unstable ships an oudated version!
 # (hopefully this can be enabled some day)
 #              ,libevdi0-dev
-# this codec is not usable yet:
-#              ,libavif-dev
+#jammy:              ,libavif-dev
+#kinetic:              ,libavif-dev
+#lunar:              ,libavif-dev
+#bookworm:              ,libavif-dev
+#sid:              ,libavif-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
@@ -73,6 +76,11 @@ Depends: xpra
         ,python3 (>= 3.6)
 #sid:              ,libspng
 #luna:              ,libspng
+#jammy:              ,libavif13
+#kinetic:              ,libavif14
+#lunar:              ,libavif15
+#bookworm:              ,libavif15
+#sid:              ,libavif15
 #bookworm:Recommends: libspng
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
