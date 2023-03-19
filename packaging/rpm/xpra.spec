@@ -165,13 +165,13 @@ BuildRequires:		turbojpeg-devel
 Requires:			turbojpeg
 BuildRequires:		libyuv-devel
 Requires:			libyuv
+BuildRequires:		libavif-devel
+Requires:			libavif
 %if 0%{?fedora}>=37
 BuildRequires:		openh264-devel
 Requires:			openh264
 %endif
 %if 0%{?fedora}
-BuildRequires:		libavif-devel
-Requires:			libavif
 BuildRequires:		libspng-devel
 Requires:			libspng
 #BuildRequires:		oneVPL-devel
@@ -505,6 +505,7 @@ rm -rf $RPM_BUILD_ROOT
 #%{python3_sitearch}/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
+%{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
@@ -513,7 +514,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/openh264
 %endif
 %if 0%{?fedora}
-%{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/spng
 %endif
 
