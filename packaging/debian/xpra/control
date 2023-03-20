@@ -74,14 +74,14 @@ Architecture: any
 Depends: xpra
         ,${codecs:Depends}
         ,python3 (>= 3.6)
-#sid:              ,libspng
-#luna:              ,libspng
+#sid:              ,libspng0
+#luna:              ,libspng0
 #jammy:              ,libavif13
 #kinetic:              ,libavif14
 #lunar:              ,libavif15
 #bookworm:              ,libavif15
 #sid:              ,libavif15
-#bookworm:Recommends: libspng
+#bookworm:Recommends: libspng0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
           ,python3-opencv
