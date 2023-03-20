@@ -2819,11 +2819,11 @@ def run_stopexit(mode, error_cb, opts, extra_args, cmdline):
     e = 1
     try:
         if mode=="stop":
-            from xpra.client.gobject_client_base import StopXpraClient
+            from xpra.client.base.gobject_client_base import StopXpraClient
             app = StopXpraClient(opts)
         else:
             assert mode=="exit"
-            from xpra.client.gobject_client_base import ExitXpraClient
+            from xpra.client.base.gobject_client_base import ExitXpraClient
             app = ExitXpraClient(opts)
         app.display_desc = display_desc
         connect_to_server(app, display_desc, opts)
