@@ -1997,7 +1997,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
     app = None
     try:
         if opts.attach is False:
-            from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
+            from xpra.client.base.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
             if isdisplaytype(args, "ssh"):
                 #ssh will start the instance we requested,
                 #then we just detach and we're done
