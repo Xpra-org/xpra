@@ -446,8 +446,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common
 %defattr(-,root,root)
-%{_bindir}/xpra*
-%{_bindir}/run_scaled*
+%{_bindir}/xpra
 %{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
@@ -498,7 +497,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files codecs
 %{python3_sitearch}/xpra/codecs/drm
-%{python3_sitearch}/xpra/codecs/proxy
 #%{python3_sitearch}/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
@@ -536,6 +534,8 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 
 %files client-gtk3
+%{_bindir}/xpra_launcher
+%{_bindir}/run_scaled*
 %{python3_sitearch}/xpra/client/gui/
 %{python3_sitearch}/xpra/client/gtk_base/
 %{python3_sitearch}/xpra/client/gtk3/
@@ -551,6 +551,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files server
 %{python3_sitearch}/xpra/server
+%{python3_sitearch}/xpra/codecs/proxy
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
