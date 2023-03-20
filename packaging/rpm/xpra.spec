@@ -472,30 +472,27 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
-%{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/notifications/
-%{python3_sitearch}/xpra/codecs/__init__.py
-%{python3_sitearch}/xpra/codecs/__pycache__
 %{python3_sitearch}/xpra/codecs/argb/
 %{python3_sitearch}/xpra/codecs/pillow/
-%{python3_sitearch}/xpra/codecs/codec_*.py*
-%{python3_sitearch}/xpra/codecs/icon_util.py
-%{python3_sitearch}/xpra/codecs/image_wrapper.py
-%{python3_sitearch}/xpra/codecs/loader.py
-%{python3_sitearch}/xpra/codecs/rgb_transform.py
-%{python3_sitearch}/xpra/codecs/video_helper.py
+%pycached %{python3_sitearch}/xpra/codecs/__init__.py
+%pycached %{python3_sitearch}/xpra/codecs/codec_*.py
+%pycached %{python3_sitearch}/xpra/codecs/icon_util.py
+%pycached %{python3_sitearch}/xpra/codecs/image_wrapper.py
+%pycached %{python3_sitearch}/xpra/codecs/loader.py
+%pycached %{python3_sitearch}/xpra/codecs/rgb_transform.py
+%pycached %{python3_sitearch}/xpra/codecs/video_helper.py
 %{python3_sitearch}/xpra/dbus/
 %{python3_sitearch}/xpra/gtk_common/
 %{python3_sitearch}/xpra/keyboard/
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
-%{python3_sitearch}/xpra/sound/
 %{python3_sitearch}/xpra/x11/
 %{python3_sitearch}/xpra/rectangle.*.so
-%{python3_sitearch}/xpra/*.py*
+%pycached %{python3_sitearch}/xpra/*.py
 %{python3_sitearch}/xpra-*.egg-info
 
 
@@ -530,7 +527,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files audio
-%{python3_sitearch}/xpra/sound
+%{python3_sitearch}/xpra/sound/
 
 %files client
 %{python3_sitearch}/xpra/client/auth/
