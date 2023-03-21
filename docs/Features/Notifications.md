@@ -11,13 +11,13 @@ It is supported on all platforms and controlled by the `notifications` [configur
 
 ## Screenshots
 MS Windows XP: \
-![MS Windows Notification](../images/win2-notification.png)
+![MS Windows Notification](../images/screenshots/win32-notification.png)
 
 MacOS 10.10.x: \
-![MacOS Notification](../images/osx-notification.png)
+![MacOS Notification](../images/screenshots/osx-notification.png)
 
 Gnome-shell: \
-![Gnome-Shell Notification](../images/gnome-shell-notification.png)
+![Gnome-Shell Notification](../images/screenshots/gnome-shell-notification.png)
 
 ***
 
