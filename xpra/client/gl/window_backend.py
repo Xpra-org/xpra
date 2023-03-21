@@ -98,7 +98,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         w, h = 250, 250
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
-        from xpra.client.window_border import WindowBorder
+        from xpra.client.gui.window_border import WindowBorder
         border = WindowBorder()
         default_cursor_data = None
         noclient = FakeClient()

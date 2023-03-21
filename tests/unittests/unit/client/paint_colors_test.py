@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.client.paint_colors import get_default_paint_box_color, get_paint_box_color, BLACK
+from xpra.client.gui.paint_colors import get_default_paint_box_color, get_paint_box_color, BLACK
 
 
 class PaintColorsTest(unittest.TestCase):
