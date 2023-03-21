@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.client.window_border import WindowBorder
+from xpra.client.gui.window_border import WindowBorder
 
 
 class AuthHandlersTest(unittest.TestCase):
