@@ -29,8 +29,12 @@ override_dh_installchangelogs:
 	dh_installchangelogs docs/CHANGELOG.md
 
 override_dh_shlibdeps:
-	dh_shlibdeps -l /usr/lib/xpra -Xcodecs
-	dh_shlibdeps -l /usr/lib/xpra/codecs -Xnvidia/ -- -pcodecs
+	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen
+	dh_shlibdeps -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen -- -pcodecs
+	dh_shlibdeps -Xcodecs/ -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen -- -px11
+	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xqrcode/ -Xproc_ -Xsd_listen -- -pbrotli
+	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xproc_ -Xsd_listen -- -pqrcode
+	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xsd_listen -- -pproc
 
 override_dh_systemd_enable:
 	dh_systemd_enable --no-enable xpra.service

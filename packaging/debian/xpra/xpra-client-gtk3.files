@@ -1,0 +1,14 @@
+usr/bin/run_scaled
+usr/bin/xpra_launcher
+usr/lib/python3*/*/xpra/client/gui/
+usr/lib/python3*/*/xpra/client/gtk_base/
+usr/lib/python3*/*/xpra/client/gtk3/
+usr/lib/python3*/*/xpra/client/gl/
+usr/lib/python3*/*/xpra/client/mixins/
+usr/libexec/xpra/xpra_signal_listener
+etc/xpra/conf.d/42_client_keyboard.conf
+usr/share/applications/xpra-launcher.desktop
+usr/share/applications/xpra-gui.desktop
+usr/share/applications/xpra.desktop
+usr/share/mime/packages/application-x-xpraconfig.xml
+usr/share/xpra/autostart.desktop

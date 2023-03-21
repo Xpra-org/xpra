@@ -1,0 +1,4 @@
+usr/lib/python3*/*/xpra/client/auth/
+usr/lib/python3*/*/xpra/client/base/
+usr/lib/python3*/*/xpra/client/__init__.py
+etc/xpra/conf.d/40_client.conf
