@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libxkbfile-dev
               ,libxres-dev
-#              ,libnvidia-fbc1 [amd64]
+              ,libnvidia-fbc1 [amd64]
 # very few Debian or Ubuntu distros have this library
 # so we can't rely on it and we use the one that comes with CUDA instead:
 #              ,libnvjpeg10 [amd64]
