@@ -67,14 +67,13 @@ https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
 
 The quick and easy way:
 ```shell
-mkdir -p ${HOME}/rpmbuild/SOURCES/ >& /dev/null
+mkdir -p ~/rpmbuild/SOURCES/ >& /dev/null
 git clone https://github.com/Xpra-org/xpra
 cd xpra
 python3 ./setup.py sdist --formats=xz
-cp dist/*xz ${HOME}/rpmbuild/SOURCES/
-cp patches/* ${HOME}/rpmbuild/SOURCES/
+cp dist/*xz patches/* ~/rpmbuild/SOURCES/
 rpmbuild -ba ./packaging/rpm/xpra.spec
-ls -s ${HOME}/rpmbuild/RPMS/*/
+ls -s ~/rpmbuild/RPMS/*/
 ```
 This builds fresh packages from git master.  
 You can also use other branches, tags or download a [source release](https://xpra.org/src/) instead.
