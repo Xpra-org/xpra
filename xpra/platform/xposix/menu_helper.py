@@ -56,17 +56,17 @@ def export(entry, properties):
             if fn:
                 v = fn()
                 if isinstance(v, (list, tuple, generator)):
-                    l("%s=%s (%s)", prop, v, type(x for x in v))
+                    l(f"{prop}={v} (%s)", type(x for x in v))
                 else:
-                    l("%s=%s (%s)", prop, v, type(v))
+                    l(f"{prop}={v} ({type(v)})")
                 if not isvalidtype(v):
-                    log.warn("Warning: found invalid type for '%s': %s", v, type(v))
+                    log.warn(f"Warning: found invalid type for {v}: {type(v)}")
                 else:
                     props[prop] = v
         except Exception as e:
             l("error on %s", entry, exc_info=True)
-            log.error("Error parsing '%s': %s", prop, e)
-    l("properties(%s)=%s", name, props)
+            log.error(f"Error parsing {prop!r}: {e}")
+    l(f"properties({name})={props}")
     load_entry_icon(props)
     return props
 
@@ -113,7 +113,7 @@ if LOAD_FROM_THEME:
                     addtheme(name)
                     if len(themes)>MAX_THEMES:
                         break
-            log("icon themes=%s", themes)
+            log(f"icon themes={themes}")
         init_themes()
 
 EXTENSIONS = ("png", "svg", "xpm")
@@ -133,7 +133,7 @@ def check_xdg():
 
 
 def clear_cache():
-    log("clear_cache() IconTheme=%s", IconTheme)
+    log(f"clear_cache() IconTheme={IconTheme}")
     if not IconTheme:
         return
     IconTheme.themes = []
@@ -165,7 +165,7 @@ def load_entry_icon(props):
             props["IconData"] = bdata
             props["IconType"] = ext
     if not icondata:
-        log("no icon found for %s from %s", names, props)
+        log(f"no icon found for {names} from {props}")
     return props
 
 
@@ -240,7 +240,7 @@ def find_glob_icon(*names, category="categories"):
             for f in filenames:
                 v = icon_util.load_icon_from_file(f)
                 if v:
-                    log("found icon for %s with glob '%s': %s", names, pathname, f)
+                    log(f"found icon for {names} with glob {pathname!r}: {f}")
                     return v
     return None
 
@@ -310,7 +310,7 @@ def load_xdg_menu(submenu):
                         entries_data[name] = ed
                 except Exception as e:
                     log("load_xdg_menu(%s)", submenu, exc_info=True)
-                    log.error("Error loading desktop entry '%s':", name)
+                    log.error(f"Error loading desktop entry {name!r}:")
                     log.estr(e)
             elif isinstance(entry, Menu):
                 #merge up:
@@ -343,13 +343,15 @@ def load_menu():
     end = monotonic()
     if xdg_menu_data:
         l = sum(len(x) for x in xdg_menu_data.values())
-        log.info("loaded %i start menu entries from %i sub-menus in %.1f seconds",
-                 l, len(xdg_menu_data), end-start)
+        submenus = len(xdg_menu_data)
+        elapsed = end-start
+        log.info(f"loaded {l} start menu entries from "+
+                 f"{submenus} sub-menus in {elapsed:.1f} seconds")
     n_large = len(icon_util.large_icons)
     if n_large:
-        log.warn("Warning: found %i large icon%s:", n_large, engs(n_large))
+        log.warn(f"Warning: found {n_large} large icons:")
         for filename, size in icon_util.large_icons:
-            log.warn(" '%s' (%i KB)", filename, size//1024)
+            log.warn(f" {filename!r} ({size//1024} KB)")
         log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
@@ -413,26 +415,26 @@ def load_xdg_menu_data():
     if menu is None:
         if error and first_time("xdg-menu-error"):
             log.error("Error parsing xdg menu data:")
-            log.error(" %s", error)
+            log.estr(error)
             log.error(" this is either a bug in python-xdg,")
             log.error(" or an invalid system menu configuration")
-            log.error(" please see:")
+            log.error(" for more information, please see:")
             log.error(" https://github.com/Xpra-org/xpra/issues/2174")
         return None
     menu_data = {}
     entries = tuple(menu.getEntries())
-    log("%s.getEntries()=%s", menu, entries)
+    log(f"{menu}.getEntries()={entries}")
     if len(entries)==1 and entries[0].Submenus:
         entries = entries[0].Submenus
-        log("using submenus %s", entries)
+        log(f"using submenus {entries}")
     for i, submenu in enumerate(entries):
         if not isinstance(submenu, Menu):
-            log("entry '%s' is not a submenu", submenu)
+            log(f"entry {submenu!r} is not a submenu")
             continue
         name = submenu.getName()
         log("* %-3i %s", i, name)
         if not submenu.Visible:
-            log(" submenu '%s' is not visible", name)
+            log(f" submenu {name!r} is not visible")
             continue
         try:
             md = load_xdg_menu(submenu)
@@ -477,7 +479,7 @@ def load_applications(menu_data=None):
             try:
                 me = MenuEntry(f, d)
             except Exception:
-                log("failed to load %s from %s", f, d, exc_info=True)
+                log(f"failed to load {f!r} from {d!r}", f, d, exc_info=True)
             else:
                 ed = load_xdg_entry(me.DesktopEntry)
                 if not ed:
@@ -517,7 +519,7 @@ def load_desktop_sessions():
                 xsessions[name] = entry
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
-                log.error("Error loading desktop entry '%s':", filename)
+                log.error(f"Error loading desktop entry {filename!r}:")
                 log.estr(e)
     return xsessions
 
