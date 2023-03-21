@@ -30,7 +30,7 @@ override_dh_installchangelogs:
 
 override_dh_shlibdeps:
 	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen
-	dh_shlibdeps -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen -- -pcodecs
+	dh_shlibdeps -Xnvidia/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen -- -pcodecs
 	dh_shlibdeps -Xcodecs/ -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xproc_ -Xsd_listen -- -px11
 	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xqrcode/ -Xproc_ -Xsd_listen -- -pbrotli
 	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xproc_ -Xsd_listen -- -pqrcode
