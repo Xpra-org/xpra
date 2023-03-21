@@ -103,7 +103,8 @@ Recommends:
 Suggests: openssh-server
 # only useful when connecting using a JSON / YAML only client:
         ,python3-yaml
-Description: tool to detach/reattach running X programs, components common to client and server
+Description: tool to detach/reattach running X programs,
+ this is the common components for all xpra sub-packages
 
 
 Package: xpra-server
@@ -152,7 +153,8 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
         ,python3-gssapi
 # keycloak authentication:
         ,python3-oauthlib
-Description: tool to detach/reattach running X programs, server component
+Description: tool to detach/reattach running X programs,
+ this is server component allowing you to start sessions
 
 
 Package: xpra-client
@@ -167,7 +169,8 @@ Suggests: python-psutil
         ,sshpass
 #better debug output:
 #        ,python3-cpuinfo
-Description: tool to detach/reattach running X programs, client component
+Description: tool to detach/reattach running X programs,
+ this is the client component without the GUI part
 
 
 Package: xpra-client-gtk3
@@ -191,7 +194,8 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
         ,gnome-shell-extension-appindicator
 # password prompts:
         ,pinentry-gnome3
-Description: xpra client using GTK3 for the user interface
+Description: tool to detach/reattach running X programs,
+ this is the xpra client user interface using GTK3
 
 
 Package: xpra-audio
