@@ -270,6 +270,7 @@ This package contains the xpra client.
 Summary:			GTK3 xpra client
 Group:				Networking
 Requires:			xpra-client = %{version}-%{release}
+Requires:			gtk3
 Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			pinentry
@@ -307,6 +308,7 @@ Requires:			libXtst
 Requires:			libXcomposite
 Requires:			libXdamage
 Requires:			libXres
+Requires:			gtk3
 %if 0%{?fedora}
 Suggests:			xmodmap
 Suggests:			xrandr
@@ -330,6 +332,7 @@ Group:				Networking
 #Provides:			python3-xpra-server
 Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
+Requires:			gtk3
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			xpra-client = %{version}-%{release}
 Recommends:			xpra-codecs = %{version}-%{release}
