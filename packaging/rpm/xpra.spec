@@ -24,10 +24,6 @@
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg_encoder  --without-nvjpeg_decoder
 %endif
-%if 0%{?el9}
-#no pandoc!
-%define build_args %{DEFAULT_BUILD_ARGS} --without-docs
-%endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 #we never want to depend on proprietary nvidia bits,
@@ -94,9 +90,7 @@ Conflicts:			python2-xpra-server
 Obsoletes:			xpra-common-client < 5.0-10.r32075
 Obsoletes:			xpra-common-server < 5.0-10.r32075
 Obsoletes:			python3-xpra < 5.0-10.r32075
-%if !0%{?el9}
 BuildRequires:		pandoc
-%endif
 BuildRequires:		which
 Requires:			python3
 Requires:			python3-gobject
@@ -464,9 +458,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/*.wav
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
-%if !0%{?el9}
 %{_docdir}/xpra
-%endif
 %{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
