@@ -69,6 +69,18 @@ packaging/MacOS/xpra-html5
 /fs/etc/xpra/xpra.conf
 /fs/etc/xpra/conf.d/*.conf
 /packaging/buildah/*log
+#debian packaging tools leave cruft:
+packaging/debian/xpra/*.debhelper
+packaging/debian/xpra/*.substvars
+packaging/debian/xpra/tmp
+packaging/debian/xpra/xpra
+packaging/debian/xpra/xpra-common
+packaging/debian/xpra/xpra-audio
+packaging/debian/xpra/xpra-client
+packaging/debian/xpra/xpra-client-gtk3
+packaging/debian/xpra/xpra-codecs
+packaging/debian/xpra/xpra-codecs-nvidia
+packaging/debian/xpra/xpra-server
 
 # generated during the tests:
 tests/unittests/test-file*
