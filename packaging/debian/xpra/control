@@ -130,7 +130,7 @@ Depends: xpra-common (= ${binary:Version})
         ,xvfb
         ,keyboard-configuration
 Recommends: xpra-codecs (= ${binary:Version})
-	,xpra-x11 (= ${binary:Version})
+        ,xpra-x11 (= ${binary:Version})
         ,xpra-html5
 # socket activation:
         ,libsystemd
@@ -187,12 +187,12 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-client-gtk3
 Architecture: any
 Depends: xpra-client (= ${binary:Version})
-	,xpra-x11 (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-pil
 Recommends: xpra-codecs (= ${binary:Version}), xpra-audio (= ${binary:Version})
+        ,xpra-x11 (= ${binary:Version})
 # client opengl acceleration:)
         ,python3-opengl
 # hope that this will allow our status icon to be shown:
