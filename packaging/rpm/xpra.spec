@@ -70,7 +70,7 @@ Requires:			xpra-server = %{version}-%{release}
 %if 0%{?fedora}
 Requires:			xpra-audio = %{version}-%{release}
 %else
-Suggests:			xpra-audio = %{version}-%{release}
+Recommends:			xpra-audio = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -78,6 +78,9 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 So basically it's screen for remote X apps.
 
 This metapackage installs the xpra in full, including the python client, server and HTML5 client.
+BuildRequires:		gcc
+BuildRequires:		gcc-c++
+BuildRequires:		python3-Cython
 
 
 %package common
@@ -268,11 +271,13 @@ Suggests:			sshpass
 %description client
 This package contains the xpra client.
 
+
 %package client-gtk3
 Summary:			GTK3 xpra client
 Group:				Networking
 Requires:			xpra-client = %{version}-%{release}
 Recommends:			xpra-codecs = %{version}-%{release}
+Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			pinentry
 Recommends:			xpra-audio
 Recommends:			python3-pyopengl
@@ -296,12 +301,42 @@ BuildRequires:		zlib-devel
 This package contains the GTK3 xpra client.
 
 
+%package x11
+Summary:			X11 bindings
+BuildRequires:		libxkbfile-devel
+BuildRequires:		libXtst-devel
+BuildRequires:		libXcomposite-devel
+BuildRequires:		libXdamage-devel
+BuildRequires:		libXres-devel
+Requires:			libxkbfile
+Requires:			libXtst
+Requires:			libXcomposite
+Requires:			libXdamage
+Requires:			libXres
+%if 0%{?fedora}
+Suggests:			xmodmap
+Suggests:			xrandr
+Recommends:			xrdb
+%else
+Requires:			xorg-x11-server-utils
+%endif
+Requires:			xorg-x11-drv-dummy
+Requires:			xorg-x11-xauth
+Recommends:			xterm
+BuildRequires:		libfakeXinerama
+Recommends:			libfakeXinerama
+Recommends:			mesa-dri-drivers
+%description x11
+This package contains the x11 bindings
+
+
 %package server
 Summary:			xpra server
 Group:				Networking
 #Provides:			python3-xpra-server
 Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
+Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			xpra-client = %{version}-%{release}
 Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-codecs-extra = %{version}-%{release}
@@ -320,42 +355,18 @@ Suggests:			tcp_wrappers-libs
 Suggests:			python3-ldap3
 Suggests:			python3-ldap
 Suggests:			python3-oauthlib
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
-BuildRequires:		python3-Cython
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
-BuildRequires:		libxkbfile-devel
-BuildRequires:		libXtst-devel
-BuildRequires:		libXcomposite-devel
-BuildRequires:		libXdamage-devel
-BuildRequires:		libXres-devel
-Requires:			libxkbfile
-Requires:			libXtst
-Requires:			libXcomposite
-Requires:			libXdamage
-Requires:			libXres
 %if 0%{?fedora}
-Suggests:			xmodmap
-Suggests:			xrandr
-Recommends:			xrdb
 BuildRequires:		procps-devel
-%else
-Requires:			xorg-x11-server-utils
 %endif
-Requires:			xorg-x11-drv-dummy
-Requires:			xorg-x11-xauth
 Requires:			selinux-policy
 Requires(post):		openssl
 Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
-Recommends:			xterm
-BuildRequires:		libfakeXinerama
-Recommends:			libfakeXinerama
-Recommends:			mesa-dri-drivers
 Recommends:			redhat-menus
 Recommends:			gnome-menus
 Recommends:			gnome-icon-theme
@@ -489,10 +500,13 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
-%{python3_sitearch}/xpra/x11/
 %{python3_sitearch}/xpra/rectangle.*.so
 %pycached %{python3_sitearch}/xpra/*.py
 %{python3_sitearch}/xpra-*.egg-info
+
+
+%files x11
+%{python3_sitearch}/xpra/x11/
 
 
 %files codecs

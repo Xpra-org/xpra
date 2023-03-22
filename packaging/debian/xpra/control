@@ -72,14 +72,22 @@ Description: tool to detach/reattach running X programs
  window.
 
 
+Package: xpra-x11
+Architecture: any
+Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}, ${x11:Depends}
+        ,gir1.2-gtk-3.0
+        ,python3-cairo
+        ,python3-gi
+Description: tool to detach/reattach running X programs,
+ this package contains the X11 bindings
+ used by both the server and client under X11
+
+
 Package: xpra-common
 Conflicts: python2-xpra, python3-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
-        ,python3-cairo
-        ,python3-gi-cairo
-        ,python3-pil
         ,gir1.2-glib-2.0
 Recommends:
         ,${x11:Depends}
@@ -112,6 +120,8 @@ Architecture: any
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
+        ,python3-cairo
+        ,python3-pil
 # ssl (generate cert), wss:
         ,openssl
 # we need a vfb: either Xdummy or Xvfb
@@ -120,6 +130,7 @@ Depends: xpra-common (= ${binary:Version})
         ,xvfb
         ,keyboard-configuration
 Recommends: xpra-codecs (= ${binary:Version})
+	,xpra-x11 (= ${binary:Version})
         ,xpra-html5
 # socket activation:
         ,libsystemd
@@ -176,8 +187,11 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-client-gtk3
 Architecture: any
 Depends: xpra-client (= ${binary:Version})
+	,xpra-x11 (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
+        ,python3-cairo
+        ,python3-pil
 Recommends: xpra-codecs (= ${binary:Version}), xpra-audio (= ${binary:Version})
 # client opengl acceleration:)
         ,python3-opengl
