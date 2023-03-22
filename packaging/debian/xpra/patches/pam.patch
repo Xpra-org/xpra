@@ -1,7 +1,7 @@
-Index: etc/pam.d/xpra
+Index: fs/etc/pam.d/xpra
 ===================================================================
---- a/etc/pam.d/xpra	(revision 18636)
-+++ b/etc/pam.d/xpra	(working copy)
+--- a/fs/etc/pam.d/xpra	(revision 18636)
++++ b/fs/etc/pam.d/xpra	(working copy)
 @@ -1,6 +1,6 @@
  account    required     pam_nologin.so
 -account    include      system-auth
