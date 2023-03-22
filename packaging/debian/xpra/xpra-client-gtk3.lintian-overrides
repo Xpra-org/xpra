@@ -1,0 +1,3 @@
+xpra-client-gtk3: desktop-command-not-in-package xpra [usr/share/applications/xpra-gui.desktop]
+xpra-client-gtk3: desktop-command-not-in-package xpra [usr/share/applications/xpra.desktop]
+xpra-client-gtk3: missing-dependency-on-libc

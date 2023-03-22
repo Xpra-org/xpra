@@ -1,0 +1,17 @@
+# This is just where / how cups backends are installed properly:
+xpra-server: non-standard-executable-perm 0700 != 0755 [usr/lib/cups/backend/xpraforwarder]
+xpra-server: executable-is-not-world-readable 0700 [usr/lib/cups/backend/xpraforwarder]
+xpra-server: executable-in-usr-lib [usr/lib/cups/backend/xpraforwarder]
+
+# These files are part of Xpra internal logic
+# xpra-server: executable-in-usr-lib /usr/libexec/xpra/auth_dialog
+# xpra-server: executable-in-usr-lib /usr/libexec/xpra/gnome-open
+# xpra-server: executable-in-usr-lib /usr/libexec/xpra/gvfs-open
+# xpra-server: executable-in-usr-lib [/usr/libexec/xpra/xdg-open]
+
+xpra-server: desktop-command-not-in-package
+
+xpra-server: missing-dependency-on-libc
+
+# not supported by all distros yet:
+xpra-server: dbus-policy-in-etc

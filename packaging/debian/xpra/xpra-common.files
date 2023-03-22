@@ -3,8 +3,7 @@ usr/share/xpra/README.md
 usr/share/xpra/COPYING
 usr/share/xpra/icons/
 usr/share/xpra/*.wav
-usr/share/man/man1/xpra*.1*
-usr/share/man/man1/run_scaled*.1*
+usr/share/man/man1/xpra.1*
 usr/share/metainfo/xpra.appdata.xml
 usr/share/icons/xpra*png
 usr/share/doc/xpra/

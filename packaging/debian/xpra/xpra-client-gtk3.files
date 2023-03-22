@@ -12,3 +12,5 @@ usr/share/applications/xpra-gui.desktop
 usr/share/applications/xpra.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml
 usr/share/xpra/autostart.desktop
+usr/share/man/man1/run_scaled.1*
+usr/share/man/man1/xpra_launcher.1*
