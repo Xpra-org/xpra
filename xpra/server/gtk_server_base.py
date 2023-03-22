@@ -14,7 +14,6 @@ from time import monotonic
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Pango', '1.0')# @UndefinedVariable
 from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
 from xpra.util import flatten_dict, envbool
