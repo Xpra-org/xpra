@@ -1,10 +1,10 @@
-usr/lib/python3*/*/xpra/codecs/csc_*
+usr/lib/python3*/*/xpra/codecs/avif
+usr/lib/python3*/*/xpra/codecs/csc_cython
 usr/lib/python3*/*/xpra/codecs/drm
-usr/lib/python3*/*/xpra/codecs/enc_*
+usr/lib/python3*/*/xpra/codecs/evdi
 usr/lib/python3*/*/xpra/codecs/jpeg
-#usr/lib/python3*/*/xpra/codecs/libyuv
+usr/lib/python3*/*/xpra/codecs/libyuv
+usr/lib/python3*/*/xpra/codecs/spng
 usr/lib/python3*/*/xpra/codecs/v4l2
 usr/lib/python3*/*/xpra/codecs/vpx
 usr/lib/python3*/*/xpra/codecs/webp
-#usr/lib/python3*/*/xpra/codecs/avif
-#usr/lib/python3*/*/xpra/codecs/spng
