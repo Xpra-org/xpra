@@ -513,7 +513,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
-%{python3_sitearch}/xpra/codecs/gstreamer
 %if 0%{?fedora}>=37
 %{python3_sitearch}/xpra/codecs/openh264
 %endif
@@ -524,6 +523,7 @@ rm -rf $RPM_BUILD_ROOT
 %files codecs-extras
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/ffmpeg
+%{python3_sitearch}/xpra/codecs/gstreamer
 
 %if %{with_cuda}
 %files codecs-nvidia
