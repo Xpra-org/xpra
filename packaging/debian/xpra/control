@@ -64,8 +64,13 @@ Vcs-Browser: https://github.com/Xpra-org/xpra
 
 Package: xpra
 Architecture: any
-Depends: xpra-client, xpra-client-gtk3, xpra-server, xpra-codecs
-Recommends: xpra-audio, xpra-codecs-extras, xpra-codecs-nvidia
+Depends: xpra-client (= ${binary:Version})
+         ,xpra-client-gtk3 (= ${binary:Version})
+         ,xpra-server (= ${binary:Version})
+         ,xpra-codecs (= ${binary:Version})
+Recommends: xpra-audio (= ${binary:Version})
+            ,xpra-codecs-extras (= ${binary:Version})
+            ,xpra-codecs-nvidia (= ${binary:Version})
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -136,6 +141,7 @@ Depends: xpra-common (= ${binary:Version})
         ,xvfb
         ,keyboard-configuration
 Recommends: xpra-codecs (= ${binary:Version})
+        ,xpra-codecs-extras (= ${binary:Version})
         ,xpra-x11 (= ${binary:Version})
         ,xpra-html5
 # socket activation:
@@ -178,7 +184,8 @@ Package: xpra-client
 Architecture: any
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
-Recommends: python3-socks, xpra-client-gtk3
+Recommends: python3-socks
+            ,xpra-client-gtk3 (= ${binary:Version})
 Suggests: python-psutil
 # external ssh transport:
         ,openssh-client
@@ -197,7 +204,9 @@ Depends: xpra-client (= ${binary:Version})
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-pil
-Recommends: xpra-codecs (= ${binary:Version}), xpra-audio (= ${binary:Version})
+Recommends: xpra-codecs (= ${binary:Version})
+        ,xpra-audio (= ${binary:Version})
+        ,xpra-codecs-extras (= ${binary:Version})
         ,xpra-x11 (= ${binary:Version})
 # client opengl acceleration:)
         ,python3-opengl
@@ -259,7 +268,7 @@ Depends: xpra-common (= ${binary:Version})
 #sid:              ,libyuv0
 #bookworm:Recommends: libspng0
 Suggests: v4l2loopback-dkms
-          ,xpra-codecs-nvidia
+          ,xpra-codecs-nvidia (= ${binary:Version})
           ,python3-opencv
 Description: Picture and video codecs
  for the xpra server and client.
