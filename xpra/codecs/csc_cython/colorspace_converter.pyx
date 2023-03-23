@@ -121,7 +121,7 @@ def get_spec(in_colorspace, out_colorspace):
     #low score as this should be used as fallback only:
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
-                    quality=50, speed=10, setup_cost=10, min_w=2, min_h=2,
+                    quality=50, speed=0, setup_cost=0, min_w=2, min_h=2,
                     max_w=16*1024, max_h=16*1024,
                     can_scale=can_scale,
                     width_mask=width_mask, height_mask=height_mask)
