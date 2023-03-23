@@ -44,9 +44,10 @@ override_dh_systemd_enable:
 #	dh_systemd_start xpra.socket
 
 override_dh_installman:
-	mkdir -p debian/xpra/usr/share/man/man1
-	cp fs/share/man/man1/*.1 debian/xpra/usr/share/man/man1/
-	gzip -9 debian/xpra/usr/share/man/man1/*.1
+	mkdir -p debian/xpra-common/usr/share/man/man1 debian/xpra-client-gtk3/usr/share/man/man1
+	cp fs/share/man/man1/xpra.1 debian/xpra-common/usr/share/man/man1/
+	cp fs/share/man/man1/xpra_launcher.1 fs/share/man/man1/run_scaled.1 debian/xpra-client-gtk3/usr/share/man/man1/
+	gzip -9 debian/xpra-*/usr/share/man/man1/*.1
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
