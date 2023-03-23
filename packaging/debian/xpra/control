@@ -64,7 +64,8 @@ Vcs-Browser: https://github.com/Xpra-org/xpra
 
 Package: xpra
 Architecture: any
-Depends: xpra-client, xpra-server
+Depends: xpra-client, xpra-client-gtk3, xpra-server, xpra-codecs
+Recommends: xpra-audio, xpra-codecs-extras, xpra-codecs-nvidia
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
