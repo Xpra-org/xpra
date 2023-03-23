@@ -254,6 +254,15 @@ Description: Picture and video codecs
  for the xpra server and client.
 
 
+Package: xpra-codecs-extras
+Architecture: any
+Depends: xpra-codecs (= ${binary:Version})
+        ,${codecsextras:Depends}
+        ,${python3:Depends}
+Description: Extra picture and video codecs
+ for the xpra server and client.
+
+
 Package: xpra-codecs-nvidia
 Architecture: any
 Depends: xpra-codecs (= ${binary:Version})
