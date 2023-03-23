@@ -26,6 +26,11 @@ Build-Depends: debhelper (>= 8)
 #lunar:              ,libavif-dev
 #bookworm:              ,libavif-dev
 #sid:              ,libavif-dev
+#lunar:              ,libyuv-dev
+#jammy:              ,libyuv-dev
+#kinetic:              ,libyuv-dev
+#bookworm:              ,libyuv-dev
+#sid:              ,libyuv-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
@@ -246,6 +251,11 @@ Depends: xpra-common (= ${binary:Version})
 #lunar:              ,libavif15
 #bookworm:              ,libavif15
 #sid:              ,libavif15
+#lunar:              ,libyuv0
+#jammy:              ,libyuv0
+#kinetic:              ,libyuv0
+#bookworm:              ,libyuv0
+#sid:              ,libyuv0
 #bookworm:Recommends: libspng0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia
