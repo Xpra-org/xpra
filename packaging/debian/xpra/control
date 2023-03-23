@@ -240,7 +240,7 @@ Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
 #sid:              ,libspng0
-#luna:              ,libspng0
+#lunar:              ,libspng0
 #jammy:              ,libavif13
 #kinetic:              ,libavif14
 #lunar:              ,libavif15
