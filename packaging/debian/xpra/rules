@@ -37,8 +37,8 @@ override_dh_shlibdeps:
 	dh_shlibdeps -Xcodecs/ -Xx11 -Xgdk -Xgtk -Xbrotli/ -Xqrcode/ -Xsd_listen -- -pproc
 
 override_dh_systemd_enable:
-	dh_systemd_enable --no-enable xpra.service
-	dh_systemd_enable xpra.socket
+	dh_systemd_enable --no-enable xpra-server.service
+	dh_systemd_enable xpra-server.socket
 
 #override_dh_systemd_start:
 #	dh_systemd_start xpra.socket

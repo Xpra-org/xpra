@@ -1,1 +1,1 @@
-xpra: init.d-script-not-included-in-package etc/init.d/xpra
+xpra: empty-binary-package

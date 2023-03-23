@@ -3,6 +3,8 @@ xpra-server: non-standard-executable-perm 0700 != 0755 [usr/lib/cups/backend/xpr
 xpra-server: executable-is-not-world-readable 0700 [usr/lib/cups/backend/xpraforwarder]
 xpra-server: executable-in-usr-lib [usr/lib/cups/backend/xpraforwarder]
 
+xpra: init.d-script-not-included-in-package etc/init.d/xpra-server
+
 # These files are part of Xpra internal logic
 # xpra-server: executable-in-usr-lib /usr/libexec/xpra/auth_dialog
 # xpra-server: executable-in-usr-lib /usr/libexec/xpra/gnome-open
