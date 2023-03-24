@@ -73,6 +73,7 @@ packaging/MacOS/xpra-html5
 packaging/debian/xpra/*.debhelper
 packaging/debian/xpra/*.substvars
 packaging/debian/xpra/tmp
+packaging/debian/xpra/files
 packaging/debian/xpra/xpra
 packaging/debian/xpra/xpra-common
 packaging/debian/xpra/xpra-audio
