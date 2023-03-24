@@ -29,11 +29,10 @@ dnf install xorg-x11-server-Xvfb
 <details>
   <summary>Video codecs</summary>
 
-For video encoding support, install the private libraries and their development headers from from the [xpra.org repositories](https://github.com/Xpra-org/xpra/wiki/Download):
+For extra video encoding support, install the following development headers from [rpmfusion.org](https://rpmfusion.org/) and / or [EPEL](https://docs.fedoraproject.org/en-US/epel/):
 ```shell
-dnf install ffmpeg-xpra-devel x264-xpra-devel
+dnf install libvpx-devel libyuv-devel ffmpeg-devel x264-devel
 ```
-Building against the default (and often outdated) host libraries or using third-party repositories (`EPEL`, `rpmfusion`, etc) is not recommended and not supported.
 </details>
 <details>
   <summary>OpenGL</summary>
@@ -46,17 +45,7 @@ dnf install python3-pyopengl
 
 ## Build
 ```shell
-python3 ./setup.py install --without-printing
-```
-
-When building against the private video codec libraries, you must point the compiler and linker to their location, ie:
-<details>
-  <summary>for 64-bit builds</summary>
-
-```shell
-python3 ./setup.py install \
-        --rpath=/usr/lib64/xpra --pkg-config-path=/usr/lib64/xpra/pkgconfig \
-        --without-html5 --without-printing
+python3 ./setup.py install
 ```
 </details>
 
