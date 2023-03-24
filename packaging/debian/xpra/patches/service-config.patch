@@ -1,7 +1,7 @@
-Index: ./packaging/debian/xpra/xpra-service.service
+Index: ./packaging/debian/xpra/xpra-server.service
 ===================================================================
---- a/packaging/debian/xpra/xpra-service.service	(revision 24973)
-+++ b/packaging/debian/xpra/xpra-service.service	(working copy)
+--- a/packaging/debian/xpra/xpra-server.service	(revision 24973)
++++ b/packaging/debian/xpra/xpra-server.service	(working copy)
 @@ -7,7 +7,7 @@
  
  [Service]
