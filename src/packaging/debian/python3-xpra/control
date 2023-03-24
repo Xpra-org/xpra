@@ -40,7 +40,6 @@ Vcs-Browser: https://github.com/Xpra-org/xpra
 Package: xpra
 Architecture: any
 Depends: python3-xpra | python2-xpra,
-         python-minimal,
          x11-xserver-utils,
 #we need a vfb: either Xdummy or Xvfb
 #        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
