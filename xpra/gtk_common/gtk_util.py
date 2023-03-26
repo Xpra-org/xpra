@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -767,14 +767,23 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
     return filename
 
 
+dsinit = True
 def init_display_source():
     """
     On X11, we want to be able to access the bindings
     so we need to get the X11 display from GDK.
     """
-    if is_X11():
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
+    global dsinit
+    if dsinit and is_X11():
+        dsinit = False
+        try:
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+            init_gdk_display_source()
+        except ImportError:     # pragma: no cover
+            from xpra.log import Logger
+            log = Logger("gtk", "client")
+            log("init_gdk_display_source()", exc_info=True)
+            log.warn("Warning: the gtk3 x11 bindings are missing")
 
 
 def main():
