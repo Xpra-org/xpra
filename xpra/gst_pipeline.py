@@ -8,7 +8,7 @@
 
 from time import monotonic
 
-from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
+from xpra.gst_common import GST_FLOW_OK, import_gst
 Gst = import_gst()
 if not Gst:
     raise ImportError("GStreamer bindings not found")

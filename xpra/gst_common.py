@@ -13,6 +13,7 @@ from xpra.log import Logger
 
 log = Logger("sound", "gstreamer")
 # pylint: disable=import-outside-toplevel
+GST_FLOW_OK = 0     #Gst.FlowReturn.OK
 
 GST_FORMAT_BYTES = 2
 GST_FORMAT_TIME = 3

@@ -11,9 +11,8 @@ from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time
 from xpra.codecs.codec_constants import video_spec, get_profile
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
-    STREAM_TYPE, BUFFER_FORMAT,
+    STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
-from xpra.gst_pipeline import GST_FLOW_OK
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
     get_version, get_type, get_info,

@@ -8,10 +8,9 @@ import sys
 from time import monotonic
 from collections import namedtuple
 
-from xpra.gst_common import format_element_options
+from xpra.gst_common import import_gst, format_element_options
 from xpra.sound.gstreamer_util import (
     parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
-    import_gst,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
     )
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env

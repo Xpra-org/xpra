@@ -8,10 +8,9 @@
 
 import os
 
-from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
-
 from xpra.util import AtomicInteger
 from xpra.os_util import register_SIGUSR_signals
+from xpra.gst_common import import_gst, GST_FLOW_OK
 from xpra.gst_pipeline import Pipeline
 from xpra.log import Logger
 

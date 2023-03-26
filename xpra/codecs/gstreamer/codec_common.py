@@ -6,8 +6,8 @@
 from queue import Queue, Empty
 
 from xpra.util import typedict, envint
-from xpra.gst_common import import_gst
-from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
+from xpra.gst_common import import_gst, GST_FLOW_OK
+from xpra.gst_pipeline import Pipeline
 from xpra.log import Logger
 
 Gst = import_gst()

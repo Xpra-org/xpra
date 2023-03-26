@@ -14,14 +14,13 @@ from xpra.os_util import SIGNAMES
 from xpra.util import csv, envint, envbool, envfloat
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.gst_common import normv, has_plugins, plugin_str
+from xpra.gst_common import normv, has_plugins, plugin_str, GST_FLOW_OK
 from xpra.sound.gstreamer_util import (
     get_source_plugins, get_encoder_elements,
     get_encoder_default_options,
     get_encoders, get_queue_time,
     MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS,
     MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
-    GST_FLOW_OK,
     )
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit

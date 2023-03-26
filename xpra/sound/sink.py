@@ -8,12 +8,12 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
-from gi.repository import GObject
+from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gst_common import (
     normv, make_buffer, plugin_str,
-    STREAM_TYPE, BUFFER_FORMAT,
+    STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.sound.gstreamer_util import (
     get_decoder_elements, has_plugins,
@@ -21,7 +21,6 @@ from xpra.sound.gstreamer_util import (
     get_default_sink_plugin, get_sink_plugins,
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
-    GST_FLOW_OK,
     )
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.compression import decompress_by_name

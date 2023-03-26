@@ -6,9 +6,9 @@
 from queue import Queue, Empty, Full
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.gst_common import  import_gst
+from xpra.gst_common import import_gst, GST_FLOW_OK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gst_pipeline import Pipeline, GST_FLOW_OK
+from xpra.gst_pipeline import Pipeline
 from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,

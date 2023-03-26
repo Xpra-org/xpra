@@ -328,14 +328,15 @@ def make_expand_server():
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
     #check that we can access the X11 display:
-    from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
-    if timeout is None:
-        timeout = VFB_WAIT
-    if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
-        return 1
-    from xpra.log import Logger
-    log = Logger("screen", "x11")
-    log("X11 display is ready")
+    if xvfb:
+        from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
+        if timeout is None:
+            timeout = VFB_WAIT
+        if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
+            return 1
+        from xpra.log import Logger
+        log = Logger("screen", "x11")
+        log("X11 display is ready")
     no_gtk()
     from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
     display = verify_gdk_display(display_name)
@@ -1337,7 +1338,7 @@ def _do_run_server(script_file, cmdline,
     if not proxying:
         if POSIX and not OSX:
             no_gtk()
-            if starting or starting_desktop or shadowing:
+            if starting or starting_desktop:
                 r = verify_display(xvfb, display_name, shadowing)
                 if r:
                     return r
@@ -1374,7 +1375,7 @@ def _do_run_server(script_file, cmdline,
 
     set_server_features(opts)
 
-    if not proxying and POSIX and not OSX:
+    if not (proxying or shadowing) and POSIX and not OSX:
         if not check_xvfb():
             return  1
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source

@@ -30,9 +30,15 @@ class RFBServer:
         self.readonly = False
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
+        self.X11Keyboard = None
         if POSIX and not OSX:
-            from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-            self.X11Keyboard = X11KeyboardBindings()
+            try:
+                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+                self.X11Keyboard = X11KeyboardBindings()
+            except ImportError:
+                log("RFBServer", exc_info=True)
+                log.warn("Warning: no x11 bindings")
+                log.warn(" some RFB keyboard events may be missing")
 
     def init(self, opts):
         if not parse_bool("rfb-upgrade", opts.rfb_upgrade):

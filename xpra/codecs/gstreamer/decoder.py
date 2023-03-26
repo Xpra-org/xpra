@@ -6,8 +6,10 @@
 import os
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.gst_common import STREAM_TYPE, GST_FORMAT_BYTES, make_buffer, has_plugins
-from xpra.gst_pipeline import GST_FLOW_OK
+from xpra.gst_common import (
+    GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
+    make_buffer, has_plugins,
+    )
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
     get_version, get_type, get_info,
