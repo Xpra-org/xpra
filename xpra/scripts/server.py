@@ -328,14 +328,14 @@ def make_expand_server():
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
     #check that we can access the X11 display:
+    from xpra.log import Logger
+    log = Logger("screen", "x11")
     if xvfb:
         from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
         if timeout is None:
             timeout = VFB_WAIT
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
             return 1
-        from xpra.log import Logger
-        log = Logger("screen", "x11")
         log("X11 display is ready")
     no_gtk()
     from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
