@@ -218,7 +218,10 @@ def _get_xsettings_dict():
 
 def _get_xsettings_dpi():
     if XSETTINGS_DPI and is_X11():
-        from xpra.x11.xsettings_prop import XSettingsTypeInteger
+        try:
+            from xpra.x11.xsettings_prop import XSettingsTypeInteger
+        except ImportError:
+            return -1
         d = _get_xsettings_dict()
         for k,div in {
             "Xft.dpi"         : 1,
