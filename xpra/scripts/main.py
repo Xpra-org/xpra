@@ -1825,8 +1825,14 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     if mode in (
         "seamless", "desktop", "monitor", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-        ) and (OSX or WIN32):
-        raise InitException(f"{mode} is not supported on this platform")
+        ):
+        if OSX or WIN32:
+            raise InitException(f"{mode} is not supported on this platform")
+        try:
+            from xpra import x11
+            assert x11
+        except ImportError:
+            raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use `{mode}")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     if mode in (
