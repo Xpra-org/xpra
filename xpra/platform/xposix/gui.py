@@ -97,7 +97,7 @@ def do_get_wm_name(env):
     return wm_name
 
 def get_x11_wm_name():
-    if not is_X11():
+    if not is_X11() or not X11WindowBindings():
         return None
     try:
         wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
@@ -116,8 +116,14 @@ def get_x11_wm_name():
 
 
 def get_clipboard_native_class():
+    gtk_clipboard_class = "xpra.gtk_common.gtk_clipboard.GTK_Clipboard"
     if is_Wayland():
-        return "xpra.gtk_common.gtk_clipboard.GTK_Clipboard"
+        return gtk_clipboard_class
+    try:
+        from xpra import x11
+        assert x11
+    except ImportError:
+        return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
 def get_native_tray_classes():
