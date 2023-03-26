@@ -9,7 +9,7 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from gi.repository import GLib
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.compression import Compressible
 from xpra.os_util import POSIX, strtobytes, bytestostr, hexstr

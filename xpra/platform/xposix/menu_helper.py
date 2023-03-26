@@ -15,7 +15,7 @@ import glob
 from time import monotonic
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 
-from xpra.util import envbool, first_time, engs
+from xpra.util import envbool, first_time
 from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename

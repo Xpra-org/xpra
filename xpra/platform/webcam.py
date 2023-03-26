@@ -67,7 +67,7 @@ def main(argv):
                 else:
                     log.info("device change")
             log.info("starting main loop")
-            from gi.repository import GLib
+            from gi.repository import GLib  # @UnresolvedImport
             main_loop = GLib.MainLoop()
             GLib.idle_add(add_video_device_change_callback, callback)
             try:
