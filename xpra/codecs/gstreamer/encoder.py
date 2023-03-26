@@ -150,6 +150,8 @@ def init_all_specs(*exclude):
     colorspaces = {}
     missing = []
     def add(element, encoding, cs_in, css_out, *args):
+        if element in missing:
+            return
         if encoding not in FORMATS:
             log(f"{encoding} not enabled - supported formats: {FORMATS}")
             return
