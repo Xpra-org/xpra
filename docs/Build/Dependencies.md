@@ -121,7 +121,7 @@ See [audio forwarding](../Features/Audio.md)
   ![Python 3 Modules](./graphs/python3.png)
 
   ### GTK3
-  ![GTK 3](./graphs/python3.png)
+  ![GTK 3](./graphs/gtk3.png)
 
   ### Tools
   ![Tools](./graphs/tools.png)
