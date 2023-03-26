@@ -374,6 +374,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.tray_widget = self.make_tray_widget()
             self.set_tray_icon(self.tray_icon  or "server-notconnected")
         except ImportError as e:
+            traylog("setup_tray()", exc_info=True)
             traylog.warn("Warning: failed to load systemtray:")
             traylog.warn(" %s", e)
         except Exception as e:
