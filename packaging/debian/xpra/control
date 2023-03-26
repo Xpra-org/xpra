@@ -279,6 +279,9 @@ Architecture: any
 Depends: xpra-codecs (= ${binary:Version})
         ,${codecsextras:Depends}
         ,${python3:Depends}
+Recommends:
+        ,gstreamer-plugins-ugly
+        ,gstreamer1.0-vaapi
 Description: Extra picture and video codecs
  for the xpra server and client.
 
