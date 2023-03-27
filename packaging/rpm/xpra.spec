@@ -22,7 +22,7 @@
 %if 0%{?with_cuda}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
-%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg_encoder  --without-nvjpeg_decoder
+%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
 %endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation

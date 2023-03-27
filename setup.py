@@ -257,8 +257,8 @@ nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
 nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
-cuda_kernels_ENABLED    = DEFAULT and not OSX
-cuda_rebuild_ENABLED    = not WIN32
+cuda_kernels_ENABLED    = nvidia_ENABLED and not OSX
+cuda_rebuild_ENABLED    = cuda_kernels_ENABLED and not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
@@ -2106,11 +2106,6 @@ tace(proc_ENABLED and proc_use_libproc, "xpra.platform.xposix.proc_libproc", "li
 
 #codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
-toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
-if nvfbc_ENABLED:
-    #platform: ie: `linux2` -> `linux`, `win32` -> `win`
-    platform = sys.platform.rstrip("0123456789")
-    ace(f"xpra.codecs.nvidia.nvfbc.fbc_capture_{platform}", "nvfbc", language="c++")
 
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 CUDA_BIN = f"{share_xpra}/cuda"
@@ -2279,9 +2274,13 @@ if nvidia_ENABLED:
         #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
-if (nvidia_ENABLED and cuda_kernels_ENABLED) or (is_Debian() or is_Ubuntu()):
+if cuda_kernels_ENABLED or (is_Debian() or is_Ubuntu()):
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
+toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
+#platform: ie: `linux2` -> `linux`, `win32` -> `win`
+fbcplatform = sys.platform.rstrip("0123456789")
+tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.fbc_capture_{fbcplatform}", "nvfbc", language="c++")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
