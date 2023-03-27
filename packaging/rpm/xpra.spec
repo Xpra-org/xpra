@@ -77,7 +77,7 @@ This metapackage installs the xpra in full, including the python client, server 
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
-
+BuildRequires:		pkgconfig
 
 %package common
 Summary:			Common files for xpra packages
