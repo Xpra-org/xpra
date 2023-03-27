@@ -14,12 +14,13 @@
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
-%ifarch x86_64 aarch64
-%{!?with_cuda: %define with_cuda 1}
+%if 0%{?with_cuda}%{?nvidia_codecs}
+%define nvidia_codecs 1
 %else
-%{!?with_cuda: %define with_cuda 0}
+#detect:
+%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
 %endif
-%if 0%{?with_cuda}
+%if 0%{?nvidia_codecs}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
@@ -206,7 +207,7 @@ Recommends:			gstreamer1-plugins-bad-free-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
 
-%if %{with_cuda}
+%if %{nvidia_codecs}
 %package codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
@@ -525,7 +526,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/gstreamer
 
-%if %{with_cuda}
+%if %{nvidia_codecs}
 %files codecs-nvidia
 %{_datadir}/xpra/cuda
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
