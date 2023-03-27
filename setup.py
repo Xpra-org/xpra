@@ -318,13 +318,12 @@ SWITCH_ALIAS = {
     "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
-    "cython"    : ("codecs",
+    "cython"    : ("cython", "codecs",
                    "server", "client", "shadow",
                    "cython_bencode", "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
                    "lz4",
                    "gtk3", "x11", "gtk_x11",
                    "pam", "sd_listen", "proc",
-                   "modules",
                    ),
     }
 
@@ -1971,7 +1970,7 @@ if data_ENABLED:
     add_data_files(f"{share_xpra}/css",           glob.glob("fs/share/xpra/css/*"))
 
 #*******************************************************************************
-if modules_ENABLED:
+if cython_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
