@@ -17,7 +17,7 @@
 %ifarch x86_64 aarch64
 %{!?with_cuda: %define with_cuda 1}
 %else
-%define with_cuda 0
+%{!?with_cuda: %define with_cuda 0}
 %endif
 %if 0%{?with_cuda}
 %define build_args %{DEFAULT_BUILD_ARGS}
