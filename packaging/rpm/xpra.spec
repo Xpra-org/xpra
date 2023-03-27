@@ -506,7 +506,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files codecs
 %{python3_sitearch}/xpra/codecs/drm
-#%{python3_sitearch}/xpra/codecs/evdi
+#/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
 %{python3_sitearch}/xpra/codecs/avif
