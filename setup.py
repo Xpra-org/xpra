@@ -406,15 +406,24 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     show_switch_info()
 
     if not cython_ENABLED:
-        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = nvdec_ENABLED = openh264_ENABLED= False
-        csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
-        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
-        spng_decoder_ENABLED = spng_encoder_ENABLED = False
+        enc_x264_ENABLED = enc_x265_ENABLED = False
+        csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
+        v4l2_ENABLED = False
+        vpx_ENABLED = avif_ENABLED = False
+        openh264_ENABLED = openh264_encoder_ENABLED = openh264_decoder_ENABLED = False
+        spng_decoder_ENABLED = spng_encoder_ENABLED = argb_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
+        nvjpeg_decoder_ENABLED = nvjpeg_encoder_ENABLED = nvenc_ENABLED = nvdec_ENABLED = nvfbc_ENABLED = False
+        dec_avcodec2_ENABLED = csc_swscale_ENABLED = enc_ffmpeg_ENABLED = ffmpeg_ENABLED = False
+        cuda_kernels_ENABLED = False
+        evdi_ENABLED = drm_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
         cython_bencode_ENABLED = rencodeplus_ENABLED = brotli_ENABLED = qrencode_ENABLED = False
+        websockets_ENABLED = netdev_ENABLED = vsock_ENABLED = False
+        lz4_ENABLED = False
         gtk3_ENABLED = False
-        x11_ENABLED = False
+        x11_ENABLED = gtk_x11_ENABLED = False
+        pam_ENABLED = sd_listen_ENABLED = proc_ENABLED = False
     #sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
@@ -635,7 +644,8 @@ if modules_ENABLED:
 def add_cython_ext(*args, **kwargs):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
-    assert cython_ENABLED, "cython compilation is disabled"
+    if not cython_ENABLED:
+        raise ValueError(f"cannot build {args}: cython compilation is disabled")
     if cython_tracing_ENABLED:
         kwargs["define_macros"] = [
             ('CYTHON_TRACE', 1),
