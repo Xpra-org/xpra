@@ -318,6 +318,14 @@ SWITCH_ALIAS = {
     "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
+    "cython"    : ("codecs",
+                   "server", "client", "shadow",
+                   "cython_bencode", "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
+                   "lz4",
+                   "gtk3", "x11", "gtk_x11",
+                   "pam", "sd_listen", "proc",
+                   "modules",
+                   ),
     }
 
 def show_help():
@@ -363,7 +371,10 @@ def filter_argv():
         for x in SWITCHES:
             with_str = f"--with-{x}"
             without_str = f"--without-{x}"
-            var_names = SWITCH_ALIAS.get(x, [x])
+            var_names = list(SWITCH_ALIAS.get(x, [x]))
+            #recurse once, so an alias can container aliases:
+            for v in tuple(var_names):
+                var_names += list(SWITCH_ALIAS.get(v, []))
             if arg.startswith(with_str+"="):
                 for var in var_names:
                     globals()[f"{var}_ENABLED"] = arg[len(with_str)+1:]
@@ -405,25 +416,6 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
             print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
     show_switch_info()
 
-    if not cython_ENABLED:
-        enc_x264_ENABLED = enc_x265_ENABLED = False
-        csc_libyuv_ENABLED = csc_cython_ENABLED = gstreamer_ENABLED = False
-        v4l2_ENABLED = False
-        vpx_ENABLED = avif_ENABLED = False
-        openh264_ENABLED = openh264_encoder_ENABLED = openh264_decoder_ENABLED = False
-        spng_decoder_ENABLED = spng_encoder_ENABLED = argb_ENABLED = False
-        webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
-        nvjpeg_decoder_ENABLED = nvjpeg_encoder_ENABLED = nvenc_ENABLED = nvdec_ENABLED = nvfbc_ENABLED = False
-        dec_avcodec2_ENABLED = csc_swscale_ENABLED = enc_ffmpeg_ENABLED = ffmpeg_ENABLED = False
-        cuda_kernels_ENABLED = False
-        evdi_ENABLED = drm_ENABLED = False
-        server_ENABLED = client_ENABLED = shadow_ENABLED = False
-        cython_bencode_ENABLED = rencodeplus_ENABLED = brotli_ENABLED = qrencode_ENABLED = False
-        websockets_ENABLED = netdev_ENABLED = vsock_ENABLED = False
-        lz4_ENABLED = False
-        gtk3_ENABLED = False
-        x11_ENABLED = gtk_x11_ENABLED = False
-        pam_ENABLED = sd_listen_ENABLED = proc_ENABLED = False
     #sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
