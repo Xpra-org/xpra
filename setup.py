@@ -316,7 +316,7 @@ SWITCHES = [
 SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
     "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
-    "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder"),
+    "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     }
 
@@ -2274,7 +2274,7 @@ if nvidia_ENABLED:
         #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
-if cuda_kernels_ENABLED or (is_Debian() or is_Ubuntu()):
+if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
