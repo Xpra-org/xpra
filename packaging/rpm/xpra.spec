@@ -207,7 +207,7 @@ Recommends:			gstreamer1-plugins-bad-free-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
 
-%if %{nvidia_codecs}
+%if 0%{?nvidia_codecs}
 %package codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
@@ -526,7 +526,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/gstreamer
 
-%if %{nvidia_codecs}
+%if 0%{?nvidia_codecs}
 %files codecs-nvidia
 %{_datadir}/xpra/cuda
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
