@@ -119,11 +119,12 @@ Recommends:			python3-avahi
 %if 0%{?fedora}
 Recommends:			python3-zeroconf
 %endif
-BuildRequires:		lz4-devel
+BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
-BuildRequires:		brotli-devel
+BuildRequires:		pkgconfig(libbrotlidec)
+BuildRequires:		pkgconfig(libbrotlienc)
 Recommends:			brotli
-BuildRequires:		qrencode-devel
+BuildRequires:		pkgconfig(libqrencode)
 Recommends:			qrencode
 BuildRequires:		coreutils
 BuildRequires:		gcc
@@ -132,10 +133,10 @@ BuildRequires:		python3
 BuildRequires:		python3-devel
 BuildRequires:		python3-Cython
 BuildRequires:		python3-gobject
-BuildRequires:		pygobject3-devel
-BuildRequires:		python3-cairo-devel
-BuildRequires:		gtk3-devel
-BuildRequires:		gobject-introspection-devel
+BuildRequires:		pkgconfig(pygobject-3.0)
+BuildRequires:		pkgconfig(py3cairo)
+BuildRequires:		pkgconfig(gtk+-3.0)
+BuildRequires:		pkgconfig(gobject-introspection-1.0)
 %if 0%{?run_tests}
 BuildRequires:		python3-cryptography
 BuildRequires:		python3-rencode
@@ -152,28 +153,26 @@ Suggests:			xpra-codecs-extra
 Suggests:			xpra-codecs-nvidia
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-pillow
-BuildRequires:		libdrm-devel
+BuildRequires:		pkgconfig(libdrm)
 Requires:			libdrm
-BuildRequires:		libvpx-devel
+BuildRequires:		pkgconfig(vpx)
 Requires:			libvpx
 Obsoletes:          libvpx-xpra < 1.8
-BuildRequires:		libwebp-devel
+BuildRequires:		pkgconfig(libwebp)
 Requires:			libwebp
-BuildRequires:		turbojpeg-devel
+BuildRequires:		pkgconfig(libturbojpeg)
 Requires:			turbojpeg
-BuildRequires:		libyuv-devel
+BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
-BuildRequires:		libavif-devel
+BuildRequires:		pkgconfig(libavif)
 Requires:			libavif
 %if 0%{?fedora}>=37
-BuildRequires:		openh264-devel
+BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
 %endif
 %if 0%{?fedora}
-BuildRequires:		libspng-devel
+BuildRequires:		pkgconfig(spng)
 Requires:			libspng
-#BuildRequires:		oneVPL-devel
-#Requires:			oneVPL
 %endif
 #not available yet:
 #BuildRequires:		libevdi-devel
@@ -189,9 +188,11 @@ Summary:			Extra picture and video codecs for xpra clients and servers.
 #Conflicts:			x264-xpra
 #Conflicts:			ffmpeg-xpra
 Recommends:			x264
-BuildRequires:		x264-devel
+BuildRequires:		pkgconfig(x264)
 Recommends:			ffmpeg
-BuildRequires:		ffmpeg-devel
+BuildRequires:		pkgconfig(libavutil)
+BuildRequires:		pkgconfig(libavformat)
+BuildRequires:		pkgconfig(libavcodec)
 #for gstreamer video encoder and decoder:
 Recommends:			python3-gstreamer1
 Recommends:			gstreamer1
@@ -299,11 +300,11 @@ This package contains the GTK3 xpra client.
 
 %package x11
 Summary:			X11 bindings
-BuildRequires:		libxkbfile-devel
-BuildRequires:		libXtst-devel
-BuildRequires:		libXcomposite-devel
-BuildRequires:		libXdamage-devel
-BuildRequires:		libXres-devel
+BuildRequires:		pkgconfig(xkbfile)
+BuildRequires:		pkgconfig(xtst)
+BuildRequires:		pkgconfig(xcomposite)
+BuildRequires:		pkgconfig(xdamage)
+BuildRequires:		pkgconfig(xres)
 Requires:			libxkbfile
 Requires:			libXtst
 Requires:			libXcomposite
@@ -353,12 +354,12 @@ Suggests:			tcp_wrappers-libs
 Suggests:			python3-ldap3
 Suggests:			python3-ldap
 Suggests:			python3-oauthlib
-BuildRequires:		systemd-devel
+BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
 %if 0%{?fedora}
-BuildRequires:		procps-devel
+BuildRequires:		pkgconfig(libprocps)
 %endif
 Requires:			selinux-policy
 Requires(post):		openssl
