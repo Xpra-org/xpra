@@ -18,9 +18,15 @@ import os.path
 import subprocess
 from time import sleep
 
-from distutils.core import setup
-from distutils.command.build import build
-from distutils.command.install_data import install_data
+try:
+    from distutils.core import setup
+    from distutils.command.build import build
+    from distutils.command.install_data import install_data
+except ImportError as e:
+    print(f"no distutils: {e}, trying setuptools")
+    from setuptools import setup
+    from setuptools.command.build import build
+    from setuptools.command.install import install as install_data
 
 import xpra
 from xpra.os_util import (
@@ -1726,11 +1732,20 @@ else:
             build_xpra_conf(build_base)
 
     class install_data_override(install_data):
-        def run(self):
-            print(f"install_data_override: install_dir={self.install_dir}")
-            install_data.run(self)
 
-            root_prefix = self.install_dir.rstrip("/")
+        def finalize_options(self):
+            self.install_base = self.install_platbase = None
+            install_data.finalize_options(self)
+
+        def run(self):
+            install_dir = self.install_dir
+            if install_dir.endswith("egg"):
+                install_dir = install_dir.split("egg")[1] or sys.prefix
+            else:
+                install_data.run(self)
+            print(f"install_data_override.run() install_dir={install_dir}")
+
+            root_prefix = install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
                 #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
@@ -1742,7 +1757,7 @@ else:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
                 else:
-                    dst_dir = self.install_dir.rstrip("/")+"/"+dst_dir
+                    dst_dir = install_dir.rstrip("/")+"/"+dst_dir
                 #make sure the target directory exists:
                 self.mkpath(dst_dir)
                 #generate the target filename:
@@ -1842,7 +1857,7 @@ else:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
-                doc_dir = f"{self.install_dir}/share/doc/xpra/"
+                doc_dir = f"{install_dir}/share/doc/xpra/"
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:

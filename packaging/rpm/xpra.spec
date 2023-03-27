@@ -79,6 +79,9 @@ BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
 BuildRequires:		pkgconfig
+%if 0%{?fedora}>=38
+BuildRequires:		python3-setuptools
+%endif
 
 %package common
 Summary:			Common files for xpra packages
