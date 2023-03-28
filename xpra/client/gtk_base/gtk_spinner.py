@@ -11,7 +11,7 @@ import math
 import cairo
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.client.spinner import cv
+from xpra.client.gui.spinner import cv
 
 
 class Example(Gtk.Window):

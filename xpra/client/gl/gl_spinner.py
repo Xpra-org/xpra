@@ -10,7 +10,7 @@ from OpenGL.GL import (
     glVertex2i, glColor4f,
     GL_POLYGON,
     )
-from xpra.client.spinner import cv
+from xpra.client.gui.spinner import cv
 
 
 def draw_spinner(bw, bh):
