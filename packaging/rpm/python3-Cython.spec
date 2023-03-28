@@ -2,13 +2,13 @@
 
 Name:		python3-Cython
 Version:	3.0.0b2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
 Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
-Patch0:     https://github.com/cython/cython/commit/03ae30013de3fde03719c9b1c9c53b39c389b599.patch
+Patch0:     03ae30013de3fde03719c9b1c9c53b39c389b599.patch
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python3
 
@@ -53,6 +53,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Mon Sep 19 2022 Antoine Martin <antoine@xpra.org> 3.0.0b2-2
+- add Python 3.12 patch
+
 * Mon Sep 19 2022 Antoine Martin <antoine@xpra.org> 3.0.0a11-1
 - switch to 3.0 branch to support python 3.11
 
