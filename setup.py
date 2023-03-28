@@ -2196,7 +2196,7 @@ if nvidia_ENABLED:
         def get_nvcc_args():
             nvcc_cmd = [nvcc, "-fatbin"]
             gcc_version = get_gcc_version()
-            if gcc_version<(7, 5):
+            if not CC_is_clang() and gcc_version<(7, 5):
                 print("gcc versions older than 7.5 are not supported!")
                 for _ in range(5):
                     sleep(1)
@@ -2208,7 +2208,7 @@ if nvidia_ENABLED:
             #GCC 6 uses C++11 by default:
             else:
                 nvcc_cmd.append("-std=c++11")
-            if gcc_version>=(12, 0) or CC_is_clang():
+            if gcc_version>=(12, 0):
                 nvcc_cmd.append("--allow-unsupported-compiler")
             if nvcc_version>=(11, 5):
                 nvcc_cmd += ["-arch=all",
