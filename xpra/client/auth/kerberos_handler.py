@@ -59,7 +59,7 @@ class Handler:
             return None
         log("kerberos service=%s", service)
         try:
-            r, ctx = kerberos.authGSSClientInit(service)
+            r, ctx = kerberos.authGSSClientInit(service)  # @UndefinedVariable
             if r!=1:
                 log("kerberos.authGSSClientInit failed and returned %s", r)
                 return None
@@ -69,12 +69,12 @@ class Handler:
             log_kerberos_exception(e)
             return None
         try:
-            kerberos.authGSSClientStep(ctx, "")
+            kerberos.authGSSClientStep(ctx, "")  # @UndefinedVariable
         except Exception as e:
             log("kerberos.authGSSClientStep", exc_info=True)
             log.error("Error: kerberos client authentication failure:")
             log_kerberos_exception(e)
             return None
-        token = kerberos.authGSSClientResponse(ctx)
+        token = kerberos.authGSSClientResponse(ctx)  # @UndefinedVariable
         log("kerberos token=%s", token)
         return token

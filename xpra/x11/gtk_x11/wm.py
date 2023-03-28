@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject, Gdk
+from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
 from xpra.common import MAX_WINDOW_SIZE

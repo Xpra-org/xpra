@@ -77,15 +77,15 @@ def upnp_add(socktype, info, options):
             #we need to figure out the specific IP
             #which is connected to this device
             import netifaces
-            gateways = netifaces.gateways()
+            gateways = netifaces.gateways()  # @UndefinedVariable
             if not gateways:
                 return err("internal host IP not found: no gateways")
             UPNP_IPV6 = False
             INET = {
-                "INET"  : netifaces.AF_INET,
+                "INET"  : netifaces.AF_INET,  # @UndefinedVariable
                 }
             if UPNP_IPV6:
-                INET["INET6"] = netifaces.AF_INET6
+                INET["INET6"] = netifaces.AF_INET6  # @UndefinedVariable
             def get_device_interface():
                 default_gw = gateways.get("default")    #ie: {2: ('192.168.3.1', 'eth0')}
                 if default_gw:
@@ -105,7 +105,7 @@ def upnp_add(socktype, info, options):
             if not interface:
                 return err("cannot identify the network interface for '%s'" % (device.address,))
             log("identified interface '%s' for device address %s", interface, device.address)
-            addrs = netifaces.ifaddresses(interface)
+            addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
             log("ifaddresses(%s)=%s", interface, addrs)
             #ie: {17: [{'addr': '30:52:cb:85:54:03', 'broadcast': 'ff:ff:ff:ff:ff:ff'}],
             #      2: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}],

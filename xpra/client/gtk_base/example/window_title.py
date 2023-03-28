@@ -9,8 +9,8 @@ from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import sys
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 
 def change_callback(entry, window):

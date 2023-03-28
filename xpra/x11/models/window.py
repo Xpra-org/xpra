@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk, Gdk
+from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE

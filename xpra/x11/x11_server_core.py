@@ -33,8 +33,8 @@ from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
 
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk  # pylint: disable=wrong-import-position, wrong-import-order
+gi.require_version('Gdk', '3.0')  # @UndefinedVariable
+from gi.repository import Gdk  # pylint: disable=wrong-import-position, wrong-import-order @UnresolvedImport
 
 set_context_check(verify_sync)
 RandR = RandRBindings()

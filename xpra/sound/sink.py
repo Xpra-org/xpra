@@ -474,7 +474,7 @@ GObject.type_register(SoundSink)
 
 
 def main():
-    from gi.repository import GLib
+    from gi.repository import GLib  # @UnresolvedImport
     from xpra.platform import program_context
     with program_context("Sound-Record"):
         args = sys.argv

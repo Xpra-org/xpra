@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk, GdkX11
+from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -187,7 +187,7 @@ class SystemTray(GObject.GObject):
                 window = GdkX11.X11Window.foreign_new_for_display(event.display, xid)
                 log("tray docking window %s", window)
                 if window:
-                    from gi.repository import GLib  # pylint: disable=import-outside-toplevel
+                    from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
                     GLib.idle_add(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]

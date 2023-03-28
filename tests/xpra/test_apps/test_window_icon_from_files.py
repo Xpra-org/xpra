@@ -2,8 +2,10 @@
 
 import sys
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk   #pylint: disable=wrong-import-position
+gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+gi.require_version('GdkPixbuf', '2.0')  # @UndefinedVariable
+from gi.repository import Gtk   #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import GdkPixbuf #pylint: disable=wrong-import-position @UnresolvedImport
 
 class TestWindow(Gtk.Window):
 
@@ -30,7 +32,7 @@ def main():
     if len(sys.argv)<2:
         print("usage: %s ICONFILE1 [ICONFILE2] [..]" % sys.argv[0])
         sys.exit(1)
-    icons = [GdkPixbuf_new_from_file(x) for x in sys.argv[1:]]
+    icons = [GdkPixbuf.new_from_file(x) for x in sys.argv[1:]]
     TestWindow(icons)
     Gtk.main()
 

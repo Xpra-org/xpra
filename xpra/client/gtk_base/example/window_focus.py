@@ -14,9 +14,9 @@ from datetime import datetime
 from collections import deque
 
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import Gtk, Pango, GLib    #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Pango", "1.0")  # @UndefinedVariable
+from gi.repository import Gtk, Pango, GLib    #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 def make_window():

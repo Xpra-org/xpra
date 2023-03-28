@@ -54,24 +54,24 @@ class Authenticator(SysAuthenticatorBase):
             log.warn("Warning: cannot use kerberos token authentication:")
             log.warn(" %s", e)
             return False
-        v, ctx = kerberos.authGSSServerInit(self.service)
+        v, ctx = kerberos.authGSSServerInit(self.service)  # @UndefinedVariable
         if v!=1:
             log.error("Error: kerberos GSS server init failed for service '%s'", self.service)
             return False
         try:
-            r = kerberos.authGSSServerStep(ctx, token)
+            r = kerberos.authGSSServerStep(ctx, token)  # @UndefinedVariable
             log("kerberos auth server step result: %s", r==1)
             if r!=1:
                 return False
-            targetname = kerberos.authGSSServerTargetName(ctx)
+            targetname = kerberos.authGSSServerTargetName(ctx)  # @UndefinedVariable
             #response = kerberos.authGSSServerResponse(ctx)
-            principal = kerberos.authGSSServerUserName(ctx)
+            principal = kerberos.authGSSServerUserName(ctx)  # @UndefinedVariable
             #ie: user1@LOCALDOMAIN
             #maybe we should validate the realm?
             log("kerberos targetname=%s, principal=%s", targetname, principal)
             return True
         finally:
-            kerberos.authGSSServerClean(ctx)
+            kerberos.authGSSServerClean(ctx)  # @UndefinedVariable
 
 
 def main(argv):

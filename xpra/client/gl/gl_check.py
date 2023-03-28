@@ -128,7 +128,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
         clogger = redirect_log('OpenGL.converters')
 
         import OpenGL
-        props["pyopengl"] = OpenGL.__version__
+        props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)

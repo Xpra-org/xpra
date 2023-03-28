@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk   #pylint: disable=wrong-import-position
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk   #pylint: disable=wrong-import-position @UnresolvedImport
 from xpra.gtk_common.gtk_util import get_root_size
 
 width = 400

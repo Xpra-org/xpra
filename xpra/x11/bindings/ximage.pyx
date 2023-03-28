@@ -533,7 +533,7 @@ cdef class XShmWrapper:
         # (include an extra line to ensure we can read rowstride at a time,
         #  even on the last line, without reading past the end of the buffer)
         cdef size_t size = self.image.bytes_per_line * (self.image.height + 1)
-        self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
+        self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0o777)
         xshmdebug("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) shmid=%#x", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
             xshmlog.error("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) failed, bytes_per_line=%i, width=%i, height=%i", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)

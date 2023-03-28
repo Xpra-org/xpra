@@ -8,11 +8,11 @@
 def main():
     from xpra.codecs.evdi.load import load_evdi_module
     load_evdi_module()
-    from xpra.codecs.drm.drm import query
+    from xpra.codecs.drm.drm import query  # @UnresolvedImport
     info = query()
     from xpra.util import print_nested_dict
     print_nested_dict(info)
-    from xpra.codecs.evdi.capture import find_evdi_devices, test_device
+    from xpra.codecs.evdi.capture import find_evdi_devices, test_device  # @UnresolvedImport
     #from xpra.gtk_common.gobject_compat import register_os_signals
     #import sys
     #def handler(*args):

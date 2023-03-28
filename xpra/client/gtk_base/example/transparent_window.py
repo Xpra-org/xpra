@@ -9,9 +9,9 @@ from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 from cairo import OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk, GLib
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 
 class TransparentWindow(Gtk.Window):

@@ -8,9 +8,12 @@ PIPE_NAME = "xpra-service"
 def get_commonappdata_dir():
     CSIDL_COMMON_APPDATA = 35
     try:
-        import ctypes
-        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-        shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+        from ctypes import (
+            create_unicode_buffer, wintypes,
+            WinDLL,  # @UnresolvedImport
+            )
+        buf = create_unicode_buffer(wintypes.MAX_PATH)
+        shell32 = WinDLL("shell32", use_last_error=True)
         SHGetFolderPath = shell32.SHGetFolderPathW
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         return buf.value

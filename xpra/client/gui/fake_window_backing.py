@@ -6,7 +6,7 @@
 
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.util import envint
 from xpra.log import Logger
 log = Logger("window", "fake")

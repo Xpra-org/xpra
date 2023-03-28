@@ -4,7 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import cdll, WinDLL, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER
+from ctypes import (
+	cdll, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER,
+	WinDLL,  # @UnresolvedImport
+	)
 from ctypes.wintypes import HDC, HANDLE, BOOL, BYTE, LPCSTR, DWORD, WORD
 
 from xpra.platform.win32.common import CreateDCA, DeleteDC, gdi32
@@ -41,17 +44,17 @@ class DOCINFO(Structure):
 		]
 
 LPDOCINFO = POINTER(DOCINFO)
-StartDocA = gdi32.StartDocA
+StartDocA = gdi32.StartDocA  # @UndefinedVariable
 StartDocA.argtypes = [HDC, LPDOCINFO]
 StartDocA.restype = int
-EndDoc = gdi32.EndDoc
+EndDoc = gdi32.EndDoc  # @UndefinedVariable
 EndDoc.argtypes = [HDC]
 EndDoc.restype = int
-StartPage = gdi32.StartPage
+StartPage = gdi32.StartPage  # @UndefinedVariable
 StartPage.argtypes = [HDC]
-EndPage = gdi32.EndPage
+EndPage = gdi32.EndPage  # @UndefinedVariable
 EndPage.argtypes = [HDC]
-TextOutA = gdi32.TextOutA
+TextOutA = gdi32.TextOutA  # @UndefinedVariable
 TextOutA.restype = BOOL
 TextOutA.argtypes = [HDC, c_int, c_int, LPCSTR, c_int]
 

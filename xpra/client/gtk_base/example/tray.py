@@ -10,8 +10,8 @@ from xpra.gtk_common.gtk_util import scaled_image
 from xpra.log import Logger
 
 import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk, GdkPixbuf
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
 log = Logger("client")
 

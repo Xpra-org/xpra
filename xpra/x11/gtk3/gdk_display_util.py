@@ -7,8 +7,8 @@ def verify_gdk_display(display_name):
     # pylint: disable=import-outside-toplevel
     # Now we can safely load gtk and connect:
     import gi
-    gi.require_version("Gdk", "3.0")
-    from gi.repository import Gdk
+    gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+    from gi.repository import Gdk  # @UnresolvedImport
     display = Gdk.Display.open(display_name)
     if not display:
         from xpra.scripts.config import InitException

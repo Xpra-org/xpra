@@ -9,7 +9,10 @@
 
 import os
 import ctypes
-from ctypes import Structure, byref, WinDLL, c_void_p, sizeof, HRESULT, POINTER
+from ctypes import (
+    Structure, byref, c_void_p, sizeof, POINTER,
+    get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
+    )
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
 
 from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
@@ -206,7 +209,7 @@ class win32NotifyIcon:
         self.hwnd = CreateWindowExA(*args)
         log("create_window() hwnd=%#x", self.hwnd or 0)
         if not self.hwnd:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
         UpdateWindow(self.hwnd)
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
@@ -482,7 +485,7 @@ def get_notifyicon_wnd_class():
         NIclassAtom = RegisterClassExA(byref(NIwc))
         log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
         if NIclassAtom==0:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
         NIwc.NIclassAtom = NIclassAtom
         _notifyicon_wnd_class = NIwc
     return _notifyicon_wnd_class
@@ -498,8 +501,8 @@ def main():
         pos = POINT()
         GetCursorPos(byref(pos))
         hwnd = tray.hwnd
-        user32.SetForegroundWindow(hwnd)
-        user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)
+        user32.SetForegroundWindow(hwnd)  # @UndefinedVariable
+        user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)  # @UndefinedVariable
         PostMessageA(hwnd, win32con.WM_NULL, 0, 0)
 
     def command_callback(hwnd, cid):

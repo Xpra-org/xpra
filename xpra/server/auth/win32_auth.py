@@ -4,7 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import windll, byref, addressof, POINTER, FormatError, GetLastError
+from ctypes import (
+    byref, addressof, POINTER,
+    windll, FormatError, GetLastError,  # @UnresolvedImport
+    )
 from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log

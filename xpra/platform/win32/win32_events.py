@@ -4,7 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import ctypes
+from ctypes import (
+    sizeof, byref,
+    WinError, get_last_error,  # @UnresolvedImport
+    )
 
 from xpra.util import envbool
 from xpra.platform.win32.wtsapi import (
@@ -105,7 +108,7 @@ class Win32EventListener:
             return
 
         self.wc = WNDCLASSEX()
-        self.wc.cbSize = ctypes.sizeof(WNDCLASSEX)
+        self.wc.cbSize = sizeof(WNDCLASSEX)
         self.wc.style =  win32con.CS_GLOBALCLASS|win32con.CS_VREDRAW|win32con.CS_HREDRAW
         self.wc.lpfnWndProc = WNDPROC(self.WndProc)
         self.wc.cbClsExtra = 0
@@ -118,16 +121,16 @@ class Win32EventListener:
         self.wc.lpszClassName = "Xpra-Event-Window"
         self.wc.hIconSm = 0
         self.wc.hbrBackground = win32con.COLOR_WINDOW
-        self.wc_atom = RegisterClassExW(ctypes.byref(self.wc))
+        self.wc_atom = RegisterClassExW(byref(self.wc))
         if self.wc_atom==0:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
 
         self.hwnd = CreateWindowExA(0, self.wc_atom, "For xpra event listener only",
             win32con.WS_CAPTION,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
             0, 0, self.wc.hInstance, None)
         if self.hwnd==0:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise WinError(get_last_error())
 
         #register our interest in session events:
         #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon

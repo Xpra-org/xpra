@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk
+from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk_x11.gdk_bindings import (

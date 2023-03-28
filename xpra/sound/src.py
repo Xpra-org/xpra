@@ -378,7 +378,7 @@ def main():
                     f.write(data)
                     f.flush()
 
-        from gi.repository import GLib
+        from gi.repository import GLib  # @UnresolvedImport
         glib_mainloop = GLib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)

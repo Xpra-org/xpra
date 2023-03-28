@@ -90,7 +90,7 @@ def main(_args):
     from xpra.platform import program_context
     from xpra.platform.gui import force_focus
     from xpra.platform.keyboard import Keyboard
-    from xpra.client.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
+    from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
     from xpra.scripts.config import read_xpra_defaults
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
         if POSIX and not OSX:

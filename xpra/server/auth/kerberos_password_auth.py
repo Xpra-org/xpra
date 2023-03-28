@@ -51,9 +51,9 @@ class Authenticator(SysAuthenticatorBase):
             log.warn(" %s", e)
             return False
         try:
-            kerberos.checkPassword(self.username, password, self.service, self.realm)
+            kerberos.checkPassword(self.username, password, self.service, self.realm)  # @UndefinedVariable
             return True
-        except kerberos.KrbError as e:
+        except kerberos.KrbError as e:  # @UndefinedVariable
             log("check(..)", exc_info=True)
             log.error("Error: kerberos authentication failed:")
             log.estr(e)

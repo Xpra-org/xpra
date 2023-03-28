@@ -32,7 +32,7 @@ def exec_command(cmd):
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     creationflags = 0
     if WIN32:
-        creationflags = subprocess.CREATE_NO_WINDOW
+        creationflags = subprocess.CREATE_NO_WINDOW  # @UndefinedVariable
     proc = subprocess.Popen(cmd, env=env, creationflags=creationflags)
     log("exec_command(%s)=%s", cmd, proc)
     return proc

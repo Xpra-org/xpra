@@ -182,7 +182,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         if show:
             widget.show()
             window.show()
-            from gi.repository import Gtk, GLib
+            from gi.repository import Gtk, GLib  # @UnresolvedImport
             def window_close_event(*_args):
                 Gtk.main_quit()
             noclient.window_close_event = window_close_event

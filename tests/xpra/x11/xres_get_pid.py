@@ -8,9 +8,9 @@ import sys
 
 
 def main(args):
-    from xpra.x11.bindings.posix_display_source import init_posix_display_source
+    from xpra.x11.bindings.posix_display_source import init_posix_display_source  # @UnresolvedImport
     init_posix_display_source()
-    from xpra.x11.bindings.res_bindings import ResBindings
+    from xpra.x11.bindings.res_bindings import ResBindings  # @UnresolvedImport
     res = ResBindings()
     for x in args[1:]:
         try:

@@ -5,7 +5,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import ctypes
+from ctypes import (
+    Structure, cast, POINTER,
+    WinDLL,  # @UnresolvedImport
+    )
 from ctypes.wintypes import POINT
 
 from xpra.util import envbool
@@ -15,7 +18,7 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import WNDPROC
 
 
-user32 = ctypes.WinDLL("user32", use_last_error=True)
+user32 = WinDLL("user32", use_last_error=True)
 GetSystemMetrics = user32.GetSystemMetrics
 #use ctypes to ensure we call the "W" version:
 SetWindowLongW = user32.SetWindowLongW
@@ -27,7 +30,7 @@ log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
 
 
-class MINMAXINFO(ctypes.Structure):
+class MINMAXINFO(Structure):
     _fields_ = [
                 ("ptReserved",      POINT),
                 ("ptMaxSize",       POINT),
@@ -81,7 +84,7 @@ class Win32Hooks:
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
         if (self.min_size or self.max_size) and lparam:
-            info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
+            info = cast(lparam, POINTER(MINMAXINFO)).contents
             style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
             dw, dh = 0, 0
             if style & win32con.WS_BORDER:
