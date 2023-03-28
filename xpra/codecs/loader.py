@@ -395,6 +395,7 @@ def main(args):
         enable_color(format_string=format_string)
 
         if len(args)>1:
+            names = []
             for x in args[1:]:
                 name = x.lower().replace("-", "_")
                 if name not in CODEC_OPTIONS:
@@ -404,7 +405,8 @@ def main(args):
                     elif len(loose_matches)>1:
                         log.warn(f"{x} matches: "+csv(loose_matches))
                 load_codec(name)
-            list_codecs = args[1:]
+                names.append(name)
+            list_codecs = names
         else:
             load_codecs(sources=True)
             list_codecs = ALL_CODECS
