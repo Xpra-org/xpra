@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,6 +28,7 @@
 #Fedora 38 issues: CUDA errors and Cython warnings:
 %if 0%{?fedora}>=38
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia --without-strict
+%define nvidia_codecs 0
 %endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
