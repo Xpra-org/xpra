@@ -103,7 +103,6 @@ class OSXTray(TrayBase):
     def set_dock_menu(self):
         #dock menu
         log("OSXTray.set_dock_menu()")
-        import gi
         gi.require_version('Gtk', '3.0')  # @UndefinedVariable
         from gi.repository import Gtk  # @UnresolvedImport
         self.dock_menu = Gtk.Menu()

@@ -26,7 +26,7 @@ def init_dpi():
         return
     w, h = GetSystemMetrics(0), GetSystemMetrics(1)
     try:
-        SetProcessDPIAware = user32.SetProcessDPIAware
+        SetProcessDPIAware = user32.SetProcessDPIAware  # @UndefinedVariable
         dpiaware = SetProcessDPIAware()
         log("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
         assert dpiaware!=0
@@ -40,7 +40,7 @@ def init_dpi():
         Process_DPI_Unaware             = 0
         Process_Per_Monitor_DPI_Aware   = 2
         assert DPI_AWARENESS in (Process_System_DPI_Aware, Process_DPI_Unaware, Process_Per_Monitor_DPI_Aware)
-        SetProcessDpiAwarenessInternal = user32.SetProcessDpiAwarenessInternal
+        SetProcessDpiAwarenessInternal = user32.SetProcessDpiAwarenessInternal  # @UndefinedVariable
         dpiawareness = SetProcessDpiAwarenessInternal(DPI_AWARENESS)
         log("SetProcessDPIAwareness: %s(%s)=%s", SetProcessDpiAwarenessInternal, DPI_AWARENESS, dpiawareness)
         assert dpiawareness==0

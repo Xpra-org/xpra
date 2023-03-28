@@ -29,7 +29,12 @@ with numpy_import_lock:
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda               #@UnresolvedImport
-    from pycuda import driver   #@UnresolvedImport
+    from pycuda.driver import (
+        get_version, get_driver_version, mem_get_info, #@UnresolvedImport
+        init, #@UnresolvedImport
+        Device, device_attribute, ctx_flags, #@UnresolvedImport
+        module_from_buffer, LogicError, #@UnresolvedImport
+        )
 
 log = Logger("cuda")
 
@@ -85,8 +90,8 @@ def get_cuda_info():
     init_all_devices()
     return {
         "driver"    : {
-            "version"        : driver.get_version(),
-            "driver_version" : driver.get_driver_version(),
+            "version"        : get_version(),
+            "driver_version" : get_driver_version(),
             }
         }
 
@@ -174,12 +179,12 @@ def driver_init():
     if driver_init_done is None:
         log.info("CUDA initialization (this may take a few seconds)")
         try:
-            driver.init()
+            init()
             driver_init_done = True
-            log(f"CUDA driver version={driver.get_driver_version()}")
-            ngpus = driver.Device.count()
+            log(f"CUDA driver version={get_driver_version()}")
+            ngpus = Device.count()
             if ngpus==0:
-                cuda_v = ".".join(str(x) for x in driver.get_version())
+                cuda_v = ".".join(str(x) for x in get_version())
                 log.info(f"CUDA {cuda_v} / PyCUDA {pycuda.VERSION_TEXT}, no devices found")
             driver_init_done = True
         except Exception as e:
@@ -205,7 +210,7 @@ def init_all_devices():
     log(f"init_all_devices() enabled: {csv(enabled_gpus)}, disabled: %s", csv(disabled_gpus) or "none")
     if not driver_init():
         return DEVICES
-    ngpus = driver.Device.count()
+    ngpus = Device.count()
     log(f"init_all_devices() ngpus={ngpus}")
     if ngpus==0:
         return DEVICES
@@ -217,7 +222,7 @@ def init_all_devices():
         device = None
         devinfo = f"gpu {i}"
         try:
-            device = driver.Device(i)
+            device = Device(i)
             devinfo = device_info(device)
             log(" + testing device %s: %s", i, devinfo)
             DEVICE_NAME[i] = device_name(device)
@@ -229,8 +234,8 @@ def init_all_devices():
     return DEVICES
 
 def check_device(i, device, min_compute=0):
-    ngpus = driver.Device.count()
-    da = driver.device_attribute
+    ngpus = Device.count()
+    da = device_attribute
     devinfo = device_info(device)
     devname = device_name(device)
     pci = pci_bus_id(device)
@@ -252,12 +257,12 @@ def check_device(i, device, min_compute=0):
     if disabled_gpus is not None and (devname in disabled_gpus or pci in disabled_gpus):
         log("device '%s' / '%s' is in the list of disabled gpus, skipped", i, devname, pci)
         return False
-    cf = driver.ctx_flags
+    cf = ctx_flags
     context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
     try:
         log("   created context=%s", context)
         log("   api version=%s", context.get_api_version())
-        free, total = driver.mem_get_info()
+        free, total = mem_get_info()
         log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
         log("   multi-processors: %s, clock rate: %s",
             device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
@@ -282,7 +287,7 @@ def check_device(i, device, min_compute=0):
             #we print the list info "header" from inside the loop
             #so that the log output is bunched up together
             log.info("CUDA %s / PyCUDA %s, found %s device%s:",
-                     ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
+                     ".".join([str(x) for x in get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
         log.info("  + %s (memory: %s%% free, compute: %s.%s)",
                  device_info(device), 100*free//total, SMmajor, SMminor)
         if SMmajor<2:
@@ -340,7 +345,7 @@ def select_round_robin(min_compute):
     if disabled_gpus is True or enabled_gpus==[]:
         log("all devices are disabled!")
         return -1, None
-    ngpus = driver.Device.count()
+    ngpus = Device.count()
     if ngpus==0:
         return -1, None
     devices = list(range(ngpus))
@@ -350,7 +355,7 @@ def select_round_robin(min_compute):
         n = len(devices)
         i = (rr+1) % n
         device_id = devices[i]
-        device = driver.Device(device_id)
+        device = Device(device_id)
         if check_device(device_id, device, min_compute):
             break
         devices.remove(device_id)
@@ -405,7 +410,7 @@ def select_best_free_memory(min_compute=0):
 def load_device(device_id):
     log("load_device(%i)", device_id)
     try:
-        return driver.Device(device_id)
+        return Device(device_id)
     except Exception as e:
         log("load_device(%s)", device_id, exc_info=True)
         log.error("Error: allocating CUDA device %s", device_id)
@@ -418,7 +423,7 @@ def make_device_context(device_id):
     if not device:
         return None
     log(f"make_device_context({device_id}) device_info={device_info(device)}")
-    cf = driver.ctx_flags
+    cf = ctx_flags
     flags = cf.SCHED_YIELD | cf.MAP_HOST
     try:
         context = device.make_context(flags=flags)
@@ -428,7 +433,7 @@ def make_device_context(device_id):
         log.estr(e)
         return None
     log(f"created context={context}")
-    free, total = driver.mem_get_info()
+    free, total = mem_get_info()
     log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
     tpct = 100*free//total
     return device, context, tpct
@@ -480,13 +485,12 @@ class cuda_device_context:
 
     def make_context(self):
         start = monotonic()
-        cf = driver.ctx_flags
         if self.opengl:
             with numpy_import_lock:
                 from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 self.context = gl.make_context(self.device)
         else:
-            self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+            self.context = self.device.make_context(flags=ctx_flags.SCHED_YIELD | ctx_flags.MAP_HOST)
         end = monotonic()
         self.context.pop()
         log("cuda context allocation took %ims", 1000*(end-start))
@@ -631,7 +635,7 @@ def get_CUDA_function(function_name):
     #now load from cubin:
     start = monotonic()
     try:
-        mod = driver.module_from_buffer(data)
+        mod = module_from_buffer(data)
     except Exception as e:
         log(f"module_from_buffer({data})", exc_info=True)
         log.error(f"Error: failed to load module from buffer for {function_name!r}")
@@ -641,7 +645,7 @@ def get_CUDA_function(function_name):
     try:
         fn = function_name
         CUDA_function = mod.get_function(fn)
-    except driver.LogicError as e:
+    except LogicError as e:
         raise Exception(f"failed to load {function_name!r} from {mod}: {e}") from None
     end = monotonic()
     log(f"loading function {function_name!r} from pre-compiled cubin took %.1fms", 1000.0*(end-start))

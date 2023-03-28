@@ -11,7 +11,7 @@ def main():
     from xpra.log import Logger
     log = Logger("evdi")
 
-    from xpra.codecs.evdi.capture import find_evdi_devices, EvdiDevice
+    from xpra.codecs.evdi.capture import find_evdi_devices, EvdiDevice  # @UnresolvedImport
     devices = find_evdi_devices()
     assert devices
 
