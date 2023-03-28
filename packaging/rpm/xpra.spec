@@ -26,7 +26,7 @@
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
 %endif
 #Fedora 38 issues: CUDA errors and Cython warnings:
-%if 0%{?fedora}<38
+%if 0%{?fedora}>=38
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia --without-strict
 %endif
 %global selinux_variants mls targeted
