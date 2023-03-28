@@ -26,7 +26,6 @@ if [ "${sha256}" != "bcac516794738fef590b954f210b80e34f577fef273bf536cd83e65b1a3
 	exit 1
 fi
 %setup -q -n cython-%{version}
-find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
