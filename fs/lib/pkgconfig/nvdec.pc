@@ -1,0 +1,13 @@
+prefix=/opt/nvenc
+exec_prefix=${prefix}
+includedir=${prefix}/Interface
+libdir=/usr/lib64/nvidia
+
+
+Name: nvdec
+Description: NVDEC
+Version: 10
+Requires: 
+Conflicts:
+Libs: -L${libdir} -lnvcuvid
+Cflags: -I${includedir} -Wno-deprecated-declarations
