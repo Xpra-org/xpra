@@ -8,6 +8,7 @@
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
+%global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
 
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
