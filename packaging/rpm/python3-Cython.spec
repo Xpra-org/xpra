@@ -8,6 +8,7 @@ Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
 Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
+Patch0:     https://github.com/cython/cython/commit/03ae30013de3fde03719c9b1c9c53b39c389b599.patch
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python3
 
@@ -26,6 +27,7 @@ if [ "${sha256}" != "bcac516794738fef590b954f210b80e34f577fef273bf536cd83e65b1a3
 	exit 1
 fi
 %setup -q -n cython-%{version}
+%patch -P 0 -p1
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
