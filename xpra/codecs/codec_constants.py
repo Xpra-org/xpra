@@ -99,10 +99,6 @@ class CodecStateException(Exception):
 
 class _codec_spec:
 
-    #I can't imagine why someone would have more than this many
-    #encoders or csc modules active at the same time!
-    WARN_LIMIT = 25
-
     def __init__(self, codec_class, codec_type="",
                     quality=50, speed=50,
                     size_efficiency=50,
@@ -142,10 +138,14 @@ class _codec_spec:
 
     def make_instance(self):
         # pylint: disable=import-outside-toplevel
+        #I can't imagine why someone would have more than this many
+        #encoders or csc modules active at the same time!
+        from xpra.util import envint
+        WARN_LIMIT = envint("XPRA_CODEC_INSTANCE_COUNT_WARN", 25)
         from xpra.log import Logger
         log = Logger("encoding")
         cur = self.get_instance_count()
-        if (self.max_instances>0 and cur>=self.max_instances) or cur>=_codec_spec.WARN_LIMIT:
+        if (self.max_instances>0 and cur>=self.max_instances) or cur>=WARN_LIMIT:
             instances = tuple(self.instances)
             log.warn(f"Warning: already {cur} active instances of {self.codec_class}:")
             try:
