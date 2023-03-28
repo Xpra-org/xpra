@@ -16,7 +16,7 @@ from xpra.exit_codes import ExitCode
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
-from xpra.client.gtk_base.css_overrides import inject_css_overrides
+from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger
 

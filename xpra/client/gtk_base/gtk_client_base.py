@@ -38,10 +38,10 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gobject_util import no_arg_signal
+from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
-from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
