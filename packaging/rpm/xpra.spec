@@ -204,6 +204,7 @@ BuildRequires:		libyuv-devel
 BuildRequires:		coreutils
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
+BuildRequires:		pkgconfig
 BuildRequires:		python3
 BuildRequires:		python3-devel
 BuildRequires:		python3-Cython
