@@ -1,0 +1,21 @@
+diff --git a/xpra/buffers/xxh.pxd b/xpra/buffers/xxh.pxd
+index aabbe2343..7a60352ab 100644
+--- a/xpra/buffers/xxh.pxd
++++ b/xpra/buffers/xxh.pxd
+@@ -4,4 +4,4 @@
+ # later version. See the file COPYING for details.
+ 
+ #cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
+-cdef unsigned long long xxh3(const void* input, size_t length) noexcept nogil
++cdef unsigned long long xxh3(const void* input, size_t length) nogil
+diff --git a/xpra/buffers/xxh.pyx b/xpra/buffers/xxh.pyx
+index 73e51c4e9..cc63d093c 100644
+--- a/xpra/buffers/xxh.pyx
++++ b/xpra/buffers/xxh.pyx
+@@ -13,5 +13,5 @@ cdef extern from "xxhash.h":
+     ctypedef uint64_t XXH64_hash_t
+     XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
+ 
+-cdef uint64_t xxh3(const void* input, size_t length) noexcept nogil:
++cdef uint64_t xxh3(const void* input, size_t length) nogil:
+     return XXH3_64bits(input, length)

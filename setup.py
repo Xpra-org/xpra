@@ -104,6 +104,15 @@ print("Xpra version %s" % XPRA_VERSION)
 # only the default values are specified here:
 #*******************************************************************************
 
+try:
+    import cython
+    print(f"found Cython version {cython.__version__}")
+    cython_version = int(cython.__version__.split('.')[0])
+except (ValueError, ImportError):
+    print(f"WARNING: unable to detect Cython version")
+    cython_version = 0
+
+
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 def check_pkgconfig():
     v = get_status_output([PKG_CONFIG, "--version"])
@@ -280,6 +289,7 @@ verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
 rebuild_ENABLED         = not skip_build
+autopatch_ENABLED       = True
 
 
 #allow some of these flags to be modified on the command line:
@@ -1987,6 +1997,12 @@ if data_ENABLED:
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
+    if "build" in sys.argv and autopatch_ENABLED and cython_version==0:
+        cmd = ["patch", "-p1", "-f", "--quiet", "-i", "./packaging/debian/xpra/patches/cython0.patch"]
+        r = subprocess.Popen(cmd).wait(30)
+        if r:
+            print("Warning: autopatch error")
+            print(" '%s' returned %s" % (" ".join(cmd), r))
     buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
     #this may well be sub-optimal:
@@ -2353,14 +2369,7 @@ tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 #workaround this warning on MS Windows with Cython 3.0.0b1:
 # "warning: comparison of integer expressions of different signedness: 'long unsigned int' and 'long int' [-Wsign-compare]"
 #simply adding -Wno-error=sign-compare is not enough:
-try:
-    import cython
-    print(f"found Cython version {cython.__version__}")
-    cv = int(cython.__version__.split('.')[0])
-except (ValueError, ImportError):
-    print(f"WARNING: unable to detect Cython version")
-    cv = 0
-ECA_WIN32SIGN = ["-Wno-error"] if (WIN32 and cv==3) else []
+ECA_WIN32SIGN = ["-Wno-error"] if (WIN32 and cython_version==3) else []
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
 tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
