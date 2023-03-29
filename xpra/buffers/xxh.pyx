@@ -13,5 +13,5 @@ cdef extern from "xxhash.h":
     ctypedef uint64_t XXH64_hash_t
     XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
 
-cdef uint64_t xxh3(const void* input, size_t length) nogil:
+cdef uint64_t xxh3(const void* input, size_t length) nogil noexcept:
     return XXH3_64bits(input, length)
