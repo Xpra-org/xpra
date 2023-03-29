@@ -3,5 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
-cdef unsigned long long xxh3(const void* input, size_t length) nogil
+from libc.stdint cimport uint64_t
+
+cdef uint64_t xxh3(const void* input, size_t length) nogil
