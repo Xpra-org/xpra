@@ -4,4 +4,4 @@
 # later version. See the file COPYING for details.
 
 #cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
-cdef unsigned long long xxh3(const void* input, size_t length) nogil
+cdef unsigned long long xxh3(const void* input, size_t length) nogil noexcept
