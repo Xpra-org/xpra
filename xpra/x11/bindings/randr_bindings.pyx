@@ -1123,8 +1123,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                           RR_Rotate_0, &output, noutput)
                     if r:
                         raise Exception(f"failed to set crtc config for monitor {i}")
-                    mmw = m.get("width-mm", dpi96(width))
-                    mmh = m.get("height-mm", dpi96(height))
+                    mmw = m.get("width-mm", 0) or dpi96(width)
+                    mmh = m.get("height-mm", 0) or dpi96(height)
                     self.set_output_int_property(i, "WIDTH_MM", mmw)
                     self.set_output_int_property(i, "HEIGHT_MM", mmh)
                     #this allows us to disconnect the output of this crtc:
@@ -1132,7 +1132,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     posinfo = ""
                     if x or y:
                         posinfo = " at %i,%i" % (x, y)
-                    if width==height==mmw==mmh==0:
+                    if width==0 or height==0:
                         log.info(f"disabling dummy crtc and output {i}")
                     else:
                         log.info(f"setting dummy crtc and output {i} to {width}x{height} {hz}Hz ({mmw}x{mmh} mm){posinfo}")
