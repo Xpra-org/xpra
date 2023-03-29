@@ -6,6 +6,7 @@
 #pylint: disable-msg=E1101
 
 from xpra.scripts.config import parse_bool_or_int
+from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
 from xpra.codecs.codec_constants import preforder
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
@@ -15,6 +16,8 @@ from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.log import Logger
 
 log = Logger("encoding")
+
+INIT_DELAY = envint("XPRA_ENCODER_INIT_DELAY", 0)
 
 
 class EncodingServer(StubServerMixin):
@@ -75,6 +78,9 @@ class EncodingServer(StubServerMixin):
                 ss.reinit_encodings(self)
 
     def threaded_setup(self):
+        if INIT_DELAY>0:
+            from time import sleep
+            sleep(INIT_DELAY)
         #load the slower codecs
         if "jpeg" in self.allowed_encodings and not OSX:
             load_codec("enc_nvjpeg")
