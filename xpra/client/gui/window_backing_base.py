@@ -168,9 +168,13 @@ class WindowBackingBase:
         self.fps_buffer_update_time = 0
         self.fps_value = 0
         self.fps_refresh_timer = 0
+        self.paint_stats = {}
 
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
+
+    def recpaint(self, encoding):
+        self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
     def get_rgb_formats(self):
         if self._alpha_enabled:
@@ -188,6 +192,7 @@ class WindowBackingBase:
             "render-size"   : self.render_size,
             "offsets"       : self.offsets,
             "fps"           : self.fps_value,
+            "paint"         : self.paint_stats,
             }
         vd = self._video_decoder
         if vd:
@@ -879,6 +884,7 @@ class WindowBackingBase:
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
+        self.recpaint(coding)
         try:
             assert self._backing is not None
             log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)",

@@ -255,7 +255,7 @@ class WindowInfo(Gtk.Window):
                 if isinstance(value, (tuple, list)):
                     return csv(value)
                 if isinstance(value, dict):
-                    return dict_to_str(dict((k,v) for k,v in value.items() if k in ("type", "encoding", )), ", ", ":")
+                    return dict_to_str(value, ", ", ":")
                 return str(value)
             def dict_to_str(d, sep="\n", eq="=", exclude=()):
                 strdict = dict((k,pv(v)) for k,v in d.items() if k not in exclude)
@@ -268,6 +268,7 @@ class WindowInfo(Gtk.Window):
                                                              "fps",
                                                              "mmap",
                                                              "type",
+                                                             "bit-depth",
                                                              )
                                                          ))
         else:
