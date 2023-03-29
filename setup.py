@@ -1997,7 +1997,7 @@ if data_ENABLED:
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
-    if "build" in sys.argv and autopatch_ENABLED and cython_version==0:
+    if autopatch_ENABLED and cython_version==0:
         cmd = ["patch", "-p1", "-f", "--quiet", "-i", "./packaging/debian/xpra/patches/cython0.patch"]
         r = subprocess.Popen(cmd).wait(30)
         if r:
