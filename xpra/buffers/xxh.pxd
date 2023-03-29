@@ -5,4 +5,4 @@
 
 from libc.stdint cimport uint64_t
 
-cdef uint64_t xxh3(const void* input, size_t length) noexcept nogil
+cdef uint64_t xxh3(const void* input, size_t length) nogil

@@ -289,7 +289,6 @@ verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
 rebuild_ENABLED         = not skip_build
-autopatch_ENABLED       = True
 
 
 #allow some of these flags to be modified on the command line:
@@ -1997,12 +1996,6 @@ if data_ENABLED:
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
-    if autopatch_ENABLED and cython_version==0:
-        cmd = ["patch", "-p1", "-f", "--quiet", "-i", "./packaging/debian/xpra/patches/cython0.patch"]
-        r = subprocess.Popen(cmd).wait(30)
-        if r:
-            print("Warning: autopatch error")
-            print(" '%s' returned %s" % (" ".join(cmd), r))
     buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
     #this may well be sub-optimal:
