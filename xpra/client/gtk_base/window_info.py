@@ -146,6 +146,9 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Size Constraints", self.size_constraints_label)
         tb.new_row("")
         #backing:
+        self.video_properties = slabel()
+        tb.new_row("Video Decoder", self.video_properties)
+        tb.new_row("")
         self.backing_properties = slabel()
         tb.new_row("Backing Properties", self.backing_properties)
         tb.new_row("")
@@ -269,8 +272,15 @@ class WindowInfo(Gtk.Window):
                                                              "mmap",
                                                              "type",
                                                              "bit-depth",
+                                                             "video-decoder",
                                                              )
                                                          ))
+            vdinfo = binfo.get("video-decoder")
+            if vdinfo:
+                self.video_properties.show()
+                self.video_properties.set_text(dict_to_str(vdinfo))
+            else:
+                self.video_properties.hide()
         else:
             self.backing_properties.hide()
             self.backing_properties.set_text("")
