@@ -101,6 +101,8 @@ class WindowInfo(Gtk.Window):
         #self.title_label.set_justify(Gtk.Justification.LEFT)
         self.title_label.set_alignment(0, 0.5)
         tb.new_row("Title", self.title_label)
+        self.rendering_label = slabel()
+        tb.new_row("Rendering", self.rendering_label)
         self.or_image = Gtk.Image()
         tb.new_row("Override-Redirect", self.or_image)
         self.state_label = slabel()
@@ -211,20 +213,23 @@ class WindowInfo(Gtk.Window):
         w = self._window
         if not w:
             return
+        fps = "n/a"
+        b = w._backing
+        binfo = {}
+        if b:
+            update_fps = getattr(b, "update_fps", None)
+            if callable(update_fps):
+                update_fps()
+                fps = str(getattr(b, "fps_value", "n/a"))
+            binfo = b.get_info()
         self.wid_label.set_text(str(w._id))
+        self.rendering_label.set_text(binfo.get("type", "unknown"))
         self.title_label.set_text(w.get_title())
         self.bool_icon(self.or_image, w._override_redirect)
         self.state_label.set_text(get_window_state(w))
         self.attributes_label.set_text(get_window_attributes(w))
         self.bool_icon(self.focus_image, w._focused)
         self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
-        fps = "n/a"
-        b = w._backing
-        if b:
-            update_fps = getattr(b, "update_fps", None)
-            if callable(update_fps):
-                update_fps()
-                fps = str(getattr(b, "fps_value", "n/a"))
         self.fps_label.set_text(fps)
         #self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(GRAVITY_STR.get(w.window_gravity, "invalid"))
@@ -252,10 +257,19 @@ class WindowInfo(Gtk.Window):
                 if isinstance(value, dict):
                     return dict_to_str(dict((k,v) for k,v in value.items() if k in ("type", "encoding", )), ", ", ":")
                 return str(value)
-            def dict_to_str(d, sep="\n", eq="="):
-                strdict = dict((k,pv(v)) for k,v in d.items())
+            def dict_to_str(d, sep="\n", eq="=", exclude=()):
+                strdict = dict((k,pv(v)) for k,v in d.items() if k not in exclude)
                 return sep.join("%s%s%s" % (k, eq, v) for k,v in strdict.items() if v)
-            self.backing_properties.set_text(dict_to_str(b.get_info()))
+            self.backing_properties.set_text(dict_to_str(binfo, exclude=(
+                                                             "transparency",
+                                                             "size",
+                                                             "render-size",
+                                                             "offsets",
+                                                             "fps",
+                                                             "mmap",
+                                                             "type",
+                                                             )
+                                                         ))
         else:
             self.backing_properties.hide()
             self.backing_properties.set_text("")
