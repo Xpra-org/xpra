@@ -32,6 +32,12 @@ from libc.string cimport memcpy
 __version__ = ("Cython", 1, 0, 8)
 
 
+inttypes = (int, )
+strtypes = (str, )
+if sys.version_info[0]==2:
+    inttypes = (int, long)
+    strtypes = (str, unicode)
+
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
@@ -282,7 +288,7 @@ cdef object MIN_SIGNED_LONGLONG = -MAX_SIGNED_LONGLONG
 
 cdef encode(char **buf, unsigned int *pos, data):
     t = type(data)
-    if t == int:
+    if t in inttypes:
         if -128 <= data < 128:
             encode_char(buf, pos, data)
         elif -32768 <= data < 32768:
@@ -308,7 +314,7 @@ cdef encode(char **buf, unsigned int *pos, data):
     elif t == memoryview:
         encode_memoryview(buf, pos, data)
 
-    elif t == str:
+    elif t in strtypes:
         encode_str(buf, pos, data.encode("utf8"))
 
     elif t == type(None):
