@@ -188,7 +188,7 @@ def init_all_specs(*exclude):
     COLORSPACES = colorspaces
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
-    if first_time("gstreamer-encoder-missing-elements"):
+    if missing and first_time("gstreamer-encoder-missing-elements"):
         log.info("some GStreamer elements are missing: "+csv(missing))
 
 
