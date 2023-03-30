@@ -2322,6 +2322,9 @@ if webp_ENABLED:
     webp_pkgconfig = pkgconfig("libwebp")
     if get_gcc_version()<=[5, ]:
         add_to_keywords(webp_pkgconfig, 'extra_compile_args', "-Wno-error=format=")
+    if sys.version_info[0]==2:
+        #Python 2 does not call __del__ on cython classes..
+        add_to_keywords(webp_pkgconfig, 'extra_compile_args', "-Wno-error=unused-function")
     cython_add(Extension("xpra.codecs.webp.encoder",
                     ["xpra/codecs/webp/encoder.pyx"],
                     **webp_pkgconfig))
