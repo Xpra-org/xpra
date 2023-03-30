@@ -156,10 +156,6 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         #These distros do weird things and this can cause the real X11 server to crash
         #see ticket #2834
         return get_Xvfb_command()
-    if is_CentOS() or is_RedHat():
-        #it's too difficult to build our custom Xdummy on CentOS 9
-        if get_distribution_version_id()=="9":
-            return get_Xvfb_command()
 
     if Xdummy_ENABLED is False:
         return get_Xvfb_command()
