@@ -364,6 +364,8 @@ BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
+#for detecting the path to the Xorg binary (not the wrapper):
+BuildRequires:		xorg-x11-server-Xorg
 %if 0%{?fedora}
 BuildRequires:		pkgconfig(libprocps)
 %endif
@@ -381,7 +383,6 @@ Recommends:			mesa-libOSMesa
 BuildRequires:		dbus-x11
 BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
-BuildRequires:		xorg-x11-server-Xorg
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
 %endif
