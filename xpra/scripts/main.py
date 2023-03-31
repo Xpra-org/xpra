@@ -319,8 +319,8 @@ def check_gtk_client():
     try:
         from xpra.client import gui, gtk3
         assert gui, gtk3
-    except ImportError as e:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, f"the xpra gui client is not installed: {e}")
+    except ImportError:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, f"xpra-client-gtk3 is not installed") from None
     check_gtk()
 
 def check_gtk():
