@@ -767,15 +767,15 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
     return filename
 
 
-dsinit = True
+dsinit = False
 def init_display_source():
     """
     On X11, we want to be able to access the bindings
     so we need to get the X11 display from GDK.
     """
     global dsinit
-    if dsinit and is_X11():
-        dsinit = False
+    dsinit = True
+    if is_X11():
         try:
             from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
@@ -783,7 +783,12 @@ def init_display_source():
             from xpra.log import Logger
             log = Logger("gtk", "client")
             log("init_gdk_display_source()", exc_info=True)
-            log.warn("Warning: the gtk3 x11 bindings are missing")
+            log.warn("Warning: the Gtk-3.0 X11 bindings are missing")
+            log.warn(" some features may be degraded or unavailable")
+            log.warn(" ie: keyboard mapping, focus, etc")
+
+def ds_inited():
+    return dsinit
 
 
 def main():

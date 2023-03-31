@@ -23,44 +23,38 @@ traylog = Logger("posix", "tray")
 mouselog = Logger("posix", "mouse")
 xinputlog = Logger("posix", "xinput")
 
-_X11Window = False
+
+def x11_bindings():
+    if not is_X11():
+        return None
+    try:
+        from xpra.x11 import bindings
+        return bindings
+    except ImportError as e:
+        log("x11_bindings()", exc_info=True)
+        from xpra.gtk_common.gtk_util import ds_inited
+        if not ds_inited():
+            log.warn("Warning: no X11 bindings")
+            log.warn(f" {e}")
+        return None
+
 def X11WindowBindings():
-    global _X11Window
-    if _X11Window is False:
-        _X11Window = None
-        if is_X11():
-            try:
-                from xpra.x11.bindings.window_bindings import X11WindowBindings as _X11WindowBindings #@UnresolvedImport
-                _X11Window = _X11WindowBindings()
-            except Exception as e:
-                log("X11WindowBindings()", exc_info=True)
-                log.error("Error: no X11 bindings")
-                log.estr(e)
-    return _X11Window
+    xb = x11_bindings()
+    if not xb:
+        return None
+    return xb.window_bindings.X11WindowBindings()
 
 def X11RandRBindings():
-    if is_X11():
-        try:
-            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-            return RandRBindings()
-        except Exception as e:
-            log("RandRBindings()", exc_info=True)
-            log.error("Error: no X11 RandR bindings")
-            log.estr(e)
-    return None
+    xb = x11_bindings()
+    if not xb:
+        return None
+    return xb.randr_bindings.RandRBindings()
 
-X11XI2 = False
 def X11XI2Bindings():
-    global X11XI2
-    if X11XI2 is False:
-        X11XI2 = None
-        if is_X11():
-            try:
-                from xpra.x11.bindings.xi2_bindings import X11XI2Bindings as _X11XI2Bindings       #@UnresolvedImport
-                X11XI2 = _X11XI2Bindings()
-            except Exception:
-                log.error("no XI2 bindings", exc_info=True)
-    return X11XI2
+    xb = x11_bindings()
+    if not xb:
+        return None
+    return xb.xi2_bindings.X11XI2Bindings()
 
 
 device_bell = None
@@ -75,6 +69,8 @@ DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 def gl_check():
     if not is_X11() and is_Wayland():
         return "disabled under wayland with GTK3 (buggy)"
+    if is_X11() and not x11_bindings():
+        return "X11 bindings are missing"
     return None
 
 
@@ -97,7 +93,7 @@ def do_get_wm_name(env):
     return wm_name
 
 def get_x11_wm_name():
-    if not is_X11() or not X11WindowBindings():
+    if not is_X11() or not x11_bindings():
         return None
     try:
         wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
@@ -117,7 +113,7 @@ def get_x11_wm_name():
 
 def get_clipboard_native_class():
     gtk_clipboard_class = "xpra.gtk_common.gtk_clipboard.GTK_Clipboard"
-    if is_Wayland():
+    if not x11_bindings():
         return gtk_clipboard_class
     try:
         from xpra import x11
@@ -193,10 +189,10 @@ def _get_X11_root_property(name, req_type):
 
 
 def _get_xsettings():
+    if not x11_bindings():
+        return None
     from xpra.gtk_common.error import xlog
     X11Window = X11WindowBindings()
-    if not X11Window:
-        return None
     with xlog:
         selection = "_XSETTINGS_S0"
         owner = X11Window.XGetSelectionOwner(selection)
@@ -212,7 +208,7 @@ def _get_xsettings():
 
 def _get_xsettings_dict():
     d = {}
-    if is_Wayland():
+    if not x11_bindings():
         return d
     v = _get_xsettings()
     if v:
@@ -223,7 +219,7 @@ def _get_xsettings_dict():
 
 
 def _get_xsettings_dpi():
-    if XSETTINGS_DPI and is_X11():
+    if XSETTINGS_DPI and x11_bindings():
         try:
             from xpra.x11.xsettings_prop import XSettingsTypeInteger
         except ImportError:
@@ -244,7 +240,7 @@ def _get_xsettings_dpi():
     return -1
 
 def _get_randr_dpi():
-    if RANDR_DPI and not is_Wayland():
+    if RANDR_DPI and x11_bindings():
         from xpra.gtk_common.error import xlog
         with xlog:
             randr_bindings = X11RandRBindings()
@@ -272,7 +268,7 @@ def get_ydpi():
 
 
 def get_icc_info():
-    if not is_Wayland():
+    if x11_bindings():
         try:
             data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
             if data:
@@ -302,6 +298,8 @@ def get_icc_info():
 
 def get_antialias_info():
     info = {}
+    if not x11_bindings():
+        return info
     try:
         from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
         d = _get_xsettings_dict()
@@ -337,7 +335,7 @@ def get_antialias_info():
 
 def get_current_desktop():
     v = -1
-    if not is_Wayland():
+    if x11_bindings():
         d = None
         try:
             d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
@@ -349,7 +347,7 @@ def get_current_desktop():
     return v
 
 def get_workarea():
-    if not is_Wayland():
+    if x11_bindings():
         try:
             d = get_current_desktop()
             if d<0:
@@ -376,7 +374,7 @@ def get_workarea():
 
 def get_number_of_desktops():
     v = 0
-    if not is_Wayland():
+    if x11_bindings():
         d = None
         try:
             d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
@@ -390,7 +388,7 @@ def get_number_of_desktops():
 
 def get_desktop_names():
     v = []
-    if not is_Wayland():
+    if x11_bindings():
         v = ("Main", )
         d = None
         try:
@@ -408,7 +406,7 @@ def get_desktop_names():
 
 def get_vrefresh():
     v = -1
-    if not is_Wayland():
+    if x11_bindings():
         try:
             from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
             randr = RandRBindings()
@@ -423,29 +421,30 @@ def get_vrefresh():
 
 
 def _get_xresources():
-    if not is_Wayland():
-        try:
-            from xpra.x11.gtk_x11.prop import prop_get
-            from xpra.gtk_common.gtk_util import get_default_root_window
-            root = get_default_root_window()
-            value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-            log(f"RESOURCE_MANAGER={value}")
-            if value is None:
-                return None
-            #parse the resources into a dict:
-            values={}
-            options = value.split("\n")
-            for option in options:
-                if not option:
-                    continue
-                parts = option.split(":\t", 1)
-                if len(parts)!=2:
-                    log(f"skipped invalid option: {option!r}")
-                    continue
-                values[parts[0]] = parts[1]
-            return values
-        except Exception as e:
-            log(f"_get_xresources error: {e!r}")
+    if not x11_bindings():
+        return None
+    try:
+        from xpra.x11.gtk_x11.prop import prop_get
+        from xpra.gtk_common.gtk_util import get_default_root_window
+        root = get_default_root_window()
+        value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
+        log(f"RESOURCE_MANAGER={value}")
+        if value is None:
+            return None
+        #parse the resources into a dict:
+        values={}
+        options = value.split("\n")
+        for option in options:
+            if not option:
+                continue
+            parts = option.split(":\t", 1)
+            if len(parts)!=2:
+                log(f"skipped invalid option: {option!r}")
+                continue
+            values[parts[0]] = parts[1]
+        return values
+    except Exception as e:
+        log(f"_get_xresources error: {e!r}")
     return None
 
 def get_cursor_size():
@@ -481,7 +480,7 @@ def get_window_frame_sizes():
 
 
 def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
-    if not is_X11():
+    if not x11_bindings():
         return False
     global device_bell
     if device_bell is False:
@@ -514,7 +513,7 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
 
 
 def pointer_grab(gdk_window):
-    if is_X11():
+    if x11_bindings():
         try:
             from xpra.gtk_common.error import xsync
             with xsync:
@@ -524,7 +523,7 @@ def pointer_grab(gdk_window):
     return False
 
 def pointer_ungrab(_window):
-    if is_X11():
+    if x11_bindings():
         try:
             from xpra.gtk_common.error import xsync
             with xsync:
@@ -536,6 +535,9 @@ def pointer_ungrab(_window):
 
 
 def _send_client_message(window, message_type, *values):
+    if not x11_bindings():
+        log(f"cannot send client message {message_type} without the X11 bindings")
+        return
     try:
         from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
         X11Window = X11WindowBindings()
@@ -551,7 +553,7 @@ def _send_client_message(window, message_type, *values):
         with xsync:
             X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
     except Exception as e:
-        log.warn("failed to send client message '%s' with values=%s: %s", message_type, values, e)
+        log.warn(f"Warning: failed to send client message {message_type!r} with values={values}: {e}")
 
 def show_desktop(b):
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
@@ -944,7 +946,7 @@ class ClientExtras:
 
     def setup_xprops(self):
         #wait for handshake to complete:
-        if not is_Wayland():
+        if x11_bindings():
             self.client.after_handshake(self.do_setup_xprops)
 
     def do_setup_xprops(self, *args):

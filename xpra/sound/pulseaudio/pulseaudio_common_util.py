@@ -19,6 +19,14 @@ def get_x11_property(atom_name):
     if not display:
         return b""
     try:
+        from xpra.x11 import bindings
+        assert bindings
+    except ImportError:
+        from xpra.util import first_time, envint
+        if first_time("pulse-x11-bindings") and not envint("XPRA_SKIP_UI", 0):
+            log.info(f"unable to query display properties without the X11 bindings")
+        return b""
+    try:
         from xpra.gtk_common.error import xswallow
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
         from xpra.x11.bindings.window_bindings import X11WindowBindingsInstance

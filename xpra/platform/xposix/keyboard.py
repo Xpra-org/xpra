@@ -20,14 +20,18 @@ class Keyboard(KeyboardBase):
 
     def __init__(self):
         super().__init__()
-        if not is_Wayland():
+        if is_X11():
             try:
                 #pylint: disable=import-outside-toplevel
                 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
-                log.error("Error: failed to load posix keyboard bindings")
-                log.error(" %s", str(e) or type(e))
+                log("keyboard bindings", exc_info=True)
+                from xpra.gtk_common.gtk_util import ds_inited
+                if not ds_inited():
+                    log.error("Error: failed to load the X11 keyboard bindings")
+                    log.error(" %s", str(e) or type(e))
+                    log.error(" keyboard mapping may be incomplete")
 
     def init_vars(self):
         super().init_vars()
@@ -44,10 +48,8 @@ class Keyboard(KeyboardBase):
 
     def do_get_keymap_modifiers(self):
         if not self.keyboard_bindings:
-            log.warn("keyboard bindings are not available")
-            log.warn(" expect keyboard mapping problems")
             if is_Wayland():
-                log.warn(" (incomplete wayland support)")
+                log.warn("Warning: incomplete keymap support under Wayland")
             return {}, [], []
         try:
             with xsync:

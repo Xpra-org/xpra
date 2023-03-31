@@ -27,6 +27,7 @@ from xpra.util import (
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
+    ds_inited,
     get_pixbuf_from_data, get_default_root_window,
     set_visual,
     BUTTON_MASK,
@@ -64,6 +65,7 @@ HAS_X11_BINDINGS = False
 USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
 prop_get, prop_set, prop_del = None, None, None
 NotifyInferior = None
+X11Window = X11Core = None
 if USE_X11_BINDINGS:
     try:
         from xpra.gtk_common.error import xlog, verify_sync
@@ -71,7 +73,12 @@ if USE_X11_BINDINGS:
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
         from xpra.x11.gtk_x11.send_wm import send_wm_workspace
-
+    except ImportError as x11e:
+        log("x11 bindings", exc_info=True)
+        #gtk_util should have already logged a detailed warning
+        log("cannot import the X11 bindings:")
+        log(" %s", x11e)
+    else:
         set_context_check(verify_sync)
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
@@ -95,10 +102,6 @@ if USE_X11_BINDINGS:
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.estr(e)
         CAN_SET_WORKSPACE = can_set_workspace()
-    except ImportError as x11e:
-        log("x11 bindings", exc_info=True)
-        log.error("Error: cannot import X11 bindings:")
-        log.error(" %s", x11e)
 
 
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
@@ -471,13 +474,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def do_init_focus(self):
         #hook up the X11 gdk event notifications so we can get focus-out when grabs are active:
-        if POSIX and not OSX:
+        if is_X11():
             try:
                 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver
             except ImportError as e:
                 log("do_init_focus()", exc_info=True)
-                log.warn("Warning: missing gdk bindings:")
-                log.warn(" %s", e)
+                if not ds_inited():
+                    log.warn("Warning: missing Gdk X11 bindings:")
+                    log.warn(" %s", e)
+                    log.warn(" you may experience window focus issues")
             else:
                 grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
                 add_event_receiver(self.get_window(), self)
