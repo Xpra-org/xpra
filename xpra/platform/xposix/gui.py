@@ -492,8 +492,13 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
         global device_bell
         if device_bell is None:
             #try to load it:
-            from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
-            device_bell = X11KeyboardBindings().device_bell
+            try:
+                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
+                device_bell = X11KeyboardBindings().device_bell
+            except ImportError:
+                log("x11_bell()", exc_info=True)
+                log.warn("Warning: cannot use X11 bell device without the X11 bindings")
+                device_bell = False
         device_bell(window.get_xid(), device, bell_class, bell_id, percent, bell_name)
     try:
         from xpra.gtk_common.error import xlog
