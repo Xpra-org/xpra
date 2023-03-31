@@ -13,8 +13,7 @@ from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
-    is_Debian, is_Ubuntu, is_CentOS, is_RedHat, is_arm,
-    get_distribution_version_id,
+    is_Debian, is_Ubuntu, is_arm,
     which,
     )
 
