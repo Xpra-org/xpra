@@ -200,7 +200,6 @@ BuildRequires:		pkgconfig(libavutil)
 BuildRequires:		pkgconfig(libavformat)
 BuildRequires:		pkgconfig(libavcodec)
 #for gstreamer video encoder and decoder:
-Recommends:			python3-gstreamer1
 Recommends:			gstreamer1
 #appsrc, videoconvert:
 Recommends:			gstreamer1-plugins-base
@@ -234,7 +233,6 @@ Group:				Networking
 #Provides:			python3-xpra-audio
 Obsoletes:			python3-xpra-audio < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
-Requires:			python3-gstreamer1
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
@@ -246,7 +244,6 @@ Recommends:			pulseaudio
 Recommends:			pulseaudio-module-x11
 Recommends:			pulseaudio-utils
 %if 0%{?run_tests}
-Requires:			python3-gstreamer1
 BuildRequires:		gstreamer1
 BuildRequires:		gstreamer1-plugins-good
 BuildRequires:		pulseaudio
