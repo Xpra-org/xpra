@@ -16,7 +16,7 @@ class StartOptionTest(ServerMixinsOptionTestUtil):
         self._test("start", {})
 
     def test_nonotifications(self):
-        self._test("start",options={"notifications" : False})
+        self._test("start", options={"notifications" : False})
 
     def test_start_all(self):
         self._test_all("start")

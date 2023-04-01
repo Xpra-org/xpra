@@ -14,10 +14,21 @@ from unit.server_test_util import ServerTestUtil, estr, log
 
 class ServerAuthTest(ServerTestUtil):
 
+    @classmethod
+    def setUpClass(cls):
+        ServerTestUtil.setUpClass()
+        cls.xvfb = cls.start_Xvfb()
+        cls.display = cls.xvfb.display
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.xvfb.terminate()
+        ServerTestUtil.tearDownClass()
+
     def _test_auth(self, auth="fail", uri_prefix="", exit_code=0, password=None):
-        display = self.find_free_display()
+        display = self.xvfb.display
         log("starting test server on %s", display)
-        server = self.check_fast_start_server(display, f"--auth={auth}")
+        server = self.check_fast_start_server(display, f"--auth={auth}", "--use-display=yes")
         #we should always be able to get the version:
         client = self.run_xpra(["version", uri_prefix+display])
         assert pollwait(client, 5)==0, "version client failed to connect"
