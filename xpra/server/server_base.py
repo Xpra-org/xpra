@@ -422,6 +422,14 @@ class ServerBase(ServerBaseClass):
         sockpath = get_ssh_agent_path(uuid)
         sshlog(f"get_ssh_agent_path({uuid})={sockpath}")
         if not os.path.exists(sockpath) or not is_socket(sockpath):
+            if os.path.islink(sockpath):
+                #dead symlink
+                try:
+                    os.unlink(sockpath)
+                except OSError as e:
+                    sshlog(f"os.unlink({sockpath!r})", exc_info=True)
+                    sshlog.error(f"Error: removing the broken ssh agent symlink")
+                    sshlog.estr(e)
             #perhaps this is a local client,
             #and we can find its agent socket and create the symlink now:
             sshlog(f"client supplied ssh-auth-sock={ssh_auth_sock}")

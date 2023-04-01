@@ -89,13 +89,18 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
         return None
     #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
     agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
-    if os.path.exists(agent_uuid_sockpath):
-        if os.path.islink(agent_uuid_sockpath) and is_socket(agent_uuid_sockpath):
+    if os.path.exists(agent_uuid_sockpath) or os.path.islink(agent_uuid_sockpath):
+        if is_socket(agent_uuid_sockpath):
             sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
             #keep the existing socket unchanged - somehow it still works?
             return agent_uuid_sockpath
         sshlog(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
-        os.unlink(agent_uuid_sockpath)
+        try:
+            os.unlink(agent_uuid_sockpath)
+        except OSError as e:
+            sshlog(f"os.unlink({agent_uuid_sockpath!r})", exc_info=True)
+            sshlog.error(f"Error: removing the broken ssh agent symlink")
+            sshlog.estr(e)
     sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
     try:
         os.symlink(auth_sock, agent_uuid_sockpath)
