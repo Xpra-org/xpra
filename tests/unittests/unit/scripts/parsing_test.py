@@ -8,7 +8,6 @@
 import os
 import unittest
 
-from xpra.log import add_debug_category, remove_debug_category
 from xpra.os_util import nomodule_context, WIN32
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
@@ -21,7 +20,6 @@ class TestParsing(unittest.TestCase):
         assert parse_ssh_option("ssh")==["ssh"]
         assert parse_ssh_option("ssh -v")==["ssh", "-v"]
         with nomodule_context("paramiko"):
-            add_debug_category("ssh")
             def pssh(s, e):
                 r = parse_ssh_option(s)[0]
                 assert r==e, f"expected {e} got {r}"
@@ -29,7 +27,6 @@ class TestParsing(unittest.TestCase):
                 pssh("auto", "plink.exe")
             else:
                 pssh("auto", "ssh")
-            remove_debug_category("ssh")
         #args:
         def targs(e, *args):
             r = get_ssh_args(*args)
