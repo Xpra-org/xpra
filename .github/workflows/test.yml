@@ -30,7 +30,7 @@ jobs:
                 gstreamer1.0-pulseaudio gstreamer1.0-alsa \
                 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
                 gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-vaapi \
-                liblz4-dev python-lz4 \
+                liblz4-dev python3-lz4 \
                 libbrotli-dev \
                 python3-coverage \
                 x11-xserver-utils dbus-x11
