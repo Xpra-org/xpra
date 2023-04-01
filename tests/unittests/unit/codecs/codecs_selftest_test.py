@@ -8,6 +8,7 @@ import os
 import logging
 import unittest
 
+from xpra.util import csv
 from xpra.codecs import loader
 from xpra.codecs.codec_constants import TransientCodecException
 
@@ -25,11 +26,12 @@ class TestDecoders(unittest.TestCase):
         loader.RUN_SELF_TESTS = False
         #loader.load_codecs()
         #test them all:
+        missing = []
         for codec_name in TEST_CODECS:
             loader.load_codec(codec_name)
             codec = loader.get_codec(codec_name)
             if not codec:
-                print("WARNING: codec '%s' not found" % (codec_name,))
+                missing.append(codec)
                 continue
             try:
                 #try to suspend error logging for full tests,
@@ -57,7 +59,9 @@ class TestDecoders(unittest.TestCase):
             finally:
                 if log:
                     log.logger.setLevel(logging.DEBUG)
-
+        if missing:
+            print("Warning: the following codecs are missing and have not been tested:")
+            print(f" {csv(missing)}")
 
 def main():
     unittest.main()
