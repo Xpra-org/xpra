@@ -192,6 +192,7 @@ class ServerSocketsTest(ServerTestUtil):
         display_no = self.find_free_display_no()
         display = f":{display_no}"
         with GenSSLCertContext() as genssl:
+            server = None
             try:
                 log("starting test quic server on %s", display)
                 server = self.start_server(display,

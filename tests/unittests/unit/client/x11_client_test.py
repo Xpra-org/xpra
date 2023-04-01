@@ -24,7 +24,7 @@ class X11ClientTest(X11ClientTestUtil):
         display = self.find_free_display()
         log("starting test server on %s", display)
         server_args = ["--start=xterm"] + list(server_args)
-        server = self.check_start_server(display, *server_args)
+        server = self.check_fast_start_server(display, *server_args)
         xvfb1, client1 = self.run_client(display, *client_args)
         r = pollwait(client1, CLIENT_TIMEOUT)
         assert r is None, "client1 exited with code %s" % exit_str(r)
@@ -85,7 +85,7 @@ class X11ClientTest(X11ClientTestUtil):
         for server_depth in (16, 24, 30):
             server_display = self.find_free_display()
             log("depth=%i starting test server on %s", server_depth, server_display)
-            server = self.check_start_server(server_display,
+            server = self.check_fast_start_server(server_display,
                                             "--start=xterm", "--sync-xvfb=50",
                                             "--pixel-depth=%i" % server_depth)
             self._test_client_depth(server_display)
@@ -95,7 +95,7 @@ class X11ClientTest(X11ClientTestUtil):
         f = self._temp_file(data)
         try:
             display = self.find_free_display()
-            server = self.check_start_server(display)
+            server = self.check_fast_start_server(display, "--file-transfer=yes")
             xvfb, client = self.run_client(display, "--file-transfer=yes")
             assert pollwait(client, CLIENT_TIMEOUT) is None
             #send a file to this client:

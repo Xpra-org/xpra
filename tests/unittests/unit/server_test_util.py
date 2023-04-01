@@ -98,6 +98,26 @@ class ServerTestUtil(ProcessTestUtil):
         server.display = display
         return server
 
+    def check_fast_start_server(self, display, *args):
+        defaults = dict((k, "no") for k in (
+            "av-sync", "remote-logging",
+            "windows",
+            "rfb-upgrade", "ssh-upgrade",
+            "speaker", "microphone",
+            "systemd-run", "start-via-proxy",
+            "splash", "printing", "opengl",
+            "webcam", "bell", "system-tray", "notifications",
+            "clipboard", "start-new-commands",
+            ))
+        defaults.update({
+            "video-encoders"    : "none",
+            "csc-modules"       : "none",
+            "video-decoders"    : "none",
+            "encodings"         : "rgb",
+            })
+        args = [f"--{k}={v}" for k,v in defaults.items()] + list(args)
+        return self.check_server("start", display, *args)
+
     def check_start_server(self, display, *args):
         return self.check_server("start", display, *args)
 
