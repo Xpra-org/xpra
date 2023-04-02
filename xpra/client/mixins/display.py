@@ -203,11 +203,6 @@ class DisplayClient(StubClientMixin):
         aa = get_antialias_info()
         if aa:
             caps["antialias"] = aa
-        if SYNC_ICC:
-            caps.update({
-            "icc"          : self.get_icc_info(),
-            "display-icc"  : self.get_display_icc_info(),
-            })
         return caps
 
     #this is the format we should be moving towards
@@ -286,6 +281,20 @@ class DisplayClient(StubClientMixin):
         #now that we have the server's screen info, allow scale changes:
         self.scale_change_embargo = 0
         self.set_max_packet_size()
+        self.send_icc_data()
+
+    def send_icc_data(self):
+        if SYNC_ICC and "configure-display" in self.server_packet_types:
+            #it is now safe to send the colourspace data if we have any:
+            icc = self.get_icc_info()
+            dicc = self.get_display_icc_info()
+            if icc or dicc:
+                self.send("configure-display", {
+                    "icc": {
+                        "global"    : icc,
+                        "display"   : dicc,
+                        }
+                    })
 
     def set_max_packet_size(self):
         p = self._protocol
@@ -533,11 +542,11 @@ class DisplayClient(StubClientMixin):
                     "display"   : dicc,
                     }
             if ndesktops:
-                attrs["desktops"] = ndesktops,
+                attrs["desktops"] = ndesktops
                 attrs["desktop-names"] = desktop_names or ()
             if rrate:
                 attrs["vrefresh"] = rrate
-            log.warn(f"configure-display: {attrs}")
+            log(f"configure-display: {attrs}")
             self.send("configure-display", attrs)
         elif self.server_desktop_size:
             log(f"sending legacy desktop-size packet: {screen_settings}")
