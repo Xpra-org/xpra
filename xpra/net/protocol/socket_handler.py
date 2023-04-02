@@ -1067,10 +1067,11 @@ class SocketProtocol:
                         packet[0] = packet_type
                     else:
                         raise ValueError(f"receive alias not found for packet type {packet_type}")
+                else:
+                    packet_type = bytestostr(packet_type)
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE and packet_type!="logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
-
                 payload_size = -1
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
