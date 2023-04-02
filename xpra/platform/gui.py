@@ -67,16 +67,16 @@ def get_native_tray_menu_helper_class():
 def get_native_tray_classes(*_args):
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
-    return []
+    return ()
 def get_native_system_tray_classes(*_args):
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
-    return []
+    return ()
 def system_bell(*_args):
     #let the toolkit classes use their own
     return False
 def get_native_notifier_classes():
-    return []
+    return ()
 
 
 def get_session_type():
@@ -187,13 +187,13 @@ def get_workarea():
 
 #per monitor workareas (assuming a single screen)
 def get_workareas():
-    return []
+    return ()
 
 def get_number_of_desktops():
     return 1
 
 def get_desktop_names():
-    return []
+    return ()
 
 def get_vrefresh():
     return -1
