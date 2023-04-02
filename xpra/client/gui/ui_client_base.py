@@ -426,7 +426,8 @@ class UIXpraClient(ClientBaseClass):
             u("platform",           get_platform_info())
             if FULL_INFO==1:
                 #remove 'opengl.extensions'
-                op = dict((k,v) for k,v in self.opengl_props.items() if k!="extensions")
+                op = dict((k,v) for k,v in self.opengl_props.items() if k not in (
+                    "extensions", "GLU.extensions"))
             else:
                 op = self.opengl_props
             caps["opengl"] = op
