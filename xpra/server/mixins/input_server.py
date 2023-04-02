@@ -382,10 +382,10 @@ class InputServer(StubServerMixin):
         self.set_ui_driver(ss)
         device_id, seq, wid, button, pressed, pointer, props = packet[1:8]
         if device_id>=0:
-            highest_seq = self.pointer_sequence.get(device_id, 0)
-            if INPUT_SEQ_NO and 0<=seq<=highest_seq:
-                mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
-                return
+            #highest_seq = self.pointer_sequence.get(device_id, 0)
+            #if INPUT_SEQ_NO and 0<=seq<=highest_seq:
+            #    mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+            #    return
             self.pointer_sequence[device_id] = seq
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
