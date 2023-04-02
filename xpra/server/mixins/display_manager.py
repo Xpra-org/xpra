@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import engs, log_screen_sizes
+from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
@@ -311,10 +311,10 @@ class DisplayManager(StubServerMixin):
 
     def _process_desktop_size(self, proto, packet):
         log("new desktop size from %s: %s", proto, packet)
-        width, height = packet[1:3]
         ss = self.get_server_source(proto)
         if ss is None:
             return
+        width, height = packet[1:3]
         ss.desktop_size = (width, height)
         if len(packet)>=12:
             ss.set_monitors(packet[11])
@@ -352,6 +352,51 @@ class DisplayManager(StubServerMixin):
         self.apply_refresh_rate(ss)
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
+
+    def _process_configure_display(self, proto, packet):
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        attrs = typedict(packet[1])
+        desktop_size = attrs.intpair("desktop-size")
+        if desktop_size:
+            ss.desktop_size = desktop_size
+        desktop_size_unscaled = attrs.intpair("desktop-size-unscaled")
+        if desktop_size_unscaled:
+            ss.desktop_size_unscaled = desktop_size_unscaled
+        #vrefresh may be overriden in 'monitors' data:
+        vrefresh = attrs.intget("vrefresh")
+        if 0<vrefresh<240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=vrefresh:
+            ss.vrefresh = vrefresh
+        monitors = attrs.dictget("monitors")
+        if monitors:
+            ss.set_monitors(monitors)
+        dpix = attrs.intget("dpi.x")
+        dpiy = attrs.intget("dpi.y")
+        if dpix and dpiy:
+            if dpix!=self.xdpi or dpiy!=self.ydpi:
+                self.xdpi, self.ydpi = dpix, dpiy
+                log("new dpi: %ix%i", dpix, dpiy)
+                self.dpi = round((dpix + dpiy)/2)
+                self.dpi_changed()
+        desktop_names = attrs.strtupleget("desktop-names")
+        if desktop_names:
+            ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
+            self.calculate_desktops()
+        #don't bother with screen-sizes?
+        bigger = ss.screen_resize_bigger
+        width, height = desktop_size
+        log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
+        self.set_screen_size(width, height, bigger)
+        if len(packet)>=4:
+            log.info("received updated display dimensions")
+            log.info(f"client display size is {width}x{height}")
+            log_screen_sizes(width, height, ss.screen_sizes)
+            self.calculate_workarea(width, height)
+        self.apply_refresh_rate(ss)
+        #ensures that DPI and antialias information gets reset:
+        self.update_all_server_settings()
+
 
     def dpi_changed(self):
         """
@@ -403,8 +448,9 @@ class DisplayManager(StubServerMixin):
 
     def init_packet_handlers(self):
         self.add_packet_handlers({
-            "set-cursors"   : self._process_set_cursors,
-            "set-bell"      : self._process_set_bell,
-            "desktop_size"  : self._process_desktop_size,
-            "screenshot"    : self._process_screenshot,
+            "set-cursors"           : self._process_set_cursors,
+            "set-bell"              : self._process_set_bell,
+            "desktop_size"          : self._process_desktop_size,
+            "configure-display"     : self._process_configure_display,
+            "screenshot"            : self._process_screenshot,
             })

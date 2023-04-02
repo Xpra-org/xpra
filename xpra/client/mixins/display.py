@@ -514,7 +514,30 @@ class DisplayClient(StubClientMixin):
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
-        if self.server_desktop_size:
+        if "configure-display" in self.server_packet_types:
+            #new packet format:
+            root_w, root_h = screen_settings[:2]
+            sss = screen_settings[2]
+            ndesktops, desktop_names = screen_settings[3:5]
+            u_root_w, u_root_h = screen_settings[5:7]
+            xdpi, ydpi = screen_settings[7:9]
+            rrate, monitors = screen_settings[9:11]
+            attrs = {
+                "desktop-size"          : (root_w, root_h),
+                "desktop-size-unscaled" : (u_root_w, u_root_h),
+                "monitors"              : monitors,
+                "dpi"                   : {"x" : xdpi, "y" : ydpi},
+                }
+            if ndesktops:
+                attrs["desktops"] = ndesktops,
+                attrs["desktop-names"] = desktop_names or ()
+            if rrate:
+                attrs["vrefresh"] = rrate
+            log.warn(f"configure-display: {attrs}")
+            self.send("configure-display", attrs)
+        elif self.server_desktop_size:
+            log(f"sending legacy desktop-size packet: {screen_settings}")
+            #legacy packet:
             self.send("desktop_size", *screen_settings)
         self._last_screen_settings = screen_settings
         #update the max packet size (may have gone up):
