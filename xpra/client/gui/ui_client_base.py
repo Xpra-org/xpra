@@ -430,9 +430,9 @@ class UIXpraClient(ClientBaseClass):
             if FULL_INFO==1:
                 op = skipkeys(op, "extensions", "GLU.extensions")
                 pi = skipkeys(pi, "release", "sysrelease", "platform", "processor", "architecture")
-            caps["platform"] = pi
             #legacy mode:
-            #u("platform", pi)
+            u("platform", pi)
+            caps["platform"] = pi
             caps["opengl"] = op
             caps["session-type"] = get_session_type()
         if self.desktop_fullscreen:
