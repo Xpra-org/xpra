@@ -226,13 +226,14 @@ def platform_release(release):
 def platform_name(sys_platform=sys.platform, release=None) -> str:
     if not sys_platform:
         return "unknown"
-    PLATFORMS = {"win32"    : "Microsoft Windows",
-                 "cygwin"   : "Windows/Cygwin",
-                 "linux.*"  : "Linux",
-                 "darwin"   : "Mac OS X",
-                 "freebsd.*": "FreeBSD",
-                 "os2"      : "OS/2",
-                 }
+    PLATFORMS = {
+        "win32"    : "Microsoft Windows",
+        "cygwin"   : "Windows/Cygwin",
+        "linux.*"  : "Linux",
+        "darwin"   : "Mac OS X",
+        "freebsd.*": "FreeBSD",
+        "os2"      : "OS/2",
+        }
     def rel(v):
         values = [v]
         if isinstance(release, (tuple, list)):
