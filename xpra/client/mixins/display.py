@@ -17,14 +17,14 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.common import (
     adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO,
+    FULL_INFO, SYNC_ICC,
     )
 from xpra.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
     )
 from xpra.util import (
-    envint, envbool, log_screen_sizes, flatten_dict, typedict,
+    envint, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -35,9 +35,6 @@ workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
-
-SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
-
 
 
 class DisplayClient(StubClientMixin):

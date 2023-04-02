@@ -13,6 +13,7 @@ from xpra.util import typedict, envbool
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.scripts.config import parse_bool
 from xpra.server import EXITING_CODE
+from xpra.common import SYNC_ICC
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
@@ -26,7 +27,6 @@ dbuslog = Logger("dbus")
 X11Keyboard = X11KeyboardBindings()
 
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
-SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def root_prop_set(prop_name, prop_type, value):
