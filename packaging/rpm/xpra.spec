@@ -34,10 +34,8 @@
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 
-# no support for centos / rhel 7:
 %if 0%{?el7}
-echo CentOS 7.x is no longer supported
-exit 1
+echo CentOS / RHEL 7.x is no longer supported
 %endif
 
 %if 0%{?xpra_revision_no}
