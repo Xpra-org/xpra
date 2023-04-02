@@ -756,19 +756,19 @@ class UIXpraClient(ClientBaseClass):
             caps.update({
                 "keyboard"  : True,
                 "keymap"    : kh.get_keymap_properties(),
-                "modifiers" :self.get_current_modifiers(),
+                "modifiers" : self.get_current_modifiers(),
                 })
             #show the user a summary of what we have detected:
             self.keyboard_helper.log_keyboard_info()
 
-            delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
+            delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
             if delay_ms>0 and interval_ms>0:
-                caps["key_repeat"] = (delay_ms,interval_ms)
+                caps["key_repeat"] = (delay_ms, interval_ms)
             else:
                 #cannot do keyboard_sync without a key repeat value!
                 #(maybe we could just choose one?)
-                self.keyboard_helper.keyboard_sync = False
-            caps["keyboard_sync"] = self.keyboard_helper.keyboard_sync
+                kh.keyboard_sync = False
+            caps["keyboard_sync"] = kh.keyboard_sync
         log("keyboard capabilities: %s", caps)
         return caps
 
