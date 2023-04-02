@@ -4,13 +4,13 @@
 %define _disable_source_fetch 0
 
 Name:		python2-Cython
-Version:	0.29.33
+Version:	0.29.34
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/dc/f6/e8e302f9942cbebede88b1a0c33d0be3a738c3ac37abae87254d58ffc51c/Cython-%{version}.tar.gz
+Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python2
 
@@ -24,11 +24,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5040764c4a4d2ce964a395da24f0d1ae58144995dab92c6b96f44c3f4d72286a" ]; then
+if [ "${sha256}" != "6428ed43b8d0edd961e0b45502a0b1e64059d84a0ed2abb84d20e9a6d9047dc6" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n Cython-%{version}
+%setup -q -n cython-%{version}
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
 %build
