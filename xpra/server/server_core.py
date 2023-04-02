@@ -1343,7 +1343,7 @@ class ServerCore:
             """ adds xpra protocol tweaks after creating the instance """
             protocol = protocol_class(self, conn, self.process_packet)
             protocol.large_packets.append("info-response")
-            protocol.receive_aliases.update(self._aliases)
+            protocol.set_receive_aliases(self._aliases)
             return protocol
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 

@@ -231,6 +231,9 @@ class SocketProtocol:
             self.send_aliases[bytestostr(k)] = v
         self.send_flush_flag = FLUSH_HEADER and caps.boolget("flush", False)
 
+    def set_receive_aliases(self, aliases):
+        self.receive_aliases = aliases
+
     def get_info(self, alias_info=True) -> dict:
         shm = self._source_has_more
         info = {
@@ -1062,6 +1065,8 @@ class SocketProtocol:
                     packet_type = self.receive_aliases.get(packet_type)
                     if packet_type:
                         packet[0] = packet_type
+                    else:
+                        raise ValueError(f"receive alias not found for packet type {packet_type}")
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE and packet_type!="logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)

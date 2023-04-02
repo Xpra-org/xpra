@@ -347,7 +347,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
                 protocol.large_packets.append(x)
             protocol.set_compression_level(10)
-            protocol.receive_aliases.update(self._aliases)
+            protocol.set_receive_aliases(self._aliases)
             protocol.enable_default_encoder()
             protocol.enable_default_compressor()
             encryption = self.get_encryption()
