@@ -356,6 +356,10 @@ def decode_str(x, try_encoding="utf8"):
 
 _RaiseKeyError = object()
 
+def checkdict(v):
+    assert isinstance(v, dict)
+    return v
+
 class typedict(dict):
     __slots__ = ("warn", ) # no __dict__ - that would be redundant
     @staticmethod # because this doesn't make sense as a global function.
@@ -410,6 +414,11 @@ class typedict(dict):
         if not super().__contains__(bytestostr(k)):
             return default
         v = self.get(k, default)
+        #auto recurse down the dictionary to find the type we want:
+        if isinstance(v, dict) and conv and conv not in (dict, checkdict, typedict):
+            d = typedict(v)
+            if "" in d:
+                return conv(d.get(""))
         try:
             return conv(v)
         except (TypeError, ValueError, AssertionError) as e:
@@ -433,9 +442,6 @@ class typedict(dict):
         return self.conv_get(k, default, bool)
 
     def dictget(self, k : str, default=None):
-        def checkdict(v):
-            assert isinstance(v, dict)
-            return v
         return self.conv_get(k, default, checkdict)
 
     def intpair(self, k : str, default_value=None):
