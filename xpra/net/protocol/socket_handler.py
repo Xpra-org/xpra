@@ -521,6 +521,7 @@ class SocketProtocol:
         size_check = LARGE_PACKET_SIZE
         min_comp_size = MIN_COMPRESS_SIZE
         packet_type = packet[0]
+        payload_size = 0
         for i in range(1, len(packet)):
             item = packet[i]
             if item is None:
@@ -555,6 +556,7 @@ class SocketProtocol:
                         il = item.level
                     packets.append((0, i, il, item.data))
                     packet[i] = b''
+                    payload_size += len(item.data)
                 else:
                     #data is small enough, inline it:
                     packet[i] = item.data
@@ -569,6 +571,7 @@ class SocketProtocol:
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
                 packets.append((0, i, cl, cdata))
+                payload_size += len(cdata)
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
                 continue
@@ -595,14 +598,16 @@ class SocketProtocol:
             from xpra.net.protocol.check import verify_packet
             verify_packet(packet)
             raise
-        if len(main_packet)>size_check and bytestostr(packet_in[0]) not in self.large_packets:
+        l = len(main_packet)
+        payload_size += l
+        if l>size_check and bytestostr(packet_in[0]) not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
             log.warn(f" packet: {repr_ellipsized(packet)}")
         #compress, but don't bother for small packets:
-        if level>0 and len(main_packet)>min_comp_size:
+        if level>0 and l>min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
             except Exception as e:
@@ -613,6 +618,8 @@ class SocketProtocol:
         else:
             packets.append((proto_flags, 0, 0, main_packet))
         may_log_packet(True, packet_type, packet)
+        if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+            log.info(f"sending  {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         return packets
 
     def set_compression_level(self, level : int):
@@ -1041,12 +1048,13 @@ class SocketProtocol:
 
                 if self._closed:
                     return
-                payload_size = -1
+                payload_size = len(data)
                 #add any raw packets back into it:
                 if raw_packets:
                     for index,raw_data in raw_packets.items():
                         #replace placeholder with the raw_data packet data:
                         packet[index] = raw_data
+                        payload_size += len(raw_data)
                     raw_packets = {}
 
                 packet_type = packet[0]
@@ -1055,9 +1063,10 @@ class SocketProtocol:
                     if packet_type:
                         packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
-                if LOG_RAW_PACKET_SIZE:
-                    log(f"{packet_type}: %i bytes", HEADER_SIZE + payload_size)
+                if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+                    log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
 
+                payload_size = -1
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", bytestostr(packet_type))
