@@ -337,9 +337,6 @@ class KeyboardConfig(KeyboardConfigBase):
             clean_keyboard_state()
 
             if not self.xkbmap_raw:
-                has_keycodes = bool(self.xkbmap_x11_keycodes) or bool(self.xkbmap_keycodes)
-                assert has_keycodes, "client failed to provide any keycodes!"
-
                 clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
                 clean_keyboard_state()
 
@@ -351,11 +348,13 @@ class KeyboardConfig(KeyboardConfigBase):
                 if bool(self.xkbmap_query):
                     #native full mapping of all keycodes:
                     self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
-                else:
+                elif self.keycodes:
                     #if the client does not provide a full native keymap with all the keycodes,
                     #try to preserve the initial server keycodes and translate the client keycodes instead:
                     #(used by non X11 clients like osx,win32 or HTML5)
                     self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
+                else:
+                    self.keycode_translation = {}
                 self.add_gtk_keynames()
 
                 #now set the new modifier mappings:
