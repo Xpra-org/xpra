@@ -2156,6 +2156,7 @@ if nvidia_ENABLED:
             if gcc_version<(7, 5):
                 print("gcc versions older than 7.5 are not supported!")
                 for _ in range(5):
+                    from time import sleep
                     sleep(1)
                     print(".")
             if (8,1)<=gcc_version<(9, ):
