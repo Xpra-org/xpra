@@ -29,12 +29,7 @@ FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
 FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000*(1+int(WIN32)))
 
-DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS",
-    "--windows=no "+
-    "--video-encoders=none "+
-    "--csc-modules=none "+
-    "--video-decoders=none "+
-    "--proxy-video-encoders=none").split(" ")
+DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS", "--windows=no").split(",")
 
 
 def get_full_sound_command():
