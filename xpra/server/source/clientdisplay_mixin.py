@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import bytestostr
-from xpra.util import get_screen_info, envint, first_time, typedict, net_utf8
+from xpra.util import get_screen_info, first_time, typedict, net_utf8
+from xpra.common import MIN_DPI, MAX_DPI
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -118,8 +119,6 @@ class ClientDisplayMixin(StubSourceMixin):
         self.screen_sizes = list(screen_sizes)
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
-        MIN_DPI = envint("XPRA_MIN_DPI", 10)
-        MAX_DPI = envint("XPRA_MIN_DPI", 500)
         def dpi(size_pixels, size_mm):
             if size_mm==0:
                 return 0
