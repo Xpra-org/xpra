@@ -383,6 +383,12 @@ class DisplayManager(StubServerMixin):
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
             self.calculate_desktops()
+        iccd = attrs.dictget("icc")
+        if iccd:
+            iccd = typedict(iccd)
+            ss.icc = iccd.get("global", ss.icc)
+            ss.display_icc = iccd.get("display", ss.display_icc)
+            self.set_icc_profile()
         #don't bother with screen-sizes?
         bigger = ss.screen_resize_bigger
         width, height = desktop_size

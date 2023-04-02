@@ -525,6 +525,13 @@ class DisplayClient(StubClientMixin):
                 "monitors"              : monitors,
                 "dpi"                   : {"x" : xdpi, "y" : ydpi},
                 }
+            icc = self.get_icc_info()
+            dicc = self.get_display_icc_info()
+            if icc or dicc:
+                attrs["icc"] = {
+                    "global"    : icc,
+                    "display"   : dicc,
+                    }
             if ndesktops:
                 attrs["desktops"] = ndesktops,
                 attrs["desktop-names"] = desktop_names or ()
