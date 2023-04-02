@@ -423,13 +423,16 @@ class UIXpraClient(ClientBaseClass):
             updict(caps, prefix, c, flatten_dicts=False)
         u("control_commands",   self.get_control_commands_caps())
         if FULL_INFO>0:
-            u("platform",           get_platform_info())
+            def skipkeys(d, *keys):
+                return dict((k,v) for k,v in d.items() if k not in keys)
+            pi = get_platform_info()
+            op = self.opengl_props
             if FULL_INFO==1:
-                #remove 'opengl.extensions'
-                op = dict((k,v) for k,v in self.opengl_props.items() if k not in (
-                    "extensions", "GLU.extensions"))
-            else:
-                op = self.opengl_props
+                op = skipkeys(op, "extensions", "GLU.extensions")
+                pi = skipkeys(pi, "release", "sysrelease", "platform", "processor", "architecture")
+            caps["platform"] = pi
+            #legacy mode:
+            #u("platform", pi)
             caps["opengl"] = op
             caps["session-type"] = get_session_type()
         if self.desktop_fullscreen:
