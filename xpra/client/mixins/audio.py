@@ -9,6 +9,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv, updict
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -179,7 +180,16 @@ class AudioClient(StubClientMixin):
             "send"       : self.microphone_allowed,
             "receive"    : self.speaker_allowed,
             }
-        caps.update(self.sound_properties)
+        sp = self.sound_properties
+        if FULL_INFO<2:
+            def skipkeys(d, *keys):
+                return dict((k,v) for k,v in d.items() if k not in keys)
+            sp = skipkeys(sp,
+                          "gst.version",
+                          "sink.default", "sources", "device", "devices",
+                          "pulseaudio",
+                          )
+        caps.update(sp)
         log("audio capabilities: %s", caps)
         return caps
 
