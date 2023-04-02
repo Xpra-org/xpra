@@ -105,7 +105,7 @@ class UIXpraClient(ClientBaseClass):
             __signals__ += c.__signals__
 
     def __init__(self):  # pylint: disable=super-init-not-called
-        log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()} {BITS}-bit")
+        log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
         self.mmap_enabled = False
