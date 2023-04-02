@@ -424,7 +424,12 @@ class UIXpraClient(ClientBaseClass):
         u("control_commands",   self.get_control_commands_caps())
         if FULL_INFO>0:
             u("platform",           get_platform_info())
-            u("opengl",             self.opengl_props)
+            if FULL_INFO==1:
+                #remove 'opengl.extensions'
+                op = dict((k,v) for k,v in self.opengl_props.items() if k!="extensions")
+            else:
+                op = self.opengl_props
+            caps["opengl"] = op
             caps["session-type"] = get_session_type()
         if self.desktop_fullscreen:
             caps["desktop-fullscreen"] = True

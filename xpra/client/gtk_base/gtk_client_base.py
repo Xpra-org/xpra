@@ -909,8 +909,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     "icons.size"        : (64, 64),     #size we want
                     "icons.max_size"    : (128, 128),   #limit
                     })
-        if FULL_INFO:
-            capabilities["opengl"] = self.opengl_props
         return capabilities
 
 
