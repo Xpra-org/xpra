@@ -67,7 +67,6 @@ METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 #on win32, the named cursors work, but they are hard to see
 #when using the Adwaita theme
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32 and not is_Wayland())
-EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
@@ -847,6 +846,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         capabilities["encoding.transparency"] = self.has_transparency()
         if FULL_INFO>1:
             capabilities.update(flatten_dict(get_gtk_version_info()))
+        EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO>1)
         if EXPORT_ICON_DATA:
             #tell the server which icons GTK can use
             #so it knows when it should supply one as fallback
