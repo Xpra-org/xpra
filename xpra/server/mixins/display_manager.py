@@ -371,8 +371,17 @@ class DisplayManager(StubServerMixin):
         monitors = attrs.dictget("monitors")
         if monitors:
             ss.set_monitors(monitors)
-        dpix = attrs.intget("dpi.x")
-        dpiy = attrs.intget("dpi.y")
+        if desktop_size:
+            bigger = ss.screen_resize_bigger
+            width, height = desktop_size
+            log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
+            self.set_screen_size(width, height, bigger)
+            log.info("received updated display dimensions")
+            log.info(f"client display size is {width}x{height}")
+            log_screen_sizes(width, height, ss.screen_sizes)
+            self.calculate_workarea(width, height)
+        dpix = attrs.intget("dpi.x") or attrs.intget("dpi")
+        dpiy = attrs.intget("dpi.y") or attrs.intget("dpi")
         if dpix and dpiy:
             if dpix!=self.xdpi or dpiy!=self.ydpi:
                 self.xdpi, self.ydpi = dpix, dpiy
@@ -389,16 +398,6 @@ class DisplayManager(StubServerMixin):
             ss.icc = iccd.get("global", ss.icc)
             ss.display_icc = iccd.get("display", ss.display_icc)
             self.set_icc_profile()
-        #don't bother with screen-sizes?
-        bigger = ss.screen_resize_bigger
-        width, height = desktop_size
-        log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
-        self.set_screen_size(width, height, bigger)
-        if len(packet)>=4:
-            log.info("received updated display dimensions")
-            log.info(f"client display size is {width}x{height}")
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
         self.apply_refresh_rate(ss)
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
