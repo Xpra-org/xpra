@@ -373,7 +373,20 @@ class typedict(dict):
     def __delitem__(self, k):
         return super().__delitem__(bytestostr(k))
     def get(self, k, default=None):
-        return super().get(bytestostr(k), default)
+        kstr = bytestostr(k)
+        if kstr in self:
+            return super().get(kstr, default)
+        #try to locate this value in a nested dictionary:
+        d = self
+        while k.find(".")>0:
+            prefix, k = k.split(".", 1)
+            if prefix not in d:
+                return default
+            d = self.get(prefix)
+            if d is None or not isinstance(d, dict):
+                return default
+            d = typedict(d)
+        return default
     def setdefault(self, k, default=None):
         return super().setdefault(bytestostr(k), default)
     def pop(self, k, v=_RaiseKeyError):
