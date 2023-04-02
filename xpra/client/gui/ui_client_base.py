@@ -9,7 +9,7 @@ import os
 import sys
 
 from xpra.client.base.client_base import XpraClientBase
-from xpra.client.gui.keyboard_helper import KeyboardHelper
+from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO
@@ -87,6 +87,7 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
+DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
 """
@@ -207,6 +208,8 @@ class UIXpraClient(ClientBaseClass):
                                                                   opts.shortcut_modifiers,
                                                                   opts.key_shortcut,
                                                                   opts.keyboard_raw, *overrides)
+                if DELAY_KEYBOARD_DATA:
+                    self.after_handshake(self.keyboard_helper.send_keymap)
             except ImportError as e:
                 keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
                 keylog.warn(f"Warning: no keyboard support, {e}")
@@ -751,16 +754,16 @@ class UIXpraClient(ClientBaseClass):
             #don't bother sending keyboard info, as it won't be used
             caps["keyboard"] = False
         else:
-            #legacy, unprefixed:
-            caps.update(kh.get_prefixed_keymap_properties())
-            caps.update({
-                "keyboard"  : True,
-                "keymap"    : kh.get_keymap_properties(),
-                "modifiers" : self.get_current_modifiers(),
-                })
+            caps["keyboard"] = True
+            caps["modifiers"] = self.get_current_modifiers()
+            skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
+            keymap = kh.get_keymap_properties(skip)
+            #legacy, prefixed with underscore:
+            caps.update(add_xkbmap_legacy_prefix(keymap))
+            #newer versions understand this:
+            caps["keymap"] = keymap
             #show the user a summary of what we have detected:
             self.keyboard_helper.log_keyboard_info()
-
             delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
             if delay_ms>0 and interval_ms>0:
                 caps["key_repeat"] = (delay_ms, interval_ms)
