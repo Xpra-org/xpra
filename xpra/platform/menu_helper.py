@@ -29,7 +29,7 @@ def main():
     from xpra.log import Logger, add_debug_category
     log = Logger("exec", "menu")
     from xpra.platform import program_context  #pylint: disable=import-outside-toplevel
-    with program_context("XDG-Menu-Helper", "XDG Menu Helper"):
+    with program_context("Menu-Helper", "Menu Helper"):
         for x in list(sys.argv):
             if x in ("-v", "--verbose"):
                 sys.argv.remove(x)
