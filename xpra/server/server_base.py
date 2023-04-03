@@ -49,9 +49,6 @@ if server_features.mmap:
 if server_features.input_devices:
     from xpra.server.mixins.input_server import InputServer
     SERVER_BASES.append(InputServer)
-if server_features.commands:
-    from xpra.server.mixins.child_command_server import ChildCommandServer
-    SERVER_BASES.append(ChildCommandServer)
 if server_features.dbus:
     from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
     SERVER_BASES.append(DBUS_RPC_Server)
@@ -73,6 +70,9 @@ if server_features.display:
 if server_features.windows:
     from xpra.server.mixins.window_server import WindowServer
     SERVER_BASES.append(WindowServer)
+if server_features.commands:
+    from xpra.server.mixins.child_command_server import ChildCommandServer
+    SERVER_BASES.append(ChildCommandServer)
 SERVER_BASES = tuple(SERVER_BASES)
 ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
 
