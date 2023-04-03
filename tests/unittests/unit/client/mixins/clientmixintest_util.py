@@ -81,6 +81,7 @@ class ClientMixinTest(unittest.TestCase):
 
     def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
         x = self.mixin = mclass()
+        x.server_packet_types = ()
         x.quit = self.fake_quit
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda : {}
