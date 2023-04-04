@@ -79,6 +79,12 @@ class VideoPipeline(Pipeline):
             return self.frame_queue.get(timeout=timeout)
         except Empty:
             log.error(f"Error: frame queue timeout ({timeout}s)")
+            try:
+                log.error(f" on %r of size %s", type(buf).__qualname__, buf.get_size())
+            except AttributeError:
+                pass
+            for k,v in self.get_info().items():
+                log.error(f" {k:<16}: {v}")
             return None
 
 
