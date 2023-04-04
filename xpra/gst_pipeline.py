@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,12 +40,12 @@ class Pipeline(GObject.GObject):
         self.pipeline = None
         self.pipeline_str = ""
         self.start_time = 0
-        self.state = "stopped"
-        self.info = {}
+        self.state : str = "stopped"
+        self.info : dict = {}
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
-        self.emit_info_timer = None
+        self.emit_info_timer : int = 0
         self.file = None
 
     def update_state(self, state):
@@ -70,7 +70,7 @@ class Pipeline(GObject.GObject):
         self.emit_info_timer = self.timeout_add(200, self.do_emit_info)
 
     def do_emit_info(self):
-        self.emit_info_timer = None
+        self.emit_info_timer = 0
         if self.pipeline:
             info = self.get_info()
             #reset info:
@@ -80,7 +80,7 @@ class Pipeline(GObject.GObject):
     def cancel_emit_info_timer(self):
         eit = self.emit_info_timer
         if eit:
-            self.emit_info_timer = None
+            self.emit_info_timer = 0
             self.source_remove(eit)
 
 
@@ -220,7 +220,7 @@ class Pipeline(GObject.GObject):
                         if dl.strip():
                             log.error(" %s", dl.strip())
             except Exception:
-                log.error(" %s", details)
+                log.estr(details)
             self.update_state("error")
             self.idle_emit("error", str(err))
             #exit
