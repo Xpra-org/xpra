@@ -75,6 +75,7 @@ def get_profile(options, encoding="h264", csc_mode="YUV420P", default_profile="c
         options.strget(f"{encoding}.{csc_mode}.profile") or
         options.strget(f"{encoding}.profile") or
         os.environ.get(f"XPRA_{encoding.upper()}_{csc_mode}_PROFILE") or
+        os.environ.get(f"XPRA_{encoding.upper()}_PROFILE") or
         default_profile
         )
 
