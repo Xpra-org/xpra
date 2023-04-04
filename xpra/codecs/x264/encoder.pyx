@@ -950,6 +950,8 @@ cdef class Encoder:
             client_options["delayed"] = self.delayed_frames
         if self.export_nals:
             client_options["nals"] = nal_indexes
+        if self.frames==0:
+            client_options["profile"] = bytestostr(self.profile)
         #accounting:
         cdef double end = monotonic()
         self.time += end-start
