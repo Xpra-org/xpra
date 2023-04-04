@@ -79,17 +79,18 @@ class Decoder(VideoPipeline):
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = "I420"
         IMAGE_CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format}"
+        stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
+        decode = [f"{self.encoding}dec"]
         if self.encoding in ("vp8", "vp9"):
-            stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
-            decode = [f"{self.encoding}dec"]
+            pass
+        elif self.encoding=="av1":
+            pass
         elif self.encoding=="h264" and not WIN32:
-            stream_caps = f"video/x-{self.encoding},profile=main,stream-format=avc,alignment=au,width={self.width},height={self.height}"
+            profile = options.strget("profile", "main")
+            stream_caps += f",profile={profile},stream-format=avc,alignment=au"
             #decode = ["vaapih264dec"]
             #decode = ["openh264dec"]
             decode = [f"avdec_{self.encoding}"]
-        elif self.encoding=="av1":
-            stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
-            decode = [f"{self.encoding}dec"]
         else:
             raise RuntimeError(f"invalid encoding {self.encoding}")
         elements = [
