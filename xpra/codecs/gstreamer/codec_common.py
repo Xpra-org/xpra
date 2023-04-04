@@ -137,4 +137,4 @@ class VideoPipeline(Pipeline):
 
 
     def do_emit_info(self):
-        pass
+        self.emit_info_timer = 0
