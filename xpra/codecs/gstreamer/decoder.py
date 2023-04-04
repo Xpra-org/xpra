@@ -25,6 +25,22 @@ log = Logger("decoder", "gstreamer")
 assert get_version and get_type and init_module and cleanup_module
 
 
+DEFAULT_MAPPINGS = "vp8:vp8dec,vp9:vp9dec"
+if not WIN32:
+    DEFAULT_MAPPINGS += ",av1:av1dec,h264:avdec_h264"
+
+def get_codecs_options():
+    dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS", DEFAULT_MAPPINGS)
+    codec_options = {}
+    for mapping in dm.split(","):   #ie: mapping="vp8:vp8dec"
+        try:
+            enc, element = mapping.split(":", 1)
+        except IndexError:
+            log.warn(f"Warning: invalid decoder mapping {mapping}")
+        else:
+            codec_options[enc] = element    #ie: codec_options["vp8"] = "vp8dec"
+    return codec_options
+
 def find_codecs(options):
     codecs = []
     for encoding, element in options.items():
@@ -32,21 +48,7 @@ def find_codecs(options):
             codecs.append(encoding)
     return tuple(codecs)
 
-
-DEFAULT_MAPPINGS = "vp8:vp8dec,vp9:vp9dec"
-if not WIN32:
-    DEFAULT_MAPPINGS += ",av1:av1dec,h264:avdec_h264"
-
-dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS", DEFAULT_MAPPINGS)
-codec_options = {}
-for mapping in dm.split(","):   #ie: mapping="vp8:vp8dec"
-    try:
-        enc, element = mapping.split(":", 1)
-    except IndexError:
-        log.warn(f"Warning: invalid decoder mapping {mapping}")
-    else:
-        codec_options[enc] = element    #ie: codec_options["vp8"] = "vp8dec"
-CODECS = find_codecs(codec_options)
+CODECS = find_codecs(get_codecs_options())
 
 
 def get_encodings():
