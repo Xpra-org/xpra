@@ -532,9 +532,11 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
-        self.profile = get_profile(options, csc_mode=self.src_format, default_profile=os.environ.get("XPRA_X264_PROFILE"))
+        default_profile = os.environ.get("XPRA_X264_PROFILE")
+        p = get_profile(options, csc_mode=self.src_format, default_profile=default_profile)
+        self.profile = strtobytes(p) if p else None
         self.export_nals = options.intget("h264.export-nals", 0)
-        if self.profile is not None and self.profile not in cs_info[2]:
+        if self.profile and self.profile not in cs_info[2]:
             log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)
             log.warn(" must be one of: %s", csv([bytestostr(x) for x in cs_info[2]]))
             self.profile = None
