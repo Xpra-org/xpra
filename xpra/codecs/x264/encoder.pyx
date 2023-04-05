@@ -278,7 +278,7 @@ cdef float get_x264_quality(int pct, char *profile):
     if pct>=100 and profile:
         #easier to compare as python strings:
         pyiprofile = bytestostr(profile)
-        pycprofile = bytestostr(PROFILE_HIGH444_PREDICTIVE)
+        pycprofile = bytestostr(PROFILE_HIGH444)
         if pycprofile==pyiprofile:
             return 0.0
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
@@ -335,27 +335,27 @@ NAL_PRIORITIES = {
     }
 
 
-cdef unsigned char *PROFILE_BASELINE = "baseline"
-cdef unsigned char *PROFILE_MAIN     = "main"
-cdef unsigned char *PROFILE_HIGH     = "high"
-cdef unsigned char *PROFILE_HIGH10   = "high10"
-cdef unsigned char *PROFILE_HIGH422  = "high422"
-cdef unsigned char *PROFILE_HIGH444_PREDICTIVE = "high444"
-I420_PROFILES = [PROFILE_BASELINE, PROFILE_MAIN, PROFILE_HIGH, PROFILE_HIGH10, PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
-I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
-I444_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
-RGB_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
+PROFILE_BASELINE = "baseline"
+PROFILE_MAIN     = "main"
+PROFILE_HIGH     = "high"
+PROFILE_HIGH10   = "high10"
+PROFILE_HIGH422  = "high422"
+PROFILE_HIGH444  = "high444"
+I420_PROFILES = [PROFILE_BASELINE, PROFILE_MAIN, PROFILE_HIGH, PROFILE_HIGH10, PROFILE_HIGH422, PROFILE_HIGH444]
+I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444]
+I444_PROFILES = [PROFILE_HIGH444]
+RGB_PROFILES = [PROFILE_HIGH444]
 
 COLORSPACE_FORMATS = {
-    "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,                  I420_PROFILES),
-    "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,               I422_PROFILES),
-    "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES),
-    "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
+    "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
+    "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
+    "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444,       RGB_PROFILES),
     }
 if SUPPORT_24BPP:
     COLORSPACE_FORMATS.update({
-        "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
-        "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+        "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444,    RGB_PROFILES),
+        "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
         })
 
 COLORSPACES = {
@@ -365,7 +365,7 @@ COLORSPACES = {
     "BGRX"      : "BGRX",
     }
 if SUPPORT_30BPP:
-    COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
+    COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444,    RGB_PROFILES)
     COLORSPACES["BGR48"] = "GBRP10"
 if SUPPORT_24BPP:
     COLORSPACES.update({
@@ -533,18 +533,18 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         default_profile = os.environ.get("XPRA_X264_PROFILE")
-        p = get_profile(options, csc_mode=self.src_format, default_profile=default_profile)
-        self.profile = strtobytes(p) if p else None
+        self.profile = get_profile(options, csc_mode=self.src_format, default_profile=default_profile)
         self.export_nals = options.intget("h264.export-nals", 0)
-        if self.profile and self.profile not in cs_info[2]:
-            log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)
-            log.warn(" must be one of: %s", csv([bytestostr(x) for x in cs_info[2]]))
+        profile_options = cs_info[2]
+        if self.profile and self.profile not in profile_options:
+            log.warn("Warning: '%s' is not a valid profile for %s", self.profile, src_format)
+            log.warn(" must be one of: %s", csv(profile_options))
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]
-            log("using default profile=%s", bytestostr(self.profile))
+            log("using default profile=%s", self.profile)
         else:
-            log("using profile=%s", bytestostr(self.profile))
+            log("using profile=%s", self.profile)
         self.init_encoder(options)
         gen = generation.increase()
         self.file = None
@@ -580,7 +580,8 @@ cdef class Encoder:
         cdef const char *preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
         x264_param_default_preset(&param, strtobytes(preset), strtobytes(self.tune))
-        x264_param_apply_profile(&param, self.profile)
+        profile = strtobytes(self.profile)
+        x264_param_apply_profile(&param, profile)
         self.tune_param(&param, options)
 
         self.context = x264_encoder_open(&param)
@@ -629,7 +630,8 @@ cdef class Encoder:
             #specifically told this is not video,
             #so use a simple motion search:
             param.analyse.i_me_method = X264_ME_DIA
-        set_f_rf(param, get_x264_quality(self.quality, self.profile))
+        profile = strtobytes(self.profile)
+        set_f_rf(param, get_x264_quality(self.quality, profile))
         #client can tune these options:
         param.b_open_gop = options.boolget("h264.open-gop", param.b_open_gop)
         param.b_deblocking_filter = not self.fast_decode and options.boolget("h264.deblocking-filter", param.b_deblocking_filter)
@@ -685,7 +687,7 @@ cdef class Encoder:
             return {}
         info = get_info()
         info.update({
-            "profile"       : bytestostr(self.profile),
+            "profile"       : self.profile,
             "preset"        : get_preset_names()[self.preset],
             "fast-decode"   : bool(self.fast_decode),
             "max-delayed"   : self.max_delayed,
@@ -951,7 +953,7 @@ cdef class Encoder:
         if self.export_nals:
             client_options["nals"] = nal_indexes
         if self.frames==0:
-            client_options["profile"] = bytestostr(self.profile)
+            client_options["profile"] = self.profile
         #accounting:
         cdef double end = monotonic()
         self.time += end-start
