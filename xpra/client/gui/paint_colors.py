@@ -20,8 +20,6 @@ DEFAULT_BOX_COLORS = {
     "vp9"       : "lavender",
     "mpeg4"     : "black",
     "scroll"    : "brown",
-    "mpeg1"     : "olive",
-    "mpeg2"     : "lime",
     "avif"      : "cyan",
     }
 
@@ -42,8 +40,6 @@ BOX_COLORS = {
     "scroll"    : (0.6470489501953125,  0.164703369140625,      0.164703369140625,  ALPHA),
     "vp8"       : (0.0,                 0.501953125,            0.0,                ALPHA),
     "vp9"       : (0.901947021484375,   0.901947021484375,      0.980377197265625,  ALPHA),
-    "mpeg1"     : (0.41796875,          0.5546875,              0.13671875,         ALPHA),
-    "mpeg2"     : (0.75,                1.0,                    0,                  ALPHA),
     "cyan"      : (0,                   1.0,                    1.0,                ALPHA),
 }
 

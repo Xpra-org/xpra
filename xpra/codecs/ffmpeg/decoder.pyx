@@ -566,10 +566,6 @@ if avcodec_find_decoder(AV_CODEC_ID_H265):
     CODECS.append("h265")
 if avcodec_find_decoder(AV_CODEC_ID_MPEG4):
     CODECS.append("mpeg4")
-if avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO):
-    CODECS.append("mpeg1")
-if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO):
-    CODECS.append("mpeg2")
 if avcodec_find_decoder(AV_CODEC_ID_VP9):
     CODECS.append("vp9")
 CODECS = tuple(CODECS)
@@ -608,7 +604,7 @@ def get_input_colorspaces(encoding):
         return []
     if encoding in ("h264", "h265"):
         return COLORSPACES
-    elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
+    elif encoding in ("vp8", "mpeg4", ):
         return ("YUV420P",)
     assert encoding=="vp9"
     return ("YUV420P", "YUV444P", "YUV444P10")
@@ -624,7 +620,7 @@ def get_output_colorspace(encoding, csc):
             return "GBRP10"
         if csc=="YUV444P10":
             return "YUV444P10"
-    elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
+    elif encoding in ("vp8", "mpeg4", ):
         return "YUV420P"
     #everything else as normal:
     return csc
@@ -748,10 +744,6 @@ cdef class Decoder:
             CodecID = AV_CODEC_ID_VP9
         elif self.encoding=="mpeg4":
             CodecID = AV_CODEC_ID_MPEG4
-        elif self.encoding=="mpeg1":
-            CodecID = AV_CODEC_ID_MPEG1VIDEO
-        elif self.encoding=="mpeg2":
-            CodecID = AV_CODEC_ID_MPEG2VIDEO
         else:
             raise Exception("invalid codec; %s" % self.encoding)
         self.codec = avcodec_find_decoder(CodecID)

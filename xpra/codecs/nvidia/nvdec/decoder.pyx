@@ -365,8 +365,8 @@ DECODE_STATUS_STR = {
     }
 
 CODEC_NAMES = {
-    cudaVideoCodec_MPEG1    : "mpeg1",
-    cudaVideoCodec_MPEG2    : "mpeg2",
+#    cudaVideoCodec_MPEG1    : "mpeg1",
+#    cudaVideoCodec_MPEG2    : "mpeg2",
     cudaVideoCodec_MPEG4    : "mpeg4",
     cudaVideoCodec_VC1      : "vc1",
     cudaVideoCodec_H264     : "h264",

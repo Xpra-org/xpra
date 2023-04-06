@@ -16,7 +16,6 @@ PREFERRED_ENCODING_ORDER = (
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
     "h265", "av1",
-    "mpeg1", "mpeg2",
     "scroll",
     "grayscale",
     )

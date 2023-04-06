@@ -21,7 +21,6 @@ def main(files):
     assert avcodec, "dec_avcodec is required"
     assert swscale, "swscale is required"
     encoders = []
-    SKIP_ENCODINGS = ("mpeg1", "mpeg2")
     ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,enc_x265,nvenc,enc_ffmpeg").split(",")
     for encoder in ENCODERS:
         enc = load_codec(encoder)
@@ -31,9 +30,6 @@ def main(files):
         print(f"* {encoder}")
         encodings = enc.get_encodings()
         for encoding in encodings:
-            if encoding in SKIP_ENCODINGS:
-                print(f"  - skipped {encoding}")
-                continue
             print(f"  - {encoding}")
             if encoding not in avcodec.get_encodings():
                 print(f"    {avcodec} cannot decode {encoding}")

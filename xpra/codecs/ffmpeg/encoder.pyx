@@ -149,13 +149,6 @@ cdef extern from "libavcodec/avcodec.h":
     int FF_PROFILE_HEVC_MAIN_STILL_PICTURE
     int FF_PROFILE_HEVC_REXT
 
-    int FF_PROFILE_MPEG2_422
-    int FF_PROFILE_MPEG2_HIGH
-    int FF_PROFILE_MPEG2_SS
-    int FF_PROFILE_MPEG2_SNR_SCALABLE
-    int FF_PROFILE_MPEG2_MAIN
-    int FF_PROFILE_MPEG2_SIMPLE
-
     int AV_CODEC_FLAG_UNALIGNED
     int AV_CODEC_FLAG_QSCALE
     int AV_CODEC_FLAG_4MV
@@ -449,8 +442,6 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_VP8
     AVCodecID AV_CODEC_ID_VP9
     AVCodecID AV_CODEC_ID_MPEG4
-    AVCodecID AV_CODEC_ID_MPEG1VIDEO
-    AVCodecID AV_CODEC_ID_MPEG2VIDEO
 
     AVCodecID AV_CODEC_ID_AAC
 
@@ -664,20 +655,9 @@ HEVC_PROFILE_NAMES = {
     }
 HEVC_PROFILES = reverse_dict(HEVC_PROFILE_NAMES)
 
-MPEG2_PROFILE_NAMES = {
-    FF_PROFILE_MPEG2_422            : "422",
-    FF_PROFILE_MPEG2_HIGH           : "high",
-    FF_PROFILE_MPEG2_SS             : "ss",
-    FF_PROFILE_MPEG2_SNR_SCALABLE   : "snr-scalable",
-    FF_PROFILE_MPEG2_MAIN           : "main",
-    FF_PROFILE_MPEG2_SIMPLE         : "simple",
-    }
-MPEG2_PROFILES = reverse_dict(MPEG2_PROFILE_NAMES)
-
 PROFILES = {
     "h264"  : H264_PROFILES,
     "hevc"  : HEVC_PROFILES,
-    "mpeg2" : MPEG2_PROFILES,
     }
 
 DEFAULT_PROFILE = {
@@ -828,8 +808,6 @@ CODEC_ID = {
     "vp8"       : AV_CODEC_ID_VP8,
     "vp9"       : AV_CODEC_ID_VP9,
     "mpeg4"     : AV_CODEC_ID_MPEG4,
-    "mpeg1"     : AV_CODEC_ID_MPEG1VIDEO,
-    "mpeg2"     : AV_CODEC_ID_MPEG2VIDEO,
     }
 
 COLORSPACES = FORMAT_TO_ENUM.keys()
@@ -894,8 +872,6 @@ ENCODER_NAMES = {
     "h264"  : b"libx264",
     "vp8"   : b"libvpx",
     "vp9"   : b"libvpx",
-    "mpeg1" : b"mpeg1video",
-    "mpeg2" : b"mpeg2video",
     }
 
 
@@ -910,8 +886,6 @@ def init_module():
         #AV_CODEC_ID_VP9     : ("vp9", "vp9+webm"),
         #AV_CODEC_ID_H265    : ("h265"),
         AV_CODEC_ID_MPEG4   : ("mpeg4+mp4", ),
-        AV_CODEC_ID_MPEG1VIDEO : ("mpeg1", ),
-        AV_CODEC_ID_MPEG2VIDEO : ("mpeg2", )
         }.items():
         if avcodec_find_encoder(codec_id):
             all_codecs += codecs
@@ -1459,17 +1433,16 @@ cdef class Encoder:
                 log("init_encoder() compression_level=%s", self.video_ctx.compression_level)
         else:
             self.video_ctx.pix_fmt = self.pix_fmt
-            if self.encoding not in ("mpeg1", "mpeg2"):
-                self.video_ctx.thread_type = THREAD_TYPE
-                if self.encoding.find("mpeg4")>=0:
-                    self.video_ctx.thread_count = MPEG4_THREAD_COUNT     #avoid ffmpeg warnings
-                else:
-                    self.video_ctx.thread_count = THREAD_COUNT
-                self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
-                self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
-                log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
-                log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
-                log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
+            self.video_ctx.thread_type = THREAD_TYPE
+            if self.encoding.find("mpeg4")>=0:
+                self.video_ctx.thread_count = MPEG4_THREAD_COUNT     #avoid ffmpeg warnings
+            else:
+                self.video_ctx.thread_count = THREAD_COUNT
+            self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
+            self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+            log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
+            log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
+            log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
             if self.encoding.startswith("h264") or self.encoding.find("mpeg4")>=0:
                 #x264 options:
                 tunes = [b"zerolatency"]
@@ -1713,12 +1686,11 @@ cdef class Encoder:
             self.av_frame.width = self.width
             self.av_frame.height = self.height
             self.av_frame.format = self.pix_fmt
-            if self.encoding not in ("mpeg1", "mpeg2"):
-                self.av_frame.pts = self.frames+1
-                self.av_frame.coded_picture_number = self.frames+1
-                self.av_frame.display_picture_number = self.frames+1
-                #if self.frames==0:
-                self.av_frame.pict_type = AV_PICTURE_TYPE_I
+            self.av_frame.pts = self.frames+1
+            self.av_frame.coded_picture_number = self.frames+1
+            self.av_frame.display_picture_number = self.frames+1
+            #if self.frames==0:
+            self.av_frame.pict_type = AV_PICTURE_TYPE_I
             #self.av_frame.key_frame = 1
             #else:
             #    self.av_frame.pict_type = AV_PICTURE_TYPE_P
@@ -1832,9 +1804,6 @@ cdef class Encoder:
             for x in self.buffers:
                 self.file.write(x)
             self.file.flush()
-        if self.encoding in ("mpeg1", "mpeg2"):
-            #always one frame buffered
-            client_options["delayed"] = 1
         if data:
             client_options["frame"] = int(self.frames)
             if self.frames==0:
