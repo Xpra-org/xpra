@@ -36,7 +36,8 @@ def setup_ssh_auth_sock():
 
 def get_ssh_agent_path(filename):
     ssh_dir = ssh_dir_path()
-    assert "/" not in filename and ".." not in filename
+    if "/" in filename or ".." in filename:
+        raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
 
 def set_ssh_agent(filename=None):
