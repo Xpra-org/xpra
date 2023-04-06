@@ -61,6 +61,12 @@ class Test_Roundtrip(unittest.TestCase):
             ):
             self._test_roundtrip(encoding, encoder_name, decoder_name)
 
+    def test_YUV444P(self):
+        for encoding, encoder_name, decoder_name in (
+            ("h264", "enc_x264", "dec_avcodec2"),
+            ):
+            self._test_roundtrip(encoding, encoder_name, decoder_name)
+
     def _test_roundtrip(self, encoding="vp8", encoder_name="enc_vpx", decoder_name="dec_vpx"):
         encoder = loader.load_codec(encoder_name)
         if not encoder:
