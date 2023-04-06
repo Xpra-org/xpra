@@ -12,6 +12,10 @@ from xpra.os_util import hexstr
 from xpra.codecs import loader
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.codec_checks import make_test_image
+from xpra.codecs.video_helper import (
+    getVideoHelper,
+    ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS,
+    )
 
 
 def h2b(s):
@@ -50,6 +54,31 @@ SAMPLE_YUV420P_IMAGES = {
 
 class Test_Roundtrip(unittest.TestCase):
 
+    def test_all(self):
+        vh = getVideoHelper()
+        vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
+        vh.init()
+        #info = vh.get_info()
+        encodings = vh.get_encodings()
+        decodings = vh.get_decodings()
+        common = [x for x in encodings if x in decodings]
+        for encoding in common:
+            encs = vh.get_encoder_specs(encoding)
+            decs = vh.get_decoder_specs(encoding)
+            for csc_in, encoders in encs.items():
+                decoders = decs.get(csc_in)
+                if not decoders:
+                    continue
+                for encoder in encoders:
+                    csc = encoder.input_colorspace
+                    for dname, decoder in decoders:
+                        if csc not in ("YUV420P", "YUV422P", "YUV444P"):
+                            continue
+                        self._test(encoding, encoder.codec_class, decoder.Decoder, csc)
+            #input_colorspace
+            print(f"encs={encs}")
+#        raise Exception("fail")
+
     def test_YUV420P(self):
         for encoding, encoder_name, decoder_name in (
             ("vp8", "enc_vpx", "dec_vpx"),
@@ -67,39 +96,36 @@ class Test_Roundtrip(unittest.TestCase):
             ):
             self._test_roundtrip(encoding, encoder_name, decoder_name)
 
-    def _test_roundtrip(self, encoding="vp8", encoder_name="enc_vpx", decoder_name="dec_vpx"):
-        encoder = loader.load_codec(encoder_name)
-        if not encoder:
+    def _test_roundtrip(self, encoding="vp8", encoder_name="enc_vpx", decoder_name="dec_vpx", csc="YUV420P"):
+        encoder_module = loader.load_codec(encoder_name)
+        if not encoder_module:
             print(f"{encoder_name} not found")
             return
         try:
-            encoder.get_input_colorspaces(encoding)
+            encoder_module.get_input_colorspaces(encoding)
         except Exception:
             print(f"{encoder_name} does not support {encoding}")
             return
-        decoder = loader.load_codec(decoder_name)
-        if not decoder:
-            print(f"{decoder_name} not found")
-            return
-        self._test(encoding, encoder, decoder, "YUV420P")
-
-
-    def _test(self, encoding, encoder_module, decoder_module, csc="YUV420P"):
-        for colour, yuvdata in SAMPLE_YUV420P_IMAGES.items():
-            try:
-                self._test_data(encoding, encoder_module, decoder_module, csc, yuvdata)
-            except Exception:
-                print(f"error with {colour} {encoding} image via {encoder_module} and {decoder_module}")
-                raise
-
-    def _test_data(self, encoding, encoder_module, decoder_module, csc="YUV420P",
-                      yuvdata=None, width=128, height=128):
         if csc not in encoder_module.get_input_colorspaces(encoding):
             raise Exception(f"{encoder_module} does not support {csc} as input")
-        out_csc = decoder_module.get_output_colorspace(encoding, csc)
-        if csc!=out_csc:
-            raise Exception(f"{decoder_module} does not support {csc} as output for {encoding} {csc} input, only {out_csc}")
-        encoder = encoder_module.Encoder()
+        decoder_module = loader.load_codec(decoder_name)
+        if not decoder_module:
+            print(f"{decoder_name} not found")
+            return
+        self._test(encoding, encoder_module.Encoder, decoder_module.Decoder, csc)
+
+    def _test(self, encoding, encoder_class, decoder_class, csc="YUV420P"):
+        for colour, yuvdata in SAMPLE_YUV420P_IMAGES.items():
+            try:
+                self._test_data(encoding, encoder_class, decoder_class, csc, yuvdata)
+            except Exception:
+                print(f"error with {colour} {encoding} image via {encoder_class} and {decoder_class}")
+                raise
+
+    def _test_data(self, encoding, encoder_class, decoder_class, csc="YUV420P",
+                      yuvdata=None, width=128, height=128):
+        #print("test_data%s" % ((encoding, encoder_class, decoder_class, csc, len(yuvdata), width, height),))
+        encoder = encoder_class()
         options = typedict({"max-delayed" : 0})
         encoder.init_context(encoding, width, height, csc, options)
         in_image = make_test_image(csc, width, height)
@@ -117,7 +143,7 @@ class Test_Roundtrip(unittest.TestCase):
         cdata, client_options = encoder.compress_image(in_image)
         assert cdata
         #decode it:
-        decoder = decoder_module.Decoder()
+        decoder = decoder_class()
         decoder.init_context(encoding, width, height, csc)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         #print("%s %s : %s" % (encoding, decoder_module, out_image))
