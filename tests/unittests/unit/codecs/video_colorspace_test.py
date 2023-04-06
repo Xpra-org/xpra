@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -48,23 +48,58 @@ SAMPLE_YUV420P_IMAGES = {
     }
 
 
-class Test_CSC_Colorspace(unittest.TestCase):
+class Test_Roundtrip(unittest.TestCase):
 
-    def _test_YUV420P(self, encoding, encoder_module, decoder_module, yuvdata,
-                      width=128, height=128):
-        in_csc = "YUV420P"
-        if in_csc not in encoder_module.get_input_colorspaces(encoding):
-            raise Exception(f"{encoder_module} does not support {in_csc} as input")
-        out_csc = decoder_module.get_output_colorspace(encoding, in_csc)
-        if in_csc!=out_csc:
-            raise Exception(f"{decoder_module} does not support {in_csc} as output for {encoding} {in_csc} input, only {out_csc}")
+    def test_YUV420P(self):
+        for encoding, encoder_name, decoder_name in (
+            ("vp8", "enc_vpx", "dec_vpx"),
+            ("vp9", "enc_vpx", "dec_vpx"),
+            ("vp8", "enc_vpx", "dec_avcodec2"),
+            ("vp9", "enc_vpx", "dec_avcodec2"),
+            ("h264", "enc_x264", "dec_avcodec2"),
+            #("h265", "enc_x265", "dec_avcodec2"),
+            ):
+            self._test_roundtrip(encoding, encoder_name, decoder_name)
+
+    def _test_roundtrip(self, encoding="vp8", encoder_name="enc_vpx", decoder_name="dec_vpx"):
+        encoder = loader.load_codec(encoder_name)
+        if not encoder:
+            print(f"{encoder_name} not found")
+            return
+        try:
+            encoder.get_input_colorspaces(encoding)
+        except Exception:
+            print(f"{encoder_name} does not support {encoding}")
+            return
+        decoder = loader.load_codec(decoder_name)
+        if not decoder:
+            print(f"{decoder_name} not found")
+            return
+        self._test(encoding, encoder, decoder, "YUV420P")
+
+
+    def _test(self, encoding, encoder_module, decoder_module, csc="YUV420P"):
+        for colour, yuvdata in SAMPLE_YUV420P_IMAGES.items():
+            try:
+                self._test_data(encoding, encoder_module, decoder_module, csc, yuvdata)
+            except Exception:
+                print(f"error with {colour} {encoding} image via {encoder_module} and {decoder_module}")
+                raise
+
+    def _test_data(self, encoding, encoder_module, decoder_module, csc="YUV420P",
+                      yuvdata=None, width=128, height=128):
+        if csc not in encoder_module.get_input_colorspaces(encoding):
+            raise Exception(f"{encoder_module} does not support {csc} as input")
+        out_csc = decoder_module.get_output_colorspace(encoding, csc)
+        if csc!=out_csc:
+            raise Exception(f"{decoder_module} does not support {csc} as output for {encoding} {csc} input, only {out_csc}")
         encoder = encoder_module.Encoder()
         options = typedict({"max-delayed" : 0})
-        encoder.init_context(encoding, width, height, in_csc, options)
-        in_image = make_test_image(in_csc, width, height)
+        encoder.init_context(encoding, width, height, csc, options)
+        in_image = make_test_image(csc, width, height)
         yuv = []
         rowstrides = []
-        divs = get_subsampling_divs(in_csc)
+        divs = get_subsampling_divs(csc)
         for i, bvalue in enumerate(yuvdata):
             xdiv, ydiv = divs[i]
             rowstride = width//xdiv
@@ -77,7 +112,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
         assert cdata
         #decode it:
         decoder = decoder_module.Decoder()
-        decoder.init_context(encoding, width, height, in_csc)
+        decoder.init_context(encoding, width, height, csc)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         #print("%s %s : %s" % (encoding, decoder_module, out_image))
         in_planes = in_image.get_pixels()
@@ -97,34 +132,6 @@ class Test_CSC_Colorspace(unittest.TestCase):
                                     f" for row {y} of plane {plane} with {encoding}")
             #print("%s - %s : %s vs %s" % (encoding, plane, hexstr(in_pdata), hexstr(out_pdata)))
 
-    def test_YUV420P(self):
-        for encoding, encoder_name, decoder_name in (
-            ("vp8", "enc_vpx", "dec_vpx"),
-            ("vp9", "enc_vpx", "dec_vpx"),
-            ("vp8", "enc_vpx", "dec_avcodec2"),
-            ("vp9", "enc_vpx", "dec_avcodec2"),
-            ("h264", "enc_x264", "dec_avcodec2"),
-            #("h265", "enc_x265", "dec_avcodec2"),
-            ):
-            encoder = loader.load_codec(encoder_name)
-            if not encoder:
-                print(f"{encoder_name} not found")
-                continue
-            try:
-                encoder.get_input_colorspaces(encoding)
-            except AssertionError:
-                print(f"{encoder_name} does not support {encoding}")
-                continue
-            decoder = loader.load_codec(decoder_name)
-            if not decoder:
-                print(f"{decoder_name} not found")
-                continue
-            for colour, yuvdata in SAMPLE_YUV420P_IMAGES.items():
-                try:
-                    self._test_YUV420P(encoding, encoder, decoder, yuvdata)
-                except Exception:
-                    print(f"error with {colour} {encoding} image via {encoder_name} and {decoder_name}")
-                    raise
 
 def main():
     unittest.main()
