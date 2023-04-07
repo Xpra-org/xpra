@@ -230,7 +230,7 @@ def makebuf(size, b=0x20):
     return (chr(b).encode())*size
 
 
-def make_test_image(pixel_format, w, h):
+def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
@@ -245,14 +245,14 @@ def make_test_image(pixel_format, w, h):
         Bpp = roundup(depth, 8)//8
         nplanes = len(divs)
         ydiv = divs[0]  #always (1, 1)
-        y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp, 0x20)
+        y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp, plane_values[0])
         udiv = divs[1]
-        u = makebuf(w//udiv[0]*h//udiv[1]*Bpp, 0x80)
+        u = makebuf(w//udiv[0]*h//udiv[1]*Bpp, plane_values[1])
         planes = [y, u]
         strides = [w//ydiv[0]*Bpp, w//udiv[0]*Bpp]
         if nplanes==3:
             vdiv = divs[2]
-            v = makebuf(w//vdiv[0]*h//vdiv[1]*Bpp, 0x80)
+            v = makebuf(w//vdiv[0]*h//vdiv[1]*Bpp, plane_values[2])
             planes.append(v)
             strides.append(w//vdiv[0]*Bpp)
         image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
@@ -263,8 +263,15 @@ def make_test_image(pixel_format, w, h):
         else:
             stride = w*len(pixel_format)
         rgb_data = makebuf(stride*h)
+        Bpp = len(pixel_format)
+        for y in range(h):
+            x = 0
+            while x<stride:
+                for i in range(len(plane_values)):
+                    while x+i<stride:
+                        rgb_data[y*stride+x+i] = plane_values[i]
+                    x += Bpp
         image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, stride, planes=ImageWrapper.PACKED, thread_safe=True)
-        #l = len(rgb_data)
     else:
         raise Exception("don't know how to create a %s image" % pixel_format)
     #log("make_test_image%30s took %3ims for %6iMBytes",
