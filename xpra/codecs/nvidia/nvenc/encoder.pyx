@@ -1634,11 +1634,14 @@ cdef class Encoder:
         log("init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         cuda_device_context = options.get("cuda-device-context")
-        assert cuda_device_context, "no cuda device context"
+        if not cuda_device_context:
+            raise RuntimeError("no cuda device context")
         self.cuda_device_context = cuda_device_context
-        assert src_format in ("XRGB", "BGRX", "r210"), "invalid source format %s" % src_format
+        if src_format not in ("XRGB", "BGRX", "r210"):
+            raise ValueError(f"invalid source format {src_format}")
         dst_formats = options.strtupleget("dst-formats")
-        assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
+        if not ("YUV420P" in dst_formats or "YUV444P" in dst_formats):
+            raise ValueError(f"unsupported output formats {dst_formats}")
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
