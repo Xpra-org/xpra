@@ -168,6 +168,9 @@ class Test_Roundtrip(unittest.TestCase):
         options["dst-formats"] = (in_csc, )
         encoder.init_context(encoding, width, height, in_csc, options)
         in_image = make_test_image(in_csc, width, height, pixeldata)
+        saved_pixels = in_image.get_pixels()
+        in_image.clone_pixel_data()
+        in_pixels = in_image.get_pixels()
         cdata, client_options = encoder.compress_image(in_image, options)
         assert cdata
         #decode it:
@@ -175,7 +178,6 @@ class Test_Roundtrip(unittest.TestCase):
         decoder.init_context(encoding, width, height, in_csc)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         #print("%s %s : %s" % (encoding, decoder_module, out_image))
-        in_pixels = in_image.get_pixels()
         out_pixels = out_image.get_pixels()
         out_csc = out_image.get_pixel_format()
         md = 0
@@ -185,6 +187,7 @@ class Test_Roundtrip(unittest.TestCase):
             divs = get_subsampling_divs(in_csc)
             for i, plane in enumerate(("Y", "U", "V")):
                 #extract plane to compare:
+                saved_pdata = saved_pixels[i]
                 in_pdata = in_pixels[i]
                 out_pdata = out_pixels[i]
                 xdiv, ydiv = divs[i]
@@ -192,8 +195,22 @@ class Test_Roundtrip(unittest.TestCase):
                 out_stride = out_image.get_rowstride()[i]
                 #compare lines at a time since the rowstride may be different:
                 for y in range(height//ydiv):
-                    in_rowdata = in_pdata[in_stride*y:in_stride*y+width//xdiv]
-                    out_rowdata = out_pdata[out_stride*y:out_stride*y+width//xdiv]
+                    p1 = in_stride*y
+                    p2 = p1+width//xdiv
+                    saved_rowdata = saved_pdata[p1:p2]
+                    in_rowdata = in_pdata[p1:p2]
+                    p1 = out_stride*y
+                    p2 = p1+width//xdiv
+                    out_rowdata = out_pdata[p1:p2]
+                    err = cmpp(saved_rowdata, in_rowdata)
+                    if err:
+                        index, v1, v2 = err
+                        log.warn("the encoder unexpectedly modified the input buffer!")
+                        log.warn(f"expected {hexstr(in_rowdata)}")
+                        log.warn(f"but got  {hexstr(out_rowdata)}")
+                        raise Exception(f"expected {hex(v1)} but got {hex(v2)}"+
+                                        f" for x={index}/{width}, y={y}/{height}, plane {plane} of {in_csc}"+
+                                        f" with {encoding} encoded using {encoder_class}")
                     err = cmpp(in_rowdata, out_rowdata)
                     if err:
                         index, v1, v2 = err
@@ -204,6 +221,14 @@ class Test_Roundtrip(unittest.TestCase):
                                         f" with {encoding} encoded using {encoder_class} and decoded using {decoder_class}")
                     md = max(md, maxdelta(in_rowdata, out_rowdata))
         elif in_image.get_planes()==ImageWrapper.PACKED:
+            #verify the encoder hasn't modified anything:
+            err = cmpp(saved_pixels, in_pixels)
+            if err:
+                index, v1, v2 = err
+                log.warn("the encoder unexpectedly modified the input buffer!")
+                raise Exception(f"expected {hex(v1)} but got {hex(v2)}"+
+                                f" for x={index}/{width}, y={y}/{height} of {in_csc}"+
+                                f" with {encoding} encoded using {encoder_class}")
             if in_csc==out_csc:
                 compare = {"direct" : out_image}
             else:
