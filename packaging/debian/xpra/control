@@ -96,7 +96,7 @@ Description: tool to detach/reattach running X programs,
 
 Package: xpra-common
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
@@ -130,7 +130,7 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-server
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
@@ -186,7 +186,7 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-client
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
 Recommends: python3-socks
@@ -205,7 +205,7 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-client-gtk3
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Depends: xpra-client (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
@@ -237,7 +237,7 @@ Description: tool to detach/reattach running X programs,
 Package: xpra-audio
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
         ,pulseaudio
@@ -261,7 +261,7 @@ Description: Components required for xpra audio forwarding,
 Package: xpra-codecs
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
@@ -288,7 +288,7 @@ Description: Picture and video codecs
 Package: xpra-codecs-extras
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Enhances: xpra-codecs (= ${binary:Version})
 Depends: xpra-codecs (= ${binary:Version})
         ,${codecsextras:Depends}
@@ -303,7 +303,7 @@ Description: Extra picture and video codecs
 Package: xpra-codecs-nvidia
 Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (< 5)
-Breaks: python2-xpra, python3-xpra, xpra (< 5)
+Breaks: python2-xpra (< 5), python3-xpra (< 5), xpra (< 5)
 Enhances: xpra-codecs (= ${binary:Version})
 Depends: xpra-codecs (= ${binary:Version})
         ,${python3:Depends}
