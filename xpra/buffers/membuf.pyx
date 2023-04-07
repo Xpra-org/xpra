@@ -52,8 +52,8 @@ cdef void *memalign(size_t size) nogil:
     return xmemalign(size)
 
 
-def get_membuf(size_t l):
-    return getbuf(l)
+def get_membuf(size_t l, int readonly=1):
+    return getbuf(l, readonly)
 
 
 cdef class MemBuf:
