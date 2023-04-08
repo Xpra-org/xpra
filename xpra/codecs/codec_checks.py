@@ -235,8 +235,6 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
-    #import time
-    #start = monotonic()
     if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
         try:
@@ -244,18 +242,10 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
         except (IndexError, ValueError):
             depth = 8
         Bpp = roundup(depth, 8)//8
-        nplanes = len(divs)
-        ydiv = divs[0]  #always (1, 1)
-        y = bytes(makebuf(w//ydiv[0]*h//ydiv[1]*Bpp, plane_values[0]))
-        udiv = divs[1]
-        u = bytes(makebuf(w//udiv[0]*h//udiv[1]*Bpp, plane_values[1]))
-        planes = [y, u]
-        strides = [w//ydiv[0]*Bpp, w//udiv[0]*Bpp]
-        if nplanes==3:
-            vdiv = divs[2]
-            v = bytes(makebuf(w//vdiv[0]*h//vdiv[1]*Bpp, plane_values[2]))
-            planes.append(v)
-            strides.append(w//vdiv[0]*Bpp)
+        nplanes = 2 if pixel_format=="NV12" else 3
+        strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
+        sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
+        planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
