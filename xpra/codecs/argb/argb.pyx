@@ -192,6 +192,31 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
             si += 1
     return memoryview(output_buf)
 
+def rgb_to_bgrx(buf):
+    assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
+    cdef const unsigned char* rgb
+    with buffer_context(buf) as bc:
+        rgb = <const unsigned char*> (<uintptr_t> int(bc))
+        return rgbdata_to_bgrx(rgb, len(bc))
+
+cdef rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
+    if rgb_len <= 0:
+        return None
+    assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
+    #number of pixels:
+    cdef int mi = rgb_len//3
+    #3 bytes per pixel:
+    cdef MemBuf output_buf = getbuf(mi*4)
+    cdef unsigned int* bgrx = <unsigned int*> output_buf.get_mem()
+    cdef int si = 0, di = 0
+    cdef unsigned int p
+    with nogil:
+        while si < mi:
+            bgrx[di] = rgb[si] + rgb[si+1]<<8 + rgb[si+2]<<16
+            di += 1
+            si += 3
+    return memoryview(output_buf)
+
 
 def bgrx_to_l(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
@@ -574,8 +599,11 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
     cdef unsigned int rs = image.get_rowstride()
     cdef unsigned int w
     cdef unsigned int h
+    def checkstride(div=4):
+        if rs%div:
+            raise ValueError(f"invalid rowstride for {pixel_format}, {rs} is not a multiple of {div}")
     if pixel_format=="r210":
-        assert rs%4==0, "invalid rowstride for r210 is not a multiple of 4"
+        checkstride()
         #r210 never contains any transparency at present
         #if supports_transparency and "RGBA" in rgb_formats:
         #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
@@ -597,7 +625,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_rowstride(w*4)
             return True
     elif pixel_format=="BGR565":
-        assert rs%2==0, "invalid rowstride for BGR565 is not a multiple of 2"
+        checkstride(2)
         if "RGB" in rgb_formats:
             log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgr565_to_rgb(pixels))
@@ -611,7 +639,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_rowstride(rs*2)
             return True
     elif pixel_format in ("BGRX", "BGRA"):
-        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        checkstride()
         if pixel_format=="BGRX" and "L" in rgb_formats:
             log("argb_swap: bgrx_to_l for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgrx_to_l(pixels))
@@ -639,7 +667,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_pixel_format("RGBX")
             return True
     elif pixel_format in ("XRGB", "ARGB"):
-        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        checkstride()
         if pixel_format=="ARGB" and supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
@@ -652,7 +680,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_rowstride(rs*3//4)
             return True
     elif pixel_format in ("RGBA", "RGBX"):
-        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        checkstride()
         if pixel_format=="RGBA" and "BGRA" in rgb_formats and supports_transparency:
             log("argb_swap: rgba_to_bgra for %s on %s", pixel_format, type(pixels))
             image.set_pixels(rgba_to_bgra(pixels))
@@ -664,6 +692,14 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_pixels(bgrx_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
+            return True
+    elif pixel_format=="RGB":
+        checkstride(3)
+        if "BGRX" in rgb_formats:
+            log("argb_swap: rgb_to_bgrx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(rgb_to_bgrx(pixels))
+            image.set_pixel_format("BGRX")
+            image.set_rowstride(rs//3*4)
             return True
     warning_key = "format-not-handled-%s" % pixel_format
     if first_time(warning_key):
