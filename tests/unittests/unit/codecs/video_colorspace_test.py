@@ -129,9 +129,6 @@ class Test_Roundtrip(unittest.TestCase):
                     if not decoders:
                         continue
                     for enc_spec in enc_specs:
-                        if enc_spec.codec_type.startswith("gstreamer"):
-                            #too much difference!
-                            continue
                         if in_csc not in enc_spec.output_colorspaces:
                             continue
                         #apply mask to sizes:
