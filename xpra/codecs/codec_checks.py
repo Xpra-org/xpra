@@ -235,6 +235,18 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
+    if isinstance(plane_values, str):
+        #assume this is a path
+        from PIL import Image
+        img = Image.open(plane_values)
+    else:
+        img = None
+    def makeimage(pixels, **kwargs):
+        kwargs["thread_safe"] = True
+        kwargs["pixel_format"] = kwargs.get("pixel_format", pixel_format)
+        kwargs["depth"] = kwargs.get("bytesperpixel", 4)*8
+        return ImageWrapper(0, 0, w, h, pixels, **kwargs)
+
     if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
         try:
@@ -245,16 +257,33 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
         nplanes = 2 if pixel_format=="NV12" else 3
         strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
         sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
-        planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
-        image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
-        #l = len(y)+len(u)+len(v)
-    elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
-        if pixel_format=="BGR48":
-            stride = w*6
+        if img:
+            raise RuntimeError("YUV from file not implemented yet!")
+            #yuv = img.convert("YCbCr")
+            #yuv444 = yuv.tobytes("raw", "YCbCr")
+            planes = ()
         else:
-            stride = w*len(pixel_format)
-        rgb_data = makebuf(stride*h)
+            planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
+        return makeimage(planes, rowstride=strides, planes=nplanes)
+        #l = len(y)+len(u)+len(v)
+    if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
         Bpp = len(pixel_format)
+        if pixel_format=="BGR48":
+            Bpp = 6
+        stride = w*Bpp
+        if img:
+            rgb = img.convert("RGB")
+            rgb_data = rgb.tobytes("raw", "RGB")
+            log.warn(f"using {rgb} from {plane_values}")
+            image = makeimage(rgb_data, pixel_format="RGB", rowstride=w*3)
+            #must convert to pixel_format!
+            if pixel_format!="RGB":
+                from xpra.codecs.rgb_transform import rgb_reformat
+                if not rgb_reformat(image, (pixel_format,), False):
+                    log.warn(f"Warning: unable to convert test image to {pixel_format}")
+                    return
+            return image
+        rgb_data = makebuf(stride*h)
         for y in range(h):
             x = 0
             while x<stride:
@@ -262,12 +291,8 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
                     while x+i<stride:
                         rgb_data[y*stride+x+i] = plane_values[i]
                         x += Bpp
-        image = ImageWrapper(0, 0, w, h, bytes(rgb_data), pixel_format, 32, stride, planes=ImageWrapper.PACKED, thread_safe=True)
-    else:
-        raise Exception("don't know how to create a %s image" % pixel_format)
-    #log("make_test_image%30s took %3ims for %6iMBytes",
-    #    (pixel_format, w, h), 1000*(monotonic()-start), l//1024//1024)
-    return image
+        return makeimage(bytes(rgb_data), bytesperpixel=Bpp, rowstride=stride)
+    raise Exception("don't know how to create a %s image" % pixel_format)
 
 
 def testdecoder(decoder_module, full):
