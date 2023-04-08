@@ -727,7 +727,7 @@ cdef class Decoder:
         self.colorspace = str(colorspace)
         self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, AV_PIX_FMT_NONE)
         if self.pix_fmt==AV_PIX_FMT_NONE:
-            log.error("invalid pixel format: %s", colorspace)
+            log.error(f"Error: invalid pixel format {colorspace!r}")
             return  False
         self.actual_pix_fmt = self.pix_fmt
 
