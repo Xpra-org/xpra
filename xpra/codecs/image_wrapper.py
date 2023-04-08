@@ -143,11 +143,13 @@ class ImageWrapper:
         self.palette = palette
 
     def set_pixels(self, pixels):
-        assert not self.freed
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
         self.pixels = pixels
 
     def allocate_buffer(self, _buf_len, _free_existing=1):
-        assert not self.freed
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
         #only defined for XImage wrappers:
         return 0
 
@@ -158,7 +160,8 @@ class ImageWrapper:
         return False
 
     def restride(self, rowstride : int) -> bool:
-        assert not self.freed
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
         if self.planes>0:
             #not supported yet for planar images
             return False
@@ -187,20 +190,24 @@ class ImageWrapper:
         return True
 
     def freeze(self) -> bool:
-        assert not self.freed
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
     def clone_pixel_data(self):
-        assert not self.freed
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
         pixels = self.pixels
         planes = self.planes
-        assert pixels, "no pixel data to clone"
+        if not pixels:
+            raise ValueError("no pixel data to clone")
+        if planes<0:
+            raise ValueError(f"invalid number of planes {planes}")
         if planes == 0:
             #no planes, simple buffer:
             self.pixels = clone_plane(pixels)
         else:
-            assert planes>0
             self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
         self.thread_safe = True
         if self.freed:  # pragma: no cover
@@ -215,7 +222,8 @@ class ImageWrapper:
             raise ValueError(f"invalid sub-image width: {x}+{w} greater than image width {self.width}")
         if y+h>self.height:
             raise ValueError(f"invalid sub-image height: {y}+{h} greater than image height {self.height}")
-        assert self.planes==0, "cannot sub-divide planar images!"
+        if self.planes!=ImageWrapper.PACKED:
+            raise NotImplementedError("cannot sub-divide a planar image!")
         if x==0 and y==0 and w==self.width and h==self.height:
             #same dimensions, use the same wrapper
             return self
