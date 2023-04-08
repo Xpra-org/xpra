@@ -227,7 +227,7 @@ TEST_PICTURES = {
 
 
 def makebuf(size, b=0x20):
-    d = (chr(b).encode())*size
+    d = (chr(b).encode("latin1"))*size
     return bytearray(d)
 
 
