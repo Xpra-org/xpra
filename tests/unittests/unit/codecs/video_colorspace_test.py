@@ -150,7 +150,7 @@ class Test_Roundtrip(unittest.TestCase):
             print(f"skipping {in_csc}: no test image available")
             return
         for width, height in sizes:
-            for colour, pixeldata in SAMPLE_YUV420P_IMAGES.items():
+            for colour, pixeldata in sample_images.items():
                 try:
                     self._test_data(encoding, encoder_class, decoder_class,
                                     options, in_csc, colour,
