@@ -58,6 +58,10 @@ def zeroout(data, i, bpp):
     return d
 
 
+TEST_IMAGES = {
+#    "codecs-image" : "/projects/xpra/docs/Build/graphs/codecs.png",
+    }
+
 #samples as generated using the csc_colorspace_test:
 #(studio-swing)
 SAMPLE_YUV420P_IMAGES = {
@@ -125,24 +129,25 @@ class Test_Roundtrip(unittest.TestCase):
                 encs = vh.get_encoder_specs(encoding)
                 decs = vh.get_decoder_specs(encoding)
                 for in_csc, enc_specs in encs.items():
-                    decoders = decs.get(in_csc)
-                    if not decoders:
-                        continue
                     for enc_spec in enc_specs:
-                        if in_csc not in enc_spec.output_colorspaces:
+                        if enc_spec.codec_type.startswith("nv"):
+                            #cuda context is not available?
                             continue
-                        #apply mask to sizes:
-                        sizes = []
-                        for width, height in TEST_SIZES:
-                            width = (width & enc_spec.width_mask)
-                            height = (height & enc_spec.height_mask)
-                            sizes.append((width, height))
-                        for dname, decoder in decoders:
-                            assert dname
-                            self._test(encoding, enc_spec.codec_class, decoder.Decoder, options, in_csc, sizes)
+                        #find decoders for the output colorspaces the encoder will generate:
+                        for out_csc in enc_spec.output_colorspaces:
+                            for dname, decoder in decs.get(out_csc):
+                                assert dname
+                                #apply mask to sizes:
+                                sizes = []
+                                for width, height in TEST_SIZES:
+                                    width = (width & enc_spec.width_mask)
+                                    height = (height & enc_spec.height_mask)
+                                    sizes.append((width, height))
+                                self._test(encoding, enc_spec.codec_class, decoder.Decoder, options, in_csc, out_csc, sizes)
 
-    def _test(self, encoding, encoder_class, decoder_class, options, in_csc="YUV420P", sizes=TEST_SIZES):
+    def _test(self, encoding, encoder_class, decoder_class, options, in_csc="YUV420P", out_csc="YUV420P", sizes=TEST_SIZES):
         sample_images = SAMPLE_IMAGES.get(in_csc)
+        log(f"SAMPLE_IMAGES[{in_csc}]={sample_images}")
         if not sample_images:
             print(f"skipping {in_csc}: no test image available")
             return
@@ -150,19 +155,22 @@ class Test_Roundtrip(unittest.TestCase):
             for colour, pixeldata in sample_images.items():
                 try:
                     self._test_data(encoding, encoder_class, decoder_class,
-                                    options, in_csc, colour,
+                                    options, in_csc, out_csc, colour,
                                     pixeldata, width, height)
                 except Exception:
                     print(f"error with {colour} {encoding} image via {encoder_class} and {decoder_class}")
                     raise
 
     def _test_data(self, encoding, encoder_class, decoder_class,
-                   options, in_csc="YUV420P", colour="?",
+                   options, in_csc="YUV420P", out_csc="YUV420P", colour="?",
                    pixeldata=None, width=128, height=128):
-        log("test%s" % ((encoding, encoder_class, decoder_class, options, in_csc, colour, len(pixeldata), width, height),))
+        log("test%s" % ((encoding, encoder_class, decoder_class, options, in_csc, out_csc, colour,
+                         len(pixeldata), width, height),))
         encoder = encoder_class()
         options = typedict(options or {})
-        options["dst-formats"] = (in_csc, )
+        options["quality"] = 100
+        options["speed"] = 0
+        options["dst-formats"] = (out_csc, )
         encoder.init_context(encoding, width, height, in_csc, options)
         in_image = make_test_image(in_csc, width, height, pixeldata)
         saved_pixels = in_image.get_pixels()
@@ -174,6 +182,8 @@ class Test_Roundtrip(unittest.TestCase):
         decoder = decoder_class()
         decoder.init_context(encoding, width, height, in_csc)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
+        if not out_image:
+            raise ValueError("no image")
         #print("%s %s : %s" % (encoding, decoder_module, out_image))
         out_pixels = out_image.get_pixels()
         out_csc = out_image.get_pixel_format()
@@ -211,6 +221,7 @@ class Test_Roundtrip(unittest.TestCase):
                     err = cmpp(in_rowdata, out_rowdata)
                     if err:
                         index, v1, v2 = err
+                        log.warn(f"encoder={encoder}")
                         log.warn(f"expected {hexstr(in_rowdata)}")
                         log.warn(f"but got  {hexstr(out_rowdata)}")
                         raise Exception(f"expected {hex(v1)} but got {hex(v2)}"+
@@ -264,10 +275,11 @@ class Test_Roundtrip(unittest.TestCase):
                     err = cmpp(in_rowdata, out_rowdata)
                     if err:
                         index, v1, v2 = err
+                        pixel = in_csc[index % len(in_csc)]
                         log.warn(f"expected {hexstr(in_rowdata)}")
                         log.warn(f"but got  {hexstr(out_rowdata)}")
                         raise Exception(f"expected {hex(v1)} but got {hex(v2)}"+
-                                        f" for x={index}/{width}, y={y}/{height} of {in_csc}"+
+                                        f" for {pixel!r} x={index}/{width}, y={y}/{height} of {in_csc}"+
                                         f" with {encoding} encoded using {encoder_class} and decoded using {decoder_class}")
                     md = max(md, maxdelta(in_rowdata, out_rowdata))
         else:
