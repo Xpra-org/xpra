@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from enum import IntEnum
 from time import monotonic
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes
@@ -14,18 +15,20 @@ def clone_plane(plane):
     return plane[:]
 
 
-class ImageWrapper:
-
+class PlanarFormat(IntEnum):
     PACKED = 0
     PLANAR_2 = 2
     PLANAR_3 = 3
     PLANAR_4 = 4
+
+
+class ImageWrapper:
+
+    PACKED = PlanarFormat.PACKED
+    PLANAR_2 = PlanarFormat.PLANAR_2
+    PLANAR_3 = PlanarFormat.PLANAR_3
+    PLANAR_4 = PlanarFormat.PLANAR_4
     PLANE_OPTIONS = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
-    PLANE_NAMES = {
-        PACKED      : "PACKED",
-        PLANAR_3    : "3_PLANES",
-        PLANAR_4    : "4_PLANES",
-        }
 
     def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
                  bytesperpixel : int=4, planes : int=PACKED, thread_safe : bool=True, palette=None):
@@ -54,11 +57,10 @@ class ImageWrapper:
         except AttributeError:  # pragma: no cover
             return type(self)
 
-    def __repr__(self):
-        return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(),
-                                 ImageWrapper.PLANE_NAMES.get(self.planes))
+    def __repr__(self) -> str:
+        return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), self.planes)
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple:
         return self.x, self.y, self.width, self.height, self.depth
 
     def get_x(self) -> int:
@@ -97,13 +99,13 @@ class ImageWrapper:
     def get_size(self) -> int:
         return self.rowstride * self.height
 
-    def get_pixel_format(self):
+    def get_pixel_format(self) -> str:
         return self.pixel_format
 
     def get_pixels(self):
         return self.pixels
 
-    def get_planes(self) -> int:
+    def get_planes(self) -> PlanarFormat:
         return self.planes
 
     def get_palette(self):
@@ -139,15 +141,15 @@ class ImageWrapper:
     def set_pixel_format(self, pixel_format):
         self.pixel_format = pixel_format
 
-    def set_palette(self, palette):
+    def set_palette(self, palette) -> None:
         self.palette = palette
 
-    def set_pixels(self, pixels):
+    def set_pixels(self, pixels) -> None:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
         self.pixels = pixels
 
-    def allocate_buffer(self, _buf_len, _free_existing=1):
+    def allocate_buffer(self, _buf_len, _free_existing=1) -> int:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
         #only defined for XImage wrappers:
@@ -195,7 +197,7 @@ class ImageWrapper:
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
-    def clone_pixel_data(self):
+    def clone_pixel_data(self) -> None:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
         pixels = self.pixels
@@ -242,10 +244,10 @@ class ImageWrapper:
         image.set_target_y(self.target_y+y)
         return image
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.free()
 
-    def free(self):
+    def free(self) -> None:
         if not self.freed:
             self.freed = True
             self.planes = None
