@@ -7,8 +7,8 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX
-from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time
-from xpra.codecs.codec_constants import video_spec, get_profile
+from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time, typedict
+from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
     STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
@@ -192,6 +192,49 @@ def init_all_specs(*exclude):
         log.info("some GStreamer elements are missing: "+csv(missing))
 
 
+def get_gst_rgb_format(rgb_format):
+    if rgb_format in (
+        "NV12",
+        "RGBA", "BGRA", "ARGB", "ABGR",
+        "RGB", "BGR",
+        "RGB15", "RGB16", "BGR15",
+        "r210",
+        "BGRP", "RGBP",
+        ):
+        #identical name:
+        return rgb_format
+    #translate to gstreamer name:
+    return {
+        "YUV420P"   : "I420",
+        "YUV444P"   : "Y444",
+        "BGRX"      : "BGRx",
+        "XRGB"      : "xRGB",
+        "XBGR"      : "xBGR",
+        "YUV400"    : "GRAY8",
+        #"RGB8P"
+        }[rgb_format]
+
+def get_caps_str(ctype="video/x-raw", caps=None):
+    if not caps:
+        return ctype
+    def s(v):
+        if isinstance(v, str):
+            return f"(string){v}"
+        if isinstance(v, tuple):
+            return "/".join(str(x) for x in v)      #ie: "60/1"
+        return str(v)
+    els = [ctype]
+    for k,v in caps.items():
+        els.append(f"{k}={s(v)}")
+    return ",".join(els)
+
+def get_element_str(element, eopts):
+    s = element
+    if eopts:
+        s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
+    return s
+
+
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
     encoder_element = "unset"
@@ -204,47 +247,58 @@ class Encoder(VideoPipeline):
     """
     Dispatch video encoding to a gstreamer pipeline
     """
-    def create_pipeline(self, options):
+    def create_pipeline(self, options : typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
-        if self.colorspace in (
-            "NV12",
-            "RGBA", "BGRA", "ARGB", "ABGR",
-            "RGB", "BGR",
-            "RGB15", "RGB16", "BGR15",
-            "r210",
-            "BGRP", "RGBP",
-            ):
-            #identical name:
-            gst_rgb_format = self.colorspace
-        else:
-            #translate to gstreamer name:
-            gst_rgb_format = {
-            "YUV420P"   : "I420",
-            "YUV444P"   : "Y444",
-            "BGRX"      : "BGRx",
-            "XRGB"      : "xRGB",
-            "XBGR"      : "xBGR",
-            "YUV400"    : "GRAY8",
-            #"RGB8P"
-            }[self.colorspace]
-        CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format},framerate=60/1,interlace=progressive"
-        encoder_str = self.encoder_element
-        if self.encoder_options:
-            encoder_str += " "+" ".join(f"{k}={v}" for k,v in self.encoder_options.items())
+        gst_rgb_format = get_gst_rgb_format(self.colorspace)
+        vcaps = {
+            "width" : self.width,
+            "height" : self.height,
+            "format" : gst_rgb_format,
+            "framerate" : (60,1),
+            "interlace" : "progressive",
+            "colorimetry" : "bt709",
+            }
+        CAPS = get_caps_str("video/x-raw", vcaps)
+        eopts, vopts = self.get_encoder_options(options)
         elements = [
-            #"do-timestamp=1",
             f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
             "videoconvert",
-            encoder_str,
+            get_element_str(self.encoder_element, eopts),
             ]
-        if self.encoding=="h264":
-            profile = get_profile(options, self.encoding, self.colorspace, "constrained-baseline")
-            elements.append(f"video/x-{self.encoding},profile={profile},alignment=au,stream-format=byte-stream")
+        if self.encoder_element=="x264enc":
+            elements.append(get_caps_str(f"video/x-{self.encoding}", vopts))
         elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
+
+    def get_encoder_options(self, options:typedict):
+        s = self.encoder_element
+        eopts = self.encoder_options.copy()
+        vopts = {}
+        if self.encoder_element=="x264enc":
+            profile = get_profile(options, self.encoding, self.colorspace, "constrained-baseline")
+            q = get_x264_quality(options.intget("quality", 50), profile)
+            s = options.intget("speed", 50)
+            eopts.update({
+                "pass"  : "qual",
+                "bframes"   : int(options.boolget("b-frames", False)),
+                "quantizer" : q,
+                "speed-preset" : get_x264_preset(s),
+                })
+            vopts.update({
+                "profile"       : profile,
+                "alignment"     : "au",
+                "stream-format" : "byte-stream",
+                })
+        return eopts, vopts
+
+    def get_encoder_str(self, eopts):
+        s = self.encoder_element
+        if eopts:
+            s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
+        return s
 
     def get_src_format(self):
         return self.colorspace
