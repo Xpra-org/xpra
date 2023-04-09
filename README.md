@@ -47,7 +47,7 @@ For more details, see [building from source](https://github.com/Xpra-org/xpra/tr
 ## Initial requirements
 `xpra` must be installed on the client and the host.  
 
-You can use the html5 client in which case xpra is only required on the host.
+You can use the [html5 client](https://github.com/Xpra-org/xpra-html5) in which case xpra is only required on the host.
 
 ## Seamless Mode
 Run `xterm` on a remote host, display and iteract with it locally (from the client machine):
