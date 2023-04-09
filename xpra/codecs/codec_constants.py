@@ -6,6 +6,10 @@
 
 import os
 import weakref
+from xpra.util import envint
+
+
+FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 
 #note: this is just for defining the order of encodings,
@@ -69,7 +73,7 @@ def preforder(encodings):
     return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
 
 
-def get_profile(options, encoding="h264", csc_mode="YUV420P", default_profile="constrained-baseline"):
+def get_profile(options, encoding:str="h264", csc_mode:str="YUV420P", default_profile:str="constrained-baseline") -> str:
     return (
         options.strget(f"{encoding}.{csc_mode}.profile") or
         options.strget(f"{encoding}.profile") or
@@ -77,6 +81,19 @@ def get_profile(options, encoding="h264", csc_mode="YUV420P", default_profile="c
         os.environ.get(f"XPRA_{encoding.upper()}_PROFILE") or
         default_profile
         )
+
+def get_x264_quality(pct:int, profile:str=None) -> float:
+    if pct>=100 and profile=="high444":
+        return 0.0
+    return 50.0 - (min(100, max(0, pct)) * 49.0 / 100.0)
+
+def get_x264_preset(speed:int=50, fast_decode:bool=False) -> int:
+    if fast_decode:
+        speed = max(FAST_DECODE_MIN_SPEED, speed)
+    if speed > 99:
+        #only allow "ultrafast" if pct > 99
+        return 0
+    return 5 - max(0, min(4, speed // 20))
 
 
 RGB_FORMATS = (
@@ -108,29 +125,31 @@ class _codec_spec:
                     score_boost=0,
                     width_mask=0xFFFF, height_mask=0xFFFF):
         self.codec_class = codec_class          #ie: xpra.codecs.x264.encoder.Encoder
-        self.codec_type = codec_type            #ie: "nvenc"
-        self.quality = quality
-        self.speed = speed
-        self.size_efficiency = size_efficiency
-        self.setup_cost = setup_cost
-        self.cpu_cost = cpu_cost
-        self.gpu_cost = gpu_cost
-        self.score_boost = score_boost
-        self.min_w = min_w
-        self.min_h = min_h
-        self.max_w = max_w
-        self.max_h = max_h
-        self.width_mask = width_mask
-        self.height_mask = height_mask
-        self.can_scale = can_scale
-        self.max_instances = 0
-        self._exported_fields = ["codec_class", "codec_type",
-                        "quality", "speed",
-                        "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
-                        "min_w", "min_h", "max_w", "max_h",
-                        "width_mask", "height_mask",
-                        "can_scale",
-                        "max_instances"]
+        self.codec_type : str = codec_type            #ie: "nvenc"
+        self.quality : int = quality
+        self.speed : int = speed
+        self.size_efficiency : int = size_efficiency
+        self.setup_cost : int = setup_cost
+        self.cpu_cost : int = cpu_cost
+        self.gpu_ : int = gpu_cost
+        self.score_ : int = score_boost
+        self.min_w : int = min_w
+        self.min_h : int = min_h
+        self.max_w : int = max_w
+        self.max_h : int = max_h
+        self.width_mask : int = width_mask
+        self.height_mask : int = height_mask
+        self.can_scale : bool = can_scale
+        self.max_instances : int = 0
+        self._exported_fields = [
+            "codec_class", "codec_type",
+            "quality", "speed",
+            "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
+            "min_w", "min_h", "max_w", "max_h",
+            "width_mask", "height_mask",
+            "can_scale",
+            "max_instances",
+            ]
         #not exported:
         self.instances = weakref.WeakSet()
         self._all_fields = list(self._exported_fields)+["instances"]
@@ -140,7 +159,6 @@ class _codec_spec:
         # pylint: disable=import-outside-toplevel
         #I can't imagine why someone would have more than this many
         #encoders or csc modules active at the same time!
-        from xpra.util import envint
         WARN_LIMIT = envint("XPRA_CODEC_INSTANCE_COUNT_WARN", 25)
         from xpra.log import Logger
         log = Logger("encoding")
@@ -190,10 +208,10 @@ class video_spec(_codec_spec):
 
     def __init__(self, encoding, input_colorspace, output_colorspaces, has_lossless_mode,
                  codec_class, codec_type, min_w=2, min_h=2, **kwargs):
-        self.encoding = encoding                        #ie: "h264"
-        self.input_colorspace = input_colorspace
+        self.encoding : str = encoding                        #ie: "h264"
+        self.input_colorspace : str = input_colorspace
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
-        self.has_lossless_mode = has_lossless_mode
+        self.has_lossless_mode : bool = has_lossless_mode
         super().__init__(codec_class, codec_type, min_w=min_w, min_h=min_h, **kwargs)
         self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
@@ -204,8 +222,8 @@ class video_spec(_codec_spec):
 class csc_spec(_codec_spec):
 
     def __init__(self, input_colorspace, output_colorspace, codec_class, codec_type, **kwargs):
-        self.input_colorspace = input_colorspace
-        self.output_colorspace = output_colorspace
+        self.input_colorspace : str = input_colorspace
+        self.output_colorspace : str = output_colorspace
         super().__init__(codec_class, codec_type, **kwargs)
         self._exported_fields += ["input_colorspace", "output_colorspace"]
 

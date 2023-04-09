@@ -13,7 +13,7 @@ log = Logger("encoder", "x264")
 
 from xpra.util import envint, envbool, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
-from xpra.codecs.codec_constants import video_spec, get_profile
+from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
 from collections import deque
 
 from libc.string cimport memset
@@ -31,7 +31,6 @@ LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 
-FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
@@ -273,16 +272,6 @@ cdef const char * const *get_preset_names():
     return x264_preset_names;
 
 
-#the x264 quality option ranges from 0 (best) to 51 (lowest)
-cdef float get_x264_quality(int pct, char *profile):
-    if pct>=100 and profile:
-        #easier to compare as python strings:
-        pyiprofile = bytestostr(profile)
-        pycprofile = bytestostr(PROFILE_HIGH444)
-        if pycprofile==pyiprofile:
-            return 0.0
-    return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
-
 ADAPT_TYPES = {
                X264_B_ADAPT_NONE        : "NONE",
                X264_B_ADAPT_FAST        : "FAST",
@@ -522,7 +511,7 @@ cdef class Encoder:
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
-        self.preset = self.get_preset_for_speed(self.speed)
+        self.preset = get_x264_preset(self.speed)
         self.src_format = src_format
         self.csc_format = COLORSPACES[src_format]
         self.colorspace = cs_info[0]
@@ -630,8 +619,7 @@ cdef class Encoder:
             #specifically told this is not video,
             #so use a simple motion search:
             param.analyse.i_me_method = X264_ME_DIA
-        profile = strtobytes(self.profile)
-        set_f_rf(param, get_x264_quality(self.quality, profile))
+        set_f_rf(param, get_x264_quality(self.quality, self.profile))
         #client can tune these options:
         param.b_open_gop = options.boolget("h264.open-gop", param.b_open_gop)
         param.b_deblocking_filter = not self.fast_decode and options.boolget("h264.deblocking-filter", param.b_deblocking_filter)
@@ -981,7 +969,7 @@ cdef class Encoder:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
         cdef x264_param_t param
-        cdef int new_preset = self.get_preset_for_speed(pct)
+        cdef int new_preset = get_x264_preset(pct)
         if new_preset == self.preset:
             return
         self.speed = pct
@@ -1004,16 +992,6 @@ cdef class Encoder:
         #adjust quality:
         self.quality = pct
         self.reconfig_tune()
-
-    #we choose presets from 1 to 7
-    #(we exclude placebo)
-    cdef int get_preset_for_speed(self, int speed):
-        if self.fast_decode:
-            speed = max(FAST_DECODE_MIN_SPEED, speed)
-        if speed > 99:
-            #only allow "ultrafast" if pct > 99
-            return 0
-        return 5 - max(0, min(4, speed // 20))
 
 
     def reconfig_tune(self):
