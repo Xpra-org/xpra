@@ -82,10 +82,10 @@ def get_profile(options, encoding:str="h264", csc_mode:str="YUV420P", default_pr
         default_profile
         )
 
-def get_x264_quality(pct:int, profile:str=None) -> float:
+def get_x264_quality(pct:int, profile:str=None) -> int:
     if pct>=100 and profile=="high444":
-        return 0.0
-    return 50.0 - (min(100, max(0, pct)) * 49.0 / 100.0)
+        return 0
+    return 50 - (min(100, max(0, pct)) * 49 // 100)
 
 def get_x264_preset(speed:int=50, fast_decode:bool=False) -> int:
     if fast_decode:
