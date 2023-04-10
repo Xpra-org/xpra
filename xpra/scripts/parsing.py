@@ -417,7 +417,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         psep += ":"
         pos += 1
     scount = 0
-    while display_name[pos]=="/" and scount<2:
+    while pos>len(display_name) and display_name[pos]=="/" and scount<2:
         psep += "/"
         pos += 1
         scount += 1
