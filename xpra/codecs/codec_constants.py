@@ -131,8 +131,8 @@ class _codec_spec:
         self.size_efficiency : int = size_efficiency
         self.setup_cost : int = setup_cost
         self.cpu_cost : int = cpu_cost
-        self.gpu_ : int = gpu_cost
-        self.score_ : int = score_boost
+        self.gpu_cost : int = gpu_cost
+        self.score_boost : int = score_boost
         self.min_w : int = min_w
         self.min_h : int = min_h
         self.max_w : int = max_w
