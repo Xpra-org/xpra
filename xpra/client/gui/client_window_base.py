@@ -12,7 +12,7 @@ from xpra.client.gui.client_widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
-from xpra.common import GRAVITY_STR
+from xpra.common import GravityStr
 from xpra.util import net_utf8, typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
@@ -148,7 +148,7 @@ class ClientWindowBase(ClientWidgetBase):
             "geometry-hints"        : dict(self.geometry_hints),
             "content-type"          : self.content_type,
             "attributes"            : attributes,
-            "gravity"               : GRAVITY_STR.get(self.window_gravity, self.window_gravity),
+            "gravity"               : GravityStr(self.window_gravity),
             #"border"                : self.border or "",
             #cursor_data
             "max-size"              : self.max_window_size,

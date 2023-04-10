@@ -8,7 +8,7 @@ from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.util import typedict, csv, WORKSPACE_UNSET
 from xpra.os_util import bytestostr
-from xpra.common import GRAVITY_STR
+from xpra.common import GravityStr
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label, TableBuilder,
     get_icon_pixbuf,
@@ -187,7 +187,7 @@ class WindowInfo(Gtk.Window):
             "attributes"        : get_window_attributes(w),
             "focused"           : w._focused,
             "buttons"           : csv(b for b,s in w.button_state.items() if s) or "none",
-            "gravity"           : GRAVITY_STR.get(w.window_gravity, "invalid"),
+            "gravity"           : GravityStr(w.window_gravity),
             "content-type"      : w.content_type or "unknown",
             "pixel-depth"       : w.pixel_depth or 24,
             "alpha"             : w._window_alpha,
@@ -235,7 +235,7 @@ class WindowInfo(Gtk.Window):
         self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
         self.fps_label.set_text(fps)
         #self.group_leader_label.set_text(str(w.group_leader))
-        self.gravity_label.set_text(GRAVITY_STR.get(w.window_gravity, "invalid"))
+        self.gravity_label.set_text(GravityStr(w.window_gravity))
         self.content_type_label.set_text(w.content_type or "unknown")
         #geometry:
         self.pixel_depth_label.set_text(str(w.pixel_depth or 24))

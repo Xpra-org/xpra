@@ -17,19 +17,7 @@ from xpra.util import typedict, csv, envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import bytestostr
-from xpra.common import (
-    NorthWestGravity,
-    NorthGravity,
-    NorthEastGravity,
-    WestGravity,
-    CenterGravity,
-    EastGravity,
-    SouthWestGravity,
-    SouthGravity,
-    SouthEastGravity,
-    StaticGravity,
-    GRAVITY_STR,
-    )
+from xpra.common import Gravity
 from xpra.log import Logger
 
 log = Logger("paint")
@@ -303,36 +291,36 @@ class WindowBackingBase:
                 return 0, bh-oldh
             return oldh-bh, 0
         g = self.gravity
-        if not g or g==NorthWestGravity:
+        if not g or g==Gravity.NorthWest:
             #undefined (or 0), use NW
             sx, dx = west_x()
             sy, dy = north_y()
-        elif g==NorthGravity:
+        elif g==Gravity.North:
             sx, dx = center_x()
             sy, dy = north_y()
-        elif g==NorthEastGravity:
+        elif g==Gravity.NorthEast:
             sx, dx = east_x()
             sy, dy = north_y()
-        elif g==WestGravity:
+        elif g==Gravity.West:
             sx, dx = west_x()
             sy, dy = center_y()
-        elif g==CenterGravity:
+        elif g==Gravity.Center:
             sx, dx = center_x()
             sy, dy = center_y()
-        elif g==EastGravity:
+        elif g==Gravity.East:
             sx, dx = east_x()
             sy, dy = center_y()
-        elif g==SouthWestGravity:
+        elif g==Gravity.SouthWest:
             sx, dx = west_x()
             sy, dy = south_y()
-        elif g==SouthGravity:
+        elif g==Gravity.South:
             sx, dx = center_x()
             sy, dy = south_y()
-        elif g==SouthEastGravity:
+        elif g==Gravity.SouthEast:
             sx, dx = east_x()
             sy, dy = south_y()
-        elif g==StaticGravity:
-            if first_time(f"StaticGravity-{self.wid}"):
+        elif g==Gravity.Static:
+            if first_time(f"Gravity.Static-{self.wid}"):
                 log.warn(f"Warning: window {self.wid} requested static gravity")
                 log.warn(" this is not implemented yet")
         w = min(bw, oldw)
@@ -345,13 +333,13 @@ class WindowBackingBase:
         window_size = options.inttupleget("window-size", None)
         g = self.gravity
         log("gravity_adjust%s window_size=%s, size=%s, gravity=%s",
-            (x, y, options), window_size, self.size, GRAVITY_STR.get(g, "unknown"))
+            (x, y, options), window_size, self.size, g or "unknown")
         if not window_size:
             return x, y
         window_size = tuple(window_size)
         if window_size==self.size:
             return x, y
-        if g==0 or self.gravity==NorthWestGravity:
+        if g==0 or self.gravity==Gravity.NorthWest:
             return x, y
         oldw, oldh = window_size
         bw, bh = self.size
@@ -375,23 +363,23 @@ class WindowBackingBase:
             if bh>=oldh:
                 return y + (bh-oldh)
             return y - (oldh-bh)
-        if g==NorthGravity:
+        if g==Gravity.North:
             return center_x(), north_y()
-        if g==NorthEastGravity:
+        if g==Gravity.NorthEast:
             return east_x(), north_y()
-        if g==WestGravity:
+        if g==Gravity.West:
             return west_x(), center_y()
-        if g==CenterGravity:
+        if g==Gravity.Center:
             return center_x(), center_y()
-        if g==EastGravity:
+        if g==Gravity.East:
             return east_x(), center_y()
-        if g==SouthWestGravity:
+        if g==Gravity.SouthWest:
             return west_x(), south_y()
-        if g==SouthGravity:
+        if g==Gravity.South:
             return center_x(), south_y()
-        if g==SouthEastGravity:
+        if g==Gravity.SouthEast:
             return east_x(), south_y()
-        #if self.gravity==StaticGravity:
+        #if self.gravity==Gravity.Static:
         #    pass
         return x, y
 

@@ -19,30 +19,26 @@ RESOLUTION_ALIASES = {
     "8K"    : (7680, 4320),
     }
 
-#X11 constants we use for gravity:
-NorthWestGravity = 1
-NorthGravity     = 2
-NorthEastGravity = 3
-WestGravity      = 4
-CenterGravity    = 5
-EastGravity      = 6
-SouthWestGravity = 7
-SouthGravity     = 8
-SouthEastGravity = 9
-StaticGravity    = 10
+from enum import IntEnum
 
-GRAVITY_STR = {
-    NorthWestGravity : "NorthWest",
-    NorthGravity     : "North",
-    NorthEastGravity : "NorthEast",
-    WestGravity      : "West",
-    CenterGravity    : "Center",
-    EastGravity      : "East",
-    SouthWestGravity : "SouthWest",
-    SouthGravity     : "South",
-    SouthEastGravity : "SouthEast",
-    StaticGravity    : "South",
-    }
+class Gravity(IntEnum):
+    #X11 constants we use for gravity:
+    NorthWest   = 1
+    North       = 2
+    NorthEast   = 3
+    West        = 4
+    Center      = 5
+    East        = 6
+    SouthWest   = 7
+    South       = 8
+    SouthEast   = 9
+    Static      = 10
+
+def GravityStr(v):
+    try:
+        return Gravity(v)
+    except ValueError:
+        return str(v)
 
 CLOBBER_UPGRADE = 0x1
 CLOBBER_USE_DISPLAY = 0x2

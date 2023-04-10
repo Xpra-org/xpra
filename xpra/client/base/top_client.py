@@ -24,7 +24,7 @@ from xpra.client.base.gobject_client_base import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
 from xpra.simple_stats import std_unit
-from xpra.common import GRAVITY_STR
+from xpra.common import GravityStr
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -767,7 +767,7 @@ class TopSessionClient(InfoTimerClient):
             def sc_str(k, v):
                 k = bytestostr(k)
                 if k=="gravity":
-                    v = GRAVITY_STR.get(v, v)
+                    v = GravityStr(v)
                 return f"{k}={v}"
             g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
         line1 = ""
