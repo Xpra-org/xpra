@@ -41,11 +41,11 @@ BITS = struct.calcsize(b"P")*8
 
 
 main_thread = threading.current_thread()
-def is_main_thread():
+def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads=()):
+def get_frame_info(ignore_threads=()) -> dict:
     info = {
         "count"        : threading.active_count() - len(ignore_threads),
         }
@@ -147,7 +147,7 @@ def memoryview_to_bytes(v) -> bytes:
     return strtobytes(v)
 
 
-def set_proc_title(title):
+def set_proc_title(title) -> None:
     try:
         import setproctitle  #pylint: disable=import-outside-toplevel
         setproctitle.setproctitle(title)  #@UndefinedVariable pylint: disable=c-extension-no-member
@@ -192,7 +192,7 @@ def get_home_for_uid(uid) -> str:
             pass
     return ""
 
-def get_groups(username):
+def get_groups(username) -> list:
     if POSIX:
         import grp      #@UnresolvedImport
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
@@ -324,7 +324,7 @@ def restore_script_env(env):
 
 
 _saved_env = os.environ.copy()
-def get_saved_env():
+def get_saved_env() -> dict:
     return _saved_env.copy()
 
 def get_saved_env_var(var, default=None):
@@ -571,7 +571,7 @@ def register_SIGUSR_signals(idle_add=no_idle):
     signal.signal(signal.SIGUSR2, sigusr2)
 
 
-def livefds():
+def livefds() -> set:
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
@@ -588,18 +588,18 @@ def livefds():
     return live
 
 
-def use_tty():
+def use_tty() -> bool:
     from xpra.util import envbool
     if envbool("XPRA_NOTTY", False):
         return False
     from xpra.platform.gui import use_stdin
     return use_stdin()
 
-def use_gui_prompt():
+def use_gui_prompt() -> bool:
     return WIN32 or OSX or not use_tty()
 
 
-def shellsub(s, subs=None):
+def shellsub(s : str, subs=None) -> str:
     """ shell style string substitution using the dictionary given """
     if subs:
         for var,value in subs.items():
@@ -651,7 +651,7 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
 
 
-def path_permission_info(filename, ftype=None):
+def path_permission_info(filename : str, ftype=None):
     if not POSIX:
         return []
     info = []
@@ -954,7 +954,7 @@ def get_peercred(sock):
         #then pwd to get the gid?
     return None
 
-def is_socket(sockpath, check_uid=None):
+def is_socket(sockpath, check_uid=None) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:
