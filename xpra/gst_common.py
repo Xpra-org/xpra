@@ -71,14 +71,14 @@ def import_gst():
     return gst
 
 
-def normv(v):
+def normv(v) -> int:
     if v==2**64-1:
         return -1
     return int(v)
 
 
 all_plugin_names = []
-def get_all_plugin_names():
+def get_all_plugin_names() -> list:
     global all_plugin_names
     if not all_plugin_names and gst:
         registry = gst.Registry.get()
@@ -87,7 +87,7 @@ def get_all_plugin_names():
         log("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
-def has_plugins(*names):
+def has_plugins(*names) -> bool:
     allp = get_all_plugin_names()
     #support names that contain a gstreamer chain, ie: "flacparse ! flacdec"
     snames = []

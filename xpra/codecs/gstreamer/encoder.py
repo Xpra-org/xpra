@@ -192,7 +192,7 @@ def init_all_specs(*exclude):
         log.info("some GStreamer elements are missing: "+csv(missing))
 
 
-def get_gst_rgb_format(rgb_format):
+def get_gst_rgb_format(rgb_format : str) -> str:
     if rgb_format in (
         "NV12",
         "RGBA", "BGRA", "ARGB", "ABGR",
@@ -214,7 +214,7 @@ def get_gst_rgb_format(rgb_format):
         #"RGB8P"
         }[rgb_format]
 
-def get_caps_str(ctype="video/x-raw", caps=None):
+def get_caps_str(ctype:str="video/x-raw", caps=None) -> str:
     if not caps:
         return ctype
     def s(v):
@@ -228,7 +228,7 @@ def get_caps_str(ctype="video/x-raw", caps=None):
         els.append(f"{k}={s(v)}")
     return ",".join(els)
 
-def get_element_str(element, eopts):
+def get_element_str(element:str, eopts=None):
     s = element
     if eopts:
         s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
@@ -294,12 +294,6 @@ class Encoder(VideoPipeline):
                 })
         return eopts, vopts
 
-    def get_encoder_str(self, eopts):
-        s = self.encoder_element
-        if eopts:
-            s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
-        return s
-
     def get_src_format(self):
         return self.colorspace
 
@@ -310,7 +304,7 @@ class Encoder(VideoPipeline):
         return info
 
 
-    def on_new_sample(self, _bus):
+    def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         size = buf.get_size()
@@ -335,7 +329,7 @@ class Encoder(VideoPipeline):
         return GST_FLOW_OK
 
 
-    def wrap(self, data):
+    def wrap(self, data) -> Gst.Buffer:
         mf = Gst.MemoryFlags
         return Gst.Buffer.new_wrapped_full(
             mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
