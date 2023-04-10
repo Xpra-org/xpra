@@ -100,6 +100,28 @@ def has_plugins(*names) -> bool:
         log("missing %s from %s", missing, names)
     return len(missing)==0
 
+
+def get_caps_str(ctype:str="video/x-raw", caps=None) -> str:
+    if not caps:
+        return ctype
+    def s(v):
+        if isinstance(v, str):
+            return f"(string){v}"
+        if isinstance(v, tuple):
+            return "/".join(str(x) for x in v)      #ie: "60/1"
+        return str(v)
+    els = [ctype]
+    for k,v in caps.items():
+        els.append(f"{k}={s(v)}")
+    return ",".join(els)
+
+def get_element_str(element:str, eopts=None):
+    s = element
+    if eopts:
+        s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
+    return s
+
+
 def format_element_options(options):
     return csv(f"{k}={v}" for k,v in options.items())
 

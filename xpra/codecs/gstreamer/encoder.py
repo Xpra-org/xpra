@@ -11,6 +11,7 @@ from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time, type
 from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
+    get_caps_str, get_element_str,
     STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.codecs.gstreamer.codec_common import (
@@ -214,26 +215,6 @@ def get_gst_rgb_format(rgb_format : str) -> str:
         #"RGB8P"
         }[rgb_format]
 
-def get_caps_str(ctype:str="video/x-raw", caps=None) -> str:
-    if not caps:
-        return ctype
-    def s(v):
-        if isinstance(v, str):
-            return f"(string){v}"
-        if isinstance(v, tuple):
-            return "/".join(str(x) for x in v)      #ie: "60/1"
-        return str(v)
-    els = [ctype]
-    for k,v in caps.items():
-        els.append(f"{k}={s(v)}")
-    return ",".join(els)
-
-def get_element_str(element:str, eopts=None):
-    s = element
-    if eopts:
-        s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
-    return s
-
 
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
@@ -250,6 +231,7 @@ class Encoder(VideoPipeline):
     def create_pipeline(self, options : typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
+        self.extra_client_info = {}
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
         vcaps = {
@@ -283,15 +265,16 @@ class Encoder(VideoPipeline):
             s = options.intget("speed", 50)
             eopts.update({
                 "pass"  : "qual",
-                "bframes"   : int(options.boolget("b-frames", False)),
+                "bframes"   : 0,    #int(options.boolget("b-frames", False)),
                 "quantizer" : q,
                 "speed-preset" : get_x264_preset(s),
                 })
-            vopts.update({
+            self.extra_client_info = {
                 "profile"       : profile,
                 "alignment"     : "au",
                 "stream-format" : "byte-stream",
-                })
+                }
+            vopts.update(self.extra_client_info)
         return eopts, vopts
 
     def get_src_format(self):
@@ -312,9 +295,9 @@ class Encoder(VideoPipeline):
         if size:
             data = buf.extract_dup(0, size)
             #log(" output=%s", hexstr(data))
-            client_info = {
-                "frame" : self.frames,
-                }
+            client_info = self.extra_client_info
+            self.extra_client_info = {}
+            client_info["frame"] = self.frames
             self.frames += 1
             pts = normv(buf.pts)
             if pts>=0:
@@ -326,6 +309,7 @@ class Encoder(VideoPipeline):
             if qs>0:
                 client_info["delayed"] = qs
             self.frame_queue.put((data, client_info))
+            log(f"added data to frame queue, client_info={client_info}")
         return GST_FLOW_OK
 
 

@@ -9,6 +9,7 @@ from gi.repository import GObject  # @UnresolvedImport
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
     make_buffer, has_plugins,
+    get_caps_str, get_element_str,
     )
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
@@ -77,27 +78,37 @@ class Decoder(VideoPipeline):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
-        gst_rgb_format = "I420"
-        IMAGE_CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){gst_rgb_format}"
-        stream_caps = f"video/x-{self.encoding},width={self.width},height={self.height}"
-        decode = [f"{self.encoding}dec"]
-        if self.encoding in ("vp8", "vp9"):
-            pass
-        elif self.encoding=="av1":
+        stream_attrs = {
+            "width"     : self.width,
+            "height"    : self.height,
+            }
+        decoder_element = f"{self.encoding}dec"
+        if self.encoding in ("vp8", "vp9", "av1"):
             pass
         elif self.encoding=="h264" and not WIN32:
-            profile = options.strget("profile", "main")
-            stream_caps += f",profile={profile},stream-format=avc,alignment=au"
+            for k,v in {
+                "profile"       : "main",
+                "stream-format" : "byte-stream",
+                "alignment"     : "au",
+                }.items():
+                stream_attrs[k] = options.strget(k, v)
             #decode = ["vaapih264dec"]
             #decode = ["openh264dec"]
-            decode = [f"avdec_{self.encoding}"]
+            decoder_element = f"avdec_{self.encoding}"
         else:
             raise RuntimeError(f"invalid encoding {self.encoding}")
+        stream_caps = get_caps_str(f"video/x-{self.encoding}", stream_attrs)
+        gst_rgb_format = "I420"
+        output_caps = get_caps_str("video/x-raw", {
+            "width" : self.width,
+            "height" : self.height,
+            "format" : gst_rgb_format,
+            })
         elements = [
             #"do-timestamp=1",
-            f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}"
-            ] + decode + [
-            f"appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false caps={IMAGE_CAPS}",
+            f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}",
+            decoder_element,
+            f"appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false caps={output_caps}",
             ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
