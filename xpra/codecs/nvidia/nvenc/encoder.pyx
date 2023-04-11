@@ -48,8 +48,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int NATIVE_RGB = int(not WIN32)
-NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", NATIVE_RGB)
+cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", int(not WIN32))
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
@@ -1359,7 +1358,8 @@ def get_input_colorspaces(encoding):
 def get_output_colorspaces(encoding, input_colorspace):
     cs = get_COLORSPACES(encoding)
     out = cs.get(input_colorspace)
-    assert out, "invalid input colorspace %s for encoding %s (must be one of: %s)" % (input_colorspace, encoding, out)
+    if not out:
+        raise ValueError(f"invalid input colorspace {input_colorspace} for encoding {encoding}, must be one of: {out}")
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
@@ -1807,8 +1807,10 @@ cdef class Encoder:
             if DEBUG_API:
                 log("cuCtxGetCurrent() returned %s, context_pointer=%#x, cuda context pointer=%#x",
                     CUDA_ERRORS_INFO.get(result, result), context_pointer, <uintptr_t> self.cuda_context_ptr)
-            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
-            assert (<uintptr_t> self.cuda_context_ptr)!=0, "invalid cuda context pointer"
+            if result:
+                raise RuntimeError("failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result))
+            if (<uintptr_t> self.cuda_context_ptr)==0:
+                raise RuntimeError("invalid null cuda context pointer")
         except driver.MemoryError as e:
             last_context_failure = monotonic()
             log("init_cuda %s", e)
@@ -1865,7 +1867,8 @@ cdef class Encoder:
             #load the kernel:
             self.kernel = get_CUDA_function(kernel_name)
             self.kernel_name = kernel_name
-            assert self.kernel, "failed to load %s for cuda context %s" % (self.kernel_name, cuda_context)
+            if not self.kernel:
+                raise RuntimeError(f"failed to load {self.kernel_name!r} for cuda context {cuda_context}")
             #allocate CUDA input buffer (on device) 32-bit RGBX
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride)
             #(this is the buffer we feed into the kernel)
@@ -1950,7 +1953,8 @@ cdef class Encoder:
 
         input_format = BUFFER_FORMAT[self.bufferFmt]
         input_formats = self.query_input_formats(codec)
-        assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
+        if input_format not in input_formats:
+            raise ValueError(f"{self.codec_name} does not support {input_format}, only: {input_formats}")
 
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         params.version = NV_ENC_INITIALIZE_PARAMS_VER
@@ -1969,7 +1973,8 @@ cdef class Encoder:
 
         #apply preset:
         cdef NV_ENC_PRESET_CONFIG *presetConfig = self.get_preset_config(self.preset_name, codec, preset)
-        assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
+        if presetConfig==NULL:
+            raise RuntimeError(f"could not find preset {self.preset_name}")
         cdef NV_ENC_CONFIG *config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
         assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
         free(presetConfig)
@@ -2034,8 +2039,7 @@ cdef class Encoder:
             #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
             #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
             #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
-        else:
-            assert self.codec_name=="H265"
+        elif self.codec_name=="H265":
             config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
             #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
             config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
@@ -2043,6 +2047,8 @@ cdef class Encoder:
             #config.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
             #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
             #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
+        else:
+            raise ValueError(f"invalid codec name {self.codec_name}")
 
     def init_buffers(self):
         log("init_buffers()")
@@ -2081,7 +2087,8 @@ cdef class Encoder:
         raiseNVENC(r, "creating output buffer")
         self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
         log("output bitstream buffer=%#x", <uintptr_t> self.bitstreamBuffer)
-        assert self.bitstreamBuffer!=NULL
+        if self.bitstreamBuffer==NULL:
+            raise RuntimeError("bitstream buffer pointer is null")
 
 
     def get_info(self) -> dict:
@@ -2431,7 +2438,8 @@ cdef class Encoder:
         cdef unsigned int i = 0
         cdef unsigned int stride, min_stride, x, y
         pixels = image.get_pixels()
-        assert pixels is not None, "failed to get pixels from %s" % image
+        if not pixels:
+            raise ValueError(f"no pixels in {image}")
         #copy to input buffer:
         cdef object buf
         if isinstance(pixels, (bytearray, bytes)):
@@ -3069,7 +3077,8 @@ def init_module():
                 log("will test: %s", test_encodings)
                 for encoding in test_encodings:
                     colorspaces = get_input_colorspaces(encoding)
-                    assert colorspaces, "cannot use NVENC: no colorspaces available"
+                    if not colorspaces:
+                        raise ValueError(f"cannot use NVENC: no colorspaces available for {encoding}")
                     src_format = colorspaces[0]
                     options["dst-formats"] = get_output_colorspaces(encoding, src_format)
                     test_encoder = None
@@ -3126,7 +3135,7 @@ def init_module():
         for device_id, encoding_warnings in device_warnings.items():
             log.info("NVENC on device %s:", get_device_name(device_id) or device_id)
             for encoding, warnings in encoding_warnings.items():
-                log.info(" %s encoding does not support %s mode", encoding, " or ".join(warnings))
+                log.info(f" {encoding} encoding does not support %s mode", " or ".join(warnings))
     if not devices:
         ENCODINGS[:] = []
         log.warn("no valid NVENC devices found")
