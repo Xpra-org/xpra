@@ -388,6 +388,8 @@ def main(args):
         args = [x for x in args if x not in ("-v", "--verbose")]
         format_string = NOPREFIX_FORMAT
         if verbose:
+            global FULL_SELFTEST
+            FULL_SELFTEST = True
             format_string = LOG_FORMAT
             log.enable_debug()
             from xpra.codecs.codec_checks import log as check_log
