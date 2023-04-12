@@ -22,12 +22,13 @@ log = Logger("encoder", "nvfbc")
 #because importing CUDAImageWrapper will have imported pycuda with the lock
 try:
     from pycuda import driver
-    from xpra.codecs.nvidia.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
+    from xpra.codecs.nvidia.cuda_context import select_device, device_info
+    from xpra.codecs.nvidia.cuda_errors import get_error_name
 except ImportError:
     raise
 except:
     log.error("Error: NvFBC requires CUDA", exc_info=True)
-    CUDA_ERRORS_INFO = {}
+    get_error_name = None
     select_device = None
 
 
@@ -682,7 +683,7 @@ cdef class NvFBC_CUDACapture:
         if res<0:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
-            raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
+            raise Exception(f"CUDA Grab Frame failed: {get_error_name(res)}")
         cdef double end = monotonic()
         log("NvFBCCudaGrabFrame: cuDevicePtr=%#x, info=%s, elapsed=%ims", <uintptr_t> self.cuDevicePtr, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)

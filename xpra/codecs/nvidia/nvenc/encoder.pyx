@@ -18,9 +18,10 @@ from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_tim
 from xpra.codecs.nvidia.cuda_context import (
     init_all_devices, get_devices, get_device_name,
     get_cuda_info, get_pycuda_info, reset_state,
-    get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO,
+    get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
     )
+from xpra.codecs.nvidia.cuda_errors import get_error_name
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.nv_util import (
@@ -1740,7 +1741,6 @@ cdef class Encoder:
                 bad_presets.setdefault(device_id, []).append(self.preset_name)
             else:
                 record_device_failure(device_id)
-
             raise
         cdef double end = monotonic()
         self.ready = 1
@@ -1804,11 +1804,12 @@ cdef class Encoder:
             #a bit of magic to pass a cython pointer to ctypes:
             context_pointer = <uintptr_t> (&self.cuda_context_ptr)
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
+            estr = get_error_name(result)
             if DEBUG_API:
-                log("cuCtxGetCurrent() returned %s, context_pointer=%#x, cuda context pointer=%#x",
-                    CUDA_ERRORS_INFO.get(result, result), context_pointer, <uintptr_t> self.cuda_context_ptr)
+                log(f"cuCtxGetCurrent() returned {estr!r}, context_pointer=%#x, cuda context pointer=%#x",
+                    context_pointer, <uintptr_t> self.cuda_context_ptr)
             if result:
-                raise RuntimeError("failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result))
+                raise RuntimeError(f"failed to get current cuda context, cuCtxGetCurrent returned {estr!r}")
             if (<uintptr_t> self.cuda_context_ptr)==0:
                 raise RuntimeError("invalid null cuda context pointer")
         except driver.MemoryError as e:
@@ -3030,7 +3031,7 @@ def init_module():
                     "threaded-init" : False,
                     })
                 try:
-                    test_encoder = Encoder(cdc)
+                    test_encoder = Encoder()
                     test_encoder.init_cuda(device_context)
                     log("test encoder=%s", test_encoder)
                     test_encoder.open_encode_session()

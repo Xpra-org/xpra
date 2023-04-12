@@ -14,7 +14,7 @@ from threading import Event
 
 from xpra.util import csv
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvidia.cuda_errors import cudacheck, CUDA_ERRORS
+from xpra.codecs.nvidia.cuda_errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
@@ -628,12 +628,12 @@ cdef class Decoder:
             self.flush()
             r = cuvidDestroyVideoParser(self.parser)
             if r:
-                log.warn(f"Warning: error %r destroying parser", CUDA_ERRORS.get(r, r))
+                log.error(f"Error destroying parser: {get_error_name(r)}")
             self.parser = NULL
         if self.context!=NULL:
             r = cuvidDestroyDecoder(self.context)
             if r:
-                log.warn(f"Warning: error %r destroying decoder", CUDA_ERRORS.get(r, r))
+                log.error(f"Error destroying decoder: {get_error_name(r)}")
             self.context = NULL
         self.width = 0
         self.height = 0
@@ -836,7 +836,7 @@ def selftest(full=False):
                 r = cuvidGetDecoderCaps(&caps)
                 if r:
                     chroma_failed.append(chroma_name)
-                    log(f"decoder caps for {codec_name} + {chroma_name} returned error %s", CUDA_ERRORS.get(r, r))
+                    log(f"decoder caps for {codec_name} + {chroma_name} returned error %s", get_error_name(r))
                     continue
                 if not caps.bIsSupported:
                     chroma_failed.append(chroma_name)
