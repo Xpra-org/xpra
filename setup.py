@@ -1822,9 +1822,7 @@ else:
                     addconf("nvenc.keys")
                 if nvfbc_ENABLED:
                     addconf("nvfbc.keys")
-                if not dummy_driver_version:
-                    dummy_driver_version = get_dummy_driver_version(dummy_driver_version)
-                if vernum(dummy_driver_version) < (0, 4):
+                if vernum(dummy_driver_version or get_dummy_driver_version()) < (0, 4):
                     addconf("xorg.conf")
                 else:
                     addconf("xorg-randr1.6.conf", "xorg.conf")
