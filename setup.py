@@ -367,11 +367,12 @@ ssl_cert = None
 ssl_key = None
 minifier = None
 share_xpra = None
+dummy_driver_version = None
 filtered_args = []
 def filter_argv():
     for arg in sys.argv:
         matched = False
-        for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra"):
+        for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra", "dummy-driver-version"):
             varg = f"--{x}="
             if arg.startswith(varg):
                 value = arg[len(varg):]
@@ -524,6 +525,10 @@ if "doc" in sys.argv:
 if "pdf-doc" in sys.argv:
     convert_docs("pdf")
     sys.exit(0)
+
+if len(sys.argv)<2:
+    print(f"{sys.argv[0]} arguments are missing!")
+    sys.exit(1)
 
 if sys.argv[1]=="unittests":
     os.execv("./tests/unittests/run", ["run"] + sys.argv[2:])
@@ -758,22 +763,25 @@ def get_clang_version():
     return clang_version
 
 
+def vernum(s):
+    return tuple(int(v) for v in s.split("-", 1)[0].split("."))
+
 def get_dummy_driver_version():
-    def vernum(s):
-        return tuple(int(v) for v in s.split("-", 1)[0].split("."))
     #try various rpm names:
     for rpm_name in ("xorg-x11-drv-dummy", "xf86-video-dummy"):
         r, out, err = get_status_output(["rpm", "-q", "--queryformat", "%{VERSION}", rpm_name])
-        print(f"rpm query: out={out}, err={err}")
         if r==0:
-            return vernum(out)
+            print(f"rpm query found dummy driver version {out}")
+            return out
+        print(f"rpm query: out={out}, err={err}")
     r, out, _ = get_status_output(["dpkg-query", "--showformat=${Version}", "--show", "xserver-xorg-video-dummy"])
     if r==0:
         if out.find(":")>=0:
             #ie: "1:0.3.8-2" -> "0.3.8"
             out = out.split(":", 1)[1]
-        return vernum(out)
-    return (0, )
+        print(f"dpkg-query found dummy driver version {out}")
+        return out
+    return "0"
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
@@ -971,7 +979,8 @@ def detect_xorg_setup(install_dir=None):
     from xpra.scripts import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
+    return config.detect_xvfb_command(conf_dir, None,
+                                      Xdummy_ENABLED or bool(dummy_driver_version), Xdummy_wrapper_ENABLED)
 
 def detect_xdummy_setup(install_dir=None):
     # pylint: disable=import-outside-toplevel
@@ -1813,9 +1822,9 @@ else:
                     addconf("nvenc.keys")
                 if nvfbc_ENABLED:
                     addconf("nvfbc.keys")
-                dummy_driver_version = get_dummy_driver_version()
-                print(f"found dummy driver version {dummy_driver_version}")
-                if dummy_driver_version < (0, 4):
+                if not dummy_driver_version:
+                    dummy_driver_version = get_dummy_driver_version(dummy_driver_version)
+                if vernum(dummy_driver_version) < (0, 4):
                     addconf("xorg.conf")
                 else:
                     addconf("xorg-randr1.6.conf", "xorg.conf")
