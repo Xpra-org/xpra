@@ -27,7 +27,7 @@ log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 VAAPI = envbool("XPRA_GSTREAMER_VAAPI", not (WIN32 or OSX))
-FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9").split(",")
+FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
@@ -188,6 +188,7 @@ def init_all_specs(*exclude):
             missing.append(element)
             return
         #add spec:
+        css_out = css_out or (cs_in, )
         spec = make_spec(element, encoding, cs_in, css_out, *args)
         specs.setdefault(encoding, {}).setdefault(cs_in, []).append(spec)
         #update colorspaces map (add new output colorspaces - if any):
@@ -213,9 +214,11 @@ def init_all_specs(*exclude):
         add("nvh264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("nvh265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
-    add("x264enc", "h264", "BGRX", ("YUV444P", ), 100, 0)
+    add("x264enc", "h264", "YUV444P", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
     add("vp9enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
+    add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
+    add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
     #add: nvh264enc, nvh265enc ?
     global SPECS, COLORSPACES
     SPECS = specs
@@ -254,23 +257,37 @@ class Encoder(VideoPipeline):
             }
         CAPS = get_caps_str("video/x-raw", vcaps)
         eopts, vopts = self.get_encoder_options(options)
+        self.extra_client_info = vopts.copy()
+        gst_encoding = {
+            "hevc"  : "h265",
+            }.get(self.encoding, self.encoding)
         elements = [
             f"appsrc name=src emit-signals=0 leaky-type=0 do-timestamp=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
-            "videoconvert",
             get_element_str(self.encoder_element, eopts),
+            get_caps_str(f"video/x-{gst_encoding}", vopts),
             ]
-        if self.encoder_element=="x264enc":
-            elements.append(get_caps_str(f"video/x-{self.encoding}", vopts))
-        elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
+        elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=false sync=false async=false qos=true")
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
     def get_encoder_options(self, options:typedict):
         s = self.encoder_element
         eopts = self.encoder_options.copy()
-        vopts = {}
+        eopts["name"] = "encoder"
+        vopts = {
+            "alignment"     : "au",
+            "stream-format" : "byte-stream",
+            }
+        default_profile = {
+            #"x264enc"   : "constrained-baseline",
+            #"nvh264enc" : "main",
+            "vp8enc"   : None, #0-4
+            "vp9enc"   : None, #0-4
+            }.get(self.encoder_element)
+        profile = get_profile(options, self.encoding, self.colorspace, default_profile)
+        if profile:
+            vopts["profile"] = profile
         if self.encoder_element=="x264enc":
-            profile = get_profile(options, self.encoding, self.colorspace, "constrained-baseline")
             q = get_x264_quality(options.intget("quality", 50), profile)
             s = options.intget("speed", 50)
             eopts.update({
@@ -278,14 +295,9 @@ class Encoder(VideoPipeline):
                 "quantizer" : q,
                 "speed-preset" : get_x264_preset(s),
                 })
-            self.extra_client_info = {
-                "profile"       : profile,
-                "alignment"     : "au",
-                "stream-format" : "byte-stream",
-                }
             vopts.update(self.extra_client_info)
-        if "bframes" in self.encoder_options:
-            eopts["bframes"] = int(options.boolget("b-frames", False))
+        #if "bframes" in self.encoder_options:
+        #    eopts["bframes"] = int(options.boolget("b-frames", False))
         return eopts, vopts
 
     def get_src_format(self):
@@ -305,7 +317,6 @@ class Encoder(VideoPipeline):
         log("on_new_sample size=%s", size)
         if size:
             data = buf.extract_dup(0, size)
-            #log(" output=%s", hexstr(data))
             client_info = self.extra_client_info
             self.extra_client_info = {}
             client_info["frame"] = self.frames
