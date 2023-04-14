@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,17 +24,17 @@ GST_APP_STREAM_TYPE_STREAM = 0
 STREAM_TYPE = GST_APP_STREAM_TYPE_STREAM
 
 
-gst = None
+Gst = None
 def get_gst_version():
-    if not gst:
+    if not Gst:
         return ()
-    return gst.version()
+    return Gst.version()
 
 
 def import_gst():
-    global gst
-    if gst is not None:
-        return gst
+    global Gst
+    if Gst is not None:
+        return Gst
 
     #hacks to locate gstreamer plugins on win32 and osx:
     if WIN32:
@@ -62,13 +62,48 @@ def import_gst():
         from gi.repository import Gst           #@UnresolvedImport
         log("Gst=%s", Gst)
         Gst.init(None)
-        gst = Gst
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")
         log.warn(" %s", e)
         return None
-    return gst
+    return Gst
+
+
+def get_gst_rgb_format(rgb_format : str) -> str:
+    if rgb_format in (
+        "NV12",
+        "RGBA", "BGRA", "ARGB", "ABGR",
+        "RGB", "BGR",
+        "RGB15", "RGB16", "BGR15",
+        "r210",
+        "BGRP", "RGBP",
+        ):
+        #identical name:
+        return rgb_format
+    #translate to gstreamer name:
+    return {
+        "YUV420P"   : "I420",
+        "YUV444P"   : "Y444",
+        "BGRX"      : "BGRx",
+        "XRGB"      : "xRGB",
+        "XBGR"      : "xBGR",
+        "YUV400"    : "GRAY8",
+        #"RGB8P"
+        }[rgb_format]
+
+
+def wrap_buffer(data):
+    mf = Gst.MemoryFlags
+    return Gst.Buffer.new_wrapped_full(
+        mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
+        data, len(data),
+        0, None, None)
+
+def make_buffer(data):
+    buf = Gst.Buffer.new_allocate(None, len(data), None)
+    buf.fill(0, data)
+    return buf
 
 
 def normv(v) -> int:
@@ -80,9 +115,9 @@ def normv(v) -> int:
 all_plugin_names = []
 def get_all_plugin_names() -> list:
     global all_plugin_names
-    if not all_plugin_names and gst:
-        registry = gst.Registry.get()
-        all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
+    if not all_plugin_names and Gst:
+        registry = Gst.Registry.get()
+        all_plugin_names = [el.get_name() for el in registry.get_feature_list(Gst.ElementFactory)]
         all_plugin_names.sort()
         log("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
@@ -138,11 +173,6 @@ def plugin_str(plugin, options):
         s += " "
         s += " ".join([f"{k}={qstr(v)}" for k,v in options.items()])
     return s
-
-def make_buffer(data):
-    buf = gst.Buffer.new_allocate(None, len(data), None)
-    buf.fill(0, data)
-    return buf
 
 
 def main():

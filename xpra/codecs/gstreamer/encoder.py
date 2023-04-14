@@ -11,7 +11,7 @@ from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time, type
 from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
-    get_caps_str, get_element_str,
+    get_caps_str, get_element_str, get_gst_rgb_format, wrap_buffer,
     STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.codecs.gstreamer.codec_common import (
@@ -226,29 +226,6 @@ def init_all_specs(*exclude):
         log.info("some GStreamer elements are missing: "+csv(missing))
 
 
-def get_gst_rgb_format(rgb_format : str) -> str:
-    if rgb_format in (
-        "NV12",
-        "RGBA", "BGRA", "ARGB", "ABGR",
-        "RGB", "BGR",
-        "RGB15", "RGB16", "BGR15",
-        "r210",
-        "BGRP", "RGBP",
-        ):
-        #identical name:
-        return rgb_format
-    #translate to gstreamer name:
-    return {
-        "YUV420P"   : "I420",
-        "YUV444P"   : "Y444",
-        "BGRX"      : "BGRx",
-        "XRGB"      : "xRGB",
-        "XBGR"      : "xBGR",
-        "YUV400"    : "GRAY8",
-        #"RGB8P"
-        }[rgb_format]
-
-
 class Encoder(VideoPipeline):
     __gsignals__ = VideoPipeline.__generic_signals__.copy()
     encoder_element = "unset"
@@ -298,7 +275,6 @@ class Encoder(VideoPipeline):
             s = options.intget("speed", 50)
             eopts.update({
                 "pass"  : "qual",
-                "bframes"   : 0,    #int(options.boolget("b-frames", False)),
                 "quantizer" : q,
                 "speed-preset" : get_x264_preset(s),
                 })
@@ -308,6 +284,8 @@ class Encoder(VideoPipeline):
                 "stream-format" : "byte-stream",
                 }
             vopts.update(self.extra_client_info)
+        if "bframes" in self.encoder_options:
+            eopts["bframes"] = int(options.boolget("b-frames", False))
         return eopts, vopts
 
     def get_src_format(self):
@@ -345,14 +323,6 @@ class Encoder(VideoPipeline):
             log(f"added data to frame queue, client_info={client_info}")
         return GST_FLOW_OK
 
-
-    def wrap(self, data) -> Gst.Buffer:
-        mf = Gst.MemoryFlags
-        return Gst.Buffer.new_wrapped_full(
-            mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
-            data, len(data),
-            0, None, None)
-
     def compress_image(self, image, options=None):
         if image.get_planes()==ImageWrapper.PACKED:
             data = image.get_pixels()
@@ -368,7 +338,7 @@ class Encoder(VideoPipeline):
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        return self.process_buffer(self.wrap(data))
+        return self.process_buffer(wrap_buffer(data))
 
 GObject.type_register(Encoder)
 
