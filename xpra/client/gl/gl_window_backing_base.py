@@ -59,7 +59,7 @@ from xpra.os_util import (
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
@@ -1469,10 +1469,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #"YUV420P" -> ("Y", "U", "V")
             #"GBRP16" -> ("GG", "BB", "RR")
             #"NV12" -> ("Y", "UV")
-            plane_name = {
-                "NV12" : ("Y", "UV"),
-                }.get(pixel_format, list(pixel_format))[index]
-            tex_name = plane_name * BPP
+            tex_name = get_plane_name(pixel_format, index) * BPP
             dformat = data_formats[index]       #data format: ie: GL_RED
             uformat = upload_formats[index]     #upload format: ie: UNSIGNED_BYTE
             rowstride = rowstrides[index]

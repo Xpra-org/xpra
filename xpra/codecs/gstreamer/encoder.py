@@ -27,6 +27,7 @@ log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 VAAPI = envbool("XPRA_GSTREAMER_VAAPI", not (WIN32 or OSX))
+NVENC = envbool("XPRA_GSTREAMER_NVENC", False)
 FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 assert get_version and init_module and cleanup_module
@@ -210,7 +211,7 @@ def init_all_specs(*exclude):
     if WIN32:
         add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("nvd3d11h265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
-    elif not OSX:
+    if NVENC:
         add("nvh264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("nvh265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)

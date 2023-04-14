@@ -47,6 +47,12 @@ LOSSY_PIXEL_FORMATS = {
     "YUV422P" : 1.5,
     }
 
+def get_plane_name(pixel_format="YUV420P", index=0):
+    return {
+        "NV12" : ("Y", "UV"),
+        }.get(pixel_format, list(pixel_format))[index]
+
+
 PIXEL_SUBSAMPLING = {
     #NV12 is actually subsampled horizontally too - just like YUV420P
     #(but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):

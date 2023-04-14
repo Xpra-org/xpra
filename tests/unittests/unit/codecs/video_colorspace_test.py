@@ -11,7 +11,7 @@ import binascii
 from xpra.util import typedict
 from xpra.os_util import hexstr
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs, get_plane_name
 from xpra.codecs.codec_checks import make_test_image
 from xpra.codecs.video_helper import (
     getVideoHelper,
@@ -135,7 +135,7 @@ class Test_Roundtrip(unittest.TestCase):
                             continue
                         #find decoders for the output colorspaces the encoder will generate:
                         for out_csc in enc_spec.output_colorspaces:
-                            for dname, decoder in decs.get(out_csc):
+                            for dname, decoder in decs.get(out_csc, ()):
                                 assert dname
                                 #apply mask to sizes:
                                 sizes = []
@@ -176,7 +176,10 @@ class Test_Roundtrip(unittest.TestCase):
         saved_pixels = in_image.get_pixels()
         in_image.clone_pixel_data()
         in_pixels = in_image.get_pixels()
-        cdata, client_options = encoder.compress_image(in_image, options)
+        out = encoder.compress_image(in_image, options)
+        if not out:
+            raise RuntimeError(f"{encoder} failed to compress {in_image} with options {options}")
+        cdata, client_options = out
         assert cdata
         #decode it:
         decoder = decoder_class()
@@ -189,10 +192,14 @@ class Test_Roundtrip(unittest.TestCase):
         out_csc = out_image.get_pixel_format()
         md = 0
         if in_csc.startswith("YUV"):
+            if out_csc=="NV12":
+                log.info(f"NV12 cannot be compared with {in_csc} (not implemented)")
+                return
             if in_csc!=out_csc:
                 raise ValueError(f"YUV output colorspace {out_csc} differs from input colorspace {in_csc}")
             divs = get_subsampling_divs(in_csc)
-            for i, plane in enumerate(("Y", "U", "V")):
+            for i in range(out_image.get_planes()):
+                plane = get_plane_name(out_csc, i)
                 #extract plane to compare:
                 saved_pdata = saved_pixels[i]
                 in_pdata = in_pixels[i]
