@@ -25,7 +25,7 @@ class Pipeline(GObject.GObject):
 
     generation = AtomicInteger()
 
-    __generic_signals__ = {
+    __generic_signals__ : dict = {
         "state-changed"     : one_arg_signal,
         "error"             : one_arg_signal,
         "new-stream"        : one_arg_signal,
@@ -120,10 +120,10 @@ class Pipeline(GObject.GObject):
             Gst.State.READY     : "ready",
             }.get(state, "unknown")
 
-    def get_state(self):
+    def get_state(self) -> str:
         return self.state
 
-    def start(self):
+    def start(self) -> bool:
         if not self.pipeline:
             log.error("Error: cannot start without a pipeline")
             return False
@@ -194,7 +194,7 @@ class Pipeline(GObject.GObject):
     def parse_tag_message(self, message):
         pass
 
-    def on_message(self, _bus, message):
+    def on_message(self, _bus, message) -> int:
         #log("on_message(%s, %s)", bus, message)
         log("on_message: %s", message)
         t = message.type
@@ -295,7 +295,7 @@ class Pipeline(GObject.GObject):
         log("do_parse_element_message%s", (message, name, props))
 
 
-    def get_element_properties(self, element, *properties, ignore_missing=False):
+    def get_element_properties(self, element, *properties, ignore_missing=False) -> dict:
         info = {}
         for x in properties:
             try:

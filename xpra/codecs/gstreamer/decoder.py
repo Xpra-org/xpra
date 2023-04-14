@@ -9,7 +9,7 @@ from gi.repository import GObject  # @UnresolvedImport
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
     make_buffer, has_plugins,
-    get_caps_str, get_element_str,
+    get_caps_str,
     )
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
@@ -52,25 +52,25 @@ def find_codecs(options):
 CODECS = find_codecs(get_codecs_options())
 
 
-def get_encodings():
+def get_encodings() -> tuple:
     return CODECS
 
 def get_min_size(encoding):
     return 16, 16
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding) -> tuple:
     assert encoding in get_encodings()
     return ("YUV420P", )
     #return ("YUV420P", "BGRX", )
 
-def get_output_colorspace(encoding, input_colorspace):
+def get_output_colorspace(encoding, input_colorspace) -> str:
     assert encoding in get_encodings()
     assert input_colorspace in get_input_colorspaces(encoding)
     return "YUV420P"
 
 
 class Decoder(VideoPipeline):
-    __gsignals__ = VideoPipeline.__generic_signals__.copy()
+    __gsignals__ : dict = VideoPipeline.__generic_signals__.copy()
     """
     Dispatch video decoding to a gstreamer pipeline
     """
@@ -105,7 +105,6 @@ class Decoder(VideoPipeline):
             "format" : gst_rgb_format,
             })
         elements = [
-            #"do-timestamp=1",
             f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}",
             decoder_element,
             f"appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false caps={output_caps}",
@@ -113,7 +112,7 @@ class Decoder(VideoPipeline):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
-    def get_colorspace(self):
+    def get_colorspace(self) -> str:
         return self.colorspace
 
     def on_new_sample(self, _bus):
@@ -141,7 +140,7 @@ class Decoder(VideoPipeline):
 
 
     def decompress_image(self, data, options=None):
-        log(f"decompress_image(..) state={self.state} data size={len(data)}")
+        log.error(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None

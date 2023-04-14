@@ -34,7 +34,7 @@ def cleanup_module():
 
 
 class VideoPipeline(Pipeline):
-    __generic_signals__ = Pipeline.__generic_signals__.copy()
+    __generic_signals__ : dict = Pipeline.__generic_signals__.copy()
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
@@ -107,23 +107,23 @@ class VideoPipeline(Pipeline):
             return "gstreamer(uninitialized)"
         return f"gstreamer({self.colorspace} - {self.width}x{self.height})"
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self.colorspace is not None
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.colorspace is None
 
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return self.encoding
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "gstreamer"
 
     def clean(self):

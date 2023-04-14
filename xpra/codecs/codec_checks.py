@@ -463,11 +463,12 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
             "speed" : 50,
             })
         e.init_context(encoding, W, H, cs_in, options)
-        for i in range(5):
+        N = 5
+        for i in range(N):
             image = make_test_image(cs_in, W, H)
             v = e.compress_image(image)
             if v is None:
-                raise Exception("%s compression failed" % encoding)
+                raise Exception(f"{encoding} compression failed on image {i+1} / {N}")
             data, meta = v
             if not data:
                 delayed = meta.get("delayed", 0)
@@ -479,7 +480,7 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
         assert data is not None, "None data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
         assert data, "no compressed data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
         assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
-        log("%s: %s / %s / %s passed", etype, encoding, cs_in, cs_out)
+        log(f"{etype}: {encoding} / {cs_in} / {cs_out} passed")
         #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
         #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
         #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
