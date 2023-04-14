@@ -227,7 +227,8 @@ def init_all_specs(*exclude):
     log("init_all_specs%s SPECS=%s", exclude, SPECS)
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
     if missing and first_time("gstreamer-encoder-missing-elements"):
-        log.info("some GStreamer elements are missing: "+csv(missing))
+        log.info("some GStreamer elements are missing or unavailable on this system:")
+        log.info(" "+csv(missing))
 
 
 class Encoder(VideoPipeline):
@@ -272,13 +273,18 @@ class Encoder(VideoPipeline):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
     def get_encoder_options(self, options:typedict):
-        s = self.encoder_element
         eopts = self.encoder_options.copy()
         eopts["name"] = "encoder"
-        vopts = {
-            "alignment"     : "au",
-            "stream-format" : "byte-stream",
-            }
+        if self.encoder_element=="av1enc":
+            vopts = {
+                "alignment"     : "tu",
+                "stream-format" : "obu-stream",
+                }
+        else:
+            vopts = {
+                "alignment"     : "au",
+                "stream-format" : "byte-stream",
+                }
         default_profile = {
             #"x264enc"   : "constrained-baseline",
             #"nvh264enc" : "main",
