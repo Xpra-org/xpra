@@ -353,7 +353,7 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	mkdir ${KEEP}
 	PLUGINS="app audio coreelements cutter removesilence faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska videoconvert x264 vpx"
 	#video support:
-	PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale"
+	PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
 	for x in $PLUGINS; do
 		echo "* keeping "$x
 		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/

@@ -86,6 +86,12 @@
 		${prefix}/lib/libavformat.*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libavutil.*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libavfilter.*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libswscale.*.dylib
 	</binary>
 	<binary>
