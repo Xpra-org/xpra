@@ -52,10 +52,8 @@ class VideoPipeline(Pipeline):
         self.src.set_property("format", Gst.Format.TIME)
         #self.src.set_caps(Gst.Caps.from_string(CAPS))
         self.sink   = self.pipeline.get_by_name("sink")
-        self.sink_handlers = []
         def sh(sig, handler):
-            sid = self.sink.connect(sig, handler)
-            self.sink_handlers.append(sid)
+            self.element_connect(self.sink, sig, handler)
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
         self.start()
@@ -131,11 +129,6 @@ class VideoPipeline(Pipeline):
         return "gstreamer"
 
     def clean(self):
-        handlers = self.sink_handlers
-        if handlers and self.sink:
-            self.handlers = []
-            for x in handlers:
-                self.sink.disconnect(x)
         super().cleanup()
         self.width = 0
         self.height = 0

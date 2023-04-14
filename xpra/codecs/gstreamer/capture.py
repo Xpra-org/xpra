@@ -55,8 +55,10 @@ class Capture(Pipeline):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
         self.sink   = self.pipeline.get_by_name("sink")
-        self.sink.connect("new-sample", self.on_new_sample)
-        self.sink.connect("new-preroll", self.on_new_preroll)
+        def sh(sig, handler):
+            self.element_connect(self.sink, sig, handler)
+        sh("new-sample", self.on_new_sample)
+        sh("new-preroll", self.on_new_preroll)
 
     def on_new_sample(self, _bus):
         sample = self.sink.emit("pull-sample")

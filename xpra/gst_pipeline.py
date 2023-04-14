@@ -35,10 +35,10 @@ class Pipeline(GObject.GObject):
     def __init__(self):
         super().__init__()
         self.bus = None
-        self.bus_message_handler_id = None
         self.bitrate = -1
         self.pipeline = None
         self.pipeline_str = ""
+        self.element_handlers = {}
         self.start_time = 0
         self.state : str = "stopped"
         self.info : dict = {}
@@ -47,6 +47,20 @@ class Pipeline(GObject.GObject):
         self.source_remove = GLib.source_remove
         self.emit_info_timer : int = 0
         self.file = None
+
+    def element_connect(self, element, sig, handler):
+        """ keeps track of signal ids so we can cleanup later """
+        sid = element.connect(sig, handler)
+        self.element_handlers.setdefault(element, []).append(sid)
+
+    def elements_disconnect(self):
+        handlers = self.element_handlers
+        if not handlers:
+            return
+        self.element_handlers = {}
+        for element, sids in handlers.items():
+            for sid in sids:
+                element.disconnect(sid)
 
     def update_state(self, state):
         log("update_state(%s)", state)
@@ -105,7 +119,7 @@ class Pipeline(GObject.GObject):
             self.cleanup()
             return False
         self.bus = self.pipeline.get_bus()
-        self.bus_message_handler_id = self.bus.connect("message", self.on_message)
+        self.element_connect(self.bus, "message", self.on_message)
         self.bus.add_signal_watch()
         self.info["pipeline"] = self.pipeline_str
         return True
@@ -152,6 +166,7 @@ class Pipeline(GObject.GObject):
     def cleanup(self):
         log("Pipeline.cleanup()")
         self.cancel_emit_info_timer()
+        self.elements_disconnect()
         self.stop()
         b = self.bus
         self.bus = None
@@ -159,11 +174,6 @@ class Pipeline(GObject.GObject):
         if not b:
             return
         b.remove_signal_watch()
-        bmhid = self.bus_message_handler_id
-        log("Pipeline.cleanup() bus_message_handler_id=%s", bmhid)
-        if bmhid:
-            self.bus_message_handler_id = None
-            b.disconnect(bmhid)
         self.pipeline = None
         self.state = None
         self.info = {}
