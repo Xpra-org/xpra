@@ -27,7 +27,7 @@ log = Logger("encoder", "gstreamer")
 
 NVIDIA_VAAPI = envbool("XPRA_NVIDIA_VAAPI", False)
 VAAPI = envbool("XPRA_GSTREAMER_VAAPI", not (WIN32 or OSX))
-FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,vp8,vp9").split(",")
+FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9").split(",")
 
 assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
@@ -59,6 +59,33 @@ DEFAULT_ENCODER_OPTIONS = {
         "error-resilient" : 0,
         "lag-in-frames" : 0,
         "cpu-used"      : 16,
+        },
+    "nvh264enc" : {
+        "zerolatency"   : True,
+        "rc-mode"       : 3,    #vbr
+        "preset"        : 5,    #low latency, high performance
+        "bframes"       : 0,
+        "aud"           : True,
+        },
+    "nvh265enc" : {
+        "zerolatency"   : True,
+        "rc-mode"       : 3,    #vbr
+        "preset"        : 5,    #low latency, high performance
+        #should be in GStreamer 1.18, but somehow missing?
+        #"bframes"       : 0,
+        "aud"           : True,
+        },
+    "nvd3d11h264enc" : {
+        "bframes"       : 0,
+        "aud"           : True,
+        "preset"        : 5,    #low latency, high performance
+        "zero-reorder-delay"    : True,
+        },
+    "nvd3d11h265enc" : {
+        "bframes"       : 0,
+        "aud"           : True,
+        "preset"        : 5,    #low latency, high performance
+        "zero-reorder-delay"    : True,
         },
     #"svtav1enc" : {
     #    "speed"         : 12,
@@ -179,6 +206,12 @@ def init_all_specs(*exclude):
     if vaapi:
         add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("vaapih264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
+    if WIN32:
+        add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
+        add("nvd3d11h265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
+    elif not OSX:
+        add("nvh264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
+        add("nvh265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
     add("x264enc", "h264", "BGRX", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
@@ -245,7 +278,7 @@ class Encoder(VideoPipeline):
         CAPS = get_caps_str("video/x-raw", vcaps)
         eopts, vopts = self.get_encoder_options(options)
         elements = [
-            f"appsrc name=src emit-signals=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
+            f"appsrc name=src emit-signals=0 leaky-type=0 do-timestamp=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
             "videoconvert",
             get_element_str(self.encoder_element, eopts),
             ]
