@@ -453,6 +453,7 @@ def main(args):
                         except Exception:
                             pass
                     except Exception as e:
+                        log(f"{mod}", exc_info=True)
                         log.error(f"error getting extra information on {name}: {e}")
             elif name in codec_errors:
                 out.error(f"* {name.ljust(20)} : {codec_errors[name]}")
