@@ -28,7 +28,7 @@ assert get_version and get_type and init_module and cleanup_module
 
 DEFAULT_MAPPINGS = "vp8:vp8dec;vp9:vp9dec"
 if not WIN32:
-    DEFAULT_MAPPINGS += ";av1:av1dec;h264:nvh264dec,avdec_h264"
+    DEFAULT_MAPPINGS += ";av1:av1dec;h264:nvh264dec,avdec_h264;hevc:vaapih265dec"
 
 def get_codecs_options():
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS", DEFAULT_MAPPINGS)
