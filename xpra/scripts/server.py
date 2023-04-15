@@ -278,7 +278,9 @@ def set_server_features(opts):
                 if mod not in impwarned:
                     impwarned.append(mod)
                     log = get_util_logger()
+                    log(f"impcheck{modules}", exc_info=True)
                     log.warn(f"Warning: missing {mod} module")
+                    log.warn(f" for Python {sys.version}")
                 return False
         return True
     server_features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
