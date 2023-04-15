@@ -34,17 +34,22 @@ assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
         "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
-        "tune"          : 3,    #low-power
+        #"tune"          : 3,    #low-power
         #"rate-control" : 8, #qvbr
         "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
         #"keyframe-period"   : 9999,
-        "prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
+        #"prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
         #"quality-factor" : 10,
         #"quality-level" : 50,
         #"bitrate"   : 2000,
         #"prediction-type" : 1,    #Hierarchical P frame encode
         #"keyframe-period" : 4294967295,
         "aud"   : True,
+        },
+    "vaapih265enc" : {
+        "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
+        #"tune"          : 3,    #low-power
+        #"rate-control" : 8, #qvbr
         },
     "x264enc" : {
         "speed-preset"  : "ultrafast",
@@ -209,8 +214,8 @@ def init_all_specs(*exclude):
             pass
     log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
-        #add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("vaapih264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
+        add("vaapih265enc", "hevc", "NV12", ("YUV420P", ), 20, 100)
     if WIN32:
         add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("nvd3d11h265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
