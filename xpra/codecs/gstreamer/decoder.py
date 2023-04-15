@@ -50,6 +50,7 @@ def find_codecs(options):
             if has_plugins(element):
                 codecs[encoding] = element
                 break
+    log(f"find_codecs({options})={codecs}")
     return codecs
 
 CODECS = find_codecs(get_codecs_options())

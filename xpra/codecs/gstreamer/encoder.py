@@ -33,8 +33,8 @@ FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9,av
 assert get_version and init_module and cleanup_module
 DEFAULT_ENCODER_OPTIONS = {
     "vaapih264enc" : {
-        "max-bframes" : 0,
-        "tune"  : 1,    #low-power
+        "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
+        "tune"          : 3,    #low-power
         #"rate-control" : 8, #qvbr
         "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
         #"keyframe-period"   : 9999,
@@ -42,6 +42,9 @@ DEFAULT_ENCODER_OPTIONS = {
         #"quality-factor" : 10,
         #"quality-level" : 50,
         #"bitrate"   : 2000,
+        #"prediction-type" : 1,    #Hierarchical P frame encode
+        #"keyframe-period" : 4294967295,
+        "aud"   : True,
         },
     "x264enc" : {
         "speed-preset"  : "ultrafast",
@@ -206,7 +209,7 @@ def init_all_specs(*exclude):
             pass
     log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
-        add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
+        #add("vaapih264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("vaapih264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
     if WIN32:
         add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
@@ -287,6 +290,7 @@ class Encoder(VideoPipeline):
                 }
         default_profile = {
             #"x264enc"   : "constrained-baseline",
+            #"vaapih264enc" : "constrained-baseline",
             #"nvh264enc" : "main",
             "vp8enc"   : None, #0-4
             "vp9enc"   : None, #0-4
