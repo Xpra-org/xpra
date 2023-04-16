@@ -110,9 +110,9 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
                         continue
                     if (x[0]=='"' and x[-1]=='"') or (x[0]=="'" and x[-1]=="'"):
                         args.append(x[1:-1])
-                    if x=="None":
+                    elif x=="None":
                         args.append(None)
-                    if x.find("."):
+                    elif x.find(".") != -1:
                         args.append(float(x))
                     else:
                         args.append(int(x))
