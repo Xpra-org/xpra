@@ -96,13 +96,15 @@ DEFAULT_ENCODER_OPTIONS = {
         "preset"        : 5,    #low latency, high performance
         "zero-reorder-delay"    : True,
         },
-    #"svtav1enc" : {
+    "svtav1enc" : {
     #    "speed"         : 12,
     #    "gop-size"      : 251,
-    #    "intra-refresh" : 1,    #open gop
+        "intra-refresh" : 1,    #open gop
     #    "lookahead"     : 0,
     #    "rc"            : 1,    #vbr
-    #    },
+        },
+    "svtvp9enc" : {
+        },
     #"svthevcenc" : {
     #    "b-pyramid"         : 0,
     #    "baselayer-mode"    : 1,
@@ -228,6 +230,9 @@ def init_all_specs(*exclude):
     add("vp9enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
     add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
     add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
+    #svt encoders error out:
+    #add("svtav1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
+    #add("svtvp9enc", "vp9", "YUV420P", ("YUV420P", ), 100, 0)
     #add: nvh264enc, nvh265enc ?
     global SPECS, COLORSPACES
     SPECS = specs
