@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -47,9 +47,11 @@ def call_context_check(*args):
 cdef class X11CoreBindingsInstance:
 
     def __cinit__(self):
-        assert is_X11(), "cannot load X11 bindings with wayland under python3 / GTK3"
+        if not is_X11():
+            raise RuntimeError("cannot load X11 bindings with wayland")
         self.display = get_display()
-        assert self.display!=NULL, "display is not set!"
+        if self.display==NULL:
+            raise RuntimeError("X11 display is not set")
         dn = get_display_name()
         bstr = strtobytes(dn)
         self.display_name = bstr
