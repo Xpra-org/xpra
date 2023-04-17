@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.util import repr_ellipsized
-from xpra.os_util import POSIX, OSX, bytestostr
+from xpra.os_util import is_X11, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.rfb_const import RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBServerProtocol
@@ -31,7 +31,7 @@ class RFBServer:
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
         self.X11Keyboard = None
-        if POSIX and not OSX:
+        if is_X11():
             try:
                 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
                 self.X11Keyboard = X11KeyboardBindings()
