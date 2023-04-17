@@ -7,13 +7,14 @@
 import os
 import sys
 
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("sound")
 
 
 def get_x11_property(atom_name):
     from xpra.os_util import OSX, POSIX
-    if not POSIX or OSX:
+    if envbool("XPRA_NOX11", not POSIX or OSX):
         return b""
     display = os.environ.get("DISPLAY")
     if not display:
