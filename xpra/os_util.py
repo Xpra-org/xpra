@@ -299,6 +299,8 @@ def get_user_uuid() -> str:
 def is_X11() -> bool:
     if OSX or WIN32:
         return False
+    if os.environ.get("XPRA_NOX11", "")=="1":
+        return False
     try:
         from xpra.x11.gtk3.gdk_bindings import is_X11_Display   #@UnresolvedImport
         return is_X11_Display()

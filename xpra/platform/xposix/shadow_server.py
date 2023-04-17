@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.util import envbool
 from xpra.os_util import is_Wayland
 from xpra.exit_codes import ExitCode
@@ -31,6 +33,8 @@ def warn(*messages):
 
 ShadowServer = None
 if envbool("XPRA_SHADOW_SCREENCAST", is_Wayland()):
+    if is_Wayland() and not os.environ.get("XPRA_NOX11"):
+        os.environ["XPRA_NOX11"] = "1"
     try:
         ShadowServer = load_screencast()
     except InitExit as e:
