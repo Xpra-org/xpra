@@ -38,6 +38,9 @@ avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
+
+UI_THREAD_CHECK = envbool("XPRA_UI_THREAD_CHECK", True)
+
 TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
 LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", False)
 
@@ -349,6 +352,8 @@ class WindowSource(WindowIconSource):
         return f"WindowSource({self.wid} : {self.window_dimensions})"
 
     def ui_thread_check(self):
+        if not UI_THREAD_CHECK:
+            return
         ct = threading.current_thread()
         if ct != self.ui_thread:
             raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")

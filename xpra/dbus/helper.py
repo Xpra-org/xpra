@@ -30,7 +30,7 @@ def dbus_to_native(value):
         return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
 
-def native_to_dbus(value):
+def native_to_dbus(value, signature=None):
     if value is None:
         return None
     if isinstance(value, int):
@@ -43,23 +43,22 @@ def native_to_dbus(value):
         if not value:
             return dbus.Array(signature="s")
         keytypes = set(type(x) for x in value)
-        sig = None
-        if len(keytypes)==1:
+        if not signature and len(keytypes)==1:
             #just one type of key:
             keytype = tuple(keytypes)[0]
             if keytype is int:
-                sig = "i"
+                signature = "i"
             elif keytype is bool:
-                sig = "b"
+                signature = "b"
             elif keytype is float:
-                sig = "d"
-        if sig:
+                signature = "d"
+        if signature:
             value = [native_to_dbus(v) for v in value]
         else:
-            sig = "s"
+            signature = "s"
             #use strings as keys
             value = [native_to_dbus(str(v)) for v in value]
-        return dbus.types.Array(value)
+        return dbus.types.Array(value, signature=signature)
     if isinstance(value, dict):
         if not value:
             return dbus.types.Dictionary({}, signature="sv")
