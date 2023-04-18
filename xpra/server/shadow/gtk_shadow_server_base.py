@@ -20,7 +20,6 @@ from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 traylog = Logger("tray")
-mouselog = Logger("mouse")
 notifylog = Logger("notify")
 screenlog = Logger("screen")
 log = Logger("shadow")
