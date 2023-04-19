@@ -979,8 +979,10 @@ def detect_xorg_setup(install_dir=None):
     from xpra.scripts import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xvfb_command(conf_dir, None,
-                                      Xdummy_ENABLED or bool(dummy_driver_version), Xdummy_wrapper_ENABLED)
+    dummy = Xdummy_ENABLED
+    if bool(dummy_driver_version):
+        dummy = True
+    return config.detect_xvfb_command(conf_dir, None, dummy, Xdummy_wrapper_ENABLED)
 
 def detect_xdummy_setup(install_dir=None):
     # pylint: disable=import-outside-toplevel
