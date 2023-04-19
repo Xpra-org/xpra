@@ -58,7 +58,7 @@ WIN32_LAYOUTS = {
            1061: ("ETI", "Estonia",        "Estonian",                 1257,   "ee", ["nodeadkeys", "dvorak", "us"]),
            1062: ("LVI", "Latvia",         "Latvian",                  1257,   "lv", ["apostrophe", "tilde", "fkey", "modern", "ergonomic", "adapted"]),
            1063: ("LTH", "Lithuania",      "Lithuanian",               1257,   "lt", ["std", "us", "ibm", "lekp", "lekpa"]),
-           1065: ("FAR", "Iran",           "Farsi",                    1256,   "", []),
+           1065: ("FAR", "Iran",           "Farsi",                    1256,   "ir", []),
            1066: ("VIT", "Viet Nam",       "Vietnamese",               1258,   "vn", []),
            1067: ("HYE", "Armenia",        "Armenian",                 UNICODE,"am", ["phonetic", "phonetic-alt", "eastern", "western", "eastern-alt"]),
            1068: ("AZE", "Azerbaijan (Latin)", "Azeri",                1254,   "az", ["cyrillic"]),
@@ -296,7 +296,7 @@ WIN32_KEYBOARDS = {
     0x00000463  : ("af", "Pashto (Afghanistan)"),
     #duplicate of 'ku'
     #0x00000429  : ("ir", "Persian"),
-    0x00050429  : ("ir", "Persian (Standard)"),
+    0xa0000429  : ("ir", "Persian (Standard)"),
     0x000a0c00  : ("cn", "Phags-pa"),
     0x00010415  : ("pl", "Polish (214)"),
     0x00000415  : ("pl", "Polish (Programmers)"),
