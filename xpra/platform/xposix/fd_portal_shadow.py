@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import random
 from dbus.types import UInt32
 from dbus.types import Dictionary
 
@@ -16,15 +17,17 @@ from xpra.codecs.gstreamer.capture import Capture
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.xposix.fd_portal import (
-    SCREENCAST_IFACE,
-    get_portal_interface, screenscast_dbus_call, remotedesktop_dbus_call,
+    SCREENCAST_IFACE, PORTAL_SESSION_INTERFACE,
+    dbus_sender_name,
+    get_portal_interface, get_session_interface,
+    screenscast_dbus_call, remotedesktop_dbus_call,
     AvailableSourceTypes, AvailableDeviceTypes,
     )
 from xpra.log import Logger
 
 log = Logger("shadow")
 
-session_counter : int = 0
+session_counter : int = random.randint(0, 2**24)
 
 
 class PipewireWindowModel(RootWindowModel):
@@ -34,10 +37,14 @@ class PipewireWindowModel(RootWindowModel):
 class PortalShadow(GTKShadowServerBase):
     def __init__(self, multi_window=True):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
+        self.session = None
+        self.session_path : str = ""
         self.session_type : str = "pipewire"
+        self.session_handle : str = ""
         self.capture : Capture = None
         self.portal_interface = get_portal_interface()
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
+        #we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
 
 
@@ -53,6 +60,11 @@ class PortalShadow(GTKShadowServerBase):
         if c:
             self.capture = None
             c.stop()
+        if self.session:
+            #https://gitlab.gnome.org/-/snippets/1122
+            log(f"trying to close the session {self.session}")
+            self.session.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
+            self.session = None
 
 
     def makeRootWindowModels(self):
@@ -90,8 +102,10 @@ class PortalShadow(GTKShadowServerBase):
     def create_session(self):
         global session_counter
         session_counter += 1
+        token = f"u{session_counter}"
+        self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
         options = {
-            "session_handle_token"  : f"u{session_counter}",
+            "session_handle_token"  : token,
             }
         log(f"create_session() session_counter={session_counter}")
         remotedesktop_dbus_call(
@@ -115,6 +129,7 @@ class PortalShadow(GTKShadowServerBase):
             log.error("Error: missing session handle creating the session")
             self.quit(ExitCode.UNSUPPORTED)
             return
+        self.session = get_session_interface(self.session_path)
         self.on_session_created()
 
     def on_session_created(self):

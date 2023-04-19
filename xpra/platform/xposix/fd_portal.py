@@ -15,6 +15,7 @@ log = Logger("shadow")
 
 BASE_REQUEST_PATH = "/org/freedesktop/portal/desktop/request"
 PORTAL_REQUEST = "org.freedesktop.portal.Request"
+PORTAL_SESSION_INTERFACE = "org.freedesktop.portal.Session"
 PORTAL_DESKTOP_INTERFACE = "org.freedesktop.portal.Desktop"
 PORTAL_DESKTOP_PATH = "/org/freedesktop/portal/desktop"
 REMOTEDESKTOP_IFACE = "org.freedesktop.portal.RemoteDesktop"
@@ -63,3 +64,6 @@ def dbus_desktop_call(interface, method, callback, *args, options=None):
 
 def get_portal_interface():
     return bus.get_object(PORTAL_DESKTOP_INTERFACE, PORTAL_DESKTOP_PATH)
+
+def get_session_interface(session_path):
+    return bus.get_object(PORTAL_DESKTOP_INTERFACE, session_path)
