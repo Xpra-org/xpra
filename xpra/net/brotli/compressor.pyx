@@ -91,9 +91,9 @@ def compress(data, int quality=1):
         raise Exception(f"failed to read data from {type(data)}")
     cdef const uint8_t *in_ptr = <const uint8_t*> in_buf.buf
 
-    cdef size_t out_size
+    cdef size_t out_size = max_size
     cdef int r
-    log("brotli.compress(%i bytes, %i)", in_buf.len, quality)
+    log("brotli.compress(%i bytes, %i) into %i byte buffer", in_buf.len, quality, out_size)
     try:
         with nogil:
             r = BrotliEncoderCompress(quality, BROTLI_DEFAULT_WINDOW,
