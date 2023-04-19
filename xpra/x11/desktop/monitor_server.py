@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
@@ -35,7 +36,8 @@ class XpraMonitorServer(DesktopServerBase):
     def __init__(self):
         with xsync:
             if not RandR.is_dummy16():
-                raise InitException("the vfb cannot virtualize monitors - dummy RandR 1.6 missing")
+                DISPLAY = os.environ.get("DISPLAY", "")
+                raise InitException(f"the vfb display {DISPLAY!r} cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
         self.session_type = "monitor"
         self.reconfigure_timer = 0
