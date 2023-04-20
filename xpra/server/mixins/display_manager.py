@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import engs, log_screen_sizes, typedict
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, is_Wayland
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -69,6 +69,9 @@ class DisplayManager(StubServerMixin):
         props = {}
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
+            return props
+        if is_Wayland():
+            gllog("query_opengl() skipped on wayland")
             return props
         try:
             # pylint: disable=import-outside-toplevel
