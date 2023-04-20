@@ -12,7 +12,11 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
-from xpra.util import envint, envbool, DONE, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
+from xpra.os_util import is_Wayland
+from xpra.util import (
+    envint, envbool,
+    DONE, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID,
+    )
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -99,23 +103,31 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if not server_features.display:
             return
         w, h = self.root.get_geometry()[2:4]
-        display = os.environ.get("DISPLAY")
-        self.do_print_screen_info(display, w, h)
+        dinfo = None
+        if is_Wayland():
+            wdisplay = os.environ.get("WAYLAND_DISPLAY", "").replace("wayland-", "")
+            if wdisplay:
+                dinfo = f"Wayland display {wdisplay}"
+        else:
+            display = os.environ.get("DISPLAY")
+            if display:
+                dinfo = f"X11 display {display}"
+        self.do_print_screen_info(dinfo, w, h)
 
     def do_print_screen_info(self, display, w, h):
         if display:
-            log.info(" on display '%s' of size %ix%i", display, w, h)
+            log.info(f" on {display} of size {w}x{h}")
         else:
-            log.info(" on display of size %ix%i", w, h)
+            log.info(f" on display of size {w}x{h}")
         if self.window_matches:
             return
         try:
             l = len(self._id_to_window)
         except AttributeError as e:
-            log("no screen info: %s", e)
+            log(f"no screen info: {e}")
             return
         if l>1:
-            log.info(" with %i monitors:", l)
+            log.info(f" with {l} monitors:")
             for window in self._id_to_window.values():
                 title = window.get_property("title")
                 x, y, w, h = window.geometry
