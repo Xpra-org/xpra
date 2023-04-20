@@ -292,22 +292,22 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
                         rgb_data[y*stride+x+i] = plane_values[i]
                         x += Bpp
         return makeimage(bytes(rgb_data), bytesperpixel=Bpp, rowstride=stride)
-    raise Exception("don't know how to create a %s image" % pixel_format)
+    raise Exception(f"don't know how to create a {pixel_format} image")
 
 
 def testdecoder(decoder_module, full):
+    dtype = decoder_module.get_type()
     codecs = list(decoder_module.get_encodings())
     for encoding in tuple(codecs):
         try:
             testdecoding(decoder_module, encoding, full)
         except Exception as e:
-            log("%s: %s decoding failed", decoder_module.get_type(), encoding, exc_info=True)
-            log.warn("%s: %s decoding failed: %s", decoder_module.get_type(), encoding, e)
+            log(f"{dtype}: {encoding} decoding failed", exc_info=True)
+            log.warn(f"{dtype}: {encoding} decoding failed: {e}")
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)",
-                  decoder_module.get_type(), csv(decoder_module.get_encodings()))
+        log.error(f"{dtype}: all the codecs have failed! {csv(decoder_module.get_encodings())}")
     return tuple(codecs)
 
 def testdecoding(decoder_module, encoding, full):
@@ -340,41 +340,43 @@ def testdecoding(decoder_module, encoding, full):
                         try:
                             log(f"frame {i+1} is {len(data or ()):5} bytes")
                             image = decoder.decompress_image(data)
-                            assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
-                            assert image.get_width()==w, "expected image of width %s but got %s" % (w, image.get_width())
-                            assert image.get_height()==h, "expected image of height %s but got %s" % (h, image.get_height())
+                            if image is None:
+                                raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
+                            if image.get_width()!=w:
+                                raise RuntimeError(f"expected image of width {w} but got {image.get_width()}")
+                            if image.get_height()!=h:
+                                raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
                             log(f" test passed for {w}x{h} {encoding} - {cs}")
                         except Exception as e:
                             log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
                             raise
                 if full:
-                    log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
+                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data")
                     #test failures:
                     try:
                         image = e.decompress_image(b"junk")
                     except Exception:
                         image = None
                     if image is not None:
-                        raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
+                        raise Exception(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
             finally:
                 decoder.clean()
 
 
 def testencoder(encoder_module, full):
+    etype = encoder_module.get_type()
     codecs = list(encoder_module.get_encodings())
     for encoding in tuple(codecs):
         try:
             testencoding(encoder_module, encoding, full)
         except Exception as e:
-            log("%s: %s encoding failed", encoder_module.get_type(), encoding, exc_info=True)
-            log.warn("Warning: %s encoder testing failed with %s:",
-                     encoder_module.get_type(), encoding)
-            log.warn(" %s", e)
+            log(f"{etype}: {encoding} encoding failed", exc_info=True)
+            log.warn(f"Warning: {etype} encoder testing failed with {encoding}:")
+            log.warn(f" {e}")
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)",
-                  encoder_module.get_type(), csv(encoder_module.get_encodings()))
+        log.error(f"{etype}: all the codecs have failed! ({csv(encoder_module.get_encodings())})")
     return tuple(codecs)
 
 def testencoding(encoder_module, encoding, full):
@@ -393,8 +395,11 @@ def get_encoder_max_sizes(encoder_module):
 def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
+    etype = encoder_module.get_type()
     def einfo():
-        return "%s %s %s" % (encoder_module.get_type(), encoding, encoder_module.get_version())
+        return f"{etype} {encoding} {encoder_module.get_version()}"
+    def elog(s, *args):
+        log(f"{einfo()} "+s, *args)
     log("get_encoder_max_size%s", (encoder_module, encoding, limit_w, limit_h))
     maxw = w = 512
     while w<=limit_w:
@@ -403,11 +408,11 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
             maxw = w
             w *= 2
         except Exception as e:
-            log("%s is limited to max width=%i for %s:", einfo(), maxw, encoding)
-            log(" %s", e)
+            elog(f"is limited to max width={max} for {encoding}")
+            log(f" {e}")
             del e
             break
-    log("%s max width=%i", einfo(), maxw)
+    elog(f"max width={maxw}")
     maxh = h = 512
     while h<=limit_h:
         try:
@@ -415,11 +420,11 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
             maxh = h
             h *= 2
         except Exception as e:
-            log("%s is limited to max height=%i for %s:", einfo(), maxh, encoding)
-            log(" %s", e)
+            elog(f"is limited to max height={maxh} for {encoding}")
+            log(f" {e}")
             del e
             break
-    log("%s max height=%i", einfo(), maxh)
+    elog(f"max height={maxh}")
     #now try combining width and height
     #as there might be a lower limit based on the total number of pixels:
     MAX_WIDTH, MAX_HEIGHT = maxw, maxh
@@ -433,15 +438,15 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
                 w = min(maxw, tw)
                 h = min(maxh, th)
                 do_testencoding(encoder_module, encoding, w, h)
-                log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
+                elog(f"can handle {w}x{h} for {encoding}")
                 MAX_WIDTH, MAX_HEIGHT = w, h
             except Exception as e:
-                log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
-                log(" %s", e)
+                elog(f"is limited to {MAX_WIDTH}x{MAX_HEIGHT} for {encoding}")
+                log(f" {e}")
                 del e
                 break
         v *= 2
-    log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)
+    elog(f"max dimensions for {encoding}: {MAX_WIDTH}x{MAX_HEIGHT}")
     return MAX_WIDTH, MAX_HEIGHT
 
 
@@ -477,9 +482,12 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
                     #now we should get one:
                     data, meta = e.flush(delayed)
         del image
-        assert data is not None, "None data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
-        assert data, "no compressed data for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
-        assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (etype, encoding, cs_in, cs_out)
+        if data is None:
+            raise RuntimeError(f"None data for {etype} using {encoding} encoding with {cs_in} / {cs_out}")
+        if not data:
+            raise RuntimeError(f"no compressed data for {etype} using {encoding} encoding with {cs_in} / {cs_out}")
+        if meta is None:
+            raise RuntimeError(f"missing metadata for {etype} using {encoding} encoding with {cs_in} / {cs_out}")
         log(f"{etype}: {encoding} / {cs_in} / {cs_out} passed")
         #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
         #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
@@ -494,7 +502,8 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
                     out = e.compress_image(None, image, options=options)
                 except Exception:
                     out = None
-                assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (etype, encoding, wrong_format, cs_in, cs_out)
+                if out is not None:
+                    raise RuntimeError(f"encoder {etype} should have failed using {encoding} encoding with {wrong_format} instead of {cs_in} / {cs_out}")
             for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
                 if w>limit_w or h>limit_h:
                     continue
@@ -503,7 +512,8 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
                     out = e.compress_image(None, image, options=options)
                 except Exception:
                     out = None
-                assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (etype, e.get_info(), encoding, w, h, W, H)
+                if out is not None:
+                    raise RuntimeError(f"encoder {etype}, info={e.get_info()} should have failed using {encoding} encoding with invalid size {w}x{h} vs {W}x{H}")
     finally:
         if e:
             e.clean()
@@ -512,7 +522,7 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
 def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=None):
     W = 48
     H = 32
-    log("test_csc(%s, %s, %s, %s)", csc_module, full, test_cs_in, test_cs_out)
+    log("test_csc%s", (csc_module, full, test_cs_in, test_cs_out))
     do_testcsc(csc_module, W, H, W, H, full, test_cs_in, test_cs_out)
     if full and scaling:
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
@@ -522,6 +532,7 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     MAX_WIDTH, MAX_HEIGHT = 512, 512
+    cs = colorspace_converter
     #as there might be a lower limit based on the total number of pixels:
     v = 512
     while v<=min(limit_w, limit_h):
@@ -529,20 +540,20 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
             if tw>limit_w or th>limit_h:
                 break
             try:
-                do_testcsc(colorspace_converter, tw, th, tw, th, False, test_cs_in, test_cs_out, limit_w, limit_h)
-                log("%s can handle %ix%i", colorspace_converter, tw, th)
+                do_testcsc(cs, tw, th, tw, th, False, test_cs_in, test_cs_out, limit_w, limit_h)
+                log(f"{cs} can handle {tw}x{th}")
                 MAX_WIDTH, MAX_HEIGHT = tw, th
             except Exception:
-                log("%s is limited to %ix%i for %s",
-                    colorspace_converter, MAX_WIDTH, MAX_HEIGHT, (test_cs_in, test_cs_out), exc_info=True)
+                log(f"{cs} is limited to {MAX_WIDTH}x{MAX_HEIGHT} for {test_cs_in} -> {test_cs_out}")
                 break
         v *= 2
-    log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
+    log(f"{cs} max dimensions: {MAX_WIDTH}x{MAX_HEIGHT}")
     return MAX_WIDTH, MAX_HEIGHT
 
 
 def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     log("do_testcsc%s", (csc_module, iw, ih, ow, oh, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
+    cstype = csc_module.get_type()
     cs_in_list = test_cs_in
     if cs_in_list is None:
         cs_in_list = csc_module.get_input_colorspaces()
@@ -551,16 +562,19 @@ def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_
         if cs_out_list is None:
             cs_out_list = csc_module.get_output_colorspaces(cs_in)
         for cs_out in cs_out_list:
-            log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)
+            log(f"{cstype}: testing {cs_in} -> {cs_out}")
             e = csc_module.ColorspaceConverter()
             try:
                 e.init_context(iw, ih, cs_in, ow, oh, cs_out)
                 image = make_test_image(cs_in, iw, ih)
                 out = e.convert_image(image)
                 #print("convert_image(%s)=%s" % (image, out))
-                assert out.get_width()==ow, "expected image of width %s but got %s" % (ow, out.get_width())
-                assert out.get_height()==oh, "expected image of height %s but got %s" % (oh, out.get_height())
-                assert out.get_pixel_format()==cs_out, "expected pixel format %s but got %s" % (cs_out, out.get_pixel_format())
+                if out.get_width()!=ow:
+                    raise RuntimeError(f"expected image of width {ow} but got {out.get_width()}")
+                if out.get_height()!=oh:
+                    raise RuntimeError(f"expected image of height {oh} but got {out.get_height()}")
+                if out.get_pixel_format()!=cs_out:
+                    raise RuntimeError(f"expected pixel format {cs_out} but got {out.get_pixel_format()}")
                 if full:
                     for w,h in ((iw*2, ih//2), (iw//2, ih**2)):
                         if w>limit_w or h>limit_h:
@@ -571,6 +585,6 @@ def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_
                         except Exception:
                             out = None
                         if out is not None:
-                            raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))
+                            raise Exception(f"converting an image of a smaller size with {cstype} should have failed, got {out} instead")
             finally:
                 e.clean()
