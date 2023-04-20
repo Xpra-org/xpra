@@ -42,7 +42,7 @@ if not XRes.check_xres():
 
 from xpra.platform.xposix.proc import get_parent_pid
 if get_parent_pid is None:
-    log("proc.get_parent_pid is not available", exc_info=True)
+    log("proc.get_parent_pid is not available")
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
