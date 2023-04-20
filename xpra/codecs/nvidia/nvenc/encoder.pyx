@@ -58,6 +58,7 @@ cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
+cdef int INTRA_REFRESH = envbool("XPRA_NVENC_INTRA_REFRESH", True)
 
 device_lock = Lock()
 
@@ -2034,7 +2035,7 @@ cdef class Encoder:
             #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
             #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
             config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
-            config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+            config.encodeCodecConfig.h264Config.enableIntraRefresh = INTRA_REFRESH
             #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
             #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
             #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
@@ -2044,7 +2045,7 @@ cdef class Encoder:
             config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
             #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
             config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
-            config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
+            config.encodeCodecConfig.hevcConfig.enableIntraRefresh = INTRA_REFRESH
             #config.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
             #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
             #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
