@@ -330,6 +330,9 @@ class Encoder(VideoPipeline):
             info["dst_formats"] = self.dst_formats
         return info
 
+    def clean(self):
+        self.cleanup()
+
 
     def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
