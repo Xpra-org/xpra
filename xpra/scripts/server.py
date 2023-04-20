@@ -137,7 +137,6 @@ def sanitize_env():
              "CKCON_TTY",
              "CKCON_X11_DISPLAY",
              "CKCON_X11_DISPLAY_DEVICE",
-             "WAYLAND_DISPLAY",
              )
 
 def configure_imsettings_env(input_method):
@@ -979,6 +978,8 @@ def _do_run_server(script_file, cmdline,
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
     sanitize_env()
+    if not shadowing:
+        os.environ.pop("WAYLAND_DISPLAY", None)
     os.environ.update(source_env(opts.source))
     if POSIX:
         if xrd:
