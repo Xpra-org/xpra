@@ -43,7 +43,7 @@ if not XRes.check_xres():
 try:
     from xpra.platform.xposix.proc import get_parent_pid
 except ImportError:
-    log("proc.get_parent_pid is not available", exc_info=True)
+    log("proc.get_parent_pid is not available")
     get_parent_pid = None
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
