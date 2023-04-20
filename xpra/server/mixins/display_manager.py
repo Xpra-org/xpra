@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -92,7 +92,7 @@ class DisplayManager(StubServerMixin):
                     v = bytestostr(parts[1].strip())
                     props[k] = v
                 gllog("opengl props=%s", props)
-                if props:
+                if props and props.get("success", "").lower() in TRUE_OPTIONS:
                     gllog.info(f"OpenGL is supported on display {self.display_name!r}")
                     renderer = props.get("renderer")
                     if renderer:
