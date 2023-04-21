@@ -551,6 +551,8 @@ class WindowVideoSource(WindowSource):
         depth = self.image_depth
         if depth==8 and "png/P" in encoding_options:
             return "png/P"
+        if self.encoding=="png/L":
+            return "png/L"
         if self._mmap_size>0:
             return "mmap"
         return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
