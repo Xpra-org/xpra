@@ -276,12 +276,10 @@ class Encodings(StubClientMixin):
             and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
             ("rgb32" if there is an alpha channel, and if the client supports it)
         """
-        cenc = self.get_core_encodings()
-        if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
-            cenc.append("rgb")
-        if "grayscale" not in cenc:
+        cenc = [{"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.get_core_encodings()]
+        if "grayscale" not in cenc and "png/L" in cenc:
             cenc.append("grayscale")
-        return preforder(filter(lambda x : x not in ("rgb32", "rgb24"), cenc))
+        return preforder(cenc)
 
     def get_cursor_encodings(self):
         e = ["raw"]
@@ -296,7 +294,10 @@ class Encodings(StubClientMixin):
         return e
 
     def get_core_encodings(self):
-        return [x for x in get_core_encodings() if x in self.allowed_encodings]
+        core = get_core_encodings()
+        r = [x for x in core if x in self.allowed_encodings]
+        log(f"get_core_encodings()={r} (core={core}, allowed={self.allowed_encodings})")
+        return r
 
     def set_encoding(self, encoding):
         log("set_encoding(%s)", encoding)
