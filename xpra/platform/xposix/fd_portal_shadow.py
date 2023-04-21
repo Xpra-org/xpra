@@ -63,7 +63,10 @@ class PortalShadow(GTKShadowServerBase):
         if self.session:
             #https://gitlab.gnome.org/-/snippets/1122
             log(f"trying to close the session {self.session}")
-            self.session.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
+            try:
+                self.session.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
+            except Exception as e:
+                log(f"ignoring error closing session {self.session}: {e}")
             self.session = None
 
 
