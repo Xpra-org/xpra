@@ -8,7 +8,6 @@ from libc.stdint cimport uintptr_t
 from libc.stdio cimport printf
 from xpra.util import AtomicInteger
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf #pylint: disable=syntax-error
-from time import monotonic, sleep
 from weakref import WeakValueDictionary
 from threading import Event
 
@@ -22,7 +21,6 @@ log = Logger("encoder", "nvdec")
 #we can import pycuda safely here,
 #because importing cuda_context will have imported it with the lock
 from pycuda.driver import Memcpy2D, mem_alloc_pitch, memcpy_dtoh, Stream
-import numpy
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -404,6 +402,9 @@ MIN_SIZES = {}
 
 def init_module():
     log("nvdec.init_module()")
+    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    if has_nvidia_hardware() is False:
+        raise ImportError("no nvidia GPU device found")
 
 def cleanup_module():
     log("nvdec.cleanup_module()")

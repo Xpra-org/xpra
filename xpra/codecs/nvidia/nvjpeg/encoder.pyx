@@ -124,6 +124,9 @@ def get_info():
 
 def init_module():
     log("nvjpeg.encoder.init_module() version=%s", get_version())
+    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    if has_nvidia_hardware() is False:
+        raise ImportError("no nvidia GPU device found")
 
 def cleanup_module():
     log("nvjpeg.encoder.cleanup_module()")
