@@ -1840,8 +1840,8 @@ def validated_encodings(encodings):
         from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
     except ImportError:
         return []
-    lower_encodings = [x.lower() for x in encodings]
-    validated = [x for x in PREFERRED_ENCODING_ORDER if x.lower() in lower_encodings]
+    encodings = [x.lower() for x in encodings] + list(encodings)
+    validated = [x for x in PREFERRED_ENCODING_ORDER if x in encodings]
     if not validated:
         raise InitException("no valid encodings specified")
     return validated
