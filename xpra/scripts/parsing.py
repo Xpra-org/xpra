@@ -1811,8 +1811,8 @@ def validated_encodings(encodings):
         from xpra.codecs.codec_constants import preforder
     except ImportError:
         return []
-    lower_encodings = [x.lower() for x in encodings]
-    validated = preforder(lower_encodings)
+    encodings = [x.lower() for x in encodings]+list(encodings)
+    validated = preforder(encodings)
     if not validated:
         raise InitException("no valid encodings specified")
     return validated
