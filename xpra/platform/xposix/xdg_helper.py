@@ -251,7 +251,9 @@ def load_xdg_menu(submenu):
             de = entry.DesktopEntry
             name = de.getName()
             try:
-                entries_data[name] = load_xdg_entry(de)
+                v = load_xdg_entry(de)
+                if v and name:
+                    entries_data[name] = v
             except Exception as e:
                 log("load_xdg_menu(%s)", submenu, exc_info=True)
                 log.error("Error loading desktop entry '%s':", name)
@@ -260,13 +262,15 @@ def load_xdg_menu(submenu):
 
 def remove_icons(menu_data):
     def noicondata(d):
-        return dict((k,v) for k,v in d.items() if k!="IconData")
+        return dict((k,v) for k,v in d.items() if k and v and k!="IconData")
     filt = {}
     for category, cdef in menu_data.items():
         fcdef = dict(cdef)
         entries = dict(fcdef.get("Entries", {}))
         for entry, edef in tuple(entries.items()):
-            entries[entry] = noicondata(edef)
+            nd = noicondata(edef)
+            if entry and nd:
+                entries[entry] = nd
         fcdef["Entries"] = entries
         filt[category] = fcdef
     return filt
@@ -329,7 +333,9 @@ def do_load_xdg_menu_data():
         if isinstance(submenu, Menu) and submenu.Visible:
             name = submenu.getName()
             try:
-                menu_data[name] = load_xdg_menu(submenu)
+                v = load_xdg_menu(submenu)
+                if v and name:
+                    menu_data[name] = v
             except Exception as e:
                 log("load_xdg_menu_data()", exc_info=True)
                 log.error("Error loading submenu '%s':", name)
