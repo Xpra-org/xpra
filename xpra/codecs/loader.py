@@ -340,9 +340,11 @@ def get_encoding_name(encoding):
 def get_encoding_help(encoding):
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
-    compressors = compression.get_enabled_compressors()
-    compressors = [x for x in compressors if x!="brotli"]
-    compressors_str = " or ".join(compressors)
+    compressors = [x for x in compression.get_enabled_compressors()
+                   if x not in ("brotli", "none")]
+    compressors_str = ""
+    if compressors:
+        compressors_str = ", may be compressed using "+(" or ".join(compressors))+" "
     return {
           "auto"    : "automatic mode (recommended)",
           "grayscale" : "same as 'auto' but in grayscale mode",
@@ -359,8 +361,8 @@ def get_encoding_help(encoding):
           "jpega"   : "JPEG lossy compression, with alpha channel",
           "avif"    : "AVIF: AV1 Image File Format",
           "av1"     : "AV1: AOMedia Video 1",
-          "rgb"     : "Raw RGB pixels, lossless,"
-                      +f" compressed using {compressors_str} (24bpp or 32bpp for transparency)",
+          "rgb"     : "Raw RGB pixels, lossless"
+                      +f"{compressors_str}(24bpp or 32bpp for transparency)",
           "scroll"  : "motion vectors, supplemented with picture codecs",
           }.get(encoding)
 
