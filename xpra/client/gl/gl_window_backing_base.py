@@ -65,7 +65,7 @@ from xpra.client.gui.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
     WEBP_PILLOW, SCROLL_ENCODING,
     )
-from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
+from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, get_max_texture_size
 from xpra.client.gl.gl_colorspace_conversions import (
     YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader, NV12_to_RGB_shader,
     )
@@ -214,7 +214,7 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
     except ImportError:
         pass
     else:
-        zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
+        zerocopy_upload = OpenGL_version.__version__==OpenGL_accelerate.__version__
 
 
 if POSIX and not OSX:
