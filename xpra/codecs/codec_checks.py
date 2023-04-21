@@ -473,7 +473,7 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
             image = make_test_image(cs_in, W, H)
             v = e.compress_image(image)
             if v is None:
-                raise Exception(f"{encoding} compression failed on image {i+1} / {N}")
+                raise Exception(f"{encoding} compression failed on image {i+1} of {N}")
             data, meta = v
             if not data:
                 delayed = meta.get("delayed", 0)
