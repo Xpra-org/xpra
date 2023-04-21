@@ -28,7 +28,16 @@ assert get_version and get_type and init_module and cleanup_module
 
 DEFAULT_MAPPINGS = "vp8:vp8dec;vp9:vp9dec"
 if not WIN32:
-    DEFAULT_MAPPINGS += ";av1:av1dec;h264:nvh264dec,avdec_h264;hevc:vaapih265dec"
+    #enable nv decoder unless we don't find nvidia hardware:
+    h264 = "nvh264dec,"
+    try:
+        from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+        if not has_nvidia_hardware():
+            h264 = ""
+    except ImportError:
+        pass
+    h264 += "avdec_h264"
+    DEFAULT_MAPPINGS += f";av1:av1dec;h264:{h264};hevc:vaapih265dec"
 
 def get_codecs_options():
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS", DEFAULT_MAPPINGS)
