@@ -505,8 +505,10 @@ class WindowVideoSource(WindowSource):
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
         depth = self.image_depth
-        if depth==8 and "png/P" in options:
+        if (depth==8 and "png/P" in options) or self.encoding=="png/P":
             return "png/P"
+        if self.encoding=="png/L":
+            return "png/L"
         if self._mmap_size>0 and self.encoding!="grayscale":
             return "mmap"
         pixel_count = ww*wh

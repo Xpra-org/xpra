@@ -859,7 +859,7 @@ class WindowSource(WindowIconSource):
         elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
             return self.encoding_is_pngL
-        elif self.image_depth==8:
+        elif self.image_depth==8 or self.encoding=="png/P":
             #no other option:
             return self.encoding_is_pngP
         elif self.strict and self.encoding!="auto":
