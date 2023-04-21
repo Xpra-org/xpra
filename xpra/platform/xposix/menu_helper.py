@@ -245,6 +245,10 @@ def find_glob_icon(*names, category="categories"):
     return None
 
 
+def noicondata(d):
+    return dict((k,v) for k,v in d.items() if k and v and k!="IconData")
+
+
 def load_xdg_entry(de):
     #not exposed:
     #"MimeType" is an re
@@ -306,7 +310,7 @@ def load_xdg_menu(submenu):
                 log("  - %-3i %s", i, name)
                 try:
                     ed = load_xdg_entry(de)
-                    if ed:
+                    if name and ed:
                         entries_data[name] = ed
                 except Exception as e:
                     log("load_xdg_menu(%s)", submenu, exc_info=True)
@@ -321,14 +325,14 @@ def load_xdg_menu(submenu):
     return submenu_data
 
 def remove_icons(menu_data):
-    def noicondata(d):
-        return dict((k,v) for k,v in d.items() if k!="IconData")
     filt = {}
     for category, cdef in menu_data.items():
         fcdef = dict(cdef)
         entries = dict(fcdef.get("Entries", {}))
         for entry, edef in tuple(entries.items()):
-            entries[entry] = noicondata(edef)
+            nd = noicondata(edef)
+            if entry and nd:
+                entries[entry] = nd
         fcdef["Entries"] = entries
         filt[category] = fcdef
     return filt
