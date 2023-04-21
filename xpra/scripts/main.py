@@ -1461,7 +1461,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
                 einfo = f"invalid encoding: {opts.encoding}\n"
             if opts.encoding=="help" or err:
                 from xpra.codecs.loader import encodings_help
-                encodings = ["auto"] + app.get_encodings()
+                encodings = ["auto"] + list(app.get_encodings())
                 raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
