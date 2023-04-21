@@ -549,7 +549,7 @@ class WindowVideoSource(WindowSource):
         #and we can ignore the current encoding
         encoding_options = encoding_options or self.non_video_encodings
         depth = self.image_depth
-        if depth==8 and "png/P" in encoding_options:
+        if (depth==8 and "png/P" in encoding_options) or self.encoding=="png/P":
             return "png/P"
         if self.encoding=="png/L":
             return "png/L"
