@@ -19,7 +19,7 @@ from xpra.os_util import (
     )
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
-from xpra.scripts.main import X11_SOCKET_DIR
+from xpra.scripts.main import X11_SOCKET_DIR, stat_display_socket
 from xpra.scripts.config import get_defaults
 
 from xpra.log import Logger
@@ -278,9 +278,13 @@ class ProcessTestUtil(unittest.TestCase):
             for x in os.listdir(X11_SOCKET_DIR):
                 if x.startswith("X"):
                     try:
-                        X11_displays.add(int(x[1:]))
+                        dno = int(x[1:])
                     except ValueError:
                         pass
+                    else:
+                        sock_path = os.path.join(X11_SOCKET_DIR, x)
+                        if stat_display_socket(sock_path):
+                            X11_displays.add(dno)
         return X11_displays
 
     @classmethod
