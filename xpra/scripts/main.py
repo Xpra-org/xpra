@@ -9,6 +9,7 @@
 import sys
 import os.path
 import stat
+import glob
 import socket
 import time
 import logging
@@ -28,7 +29,7 @@ from xpra.util import (
 from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
-    bytestostr, use_tty, osexpand,
+    bytestostr, use_tty, osexpand, is_socket,
     OSEnvContext,
     set_proc_title,
     is_systemd_pid1,
@@ -57,7 +58,7 @@ WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 90)
 CONNECT_TIMEOUT = envint("XPRA_CONNECT_TIMEOUT", 20)
 OPENGL_PROBE_TIMEOUT = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
-VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
+VERIFY_SOCKET_TIMEOUT = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
 #pylint: disable=import-outside-toplevel
@@ -2091,94 +2092,141 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
     return r
 
 
-X11_SOCKET_DIR = "/tmp/.X11-unix"
-
-def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
+def find_wayland_display_sockets(uid=getuid(), gid=getgid()):
+    if WIN32 or OSX:
+        return {}
     displays = {}
-    if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
-        for x in os.listdir(X11_SOCKET_DIR):
-            if not x.startswith("X"):
-                warn(f"path {x!r} does not look like an X11 socket")
-                continue
-            try:
-                display_no = int(x[1:])
-            except ValueError:
-                warn(f"{x} does not parse as a display number")
-                continue
-            #arbitrary: only shadow automatically displays below 10..
-            if max_display_no and display_no>max_display_no:
-                #warn("display no %i too high (max %i)" % (v, max_display_no))
-                continue
-            stat = stat_X11_display(display_no)
-            if not stat:
-                continue
-            uid = stat.get("uid", -1)
-            gid = stat.get("gid", -1)
-            if match_uid is not None and uid!=match_uid:
-                #print("display socket %s does not match uid %i (uid=%i)" % (socket_path, match_uid, sstat.st_uid))
-                continue
-            if match_gid is not None and gid!=match_gid:
-                #print("display socket %s does not match gid %i (gid=%i)" % (socket_path, match_gid, sstat.st_gid))
-                continue
-            displays[display_no] = (uid, gid, )
+    def addwaylandsock(d, p):
+        if os.path.isabs(p) and is_socket(p) and os.path.exists(p) and d not in displays:
+            displays[d] = p
+    from xpra.platform.xposix.paths import get_runtime_dir
+    xrd = osexpand(get_runtime_dir(), uid=uid, gid=gid)
+    #try the one from the environment first:
+    wd = os.environ.get("WAYLAND_DISPLAY")
+    if wd:
+        addwaylandsock(wd, wd)
+        addwaylandsock(wd, os.path.join(xrd, wd))
+    #now try a file glob:
+    for x in glob.glob(os.path.join(xrd, "wayland-*")):
+        wd = os.path.basename(x)
+        addwaylandsock(wd, x)
     return displays
 
-def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
-    socket_path = os.path.join(X11_SOCKET_DIR, f"X{display_no}")
+
+X11_SOCKET_DIR = "/tmp/.X11-unix"
+def find_X11_display_sockets(max_display_no=None):
+    displays = {}
+    if not os.path.exists(X11_SOCKET_DIR):
+        return displays
+    if not os.path.isdir(X11_SOCKET_DIR):
+        return displays
+    for x in os.listdir(X11_SOCKET_DIR):
+        if not x.startswith("X"):
+            warn(f"path {x!r} does not look like an X11 socket")
+            continue
+        try:
+            display_no = int(x[1:])
+        except ValueError:
+            warn(f"{x} does not parse as a display number")
+            continue
+        #arbitrary: only shadow automatically displays below 10..
+        if max_display_no and display_no>max_display_no:
+            #warn("display no %i too high (max %i)" % (v, max_display_no))
+            continue
+        displays[f":{display_no}"] = os.path.join(X11_SOCKET_DIR, x)
+    return displays
+
+
+def stat_display_socket(socket_path, timeout=VERIFY_SOCKET_TIMEOUT):
     try:
         #check that this is a socket
         sstat = os.stat(socket_path)
-        is_socket = stat.S_ISSOCK(sstat.st_mode)
-        if not is_socket:
+        if not stat.S_ISSOCK(sstat.st_mode):
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
         try:
             if timeout>0:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
+                sock.settimeout(timeout)
                 sock.connect(socket_path)
                 sock.close()
-        except OSError:
+        except BlockingIOError:
+            pass
+        except OSError as e:
+            #warn(f"Error trying to connect to {socket_path!r}: {e}")
             return {}
-        else:
-            return {
-                "uid"   : sstat.st_uid,
-                "gid"   : sstat.st_gid,
-                }
+        return {
+            "uid"   : sstat.st_uid,
+            "gid"   : sstat.st_gid,
+            }
     except FileNotFoundError:
-        pass
+        warn(f"Socket path {socket_path!r} not found")
     except Exception as e:
-        warn(f"failure on {socket_path}: {e}")
+        warn(f"Warning: unexpected failure on {socket_path!r}: {e}")
     return {}
 
 
-def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
-    displays = [f":{x}" for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
-    if current_display and current_display not in displays:
-        displays.append(current_display)
-    if len(displays)!=1:
-        #try without uid match:
-        displays = [f":{x}" for x in find_X11_displays(max_display_no=10, match_gid=gid)]
-        if len(displays)!=1:
-            #try without gid match:
-            displays = [f":{x}" for x in find_X11_displays(max_display_no=10)]
-    if not displays:
-        raise InitExit(1, "could not detect any live X11 displays")
-    if len(displays)>1:
-        #since we are here to shadow,
-        #assume we want to shadow a real X11 server,
-        #so remove xpra's own displays to narrow things down:
-        results = dotxpra.sockets()
-        xpra_displays = [display for _, display in results]
-        displays = list(set(displays)-set(xpra_displays))
-        if not displays:
-            raise InitExit(1, "could not detect any live plain X11 displays,\n"
-                           +" only multiple xpra displays: "+csv(xpra_displays))
-    if current_display:
-        return current_display
-    if len(displays)!=1:
-        raise InitExit(1, "too many live X11 displays to choose from: "+csv(sorted_nicely(displays)))
-    return displays[0]
+def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
+    """
+    try to find the one "real" active display
+    either X11 or wayland displays used by real user sessions
+    """
+    MAX_X11_DISPLAY_NO = 10
+    args = tuple(x for x in (uid, gid) if x is not None)
+    all_displays = []
+    while True:
+        displays = list(find_displays(MAX_X11_DISPLAY_NO, *args).keys())
+        if current_display and current_display not in displays:
+            displays.append(current_display)
+        all_displays = all_displays or displays
+        if len(displays)>1:
+            #remove xpra's own displays to narrow things down:
+            results = dotxpra.sockets()
+            xpra_displays = [display for _, display in results]
+            displays = list(set(displays)-set(xpra_displays))
+        if len(displays)==1:
+            return displays[0]
+        if not args:
+            if all_displays:
+                raise InitExit(1, "too many live displays to choose from: "+csv(all_displays))
+            raise InitExit(1, "could not detect any live displays")
+        #remove last arg (gid then uid) then try again:
+        args = args[:-1]
+
+
+def find_displays(max_display_no=None, uid=getuid(), gid=getgid()):
+    if OSX or WIN32:
+        return {"Main" : {}}
+    displays = {}
+    try:
+        from xpra import x11
+        assert x11
+    except ImportError:
+        pass
+    else:
+        displays = find_X11_display_sockets(max_display_no=max_display_no)
+    #add wayland displays:
+    displays.update(find_wayland_display_sockets(uid, gid))
+    #now verify that the sockets are usable
+    #and filter out by uid and gid if requested:
+    #print(f"find_displays unfiltered displays={displays}")
+    display_info = {}
+    for display, sockpath in displays.items():
+        stat = stat_display_socket(sockpath)
+        if not stat:
+            #print(f"cannot stat {sockpath}")
+            continue
+        #print(f"stat({sockpath}={stat}")
+        sock_uid = stat.get("uid", -1)
+        sock_gid = stat.get("gid", -1)
+        if uid is not None and uid!=sock_uid:
+            #print(f"display socket {sockpath} does not match uid {uid} (uid={sock_uid})")
+            continue
+        if gid is not None and gid!=sock_gid:
+            #print(f"display socket {sockpath} does not match gid {gid} (gid={sock_gid})")
+            continue
+        display_info[display] = {"uid" : sock_uid, "gid" : sock_gid, "socket" : sockpath}
+    return display_info
 
 
 no_gtk_bypass = False
@@ -2346,7 +2394,7 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
     if OSX or WIN32:
         #no need for a specific display
         return "Main"
-    return guess_X11_display(dotxpra, None, uid, gid)
+    return guess_display(dotxpra, None, uid, gid)
 
 
 def start_macos_shadow(cmd, env, cwd):
@@ -3121,10 +3169,10 @@ def run_clean(opts, args):
         except (ValueError, TypeError):
             dno = 0
         else:
-            r = stat_X11_display(dno, timeout=VERIFY_X11_SOCKET_TIMEOUT)
+            x11_socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
+            r = stat_display_socket(x11_socket_path)
             if r:
                 #so the X11 server may still be running
-                #x11_sockpath = X11_SOCKET_DIR+"/X%i" % dno
                 xvfb_pid = load_pid(session_dir, "xvfb.pid")
                 if xvfb_pid and kill_displays:
                     kill_pid(xvfb_pid)
@@ -3262,22 +3310,22 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
 
 def run_displays(args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays_info(None, args)
-    print("Found %i displays:" % len(displays))
+    displays = get_displays_info(display_names=args if args else None)
+    print(f"Found {len(displays)} displays:")
     if args:
-        print(" matching %s" % csv(args))
+        print(" matching " + csv(args))
     SHOW = {
         "xpra-server-mode"  : "mode",
         "uid"               : "uid",
         "gid"               : "gid",
         }
-    for display, descr in sorted_nicely(displays.items()):
+    for display, descr in displays.items():
         state = descr.pop("state", "LIVE")
         info_str = ""
         if "wmname" in descr:
             info_str += descr.get("wmname")+": "
         info_str += csv("%s=%s" % (v, descr.get(k)) for k,v in SHOW.items() if k in descr)
-        print("%4s    %-8s    %s" % (display, state, info_str))
+        print("%10s    %-8s    %s" % (display, state, info_str))
 
 def run_clean_displays(args):
     if not POSIX or OSX:
@@ -3378,18 +3426,21 @@ def run_clean_displays(args):
 def get_displays_info(dotxpra=None, display_names=None):
     displays = get_displays(dotxpra, display_names)
     displays_info = {}
-    for display, descr in sorted_nicely(displays.items()):
+    for display, descr in displays.items():
         #descr already contains the uid, gid
         displays_info[display] = descr
         #add wminfo:
         descr.update(get_display_info(display))
-    return displays_info
+    sn = sorted_nicely(displays_info.keys())
+    return dict((k,displays_info[k]) for k in sn)
 
 def get_display_info(display):
     log = Logger("util")
     display_info = {"state" : "LIVE"}
     if OSX or not POSIX:
         return display_info
+    if not display.startswith(":"):
+        return {}
     wminfo = exec_wminfo(display)
     if wminfo:
         log(f"wminfo({display})={wminfo}")
@@ -3410,7 +3461,7 @@ def get_display_info(display):
     return display_info
 
 def get_displays(dotxpra=None, display_names=None):
-    if OSX or not POSIX:
+    if OSX or WIN32:
         return {"Main" : {}}
     log = get_util_logger()
     #add ":" prefix to display name,
@@ -3418,16 +3469,14 @@ def get_displays(dotxpra=None, display_names=None):
     xpra_sessions = {}
     if dotxpra:
         xpra_sessions = get_xpra_sessions(dotxpra)
-    displays = {}
-    for k, v in find_X11_displays().items():
-        display = f":{k}"
-        if display in xpra_sessions:
-            continue
-        if display_names and display not in display_names:
-            continue
-        uid, gid = v[:2]
-        displays[display] = {"uid" : uid, "gid" : gid}
-    log("get_displays%s=%s", (dotxpra, display_names), displays)
+    displays = find_displays()
+    log(f"find_displays()={displays}")
+    #filter out:
+    displays = dict(
+        (d,i) for d,i in tuple(displays.items()) if
+        (d not in xpra_sessions) and (display_names is None or d in display_names)
+        )
+    log(f"get_displays({dotxpra}, {display_names})={displays} (xpra_sessions={xpra_sessions})")
     return displays
 
 def run_list_sessions(args, options):

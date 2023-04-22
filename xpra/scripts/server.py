@@ -22,7 +22,7 @@ from xpra.scripts.main import (
     info, warn,
     no_gtk, bypass_no_gtk, nox,
     validate_encryption, parse_env, configure_env,
-    stat_X11_display, get_xpra_sessions,
+    stat_display_socket, get_xpra_sessions,
     make_progress_process,
     X11_SOCKET_DIR,
     )
@@ -780,9 +780,9 @@ def _do_run_server(script_file, cmdline,
             #just a virtual name for the only display available:
             display_name = "Main"
         else:
-            from xpra.scripts.main import guess_X11_display
+            from xpra.scripts.main import guess_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-            display_name = guess_X11_display(dotxpra, desktop_display)
+            display_name = guess_display(dotxpra, desktop_display)
     elif upgrading and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
@@ -1144,9 +1144,10 @@ def _do_run_server(script_file, cmdline,
                 use_display = False
             else:
                 progress(40, "connecting to the display")
-                display_no = int(display_name[1:])
-                stat = stat_X11_display(display_no)
-                log(f"stat_X11_display({display_no})={stat}")
+                if display_name.startswith(":"):
+                    x11_socket_path = os.path.join(X11_SOCKET_DIR, display_name)
+                    stat = stat_display_socket(x11_socket_path)
+                    log(f"stat_display_socket({x11_socket_path})={stat}")
                 if not stat:
                     if upgrading:
                         error_cb(f"cannot access display {display_name!r}")
