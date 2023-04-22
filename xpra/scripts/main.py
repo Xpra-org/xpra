@@ -2173,6 +2173,13 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     MAX_X11_DISPLAY_NO = 10
     args = tuple(x for x in (uid, gid) if x is not None)
     all_displays = []
+    info_cache = {}
+    def dinfo(display):
+        info = info_cache.get(display)
+        if info is None:
+            info = get_display_info(display)
+            info_cache[display] = info
+        return info
     while True:
         displays = list(find_displays(MAX_X11_DISPLAY_NO, *args).keys())
         if current_display and current_display not in displays:
@@ -2183,13 +2190,16 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
             results = dotxpra.sockets()
             xpra_displays = [display for _, display in results]
             displays = list(set(displays)-set(xpra_displays))
+        if len(displays)>1:
+            #keep only LIVE ones - assume that they are:
+            displays = [display for display in displays if dinfo(display).get("state", "LIVE")=="LIVE"]
         if len(displays)==1:
             return displays[0]
         if not args:
             if all_displays:
                 raise InitExit(1, "too many live displays to choose from: "+csv(sorted_nicely(all_displays)))
             raise InitExit(1, "could not detect any live displays")
-        #remove last arg (gid then uid) then try again:
+        #remove last arg (gid then uid) and try again:
         args = args[:-1]
 
 
@@ -3321,8 +3331,9 @@ def run_displays(args):
     for display, descr in displays.items():
         state = descr.pop("state", "LIVE")
         info_str = ""
-        if "wmname" in descr:
-            info_str += descr.get("wmname")+": "
+        wmname = descr.get("wmname")
+        if wmname:
+            info_str += f"{wmname}: "
         info_str += csv("%s=%s" % (v, descr.get(k)) for k,v in SHOW.items() if k in descr)
         print("%10s    %-8s    %s" % (display, state, info_str))
 
