@@ -47,6 +47,7 @@ class GTKServerBase(ServerBase):
         self.source_remove = GLib.source_remove
         self.cursor_suspended = False
         self.ui_watcher = None
+        self.keymap_changing_timer : int = 0
         super().__init__()
 
     def watch_keymap_changes(self):
