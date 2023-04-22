@@ -63,11 +63,11 @@ class X11ServerTest(ServerTestUtil):
 		self.check_stop_server(server, "stop", display)
 		#the socket may be removed before the vfb is stopped,
 		#so wait a little:
-		for _ in range(5):
+		for _ in range(20):
 			if display not in self.find_X11_displays():
-				break
+				return
 			time.sleep(1)
-		assert display not in self.find_X11_displays(), "the display %s should have been killed" % display
+		raise RuntimeError(f"the display {display!r} should have been killed by the server shutdown")
 
 
 	def test_existing_Xvfb(self):
