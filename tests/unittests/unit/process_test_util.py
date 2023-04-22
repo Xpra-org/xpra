@@ -276,15 +276,15 @@ class ProcessTestUtil(unittest.TestCase):
         X11_displays = set()
         if POSIX and os.path.exists(X11_SOCKET_DIR):
             for x in os.listdir(X11_SOCKET_DIR):
-                if x.startswith("X"):
-                    try:
-                        dno = int(x[1:])
-                    except ValueError:
-                        pass
-                    else:
-                        sock_path = os.path.join(X11_SOCKET_DIR, x)
-                        if stat_display_socket(sock_path):
-                            X11_displays.add(dno)
+                if not x.startswith("X"):
+                    continue
+                try:
+                    dno = int(x[1:])
+                except ValueError:
+                    continue
+                sock_path = os.path.join(X11_SOCKET_DIR, x)
+                if stat_display_socket(sock_path):
+                    X11_displays.add(dno)
         return X11_displays
 
     @classmethod

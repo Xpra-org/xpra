@@ -102,6 +102,7 @@ class ServerTestUtil(ProcessTestUtil):
         defaults = dict((k, "no") for k in (
             "av-sync", "remote-logging",
             "windows",
+            "mdns",
             "rfb-upgrade", "ssh-upgrade",
             "speaker", "microphone",
             "systemd-run", "start-via-proxy",

@@ -102,7 +102,7 @@ SAMPLE_IMAGES = {
 TEST_SIZES = (
     (128, 128),
     (512, 512),
-#    (255, 257),
+    (255, 257),
     )
 
 class Test_Roundtrip(unittest.TestCase):
