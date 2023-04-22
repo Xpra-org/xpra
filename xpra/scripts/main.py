@@ -2144,17 +2144,16 @@ def stat_display_socket(socket_path, timeout=VERIFY_SOCKET_TIMEOUT):
         if not stat.S_ISSOCK(sstat.st_mode):
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
-        try:
-            if timeout>0:
+        if timeout>0:
+            try:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(timeout)
                 sock.connect(socket_path)
+            except OSError as e:
+                #warn(f"Error trying to connect to {socket_path!r}: {e}")
+                return {}
+            finally:
                 sock.close()
-        except BlockingIOError:
-            pass
-        except OSError as e:
-            #warn(f"Error trying to connect to {socket_path!r}: {e}")
-            return {}
         return {
             "uid"   : sstat.st_uid,
             "gid"   : sstat.st_gid,
@@ -2188,7 +2187,7 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
             return displays[0]
         if not args:
             if all_displays:
-                raise InitExit(1, "too many live displays to choose from: "+csv(all_displays))
+                raise InitExit(1, "too many live displays to choose from: "+csv(sorted_nicely(all_displays)))
             raise InitExit(1, "could not detect any live displays")
         #remove last arg (gid then uid) then try again:
         args = args[:-1]
