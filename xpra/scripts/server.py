@@ -1145,7 +1145,7 @@ def _do_run_server(script_file, cmdline,
             else:
                 progress(40, "connecting to the display")
                 if display_name.startswith(":"):
-                    x11_socket_path = os.path.join(X11_SOCKET_DIR, display_name)
+                    x11_socket_path = os.path.join(X11_SOCKET_DIR, "X"+display_name[1:])
                     stat = stat_display_socket(x11_socket_path)
                     log(f"stat_display_socket({x11_socket_path})={stat}")
                 if not stat:
@@ -1192,9 +1192,10 @@ def _do_run_server(script_file, cmdline,
                                                       uid, gid, username, uinput_uuid)
             xauth_add(xauthority, display_name, xauth_data, uid, gid)
             xvfb_pid = xvfb.pid
-            xvfb_pidfile = write_session_file("xvfb.pid", "%s" % xvfb.pid)
+            xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
+            log(f"saved xvfb.pid={xvfb.pid}")
             def xvfb_terminated():
-                log("xvfb_terminated() removing %s", xvfb_pidfile)
+                log(f"xvfb_terminated() removing {xvfb_pidfile}")
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
             getChildReaper().add_process(xvfb, "xvfb", opts.xvfb, ignore=True, callback=xvfb_terminated)
@@ -1230,6 +1231,7 @@ def _do_run_server(script_file, cmdline,
                 xvfb_pid = int(load_session_file("xvfb.pid") or 0)
             except ValueError:
                 pass
+            log(f"reloaded xvfb.pid={xvfb_pid} from session file")
             if use_uinput:
                 uinput_uuid = load_session_file("uinput-uuid")
         if uinput_uuid:
