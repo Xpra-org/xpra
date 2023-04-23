@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -57,8 +57,9 @@ def get_x11_property(atom_name):
                 return b""
     except Exception as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
-        log.error("Error: cannot get X11 property '%s'", atom_name)
-        log.estr(e)
+        if not os.environ.get("WAYLAND_DISPLAY"):
+            log.error("Error: cannot get X11 property '%s'", atom_name)
+            log.estr(e)
     return b""
 
 def get_pulse_server_x11_property():
