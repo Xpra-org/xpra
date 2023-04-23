@@ -49,6 +49,10 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         GObject.GObject.__init__(self)
         self._owner_change_embargo = 0
         self._want_targets = False
+        display = Gdk.Display.get_default()
+        if not display:
+            log.warn(f"Warning: no display, cannot access the {selection} clipboard")
+            return
         self.clipboard = Gtk.Clipboard.get(Gdk.Atom.intern(selection, False))
         self.clipboard.connect("owner-change", self.owner_change)
 
