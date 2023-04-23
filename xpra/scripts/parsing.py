@@ -380,7 +380,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
         if not find_session_by_name:
             raise ValueError(f"invalid display name {display_name!r}")
         r = find_session_by_name(display_name)
-        if not display_name:
+        if not r:
             raise ValueError(f"no session found matching name {display_name!r}")
         display_name = r
 
