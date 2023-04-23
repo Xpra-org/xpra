@@ -73,6 +73,8 @@ class InputMixin(StubSourceMixin):
 
 
     def set_layout(self, layout, variant, options):
+        if not self.keyboard_config:
+            return
         return self.keyboard_config.set_layout(layout, variant, options)
 
     def keys_changed(self):

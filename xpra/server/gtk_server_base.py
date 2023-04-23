@@ -153,11 +153,13 @@ class GTKServerBase(ServerBase):
 
     def get_ui_info(self, proto, *args):
         info = super().get_ui_info(proto, *args)
-        info.setdefault("server", {}).update({
-                                              "display"             : Gdk.Display.get_default().get_name(),
-                                              "root_window_size"    : self.get_root_window_size(),
-                                              })
-        info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
+        display = Gdk.Display.get_default()
+        if display:
+            info.setdefault("server", {}).update({
+                "display"             : display.get_name(),
+                "root_window_size"    : self.get_root_window_size(),
+                })
+            info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
 
 
@@ -187,9 +189,10 @@ class GTKServerBase(ServerBase):
     def send_initial_cursors(self, ss, _sharing=False):
         #cursors: get sizes and send:
         display = Gdk.Display.get_default()
-        self.cursor_sizes = int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
-        cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
-        ss.send_cursor()
+        if display:
+            self.cursor_sizes = int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
+            cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
+            ss.send_cursor()
 
     def get_ui_cursor_info(self) -> dict:
         #(from UI thread)
