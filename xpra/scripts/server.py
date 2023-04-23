@@ -866,11 +866,11 @@ def _do_run_server(script_file, cmdline,
         env_script = xpra_env_shell_script(opts.socket_dir, env)
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
-    uid = int(opts.uid)
-    gid = int(opts.gid)
+    uid : int = int(opts.uid)
+    gid : int = int(opts.gid)
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
-    ROOT = POSIX and getuid()==0
+    ROOT : bool = POSIX and getuid()==0
     if POSIX and uid and not gid:
         #try harder to use a valid group,
         #since we're going to chown files:
@@ -912,8 +912,8 @@ def _do_run_server(script_file, cmdline,
             del e
 
     clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
-    start_vfb = not (shadowing or proxying or clobber or expanding)
-    xauth_data = get_hex_uuid() if start_vfb else None
+    start_vfb : bool = not (shadowing or proxying or clobber or expanding)
+    xauth_data : str = get_hex_uuid() if start_vfb else None
 
     # if pam is present, try to create a new session:
     pam = None
