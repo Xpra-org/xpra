@@ -70,7 +70,7 @@ class X11ServerTest(ServerTestUtil):
 		raise RuntimeError(f"the display {display!r} should have been killed by the server shutdown")
 
 
-	def Xtest_existing_Xvfb(self):
+	def test_existing_Xvfb(self):
 		display, xvfb, server = self.start_test_xvfb_and_server()
 		self.check_stop_server(server, "stop", display)
 		time.sleep(1)
@@ -78,7 +78,7 @@ class X11ServerTest(ServerTestUtil):
 		xvfb.terminate()
 
 
-	def Xtest_dbus(self):
+	def test_dbus(self):
 		dbus_send = which("dbus-send")
 		if not dbus_send:
 			print("Warning: dbus test skipped, 'dbus-send' not found")
