@@ -95,15 +95,21 @@ class DisplayManager(StubServerMixin):
                     v = bytestostr(parts[1].strip())
                     props[k] = v
                 gllog("opengl props=%s", props)
-                if props and props.get("success", "").lower() in TRUE_OPTIONS:
-                    gllog.info(f"OpenGL is supported on display {self.display_name!r}")
-                    renderer = props.get("renderer")
-                    if renderer:
-                        gllog.info(f" using {renderer!r} renderer")
+                if props:
+                    if props.get("success", "").lower() in TRUE_OPTIONS:
+                        gllog.info(f"OpenGL is supported on display {self.display_name!r}")
+                        renderer = props.get("renderer")
+                        if renderer:
+                            gllog.info(f" using {renderer!r} renderer")
+                    else:
+                        gllog.info("OpenGL is not supported on this display")
+                        err = props.get("error")
+                        if err:
+                            gllog.info(f" {err}")
                 else:
                     gllog.info("No OpenGL information available")
             else:
-                props["error-details"] = str(err).strip("\n\r")
+                props["error-details"] = bytestostr(err).strip("\n\r")
                 error = "unknown error"
                 for x in str(err).splitlines():
                     if x.startswith("RuntimeError: "):

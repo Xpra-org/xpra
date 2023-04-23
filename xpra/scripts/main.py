@@ -607,7 +607,6 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         return run_splash(args)
     elif mode=="opengl":
-        check_gtk_client()
         return run_glcheck(options)
     elif mode=="opengl-probe":
         check_gtk_client()
@@ -2370,10 +2369,13 @@ def do_run_glcheck(opts, show=False) -> dict:
 
 def run_glcheck(opts):
     try:
+        check_gtk_client()
         props = do_run_glcheck(opts)
     except Exception as e:
-        noerr(sys.stdout.write, "error=%s\n" % str(e).replace("\n", " "))
-        return 1
+        props = {
+            "error"     : str(e).replace("\n", " "),
+            "success"   : False,
+            }
     log = Logger("opengl")
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
