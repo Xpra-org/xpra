@@ -342,5 +342,5 @@ def mmap_write(mmap_area, mmap_size, data):
             l2 = l-chunk
             chunks = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8+l2
-    log("sending damage with mmap: %s", data)
+    log("sending damage with mmap: %s bytes", len(data))
     return chunks, mmap_free_size
