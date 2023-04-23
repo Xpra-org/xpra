@@ -859,9 +859,7 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
                 })
         return desc
     if len(extra_args) == 1:
-        def find_session(name):
-            return find_session_by_name(opts, name)
-        return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session)
+        return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
     error_cb(f"too many arguments ({len(extra_args)}): {extra_args}")
     return None
 
