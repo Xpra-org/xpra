@@ -100,7 +100,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return "shadow"
 
     def print_screen_info(self):
-        if not server_features.display:
+        if not server_features.display or not self.root:
             return
         w, h = self.root.get_geometry()[2:4]
         dinfo = None

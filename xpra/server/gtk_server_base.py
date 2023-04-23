@@ -53,6 +53,9 @@ class GTKServerBase(ServerBase):
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
         display = Gdk.Display.get_default()
+        if not display:
+            log.warn("Warning: no default Gdk Display!")
+            return
         keymap = Gdk.Keymap.get_for_display(display)
         #this event can fire many times in succession
         #throttle how many times we call self._keys_changed()
@@ -122,11 +125,12 @@ class GTKServerBase(ServerBase):
             self.ui_watcher.start()
         if server_features.windows:
             display = Gdk.Display.get_default()
-            #n = display.get_n_screens()
-            #assert n==1, "unsupported number of screens: %i" % n
-            screen = display.get_default_screen()
-            screen.connect("size-changed", self._screen_size_changed)
-            screen.connect("monitors-changed", self._monitors_changed)
+            if display:
+                #n = display.get_n_screens()
+                #assert n==1, "unsupported number of screens: %i" % n
+                screen = display.get_default_screen()
+                screen.connect("size-changed", self._screen_size_changed)
+                screen.connect("monitors-changed", self._monitors_changed)
         log("do_run() calling %s", Gtk.main)
         Gtk.main()
         log("do_run() end of gtk.main()")
@@ -136,12 +140,13 @@ class GTKServerBase(ServerBase):
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()
-            max_size = tuple(display.get_maximal_cursor_size())
-            capabilities.update({
-                "display"               : display.get_name(),
-                "cursor.default_size"   : display.get_default_cursor_size(),
-                "cursor.max_size"       : max_size,
-                })
+            if display:
+                max_size = tuple(display.get_maximal_cursor_size())
+                capabilities.update({
+                    "display"               : display.get_name(),
+                    "cursor.default_size"   : display.get_default_cursor_size(),
+                    "cursor.max_size"       : max_size,
+                    })
         if "versions" in source.wants and FULL_INFO>2:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities

@@ -167,6 +167,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def get_shadow_monitors(self):
         display = self.root.get_display()
+        if not display:
+            return []
         screen = self.root.get_screen()
         n = display.get_n_monitors()
         monitors = []
