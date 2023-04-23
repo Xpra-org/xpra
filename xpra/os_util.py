@@ -23,21 +23,21 @@ from subprocess import PIPE, Popen
 # without too many side-effects
 # pylint: disable=import-outside-toplevel
 
-SIGNAMES = {}
+SIGNAMES : dict = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     SIGNAMES[getattr(signal, signame)] = signame
 
 
-WIN32 = sys.platform.startswith("win")
-OSX = sys.platform.startswith("darwin")
-LINUX = sys.platform.startswith("linux")
-NETBSD = sys.platform.startswith("netbsd")
-OPENBSD = sys.platform.startswith("openbsd")
-FREEBSD  = sys.platform.startswith("freebsd")
+WIN32 : bool = sys.platform.startswith("win")
+OSX : bool = sys.platform.startswith("darwin")
+LINUX : bool = sys.platform.startswith("linux")
+NETBSD : bool = sys.platform.startswith("netbsd")
+OPENBSD : bool = sys.platform.startswith("openbsd")
+FREEBSD : bool = sys.platform.startswith("freebsd")
 
-POSIX = os.name=="posix"
+POSIX : bool = os.name=="posix"
 
-BITS = struct.calcsize(b"P")*8
+BITS : int = struct.calcsize(b"P")*8
 
 
 main_thread = threading.current_thread()
@@ -85,7 +85,7 @@ def get_frame_info(ignore_threads=()) -> dict:
         get_util_logger().error("failed to get frame info: %s", e)
     return info
 
-def get_info_env():
+def get_info_env() -> dict:
     filtered_env = os.environ.copy()
     if filtered_env.get('XPRA_PASSWORD'):
         filtered_env['XPRA_PASSWORD'] = "*****"
@@ -93,7 +93,7 @@ def get_info_env():
         filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
     return filtered_env
 
-def get_sysconfig_info():
+def get_sysconfig_info() -> dict:
     import sysconfig
     sysinfo = {}
     log = get_util_logger()
@@ -619,7 +619,7 @@ def shellsub(s : str, subs=None) -> str:
     return s
 
 
-def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
+def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
     if not s:
         return s
     def expanduser(s):
@@ -784,7 +784,7 @@ def setbinarymode(fd):
         except OSError:
             get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
-def find_lib_ldconfig(libname):
+def find_lib_ldconfig(libname) -> str:
     libname = re.escape(libname)
 
     arch_map = {"x86_64": "libc6,x86-64"}
@@ -896,7 +896,7 @@ def get_ssh_port() -> int:
     return 22
 
 
-def setuidgid(uid, gid):
+def setuidgid(uid, gid) -> None:
     if not POSIX:
         return
     log = get_util_logger()
