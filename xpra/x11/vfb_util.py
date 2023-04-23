@@ -449,6 +449,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
     except OSError as e:
         #trying to continue anyway!
         log = get_vfb_logger()
+        log(f"xauth_add%s xauth_cmd={xauth_cmd}", (filename, display_name, xauth_data, uid, gid))
         log.error(f"Error adding xauth entry for {display_name}")
         log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
         log.estr(e)
