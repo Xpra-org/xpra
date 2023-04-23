@@ -376,7 +376,7 @@ def normalize_display_name(display_name):
 def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by_name=False):
     display_name = normalize_display_name(display_name)
     #last chance to find it by name:
-    if display_name.find(":")<0:
+    if display_name.find(":")<0 and display_name.find("wayland-")<0:
         if not find_session_by_name:
             raise ValueError(f"invalid display name {display_name!r}")
         r = find_session_by_name(display_name)
@@ -457,9 +457,9 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     def add_query():
         process_query_string(parsed.query)
 
-    if display_name.startswith(":"):
+    if display_name.startswith(":") or display_name.startswith("wayland-"):
         if WIN32 or OSX:
-            raise RuntimeError("X11 display names are not supported on this platform")
+            raise RuntimeError("X11 / Wayland display names are not supported on this platform")
         add_query()
         display = parsed.path.lstrip(":")
         desc.update({

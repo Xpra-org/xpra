@@ -197,6 +197,10 @@ class DotXpra:
             results = sd.setdefault(d, [])
             if item not in results:
                 results.append(item)
+        def local(display):
+            if display.startswith("wayland-"):
+                return display
+            return DISPLAY_PREFIX+strip_display_prefix(display)
         def add_session_dir(session_dir, display):
             if not os.path.exists(session_dir):
                 debug("add_session_dir%s path does not exist", (session_dir, display))
@@ -210,8 +214,7 @@ class DotXpra:
                 state = self.is_socket_match(sockpath, None, matching_state)
                 debug("add_session_dir(%s) state(%s)=%s", (session_dir, display), sockpath, state)
                 if state:
-                    local_display = DISPLAY_PREFIX+strip_display_prefix(display)
-                    add_result(session_dir, (state, local_display, sockpath))
+                    add_result(session_dir, (state, local(display), sockpath))
         for d in self._unique_sock_dirs():
             #if we know the display name,
             #we know the corresponding session dir:
@@ -237,8 +240,8 @@ class DotXpra:
             for sockpath in sorted(potential_sockets):
                 state = self.is_socket_match(sockpath, check_uid, matching_state)
                 if state:
-                    local_display = DISPLAY_PREFIX+sockpath[len(base):]
-                    add_result(d, (state, local_display, sockpath))
+                    display = local(sockpath[len(base):])
+                    add_result(d, (state, display, sockpath))
         return sd
 
     def is_socket_match(self, sockpath, check_uid=None, matching_state=None):
