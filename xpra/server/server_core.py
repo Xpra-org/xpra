@@ -144,6 +144,15 @@ def get_thread_info(proto=None):
     return get_frame_info(info_threads)
 
 
+def proto_crypto_caps(proto):
+    if not proto:
+        return {}
+    if FULL_INFO>1 or proto.encryption:
+        from xpra.net.crypto import get_crypto_caps
+        return get_crypto_caps(FULL_INFO)
+    return {}
+
+
 class ServerCore:
     """
         This is the simplest base class for servers.
@@ -2165,7 +2174,9 @@ class ServerCore:
 
     def make_hello(self, source=None):
         now = time()
-        capabilities = flatten_dict(get_network_caps(FULL_INFO))
+        ncaps = get_network_caps(FULL_INFO)
+        ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
+        capabilities = flatten_dict(ncaps)
         if source is None or "versions" in source.wants:
             capabilities.update(flatten_dict(self.get_minimal_server_info()))
         capabilities.update({

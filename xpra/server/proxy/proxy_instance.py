@@ -27,7 +27,7 @@ from xpra.util import (
     )
 from xpra.version_util import XPRA_VERSION, vparts
 from xpra.make_thread import start_thread
-from xpra.server.server_core import get_server_info, get_thread_info
+from xpra.server.server_core import get_server_info, get_thread_info, proto_crypto_caps
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -269,7 +269,7 @@ class ProxyInstance:
         return d
 
     def filter_client_caps(self, caps, remove=CLIENT_REMOVE_CAPS):
-        fc = self.filter_caps(caps, remove)
+        fc = self.filter_caps(caps, remove, self.server_protocol)
         #the display string may override the username:
         username = self.disp_desc.get("username")
         if username:
@@ -284,9 +284,9 @@ class ProxyInstance:
 
     def filter_server_caps(self, caps):
         self.server_protocol.enable_encoder_from_caps(caps)
-        return self.filter_caps(caps, ("aliases", ))
+        return self.filter_caps(caps, ("aliases", ), self.client_protocol)
 
-    def filter_caps(self, caps, prefixes):
+    def filter_caps(self, caps, prefixes, proto=None):
         #removes caps that the proxy overrides / does not use:
         pcaps = {}
         removed = []
@@ -297,7 +297,9 @@ class ProxyInstance:
                 pcaps[k] = caps[k]
         log("filtered out %s matching %s", removed, prefixes)
         #replace the network caps with the proxy's own:
-        pcaps.update(flatten_dict(get_network_caps()))
+        ncaps = get_network_caps()
+        ncaps.update(proto_crypto_caps(proto))
+        pcaps.update(flatten_dict(ncaps))
         #then add the proxy info:
         updict(pcaps, "proxy", get_server_info(), flatten_dicts=True)
         pcaps["proxy"] = True

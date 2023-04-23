@@ -214,6 +214,7 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
          }
 
 def get_crypto_caps(full=True) -> dict:
+    crypto_backend_init()
     caps = {
             "padding"       : {"options"    : PADDING_OPTIONS},
             "modes"         : {"options"    : MODES},

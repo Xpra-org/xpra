@@ -24,7 +24,6 @@ from xpra.gtk_common.gtk_util import (
     TableBuilder, imagebutton, get_gtk_version_info,
     get_icon_pixbuf,
     )
-from xpra.net.net_util import get_network_caps
 from xpra.log import Logger
 
 log = Logger("info")
@@ -935,6 +934,8 @@ class SessionInfo(Gtk.Window):
             compression_str += " (level %s)" % level
         self.compression_label.set_text(compression_str)
 
+        from xpra.net.crypto import get_crypto_caps
+        ccaps = get_crypto_caps()
         def enclabel(label_widget, cipher):
             if not cipher:
                 info = "None"
@@ -942,8 +943,7 @@ class SessionInfo(Gtk.Window):
                 info = str(cipher)
             if c.socktype.lower()=="ssh":
                 info += " (%s)" % c.socktype
-            ncaps = get_network_caps()
-            backend = ncaps.get("backend")
+            backend = ccaps.get("backend")
             if backend=="python-cryptography":
                 info += " / python-cryptography"
             label_widget.set_text(info)
