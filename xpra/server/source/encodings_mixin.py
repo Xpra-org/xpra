@@ -36,7 +36,7 @@ class EncodingsMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        return bool(caps.strtupleget("encodings"))
+        return bool(caps.strtupleget("encodings")) or caps.boolget("windows")
 
     def init_state(self):
         #contains default values, some of which may be supplied by the client:
