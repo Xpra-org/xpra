@@ -8,6 +8,7 @@ import sys
 import os.path
 import subprocess
 
+import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Pango', '1.0')  # @UndefinedVariable
 from gi.repository import Gtk, Pango, GLib  # @UnresolvedImport
