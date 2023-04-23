@@ -495,10 +495,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return get_version_info(FULL_INFO)
 
     def make_hello(self):
-        capabilities = {
-                        "randr_notify"        : False,        #only client.py cares about this
-                        "windows"            : False,        #only client.py cares about this
-                       }
+        capabilities = {}
+        #no need to set "randr_notify" and "windows" capabilities to False,
+        #they are only enabled by GUI clients.
         if self._aliases:
             reverse_aliases = {}
             for i, packet_type in self._aliases.items():
