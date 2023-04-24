@@ -1144,6 +1144,7 @@ def _do_run_server(script_file, cmdline,
                 use_display = False
             else:
                 progress(40, "connecting to the display")
+                stat = None
                 if display_name.startswith(":"):
                     x11_socket_path = os.path.join(X11_SOCKET_DIR, "X"+display_name[1:])
                     stat = stat_display_socket(x11_socket_path)
