@@ -38,7 +38,8 @@ from xpra.os_util import (
 from xpra.scripts.parsing import (
     info, warn, error,
     parse_display_name, parse_env,
-    fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
+    fixup_defaults,
+    validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
     MODE_ALIAS,
     )
 from xpra.scripts.config import (
@@ -46,7 +47,8 @@ from xpra.scripts.config import (
     NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
-    fixup_options, dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
+    fixup_options, fixup_encodings,
+    dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_sound_support, name_to_field,
     )
 from xpra.log import is_debug_enabled, Logger, get_debug_args
@@ -455,7 +457,6 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     if mode in (
         "seamless", "desktop", "shadow", "shadow-screen", "expand",
-        "attach", "listen",
         "recover",
         ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
@@ -3771,7 +3772,7 @@ def run_auth(_options, args):
 def run_showconfig(options, args):
     log = get_util_logger()
     d = dict_to_validated_config({})
-    fixup_options(d, skip_encodings=True)
+    fixup_options(d)
     #this one is normally only probed at build time:
     #(so probe it here again)
     if POSIX:

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.scripts.config import parse_bool_or_int
+from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
 from xpra.codecs.codec_constants import preforder
@@ -37,6 +37,8 @@ class EncodingServer(StubServerMixin):
         self.lossless_mode_encodings = ()
         self.default_encoding = None
         self.scaling_control = None
+        self.video_encoders = ()
+        self.csc_modules = ()
 
     def init(self, opts):
         self.encoding = opts.encoding
@@ -47,7 +49,8 @@ class EncodingServer(StubServerMixin):
         self.default_min_speed = opts.min_speed
         if opts.video_scaling.lower() not in ("auto", "on"):
             self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
-        getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
+        self.video_encoders = csvstrl(opts.video_encoders).split(",")
+        self.csc_modules = csvstrl(opts.csc_modules).split(",")
 
     def setup(self):
         #essential codecs, load them early:
@@ -85,6 +88,7 @@ class EncodingServer(StubServerMixin):
         if "jpeg" in self.allowed_encodings and not OSX:
             load_codec("enc_nvjpeg")
         #load video codecs:
+        getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
         getVideoHelper().init()
         self.init_encodings()
 

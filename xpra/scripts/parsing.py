@@ -1742,18 +1742,14 @@ When unspecified, all the available codecs are allowed and the first one is used
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No audio capture plugins found!")
 
-    #only use the default bind option if the user hasn't specified one on the command line:
-    if not options.bind:
-        #use the default:
-        options.bind = defaults_bind
-
-    #only use the default challenge-handlers if the user hasn't specified any:
-    if not options.challenge_handlers:
-        options.challenge_handlers = defaults.challenge_handlers
-
-    #only use the default key-shortcut list if the user hasn't specified one:
-    if not options.key_shortcut:
-        options.key_shortcut = defaults.key_shortcut
+    #only use the defaults if no value is specified:
+    for setting in (
+        "bind", "challenge_handlers", "key_shortcut",
+        "source", "source_start",
+        "video_encoders", "video_decoders", "csc_modules", "proxy_video_encoders",
+        ):
+        if not getattr(options, setting):
+            setattr(options, setting, getattr(defaults, setting, []))
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
@@ -1773,20 +1769,7 @@ When unspecified, all the available codecs are allowed and the first one is used
                 args[1] = address
                 break
 
-    NEED_ENCODING_MODES = (
-        "attach",
-        "seamless",
-        "desktop",
-        "monitor",
-        "expand",
-        "upgrade", "upgrade-seamless", "upgrade-desktop",
-        "recover",
-        "shadow", "shadow-screen", "proxy",
-        "listen", "launcher",
-        "bug-report", "encoding", "gui-info",
-        )
-    fixup_options(options, defaults, skip_encodings=len(args)==0 or
-                  MODE_ALIAS.get(args[0], args[0]) not in NEED_ENCODING_MODES)
+    fixup_options(options)
 
     options.sync_xvfb = parse_bool("sync-xvfb", options.sync_xvfb)
     options.dpi = parse_number(int, "dpi", options.dpi, 96)

@@ -440,7 +440,7 @@ class ServerCore:
             return
         log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
         if self.init_thread.is_alive():
-            log.info("waiting for initialization thread to complete")
+            log("waiting for initialization thread to complete")
             self.init_thread.join(INIT_THREAD_TIMEOUT)
             if self.init_thread.is_alive():
                 log.warn("Warning: initialization thread is still active")

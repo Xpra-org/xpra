@@ -8,6 +8,7 @@
 import sys
 from threading import Lock
 
+from xpra.scripts.config import csvstrl
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
 from xpra.util import csv
 from xpra.log import Logger
@@ -61,11 +62,10 @@ def try_import_modules(prefix, *codec_names):
     return names
 
 #all the codecs we know about:
-#try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("enc", "x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
-HARDWARE_ENCODER_OPTIONS = try_import_modules("enc", "nvenc", "nvjpeg")
-ALL_CSC_MODULE_OPTIONS = try_import_modules("csc", "swscale", "cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules("dec", "avcodec2", "openh264", "vpx", "gstreamer", "nvdec")
+ALL_VIDEO_ENCODER_OPTIONS = "x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer"
+HARDWARE_ENCODER_OPTIONS = "nvenc", "nvjpeg"
+ALL_CSC_MODULE_OPTIONS = "swscale", "cython", "libyuv"
+ALL_VIDEO_DECODER_OPTIONS = "avcodec2", "openh264", "vpx", "gstreamer", "nvdec"
 
 PREFERRED_ENCODER_ORDER = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
@@ -86,36 +86,43 @@ def get_csc_module_name(x):
     return autoprefix("csc", x)
 
 
-def get_DEFAULT_VIDEO_ENCODERS():
+def get_video_encoders(names=ALL_VIDEO_ENCODER_OPTIONS):
     """ returns all the video encoders installed """
-    encoders = []
-    for x in tuple(ALL_VIDEO_ENCODER_OPTIONS):
-        mod = get_encoder_module_name(x)
-        c = get_codec(mod)
-        if c:
-            encoders.append(x)
-            break
-    return encoders
+    return try_import_modules("enc", *names)
 
-def get_DEFAULT_CSC_MODULES():
+def get_csc_modules(names=ALL_CSC_MODULE_OPTIONS):
     """ returns all the csc modules installed """
-    csc = []
-    for x in tuple(ALL_CSC_MODULE_OPTIONS):
-        mod = get_csc_module_name(x)
-        c = get_codec(mod)
-        if c:
-            csc.append(x)
-    return csc
+    return try_import_modules("csc", *names)
 
-def get_DEFAULT_VIDEO_DECODERS():
+def get_video_decoders(names=ALL_VIDEO_DECODER_OPTIONS):
     """ returns all the video decoders installed """
-    decoders = []
-    for x in tuple(ALL_VIDEO_DECODER_OPTIONS):
-        mod = get_decoder_module_name(x)
-        c = get_codec(mod)
-        if c:
-            decoders.append(x)
-    return decoders
+    return try_import_modules("dec", *names)
+
+def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS):
+    return try_import_modules("enc", *names)
+
+
+
+def filt(prefix, name, inlist, all_fn, all_list):
+    #log("filt%s", (prefix, name, inlist, all_fn, all_list))
+    def ap(v):
+        return autoprefix(prefix, v)
+    def apl(l):
+        return [ap(v) for v in l]
+    inlist = csvstrl(inlist or ()).split(",")
+    if "all" in inlist:
+        inlist = all_fn()
+    exclist = [x[1:] for x in inlist if x and x.startswith("-")]
+    inclist = [x for x in inlist if x and not x.startswith("-")]
+    lists = exclist + inclist
+    all_list = apl(all_list)
+    unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE)
+    if unknown:
+        log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
+    notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown))
+    if notfound:
+        log.warn("Warning: %s not found: %s", name, csv(notfound))
+    return apl(x for x in inclist if x not in exclist)
 
 
 class VideoHelper:
@@ -144,25 +151,9 @@ class VideoHelper:
     def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
-        def filt(prefix, name, inlist, all_list):
-            inlist = inlist or ()
-            exclist = list(x[1:] for x in inlist if x and x.startswith("-"))
-            inclist = list(x for x in inlist if x and not x.startswith("-"))
-            if "all" in inclist:
-                inclist = all_list
-            else:
-                notfound = tuple(x for x in (exclist+inclist) if x and autoprefix(prefix, x) not in all_list)
-                unknown = tuple(x for x in notfound if autoprefix(prefix, x) not in CODEC_TO_MODULE)
-                if unknown:
-                    log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
-                    notfound = tuple(x for x in notfound if x not in unknown)
-                if notfound:
-                    log.warn("Warning: %s not found: %s", name, csv(notfound))
-                    log.warn(" only: %s", csv(all_list))
-            return tuple(autoprefix(prefix, x) for x in inclist if x not in exclist)
-        self.video_encoders = filt("enc", "video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
-        self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
-        self.video_decoders = filt("dec", "video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
+        self.video_encoders = filt("enc", "video encoders" , video_encoders,   get_video_encoders,  ALL_VIDEO_ENCODER_OPTIONS)
+        self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      get_csc_modules,     ALL_CSC_MODULE_OPTIONS)
+        self.video_decoders = filt("dec", "video decoders" , video_decoders,   get_video_decoders,  ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%r, %r, %r) video encoders=%s, csc=%s, video decoders=%s",
             csv(video_encoders), csv(csc_modules), csv(video_decoders),
             csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
@@ -231,10 +222,10 @@ class VideoHelper:
             return "not found"
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
-            venc[x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
+            venc[x] = modstatus(get_encoder_module_name(x), get_video_encoders(), self.video_encoders)
         cscm = einfo.setdefault("csc-module", {})
         for x in ALL_CSC_MODULE_OPTIONS:
-            cscm[x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
+            cscm[x] = modstatus(get_csc_module_name(x), get_csc_modules(), self.csc_modules)
         return d
 
     def init(self):
