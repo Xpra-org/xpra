@@ -104,6 +104,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return caps
 
 
+    def get_info(self, proto=None, *args):
+        info = ShadowServerBase.get_info(self, proto, *args)
+        info.update(GTKServerBase.get_info(self, proto, *args))
+        return info
+
+
     def accept_client_ssh_agent(self, uuid, ssh_auth_sock):
         log("accept_client_ssh_agent: not setting up ssh agent forwarding for shadow servers")
 
