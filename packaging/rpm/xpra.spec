@@ -202,6 +202,8 @@ Recommends:			gstreamer1
 Recommends:			gstreamer1-plugins-base
 #vaapi:
 Recommends:			gstreamer1-vaapi
+#strangely conflicts with 'mesa-va-drivers' instead of replacing it:
+Suggests:			mesa-va-drivers-freeworld
 #x264:
 Recommends:			gstreamer1-plugins-ugly
 #av1:
