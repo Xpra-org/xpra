@@ -1,6 +1,9 @@
 ################################################################################
 # Sound
 
+# This option can disable all audio related features:
+audio = yes
+
 # Forward sound output to clients:
 #speaker = off
 #speaker = disabled

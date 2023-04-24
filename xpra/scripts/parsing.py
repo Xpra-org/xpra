@@ -1092,19 +1092,8 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--mdns", action="store", metavar="yes|no",
                       dest="mdns", default=defaults.mdns,
                       help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
-    legacy_bool_parse("pulseaudio")
     legacy_bool_parse("dbus-proxy")
     legacy_bool_parse("dbus-control")
-    group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
-                  dest="pulseaudio", default=defaults.pulseaudio,
-                  help="Start a pulseaudio server for the session."
-                  +" Default: %s." % enabled_or_auto(defaults.pulseaudio))
-    group.add_option("--pulseaudio-command", action="store",
-                  dest="pulseaudio_command", default=defaults.pulseaudio_command,
-                  help="The command used to start the pulseaudio server. Default: '%default'.")
-    group.add_option("--pulseaudio-configure-commands", action="append",
-                  dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
-                  help="The commands used to configure the pulseaudio server. Default: '%default'.")
     group.add_option("--dbus-proxy", action="store", metavar="yes|no",
                   dest="dbus_proxy", default=defaults.dbus_proxy,
                   help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
@@ -1191,9 +1180,30 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="remote_logging", default=defaults.remote_logging,
                       help="Forward all the client's log output to the server. "
                       +" Default: %s." % enabled_str(defaults.remote_logging))
+
+    group = optparse.OptionGroup(parser, "Audio Options",
+                "These options be specified on the client or on the server, "
+                "but the server's settings will have precedence over the client's.")
+    parser.add_option_group(group)
+    legacy_bool_parse("audio")
+    legacy_bool_parse("pulseaudio")
     legacy_bool_parse("speaker")
     legacy_bool_parse("microphone")
     legacy_bool_parse("av-sync")
+    group.add_option("--audio", action="store", metavar="yes|no",
+                  dest="audio", default=defaults.audio,
+                  help="Enable or disable all audio support."
+                  +" Default: %s." % enabled_str(defaults.audio))
+    group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
+                  dest="pulseaudio", default=defaults.pulseaudio,
+                  help="Start a pulseaudio server for the session."
+                  +" Default: %s." % enabled_or_auto(defaults.pulseaudio))
+    group.add_option("--pulseaudio-command", action="store",
+                  dest="pulseaudio_command", default=defaults.pulseaudio_command,
+                  help="The command used to start the pulseaudio server. Default: '%default'.")
+    group.add_option("--pulseaudio-configure-commands", action="append",
+                  dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
+                  help="The commands used to configure the pulseaudio server. Default: '%default'.")
     group.add_option("--speaker", action="store", metavar="on|off|disabled",
                       dest="speaker", default=defaults.speaker,
                       help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
@@ -1218,6 +1228,7 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--av-sync", action="store",
                       dest="av_sync", default=defaults.av_sync,
                       help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
+
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default settings.")

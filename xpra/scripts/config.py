@@ -554,6 +554,7 @@ OPTION_TYPES = {
                     "debug"             : str,
                     "input-method"      : str,
                     "video-scaling"     : str,
+                    "audio"             : bool,
                     "microphone"        : str,
                     "speaker"           : str,
                     "sound-source"      : str,
@@ -728,6 +729,7 @@ OPTIONS_ADDED_SINCE_V3 = [
     "refresh-rate",
     "exit-with-windows",
     "bind-quic",
+    "audio",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -788,7 +790,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "title", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
     "input-method",
-    "microphone", "speaker", "sound-source", "pulseaudio",
+    "audio", "microphone", "speaker", "sound-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
     "use-display",
     "fake-xinerama", "resize-display", "dpi", "pixel-depth",
@@ -1053,6 +1055,7 @@ def get_defaults():
                     "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : "yes",
                     "mmap-group"        : "auto",
+                    "audio"             : True,
                     "speaker"           : ["disabled", "on"][has_sound_support() and not is_arm()],
                     "microphone"        : ["disabled", "off"][has_sound_support()],
                     "video-scaling"     : "auto",
