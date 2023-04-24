@@ -71,7 +71,7 @@ class OSXRootCapture:
 
 class ShadowServer(GTKShadowServerBase):
 
-    def __init__(self, multi_window=True):
+    def __init__(self, display=None, multi_window=True):
         super().__init__(multi_window)
         #sanity check:
         check_display()

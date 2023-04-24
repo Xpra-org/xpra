@@ -250,7 +250,7 @@ class Win32ShadowModel(RootWindowModel):
 
 class ShadowServer(GTKShadowServerBase):
 
-    def __init__(self, multi_window=True):
+    def __init__(self, display=None, multi_window=True):
         super().__init__(multi_window)
         self.keycodes = {}
         self.cursor_handle = None

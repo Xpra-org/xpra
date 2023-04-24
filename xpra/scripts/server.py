@@ -314,9 +314,9 @@ def make_server(clobber):
     from xpra.x11.server import XpraServer
     return XpraServer(clobber)
 
-def make_shadow_server(multi_window=False):
+def make_shadow_server(display, multi_window=False):
     from xpra.platform.shadow_server import ShadowServer
-    return ShadowServer(multi_window)
+    return ShadowServer(display, multi_window)
 
 def make_proxy_server():
     from xpra.platform.proxy_server import ProxyServer
@@ -1403,7 +1403,7 @@ def _do_run_server(script_file, cmdline,
 
     progress(80, "initializing server")
     if shadowing:
-        app = make_shadow_server(multi_window=mode=="shadow")
+        app = make_shadow_server(display_name, multi_window=mode=="shadow")
     elif proxying:
         app = make_proxy_server()
     elif expanding:
