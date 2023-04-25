@@ -6,7 +6,10 @@
 
 import os
 
+import json
+
 from xpra.platform.keyboard_base import KeyboardBase
+from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
 from xpra.os_util import is_X11, is_Wayland, bytestostr
@@ -37,6 +40,55 @@ class Keyboard(KeyboardBase):
         super().init_vars()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
+        self.__dbus_helper = DBusHelper()
+        self.__input_sources = {}
+        self._dbus_gnome_shell_eval_ism(
+            ".inputSources",
+            self._store_input_sources,
+        )
+
+    def _store_input_sources(self, input_sources):
+        log("_store_input_sources(%s)", input_sources)
+        for layout_info in input_sources.values():
+            index = int(layout_info["index"])
+            layout_variant = str(layout_info["id"])
+            layout = layout_variant.split("+", 1)[0]
+            self.__input_sources[layout] = index
+
+    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None):
+        ism = "imports.ui.status.keyboard.getInputSourceManager()"
+
+        def ok_cb(success, res):
+            try:
+                if not dbus_to_native(success):
+                    log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, msg)
+                    return
+                if callback is not None:
+                    callback(json.loads(dbus_to_native(res)))
+            except Exception:
+                log("_dbus_gnome_shell_eval_ism(%s)", cmd, exc_info=True)
+
+        def err_cb(msg):
+            log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, msg)
+
+        self.__dbus_helper.call_function(
+            "org.gnome.Shell",
+            "/org/gnome/Shell",
+            "org.gnome.Shell",
+            "Eval",
+            [native_to_dbus(ism + cmd)],
+            ok_cb,
+            err_cb,
+        )
+
+    def set_platform_layout(self, layout):
+        index = self.__input_sources.get(layout)
+        log("set_platform_layout(%s): index=%s", layout, index)
+        if index is None:
+            return f"unknown layout: {layout}"
+        self._dbus_gnome_shell_eval_ism(
+            f".inputSources[{index}].activate()",
+        )
 
     def __repr__(self):
         return "posix.Keyboard"
