@@ -3337,6 +3337,7 @@ def run_displays(args):
     if args:
         print(" matching " + csv(args))
     SHOW = {
+        "xwayland"          : "XWayland",
         "xpra-server-mode"  : "mode",
         "uid"               : "uid",
         "gid"               : "gid",
@@ -3347,7 +3348,11 @@ def run_displays(args):
         wmname = descr.get("wmname")
         if wmname:
             info_str += f"{wmname}: "
-        info_str += csv("%s=%s" % (v, descr.get(k)) for k,v in SHOW.items() if k in descr)
+        def show(name, value):
+            if value is True:
+                return name
+            return f"{name}={value}"
+        info_str += csv(show(v, descr.get(k)) for k,v in SHOW.items() if k in descr)
         print("%10s    %-8s    %s" % (display, state, info_str))
 
 def run_clean_displays(args):
@@ -3464,6 +3469,16 @@ def get_display_info(display):
         return display_info
     if not display.startswith(":"):
         return {}
+    try:
+        from xpra.x11.bindings.xwayland import isxwayland
+    except ImportError:
+        pass
+    else:
+        try:
+            if isxwayland(display):
+                display_info["xwayland"] = True
+        except Exception:
+            pass
     wminfo = exec_wminfo(display)
     if wminfo:
         log(f"wminfo({display})={wminfo}")

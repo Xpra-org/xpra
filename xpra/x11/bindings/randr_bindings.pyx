@@ -288,7 +288,7 @@ cdef extern from "X11/extensions/Xrandr.h":
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
 
-cdef get_mode_info(XRRModeInfo *mi, with_sync=False):
+cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):
     info = {
         "id"            : mi.id,
         "width"         : mi.width,
@@ -438,7 +438,7 @@ cdef get_all_screen_properties(Display *display):
         props["timestamp"] = rsc.timestamp
         props["config-timestamp"] = rsc.configTimestamp
     for i in range(rsc.nmode):
-        props.setdefault("modes", {})[i] = get_mode_info(&rsc.modes[i])
+        props.setdefault("modes", {})[i] = get_mode_info(&rsc.modes[i], False)
     try:
         for o in range(rsc.noutput):
             if primary and primary==rsc.outputs[o]:

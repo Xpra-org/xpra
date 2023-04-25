@@ -1131,6 +1131,7 @@ def clean():
                    "xpra/x11/bindings/res_bindings.c",
                    "xpra/x11/bindings/core_bindings.c",
                    "xpra/x11/bindings/posix_display_source.c",
+                   "xpra/x11/bindings/xwayland.c",
                    "xpra/x11/bindings/ximage.c",
                    "xpra/x11/bindings/xi2_bindings.c",
                    "xpra/platform/win32/propsys.cpp",
@@ -2040,6 +2041,7 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")
     ace("xpra.x11.bindings.core_bindings", "x11")
+    ace("xpra.x11.bindings.xwayland", "x11")
     ace("xpra.x11.bindings.posix_display_source", "x11")
     ace("xpra.x11.bindings.randr_bindings", "x11,xrandr")
     ace("xpra.x11.bindings.keyboard_bindings", "x11,xtst,xfixes,xkbfile")

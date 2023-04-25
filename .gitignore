@@ -182,6 +182,7 @@ tests/unittests/test-file*
 /xpra/x11/bindings/xwait.c
 /xpra/x11/bindings/window_bindings.c
 /xpra/x11/bindings/ximage.c
+/xpra/x11/bindings/xwayland.c
 /xpra/x11/bindings/posix_display_source.c
 /xpra/x11/bindings/xi2_bindings.c
 /xpra/x11/gtk3/gdk_display_source.c
