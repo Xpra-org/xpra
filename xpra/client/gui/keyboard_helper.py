@@ -54,6 +54,10 @@ class KeyboardHelper:
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
 
+    def set_platform_layout(self, layout):
+        if hasattr(self.keyboard, "set_platform_layout"):
+            return self.keyboard.set_platform_layout(layout)
+
     def mask_to_names(self, mask):
         return self.keyboard.mask_to_names(mask)
 

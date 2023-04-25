@@ -919,6 +919,8 @@ class ClientWindowBase(ClientWidgetBase):
     def log(self, message=""):
         log.info(message)
 
+    def next_keyboard_layout(self, update_platform_layout):
+        self._client.next_keyboard_layout(update_platform_layout)
 
     def keyboard_layout_changed(self, *args):
         #used by win32 hooks to tell us about keyboard layout changes for this window

@@ -775,6 +775,10 @@ class UIXpraClient(ClientBaseClass):
         log("keyboard capabilities: %s", caps)
         return caps
 
+    def next_keyboard_layout(self, update_platform_layout):
+        if self.keyboard_helper:
+            self.keyboard_helper.next_layout(update_platform_layout)
+
     def window_keyboard_layout_changed(self, window=None):
         #win32 can change the keyboard mapping per window...
         keylog("window_keyboard_layout_changed(%s)", window)
