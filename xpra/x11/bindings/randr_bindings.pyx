@@ -13,6 +13,7 @@ log = Logger("x11", "bindings", "randr")
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom,
     XDefaultRootWindow,
+    XGetAtomName,
     XFree, XFlush, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
@@ -285,6 +286,239 @@ cdef extern from "X11/extensions/Xrandr.h":
 
 
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+
+
+cdef get_mode_info(XRRModeInfo *mi, with_sync=False):
+    info = {
+        "id"            : mi.id,
+        "width"         : mi.width,
+        "height"        : mi.height,
+        }
+    if mi.name and mi.nameLength:
+        info["name"] = bytestostr(mi.name[:mi.nameLength])
+    if with_sync:
+        info.update({
+        "dot-clock"     : mi.dotClock,
+        "h-sync-start"  : mi.hSyncStart,
+        "h-sync-end"    : mi.hSyncEnd,
+        "h-total"       : mi.hTotal,
+        "h-skew"        : mi.hSkew,
+        "v-sync-start"  : mi.vSyncStart,
+        "v-sync-end"    : mi.vSyncEnd,
+        "v-total"       : mi.vTotal,
+        "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
+        })
+    return info
+
+cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output):
+    cdef XRROutputInfo *oi = XRRGetOutputInfo(display, rsc, output)
+    if oi==NULL:
+        return {}
+    info = {
+        "id"                : output,
+        "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
+        }
+    if oi.connection!=RR_Disconnected:
+        info.update({
+        "width-mm"          : oi.mm_width,
+        "height-mm"         : oi.mm_height,
+        "preferred-mode"    : oi.npreferred,
+        })
+        if TIMESTAMPS:
+            info["timestamp"] = oi.timestamp
+        so = SUBPIXEL_STR.get(oi.subpixel_order)
+        if so and so!="unknown":
+            info["subpixel-order"] = so
+        if oi.nclone:
+            info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
+        info["properties"] = get_output_properties(display, output)
+    if oi.name and oi.nameLen:
+        info["name"] = bytestostr(oi.name[:oi.nameLen])
+    XRRFreeOutputInfo(oi)
+    return info
+
+cdef get_XAtom(Display *display, Atom atom):
+    cdef char *v = XGetAtomName(display, atom)
+    if v==NULL:
+        return None
+    r = v[:]
+    XFree(v)
+    return r.decode()
+
+cdef get_output_properties(Display *display, RROutput output):
+    cdef int nprop
+    cdef Atom *atoms = XRRListOutputProperties(display, output, &nprop)
+    cdef Atom prop, actual_type
+    cdef int actual_format
+    cdef unsigned long nitems
+    cdef unsigned long bytes_after
+    cdef unsigned char *buf
+    cdef int nbytes
+    cdef XRRPropertyInfo *prop_info
+    log(f"reading {nprop} properties from output {output}")
+    properties = {}
+    for i in range(nprop):
+        prop = atoms[i]
+        prop_name = get_XAtom(display, prop)
+        buf = NULL
+        r = XRRGetOutputProperty(display, output,
+                                 prop, 0, 1024,
+                                 0, 0, AnyPropertyType,
+                                 &actual_type, &actual_format,
+                                 &nitems, &bytes_after,
+                                 &buf)
+        if r or not buf:
+            log.warn(f"Warning: failed to read output property {prop_name!r}")
+            continue
+        if bytes_after:
+            log.warn(f"Warning: failed to read output property {prop_name!r}")
+            log.warn(" data too large")
+            continue
+        if not actual_format:
+            log.warn(f"Warning: failed to read output property {prop_name!r}")
+            log.warn(" invalid format")
+            continue
+        at = get_XAtom(display, actual_type)
+        if at not in ("INTEGER", "CARDINAL", "ATOM"):
+            log(f"skipped output property {at}")
+            continue
+        if actual_format == 8:
+            fmt = b"B"
+        elif actual_format == 16:
+            fmt = b"H"
+        elif actual_format == 32:
+            fmt = b"L"
+        else:
+            raise Exception("invalid format %r" % actual_format)
+        log(f"{prop_name!r} : {at} / {actual_format}")
+        try:
+            bytes_per_item = struct.calcsize(b"@%s" % fmt)
+            nbytes = bytes_per_item * nitems
+            data = buf[:nbytes]
+            value = struct.unpack(b"@%s" % (fmt*nitems), data)
+            if at=="ATOM":
+                value = tuple(get_XAtom(display, v) for v in value)
+            if at=="INTEGER" and actual_format==8 and prop_name=="EDID" and nitems>=32:
+                #EDID is a binary blob:
+                value = bytes(value)
+                try:
+                    from pyedid import parse_edid
+                    value = parse_edid(value)._asdict()
+                except ImportError as e:
+                    log(f"cannot parse EDID: {e}")
+                except ValueError as e:
+                    log.warn(f"Warning: invalid EDID data: {e}")
+            if nitems==1:
+                value = value[0]
+                #convert booleans:
+                prop_info = XRRQueryOutputProperty(display, output, prop)
+                if prop_info:
+                    if prop_info.num_values==2 and prop_info.values[0] in (0, 1) and prop_info.values[1] in (0, 1):
+                        value = bool(value)
+                    XFree(prop_info)
+        except Exception:
+            log.error(f"Error unpacking {prop_name!r} using format {fmt} from {data!r}", exc_info=True)
+        else:
+            if prop_name=="non-desktop" and value is False:
+                #no value in reporting this, we can assume it is False when missing
+                continue
+            properties[prop_name] = value
+    XFree(atoms)
+    return properties
+
+cdef get_all_screen_properties(Display *display):
+    cdef Window window = XDefaultRootWindow(display)
+    cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(display, window)
+    cdef RROutput primary = XRRGetOutputPrimary(display, window)
+    if rsc==NULL:
+        log.error("Error: cannot access screen resources")
+        return {}
+    props = {}
+    if TIMESTAMPS:
+        props["timestamp"] = rsc.timestamp
+        props["config-timestamp"] = rsc.configTimestamp
+    for i in range(rsc.nmode):
+        props.setdefault("modes", {})[i] = get_mode_info(&rsc.modes[i])
+    try:
+        for o in range(rsc.noutput):
+            if primary and primary==rsc.outputs[o]:
+                props["primary-output"] = o
+            output_info = get_output_info(display, rsc, rsc.outputs[o])
+            if output_info:
+                oid = output_info["id"]
+                props.setdefault("outputs", {})[oid] = output_info
+        for crtc in range(rsc.ncrtc):
+            crtc_info = get_crtc_info(display, rsc, rsc.crtcs[crtc])
+            if crtc_info:
+                props.setdefault("crtcs", {})[crtc] = crtc_info
+    finally:
+        XRRFreeScreenResources(rsc)
+    props["monitors"] = get_monitor_properties(display)
+    return props
+
+cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
+    cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(display, rsc, crtc)
+    if ci==NULL:
+        return {}
+    info = {
+            "noutput"   : ci.noutput,
+            "npossible" : ci.npossible,
+            }
+    if ci.noutput:
+        info["outputs"] = tuple(int(ci.outputs[i]) for i in range(ci.noutput))
+    if TIMESTAMPS:
+        info["timestamp"] = int(ci.timestamp)
+    cdef XRRCrtcGamma *gamma
+    if ci.mode or ci.width or ci.height or ci.noutput:
+        info.update({
+            "x"         : ci.x,
+            "y"         : ci.y,
+            "width"     : ci.width,
+            "height"    : ci.height,
+            "mode"      : ci.mode,
+            })
+        if GAMMA:
+            gamma = XRRGetCrtcGamma(display, crtc)
+            if gamma and gamma.size:
+                info["gamma"] = {
+                    "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
+                    "green" : tuple(gamma.green[i] for i in range(gamma.size)),
+                    "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
+                    }
+                XRRFreeGamma(gamma)
+    if ci.rotation!=RR_Rotate_0:
+        info["rotation"] = get_rotation(ci.rotation)
+    if ci.rotations!=RR_Rotate_0:
+        info["rotations"] = get_rotations(ci.rotations)
+    XRRFreeCrtcInfo(ci)
+    return info
+
+cdef get_monitor_properties(Display *display):
+    cdef int nmonitors
+    cdef Window window = XDefaultRootWindow(display)
+    cdef XRRMonitorInfo *monitors = XRRGetMonitors(display, window, True, &nmonitors)
+    cdef XRRMonitorInfo *m
+    props = {}
+    for i in range(nmonitors):
+        m = &monitors[i]
+        props[i] = {
+            "index"     : i,
+            "name"      : get_XAtom(display, m.name),
+            "primary"   : bool(m.primary),
+            "automatic" : bool(m.automatic),
+            "x"         : m.x,
+            "y"         : m.y,
+            "width"     : m.width,
+            "height"    : m.height,
+            "width-mm"  : m.mwidth,
+            "height-mm" : m.mheight,
+            #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+            "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
+            }
+    XRRFreeMonitors(monitors)
+    return props
+
+
 
 cdef RandRBindingsInstance singleton = None
 def RandRBindings():
@@ -737,229 +971,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeMonitors(monitors)
         return True
 
-    cdef get_mode_info(self, XRRModeInfo *mi, with_sync=False):
-        info = {
-            "id"            : mi.id,
-            "width"         : mi.width,
-            "height"        : mi.height,
-            }
-        if mi.name and mi.nameLength:
-            info["name"] = bytestostr(mi.name[:mi.nameLength])
-        if with_sync:
-            info.update({
-            "dot-clock"     : mi.dotClock,
-            "h-sync-start"  : mi.hSyncStart,
-            "h-sync-end"    : mi.hSyncEnd,
-            "h-total"       : mi.hTotal,
-            "h-skew"        : mi.hSkew,
-            "v-sync-start"  : mi.vSyncStart,
-            "v-sync-end"    : mi.vSyncEnd,
-            "v-total"       : mi.vTotal,
-            "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
-            })
-        return info
-
-    cdef get_output_properties(self, RROutput output):
-        cdef int nprop
-        cdef Atom *atoms = XRRListOutputProperties(self.display, output, &nprop)
-        cdef Atom prop, actual_type
-        cdef int actual_format
-        cdef unsigned long nitems
-        cdef unsigned long bytes_after
-        cdef unsigned char *buf
-        cdef int nbytes
-        cdef XRRPropertyInfo *prop_info
-        log(f"reading {nprop} properties from output {output}")
-        properties = {}
-        for i in range(nprop):
-            prop = atoms[i]
-            prop_name = bytestostr(self.XGetAtomName(prop))
-            buf = NULL
-            r = XRRGetOutputProperty(self.display, output,
-                                     prop, 0, 1024,
-                                     0, 0, AnyPropertyType,
-                                     &actual_type, &actual_format,
-                                     &nitems, &bytes_after,
-                                     &buf)
-            if r or not buf:
-                log.warn(f"Warning: failed to read output property {prop_name!r}")
-                continue
-            if bytes_after:
-                log.warn(f"Warning: failed to read output property {prop_name!r}")
-                log.warn(" data too large")
-                continue
-            if not actual_format:
-                log.warn(f"Warning: failed to read output property {prop_name!r}")
-                log.warn(" invalid format")
-                continue
-            at = bytestostr(self.XGetAtomName(actual_type))
-            if at not in ("INTEGER", "CARDINAL", "ATOM"):
-                log(f"skipped output property {at}")
-                continue
-            if actual_format == 8:
-                fmt = b"B"
-            elif actual_format == 16:
-                fmt = b"H"
-            elif actual_format == 32:
-                fmt = b"L"
-            else:
-                raise Exception("invalid format %r" % actual_format)
-            log(f"{prop_name!r} : {at} / {actual_format}")
-            try:
-                bytes_per_item = struct.calcsize(b"@%s" % fmt)
-                nbytes = bytes_per_item * nitems
-                data = buf[:nbytes]
-                value = struct.unpack(b"@%s" % (fmt*nitems), data)
-                if at=="ATOM":
-                    value = tuple(bytestostr(self.XGetAtomName(v)) for v in value)
-                if at=="INTEGER" and actual_format==8 and prop_name=="EDID" and nitems>=32:
-                    #EDID is a binary blob:
-                    value = bytes(value)
-                    try:
-                        from pyedid import parse_edid
-                        value = parse_edid(value)._asdict()
-                    except ImportError as e:
-                        log(f"cannot parse EDID: {e}")
-                    except ValueError as e:
-                        log.warn(f"Warning: invalid EDID data: {e}")
-                if nitems==1:
-                    value = value[0]
-                    #convert booleans:
-                    prop_info = XRRQueryOutputProperty(self.display, output, prop)
-                    if prop_info:
-                        if prop_info.num_values==2 and prop_info.values[0] in (0, 1) and prop_info.values[1] in (0, 1):
-                            value = bool(value)
-                        XFree(prop_info)
-            except Exception:
-                log.error(f"Error unpacking {prop_name!r} using format {fmt} from {data!r}", exc_info=True)
-            else:
-                if prop_name=="non-desktop" and value is False:
-                    #no value in reporting this, we can assume it is False when missing
-                    continue
-                properties[prop_name] = value
-        XFree(atoms)
-        return properties
-
-    cdef get_output_info(self, XRRScreenResources *rsc, RROutput output):
-        cdef XRROutputInfo *oi = XRRGetOutputInfo(self.display, rsc, output)
-        if oi==NULL:
-            return {}
-        info = {
-            "id"                : output,
-            "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
-            }
-        if oi.connection!=RR_Disconnected:
-            info.update({
-            "width-mm"          : oi.mm_width,
-            "height-mm"         : oi.mm_height,
-            "preferred-mode"    : oi.npreferred,
-            })
-            if TIMESTAMPS:
-                info["timestamp"] = oi.timestamp
-            so = SUBPIXEL_STR.get(oi.subpixel_order)
-            if so and so!="unknown":
-                info["subpixel-order"] = so
-            if oi.nclone:
-                info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
-            info["properties"] = self.get_output_properties(output)
-        if oi.name and oi.nameLen:
-            info["name"] = bytestostr(oi.name[:oi.nameLen])
-        XRRFreeOutputInfo(oi)
-        return info
-
-    cdef get_crtc_info(self, XRRScreenResources *rsc, RRCrtc crtc):
-        cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(self.display, rsc, crtc)
-        if ci==NULL:
-            return {}
-        info = {
-                "noutput"   : ci.noutput,
-                "npossible" : ci.npossible,
-                }
-        if ci.noutput:
-            info["outputs"] = tuple(int(ci.outputs[i]) for i in range(ci.noutput))
-        if TIMESTAMPS:
-            info["timestamp"] = int(ci.timestamp)
-        cdef XRRCrtcGamma *gamma
-        if ci.mode or ci.width or ci.height or ci.noutput:
-            info.update({
-                "x"         : ci.x,
-                "y"         : ci.y,
-                "width"     : ci.width,
-                "height"    : ci.height,
-                "mode"      : ci.mode,
-                })
-            if GAMMA:
-                gamma = XRRGetCrtcGamma(self.display, crtc)
-                if gamma and gamma.size:
-                    info["gamma"] = {
-                        "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
-                        "green" : tuple(gamma.green[i] for i in range(gamma.size)),
-                        "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
-                        }
-                    XRRFreeGamma(gamma)
-        if ci.rotation!=RR_Rotate_0:
-            info["rotation"] = get_rotation(ci.rotation)
-        if ci.rotations!=RR_Rotate_0:
-            info["rotations"] = get_rotations(ci.rotations)
-        XRRFreeCrtcInfo(ci)
-        return info
 
     def get_monitor_properties(self):
         self.context_check("get_monitor_properties")
-        cdef int nmonitors
-        cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-        cdef XRRMonitorInfo *m
-        props = {}
-        for i in range(nmonitors):
-            m = &monitors[i]
-            props[i] = {
-                "index"     : i,
-                "name"      : bytestostr(self.XGetAtomName(m.name)),
-                "primary"   : bool(m.primary),
-                "automatic" : bool(m.automatic),
-                "x"         : m.x,
-                "y"         : m.y,
-                "width"     : m.width,
-                "height"    : m.height,
-                "width-mm"  : m.mwidth,
-                "height-mm" : m.mheight,
-                #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
-                "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
-                }
-        XRRFreeMonitors(monitors)
-        return props
+        return get_monitor_properties(self.display)
 
     def get_all_screen_properties(self):
         self.context_check("get_all_screen_properties")
-        cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
-        cdef RROutput primary = XRRGetOutputPrimary(self.display, window)
-        if rsc==NULL:
-            log.error("Error: cannot access screen resources")
-            return {}
-        props = {}
-        if TIMESTAMPS:
-            props["timestamp"] = rsc.timestamp
-            props["config-timestamp"] = rsc.configTimestamp
-        for i in range(rsc.nmode):
-            props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
-        try:
-            for o in range(rsc.noutput):
-                if primary and primary==rsc.outputs[o]:
-                    props["primary-output"] = o
-                output_info = self.get_output_info(rsc, rsc.outputs[o])
-                if output_info:
-                    oid = output_info["id"]
-                    props.setdefault("outputs", {})[oid] = output_info
-            for crtc in range(rsc.ncrtc):
-                crtc_info = self.get_crtc_info(rsc, rsc.crtcs[crtc])
-                if crtc_info:
-                    props.setdefault("crtcs", {})[crtc] = crtc_info
-        finally:
-            XRRFreeScreenResources(rsc)
-        props["monitors"] = self.get_monitor_properties()
-        return props
+        return get_all_screen_properties(self.display)
 
 
     def set_output_int_property(self, int output, prop_name, int value):
