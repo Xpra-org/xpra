@@ -390,7 +390,7 @@ def get_ssl_info(show_constants=False) -> dict:
     return info
 
 
-def get_network_caps(full=True) -> dict:
+def get_network_caps(full_info : int=1) -> dict:
     # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -405,8 +405,8 @@ def get_network_caps(full=True) -> dict:
                 "encoders"              : get_enabled_encoders(),
                }
     caps["flush"] = FLUSH_HEADER
-    caps.update(get_compression_caps(full))
-    caps.update(get_packet_encoding_caps(full))
+    caps.update(get_compression_caps(full_info))
+    caps.update(get_packet_encoding_caps(full_info))
     return caps
 
 

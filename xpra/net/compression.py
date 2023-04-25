@@ -103,16 +103,15 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full=True) -> dict:
+def get_compression_caps(full_info : int=1) -> dict:
     caps = {}
     for x in ALL_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:
             continue
         ccaps = caps.setdefault(x, {})
-        if full:
-            if c.version:
-                ccaps["version"] = c.version
+        if full_info>1 and c.version:
+            ccaps["version"] = c.version
         ccaps[""] = True
     return caps
 
