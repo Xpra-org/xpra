@@ -31,8 +31,7 @@ from xpra.x11.bindings.xlib cimport (
     XEvent, XSelectionRequestEvent, XSelectionClearEvent,
     XSelectionEvent,
     XFree, XGetErrorText,
-    XQueryExtension, XQueryTree,
-    NoSymbol,
+    XQueryTree,
     )
 from libc.stdint cimport uintptr_t
 from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_raw_display_for
