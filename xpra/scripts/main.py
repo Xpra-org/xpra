@@ -55,7 +55,6 @@ from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
-CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 90)
 CONNECT_TIMEOUT = envint("XPRA_CONNECT_TIMEOUT", 20)
 OPENGL_PROBE_TIMEOUT = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)

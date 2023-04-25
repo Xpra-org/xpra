@@ -1,8 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import os
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
@@ -14,6 +16,8 @@ from xpra.os_util import bytestostr, is_Wayland
 from xpra.log import Logger
 
 log = Logger("clipboard")
+
+CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
 
 class ClipboardClient(StubClientMixin):
@@ -180,7 +184,6 @@ class ClipboardClient(StubClientMixin):
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []
-        from xpra.scripts.main import CLIPBOARD_CLASS
         #first add the platform specific one, (may be None):
         clipboard_options = [
             CLIPBOARD_CLASS,
