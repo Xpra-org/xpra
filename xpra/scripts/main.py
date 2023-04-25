@@ -2368,6 +2368,18 @@ def do_run_glcheck(opts, show=False) -> dict:
             logging.root.setLevel(saved_level)
 
 def run_glcheck(opts):
+    log = Logger("opengl")
+    if POSIX and not OSX:
+        with OSEnvContext():
+            os.environ["GDK_BACKEND"] = "x11"
+            try:
+                from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+                init_gdk_display_source()
+            except ImportError as e:
+                log(f"no gtk3 x11 bindings: {e}")
+                pass
+            except Exception:
+                log("error initializing gdk display source", exc_info=True)
     try:
         check_gtk_client()
         props = do_run_glcheck(opts)
@@ -2376,7 +2388,6 @@ def run_glcheck(opts):
             "error"     : str(e).replace("\n", " "),
             "success"   : False,
             }
-    log = Logger("opengl")
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
