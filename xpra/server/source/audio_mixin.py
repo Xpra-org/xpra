@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from shutil import which
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr
 from xpra.util import csv, envbool, envint, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.log import Logger
@@ -117,6 +118,11 @@ class AudioMixin(StubSourceMixin):
         if not self.wants_sound or not self.sound_properties:
             return {}
         sound_props = self.sound_properties.copy()
+        if FULL_INFO<2:
+            #only expose these specific keys:
+            sound_props = dict((k,v) for k,v in sound_props.items() if k in (
+                "muxers", "demuxers", "bundle-metadata", "ogg-latency-fix",
+                ))
         sound_props.update({
             "codec-full-names"  : True,
             "encoders"          : self.speaker_codecs,

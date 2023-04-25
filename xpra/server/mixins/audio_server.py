@@ -100,9 +100,6 @@ class AudioServer(StubServerMixin):
                 ""          : self.av_sync,
                 "enabled"   : self.av_sync,
                 },
-            "sound" : {
-                "ogg-latency-fix" : True,       #warning removed in v4 clients
-                },
             }
         log("get_server_features(%s)=%s", source, d)
         return d

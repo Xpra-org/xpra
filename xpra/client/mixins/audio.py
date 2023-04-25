@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -182,13 +182,10 @@ class AudioClient(StubClientMixin):
             }
         sp = self.sound_properties
         if FULL_INFO<2:
-            def skipkeys(d, *keys):
-                return dict((k,v) for k,v in d.items() if k not in keys)
-            sp = skipkeys(sp,
-                          "gst.version",
-                          "sink.default", "sources", "device", "devices",
-                          "pulseaudio",
-                          )
+            #only expose these specific keys:
+            sp = dict((k,v) for k,v in sp.items() if k in (
+                "encoders", "decoders", "muxers", "demuxers", "bundle-metadata", "ogg-latency-fix",
+                ))
         caps.update(sp)
         log("audio capabilities: %s", caps)
         return caps
