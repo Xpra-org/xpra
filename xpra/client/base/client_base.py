@@ -460,6 +460,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cipher_caps = self.get_cipher_caps()
         if cipher_caps:
             up("cipher", cipher_caps)
+            cipher_caps["cipher"] = cipher_caps.pop("")
+            capabilities["encryption"] = cipher_caps
         capabilities.update(self.hello_extra)
         return capabilities
 
@@ -929,20 +931,28 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     ########################################
     # Encryption
     def set_server_encryption(self, caps, key):
+        enc_caps = caps.dictget("encryption")
+        if enc_caps:
+            #v5, proper namespace
+            caps = typedict(enc_caps)
+            prefix = ""
+        else:
+            #legacy string prefix:
+            prefix = "cipher."
         cipher = caps.strget("cipher")
-        cipher_mode = caps.strget("cipher.mode", DEFAULT_MODE)
-        cipher_iv = caps.strget("cipher.iv")
-        key_salt = caps.strget("cipher.key_salt")
-        key_hash = caps.strget("cipher.key_hash", DEFAULT_KEY_HASH)
-        key_size = caps.intget("cipher.key_size", DEFAULT_KEYSIZE)
-        key_stretch = caps.strget("cipher.key_stretch", DEFAULT_KEY_STRETCH)
-        iterations = caps.intget("cipher.key_stretch_iterations")
-        padding = caps.strget("cipher.padding", DEFAULT_PADDING)
+        cipher_mode = caps.strget(f"{prefix}mode", DEFAULT_MODE)
+        cipher_iv = caps.strget(f"{prefix}iv")
+        key_salt = caps.strget(f"{prefix}key_salt")
+        key_hash = caps.strget(f"{prefix}key_hash", DEFAULT_KEY_HASH)
+        key_size = caps.intget(f"{prefix}key_size", DEFAULT_KEYSIZE)
+        key_stretch = caps.strget(f"{prefix}key_stretch", DEFAULT_KEY_STRETCH)
+        iterations = caps.intget(f"{prefix}key_stretch_iterations")
+        padding = caps.strget(f"{prefix}padding", DEFAULT_PADDING)
         ciphers = get_ciphers()
         key_hashes = get_key_hashes()
         #server may tell us what it supports,
         #either from hello response or from challenge packet:
-        self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
+        self.server_padding_options = caps.strtupleget(f"{prefix}padding.options", (DEFAULT_PADDING,))
         def fail(msg):
             self.warn_and_quit(ExitCode.ENCRYPTION, msg)
             return False

@@ -198,20 +198,27 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     padding = choose_padding(padding_options)
     proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key,
                         key_salt, key_hash, key_size, iterations, padding)
-    return {
-         "cipher"                       : cipher,
-         "cipher.mode"                  : cipher_mode,
-         "cipher.mode.options"          : MODES,
-         "cipher.iv"                    : iv,
-         "cipher.key_salt"              : key_salt,
-         "cipher.key_hash"              : key_hash,
-         "cipher.key_size"              : key_size,
-         "cipher.key_stretch"           : key_stretch,
-         "cipher.key_stretch.options"   : KEY_STRETCHING,
-         "cipher.key_stretch_iterations": iterations,
-         "cipher.padding"               : padding,
-         "cipher.padding.options"       : PADDING_OPTIONS,
-         }
+    attrs = {
+        "cipher"                : cipher,
+        "mode"                  : cipher_mode,
+        "mode.options"          : MODES,
+        "iv"                    : iv,
+        "key_salt"              : key_salt,
+        "key_hash"              : key_hash,
+        "key_size"              : key_size,
+        "key_stretch"           : key_stretch,
+        "key_stretch.options"   : KEY_STRETCHING,
+        "key_stretch_iterations": iterations,
+        "padding"               : padding,
+        "padding.options"       : PADDING_OPTIONS,
+        }
+    #v5 onwards with namespace:
+    caps = {"encryption" : attrs}
+    #for older versions:
+    for k,v in attrs.items():
+        caps[f"cipher.{k}"] = v
+    caps["cipher"] = cipher
+    return caps
 
 def get_crypto_caps(full=True) -> dict:
     crypto_backend_init()
@@ -233,8 +240,8 @@ def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     if not ciphername:
         return None, 0
     assert key_size>=16
-    if MIN_ITERATIONS<iterations or iterations>MAX_ITERATIONS:
-        raise ValueError(f"invalid number of iterations {iterations}")
+    if iterations<MIN_ITERATIONS or iterations>MAX_ITERATIONS:
+        raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
@@ -251,8 +258,8 @@ def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     if not ciphername:
         return None, 0
     assert key_size>=16
-    if MIN_ITERATIONS<iterations or iterations>MAX_ITERATIONS:
-        raise ValueError(f"invalid number of iterations {iterations}")
+    if iterations<MIN_ITERATIONS or iterations>MAX_ITERATIONS:
+        raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")
     assert ciphername.startswith("AES")
     assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
