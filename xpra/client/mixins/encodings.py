@@ -226,8 +226,8 @@ class Encodings(StubClientMixin):
             caps["min-speed"] = self.min_speed
 
         #generic rgb compression flags:
-        for x in compression.ALL_COMPRESSORS:
-            caps[f"rgb_{x}"] = x in compression.get_enabled_compressors(("lz4", ))
+        if "lz4" in compression.get_enabled_compressors():
+            caps[f"rgb_lz4"] = True
         #these are the defaults - when we instantiate a window,
         #we can send different values as part of the map event
         #these are the RGB modes we want (the ones we are expected to be able to paint with):
