@@ -114,6 +114,10 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
                         args.append(None)
                     elif x.find(".") != -1:
                         args.append(float(x))
+                    elif x in ("yes", "true", "on"):
+                        args.append(True)
+                    elif x in ("no", "false", "off"):
+                        args.append(False)
                     else:
                         args.append(int(x))
                 args = tuple(args)
