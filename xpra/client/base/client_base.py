@@ -41,7 +41,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
-    repr_ellipsized, ellipsizer, nonl,
+    repr_ellipsized, ellipsizer, nonl, print_nested_dict,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
     SERVER_UPGRADE, CONNECTION_ERROR, AUTHENTICATION_FAILED,
     )
@@ -406,6 +406,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
         log("send_hello(%s) packet=%s", hexstr(challenge_response or ""), hello)
+        if LOG_HELLO:
+            netlog.info("sending hello:")
+            print_nested_dict(hello, print_fn=netlog.info)
         self.send("hello", hello)
 
     def verify_connected(self):
@@ -415,7 +418,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def make_hello_base(self):
-        capabilities = flatten_dict(get_network_caps(FULL_INFO>0))
+        capabilities = flatten_dict(get_network_caps(FULL_INFO))
         #add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
@@ -454,42 +457,49 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
-        encryption = self.get_encryption()
-        cryptolog(f"encryption={encryption}")
-        if encryption:
-            crypto_backend_init()
-            enc, mode = (encryption+"-").split("-")[:2]
-            if not mode:
-                mode = DEFAULT_MODE
-            ciphers = get_ciphers()
-            if enc not in ciphers:
-                raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers)}")
-            modes = get_modes()
-            if mode not in modes:
-                raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes)}")
-            iv = get_iv()
-            key_salt = get_salt()
-            iterations = get_iterations()
-            padding = choose_padding(self.server_padding_options)
-            cipher_caps = {
-                ""                      : enc,
-                "mode"                  : mode,
-                "iv"                    : iv,
-                "key_salt"              : key_salt,
-                "key_size"              : DEFAULT_KEYSIZE,
-                "key_hash"              : DEFAULT_KEY_HASH,
-                "key_stretch"           : DEFAULT_KEY_STRETCH,
-                "key_stretch_iterations": iterations,
-                "padding"               : padding,
-                "padding.options"       : PADDING_OPTIONS,
-                }
-            cryptolog(f"cipher_caps={cipher_caps}")
+        cipher_caps = self.get_cipher_caps()
+        if cipher_caps:
             up("cipher", cipher_caps)
-            key = self.get_encryption_key()
-            self._protocol.set_cipher_in(encryption, iv, key,
-                                         key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, iterations, padding)
         capabilities.update(self.hello_extra)
         return capabilities
+
+    def get_cipher_caps(self):
+        encryption = self.get_encryption()
+        cryptolog(f"encryption={encryption}")
+        if not encryption:
+            return {}
+        crypto_backend_init()
+        enc, mode = (encryption+"-").split("-")[:2]
+        if not mode:
+            mode = DEFAULT_MODE
+        ciphers = get_ciphers()
+        if enc not in ciphers:
+            raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers)}")
+        modes = get_modes()
+        if mode not in modes:
+            raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes)}")
+        iv = get_iv()
+        key_salt = get_salt()
+        iterations = get_iterations()
+        padding = choose_padding(self.server_padding_options)
+        cipher_caps = {
+            ""                      : enc,
+            "mode"                  : mode,
+            "iv"                    : iv,
+            "key_salt"              : key_salt,
+            "key_size"              : DEFAULT_KEYSIZE,
+            "key_hash"              : DEFAULT_KEY_HASH,
+            "key_stretch"           : DEFAULT_KEY_STRETCH,
+            "key_stretch_iterations": iterations,
+            "padding"               : padding,
+            "padding.options"       : PADDING_OPTIONS,
+            }
+        cryptolog(f"cipher_caps={cipher_caps}")
+        key = self.get_encryption_key()
+        self._protocol.set_cipher_in(encryption, iv, key,
+                                     key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, iterations, padding)
+        return cipher_caps
+
 
     def get_version_info(self) -> dict:
         return get_version_info(FULL_INFO)
@@ -1000,7 +1010,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def _process_hello(self, packet):
         if LOG_HELLO:
-            from xpra.util import print_nested_dict
+            netlog.info("received hello:")
             print_nested_dict(packet[1], print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
         if not self.password_sent and self.has_password():

@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.server import server_features
-from xpra.util import merge_dicts, typedict
+from xpra.util import merge_dicts, typedict, print_nested_dict
+from xpra.common import LOG_HELLO
 from xpra.log import Logger
 
 log = Logger("server")
@@ -112,6 +113,10 @@ def get_client_connection_class(caps):
             for bc in CC_BASES:
                 log("%s.get_caps()", bc)
                 merge_dicts(capabilities, bc.get_caps(self))
+            if LOG_HELLO:
+                netlog = Logger("network")
+                netlog.info(f"sending hello to {self}:")
+                print_nested_dict(capabilities, print_fn=netlog.info)
             self.send("hello", capabilities)
             self.hello_sent = True
 

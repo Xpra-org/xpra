@@ -1816,6 +1816,7 @@ class ServerCore:
         capabilities = packet[1]
         c = typedict(capabilities)
         if LOG_HELLO:
+            netlog.info(f"hello from {proto}:")
             from xpra.util import print_nested_dict
             print_nested_dict(c, print_fn=netlog.info)
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
