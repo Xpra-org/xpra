@@ -10,6 +10,7 @@ from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
 
 from xpra.platform.win32.common import (
+    ActivateKeyboardLayout,
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
@@ -37,6 +38,39 @@ def _GetKeyboardLayoutList():
     return layouts
 
 
+def x11_layouts_to_win32_hkl():
+    KMASKS = {
+        0xffffffff : (0, 16),
+        0xffff  : (0, ),
+        0x3ff   : (0, ),
+        }
+    layout_to_hkl = {}
+    max_items = 32
+    try:
+        handle_list = (HANDLE*max_items)()
+        count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
+        for i in range(count):
+            hkl = handle_list[i]
+            hkli = int(hkl)
+            for mask, bitshifts in KMASKS.items():
+                kbid = 0
+                for bitshift in bitshifts:
+                    kbid = (hkli & mask)>>bitshift
+                    if kbid in WIN32_LAYOUTS:
+                        break
+                if kbid in WIN32_LAYOUTS:
+                    code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
+                    log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
+                        _layout, kbid, _variants, code, hkli)
+                    if _layout not in layout_to_hkl:
+                        layout_to_hkl[_layout] = hkl
+                        break
+    except Exception:
+        log("x11_layouts_to_win32_hkl()", exc_info=True)
+    return layout_to_hkl
+
+
+
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 
@@ -60,6 +94,16 @@ class Keyboard(KeyboardBase):
         #workaround for "fr" keyboards, which use a different key name under X11:
         KEY_TRANSLATIONS[("dead_tilde", 65107,  50)]    = "asciitilde"
         KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
+        self.__x11_layouts_to_win32_hkl = x11_layouts_to_win32_hkl()
+
+    def set_platform_layout(self, layout):
+        hkl = self.__x11_layouts_to_win32_hkl.get(layout)
+        if hkl is None:
+            return 0
+        # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-activatekeyboardlayout
+        # KLF_SETFORPROCESS|KLF_REORDER = 0x108
+        old_hkl_or_zero_on_failure = ActivateKeyboardLayout(hkl, 0x108)
+        return old_hkl_or_zero_on_failure
 
     def __repr__(self):
         return "win32.Keyboard"
