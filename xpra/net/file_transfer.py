@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -159,7 +159,8 @@ class FileTransferAttributes:
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict:
-        #used in hello packets
+        #used in hello packets,
+        #duplicated with namespace (old caps to be removed in v6)
         return {
                 "file-transfer"     : self.file_transfer,
                 "file-transfer-ask" : self.file_transfer_ask,
@@ -173,9 +174,14 @@ class FileTransferAttributes:
                 "open-url"          : self.open_url,
                 "open-url-ask"      : self.open_url_ask,
                 "file-ask-timeout"  : self.file_ask_timeout,
+                #v5 onwards can use a proper namespace:
+                "file" : self.get_file_transfer_info(),
                 }
 
     def get_info(self) -> dict:
+        return self.get_file_transfer_info()
+
+    def get_file_transfer_info(self) -> dict:
         #slightly different from above... for legacy reasons
         #this one is used for get_info() in a proper "file." namespace from server_base.py
         return {
@@ -239,18 +245,36 @@ class FileTransferHandler(FileTransferAttributes):
         self.file_descriptors = set()
         self.init_attributes()
 
+
     def parse_file_transfer_caps(self, c):
-        self.remote_file_transfer = c.boolget("file-transfer")
-        self.remote_file_transfer_ask = c.boolget("file-transfer-ask")
-        self.remote_printing = c.boolget("printing")
-        self.remote_printing_ask = c.boolget("printing-ask")
-        self.remote_open_files = c.boolget("open-files")
-        self.remote_open_files_ask = c.boolget("open-files-ask")
-        self.remote_open_url = c.boolget("open-url")
-        self.remote_open_url_ask = c.boolget("open-url-ask")
-        self.remote_file_ask_timeout = c.intget("file-ask-timeout")
-        self.remote_file_size_limit = c.intget("max-file-size") or c.intget("file-size-limit")*1024*1024
-        self.remote_file_chunks = max(0, min(self.remote_file_size_limit, c.intget("file-chunks")))
+        fc = c.dictget("file")
+        if fc:
+            fc = typedict(fc)
+            #v5 with "file" namespace:
+            self.remote_file_transfer = fc.boolget("enabled")
+            self.remote_file_transfer_ask = fc.boolget("ask")
+            self.remote_printing = fc.boolget("printing")
+            self.remote_printing_ask = fc.boolget("printing-ask")
+            self.remote_open_files = fc.boolget("open")
+            self.remote_open_files_ask = fc.boolget("open-ask")
+            self.remote_open_url = fc.boolget("open-url")
+            self.remote_open_url_ask = fc.boolget("open-url-ask")
+            self.remote_file_ask_timeout = fc.intget("ask-timeout")
+            self.remote_file_size_limit = fc.intget("max-file-size")
+            self.remote_file_chunks = max(0, fc.intget("chunks"))
+        else:
+            #legacy - to be removed:
+            self.remote_file_transfer = c.boolget("file-transfer")
+            self.remote_file_transfer_ask = c.boolget("file-transfer-ask")
+            self.remote_printing = c.boolget("printing")
+            self.remote_printing_ask = c.boolget("printing-ask")
+            self.remote_open_files = c.boolget("open-files")
+            self.remote_open_files_ask = c.boolget("open-files-ask")
+            self.remote_open_url = c.boolget("open-url")
+            self.remote_open_url_ask = c.boolget("open-url-ask")
+            self.remote_file_ask_timeout = c.intget("file-ask-timeout")
+            self.remote_file_size_limit = c.intget("max-file-size") or c.intget("file-size-limit")*1024*1024
+            self.remote_file_chunks = max(0, min(self.remote_file_size_limit, c.intget("file-chunks")))
         self.dump_remote_caps()
 
     def dump_remote_caps(self):
