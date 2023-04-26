@@ -7,13 +7,14 @@
 
 from dbus.types import UInt32, Int32
 
-from xpra.util import net_utf8
+from xpra.util import net_utf8, first_time
 from xpra.dbus.helper import native_to_dbus
 from xpra.platform.xposix.fd_portal import REMOTEDESKTOP_IFACE
 from xpra.platform.xposix.fd_portal_shadow import PortalShadow
 from xpra.log import Logger
 
 log = Logger("shadow")
+keylog = Logger("shadow", "keyboard")
 
 
 class RemoteDesktop(PortalShadow):
@@ -74,7 +75,7 @@ class RemoteDesktop(PortalShadow):
         keystr = net_utf8(keystr)
         modifiers = list(net_utf8(x) for x in modifiers)
         self.set_ui_driver(ss)
-        log(f"key: name={keyname}, keyval={keyval}, keystr={keystr}")
+        keylog(f"key: name={keyname}, keyval={keyval}, keystr={keystr}")
         options = native_to_dbus([], "{sv}")
         #if keystr:
         #    keysym = Gdk.KEY_0
@@ -90,10 +91,14 @@ class RemoteDesktop(PortalShadow):
         ukeyname = keyname[:1].upper()+keyname[2:]
         skeyval = getattr(Gdk, f"KEY_{keyname}", 0) or getattr(Gdk, f"KEY_{ukeyname}", 0) or keyval
         keymap = Gdk.Keymap.get_default()
+        if not keymap:
+            if first_time("no-keymap"):
+                log.warn("Warning: no access to the keymap, cannot simulate key events")
+            return
         entries = keymap.get_entries_for_keyval(skeyval)
-        log(f"get_entries_for_keyval({skeyval})={entries}")
+        keylog(f"get_entries_for_keyval({skeyval})={entries}")
         if not entries or not entries[0]:
-            log(f"no matching entries in keymap for {skeyval}")
+            keylog(f"no matching entries in keymap for {skeyval}")
             return
         for keymapkey in entries[1]:
             keycode = keymapkey.keycode-8
