@@ -613,6 +613,8 @@ class SocketProtocol:
         if level>0 and l>min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
+                if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+                    log.info(f"         {packet_type:<32}: %i bytes compressed", len(cdata))
             except Exception as e:
                 log.error(f"Error compressing {packet_type} packet")
                 log.estr(e)
