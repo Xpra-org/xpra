@@ -5,7 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import Gtk   #pylint: disable=no-name-in-module
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk   #pylint: disable=no-name-in-module
 
 from xpra.util import envbool, prettify_plug_name, csv, parse_simple_dict, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
@@ -348,6 +351,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def setup_tray(self):
         if OSX:
+            return
+        display = Gdk.Display.get_default()
+        if not display:
+            #usually this is wayland shadow server:
+            traylog("no access to the display, cannot setup tray")
             return
         try:
             #menu:
