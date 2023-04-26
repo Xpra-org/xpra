@@ -5,9 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gi
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk
 from dbus.types import UInt32, Int32
 
-from xpra.util import net_utf8, first_time
+from xpra.util import net_utf8
 from xpra.dbus.helper import native_to_dbus
 from xpra.platform.xposix.fd_portal import REMOTEDESKTOP_IFACE
 from xpra.platform.xposix.fd_portal_shadow import PortalShadow
@@ -15,6 +18,7 @@ from xpra.log import Logger
 
 log = Logger("shadow")
 keylog = Logger("shadow", "keyboard")
+mouselog = Logger("shadow", "mouse")
 
 
 class RemoteDesktop(PortalShadow):
@@ -22,10 +26,13 @@ class RemoteDesktop(PortalShadow):
         super().__init__(multi_window)
         self.session_type : str = "pipewire shadow"
         self.input_devices = 0
+        self.keymap = Gdk.Keymap.get_default()
+        if not self.keymap:
+            log.warn("Warning: no access to the keymap, cannot simulate key events")
 
 
     def set_keymap(self, server_source, force=False):
-        log.info("key mapping not implemented - YMMV")
+        keylog.info("key mapping not implemented - YMMV")
 
 
     def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
@@ -33,7 +40,7 @@ class RemoteDesktop(PortalShadow):
             return False
         win = self._id_to_window.get(wid)
         if not win:
-            log.error(f"Error: window {wid} not found")
+            mouselog.error(f"Error: window {wid} not found")
             return
         x, y = pointer[:2]
         node_id = win.pipewire_id
@@ -47,14 +54,14 @@ class RemoteDesktop(PortalShadow):
 
     def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
         options = native_to_dbus([], "{sv}")
-        log.info(f"button-action: button={button}, pressed={pressed}")
+        mouselog(f"button-action: button={button}, pressed={pressed}")
         evdev_button = {
             1   : 0x110,    #BTN_LEFT
             2   : 0x111,    #BTN_RIGHT
             3   : 0x112,    #BTN_MIDDLE
             }.get(button, -1)
         if evdev_button<0:
-            log.warn(f"Warning: button {button} not recognized")
+            mouselog.warn(f"Warning: button {button} not recognized")
             return
         self.portal_interface.NotifyPointerButton(
             self.session_handle,
@@ -85,17 +92,11 @@ class RemoteDesktop(PortalShadow):
         #        Int32(keysym),
         #        UInt32(pressed))
         #GDK code must be moved elsewhere
-        import gi
-        gi.require_version("Gdk", "3.0")
-        from gi.repository import Gdk
         ukeyname = keyname[:1].upper()+keyname[2:]
         skeyval = getattr(Gdk, f"KEY_{keyname}", 0) or getattr(Gdk, f"KEY_{ukeyname}", 0) or keyval
-        keymap = Gdk.Keymap.get_default()
-        if not keymap:
-            if first_time("no-keymap"):
-                log.warn("Warning: no access to the keymap, cannot simulate key events")
+        if not self.keymap:
             return
-        entries = keymap.get_entries_for_keyval(skeyval)
+        entries = self.keymap.get_entries_for_keyval(skeyval)
         keylog(f"get_entries_for_keyval({skeyval})={entries}")
         if not entries or not entries[0]:
             keylog(f"no matching entries in keymap for {skeyval}")
