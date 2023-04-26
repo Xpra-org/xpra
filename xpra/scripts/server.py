@@ -1114,27 +1114,28 @@ def _do_run_server(script_file, cmdline,
             get_xauthority_path,
             xauth_add,
             )
-        xauthority = load_session_file("xauthority")
-        if xauthority and os.path.exists(xauthority):
-            os.environ["XAUTHORITY"] = xauthority.decode("latin1")
-            log("found existing XAUTHORITY file '%s'", xauthority)
-        else:
-            xauthority = get_xauthority_path(display_name, username, uid, gid)
-            os.environ["XAUTHORITY"] = xauthority
-            if not os.path.exists(xauthority):
-                log("creating XAUTHORITY file '%s'", xauthority)
-                try:
-                    with open(xauthority, "ab") as f:
-                        os.fchmod(f.fileno(), 0o640)
-                        if ROOT and (uid!=0 or gid!=0):
-                            os.fchown(f.fileno(), uid, gid)
-                except Exception as e:
-                    #trying to continue anyway!
-                    log.error("Error trying to create XAUTHORITY file %s:", xauthority)
-                    log.estr(e)
-            else:
+        if shadowing and display_name.find("wayland")<0:
+            xauthority = load_session_file("xauthority")
+            if xauthority and os.path.exists(xauthority):
+                os.environ["XAUTHORITY"] = xauthority.decode("latin1")
                 log("found existing XAUTHORITY file '%s'", xauthority)
-        write_session_file("xauthority", xauthority)
+            else:
+                xauthority = get_xauthority_path(display_name, username, uid, gid)
+                os.environ["XAUTHORITY"] = xauthority
+                if not os.path.exists(xauthority):
+                    log("creating XAUTHORITY file '%s'", xauthority)
+                    try:
+                        with open(xauthority, "ab") as f:
+                            os.fchmod(f.fileno(), 0o640)
+                            if ROOT and (uid!=0 or gid!=0):
+                                os.fchown(f.fileno(), uid, gid)
+                    except Exception as e:
+                        #trying to continue anyway!
+                        log.error("Error trying to create XAUTHORITY file %s:", xauthority)
+                        log.estr(e)
+                else:
+                    log("found existing XAUTHORITY file '%s'", xauthority)
+            write_session_file("xauthority", xauthority)
         #resolve use-display='auto':
         if use_display is None or upgrading:
             #figure out if we have to start the vfb or not:
