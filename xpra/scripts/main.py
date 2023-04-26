@@ -531,10 +531,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_sessions_gui(options)
     elif mode == "displays":
         check_gtk_client()
-        return run_displays(args)
+        return run_displays(options, args)
     elif mode == "clean-displays":
         no_gtk()
-        return run_clean_displays(args)
+        return run_clean_displays(options, args)
     elif mode == "clean-sockets":
         no_gtk()
         return run_clean_sockets(options, args)
@@ -2164,7 +2164,7 @@ def stat_display_socket(socket_path, timeout=VERIFY_SOCKET_TIMEOUT):
     return {}
 
 
-def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
+def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid(), sessions_dir=None):
     """
     try to find the one "real" active display
     either X11 or wayland displays used by real user sessions
@@ -2176,7 +2176,7 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     def dinfo(display):
         info = info_cache.get(display)
         if info is None:
-            info = get_display_info(display)
+            info = get_display_info(display, sessions_dir)
             info_cache[display] = info
         return info
     while True:
@@ -3292,7 +3292,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
         display = display_descr.get("display")
         #args are enough to identify the display,
         #get the display_info so we know the mode:
-        descr = get_display_info(display)
+        descr = get_display_info(display, options.sessions_dir)
     else:
         def recover_many(displays):
             from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
@@ -3302,7 +3302,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
             return 0
         if len(args)>1:
             return recover_many(args)
-        displays = get_displays_info()
+        displays = get_displays_info(sessions_dir=options.sessions_dir)
         #find the 'DEAD' ones:
         dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
         if not dead_displays:
@@ -3330,9 +3330,9 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
     no_gtk()
     return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
-def run_displays(args):
+def run_displays(options, args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays_info(display_names=args if args else None)
+    displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
     print(f"Found {len(displays)} displays:")
     if args:
         print(" matching " + csv(args))
@@ -3355,10 +3355,10 @@ def run_displays(args):
         info_str += csv(show(v, descr.get(k)) for k,v in SHOW.items() if k in descr)
         print("%10s    %-8s    %s" % (display, state, info_str))
 
-def run_clean_displays(args):
+def run_clean_displays(options, args):
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
-    displays = get_displays_info()
+    displays = get_displays_info(sessions_dir=options.sessions_dir)
     dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
     if not dead_displays:
         print("No dead displays found")
@@ -3451,51 +3451,83 @@ def run_clean_displays(args):
     print("")
     print("Done")
 
-def get_displays_info(dotxpra=None, display_names=None):
+def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None):
     displays = get_displays(dotxpra, display_names)
     displays_info = {}
     for display, descr in displays.items():
         #descr already contains the uid, gid
         displays_info[display] = descr
         #add wminfo:
-        descr.update(get_display_info(display))
+        descr.update(get_display_info(display, sessions_dir))
     sn = sorted_nicely(displays_info.keys())
     return dict((k,displays_info[k]) for k in sn)
 
-def get_display_info(display):
-    log = Logger("util")
+def get_display_info(display, sessions_dir=None):
     display_info = {"state" : "LIVE"}
     if OSX or not POSIX:
         return display_info
     if not display.startswith(":"):
         return {}
-    try:
-        from xpra.x11.bindings.xwayland import isxwayland
-    except ImportError:
-        pass
-    else:
+    return get_x11_display_info(display, sessions_dir)
+
+def get_x11_display_info(display, sessions_dir=None):
+    log = Logger("util")
+    log(f"get_x11_display_info({display}, {sessions_dir})")
+    #assume live:
+    display_info = {"state" : "LIVE"}
+    #try to load the sessions files:
+    xauthority : str = ""
+    if sessions_dir:
         try:
-            if isxwayland(display):
-                display_info["xwayland"] = True
-        except Exception:
+            from xpra.scripts.server import get_session_dir, load_session_file
+        except ImportError:
             pass
-    wminfo = exec_wminfo(display)
-    if wminfo:
-        log(f"wminfo({display})={wminfo}")
-        display_info.update(wminfo)
-        mode = wminfo.get("xpra-server-mode", "")
-        #seamless servers and non-xpra servers should have a window manager:
-        if mode.find("seamless")>=0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
-            display_info["state"] = "DEAD"
         else:
-            wmname = wminfo.get("wmname")
-            if wmname and wmname.lower().find("xpra")>=0:
-                #check if the xpra server process still exists:
-                pid = wminfo.get("xpra-server-pid")
-                if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
-                    display_info["state"] = "DEAD"
-    else:
-        display_info.update({"state" : "UNKNOWN"})
+            with OSEnvContext():
+                uid = getuid()
+                session_dir = get_session_dir("unknown", sessions_dir, display, uid)
+                if os.path.exists(session_dir) and os.path.isdir(session_dir):
+                    log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
+                    os.environ["XPRA_SESSION_DIR"] = session_dir
+                    try:
+                        xvfb_pid = int(load_session_file("xvfb.pid"))
+                        log(f"xvfb.pid({display})={xvfb_pid}")
+                        if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
+                            display_info = {"state" : "UNKNOWN"}
+                    except (TypeError, ValueError):
+                        xvfb_pid = 0
+                    xauthority = (load_session_file("xauthority") or "").decode()
+                    log(f"xauthority({display})={xauthority}")
+    xauthority = xauthority or os.environ.get("XAUTHORITY")
+    with OSEnvContext():
+        os.environ["XAUTHORITY"] = xauthority
+        try:
+            from xpra.x11.bindings.xwayland import isxwayland
+        except ImportError:
+            pass
+        else:
+            try:
+                if isxwayland(display):
+                    display_info["xwayland"] = True
+            except Exception:
+                pass
+        wminfo = exec_wminfo(display)
+        if wminfo:
+            log(f"wminfo({display})={wminfo}")
+            display_info.update(wminfo)
+            mode = wminfo.get("xpra-server-mode", "")
+            #seamless servers and non-xpra servers should have a window manager:
+            if mode.find("seamless")>=0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
+                display_info["state"] = "DEAD"
+            else:
+                wmname = wminfo.get("wmname")
+                if wmname and wmname.lower().find("xpra")>=0:
+                    #check if the xpra server process still exists:
+                    pid = wminfo.get("xpra-server-pid")
+                    if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
+                        display_info["state"] = "DEAD"
+        else:
+            display_info.update({"state" : "UNKNOWN"})
     return display_info
 
 def get_displays(dotxpra=None, display_names=None):
