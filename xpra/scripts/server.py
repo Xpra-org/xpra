@@ -782,7 +782,7 @@ def _do_run_server(script_file, cmdline,
         else:
             from xpra.scripts.main import guess_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-            display_name = guess_display(dotxpra, desktop_display)
+            display_name = guess_display(dotxpra, desktop_display, sessions_dir=opts.sessions_dir)
     elif upgrading and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:

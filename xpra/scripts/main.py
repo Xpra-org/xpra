@@ -2190,11 +2190,15 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid(), sessions
             xpra_displays = [display for _, display in results]
             displays = list(set(displays)-set(xpra_displays))
         if len(displays)>1:
-            #keep only LIVE ones - assume that they are:
-            displays = [display for display in displays if dinfo(display).get("state", "LIVE")=="LIVE"]
+            #keep only LIVE ones (assume that they are),
+            #and skip XWayland displays:
+            displays = [display for display in displays if
+                        dinfo(display).get("state", "LIVE")=="LIVE" and not dinfo(display).get("xwayland", False)]
         if len(displays)==1:
             return displays[0]
         if not args:
+            if len(displays)>1:
+                raise InitExit(1, "too many live displays to choose from: "+csv(sorted_nicely(displays)))
             if all_displays:
                 raise InitExit(1, "too many live displays to choose from: "+csv(sorted_nicely(all_displays)))
             raise InitExit(1, "could not detect any live displays")
@@ -2406,7 +2410,7 @@ def run_glcheck(opts):
     return 0
 
 
-def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
+def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=None):
     if len(args)==1 and args[0]:
         if OSX or WIN32:
             return args[0]
@@ -2416,7 +2420,7 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
     if OSX or WIN32:
         #no need for a specific display
         return "Main"
-    return guess_display(dotxpra, None, uid, gid)
+    return guess_display(dotxpra, None, uid, gid, sessions_dir)
 
 
 def start_macos_shadow(cmd, env, cwd):
@@ -2523,7 +2527,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     else:
         if mode not in ("expand", "shadow", "shadow-screen"):
             raise ValueError(f"invalid mode {mode!r}")
-        display_name = pick_shadow_display(dotxpra, args, uid, gid)
+        display_name = pick_shadow_display(dotxpra, args, uid, gid, opts.sessions_dir)
         #we now know the display name, so add it:
         args = [display_name]
         opts.exit_with_client = True
@@ -2746,7 +2750,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             if not args and server_mode in ("shadow", "shadow-screen", "expand"):
                 try:
-                    display_name = pick_shadow_display(dotxpra, args)
+                    display_name = pick_shadow_display(dotxpra, args, sessions_dir=opts.sessions_dir)
                     args = [display_name]
                 except Exception:
                     #failed to guess!
@@ -3479,7 +3483,7 @@ def get_x11_display_info(display, sessions_dir=None):
     xauthority : str = ""
     if sessions_dir:
         try:
-            from xpra.scripts.server import get_session_dir, load_session_file
+            from xpra.scripts.server import get_session_dir, load_session_file, session_file_path
         except ImportError:
             pass
         else:
@@ -3493,14 +3497,18 @@ def get_x11_display_info(display, sessions_dir=None):
                         xvfb_pid = int(load_session_file("xvfb.pid"))
                         log(f"xvfb.pid({display})={xvfb_pid}")
                         if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
-                            display_info = {"state" : "UNKNOWN"}
+                            display_info["state"] = "UNKNOWN"
                     except (TypeError, ValueError):
                         xvfb_pid = 0
                     xauthority = (load_session_file("xauthority") or "").decode()
                     log(f"xauthority({display})={xauthority}")
+                    if not os.path.exists(session_file_path("server.pid")) and not os.path.exists(session_file_path("socket")):
+                        #looks like the server has exited
+                        display_info["state"] = "DEAD"
     xauthority = xauthority or os.environ.get("XAUTHORITY")
     with OSEnvContext():
-        os.environ["XAUTHORITY"] = xauthority
+        if xauthority:
+            os.environ["XAUTHORITY"] = xauthority
         try:
             from xpra.x11.bindings.xwayland import isxwayland
         except ImportError:
