@@ -116,13 +116,13 @@ def filt(prefix, name, inlist, all_fn, all_list):
     inclist = [x for x in inlist if x and not x.startswith("-")]
     lists = exclist + inclist
     all_list = apl(all_list)
-    unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE)
+    unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE and x.lower()!="none")
     if unknown:
         log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
-    notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown))
+    notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown and x!="none"))
     if notfound:
         log.warn("Warning: %s not found: %s", name, csv(notfound))
-    return apl(x for x in inclist if x not in exclist)
+    return apl(x for x in inclist if x not in exclist and x!="none")
 
 
 class VideoHelper:
