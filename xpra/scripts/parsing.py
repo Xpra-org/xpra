@@ -1463,7 +1463,7 @@ When unspecified, all the available codecs are allowed and the first one is used
                       +" Default: '%default'.")
     group.add_option("--ssl-cert", action="store",
                       dest="ssl_cert", default=defaults.ssl_cert,
-                      help="Certifcate file to use."
+                      help="Certificate file to use."
                       +" Default: '%default'.")
     group.add_option("--ssl-protocol", action="store",
                       dest="ssl_protocol", default=defaults.ssl_protocol,

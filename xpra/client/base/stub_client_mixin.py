@@ -54,7 +54,7 @@ class StubClientMixin:
 
     def emit(self, *_args, **_kwargs):
         """
-        Emit a signal, dummy implementation overriden by gobject.
+        Emit a signal, dummy implementation overridden by gobject.
         """
 
     def setup_connection(self, _conn):

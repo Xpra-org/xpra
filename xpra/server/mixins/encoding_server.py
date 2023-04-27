@@ -165,7 +165,7 @@ class EncodingServer(StubServerMixin):
         ve = getVideoHelper().get_encodings()
         log("init_encodings() adding video encodings: %s", ve)
         add_encodings(*ve)  #ie: ["vp8", "h264"]
-        #Pithon Imaging Libary:
+        #Pithon Imaging Library:
         enc_pillow = get_codec("enc_pillow")
         log("enc_pillow=%s", enc_pillow)
         if enc_pillow:

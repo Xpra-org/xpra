@@ -52,9 +52,9 @@ def decrypt_passwd(data):
     dk = deskey(pack('8B', *vnckey), True)
     return desfunc(data, dk)
 
-def generate_response(passwd, challange):
+def generate_response(passwd, challenge):
     ek = deskey((passwd+b'\x00'*8)[:8], False)
-    return desfunc(challange[:8], ek) + desfunc(challange[8:], ek)
+    return desfunc(challenge[:8], ek) + desfunc(challenge[8:], ek)
 
 ###
 ###  end: changes made for VNC.

@@ -188,7 +188,7 @@ Using the `control` channel:
 ```shell
 xpra control :DISPLAY debug enable CATEGORY
 ```
-This can be used to contol both servers and clients (using the client's socket path: #2406).
+This can be used to control both servers and clients (using the client's socket path: #2406).
 
 The server can also forward debug control commands to the clients connected to it using `client debug`:
 ```shell
@@ -209,7 +209,7 @@ xpra control :2  debug disable focus+grab
 <details>
   <summary>the server's dbus interface</summary>
 
-The debug control commands are also available trough the server's dbus interface, see [#904](https://github.com/Xpra-org/xpra/issues/904).
+The debug control commands are also available through the server's dbus interface, see [#904](https://github.com/Xpra-org/xpra/issues/904).
 </details>
 
 ***

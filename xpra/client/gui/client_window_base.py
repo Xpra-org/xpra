@@ -937,7 +937,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def get_mouse_event_wid(self, *_args):
-        #used to be overriden in GTKClientWindowBase
+        #used to be overridden in GTKClientWindowBase
         return self._id
 
     def _do_motion_notify_event(self, event):

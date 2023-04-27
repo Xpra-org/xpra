@@ -387,7 +387,7 @@ cdef class Encoder:
             log("nvjpeg: csc / scaling took %.1fms", 1000*(end-start))
             if abs(width-self.encoder_width)>1 or abs(height-self.encoder_height)>1:
                 client_options["scaling-quality"] = "low"   #our dumb scaling kernels produces low quality output
-            #now we actuall compress the rgb buffer:
+            #now we actually compress the rgb buffer:
             start = monotonic()
             with nogil:
                 r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,

@@ -145,7 +145,7 @@ class CythonImageWrapper(ImageWrapper):
 DEF STRIDE_ROUNDUP = 2
 
 #Pre-calculate some coefficients and define them as constants
-#We use integer calculations so everything is multipled by 2**16
+#We use integer calculations so everything is multiplied by 2**16
 #To get the result as a byte, we just bitshift:
 
 #RGB to YUV
@@ -328,7 +328,7 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
 
-        #explicity clear all strides / sizes / offsets:
+        #explicitly clear all strides / sizes / offsets:
         for i in range(2):
             self.dst_strides[i] = 0
             self.dst_sizes[i]   = 0

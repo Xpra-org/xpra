@@ -18,7 +18,7 @@ import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
 
-# only mininal imports go at the top
+# only minimal imports go at the top
 # so that this file can be included everywhere
 # without too many side-effects
 # pylint: disable=import-outside-toplevel

@@ -7,7 +7,7 @@
 Intercepting thread creation
 
 This is only here so we can intercept the creation
-of all deamon threads and inject some code.
+of all daemon threads and inject some code.
 This is used by the pycallgraph test wrapper.
 (this is cleaner than overriding the threading module directly
  as only our code will be affected)

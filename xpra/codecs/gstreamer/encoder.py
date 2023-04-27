@@ -154,7 +154,7 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
     enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
     if enc_options_str:
         encoder_options = parse_simple_dict(enc_options_str)
-        log(f"user overriden options for {element}: {encoder_options}")
+        log(f"user overridden options for {element}: {encoder_options}")
     else:
         encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
     if cs_in in PACKED_RGB_FORMATS:

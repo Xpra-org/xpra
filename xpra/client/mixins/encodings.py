@@ -33,7 +33,7 @@ def get_core_encodings():
     """
         This method returns the actual encodings supported.
         ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
-        It is often overriden in the actual client class implementations,
+        It is often overridden in the actual client class implementations,
         where extra encodings can be added (generally just 'rgb32' for transparency),
         or removed if the toolkit implementation class is more limited.
     """
@@ -251,7 +251,7 @@ class Encodings(StubClientMixin):
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for YUV420P
             # as the python client always supports all the profiles
-            # whereas on the server side, the default is baseline to accomodate less capable clients.
+            # whereas on the server side, the default is baseline to accommodate less capable clients.
             # YUV422P requires high422, and
             # YUV444P requires high444,
             # so we don't bother specifying anything for those two.

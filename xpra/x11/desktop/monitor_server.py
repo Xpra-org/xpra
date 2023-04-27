@@ -169,7 +169,7 @@ class XpraMonitorServer(DesktopServerBase):
                     return
                 #get the geometry from the crtc:
                 mdef = dict((k,v) for k,v in crtc_info.items() if k in ("x", "y", "width", "height"))
-                #add the milimeter dimensions from the output:
+                #add the millimeter dimensions from the output:
                 mdef.update((k, v) for k,v in output_info.items() if k in ("mm-width", "mm-height"))
                 #and some monitor attributes:
                 mdef.update((k, v) for k,v in output_info.items() if k in ("primary", "automatic", "name"))

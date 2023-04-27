@@ -252,7 +252,7 @@ class AudioClient(StubClientMixin):
         return matching_codecs
 
     def may_notify_audio(self, summary, body):
-        #overriden in UI client subclass
+        #overridden in UI client subclass
         pass
 
     def audio_loop_check(self, mode="speaker"):

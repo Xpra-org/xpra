@@ -24,7 +24,7 @@ def import_netifaces() -> object:
     if _netifaces is None:
         try:
             import netifaces                #@UnresolvedImport pylint: disable=import-outside-toplevel
-            log("netifaces loaded sucessfully")
+            log("netifaces loaded successfully")
             _netifaces = netifaces
             netifaces_version = netifaces.version        #@UndefinedVariable
         except ImportError:
@@ -488,7 +488,7 @@ def main(): # pragma: no cover
                 lastx = None
                 for x in v:
                     if lastx is not None:
-                        #dot seperated numbers
+                        #dot separated numbers
                         if isinstance(lastx, int):
                             s += "."
                         else:

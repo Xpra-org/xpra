@@ -383,7 +383,7 @@ class CoreX11WindowModel(WindowModelStub):
         #initial sync:
         for cb in self._py_property_handlers.values():
             cb(self)
-        #this one is special, and overriden in BaseWindow too:
+        #this one is special, and overridden in BaseWindow too:
         self.managed_connect("notify::protocols", self._update_can_focus)
 
     def _update_can_focus(self, *_args):
@@ -688,7 +688,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._handle_frame_changed()
             return True
         if event.message_type=="_NET_MOVERESIZE_WINDOW":
-            #this is overriden in WindowModel, skipped everywhere else:
+            #this is overridden in WindowModel, skipped everywhere else:
             geomlog("_NET_MOVERESIZE_WINDOW skipped on %s (data=%s)", self, event.data)
             return True
         if event.message_type=="":

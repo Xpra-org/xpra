@@ -29,7 +29,7 @@ BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
                                        "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
 
-#undocumented XSETTINGS endianess values:
+#undocumented XSETTINGS endianness values:
 LITTLE_ENDIAN = 0
 BIG_ENDIAN    = 1
 def get_local_byteorder():

@@ -43,7 +43,7 @@ def do_get_install_prefix():
 def get_system_conf_dirs():
     return envaslist_or_delegate("XPRA_SYSTEM_CONF_DIRS", do_get_system_conf_dirs)
 def do_get_system_conf_dirs():
-    #overriden in all platforms
+    #overridden in all platforms
     return []
 
 def get_ssl_cert_dirs():
@@ -159,7 +159,7 @@ def do_get_sshpass_command():
     return None
 
 
-#overriden in platform code:
+#overridden in platform code:
 def get_app_dir():
     return env_or_delegate("XPRA_APP_DIR", do_get_app_dir)
 def do_get_app_dir():
@@ -194,13 +194,13 @@ def default_get_app_dir():
     adir = os.getcwd()
     return adir       #tried our best, hope this works!
 
-#may be overriden in platform code:
+#may be overridden in platform code:
 def get_resources_dir():
     return env_or_delegate("XPRA_RESOURCES_DIR", do_get_resources_dir)
 def do_get_resources_dir():
     return get_app_dir()
 
-#may be overriden in platform code:
+#may be overridden in platform code:
 def get_icon_dir():
     return env_or_delegate("XPRA_ICON_DIR", do_get_icon_dir)
 def do_get_icon_dir():

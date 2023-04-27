@@ -240,7 +240,7 @@ class UIXpraClient(ClientBaseClass):
                 log("failed to calculate automatic delay", exc_info=True)
 
     def get_vrefresh(self):
-        #this method is overriden in the GTK client
+        #this method is overridden in the GTK client
         from xpra.platform.gui import get_vrefresh  #pylint: disable=import-outside-toplevel
         return get_vrefresh()
 
@@ -621,7 +621,7 @@ class UIXpraClient(ClientBaseClass):
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
             return
         log("_process_setting_change: %s=%s", setting, value)
-        #thse are too big to log
+        #these are too big to log
         if setting not in ("xdg-menu", "monitors"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)

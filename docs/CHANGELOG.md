@@ -512,7 +512,7 @@
 * fix password leak in server log file
 * fix keyboard layout change handling
 * fix openSUSE RPM packaging dependencies
-* fix video region API stickyness
+* fix video region API stickiness
 * fix application iconification support
 * fix XShape performance when scaling
 * fix file transfer packet handling and checksum validation
@@ -623,7 +623,7 @@
 * lz4 faster modes with automatic speed tuning
 * server file upload from system tray
 * new subcommand: "xpra showconfig"
-* option to select a specific clibpoard to synchronize with (MS Windows only)
+* option to select a specific clipboard to synchronize with (MS Windows only)
 * faster OpenGL screen updates: group screen updates
 * dbus server for easier runtime control
 * replace calls to setxkbmap with native X11 API
@@ -836,7 +836,7 @@
 * client log output forwarding to the server
 * fixed workarea coordinates detection for MS Windows clients
 * improved video region detection and handling
-* more complete support for window states (keep above, below, sticky, etc..) and general window manager responsabilities
+* more complete support for window states (keep above, below, sticky, etc..) and general window manager responsibilities
 * allow environment variables passed to children to be specified in the config files
 * faster reformatting of window pixels before compression stage
 * support multiple delta regions and expire them (better compression)
@@ -879,7 +879,7 @@
 * better clipboard compression support
 * better packet level network tuning
 * support for input methods
-* xpra info cleanups and improvments (show children, more versions, etc)
+* xpra info cleanups and improvements (show children, more versions, etc)
 * integrated keyboard layout detection on *nix
 * upgrade and shadow now ignore start child
 * improved automatic encoding selection, also faster
@@ -1272,7 +1272,7 @@ v0.13.5-3 2014-06-14
 
 ## [0.10.1] 2013-08-20
 * fix avcodec buffer pointer errors on some 32-bit Linux
-* fix invalid time convertion
+* fix invalid time conversion
 * fix OpenGL scaling with fractions
 * compilation fix for some newer versions of libav
 * disable OpenGL on Ubuntu 12.04 and earlier (non functional)
@@ -1369,7 +1369,7 @@ v0.13.5-3 2014-06-14
 * fix selection timestamp parsing
 * fix crash due to logging code location
 * fix pixel area request dimensions for lossless edges
-* fix advertized tray visual property
+* fix advertised tray visual property
 * fix cursors are too small with some applications
 * fix crash when low level debug code is enabled
 * reset cursors when disabling cursor forwarding
@@ -1463,7 +1463,7 @@ v0.13.5-3 2014-06-14
 
 
 ## [0.8.3] 2013-02-12
-* Python 2.4 compatiblity fixes (CentOS 5.x)
+* Python 2.4 compatibility fixes (CentOS 5.x)
 * fix static builds of vpx and x264
 
 
@@ -1511,7 +1511,7 @@ v0.13.5-3 2014-06-14
 * more aggressive picture quality tuning
 * better CPU utilization
 * new command line options and tray menu to trade latency for bandwidth
-* x264 disable unecessary I-frames and avoid IDR frames
+* x264 disable unnecessary I-frames and avoid IDR frames
 * performance and latency optimizations in critical sections
 * avoid server loops: prevent the client from connecting to itself
 * group windows according to the remote application they belong to
@@ -1600,7 +1600,7 @@ v0.13.5-3 2014-06-14
 * fix undefined variable exception in window setup/cleanup code
 * fix undefined variable exception in window damage code
 * fix dimensions used for calculating the optimal picture encoding
-* reduce Xdummy memory usage by limitting to lower maxmimum resolutions
+* reduce Xdummy memory usage by limiting to lower maximum resolutions
 
 
 ## [0.7.1] 2012-10-21
@@ -1780,7 +1780,7 @@ v0.13.5-3 2014-06-14
 * fix accounting of client decode time: ignore figure in case of decoding error
 * fix subversion build information detection on MS Windows
 * fix some binary packages which were missing some menu icons
-* restore keyboard compatiblity code for MS Windows and OSX clients
+* restore keyboard compatibility code for MS Windows and OSX clients
 * use padded buffers to prevent colourspace conversion from reading random memory
 * release Python's GIL during vpx and x264 compression and colourspace conversion
 * better UI launcher: UI improvements, detect encodings, fix standalone/win32 usage, minimize window once the client has started
@@ -1888,7 +1888,7 @@ v0.13.5-3 2014-06-14
 * prevent DoS: limit number of concurrent connections attempting login 20
 * prevent DoS: limit initial packet size (memory exhaustion: 32KB)
 * mmap: options to place sockets in /tmp and share mmap area across users via unix groups
-* remove large amount of compatiblity code for older versions
+* remove large amount of compatibility code for older versions
 * fix for Mac OS X clients sending hexadecimal keysyms
 * fix for clipboard sharing and some applications (ie: Qt)
 * notifications systems with dbus: re-connect if needed

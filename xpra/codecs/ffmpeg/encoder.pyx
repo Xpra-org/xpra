@@ -294,7 +294,7 @@ cdef extern from "libavcodec/avcodec.h":
         int cutoff
         uint64_t channel_layout
         uint64_t request_channel_layout
-        #skippped: AVAudioServiceType
+        #skipped: AVAudioServiceType
         #        AVSampleFormat
         int refcounted_frames
         float qcompress

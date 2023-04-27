@@ -54,7 +54,7 @@ cdef extern from "wels/codec_app_def.h":
 
         ENCODER_OPTION_PROFILE                  #assign the profile for each layer
         ENCODER_OPTION_LEVEL                    #assign the level for each layer
-        ENCODER_OPTION_NUMBER_REF               #the number of refererence frame
+        ENCODER_OPTION_NUMBER_REF               #the number of reference frame
         ENCODER_OPTION_DELIVERY_STATUS          #the delivery info which is a feedback from app level
 
         ENCODER_LTR_RECOVERY_REQUEST
@@ -65,7 +65,7 @@ cdef extern from "wels/codec_app_def.h":
 
         ENCODER_OPTION_ENABLE_SSEI              #enable SSEI: true--enable ssei; false--disable ssei
         ENCODER_OPTION_ENABLE_PREFIX_NAL_ADDING #enable prefix: true--enable prefix; false--disable prefix
-        ENCODER_OPTION_SPS_PPS_ID_STRATEGY      #different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
+        ENCODER_OPTION_SPS_PPS_ID_STRATEGY      #different strategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
 
         ENCODER_OPTION_CURRENT_PATH
         ENCODER_OPTION_DUMP_FILE                #dump layer reconstruct frame to a specified file

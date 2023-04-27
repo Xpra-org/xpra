@@ -31,7 +31,7 @@ For more details, see [url mode mapping](https://github.com/Xpra-org/xpra/issues
 Both the URL mapping and session files require xpra to be installed using proper packages rather than archives.  
 This ensures that the operating system integration is registered correctly.  
 On MS Windows, that means using `EXE` or `MSI` installers and not `ZIP files. On MacOS, `PKG` and not `DMG` archives.  
-When installing from source on other platforms, [manual steps](https://github.com/Xpra-org/xpra/issues/1894#issuecomment-765501182) may be requred.
+When installing from source on other platforms, [manual steps](https://github.com/Xpra-org/xpra/issues/1894#issuecomment-765501182) may be required.
 
 ## Command line
 The command line is the most powerful tool for running the client and has the advantage of printing out diagnostic messages directly

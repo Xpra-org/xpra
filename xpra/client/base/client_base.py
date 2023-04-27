@@ -329,7 +329,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def client_type(self) -> str:
-        #overriden in subclasses!
+        #overridden in subclasses!
         return "Python"
 
     def get_scheduler(self):
@@ -801,7 +801,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     #utility method used by some authentication handlers,
-    #and overriden in UI client to provide a GUI dialog
+    #and overridden in UI client to provide a GUI dialog
     def do_process_challenge_prompt(self, prompt="password"):
         authlog(f"do_process_challenge_prompt({prompt}) use_gui_prompt={use_gui_prompt()}")
         if SKIP_UI:

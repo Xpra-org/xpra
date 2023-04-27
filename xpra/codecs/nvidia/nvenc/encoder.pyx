@@ -488,7 +488,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    chromaSampleLocationFlag        #[in]: if set to 1 , it specifies that thechromaSampleLocationTop and chromaSampleLocationBot are present.
         uint32_t    chromaSampleLocationTop         #[in]: Specifies the chroma sample location for top field(as defined in Annex E of the ITU-T Specification)
         uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification)
-        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it speficies the bitstream restriction parameters are present in the bitstream.
+        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it specifies the bitstream restriction parameters are present in the bitstream.
         uint32_t    reserved[15]
 
     ctypedef struct NV_ENC_CONFIG_H264:
@@ -603,7 +603,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    vbvInitialDelay     #[in]: Specifies the VBV(HRD) initial delay in bits. Set 0 to use the default VBV  initial delay
         uint32_t    enableMinQP         #[in]: Set this to 1 if minimum QP used for rate control.
         uint32_t    enableMaxQP         #[in]: Set this to 1 if maximum QP used for rate control.
-        uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user suppplied initial QP is used for rate control.
+        uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user supplied initial QP is used for rate control.
         uint32_t    enableAQ            #[in]: Set this to 1 to enable adaptive quantization.
         uint32_t    reservedBitField1   #[in]: Reserved bitfields and must be set to 0
         uint32_t    reservedBitFields[27] #[in]: Reserved bitfields and must be set to 0
@@ -710,7 +710,7 @@ cdef extern from "nvEncodeAPI.h":
                                         #forceIntraRefreshWithFrameCnt cannot be used if B frames are used in the GOP structure specified
         uint32_t    constrainedFrame    #[in]: Set to 1 if client wants to encode this frame with each slice completely independent of other slices in the frame.
                                         #NV_ENC_INITIALIZE_PARAMS::enableConstrainedEncoding should be set to 1
-        uint32_t    sliceModeDataUpdate #[in]: Set to 1 if client wants to change the sliceModeData field to speficy new sliceSize Parameter
+        uint32_t    sliceModeDataUpdate #[in]: Set to 1 if client wants to change the sliceModeData field to specify new sliceSize Parameter
                                         #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
         uint32_t    ltrMarkFrame        #[in]: Set to 1 if client wants to mark this frame as LTR
         uint32_t    ltrUseFrames        #[in]: Set to 1 if client allows encoding this frame using the LTR frames specified in ltrFrameBitmap
@@ -823,7 +823,7 @@ cdef extern from "nvEncodeAPI.h":
                                         #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
         NV_ENC_RC_PARAMS rcParams       #[in]: Specifies the rate control parameters for the current encoding session.
         NVENC_EXTERNAL_ME_HINT_COUNTS_PER_BLOCKTYPE meHintCountsPerBlock[2] #[in]: Specifies the number of hint candidates per block per direction for the current frame. meHintCountsPerBlock[0] is for L0 predictors and meHintCountsPerBlock[1] is for L1 predictors.
-                                        #The candidate count in NV_ENC_PIC_PARAMS::meHintCountsPerBlock[lx] must never exceed NV_ENC_INITIALIZE_PARAMS::maxMEHintCountsPerBlock[lx] provided during encoder intialization.
+                                        #The candidate count in NV_ENC_PIC_PARAMS::meHintCountsPerBlock[lx] must never exceed NV_ENC_INITIALIZE_PARAMS::maxMEHintCountsPerBlock[lx] provided during encoder initialization.
         NVENC_EXTERNAL_ME_HINT *meExternalHints     #[in]: Specifies the pointer to ME external hints for the current frame. The size of ME hint buffer should be equal to number of macroblocks multiplied by the total number of candidates per macroblock.
                                         #The total number of candidates per MB per direction = 1*meHintCountsPerBlock[Lx].numCandsPerBlk16x16 + 2*meHintCountsPerBlock[Lx].numCandsPerBlk16x8 + 2*meHintCountsPerBlock[Lx].numCandsPerBlk8x8
                                         # + 4*meHintCountsPerBlock[Lx].numCandsPerBlk8x8. For frames using bidirectional ME , the total number of candidates for single macroblock is sum of total number of candidates per MB for each direction (L0 and L1)
@@ -1010,8 +1010,8 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY  : "This indicates that the client is attempting to use a feature that is not available for the license type for the current system.",
     NV_ENC_ERR_UNIMPLEMENTED : "This indicates that the client is attempting to use a feature that is not implemented for the current version.",
     NV_ENC_ERR_RESOURCE_REGISTER_FAILED : "This indicates that the ::NvEncRegisterResource API failed to register the resource.",
-    NV_ENC_ERR_RESOURCE_NOT_REGISTERED : "This indicates that the client is attempting to unregister a resource that has not been successfuly registered.",
-    NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
+    NV_ENC_ERR_RESOURCE_NOT_REGISTERED : "This indicates that the client is attempting to unregister a resource that has not been successfully registered.",
+    NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfully mapped.",
       }
 
 OPEN_TRANSIENT_ERROR = (
@@ -3011,7 +3011,7 @@ def init_module():
             YUV444_ENABLED = False
         if LOSSLESS_ENABLED:
             LOSSLESS_ENABLED = False
-    #check NVENC availibility by creating a context:
+    #check NVENC availability by creating a context:
     device_warnings = {}
     log("init_module() will try keys: %s", try_keys)
     for client_key in try_keys:

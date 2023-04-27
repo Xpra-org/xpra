@@ -149,7 +149,7 @@ class WindowPerformanceStatistics:
                     "max_latency"   : int(1000.0*self.max_latency)}
             mayaddfac(metric, info, target, weight)
         if bandwidth_limit>0:
-            #calculate how much bandwith we have used in the last second (in bps):
+            #calculate how much bandwidth we have used in the last second (in bps):
             #encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
             cutoff = monotonic()-1
             used = sum(v[4] for v in tuple(self.encoding_stats) if v[0]>cutoff) * 8
