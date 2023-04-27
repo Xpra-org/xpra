@@ -251,6 +251,8 @@ class sound_subprocess_wrapper(subprocess_caller):
     def get_env(self):
         env = super().get_env()
         env.update(get_sound_wrapper_env())
+        env.pop("DISPLAY", None)
+        #env.pop("WAYLAND_DISPLAY", None)
         return env
 
     def start(self):
@@ -406,6 +408,7 @@ def query_sound():
     kwargs = exec_kwargs()
     env = exec_env()
     env.update(get_sound_wrapper_env())
+    env.pop("DISPLAY", None)
     log(f"query_sound() command=`{command}`, env={env}, kwargs={kwargs}")
     proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, **kwargs)
     out, err = proc.communicate(None)

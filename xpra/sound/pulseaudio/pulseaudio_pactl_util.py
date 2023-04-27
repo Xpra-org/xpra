@@ -37,9 +37,10 @@ def pactl_output(log_errors=True, *pactl_args):
     #force "C" locale so that we can parse the output as expected
     env = os.environ.copy()
     env["LC_ALL"] = "C"
+    env.pop("DISPLAY", None)
     try:
         import subprocess
-        log(f"running `{cmd}`")
+        log(f"running `{cmd}` with env={env}")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         from xpra.child_reaper import getChildReaper
         procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
