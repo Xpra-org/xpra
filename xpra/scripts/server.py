@@ -1114,7 +1114,7 @@ def _do_run_server(script_file, cmdline,
             get_xauthority_path,
             xauth_add,
             )
-        if shadowing and display_name.find("wayland")<0:
+        if not shadowing or display_name.find("wayland")<0:
             xauthority = load_session_file("xauthority")
             if xauthority and os.path.exists(xauthority):
                 os.environ["XAUTHORITY"] = xauthority.decode("latin1")
