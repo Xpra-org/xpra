@@ -2312,6 +2312,7 @@ class ServerCore:
             "exec_prefix"       : sys.exec_prefix,
             "executable"        : sys.executable,
             "idle-timeout"      : int(self.server_idle_timeout),
+            "pid"               : os.getpid(),
             }
         if self.pidfile:
             info["pidfile"] = {
