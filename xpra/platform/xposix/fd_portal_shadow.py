@@ -53,7 +53,7 @@ class PortalShadow(GTKShadowServerBase):
         log("notify_new_user() start capture")
         super().notify_new_user(ss)
         if not self._window_to_id:
-            self.client_source = ss
+            self.authenticating_client = ss
             self.create_session()
 
     def last_client_exited(self):
