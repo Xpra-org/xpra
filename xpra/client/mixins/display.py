@@ -300,7 +300,7 @@ class DisplayClient(StubClientMixin):
             server_w, server_h = self.server_actual_desktop_size
             maxw = max(root_w, server_w)
             maxh = max(root_h, server_h)
-        except ValueError:
+        except (TypeError, ValueError):
             pass
         if maxw<=0 or maxh<=0 or maxw>=32768 or maxh>=32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
