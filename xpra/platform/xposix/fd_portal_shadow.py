@@ -11,7 +11,7 @@ from dbus.types import UInt32
 from dbus.types import Dictionary
 
 from xpra.exit_codes import ExitCode
-from xpra.util import typedict
+from xpra.util import typedict, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -41,6 +41,7 @@ class PortalShadow(GTKShadowServerBase):
         self.session_path : str = ""
         self.session_type : str = "pipewire"
         self.session_handle : str = ""
+        self.authenticating_client = None
         self.capture : Capture = None
         self.portal_interface = get_portal_interface()
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
@@ -52,6 +53,7 @@ class PortalShadow(GTKShadowServerBase):
         log("notify_new_user() start capture")
         super().notify_new_user(ss)
         if not self._window_to_id:
+            self.client_source = ss
             self.create_session()
 
     def last_client_exited(self):
@@ -68,6 +70,13 @@ class PortalShadow(GTKShadowServerBase):
             except Exception as e:
                 log(f"ignoring error closing session {self.session}: {e}")
             self.session = None
+
+    def disconnect_authenticating_client(self, reason=ConnectionMessage.PERMISSION_ERROR, *extra):
+        ac = self.authenticating_client
+        if ac:
+            self.authenticating_client = None
+            self.disconnect_protocol(ac.protocol, reason, *extra)
+            self.cleanup_source(ac)
 
 
     def makeRootWindowModels(self):
@@ -124,12 +133,13 @@ class PortalShadow(GTKShadowServerBase):
             log("on_create_session_response%s", (response, results))
             log.error(f"Error {r} creating the session")
             log.error(" session access may have been denied")
-            self.quit(ExitCode.UNSUPPORTED)
+            self.disconnect_authenticating_client(ConnectionMessage.PERMISSION_ERROR, "session not created")
             return
         self.session_handle = res.strget("session_handle")
         log("on_create_session_response%s session_handle=%s", (r, res), self.session_handle)
         if not self.session_handle:
             log.error("Error: missing session handle creating the session")
+            self.disconnect_authenticating_client(ConnectionMessage.PERMISSION_ERROR, "no session handle")
             self.quit(ExitCode.UNSUPPORTED)
             return
         self.session = get_session_interface(self.session_path)
@@ -156,7 +166,7 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log("on_select_devices_response%s", (response, results))
             log.error(f"Error {r} selecting screencast devices")
-            self.quit(ExitCode.UNSUPPORTED)
+            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "failed to select devices")
             return
         log(f"on_select_devices_response devices selected, results={res}")
         self.select_sources()
@@ -180,7 +190,7 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log("on_select_sources_response%s", (response, results))
             log.error(f"Error {r} selecting screencast sources")
-            self.quit(ExitCode.UNSUPPORTED)
+            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "failed to select screencast sources")
             return
         log(f"on_select_sources_response sources selected, results={res}")
         self.portal_start()
@@ -201,13 +211,13 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log.error("on_start_response%s", (response, results))
             log.error(f"Error {r} starting the screen capture")
-            self.quit(ExitCode.UNSUPPORTED)
+            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "cannot start screen capture")
             return
         streams = res.tupleget("streams")
         if not streams:
             log.error("Error: failed to start capture:")
             log.error(" missing streams")
-            self.quit(ExitCode.UNSUPPORTED)
+            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "no streams")
             return
         log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
