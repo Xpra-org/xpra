@@ -209,7 +209,7 @@ class PortalShadow(GTKShadowServerBase):
         res = typedict(dbus_to_native(results))
         log(f"start response: {res}")
         if r:
-            log.error("on_start_response%s", (response, results))
+            log("on_start_response%s", (response, results))
             log.error(f"Error {r} starting the screen capture")
             self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "cannot start screen capture")
             return
