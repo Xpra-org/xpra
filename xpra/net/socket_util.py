@@ -668,7 +668,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
                                    f"You already have an xpra server running at {sockpath!r}\n"
                                    "  (did you want 'xpra upgrade'?)")
-            #remove exisiting sockets if clobber is set,
+            #remove existing sockets if clobber is set,
             #otherwise verify there isn't a server already running
             #and create the directories for the sockets:
             unknown = []

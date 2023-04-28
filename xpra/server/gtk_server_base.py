@@ -266,10 +266,10 @@ class GTKServerBase(ServerBase):
         self.set_workarea(workarea)
 
     def set_workarea(self, workarea):
-        """ overriden by seamless servers """
+        """ overridden by seamless servers """
 
     def set_desktop_geometry(self, width, height):
-        """ overriden by X11 seamless and desktop servers """
+        """ overridden by X11 seamless and desktop servers """
 
 
     def _move_pointer(self, device_id, wid, pos, props=None):

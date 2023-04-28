@@ -73,7 +73,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
 
     def client_type(self):
-        #overriden in subclasses!
+        #overridden in subclasses!
         return "Python3/GObject"
 
 
@@ -224,7 +224,7 @@ class HelloRequestClient(SendCommandConnectClient):
         self.quit(ExitCode.OK)
 
     def _process_disconnect(self, packet):
-        #overriden method so we can avoid printing a warning,
+        #overridden method so we can avoid printing a warning,
         #we haven't received the hello back from the server
         #but that's fine for a request client
         info = tuple(nonl(bytestostr(x)) for x in packet[1:])
@@ -444,7 +444,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.log("exit_code=%s" % self.exit_code)
 
     def log(self, message):
-        #this method is overriden in top client to use a log file
+        #this method is overridden in top client to use a log file
         log(message)
 
     def err(self, e):

@@ -134,7 +134,7 @@ class BugReport:
             from xpra.platform.gui import take_screenshot
             take_screenshot_fn = take_screenshot
         except ImportError:
-            log("failed to load platfrom specific screenshot code", exc_info=True)
+            log("failed to load platform specific screenshot code", exc_info=True)
         if not take_screenshot_fn:
             #try with Pillow:
             try:

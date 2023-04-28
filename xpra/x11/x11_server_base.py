@@ -74,7 +74,7 @@ class X11ServerBase(X11ServerCore):
     def do_init(self, opts):
         super().do_init(opts)
         #the server class sets the default value for 'xsettings_enabled'
-        #it is overriden in the seamless server (enabled by default),
+        #it is overridden in the seamless server (enabled by default),
         #and we let the options have the final say here:
         self._xsettings_enabled = parse_bool("xsettings", opts.xsettings, self._xsettings_enabled)
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
@@ -210,7 +210,7 @@ class X11ServerBase(X11ServerCore):
             if pos==(ox, oy):
                 mouselog.warn("Warning: %s failed verification", self.pointer_device)
                 mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
-                mouselog.warn(" usign XTest fallback")
+                mouselog.warn(" using XTest fallback")
                 self.pointer_device = xtest
                 self.input_devices = "xtest"
         self.timeout_add(1000, verify_uinput_moved)
@@ -363,7 +363,7 @@ class X11ServerBase(X11ServerCore):
                     sss = tuple(self._server_sources.values())
                     if len(sss)==1:
                         #only honour sub-pixel hinting if a single client is connected
-                        #and only when it is not using any scaling (or overriden with SCALED_FONT_ANTIALIAS):
+                        #and only when it is not using any scaling (or overridden with SCALED_FONT_ANTIALIAS):
                         ss = sss[0]
                         ds_unscaled = getattr(ss, "desktop_size_unscaled", None)
                         ds_scaled = getattr(ss, "desktop_size", None)

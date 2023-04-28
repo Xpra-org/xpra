@@ -175,5 +175,5 @@ class NotificationClient(StubClientMixin):
         self.notifier.close_notify(nid)
 
     def get_tray_window(self, _app_name, _hints):
-        #overriden in subclass to use the correct window if we can find it
+        #overridden in subclass to use the correct window if we can find it
         return self.tray

@@ -385,7 +385,7 @@ def load_xdg_menu_data():
             #and it isn't set when logging in via ssh
             #so we have to guess!
             config_dirs = []
-            #XDG_CONFIG_HOME takes precendence so add it first:
+            #XDG_CONFIG_HOME takes precedence so add it first:
             if xdg_home:
                 config_dirs.append(f"{xdg_home}/xdg")
             for d in os.environ.get("XDG_CONFIG_DIRS", default_xdg).split(":"):

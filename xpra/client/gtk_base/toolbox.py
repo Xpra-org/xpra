@@ -125,7 +125,7 @@ class ToolboxGUI(Gtk.Window):
             ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"),
             ))
         addhbox("Geometry:", (
-            ("Size constraints", "Specify window geometry size contraints", epath+"window_geometry_hints.py"),
+            ("Size constraints", "Specify window geometry size constraints", epath+"window_geometry_hints.py"),
             ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py", wox11),
             ))
         addhbox("Keyboard and Clipboard:", (

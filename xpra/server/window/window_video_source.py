@@ -748,7 +748,7 @@ class WindowVideoSource(WindowSource):
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options):
         """
-            Overriden here so we can try to intercept the video_subregion if one exists.
+            Overridden here so we can try to intercept the video_subregion if one exists.
         """
         vr = self.video_subregion.rectangle
         #overrides the default method for finding the encoding of a region
@@ -1274,7 +1274,7 @@ class WindowVideoSource(WindowSource):
                          csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
                 return False
             if csce.get_dst_width()!=enc_width or csce.get_dst_height()!=enc_height:
-                scorelog(" change of csc ouput dimensions from %ix%i to %ix%i",
+                scorelog(" change of csc output dimensions from %ix%i to %ix%i",
                          csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
                 return False
         ve = self._video_encoder
@@ -1876,7 +1876,7 @@ class WindowVideoSource(WindowSource):
 
 
     def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options, options):
-        #overriden so we can invalidate the scroll data:
+        #overridden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
         sd = self.scroll_data

@@ -156,7 +156,7 @@ class WindowSource(WindowIconSource):
     we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
     the function can then submit the packet using the 'queue_damage_packet' callback.
 
-    (also by 'send_window_icon' and clibpoard packets)
+    (also by 'send_window_icon' and clipboard packets)
     """
 
     _encoding_warnings = set()
@@ -323,7 +323,7 @@ class WindowSource(WindowIconSource):
             if self.content_type.find("browser")>=0 and "NORMAL" in self.window_type and ww>=200 and wh>=200:
                 self.has_alpha = False
 
-        #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
+        #will be overridden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = (self.bandwidth_limit or 0)<=0
         if self._quality_hint>=0:
@@ -2282,13 +2282,13 @@ class WindowSource(WindowIconSource):
 
     def remove_refresh_region(self, region):
         #removes the given region from the refresh list
-        #(also overriden in window video source)
+        #(also overridden in window video source)
         remove_rectangle(self.refresh_regions, region)
 
     def add_refresh_region(self, region):
         #adds the given region to the refresh list
         #returns the number of pixels in the region update
-        #(overriden in window video source to exclude the video region)
+        #(overridden in window video source to exclude the video region)
         #Note: this does not run in the UI thread!
         return add_rectangle(self.refresh_regions, region)
 
@@ -2355,7 +2355,7 @@ class WindowSource(WindowIconSource):
         return encoding
 
     def get_refresh_exclude(self):
-        #overriden in window video source to exclude the video subregion
+        #overridden in window video source to exclude the video subregion
         return None
 
     def full_quality_refresh(self, damage_options):
@@ -2614,7 +2614,7 @@ class WindowSource(WindowIconSource):
 
 
     def may_use_scrolling(self, _image, _options):
-        #overriden in video source
+        #overridden in video source
         return False
 
 

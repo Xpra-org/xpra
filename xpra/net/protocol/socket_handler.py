@@ -778,7 +778,7 @@ class SocketProtocol:
 
 
     #delegates to invalid_header()
-    #(so this can more easily be intercepted and overriden)
+    #(so this can more easily be intercepted and overridden)
     def invalid_header(self, proto, data, msg="invalid packet header"):
         self._invalid_header(proto, data, msg)
 

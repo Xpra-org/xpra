@@ -815,7 +815,7 @@ def _do_run_server(script_file, cmdline,
                 #only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
-                # We will try to find one automaticaly
+                # We will try to find one automatically
                 # Use the temporary magic value 'S' as marker:
                 display_name = 'S' + str(os.getpid())
 

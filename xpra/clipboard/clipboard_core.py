@@ -327,7 +327,7 @@ class ClipboardProtocolHelperCore:
             raise
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
-        """ this method is overriden in xclipboard to parse X11 atoms """
+        """ this method is overridden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
         log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))

@@ -2596,7 +2596,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         add_process(proc, "server", cmd, ignore=True, forget=True)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd  #pylint: disable=import-outside-toplevel
-            buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
+            buf = read_displayfd(r_pipe, proc=None) #proc daemonizes!
             noerr(os.close, r_pipe)
             noerr(os.close, w_pipe)
             def displayfd_err(msg):

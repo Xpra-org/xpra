@@ -64,7 +64,7 @@ cdef extern from "NvFBC/nvFBC.h":
 
     NVFBCRESULT NVFBC_SUCCESS
     NVFBCRESULT NVFBC_ERROR_GENERIC                     # Unexpected failure in NVFBC.
-    NVFBCRESULT NVFBC_ERROR_INVALID_PARAM               # One or more of the paramteres passed to NvFBC are invalid [This include NULL pointers].
+    NVFBCRESULT NVFBC_ERROR_INVALID_PARAM               # One or more of the parameters passed to NvFBC are invalid [This include NULL pointers].
     NVFBCRESULT NVFBC_ERROR_INVALIDATED_SESSION         # NvFBC session is invalid. Client needs to recreate session.
     NVFBCRESULT NVFBC_ERROR_PROTECTED_CONTENT           # Protected content detected. Capture failed.
     NVFBCRESULT NVFBC_ERROR_DRIVER_FAILURE              # GPU driver returned failure to process NvFBC command.
@@ -75,7 +75,7 @@ cdef extern from "NvFBC/nvFBC.h":
     NVFBCRESULT NVFBC_ERROR_UNSUPPORTED_PLATFORM        # NVFBC is not supported on this platform.
     NVFBCRESULT NVFBC_ERROR_OUT_OF_MEMORY               # Failed to allocate memory.
     NVFBCRESULT NVFBC_ERROR_INVALID_PTR                 # A NULL pointer was passed.
-    NVFBCRESULT NVFBC_ERROR_INCOMPATIBLE_VERSION        # An API was called with a parameter struct that has an incompatible version. Check dwVersion field of paramter struct.
+    NVFBCRESULT NVFBC_ERROR_INCOMPATIBLE_VERSION        # An API was called with a parameter struct that has an incompatible version. Check dwVersion field of parameter struct.
     NVFBCRESULT NVFBC_ERROR_OPT_CAPTURE_FAILURE         # Desktop Capture failed.
     NVFBCRESULT NVFBC_ERROR_INSUFFICIENT_PRIVILEGES     # User doesn't have appropriate previlages.
     NVFBCRESULT NVFBC_ERROR_INVALID_CALL                # NVFBC APIs called in wrong sequence.

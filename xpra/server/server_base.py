@@ -507,7 +507,7 @@ class ServerBase(ServerBaseClass):
 
 
     def update_all_server_settings(self, reset=False):
-        pass        #may be overriden in subclasses (ie: x11 server)
+        pass        #may be overridden in subclasses (ie: x11 server)
 
 
     ######################################################################
@@ -735,7 +735,7 @@ class ServerBase(ServerBaseClass):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
-            #filter out encoding properties, which are expected to be set everytime:
+            #filter out encoding properties, which are expected to be set every time:
             ncp = {}
             for k,v in new_client_properties.items():
                 if v is None:

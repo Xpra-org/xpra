@@ -717,7 +717,7 @@ class WindowBackingBase:
 
     def validate_csc_size(self, spec, src_width, src_height, dst_width, dst_height):
         if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
-            return "scaling not suported"
+            return "scaling not supported"
         if src_width<spec.min_w:
             return "source width %i is out of range: minimum is %i", src_width, spec.min_w
         if src_height<spec.min_h:

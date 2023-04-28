@@ -377,7 +377,7 @@ class Logger:
     * Any of the categories can enable debug logging if the environment
     variable 'XPRA_${CATEGORY}_DEBUG' is set to "1"
     * We also keep a list of debug_categories, so these can get enabled
-        programatically too
+        programmatically too
     * We keep track of which loggers are associated with each category,
         so we can enable/disable debug logging by category
     * You can pass exc_info=True to any method, and sys.exc_info() will be

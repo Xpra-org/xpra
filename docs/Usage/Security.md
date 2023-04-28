@@ -30,7 +30,7 @@ but that is not always an acceptable compromise for end users, in which case lim
 Beyond this, there are many other tunables in the [clipboard subsystem](https://github.com/Xpra-org/xpra/tree/master/xpra/clipboard)
 and its various OS specific implementations. This can be used to restrict the rate and size of the data transferred, filter out certain types of contents,
 select which clipboards can be accessed (for platforms that support more than one clipboard type), the type of data exchanged, etc..
-Pictures transfered using the clipboard from server to client are sanitized (re-encoded) and watermarked.
+Pictures transferred using the clipboard from server to client are sanitized (re-encoded) and watermarked.
 
 ### [Audio](../Features/Audio.md)
 Very much like the clipboard, the safest way to handle audio is to not forward it at all.  
@@ -100,10 +100,10 @@ but it may still be possible to glean enough data to be present a real risk. A g
 The xpra shell is a very powerful debugging feature which allows full access to all the data structures held in the client and server. It is disabled by default.  
 
 ### Malicious clients and servers
-Servers should be using authentication, so tipically this means that malicious clients have had their authentication credentials compromised or perhaps the whole clients is compromised.  
+Servers should be using authentication, so typically this means that malicious clients have had their authentication credentials compromised or perhaps the whole clients is compromised.  
 Clients should be using SSL certificates or SSH host keys to verify the identity of a server. A malicious server would be one that has been compromised or which is running a compromised application (ie: a browser).  
 
-As per the list above, if the specific subsytem is not disabled, a malicious actor may be able to:
+As per the list above, if the specific subsystem is not disabled, a malicious actor may be able to:
 * collect information about the remote peer: xpra and library versions, network connection, etc
 * send malicious files to be downloaded or opened by the client, documents to be printed
 * send notifications trying to impersonate local applications or to mislead the client
@@ -126,9 +126,9 @@ Some specific options have a direct impact on the security of the system:
 * `remote-xpra` the command executed from client SSH connections
 * `source=SOURCE` and `env=ENV`: anything that modifies the server's environment variables can potentially be used to subvert the server process
 * `source-start=SOURCE_START`, `start-env=START_ENV`: as above, but for commands started by the server
-* `mdns` will advertize sessions on local networks
+* `mdns` will advertise sessions on local networks
 * `readonly` sessions are unable to receive any keyboard or pointer input
-* `sharing` and `lock` control if and when sessions are transfered between clients
+* `sharing` and `lock` control if and when sessions are transferred between clients
 * `border`, `min-size`, `max-size`, `modal-windows`: to distinguish and constrain remote windows
 * `challenge-handlers` to restrict the type of authentication mechanisms the client will use (ie: prevent password prompts)
 * `uinput` virtual devices should be avoided as they can be used to inject input events into a system at a lower level

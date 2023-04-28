@@ -67,7 +67,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("ungrab",                "cancels any grabs",                max_args=0),
             #server globals:
             ArgsControlCommand("readonly",              "set readonly state for client(s)", min_args=1, max_args=1, validation=[parse_boolean_value]),
-            ArgsControlCommand("idle-timeout",          "set the idle tiemout",             validation=[int]),
+            ArgsControlCommand("idle-timeout",          "set the idle timeout",             validation=[int]),
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
             ArgsControlCommand("start-env",             "modify the environment used to start new commands", min_args=2),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),

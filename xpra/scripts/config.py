@@ -21,7 +21,7 @@ def warn(msg):
     sys.stderr.write(msg+"\n")
 
 def nodebug(*_args):
-    #can be overriden
+    #can be overridden
     pass
 debug = nodebug
 

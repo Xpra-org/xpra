@@ -208,7 +208,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return get_native_notifier_classes()
 
     def notify_new_user(self, ss):
-        #overriden here so we can show the notification
+        #overridden here so we can show the notification
         #directly on the screen we shadow
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
@@ -231,7 +231,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=XPRA_STARTUP_NOTIFICATION_ID)
 
     def do_notify_startup(self, title, body="", replaces_nid=0):
-        #overriden here so we can show the notification
+        #overridden here so we can show the notification
         #directly on the screen we shadow
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
         if self.notifier:
@@ -383,7 +383,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 ss.send_cursor()
 
     def do_get_cursor_data(self):
-        #this method is overriden in subclasses with platform specific code
+        #this method is overridden in subclasses with platform specific code
         return None
 
     def get_cursor_data(self):

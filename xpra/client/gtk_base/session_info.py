@@ -1313,7 +1313,7 @@ class SessionInfoClient(InfoTimerClient):
         Gtk.main_quit()
 
     def client_type(self):
-        #overriden in subclasses!
+        #overridden in subclasses!
         return "session-info"
 
     def update_screen(self):

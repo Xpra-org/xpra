@@ -112,7 +112,7 @@ cdef class rectangle:
             #area contains this rectangle, so nothing remains:
             return []
         cdef object rects = []
-        #note: we do "width first", no redudant area
+        #note: we do "width first", no redundant area
         #which means we prefer wider rectangles for the areas that would overlap (the corners)
         if self.y<y:
             #top:

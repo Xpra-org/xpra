@@ -1225,7 +1225,7 @@ class ServerCore:
         pre_read = None
         if socktype=="socket" and not peek_data:
             #try to read from this socket,
-            #so short lived probes don't go through the whole protocol instantation
+            #so short lived probes don't go through the whole protocol instantiation
             try:
                 sock.settimeout(0.001)
                 data = conn.read(1)
@@ -1778,7 +1778,7 @@ class ServerCore:
         netlog.info(*args)
 
     def _disconnect_proto_info(self, _proto):
-        #overriden in server_base in case there is more than one protocol
+        #overridden in server_base in case there is more than one protocol
         return ""
 
     def _process_connection_lost(self, proto, packet):
@@ -2238,7 +2238,7 @@ class ServerCore:
         return id_info
 
     def send_hello_info(self, proto):
-        #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
+        #Note: this can be overridden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
         log.info("processing info request from %s", proto._conn)
         def cb(proto, info):

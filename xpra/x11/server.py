@@ -228,7 +228,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             wm.set_size_constraints(minw, minh, maxw, maxh)
         elif server_features.windows:
             #update the default so Wm will use it
-            #when we do intantiate it:
+            #when we do instantiate it:
             from xpra.x11.gtk_x11 import wm
             wm.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
@@ -332,7 +332,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def set_screen_geometry_attributes(self, w, h):
         #only run the default code if there are no clients,
         #when we have clients, this should have been done already
-        #in the code that synchonizes the screen resolution
+        #in the code that synchronizes the screen resolution
         if not self._server_sources:
             super().set_screen_geometry_attributes(w, h)
 

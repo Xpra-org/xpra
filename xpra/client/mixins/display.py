@@ -315,7 +315,7 @@ class DisplayClient(StubClientMixin):
             raise SystemExit(message)
         if maxw>=16384 or maxh>=16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
-        #max packet size to accomodate
+        #max packet size to accommodate
         # a full screen RGBX (32 bits) uncompressed image
         # also with enough headroom for some metadata (4k)
         #we can't assume to have a real ClientConnection object:
@@ -393,7 +393,7 @@ class DisplayClient(StubClientMixin):
         #to use the same scale for both axes:
         #self.xscale = mint(max(x, y))
         #self.yscale = self.xscale
-        summary = "Desktop scaling adjusted to accomodate the server"
+        summary = "Desktop scaling adjusted to accommodate the server"
         xstr = ("%.3f" % self.xscale).rstrip("0")
         ystr = ("%.3f" % self.yscale).rstrip("0")
         messages = [

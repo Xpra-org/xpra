@@ -373,7 +373,7 @@ class DisplayManager(StubServerMixin):
         desktop_size_unscaled = attrs.intpair("desktop-size-unscaled")
         if desktop_size_unscaled:
             ss.desktop_size_unscaled = desktop_size_unscaled
-        #vrefresh may be overriden in 'monitors' data:
+        #vrefresh may be overridden in 'monitors' data:
         vrefresh = attrs.intget("vrefresh")
         if 0<vrefresh<240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=vrefresh:
             ss.vrefresh = vrefresh

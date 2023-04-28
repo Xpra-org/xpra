@@ -1030,5 +1030,5 @@ class FileTransferHandler(FileTransferAttributes):
         raise NotImplementedError()
 
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
-        #this method is overriden in the gtk client:
+        #this method is overridden in the gtk client:
         filelog("transfer_progress_update%s", (send, transfer_id, elapsed, position, total, error))

@@ -54,7 +54,7 @@ class GTK_Notifier(NotifierBase):
             longer it will be expanded to fit.
             `timeout` : Popup instance will disappear after this timeout if there
             is no human intervention. This can be overridden temporarily by passing
-            a new timout to the new_popup method.
+            a new timeout to the new_popup method.
         """
         self.size_x = size_x
         self.size_y = size_y

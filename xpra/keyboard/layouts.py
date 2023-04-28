@@ -69,7 +69,7 @@ WIN32_LAYOUTS = {
            1080: ("FOS", "Faroe Islands",  "Faroese",                  1252,   "fo", ["nodeadkeys"]),
            1081: ("HIN", "India",          "Hindi",                    UNICODE,"in", ["bolnagri", "hin-wx"]),
            1086: ("MSL", "Malaysia",       "Malay",                    1252,   "in", ["mal", "mal_lalitha", "mal_enhanced"]),
-           1087: ("KKZ", "Kazakstan",      "Kazakh",                   1251,   "kz", ["ruskaz", "kazrus"]),
+           1087: ("KKZ", "Kazakhstan",      "Kazakh",                   1251,   "kz", ["ruskaz", "kazrus"]),
            1088: ("KYR", "Kyrgyzstan",     "Kyrgyz",                   1251,   "kg", ["phonetic"]),
            1089: ("SWK", "Kenya",          "Swahili",                  1252,   "ke", ["kik"]),
            1091: ("UZB", "Uzbekistan (Latin)", "Uzbek",                1254,   "uz", ["latin"]),

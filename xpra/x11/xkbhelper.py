@@ -727,11 +727,11 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
                 keynames.append(keyname)
             all_keynames.add(keyname)
     if add_default_modifiers:
-        #try to add missings ones (magic!)
+        #try to add missing ones (magic!)
         defaults = {}
         for keyname, modifier in DEFAULT_MODIFIER_MEANINGS.items():
             if keyname in all_keynames:
-                continue            #aleady defined
+                continue            #already defined
             if modifier not in matches:
                 #define it since it is completely missing
                 keynames = defaults.setdefault(modifier, [])

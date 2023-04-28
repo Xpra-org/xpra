@@ -243,7 +243,7 @@ def show_desktop(_show):
     """ If possible, show the desktop """
 
 def set_fullscreen_monitors(_window, _fsm, _source_indication=0):
-    """ Only overriden by xposix """
+    """ Only overridden by xposix """
 
 def set_shaded(_window, _shaded):
     """

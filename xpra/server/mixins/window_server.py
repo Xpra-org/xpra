@@ -416,7 +416,7 @@ class WindowServer(StubServerMixin):
         focuslog("_focus(%s,%s)", wid, modifiers)
 
     def get_focus(self) -> int:
-        #can be overriden by subclasses that do manage focus
+        #can be overridden by subclasses that do manage focus
         #(ie: not shadow servers which only have a single window)
         #default: no focus
         return -1

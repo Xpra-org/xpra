@@ -9,7 +9,7 @@ import os
 
 from xpra.util import envbool
 
-#defaults which may be overriden by platform_import:
+#defaults which may be overridden by platform_import:
 CAN_DAEMONIZE = True
 REINIT_WINDOWS = False
 AUTOSTART = False

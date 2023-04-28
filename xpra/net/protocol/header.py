@@ -8,7 +8,7 @@ import struct
 #Note: since encoding flags and compression flags are all mutually exclusive,
 # (ie: only one encoder and at most one compressor can be used at a time)
 # we could theoretically add many more values here,
-# not necessarily limitting ourselves to the ones that land on a bit.
+# not necessarily limiting ourselves to the ones that land on a bit.
 
 #packet encoding flags:
 FLAGS_BENCODE   = 0x0       #assume bencode if not other flag is set

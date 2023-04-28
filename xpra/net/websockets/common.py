@@ -86,9 +86,9 @@ def get_client_upgrade_request(host, port, path, key):
 def write_request(write, http_request):
     now = monotonic()
     while http_request:
-        elasped = monotonic()-now
-        if elasped>=MAX_WRITE_TIME:
-            raise Exception(f"http write timeout, took more {elasped:.1f} seconds")
+        elapsed = monotonic()-now
+        if elapsed>=MAX_WRITE_TIME:
+            raise Exception(f"http write timeout, took more {elapsed:.1f} seconds")
         w = write(http_request)
         http_request = http_request[w:]
 
