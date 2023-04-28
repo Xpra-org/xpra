@@ -9,12 +9,7 @@ import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk, GLib  # @UnresolvedImport
 
-from xpra.util import (
-    MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \
-    MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_BOTTOMRIGHT, \
-    MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
-    MOVERESIZE_MOVE, MOVERESIZE_CANCEL,
-    )
+from xpra.util import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.platform import program_context
 
@@ -49,7 +44,7 @@ def make_window():
               x_root, y_root, direction, button, source_indication)
 
     def cancel():
-        initiate(0, 0, MOVERESIZE_CANCEL, 0, 1)
+        initiate(0, 0, MoveResize.CANCEL, 0, 1)
 
 
     table = Gtk.Table(n_rows=3, n_columns=3, homogeneous=True)
@@ -63,7 +58,7 @@ def make_window():
         pos = get_root_window().get_pointer()
         source_indication = 1    #normal
         button = 1
-        direction = MOVERESIZE_MOVE
+        direction = MoveResize.MOVE
         initiate(pos.x, pos.y, direction, button, source_indication)
         GLib.timeout_add(5*1000, cancel)
     btn.connect('button-press-event', initiate_move)
@@ -81,15 +76,15 @@ def make_window():
         btn.connect('button-press-event', btn_callback, direction)
 
     for x,y,direction in (
-                        (0, 0, MOVERESIZE_SIZE_TOPLEFT),
-                        (1, 0, MOVERESIZE_SIZE_TOP),
-                        (2, 0, MOVERESIZE_SIZE_TOPRIGHT),
-                        (0, 1, MOVERESIZE_SIZE_LEFT),
-                        (1, 1, MOVERESIZE_MOVE),
-                        (2, 1, MOVERESIZE_SIZE_RIGHT),
-                        (0, 2, MOVERESIZE_SIZE_BOTTOMLEFT),
-                        (1, 2, MOVERESIZE_SIZE_BOTTOM),
-                        (2, 2, MOVERESIZE_SIZE_BOTTOMRIGHT),
+                        (0, 0, MoveResize.SIZE_TOPLEFT),
+                        (1, 0, MoveResize.SIZE_TOP),
+                        (2, 0, MoveResize.SIZE_TOPRIGHT),
+                        (0, 1, MoveResize.SIZE_LEFT),
+                        (1, 1, MoveResize.MOVE),
+                        (2, 1, MoveResize.SIZE_RIGHT),
+                        (0, 2, MoveResize.SIZE_BOTTOMLEFT),
+                        (1, 2, MoveResize.SIZE_BOTTOM),
+                        (2, 2, MoveResize.SIZE_BOTTOMRIGHT),
                             ):
         add_button(x, y, direction)
     table.show_all()

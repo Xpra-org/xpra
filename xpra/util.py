@@ -112,32 +112,33 @@ DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
 
 
 #initiate-moveresize X11 constants
-MOVERESIZE_SIZE_TOPLEFT      = 0
-MOVERESIZE_SIZE_TOP          = 1
-MOVERESIZE_SIZE_TOPRIGHT     = 2
-MOVERESIZE_SIZE_RIGHT        = 3
-MOVERESIZE_SIZE_BOTTOMRIGHT  = 4
-MOVERESIZE_SIZE_BOTTOM       = 5
-MOVERESIZE_SIZE_BOTTOMLEFT   = 6
-MOVERESIZE_SIZE_LEFT         = 7
-MOVERESIZE_MOVE              = 8
-MOVERESIZE_SIZE_KEYBOARD     = 9
-MOVERESIZE_MOVE_KEYBOARD     = 10
-MOVERESIZE_CANCEL            = 11
+class MoveResize(IntEnum):
+    SIZE_TOPLEFT      = 0
+    SIZE_TOP          = 1
+    SIZE_TOPRIGHT     = 2
+    SIZE_RIGHT        = 3
+    SIZE_BOTTOMRIGHT  = 4
+    SIZE_BOTTOM       = 5
+    SIZE_BOTTOMLEFT   = 6
+    SIZE_LEFT         = 7
+    MOVE              = 8
+    SIZE_KEYBOARD     = 9
+    MOVE_KEYBOARD     = 10
+    CANCEL            = 11
 MOVERESIZE_DIRECTION_STRING = {
-                               MOVERESIZE_SIZE_TOPLEFT      : "SIZE_TOPLEFT",
-                               MOVERESIZE_SIZE_TOP          : "SIZE_TOP",
-                               MOVERESIZE_SIZE_TOPRIGHT     : "SIZE_TOPRIGHT",
-                               MOVERESIZE_SIZE_RIGHT        : "SIZE_RIGHT",
-                               MOVERESIZE_SIZE_BOTTOMRIGHT  : "SIZE_BOTTOMRIGHT",
-                               MOVERESIZE_SIZE_BOTTOM       : "SIZE_BOTTOM",
-                               MOVERESIZE_SIZE_BOTTOMLEFT   : "SIZE_BOTTOMLEFT",
-                               MOVERESIZE_SIZE_LEFT         : "SIZE_LEFT",
-                               MOVERESIZE_MOVE              : "MOVE",
-                               MOVERESIZE_SIZE_KEYBOARD     : "SIZE_KEYBOARD",
-                               MOVERESIZE_MOVE_KEYBOARD     : "MOVE_KEYBOARD",
-                               MOVERESIZE_CANCEL            : "CANCEL",
-                               }
+    MoveResize.SIZE_TOPLEFT      : "SIZE_TOPLEFT",
+    MoveResize.SIZE_TOP          : "SIZE_TOP",
+    MoveResize.SIZE_TOPRIGHT     : "SIZE_TOPRIGHT",
+    MoveResize.SIZE_RIGHT        : "SIZE_RIGHT",
+    MoveResize.SIZE_BOTTOMRIGHT  : "SIZE_BOTTOMRIGHT",
+    MoveResize.SIZE_BOTTOM       : "SIZE_BOTTOM",
+    MoveResize.SIZE_BOTTOMLEFT   : "SIZE_BOTTOMLEFT",
+    MoveResize.SIZE_LEFT         : "SIZE_LEFT",
+    MoveResize.MOVE              : "MOVE",
+    MoveResize.SIZE_KEYBOARD     : "SIZE_KEYBOARD",
+    MoveResize.MOVE_KEYBOARD     : "MOVE_KEYBOARD",
+    MoveResize.CANCEL            : "CANCEL",
+    }
 SOURCE_INDICATION_UNSET     = 0
 SOURCE_INDICATION_NORMAL    = 1
 SOURCE_INDICATION_PAGER     = 2

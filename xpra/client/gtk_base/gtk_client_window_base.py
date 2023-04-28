@@ -17,13 +17,8 @@ from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
 from xpra.util import (
-    typedict, envint, envbool, csv, first_time, net_utf8,
+    typedict, envint, envbool, csv, first_time, net_utf8, MoveResize,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
-    MOVERESIZE_CANCEL,
-    MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
-    MOVERESIZE_SIZE_RIGHT,
-    MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
-    MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE, MOVERESIZE_MOVE_KEYBOARD,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
@@ -1741,40 +1736,40 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             maxh = self.geometry_hints.get("max_height", 2**15)
             geomlog("%s: min=%ix%i, max=%ix%i, window=%ix%i, delta=%ix%i",
                     dirstr, minw, minh, maxw, maxh, ww, wh, dx, dy)
-            if direction in (MOVERESIZE_SIZE_BOTTOMRIGHT, MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT):
+            if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_BOTTOM, MoveResize.SIZE_BOTTOMLEFT):
                 #height will be set to: wh+dy
                 dy = max(minh-wh, dy)
                 dy = min(maxh-wh, dy)
-            elif direction in (MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPLEFT):
+            elif direction in (MoveResize.SIZE_TOPRIGHT, MoveResize.SIZE_TOP, MoveResize.SIZE_TOPLEFT):
                 #height will be set to: wh-dy
                 dy = min(wh-minh, dy)
                 dy = max(wh-maxh, dy)
-            if direction in (MOVERESIZE_SIZE_BOTTOMRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_TOPRIGHT):
+            if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_RIGHT, MoveResize.SIZE_TOPRIGHT):
                 #width will be set to: ww+dx
                 dx = max(minw-ww, dx)
                 dx = min(maxw-ww, dx)
-            elif direction in (MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, MOVERESIZE_SIZE_TOPLEFT):
+            elif direction in (MoveResize.SIZE_BOTTOMLEFT, MoveResize.SIZE_LEFT, MoveResize.SIZE_TOPLEFT):
                 #width will be set to: ww-dx
                 dx = min(ww-minw, dx)
                 dx = max(ww-maxw, dx)
             #calculate move + resize:
-            if direction==MOVERESIZE_MOVE:
+            if direction==MoveResize.MOVE:
                 data = (wx+dx, wy+dy), None
-            elif direction==MOVERESIZE_SIZE_BOTTOMRIGHT:
+            elif direction==MoveResize.SIZE_BOTTOMRIGHT:
                 data = None, (ww+dx, wh+dy)
-            elif direction==MOVERESIZE_SIZE_BOTTOM:
+            elif direction==MoveResize.SIZE_BOTTOM:
                 data = None, (ww, wh+dy)
-            elif direction==MOVERESIZE_SIZE_BOTTOMLEFT:
+            elif direction==MoveResize.SIZE_BOTTOMLEFT:
                 data = (wx+dx, wy), (ww-dx, wh+dy)
-            elif direction==MOVERESIZE_SIZE_RIGHT:
+            elif direction==MoveResize.SIZE_RIGHT:
                 data = None, (ww+dx, wh)
-            elif direction==MOVERESIZE_SIZE_LEFT:
+            elif direction==MoveResize.SIZE_LEFT:
                 data = (wx+dx, wy), (ww-dx, wh)
-            elif direction==MOVERESIZE_SIZE_TOPRIGHT:
+            elif direction==MoveResize.SIZE_TOPRIGHT:
                 data = (wx, wy+dy), (ww+dx, wh-dy)
-            elif direction==MOVERESIZE_SIZE_TOP:
+            elif direction==MoveResize.SIZE_TOP:
                 data = (wx, wy+dy), (ww, wh-dy)
-            elif direction==MOVERESIZE_SIZE_TOPLEFT:
+            elif direction==MoveResize.SIZE_TOPLEFT:
                 data = (wx+dx, wy+dy), (ww-dx, wh-dy)
             else:
                 #not handled yet!
@@ -1831,23 +1826,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_X11(x, y, direction, button, source_indication)
             return
-        if direction==MOVERESIZE_CANCEL:
+        if direction==MoveResize.CANCEL:
             self.moveresize_event = None
             self.moveresize_data = None
             self.cancel_moveresize_timer()
         elif MOVERESIZE_GDK:
-            if direction in (MOVERESIZE_MOVE, MOVERESIZE_MOVE_KEYBOARD):
+            if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
                 self.begin_move_drag(button, x, y, 0)
             else:
                 edge = {
-                    MOVERESIZE_SIZE_TOPLEFT     : Gdk.WindowEdge.NORTH_WEST,
-                    MOVERESIZE_SIZE_TOP         : Gdk.WindowEdge.NORTH,
-                    MOVERESIZE_SIZE_TOPRIGHT    : Gdk.WindowEdge.NORTH_EAST,
-                    MOVERESIZE_SIZE_RIGHT       : Gdk.WindowEdge.EAST,
-                    MOVERESIZE_SIZE_BOTTOMRIGHT : Gdk.WindowEdge.SOUTH_EAST,
-                    MOVERESIZE_SIZE_BOTTOM      : Gdk.WindowEdge.SOUTH,
-                    MOVERESIZE_SIZE_BOTTOMLEFT  : Gdk.WindowEdge.SOUTH_WEST,
-                    MOVERESIZE_SIZE_LEFT        : Gdk.WindowEdge.WEST,
+                    MoveResize.SIZE_TOPLEFT     : Gdk.WindowEdge.NORTH_WEST,
+                    MoveResize.SIZE_TOP         : Gdk.WindowEdge.NORTH,
+                    MoveResize.SIZE_TOPRIGHT    : Gdk.WindowEdge.NORTH_EAST,
+                    MoveResize.SIZE_RIGHT       : Gdk.WindowEdge.EAST,
+                    MoveResize.SIZE_BOTTOMRIGHT : Gdk.WindowEdge.SOUTH_EAST,
+                    MoveResize.SIZE_BOTTOM      : Gdk.WindowEdge.SOUTH,
+                    MoveResize.SIZE_BOTTOMLEFT  : Gdk.WindowEdge.SOUTH_WEST,
+                    MoveResize.SIZE_LEFT        : Gdk.WindowEdge.WEST,
                     #MOVERESIZE_SIZE_KEYBOARD,
                     }.get(direction)
                 geomlog("edge(%s)=%s", MOVERESIZE_DIRECTION_STRING.get(direction), edge)
