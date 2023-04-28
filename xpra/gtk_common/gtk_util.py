@@ -159,7 +159,7 @@ def get_default_root_window() -> Gdk.Window:
         return None
     return screen.get_root_window()
 
-def get_root_size():
+def get_root_size(default=(1920, 1024)):
     if OSX:
         #the easy way:
         root = get_default_root_window()
@@ -171,14 +171,14 @@ def get_root_size():
         #and on Linux with Wayland, we get bogus values...
         screen = Gdk.Screen.get_default()
         if screen is None:
-            return 1920, 1024
+            return default
         w = screen.get_width()
         h = screen.get_height()
     if w<=0 or h<=0 or w>32768 or h>32768:
         if first_time("Gtk root window dimensions"):
             log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
-            w, h = 1920, 1080
-            log.warn(" using %ix%i instead", w, h)
+            w, h = default
+            log.warn(f" using {default} instead", w, h)
             if WIN32:
                 log.warn(" no access to the display?")
     return w, h

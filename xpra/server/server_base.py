@@ -455,8 +455,8 @@ class ServerBase(ServerBaseClass):
 
             self.parse_hello(ss, c, send_ui)
             #send_hello will take care of sending the current and max screen resolutions
-            root_w, root_h = self.get_root_window_size()
-            self.send_hello(ss, root_w, root_h, auth_caps)
+            root_size = self.get_root_window_size()
+            self.send_hello(ss, root_size, auth_caps)
             self.add_new_client(ss, c, send_ui, share_count)
             self.send_initial_data(ss, c, send_ui, share_count)
             self.client_startup_complete(ss)
@@ -529,10 +529,12 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(capabilities, c.get_caps(self, source))
         capabilities["server_type"] = "base"
         if "display" in source.wants:
-            capabilities.update({
-                 "max_desktop_size"             : self.get_max_screen_size(),
-                 "display"                      : os.environ.get("DISPLAY", "Main"),
-                 })
+            max_size = self.get_max_screen_size()
+            if max_size:
+                capabilities["max_desktop_size"] = max_size
+            display = os.environ.get("DISPLAY")
+            if display:
+                capabilities["display"] = display
         if "features" in source.wants:
             capabilities.update({
                  "client-shutdown"              : self.client_shutdown,
@@ -551,7 +553,7 @@ class ServerBase(ServerBaseClass):
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
-    def send_hello(self, server_source, root_w, root_h, server_cipher):
+    def send_hello(self, server_source, root_size, server_cipher):
         capabilities = self.make_hello(server_source)
         from xpra.server.source.encodings_mixin import EncodingsMixin
         if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
@@ -581,10 +583,10 @@ class ServerBase(ServerBaseClass):
                 #check for mmap:
                 if getattr(self, "mmap_size", 0)==0:
                     self.after_threaded_init(server_source.print_encoding_info)
-        if "display" in server_source.wants:
+        if "display" in server_source.wants and root_size:
             capabilities.update({
-                         "actual_desktop_size"  : (root_w, root_h),
-                         "root_window_size"     : (root_w, root_h),
+                         "actual_desktop_size"  : root_size,
+                         "root_window_size"     : root_size,
                          })
         if "aliases" in self._aliases and server_source.wants:
             reverse_aliases = {}
@@ -637,7 +639,11 @@ class ServerBase(ServerBaseClass):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
-        info = {"server"    : {"max_desktop_size"   : self.get_max_screen_size()}}
+        max_size = self.get_max_screen_size()
+        if max_size:
+            info = {"server"    : {"max_desktop_size"   : max_size}}
+        else:
+            info = {}
         for c in SERVER_BASES:
             try:
                 merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))

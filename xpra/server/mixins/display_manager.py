@@ -131,12 +131,13 @@ class DisplayManager(StubServerMixin):
 
 
     def get_caps(self, source) -> dict:
-        root_w, root_h = self.get_root_window_size()
         caps = {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
-            "desktop_size"  : self._get_desktop_size_capability(source, root_w, root_h),
             }
+        root_size = self.get_root_window_size()
+        if root_size:
+            caps["desktop_size"] = self._get_desktop_size_capability(source, *root_size)
         if FULL_INFO and self.opengl_props:
             caps["opengl"] = self.opengl_props
         return caps
@@ -209,8 +210,10 @@ class DisplayManager(StubServerMixin):
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except Exception:
                 dw, dh = None, None
-        sw, sh = self.configure_best_screen_size()
-        log("configure_best_screen_size()=%s", (sw, sh))
+        best = self.configure_best_screen_size()
+        if not best:
+            return desktop_size
+        sw, sh = best
         #we will tell the client about the size chosen in the hello we send back,
         #so record this size as the current server desktop size to avoid change notifications:
         ss.desktop_size_server = sw, sh
@@ -218,12 +221,15 @@ class DisplayManager(StubServerMixin):
         w = dw or sw
         h = dh or sh
         #clamp to max supported:
-        maxw, maxh = self.get_max_screen_size()
-        w = min(w, maxw)
-        h = min(h, maxh)
+        max_size = self.get_max_screen_size()
+        if max_size:
+            maxw, maxh = max_size
+            w = min(w, maxw)
+            h = min(h, maxh)
         self.set_desktop_geometry_attributes(w, h)
         self.set_icc_profile()
         self.apply_refresh_rate(ss)
+        log("configure_best_screen_size()=%s", (w, h))
         return w, h
 
 
@@ -252,8 +258,14 @@ class DisplayManager(StubServerMixin):
         raise NotImplementedError()
 
     def send_updated_screen_size(self):
-        max_w, max_h = self.get_max_screen_size()
-        root_w, root_h = self.get_root_window_size()
+        root_size = self.get_root_window_size()
+        if not root_size:
+            return
+        root_w, root_h = root_size
+        max_size = self.get_max_screen_size()
+        if not max_size:
+            return
+        max_w, max_h = max_size
         root_w = min(root_w, max_w)
         root_h = min(root_h, max_h)
         count = 0
@@ -265,8 +277,7 @@ class DisplayManager(StubServerMixin):
                      count, engs(count), root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
-        max_w, max_h = self.get_root_window_size()
-        return max_w, max_h
+        return self.get_root_window_size()
 
     def _get_desktop_size_capability(self, server_source, root_w, root_h):
         client_size = server_source.desktop_size

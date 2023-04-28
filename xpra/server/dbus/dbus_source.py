@@ -10,7 +10,7 @@ from dbus.exceptions import DBusException  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
-from xpra.util import AtomicInteger, DETACH_REQUEST
+from xpra.util import AtomicInteger, ConnectionMessage
 from xpra.log import Logger
 
 log = Logger("dbus", "server")
@@ -178,4 +178,4 @@ class DBUS_Source(dbus.service.Object):
         rs = ns(reason)
         self.log(".SendClientCommand(%s) protocol=%s", rs, proto)
         assert proto, "no connection"
-        proto.send_disconnect(DETACH_REQUEST, rs)
+        proto.send_disconnect(ConnectionMessage.DETACH_REQUEST, rs)

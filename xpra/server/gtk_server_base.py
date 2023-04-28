@@ -198,6 +198,8 @@ class GTKServerBase(ServerBase):
         #(from UI thread)
         #now cursor size info:
         display = Gdk.Display.get_default()
+        if not display:
+            return {}
         pos = display.get_default_screen().get_root_window().get_pointer()[-3:-1]
         cinfo = {"position" : pos}
         for prop, size in {
@@ -219,11 +221,10 @@ class GTKServerBase(ServerBase):
         return info
 
     def get_root_window_size(self):
-        return get_root_size()
+        return get_root_size(None)
 
     def get_max_screen_size(self):
-        max_w, max_h = get_root_size()
-        return max_w, max_h
+        return get_root_size(None)
 
     def configure_best_screen_size(self):
         return self.get_root_window_size()
