@@ -276,8 +276,19 @@ class Encoder(VideoPipeline):
         gst_encoding = {
             "hevc"  : "h265",
             }.get(self.encoding, self.encoding)
+        appsrc_opts = {
+            "name"          : "src",
+            "emit-signals"  : 0,
+            "do-timestamp"  : 1,
+            "block"         : 0,
+            "is-live"       : 1,
+            "stream-type"   : STREAM_TYPE,
+            "format"        : BUFFER_FORMAT,
+            "caps"          : CAPS,
+            #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
+            }
         elements = [
-            f"appsrc name=src emit-signals=0 leaky-type=0 do-timestamp=1 block=0 is-live=1 stream-type={STREAM_TYPE} format={BUFFER_FORMAT} caps={CAPS}",
+            get_element_str("appsrc", appsrc_opts),
             get_element_str(self.encoder_element, eopts),
             get_caps_str(f"video/x-{gst_encoding}", vopts),
             ]
