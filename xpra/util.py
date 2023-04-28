@@ -12,6 +12,11 @@ import traceback
 import threading
 from itertools import chain
 from enum import Enum, IntEnum
+try:
+    #Python 3.11 and later:
+    from enum import StrEnum
+except ImportError:
+    StrEnum = Enum
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -49,7 +54,7 @@ class NotificationID(IntEnum):
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
 #timeouts:
-class ConnectionMessage(Enum):
+class ConnectionMessage(StrEnum):
     CLIENT_PING_TIMEOUT     = "client ping timeout"
     LOGIN_TIMEOUT           = "login timeout"
     CLIENT_EXIT_TIMEOUT     = "client exit timeout"
