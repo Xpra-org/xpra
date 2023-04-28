@@ -6,7 +6,7 @@
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr
-from xpra.util import envint, make_instance, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import envint, make_instance, ConnectionMessage, XPRA_APP_ID
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -97,7 +97,7 @@ class TrayClient(StubClientMixin):
             log("xpra_tray_mouseover%s", args)
         def xpra_tray_exit(*args):
             log("xpra_tray_exit%s", args)
-            self.disconnect_and_quit(0, CLIENT_EXIT)
+            self.disconnect_and_quit(0, ConnectionMessage.CLIENT_EXIT)
         def xpra_tray_geometry(*args):
             if tray:
                 log("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())

@@ -8,7 +8,7 @@ import os
 import sys
 
 from xpra.version_util import version_str
-from xpra.util import envint, envfloat, envbool, typedict, DETACH_REQUEST, PROTOCOL_ERROR
+from xpra.util import envint, envfloat, envbool, typedict, ConnectionMessage
 from xpra.os_util import bytestostr, get_machine_id, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
@@ -195,7 +195,7 @@ class NetworkListener(StubClientMixin):
             elif request=="detach":
                 def protocol_closed():
                     self.disconnect_and_quit(ExitCode.OK, "network request")
-                proto.send_disconnect([DETACH_REQUEST], done_callback=protocol_closed)
+                proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
                 return
             elif request=="version":
                 hello_reply({"version" : version_str()})
@@ -228,13 +228,13 @@ class NetworkListener(StubClientMixin):
                 self.idle_add(process_control)
             else:
                 log.info("request '%s' is not handled by this client", request)
-                proto.send_disconnect([PROTOCOL_ERROR])
+                proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         elif packet_type in (CONNECTION_LOST, GIBBERISH):
             close()
             return
         else:
             log.info("packet '%s' is not handled by this client", packet_type)
-            proto.send_disconnect([PROTOCOL_ERROR])
+            proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         #make sure the connection is closed:
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid

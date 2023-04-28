@@ -9,7 +9,7 @@ import re
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util import (
-    CLIENT_EXIT,
+    ConnectionMessage,
     envbool, u,
     ellipsizer, repr_ellipsized, reverse_dict, typedict,
     )
@@ -1552,7 +1552,7 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_disconnectmenuitem(self):
         def menu_quit(*_args):
-            self.client.disconnect_and_quit(ExitCode.OK, CLIENT_EXIT)
+            self.client.disconnect_and_quit(ExitCode.OK, ConnectionMessage.CLIENT_EXIT)
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 
 

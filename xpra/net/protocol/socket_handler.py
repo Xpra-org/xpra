@@ -299,7 +299,8 @@ class SocketProtocol:
 
 
     def send_disconnect(self, reasons, done_callback=None):
-        self.flush_then_close(self.encode, ["disconnect"]+list(reasons), done_callback=done_callback)
+        packet = ["disconnect"]+[str(x) for x in reasons]
+        self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
     def send_now(self, packet):
         if self._closed:

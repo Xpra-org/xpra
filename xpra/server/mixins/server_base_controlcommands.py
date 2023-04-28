@@ -8,7 +8,7 @@
 import os.path
 from time import monotonic
 
-from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict, SESSION_BUSY
+from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict, ConnectionMessage
 from xpra.os_util import load_binary_file
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
@@ -688,7 +688,7 @@ class ServerBaseControlCommands(StubServerMixin):
             if n>1:
                 for c in sorted(ui_clients)[1:]:
                     proto = ui_clients[c]
-                    self.disconnect_client(proto, SESSION_BUSY, "this session is no longer shared")
+                    self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is no longer shared")
                 message += f", disconnected {n-1} clients"
         return message
 

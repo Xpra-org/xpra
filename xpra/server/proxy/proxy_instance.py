@@ -23,7 +23,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     flatten_dict, typedict, updict, ellipsizer, envint, envbool,
-    csv, first_time, SERVER_SHUTDOWN,
+    csv, first_time, ConnectionMessage,
     )
 from xpra.version_util import XPRA_VERSION, vparts
 from xpra.make_thread import start_thread
@@ -136,7 +136,7 @@ class ProxyInstance:
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
                 log("sending disconnect to %s", proto)
-                proto.send_disconnect([SERVER_SHUTDOWN]+list(reasons))
+                proto.send_disconnect([ConnectionMessage.SERVER_SHUTDOWN]+list(reasons))
         #wait for connections to close down cleanly before we exit
         cp = self.client_protocol
         sp = self.server_protocol

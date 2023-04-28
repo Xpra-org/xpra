@@ -11,6 +11,7 @@ import binascii
 import traceback
 import threading
 from itertools import chain
+from enum import StrEnum
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -47,31 +48,32 @@ XPRA_SHADOWWAYLAND_NOTIFICATION_ID = XPRA_NOTIFICATIONS_OFFSET+15
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
 #timeouts:
-CLIENT_PING_TIMEOUT     = "client ping timeout"
-LOGIN_TIMEOUT           = "login timeout"
-CLIENT_EXIT_TIMEOUT     = "client exit timeout"
-#errors:
-PROTOCOL_ERROR          = "protocol error"
-VERSION_ERROR           = "version error"
-CONTROL_COMMAND_ERROR   = "control command error"
-AUTHENTICATION_FAILED   = "authentication failed"
-AUTHENTICATION_ERROR    = "authentication error"
-PERMISSION_ERROR        = "permission error"
-SERVER_ERROR            = "server error"
-CONNECTION_ERROR        = "connection error"
-SESSION_NOT_FOUND       = "session not found error"
-#informational (not a problem):
-DONE                    = "done"
-SERVER_EXIT             = "server exit"
-SERVER_UPGRADE          = "server upgrade"
-SERVER_SHUTDOWN         = "server shutdown"
-CLIENT_REQUEST          = "client request"
-DETACH_REQUEST          = "detach request"
-NEW_CLIENT              = "new client"
-IDLE_TIMEOUT            = "idle timeout"
-SESSION_BUSY            = "session busy"
-#client telling the server:
-CLIENT_EXIT             = "client exit"
+class ConnectionMessage(StrEnum):
+    CLIENT_PING_TIMEOUT     = "client ping timeout"
+    LOGIN_TIMEOUT           = "login timeout"
+    CLIENT_EXIT_TIMEOUT     = "client exit timeout"
+    #errors:
+    PROTOCOL_ERROR          = "protocol error"
+    VERSION_ERROR           = "version error"
+    CONTROL_COMMAND_ERROR   = "control command error"
+    AUTHENTICATION_FAILED   = "authentication failed"
+    AUTHENTICATION_ERROR    = "authentication error"
+    PERMISSION_ERROR        = "permission error"
+    SERVER_ERROR            = "server error"
+    CONNECTION_ERROR        = "connection error"
+    SESSION_NOT_FOUND       = "session not found error"
+    #informational (not a problem):
+    DONE                    = "done"
+    SERVER_EXIT             = "server exit"
+    SERVER_UPGRADE          = "server upgrade"
+    SERVER_SHUTDOWN         = "server shutdown"
+    CLIENT_REQUEST          = "client request"
+    DETACH_REQUEST          = "detach request"
+    NEW_CLIENT              = "new client"
+    IDLE_TIMEOUT            = "idle timeout"
+    SESSION_BUSY            = "session busy"
+    #client telling the server:
+    CLIENT_EXIT             = "client exit"
 
 
 DEFAULT_PORT = 14500
@@ -156,7 +158,7 @@ def get_util_logger():
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
-    return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=IDLE_TIMEOUT)
+    return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=ConnectionMessage.IDLE_TIMEOUT)
 
 
 def dump_exc():

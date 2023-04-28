@@ -16,8 +16,7 @@ from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, csv,
-    SERVER_EXIT, CONNECTION_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
-    NEW_CLIENT, DONE, SESSION_BUSY,
+    ConnectionMessage,
     )
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import server_features
@@ -208,7 +207,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # shutdown / exit commands:
     def _process_exit_server(self, _proto, packet=()):
-        reason = SERVER_EXIT
+        reason = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet)>1:
             reason = bytestostr(packet[1])
@@ -222,7 +221,7 @@ class ServerBase(ServerBaseClass):
             log.warn("Warning: ignoring shutdown request")
             return
         log.info("Shutting down in response to client request")
-        self.cleanup_all_protocols(reason=SERVER_SHUTDOWN)
+        self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
 
 
@@ -249,36 +248,36 @@ class ServerBase(ServerBaseClass):
                 authlog("handle_sharing: sharing with %s", tuple(existing_sources))
             elif self.lock is True:
                 authlog("handle_sharing: session is locked")
-                self.disconnect_client(proto, SESSION_BUSY, "this session is locked")
+                self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
                 return False, 0, 0
             elif self.lock is not False and any(ss.lock for ss in existing_sources):
                 authlog("handle_sharing: another client has locked the session: " + csv(ss for ss in existing_sources if ss.lock))
-                self.disconnect_client(proto, SESSION_BUSY, "a client has locked this session")
+                self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
             if detach_request and p!=proto:
                 authlog("handle_sharing: detaching %s", ss)
-                self.disconnect_client(p, DETACH_REQUEST)
+                self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
                 disconnected += 1
             elif uuid and ss.uuid==uuid and ui_client and ss.ui_client:
                 authlog("uuid %s is the same as %s", uuid, ss)
                 authlog("existing sources: %s", existing_sources)
-                self.disconnect_client(p, NEW_CLIENT, "new connection from the same uuid")
+                self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
                 disconnected += 1
             elif ui_client and ss.ui_client:
                 #check if existing sessions are willing to share:
                 if self.sharing is True:
                     share_count += 1
                 elif self.sharing is False:
-                    self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
+                    self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
                     disconnected += 1
                 else:
                     assert self.sharing is None
                     if not share:
-                        self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
+                        self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
                         disconnected += 1
                     elif not ss.share:
-                        self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
+                        self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
                         disconnected += 1
                     else:
                         share_count += 1
@@ -286,7 +285,7 @@ class ServerBase(ServerBaseClass):
         #don't accept this connection if we're going to exit-with-client:
         accepted = True
         if disconnected>0 and share_count==0 and self.exit_with_client:
-            self.disconnect_client(proto, SERVER_SHUTDOWN, "last client has exited")
+            self.disconnect_client(proto, ConnectionMessage.SERVER_SHUTDOWN, "last client has exited")
             accepted = False
         return accepted, share_count, disconnected
 
@@ -301,7 +300,7 @@ class ServerBase(ServerBaseClass):
         if not self.sanity_checks(proto, c):
             return
         if not c.boolget("steal", True) and self._server_sources:
-            self.disconnect_client(proto, SESSION_BUSY, "this session is already active")
+            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is already active")
             return
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)
@@ -328,7 +327,7 @@ class ServerBase(ServerBaseClass):
             return
 
         if is_req("detach"):
-            self.disconnect_client(proto, DONE, "%i other clients have been disconnected" % disconnected)
+            self.disconnect_client(proto, ConnectionMessage.DONE, "%i other clients have been disconnected" % disconnected)
             return
         if is_req("exit"):
             self._process_exit_server(proto)
@@ -470,7 +469,7 @@ class ServerBase(ServerBaseClass):
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
             log.error("Error: processing new connection from %s:", p or ss, exc_info=True)
             if p:
-                self.disconnect_client(p, CONNECTION_ERROR, "error accepting new connection")
+                self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
     def parse_hello(self, ss, c, send_ui):
         for bc in SERVER_BASES:
@@ -781,7 +780,7 @@ class ServerBase(ServerBaseClass):
             #disconnect other users:
             for p,ss in tuple(self._server_sources.items()):
                 if p!=proto:
-                    self.disconnect_client(p, DETACH_REQUEST,
+                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                            f"client {ss.counter} no longer wishes to share the session")
 
     def _process_lock_toggle(self, proto, packet):

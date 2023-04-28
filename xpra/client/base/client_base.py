@@ -43,7 +43,7 @@ from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl, print_nested_dict,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
-    SERVER_UPGRADE, CONNECTION_ERROR, AUTHENTICATION_FAILED,
+    ConnectionMessage,
     )
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
 from xpra.client.base.fileprint_mixin import FilePrintMixin
@@ -700,9 +700,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn(f" {reason}")
         for x in extra_info:
             log.warn(f" {x}")
-        if AUTHENTICATION_FAILED in extra_info:
+        if ConnectionMessage.AUTHENTICATION_FAILED in extra_info:
             self.quit(ExitCode.AUTHENTICATION_FAILED)
-        elif CONNECTION_ERROR in extra_info or not self.completed_startup:
+        elif ConnectionMessage.CONNECTION_ERROR in extra_info or not self.completed_startup:
             self.quit(ExitCode.CONNECTION_FAILED)
         else:
             self.quit(ExitCode.FAILURE)
@@ -719,9 +719,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         l(" %s", reason)
         for x in extra_info:
             l(" %s", x)
-        if reason==SERVER_UPGRADE:
+        if reason==ConnectionMessage.SERVER_UPGRADE:
             return ExitCode.UPGRADE
-        if AUTHENTICATION_FAILED in extra_info:
+        if ConnectionMessage.AUTHENTICATION_FAILED in extra_info:
             return ExitCode.AUTHENTICATION_FAILED
         return ExitCode.OK
 
@@ -827,7 +827,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code, message, server_message=AUTHENTICATION_FAILED):
+    def auth_error(self, code, message, server_message=ConnectionMessage.AUTHENTICATION_FAILED):
         authlog.error("Error: authentication failed:")
         authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)

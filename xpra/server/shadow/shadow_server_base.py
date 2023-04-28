@@ -13,10 +13,7 @@ from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
 from xpra.os_util import is_Wayland
-from xpra.util import (
-    envint, envbool,
-    DONE, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID,
-    )
+from xpra.util import envint, envbool, ConnectionMessage, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -500,7 +497,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def _process_close_window(self, proto, packet):
         wid = packet[1]
         self._process_window_common(wid)
-        self.disconnect_client(proto, DONE, "closed the only window")
+        self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
 
 
     def do_make_screenshot_packet(self):

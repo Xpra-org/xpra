@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from xpra.util import envint, typedict, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envint, typedict, ConnectionMessage, XPRA_IDLE_NOTIFICATION_ID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -129,6 +129,6 @@ class IdleMixin(StubSourceMixin):
         p = self.protocol
         log("idle_timedout() protocol=%s", p)
         if p:
-            self.disconnect(IDLE_TIMEOUT)
+            self.disconnect(ConnectionMessage.IDLE_TIMEOUT)
         if not self.is_closed():
             self.schedule_idle_timeout()

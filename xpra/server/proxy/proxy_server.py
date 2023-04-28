@@ -12,7 +12,7 @@ from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import (
-    LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,
+    ConnectionMessage,
     repr_ellipsized, print_nested_dict, csv, envfloat, envbool, envint, typedict,
     )
 from xpra.os_util import (
@@ -275,7 +275,7 @@ class ProxyServer(ServerCore):
         #if we start a proxy, the protocol will be closed
         #(a new one is created in the proxy process)
         if not protocol.is_closed():
-            self.send_disconnect(protocol, LOGIN_TIMEOUT)
+            self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, c, auth_caps):
         if super().hello_oked(proto, c, auth_caps):
@@ -329,7 +329,8 @@ class ProxyServer(ServerCore):
         def disconnect(reason, *extras):
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
-
+        def nosession(*extras):
+            disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
         #find the target server session:
         if not client_proto.authenticators:
             log.error("Error: the proxy server requires an authentication mode,")
@@ -338,7 +339,7 @@ class ProxyServer(ServerCore):
             except AttributeError:
                 pass
             log.error(" use 'none' to disable authentication")
-            disconnect(SESSION_NOT_FOUND, "no sessions found")
+            nosession("no sessions found")
             return
         sessions = None
         authenticator = None
@@ -353,11 +354,11 @@ class ProxyServer(ServerCore):
                 authlog("failed to get the list of sessions from %s", authenticator, exc_info=True)
                 authlog.error("Error: failed to get the list of sessions using '%s' authenticator", authenticator)
                 authlog.estr(e)
-                disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
+                disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot access sessions")
                 return
         authlog("proxy_auth(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         if sessions is None:
-            disconnect(SESSION_NOT_FOUND, "no sessions found")
+            nosession("no sessions found")
             return
         self.proxy_session(client_proto, c, auth_caps, sessions)
 
@@ -365,13 +366,15 @@ class ProxyServer(ServerCore):
         def disconnect(reason, *extras):
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
+        def nosession(*extras):
+            disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
         uid, gid, displays, env_options, session_options = sessions
         if POSIX:
             if getuid()==0:
                 if uid==0 or gid==0:
                     log.error("Error: proxy instances cannot run as root")
                     log.error(" use a different uid and gid (ie: nobody)")
-                    disconnect(AUTHENTICATION_ERROR, "cannot run proxy instances as root")
+                    disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot run proxy instances as root")
                     return
             else:
                 uid = getuid()
@@ -403,7 +406,7 @@ class ProxyServer(ServerCore):
                 displays, self._start_sessions, sns)
         if not displays or sns:
             if not self._start_sessions:
-                disconnect(SESSION_NOT_FOUND, "no displays found")
+                nosession("no displays found")
                 return
             try:
                 proc, socket_path, display = self.start_new_session(username, password, uid, gid, sns, displays)
@@ -412,26 +415,25 @@ class ProxyServer(ServerCore):
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
                 log.estr(e)
-                disconnect(SERVER_ERROR, "failed to start a new session")
+                nosession("failed to start a new session")
                 return
         if display is None:
             display = c.strget("display")
             authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
                     proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
-                disconnect(SESSION_NOT_FOUND, "invalid display: proxy display")
+                nosession("invalid display: proxy display")
                 return
             if display:
                 if display not in displays:
                     if f":{display}" in displays:
                         display = f":{display}"
                     else:
-                        disconnect(SESSION_NOT_FOUND, f"display {display!r} not found")
+                        nosession(f"display {display!r} not found")
                         return
             else:
                 if len(displays)!=1:
-                    disconnect(SESSION_NOT_FOUND,
-                               "please specify a display, more than one is available: " + csv(displays))
+                    nosession("please specify a display, more than one is available: " + csv(displays))
                     return
                 display = displays[0]
 
@@ -459,7 +461,7 @@ class ProxyServer(ServerCore):
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
             stop_server_subprocess()
-            disconnect(SESSION_NOT_FOUND, "invalid display string")
+            nosession("invalid display string")
             log.warn("Error: parsing failed for display string '%s':", display)
             for arg in args:
                 log.warn(" %s", arg)
@@ -480,7 +482,7 @@ class ProxyServer(ServerCore):
                 log.error(" %s", x)
             log.error(" connection definition:")
             print_nested_dict(disp_desc, prefix=" ", lchar="*", pad=20, print_fn=log.error)
-            disconnect(SESSION_NOT_FOUND, "failed to connect to display")
+            nosession("failed to connect to display")
             stop_server_subprocess()
             return
         log("server connection=%s", server_conn)

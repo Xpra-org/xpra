@@ -23,11 +23,7 @@ from xpra.os_util import (
     getuid, getgid, get_username_for_uid, setuidgid,
     register_SIGUSR_signals,
     )
-from xpra.util import (
-    typedict,
-    ellipsizer,
-    LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT
-    )
+from xpra.util import typedict, ellipsizer, ConnectionMessage
 from xpra.queue_scheduler import QueueScheduler
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
@@ -276,14 +272,14 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def verify_connection_accepted(self, protocol):
         if not protocol.is_closed() and protocol in self.potential_protocols:
             log.error("connection timedout: %s", protocol)
-            self.send_disconnect(protocol, LOGIN_TIMEOUT)
+            self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def process_control_packet(self, proto, packet):
         try:
             self.do_process_control_packet(proto, packet)
         except Exception as e:
             log.error("error processing control packet", exc_info=True)
-            self.send_disconnect(proto, CONTROL_COMMAND_ERROR, str(e))
+            self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR, str(e))
 
     def do_process_control_packet(self, proto, packet):
         log("process_control_packet(%s, %s)", proto, packet)
@@ -296,7 +292,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if packet_type=="hello":
             caps = typedict(packet[1])
             if caps.boolget("challenge"):
-                self.send_disconnect(proto, AUTHENTICATION_ERROR, "this socket does not use authentication")
+                self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR, "this socket does not use authentication")
                 return
             generic_request = caps.strget("request")
             def is_req(mode):
@@ -305,7 +301,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 info = self.get_proxy_info(proto)
                 info.setdefault("connection", {}).update(self.get_connection_info())
                 proto.send_now(("hello", info))
-                self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT, "info sent")
                 return
             if is_req("stop"):
                 self.stop(None, "socket request")
@@ -315,14 +311,14 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
                 proto.send_now(("hello", {"version" : version}))
-                self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT, "version sent")
                 return
             log.warn("Warning: invalid hello packet,")
             log.warn(" not a supported control channel request")
         else:
             log.warn("Warning: invalid packet type for control channel")
             log.warn(" '%s' is not supported, only 'hello' is", packet_type)
-        self.send_disconnect(proto, CONTROL_COMMAND_ERROR,
+        self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR,
                              "this socket only handles 'info', 'version' and 'stop' requests")
 
 

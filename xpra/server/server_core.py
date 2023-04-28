@@ -70,9 +70,7 @@ from xpra.util import (
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
-    SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
-    VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
-    CONNECTION_ERROR, AUTHENTICATION_FAILED,
+    ConnectionMessage,
     )
 from xpra.log import Logger, get_info as get_log_info
 
@@ -986,9 +984,9 @@ class ServerCore:
     def cleanup_protocols(self, protocols, reason=None, force=False):
         if reason is None:
             if self._upgrading:
-                reason = SERVER_UPGRADE
+                reason = ConnectionMessage.SERVER_UPGRADE
             else:
-                reason = SERVER_SHUTDOWN
+                reason = ConnectionMessage.SERVER_SHUTDOWN
         netlog("cleanup_protocols(%s, %s, %s)", protocols, reason, force)
         for protocol in protocols:
             if force:
@@ -1711,7 +1709,7 @@ class ServerCore:
                         packet_type = guess_packet_type(data)
                         if packet_type:
                             log.error(f" looks like {packet_type!r}")
-            self.send_disconnect(protocol, LOGIN_TIMEOUT)
+            self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol):
         t = self.socket_verify_timer.pop(protocol, None)
@@ -1772,7 +1770,7 @@ class ServerCore:
         #only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
-        self.disconnect_protocol(proto, CLIENT_REQUEST)
+        self.disconnect_protocol(proto, ConnectionMessage.CLIENT_REQUEST)
 
     def _log_disconnect(self, _proto, *args):
         netlog.info(*args)
@@ -1810,7 +1808,7 @@ class ServerCore:
         version = version_str() if full else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(("hello", {"version" : version}))
         #client is meant to close the connection itself, but just in case:
-        self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
+        self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
@@ -1825,7 +1823,7 @@ class ServerCore:
             #this should never happen:
             #if we got here, we parsed a packet from the client!
             #(maybe the client used an encoding it claims not to support?)
-            self.disconnect_client(proto, PROTOCOL_ERROR, "failed to negotiate a packet encoder")
+            self.disconnect_client(proto, ConnectionMessage.PROTOCOL_ERROR, "failed to negotiate a packet encoder")
             return
 
         log("process_hello: capabilities=%s", capabilities)
@@ -1836,7 +1834,7 @@ class ServerCore:
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
-            self.disconnect_client(proto, VERSION_ERROR, "incompatible version: %s" % verr)
+            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, "incompatible version: %s" % verr)
             proto.close()
             return
         #this will call auth_verified if successful
@@ -1993,7 +1991,7 @@ class ServerCore:
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed(AUTHENTICATION_FAILED)
+                auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
         client_expects_challenge = c.strget("challenge") is not None
         if client_expects_challenge:
@@ -2124,11 +2122,11 @@ class ServerCore:
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.estr(e)
-            self.disconnect_client(proto, CONNECTION_ERROR, str(e))
+            self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, str(e))
         except Exception as e:
             #log exception but don't disclose internal details to the client
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
-            self.disconnect_client(proto, CONNECTION_ERROR, "error accepting new connection")
+            self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto, c, _auth_caps):
         generic_request = c.strget("request")
@@ -2143,7 +2141,7 @@ class ServerCore:
             self.send_id_info(proto)
             return True
         if self._closing:
-            self.disconnect_client(proto, SERVER_EXIT, "server is shutting down")
+            self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
             return True
         if is_req("info"):
             self.send_hello_info(proto)

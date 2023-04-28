@@ -13,8 +13,7 @@ from gi.repository import GLib, GObject  # @UnresolvedImport
 from xpra.util import (
     u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
-    repr_ellipsized,
-    SERVER_EXIT, DONE,
+    repr_ellipsized, ConnectionMessage,
     )
 from xpra.os_util import (
     bytestostr,
@@ -703,7 +702,7 @@ class PrintClient(SendCommandConnectClient):
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)
-        self.idle_add(self.send, "disconnect", DONE, "detaching")
+        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
 
     def make_hello(self):
         capabilities = super().make_hello()
@@ -725,7 +724,7 @@ class ExitXpraClient(HelloRequestClient):
             }
 
     def do_command(self, caps : typedict):
-        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", SERVER_EXIT))
+        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT))
 
 
 class StopXpraClient(HelloRequestClient):
@@ -760,7 +759,7 @@ class DetachXpraClient(HelloRequestClient):
             }
 
     def do_command(self, caps : typedict):
-        self.idle_add(self.send, "disconnect", DONE, "detaching")
+        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response
 

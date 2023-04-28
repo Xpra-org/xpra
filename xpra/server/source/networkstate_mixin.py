@@ -8,7 +8,7 @@ import os
 import time
 from time import monotonic
 
-from xpra.util import envbool, envint, typedict, CLIENT_PING_TIMEOUT
+from xpra.util import envbool, envint, typedict, ConnectionMessage
 from xpra.os_util import POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -67,7 +67,7 @@ class NetworkStateMixin(StubSourceMixin):
     def check_ping_echo_timeout(self, now_ms, timeout):
         self.check_ping_echo_timers.pop(now_ms, None)
         if self.last_ping_echoed_time<now_ms and not self.is_closed():
-            self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
+            self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
 
     def cancel_ping_echo_timers(self):
         timers = self.check_ping_echo_timers.values()
