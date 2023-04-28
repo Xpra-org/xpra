@@ -10,7 +10,7 @@ from time import monotonic
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
-from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, NotificationID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
@@ -283,7 +283,7 @@ class ShadowServer(GTKShadowServerBase):
         if wParam==win32con.PBT_APMSUSPEND:
             log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
             for source in self._server_sources.values():
-                source.may_notify(XPRA_IDLE_NOTIFICATION_ID, "Server Suspending",
+                source.may_notify(NotificationID.IDLE, "Server Suspending",
                                   "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.",
                                   expire_timeout=10*1000, icon_name="shutdown")
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:

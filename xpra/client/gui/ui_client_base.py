@@ -25,9 +25,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
-    merge_dicts,
-    XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
-    ConnectionMessage,
+    merge_dicts, NotificationID, ConnectionMessage,
     )
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode
@@ -370,8 +368,7 @@ class UIXpraClient(ClientBaseClass):
             else:
                 title = "Connection failed: %s" % reason
                 self.exit_code = ExitCode.CONNECTION_FAILED
-            self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
-                            title, body, icon_name="disconnected")
+            self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             #show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
             self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
@@ -379,8 +376,7 @@ class UIXpraClient(ClientBaseClass):
 
     def server_disconnect(self, reason, *info):
         body = "\n".join(info)
-        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
-                        f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
+        self.may_notify(NotificationID.DISCONNECT, f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
@@ -720,7 +716,7 @@ class UIXpraClient(ClientBaseClass):
 
 
     def may_notify_audio(self, summary, body):
-        self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
+        self.may_notify(NotificationID.AUDIO, summary, body, icon_name="audio")
 
 
     ######################################################################

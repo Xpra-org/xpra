@@ -13,7 +13,7 @@ from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
 from xpra.os_util import is_Wayland
-from xpra.util import envint, envbool, ConnectionMessage, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
+from xpra.util import envint, envbool, ConnectionMessage, NotificationID
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -210,7 +210,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
-            nid = XPRA_NEW_USER_NOTIFICATION_ID
+            nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
             actions = []
@@ -225,7 +225,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return None
 
     def notify_startup_complete(self):
-        self.do_notify_startup("Xpra shadow server is ready", replaces_nid=XPRA_STARTUP_NOTIFICATION_ID)
+        self.do_notify_startup("Xpra shadow server is ready", replaces_nid=NotificationID.STARTUP)
 
     def do_notify_startup(self, title, body="", replaces_nid=0):
         #overridden here so we can show the notification
@@ -233,14 +233,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
         if self.notifier:
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
-            nid = XPRA_STARTUP_NOTIFICATION_ID
             actions = []
             hints = {}
             icon = None
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
             if os.path.exists(icon_filename):
                 icon = parse_image_path(icon_filename)
-            self.notifier.show_notify("", tray, nid, "Xpra", replaces_nid, "",
+            self.notifier.show_notify("", tray, NotificationID.STARTUP, "Xpra", replaces_nid, "",
                                       title, body, actions, hints, 10*1000, icon)
 
 

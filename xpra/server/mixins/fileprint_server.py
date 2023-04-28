@@ -12,7 +12,7 @@ import hashlib
 
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
-from xpra.util import u, engs, repr_ellipsized, XPRA_FILETRANSFER_NOTIFICATION_ID
+from xpra.util import u, engs, repr_ellipsized, NotificationID
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -288,7 +288,7 @@ class FilePrintServer(StubServerMixin):
         if not os.path.exists(filename):
             filelog.warn("Warning: the file requested does not exist:")
             filelog.warn(" %s", filename)
-            ss.may_notify(XPRA_FILETRANSFER_NOTIFICATION_ID,
+            ss.may_notify(NotificationID.FILETRANSFER,
                           "File not found", "The file requested does not exist:\n%s" % filename,
                            icon_name="file")
             return
@@ -300,7 +300,7 @@ class FilePrintServer(StubServerMixin):
         else:
             file_size = stat.st_size
             if file_size>self.file_transfer.file_size_limit or file_size>ss.file_size_limit:
-                ss.may_notify(XPRA_FILETRANSFER_NOTIFICATION_ID,
+                ss.may_notify(NotificationID.FILETRANSFER,
                               "File too large",
                               "The file requested is too large to send:\n%s\nis %s" % (argf, std_unit(file_size)),
                                icon_name="file")

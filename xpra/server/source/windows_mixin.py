@@ -19,7 +19,7 @@ from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
+from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, NotificationID
 from xpra.log import Logger
 
 log = Logger("server")
@@ -654,7 +654,7 @@ class WindowsMixin(StubSourceMixin):
                          count, T, CONGESTION_WARNING_EVENT_COUNT)
             if count>CONGESTION_WARNING_EVENT_COUNT:
                 self.bandwidth_warning_time = now
-                nid = XPRA_BANDWIDTH_NOTIFICATION_ID
+                nid = NotificationID.BANDWIDTH
                 summary = "Network Performance Issue"
                 body = "Your network connection is struggling to keep up,\n" + \
                         "consider lowering the bandwidth limit,\n" + \

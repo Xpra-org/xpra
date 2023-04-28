@@ -92,17 +92,16 @@ class NotificationForwarder(StubServerMixin):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            from xpra.util import XPRA_NEW_USER_NOTIFICATION_ID
+            from xpra.util import NotificationID
             from xpra.notifications.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
-            nid = XPRA_NEW_USER_NOTIFICATION_ID
             icon = parse_image_path(get_icon_filename("user"))
             name = ss.name or ss.username or ss.uuid
             title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
                 if s!=ss:
-                    s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+                    s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")

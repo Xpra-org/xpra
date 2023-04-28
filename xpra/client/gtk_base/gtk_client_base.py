@@ -16,7 +16,7 @@ from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
     updict, pver, flatten_dict, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
-    DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
+    DEFAULT_METADATA_SUPPORTED, NotificationID,
     )
 from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
@@ -1159,7 +1159,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if event!="notification-action":
                 log.warn(f"Warning: unexpected event {event}")
                 return
-            if nid!=XPRA_OPENGL_NOTIFICATION_ID:
+            if nid!=NotificationID.OPENGL:
                 log.warn(f"Warning: unexpected notification id {nid}")
                 return
             if action_id==DISABLE:
@@ -1187,7 +1187,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 log.info(body)
                 return
             actions = (OK, "OK", DISABLE, "Don't show this warning again")
-            self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, actions,
+            self.may_notify(NotificationID.OPENGL, summary, body, actions,
                             icon_name="opengl", callback=notify_callback)
         #wait for the main loop to run:
         self.timeout_add(2*1000, delayed_notify)

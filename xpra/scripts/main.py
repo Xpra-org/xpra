@@ -1586,7 +1586,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
         app.show_progress(100, f"failure: {e}")
         may_notify = getattr(app, "may_notify", None)
         if callable(may_notify):
-            from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
+            from xpra.util import NotificationID
             body = str(e)
             if body.startswith("failed to connect to"):
                 lines = body.split("\n")
@@ -1594,7 +1594,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
                 body = "\n".join(lines[1:])
             else:
                 summary = "Xpra client failed to connect"
-            may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
+            may_notify(NotificationID.FAILURE, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
         app.cleanup()
         raise
     return app

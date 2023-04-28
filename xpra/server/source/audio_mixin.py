@@ -12,7 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr
-from xpra.util import csv, envbool, envint, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import csv, envbool, envint, flatten_dict, typedict, NotificationID
 from xpra.log import Logger
 
 log = Logger("sound")
@@ -176,8 +176,7 @@ class AudioMixin(StubSourceMixin):
         msgs = loop_warning_messages(mode)
         summary = msgs[0]
         body = "\n".join(msgs[1:])
-        nid = XPRA_AUDIO_NOTIFICATION_ID
-        self.may_notify(nid, summary, body, icon_name=mode)
+        self.may_notify(NotificationID.AUDIO, summary, body, icon_name=mode)
         log.warn("Warning: %s", summary)
         for x in msgs[1:]:
             log.warn(" %s", x)

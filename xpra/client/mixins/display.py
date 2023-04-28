@@ -23,10 +23,7 @@ from xpra.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
     )
-from xpra.util import (
-    envint, log_screen_sizes, flatten_dict, typedict,
-    XPRA_SCALING_NOTIFICATION_ID,
-    )
+from xpra.util import envint, log_screen_sizes, flatten_dict, typedict, NotificationID
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -400,7 +397,7 @@ class DisplayClient(StubClientMixin):
             "server desktop size is %ix%i" % (max_w, max_h),
             "using scaling factor %s x %s" % (xstr, ystr),
             ]
-        self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
+        self.may_notify(NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
         scalinglog.warn("Warning: %s", summary)
         for m in messages:
             scalinglog.warn(" %s", m)
@@ -635,7 +632,7 @@ class DisplayClient(StubClientMixin):
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
                 ]
-            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
+            self.may_notify(NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
             scalinglog.warn("Warning: %s", summary)
             for m in messages:
                 scalinglog.warn(" %s", m)

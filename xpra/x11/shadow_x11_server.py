@@ -9,10 +9,7 @@ import re
 from time import monotonic
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
-from xpra.util import (
-    envbool, envint, merge_dicts, AdHocStruct,
-    XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
-    )
+from xpra.util import envbool, envint, merge_dicts, AdHocStruct, NotificationID
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
@@ -383,7 +380,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         super().client_startup_complete(ss)
         log("is_Wayland()=%s", is_Wayland())
         if is_Wayland():
-            ss.may_notify(XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
+            ss.may_notify(NotificationID.SHADOWWAYLAND,
                           "Wayland Shadow Server",
                           "This shadow session is running under wayland,\n"+
                           "the screen scraping will probably come up empty",
@@ -410,7 +407,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         try:
             capture = GTKImageCapture(self.root)
             bdata = capture.take_screenshot()[-1]
-            nid = XPRA_DISPLAY_NOTIFICATION_ID
+            nid = NotificationID.DISPLAY
             title = body = ""
             if any(b!=0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)

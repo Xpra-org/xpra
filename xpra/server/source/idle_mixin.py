@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from xpra.util import envint, typedict, ConnectionMessage, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envint, typedict, ConnectionMessage, NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -66,8 +66,8 @@ class IdleMixin(StubSourceMixin):
         self.schedule_idle_timeout()
         if self.idle:
             self.no_idle()
-        if self.notification_callbacks.pop(XPRA_IDLE_NOTIFICATION_ID, None):
-            self.notify_close(XPRA_IDLE_NOTIFICATION_ID)
+        if self.notification_callbacks.pop(NotificationID.IDLE, None):
+            self.notify_close(NotificationID.IDLE)
 
 
     def cancel_idle_timeout(self):
@@ -101,7 +101,7 @@ class IdleMixin(StubSourceMixin):
             #not much we can do!
             return
         #notify the user, giving him a chance to cancel the timeout:
-        nid = XPRA_IDLE_NOTIFICATION_ID
+        nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
         actions = ()
