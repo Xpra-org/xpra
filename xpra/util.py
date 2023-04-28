@@ -99,16 +99,22 @@ WORKSPACE_NAMES = {
                    WORKSPACE_ALL    : "all",
                    }
 
-#this default value is based on 0.14.19 clients,
+#this default value is based on 0.15.x clients,
 #later clients should provide the 'metadata.supported" capability instead
-DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
-                              "size-hints", "class-instance", "client-machine",
-                              "transient-for", "window-type",
-                              "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
-                              "has-alpha", "override-redirect", "tray", "modal",
-                              "role", "opacity", "xid", "group-leader",
-                              "opaque-region",
-                              )
+DEFAULT_METADATA_SUPPORTED = (
+    "title", "icon-title", "pid", "iconic",
+    "size-hints", "class-instance", "client-machine",
+    "transient-for", "window-type",
+    "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
+    "has-alpha", "override-redirect", "tray", "modal",
+    "role", "opacity", "xid", "group-leader",
+    "opaque-region",
+    "command", "workspace", "above", "below", "sticky",
+    "set-initial-position", "requested-position",
+    "content-type",
+    #4.4:
+    #"parent", "relative-position",
+    )
 
 
 #initiate-moveresize X11 constants

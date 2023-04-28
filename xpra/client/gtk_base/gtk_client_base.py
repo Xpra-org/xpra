@@ -879,13 +879,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 "skip-taskbar", "skip-pager",
                 ]
             ms = list(DEFAULT_METADATA_SUPPORTED)
-            #added in 0.15:
-            ms += ["command", "workspace", "above", "below", "sticky",
-                   "set-initial-position", "requested-position",
-                   "content-type",
-                   #4.4:
-                   "parent", "relative-position",
-                   ]
+            #4.4:
+            ms += ["parent", "relative-position"]
         if POSIX:
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
