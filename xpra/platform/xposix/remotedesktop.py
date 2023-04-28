@@ -72,7 +72,7 @@ class RemoteDesktop(PortalShadow):
 
 
     def _process_key_action(self, proto, packet):
-        if self.readonly:
+        if self.readonly or not self.input_devices or not self.keymap:
             return
         wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
         ss = self.get_server_source(proto)
@@ -94,8 +94,6 @@ class RemoteDesktop(PortalShadow):
         #GDK code must be moved elsewhere
         ukeyname = keyname[:1].upper()+keyname[2:]
         skeyval = getattr(Gdk, f"KEY_{keyname}", 0) or getattr(Gdk, f"KEY_{ukeyname}", 0) or keyval
-        if not self.keymap:
-            return
         entries = self.keymap.get_entries_for_keyval(skeyval)
         keylog(f"get_entries_for_keyval({skeyval})={entries}")
         if not entries or not entries[0]:
