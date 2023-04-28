@@ -7,11 +7,11 @@
 import os
 
 from xpra.util import envbool
-
+from xpra.log import Logger
 
 def warn(*messages):
-    from xpra.log import Logger
     log = Logger("server")
+    log("warning loading backend", exc_info=True)
     for m in messages:
         log.warn(m)
 
