@@ -71,11 +71,14 @@ class PortalShadow(GTKShadowServerBase):
                 log(f"ignoring error closing session {self.session}: {e}")
             self.session = None
 
-    def disconnect_authenticating_client(self, reason=ConnectionMessage.PERMISSION_ERROR, *extra):
+    def client_auth_error(self, message):
+        self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
+
+    def disconnect_authenticating_client(self, reason : ConnectionMessage, message : str):
         ac = self.authenticating_client
         if ac:
             self.authenticating_client = None
-            self.disconnect_protocol(ac.protocol, reason, *extra)
+            self.disconnect_protocol(ac.protocol, reason, message)
             self.cleanup_source(ac)
 
 
@@ -133,13 +136,13 @@ class PortalShadow(GTKShadowServerBase):
             log("on_create_session_response%s", (response, results))
             log.error(f"Error {r} creating the session")
             log.error(" session access may have been denied")
-            self.disconnect_authenticating_client(ConnectionMessage.PERMISSION_ERROR, "session not created")
+            self.client_auth_error("session not created")
             return
         self.session_handle = res.strget("session_handle")
         log("on_create_session_response%s session_handle=%s", (r, res), self.session_handle)
         if not self.session_handle:
             log.error("Error: missing session handle creating the session")
-            self.disconnect_authenticating_client(ConnectionMessage.PERMISSION_ERROR, "no session handle")
+            self.client_auth_error("no session handle")
             self.quit(ExitCode.UNSUPPORTED)
             return
         self.session = get_session_interface(self.session_path)
@@ -166,7 +169,7 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log("on_select_devices_response%s", (response, results))
             log.error(f"Error {r} selecting screencast devices")
-            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "failed to select devices")
+            self.client_auth_error("failed to select devices")
             return
         log(f"on_select_devices_response devices selected, results={res}")
         self.select_sources()
@@ -190,7 +193,7 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log("on_select_sources_response%s", (response, results))
             log.error(f"Error {r} selecting screencast sources")
-            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "failed to select screencast sources")
+            self.client_auth_error("failed to select screencast sources")
             return
         log(f"on_select_sources_response sources selected, results={res}")
         self.portal_start()
@@ -211,13 +214,13 @@ class PortalShadow(GTKShadowServerBase):
         if r:
             log("on_start_response%s", (response, results))
             log.error(f"Error {r} starting the screen capture")
-            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "cannot start screen capture")
+            self.client_auth_error("cannot start screen capture")
             return
         streams = res.tupleget("streams")
         if not streams:
             log.error("Error: failed to start capture:")
             log.error(" missing streams")
-            self.disconnect_authenticating_client(ConnectionMessage.SERVER_ERROR, "no streams")
+            self.client_auth_error("no streams")
             return
         log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
