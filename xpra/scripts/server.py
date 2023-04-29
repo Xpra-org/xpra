@@ -398,7 +398,9 @@ def make_session_dir(mode, sessions_dir, display_name, uid=0, gid=0):
     return session_dir
 
 def session_file_path(filename):
-    session_dir = os.environ["XPRA_SESSION_DIR"]
+    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    if session_dir is None:
+        raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
 
 def load_session_file(filename):
