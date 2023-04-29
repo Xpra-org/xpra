@@ -104,7 +104,7 @@ def version_compat_check(remote_version):
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return None
-    if rv[0:2]<[3, 0]:
+    if rv[0:2]<(3, 0):
         #this is the oldest version we support
         msg = f"remote version {rv[:2]} is too old, sorry"
         log(msg)
@@ -199,6 +199,8 @@ def parse_version(v):
             except ValueError:
                 return v
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
+    if isinstance(v, list):
+        return tuple(v)
     return v
 
 def vtrim(v, parts=FULL_INFO+1):
