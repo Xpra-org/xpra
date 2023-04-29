@@ -124,7 +124,7 @@ def main(script_file, cmdline):
             def nomd5(*_args):
                 raise ValueError("md5 support is disabled")
             hashlib.md5 = nomd5
-    if envbool("XPRA_SHA1", False):
+    if envbool("XPRA_NOSHA1", False):
         import hashlib  # @Reimport
         try:
             hashlib.algorithms_available.remove("sha1")  # @UndefinedVariable
