@@ -273,11 +273,11 @@ class ServerSocketsTest(ServerTestUtil):
         tmpsessionsdir = tempfile.mkdtemp(suffix='xpra')
         #hide sessions dir and use a single socket dir location:
         ServerSocketsTest.default_xpra_args = list(filter(lambda x : not x.startswith("--socket-dir"), saved_args))
-        server_args = [
-                "--socket-dir=%s" % tmpsocketdir1,
-                "--socket-dirs=%s" % tmpsocketdir2,
-                "--sessions-dir=%s" % tmpsessionsdir,
-            ]
+        server_args = (
+            "--socket-dir=%s" % tmpsocketdir1,
+            "--socket-dirs=%s" % tmpsocketdir2,
+            "--sessions-dir=%s" % tmpsessionsdir,
+            )
         log_gap()
         def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=ExitCode.OK):
             self._test_connect(server_args, client_args, None, prefix, exit_code)
@@ -288,8 +288,8 @@ class ServerSocketsTest(ServerTestUtil):
             t(exit_code=ExitCode.CONNECTION_FAILED)
             #specifying the socket-dir(s) should work:
             for d in (tmpsocketdir1, tmpsocketdir2):
-                t(["--socket-dir=%s" % d])
-                t(["--socket-dirs=%s" % d])
+                t(("--socket-dir=%s" % d, ))
+                t(("--socket-dirs=%s" % d, ))
         finally:
             ServerSocketsTest.default_xpra_args = saved_args
             for d in (tmpsocketdir1, tmpsocketdir2, tmpsessionsdir):
