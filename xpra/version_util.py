@@ -145,27 +145,28 @@ def get_host_info(full_info=1) -> dict:
                 })
     return info
 
-def get_version_info(full=1) -> dict:
-    props = {"version" : vparts(XPRA_VERSION, full+1)}
+def get_version_info(full:int=1) -> dict:
+    info = {"version" : vparts(XPRA_VERSION, full+1)}
     if full>0:
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
             for k,v in {
-                "version"               : XPRA_VERSION,
                 "local_modifications"   : LOCAL_MODIFICATIONS,
                 "revision"              : REVISION,
                 "branch"                : BRANCH,
                 "commit"                : COMMIT,
                 }.items():
                 if v is not None and v!="unknown":
-                    props[k] = v
+                    info[k] = v
         except ImportError as e:
             warn("missing some source information: %s", e)
-    return props
+    if full>1:
+        info["build"] = get_build_info()
+    return info
 
-def get_version_info_full() -> dict:
-    props = get_version_info()
+def get_build_info(full:int=1) -> dict:
+    info = {}
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
         #rename these build info properties:
@@ -182,14 +183,14 @@ def get_version_info_full() -> dict:
                   }.items():
             v = getattr(build_info, bk, None)
             if v is not None:
-                props[k] = v
+                info[k] = v
         #record library versions:
-        d = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
-        props["lib"] = d
+        if full>1:
+            info["lib"] = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
     except Exception as e:
         warn("missing some build information: %s", e)
-    log("get_version_info_full()=%s", props)
-    return props
+    log(f"get_build_info({full})={info}")
+    return info
 
 def do_get_platform_info() -> dict:
     # pylint: disable=import-outside-toplevel

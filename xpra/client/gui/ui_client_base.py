@@ -29,7 +29,7 @@ from xpra.util import (
     )
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode
-from xpra.version_util import get_version_info_full, get_platform_info
+from xpra.version_util import get_platform_info
 from xpra.client.gui import mixin_features
 from xpra.log import Logger, get_info as get_log_info
 
@@ -343,11 +343,6 @@ class UIXpraClient(ClientBaseClass):
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
-
-    def get_version_info(self) -> dict:
-        if FULL_INFO>1:
-            return get_version_info_full()
-        return super().get_version_info()
 
 
     ######################################################################

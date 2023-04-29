@@ -19,7 +19,7 @@ from time import sleep, time, monotonic
 from threading import Thread, Lock
 
 from xpra.version_util import (
-    XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info_full,
+    XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
@@ -129,7 +129,7 @@ def get_server_info():
     #this function is for non UI thread info
     info = {
             "platform"  : get_platform_info(),
-            "build"     : get_version_info_full(),
+            "build"     : get_version_info(),
             }
     return info
 
