@@ -10,7 +10,7 @@ from xpra.os_util import is_X11
 from xpra.scripts.config import InitException
 from xpra.x11.bindings.xlib cimport Display
 from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error
-from xpra.x11.bindings.display_source import set_display_name
+from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport
 
 
 ###################################
@@ -35,7 +35,8 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
 import gi
 gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
-assert GdkX11
+if GdkX11 is None:
+    raise RuntimeError("could not load GdkX11 3.0")
 
 display = None
 def init_gdk_display_source():
@@ -52,7 +53,8 @@ def init_gdk_display_source():
         raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
-    assert root is not None, "could not get the default root window"
+    if root is None:
+        raise RuntimeError("could not get the default root window")
     display = Gdk.Display.get_default()
     #now we can get a display:
     cdef Display *x11_display = gdk_x11_display_get_xdisplay(gdk_display)
