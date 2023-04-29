@@ -339,6 +339,8 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
             return 1
         log("X11 display is ready")
     no_gtk()
+    #we're going to load gtk:
+    bypass_no_gtk()
     from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
     display = verify_gdk_display(display_name)
     if not display:
@@ -1156,8 +1158,6 @@ def _do_run_server(script_file, cmdline,
                 elif verify_display(None, display_name, log_errors=False, timeout=1)==0:
                     #accessed OK:
                     start_vfb = False
-                    #we have already loaded gtk in 'verify_display':
-                    bypass_no_gtk()
                 else:
                     #verify failed but we can stat the X11 server socket...
                     #perhaps we need to re-add an xauth entry
