@@ -1120,12 +1120,12 @@ def _do_run_server(script_file, cmdline,
             xauthority = load_session_file("xauthority")
             if xauthority and os.path.exists(xauthority):
                 os.environ["XAUTHORITY"] = xauthority.decode("latin1")
-                log("found existing XAUTHORITY file '%s'", xauthority)
+                log(f"found existing XAUTHORITY file {xauthority!r}")
             else:
                 xauthority = get_xauthority_path(display_name, username, uid, gid)
                 os.environ["XAUTHORITY"] = xauthority
                 if not os.path.exists(xauthority):
-                    log("creating XAUTHORITY file '%s'", xauthority)
+                    log(f"creating XAUTHORITY file {xauthority!r}")
                     try:
                         with open(xauthority, "ab") as f:
                             os.fchmod(f.fileno(), 0o640)
@@ -1133,10 +1133,10 @@ def _do_run_server(script_file, cmdline,
                                 os.fchown(f.fileno(), uid, gid)
                     except Exception as e:
                         #trying to continue anyway!
-                        log.error("Error trying to create XAUTHORITY file %s:", xauthority)
+                        log.error(f"Error trying to create XAUTHORITY file {xauthority!r}")
                         log.estr(e)
                 else:
-                    log("found existing XAUTHORITY file '%s'", xauthority)
+                    log(f"found existing XAUTHORITY file {xauthority!r}")
             write_session_file("xauthority", xauthority)
         #resolve use-display='auto':
         if use_display is None or upgrading:

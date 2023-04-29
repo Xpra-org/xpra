@@ -557,7 +557,7 @@ def parse_bind_vsock(bind_vsock):
 def setup_sd_listen_socket(stype, sock, addr):
     log = get_network_logger()
     def cleanup_sd_listen_socket():
-        log.info("closing sd listen socket %s", pretty_socket(addr))
+        log.info(f"closing sd listen socket {pretty_socket(addr)}")
         try:
             sock.close()
         except OSError:
@@ -607,7 +607,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
     defs = {}
     try:
         sockpaths = {}
-        log("setup_local_sockets: bind=%s, dotxpra=%s", bind, dotxpra)
+        log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
         for b in bind:
             if b in ("none", ""):
                 continue
@@ -623,7 +623,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 if session_dir and not WIN32:
                     session_socket = os.path.join(session_dir, "socket")
                     sockpaths[session_socket] = options
-                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
+                log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
             else:
                 sockpath = dotxpra.osexpand(sockpath)
                 if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
@@ -644,11 +644,11 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
         for tsp, options in sockpaths.items():
             sockpath = dotxpra.osexpand(tsp)
             if sockpath in tmp:
-                log.warn("Warning: skipping duplicate bind path %s", sockpath)
+                log.warn(f"Warning: skipping duplicate bind path {sockpath!r}")
                 continue
             tmp[sockpath] = options
         sockpaths = tmp
-        log("sockpaths=%s", sockpaths)
+        log(f"sockpaths={sockpaths}")
         #create listeners:
         if WIN32:
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
@@ -658,7 +658,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 ppath = sockpath
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
-                log.info("created named pipe '%s'", ppath)
+                log.info(f"created named pipe {ppath!r}")
                 defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
             def checkstate(sockpath, state):
@@ -677,7 +677,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     os.unlink(sockpath)
                 else:
                     state = dotxpra.get_server_state(sockpath, 1)
-                    log("state(%s)=%s", sockpath, state)
+                    log(f"state({sockpath})={state}")
                     checkstate(sockpath, state)
                     if state==dotxpra.UNKNOWN:
                         unknown.append(sockpath)
@@ -691,15 +691,15 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         xpra_gid = get_group_id(SOCKET_DIR_GROUP)
                         if xpra_gid>0:
                             kwargs["gid"] = xpra_gid
-                    log("creating sockdir=%s, kwargs=%s", d, kwargs)
+                    log(f"creating sockdir={d!r}, kwargs={kwargs}")
                     dotxpra.mksockdir(d, **kwargs)
-                    log("%s permission mask: %s", d, oct(os.stat(d).st_mode))
+                    log(f"{d!r} permission mask: "+oct(os.stat(d).st_mode))
                 except Exception as e:
-                    log.warn("Warning: failed to create socket directory '%s'", d)
-                    log.warn(" %s", e)
+                    log.warn(f"Warning: failed to create socket directory {d!r}")
+                    log.warn(f" {e}")
                     del e
             #wait for all the unknown ones:
-            log("sockets in unknown state: %s", unknown)
+            log(f"sockets in unknown state: {csv(unknown)}")
             if unknown:
                 #re-probe them using threads so we can do them in parallel:
                 threads = []
@@ -709,13 +709,13 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     start = monotonic()
                     while monotonic()-start<WAIT_PROBE_TIMEOUT:
                         state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
-                        log("timeout_probe() get_server_state(%s)=%s", sockpath, state)
+                        log(f"timeout_probe() get_server_state({sockpath!r})={state}")
                         if state not in (DotXpra.UNKNOWN, DotXpra.DEAD):
                             break
                         sleep(1)
                 log.warn("Warning: some of the sockets are in an unknown state:")
                 for sockpath in unknown:
-                    log.warn(" %s", sockpath)
+                    log.warn(f" {sockpath!r}")
                     t = start_thread(timeout_probe, f"probe-{sockpath}", daemon=True, args=(sockpath,))
                     threads.append(t)
                 log.warn(" please wait as we allow the socket probing to timeout")
@@ -727,7 +727,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 #(they should all be DEAD or UNKNOWN):
                 for sockpath in sockpaths:
                     state = dotxpra.get_server_state(sockpath, 1)
-                    log("state(%s)=%s", sockpath, state)
+                    log(f"state({sockpath})={state}")
                     checkstate(sockpath, state)
                     try:
                         if os.path.exists(sockpath):
@@ -766,8 +766,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             try:
                 cleanup_socket()
             except Exception:
-                log.error("Error cleaning up socket %s:", sock, exc_info=True)
-                log.error(" using %s", cleanup_socket)
+                log.error(f"Error cleaning up socket {sock}:", exc_info=True)
+                log.error(f" using {cleanup_socket}")
         raise
     return defs
 
@@ -775,35 +775,34 @@ def handle_socket_error(sockpath, sperms, e):
     log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
-        log.info("cannot create group socket '%s'", sockpath)
-        log.info(" %s", e)
+        log.info(f"cannot create group socket {sockpath!r}")
+        log.info(f" {e}")
         dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
         if not os.path.exists(dirname):
-            log.info(" %s does not exist", dirname)
+            log.info(f" {dirname!r} does not exist")
         #only show extra information if the socket permissions
         #would have been accessible by the group:
         elif POSIX and (sperms & 0o40):
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
-            log.info(" user '%s' is a member of groups: %s", username, csv(groups) or "no groups!")
+            log.info(f" user {username!r} is a member of groups: "+(csv(groups) or "no groups!"))
             if "xpra" not in groups:
                 log.info("  add 'xpra' group membership to enable group socket sharing")
             for x in path_permission_info(dirname):
-                log.info("  %s", x)
+                log.info(f"  {x}")
     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
-        log.warn("Warning: cannot create socket '%s':", sockpath)
-        log.warn(" %s", e)
+        log.warn(f"Warning: cannot create socket {sockpath!r}:")
+        log.warn(f" {e}")
         run_user = sockpath.split("/user")[0]+"/user"
         if not os.path.exists(run_user):
-            log.warn(" %s does not exist", run_user)
+            log.warn(f" {run_user} does not exist")
         else:
             log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
     else:
-        log.error("Error: failed to create socket '%s':", sockpath)
+        log.error(f"Error: failed to create socket {sockpath!r}")
         log.estr(e)
-        raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
-                       f"failed to create socket {sockpath}")
+        raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"failed to create socket {sockpath}")
 
 def import_zeroconf():
     from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
@@ -827,7 +826,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         assert mdns
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, RFB_MDNS_TYPE
     except ImportError as e:
-        log("mdns support is not installed: %s", e)
+        log(f"mdns support is not installed: {e}")
         return ()
     PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
     imports = [import_zeroconf, import_avahi]
@@ -911,23 +910,23 @@ def find_ssl_cert(filename="ssl-cert.pem"):
     #try to locate the cert file from known locations
     from xpra.platform.paths import get_ssl_cert_dirs  #pylint: disable=import-outside-toplevel
     dirs = get_ssl_cert_dirs()
-    ssllog("find_ssl_cert(%s) get_ssl_cert_dirs()=%s", filename, dirs)
+    ssllog(f"find_ssl_cert({filename}) get_ssl_cert_dirs()={dirs}")
     for d in dirs:
         p = osexpand(d)
         if not os.path.exists(p):
-            ssllog("ssl cert dir '%s' does not exist", p)
+            ssllog(f"ssl cert dir {p!r} does not exist")
             continue
         f = os.path.join(p, "ssl-cert.pem")
         if not os.path.exists(f):
-            ssllog("ssl cert '%s' does not exist", f)
+            ssllog(f"ssl cert {f!r} does not exist")
             continue
         if not os.path.isfile(f):
-            ssllog.warn("Warning: '%s' is not a file", f)
+            ssllog.warn(f"Warning: {f!r} is not a file")
             continue
         if not os.access(p, os.R_OK):
-            ssllog.info("SSL certificate file '%s' is not accessible", f)
+            ssllog.info(f"SSL certificate file {f!r} is not accessible")
             continue
-        ssllog("found ssl cert '%s'", f)
+        ssllog(f"found ssl cert {f!r}")
         return f
     return None
 
