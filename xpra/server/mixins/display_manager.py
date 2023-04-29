@@ -6,6 +6,7 @@
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
+from xpra.version_util import parse_version
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -88,11 +89,13 @@ class DisplayManager(StubServerMixin):
             if proc.returncode==0:
                 #parse output:
                 for line in out.splitlines():
-                    parts = line.split(b"=")
+                    parts = bytestostr(line).split("=")
                     if len(parts)!=2:
                         continue
-                    k = bytestostr(parts[0].strip())
-                    v = bytestostr(parts[1].strip())
+                    k = parts[0].strip()
+                    v = parts[1].strip()
+                    if k in ("GLX", "GLU.version", "opengl", "pyopengl", "accelerate", "shading-language-version"):
+                        v = parse_version(v)
                     props[k] = v
                 gllog("opengl props=%s", props)
                 if props:
