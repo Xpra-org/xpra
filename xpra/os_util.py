@@ -722,7 +722,7 @@ class OSEnvContext:
         self.kwargs = kwargs
     def __enter__(self):
         self.env = os.environ.copy()
-        self.env.update(self.kwargs)
+        os.environ.update(self.kwargs)
     def __exit__(self, *_args):
         os.environ.clear()
         os.environ.update(self.env)
