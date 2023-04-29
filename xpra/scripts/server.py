@@ -744,9 +744,7 @@ def _do_run_server(script_file, cmdline,
     shadowing = mode.startswith("shadow")
     proxying  = mode == "proxy"
 
-    if not proxying and POSIX and not OSX:
-        #we don't support wayland servers,
-        #so make sure GDK will use the X11 backend:
+    if not proxying and not shadowing and POSIX and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
 
     has_child_arg = (
