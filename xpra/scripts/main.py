@@ -72,7 +72,7 @@ def nox():
     # be noticed:
     import warnings
     warnings.filterwarnings("error", "could not open display")
-    return DISPLAY
+    return DISPLAY or os.environ.get("WAYLAND_DISPLAY")
 
 def werr(*msg):
     for x in msg:
@@ -2196,6 +2196,8 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid(), sessions
                         dinfo(display).get("state", "LIVE")=="LIVE" and not dinfo(display).get("xwayland", False)]
         if len(displays)==1:
             return displays[0]
+        if current_display in displays:
+            return current_display
         if not args:
             if len(displays)>1:
                 raise InitExit(1, "too many live displays to choose from: "+csv(sorted_nicely(displays)))
