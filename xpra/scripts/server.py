@@ -370,11 +370,12 @@ def get_session_dir(mode, sessions_dir, display_name, uid):
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
-        if ROOT and uid==0:
+        ROOT_FALLBACK = ("/run/xpra", "/var/run/xpra", "/tmp")
+        if ROOT and uid==0 and not any(session_dir.startswith(x) for x in ROOT_FALLBACK):
             #there is usually no $XDG_RUNTIME_DIR when running as root
             #and even if there was, that's probably not a good path to use,
             #so try to find a more suitable directory we can use:
-            for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
+            for d in ROOT_FALLBACK:
                 if os.path.exists(d):
                     if mode=="proxy" and (display_name or "").lstrip(":").split(",")[0]=="14500":
                         #stash the system wide proxy session files in a 'proxy' subdirectory:
