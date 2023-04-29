@@ -24,11 +24,13 @@ mouselog = Logger("shadow", "mouse")
 class RemoteDesktop(PortalShadow):
     def __init__(self, multi_window=True):
         super().__init__(multi_window)
-        self.session_type : str = "pipewire shadow"
         self.input_devices = 0
         self.keymap = Gdk.Keymap.get_default()
         if not self.keymap:
             log.warn("Warning: no access to the keymap, cannot simulate key events")
+
+    def get_server_mode(self):
+        return "pipewire shadow"
 
 
     def set_keymap(self, server_source, force=False):
@@ -74,7 +76,7 @@ class RemoteDesktop(PortalShadow):
     def _process_key_action(self, proto, packet):
         if self.readonly or not self.input_devices or not self.keymap:
             return
-        wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
+        wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]  # @UnusedVariable
         ss = self.get_server_source(proto)
         if ss is None:
             return

@@ -12,9 +12,10 @@ log = Logger("shadow")
 
 
 class ScreenCast(PortalShadow):
-    def __init__(self, multi_window=True):
-        super().__init__(multi_window)
-        self.session_type : str = "pipewire screencast"
+
+    def get_server_mode(self):
+        return "pipewire screencast"
+
 
     def on_session_created(self):
         #skip select_devices() and go straight to sources then start:

@@ -39,7 +39,6 @@ class PortalShadow(GTKShadowServerBase):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         self.session = None
         self.session_path : str = ""
-        self.session_type : str = "pipewire"
         self.session_handle : str = ""
         self.authenticating_client = None
         self.capture : Capture = None
