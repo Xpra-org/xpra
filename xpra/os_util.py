@@ -716,11 +716,13 @@ class HideSysArgv:
 
 
 class OSEnvContext:
-    __slots__ = ("env")
-    def __init__(self):
+    __slots__ = ("env", "kwargs")
+    def __init__(self, **kwargs):
         self.env = {}
+        self.kwargs = kwargs
     def __enter__(self):
         self.env = os.environ.copy()
+        self.env.update(self.kwargs)
     def __exit__(self, *_args):
         os.environ.clear()
         os.environ.update(self.env)

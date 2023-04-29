@@ -1,10 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-import os
 from time import monotonic
 from threading import RLock
 
@@ -64,9 +63,7 @@ class WebcamForwarder(StubClientMixin):
         self.server_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
-            with OSEnvContext():
-                os.environ["LANG"] = "C"
-                os.environ["LC_ALL"] = "C"
+            with OSEnvContext(LANG="C", LC_ALL="C"):
                 try:
                     import cv2
                     from PIL import Image

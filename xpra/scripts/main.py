@@ -2376,8 +2376,7 @@ def do_run_glcheck(opts, show=False) -> dict:
 def run_glcheck(opts):
     log = Logger("opengl")
     if POSIX and not OSX:
-        with OSEnvContext():
-            os.environ["GDK_BACKEND"] = "x11"
+        with OSEnvContext(GDK_BACKEND="x11"):
             try:
                 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
                 init_gdk_display_source()
@@ -2802,11 +2801,11 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults):
         else:
             try:
                 from xpra.scripts.server import get_session_dir
-                with OSEnvContext():
-                    #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
-                    #and we use an OSEnvContext to avoid polluting the env with it
-                    #(we need it to use the server ssh agent path functions)
-                    os.environ["XPRA_SESSION_DIR"] = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
+                #env var `XPRA_SESSION_DIR` should not be set in an ssh session,
+                #and we use an OSEnvContext to avoid polluting the env with it
+                #(we need it to use the server ssh agent path functions)
+                session_dir = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
+                with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
                     setup_proxy_ssh_socket(cmdline)
             except OSError:
@@ -3489,12 +3488,11 @@ def get_x11_display_info(display, sessions_dir=None):
         except ImportError:
             pass
         else:
-            with OSEnvContext():
-                uid = getuid()
-                session_dir = get_session_dir("unknown", sessions_dir, display, uid)
-                if os.path.exists(session_dir) and os.path.isdir(session_dir):
+            uid = getuid()
+            session_dir = get_session_dir("unknown", sessions_dir, display, uid)
+            if os.path.exists(session_dir) and os.path.isdir(session_dir):
+                with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
-                    os.environ["XPRA_SESSION_DIR"] = session_dir
                     try:
                         xvfb_pid = int(load_session_file("xvfb.pid"))
                         log(f"xvfb.pid({display})={xvfb_pid}")
@@ -3584,8 +3582,7 @@ def display_wm_info(args):
         pass
     else:
         raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
-    with OSEnvContext():
-        os.environ["GDK_BACKEND"] = "x11"
+    with OSEnvContext(GDK_BACKEND="x11"):
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.gtk_x11.wm_check import get_wm_info
