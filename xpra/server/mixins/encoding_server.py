@@ -8,12 +8,14 @@
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
+from xpra.version_util import vtrim
 from xpra.codecs.codec_constants import preforder
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.log import Logger
+from xpra.common import FULL_INFO
 
 log = Logger("encoding")
 
@@ -106,8 +108,9 @@ class EncodingServer(StubServerMixin):
             "encodings" : self.get_encoding_info(),
             "video"     : getVideoHelper().get_info(),
             }
-        for k,v in codec_versions.items():
-            info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
+        if FULL_INFO>0:
+            for k,v in codec_versions.items():
+                info.setdefault("encoding", {}).setdefault(k, {})["version"] = vtrim(v)
         return info
 
     def get_encoding_info(self) -> dict:

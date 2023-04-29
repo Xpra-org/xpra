@@ -319,6 +319,8 @@ class InfoXpraClient(CommandConnectClient):
                             v = hex(int(v))
                         except:
                             pass
+                    if k.endswith("version") and isinstance(v, (tuple, list)):
+                        v = ".".join(str(x) for x in v)
                     print_fn(f"{k}={nonl(v)}")
             else:
                 print_nested_dict(caps, print_fn=print_fn)

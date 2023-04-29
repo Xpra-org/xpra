@@ -6,7 +6,7 @@
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
-from xpra.version_util import parse_version
+from xpra.version_util import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -142,7 +142,7 @@ class DisplayManager(StubServerMixin):
         if root_size:
             caps["desktop_size"] = self._get_desktop_size_capability(source, *root_size)
         if FULL_INFO and self.opengl_props:
-            caps["opengl"] = self.opengl_props
+            caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps
 
     def get_info(self, _proto) -> dict:

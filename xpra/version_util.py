@@ -13,6 +13,7 @@ import platform
 import xpra
 from xpra.util import envbool, typedict, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
+from xpra.common import FULL_INFO
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
@@ -199,6 +200,23 @@ def parse_version(v):
                 return v
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
     return v
+
+def vtrim(v, parts=FULL_INFO+1):
+    if isinstance(v, (list, tuple)):
+        return v[:parts]
+    return v
+
+def dict_version_trim(d, parts=FULL_INFO+1):
+    """
+    trims version numbers from info dictionaries
+    """
+    def vfilt(k, v):
+        if k.endswith("version") and isinstance(v, (list, tuple)):
+            v = vtrim(v, parts)
+        elif isinstance(v, dict):
+            return k, dict_version_trim(v, parts)
+        return k, v
+    return dict(vfilt(k,v) for k,v in d.items())
 
 
 def do_get_platform_info() -> dict:
