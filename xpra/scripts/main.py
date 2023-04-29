@@ -111,8 +111,6 @@ def main(script_file, cmdline):
     #client side decorations break window geometry,
     #disable this "feature" unless explicitly enabled:
     os.environ["GTK_CSD"] = os.environ.get("GTK_CSD", "0")
-    if POSIX and not OSX and os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" and not os.environ.get("GDK_BACKEND"):
-        os.environ["GDK_BACKEND"] = "x11"
 
     if envbool("XPRA_NOMD5", False):
         import hashlib
@@ -322,6 +320,10 @@ def check_gtk_client():
         assert gui, gtk3
     except ImportError:
         raise InitExit(ExitCode.FILE_NOT_FOUND, f"xpra-client-gtk3 is not installed") from None
+    if POSIX and not OSX and not os.environ.get("GDK_BACKEND") and (
+        os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" or os.environ.get("SSH_TTY")
+        ):
+        os.environ["GDK_BACKEND"] = "x11"
     check_gtk()
 
 def check_gtk():
