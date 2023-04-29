@@ -65,7 +65,7 @@ class ServerInfoMixin(StubClientMixin):
             return True
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
-        self._remote_version = c.strget("build.version", c.strget("version"))
+        self._remote_version = parse_version(c.strget("build.version", c.strget("version")))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
         mods = c.get("build.local_modifications")
         if mods and str(mods).find("dfsg")>=0:  # pragma: no cover
@@ -97,7 +97,7 @@ class ServerInfoMixin(StubClientMixin):
             self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:
-            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION,
-                               "incompatible remote version '%s': %s" % (self._remote_version, verr))
+            vstr = ".".join(str(x) for x in self._remote_version)
+            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
             return False
         return True

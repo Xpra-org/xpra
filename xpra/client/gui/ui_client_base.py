@@ -486,7 +486,7 @@ class UIXpraClient(ClientBaseClass):
 
         i = platform_name(self._remote_platform,
                           c.strtupleget("platform.linux_distribution") or c.strget("platform.release", ""))
-        r = self._remote_version
+        r = ".".join(str(x) for x in self._remote_version)
         if self._remote_revision:
             r += f"-r{self._remote_revision}"
         mode = c.strget("server.mode", "server")
