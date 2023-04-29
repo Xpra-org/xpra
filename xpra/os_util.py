@@ -973,3 +973,21 @@ def is_socket(sockpath, check_uid=None) -> bool:
             get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
             return False
     return True
+
+def is_writable(path, uid=getuid(), gid=getgid()):
+    if uid==0:
+        return True
+    try:
+        s = os.stat(path)
+    except OSError as e:
+        get_util_logger().debug(f"is_writable({path}) path cannot be accessed: {e}")
+        #socket cannot be accessed
+        return False
+    mode = s.st_mode
+    if s.st_uid==uid and mode & stat.S_IWUSR:
+        #uid has write access
+        return True
+    if s.st_gid==gid and mode & stat.S_IWGRP:
+        #gid has write access:
+        return True
+    return False

@@ -22,7 +22,7 @@ from xpra.os_util import (
     shellsub,
     setuidgid, getuid, getgid,
     strtobytes, bytestostr, osexpand,
-    pollwait,
+    pollwait, is_writable,
     POSIX, OSX,
     )
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -155,7 +155,10 @@ def get_xauthority_path(display_name, username, uid, gid):
     if filename:
         filename = pathexpand(filename)
         if os.path.exists(filename):
-            return filename
+            if is_writable(filename):
+                return filename
+            log = get_vfb_logger()
+            log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
     # pylint: disable=import-outside-toplevel
     from xpra.platform.xposix.paths import _get_xpra_runtime_dir
     if PRIVATE_XAUTH:
