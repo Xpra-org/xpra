@@ -10,6 +10,7 @@ import gi
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
+from xpra.version_util import parse_version
 from xpra.log import Logger
 
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
@@ -31,7 +32,7 @@ def get_gtk_version_info() -> dict:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):
-        GTK_VERSION_INFO.setdefault(k, {})["version"] = v
+        GTK_VERSION_INFO.setdefault(k, {})["version"] = parse_version(v)
     def V(k, module, *fields):
         for field in fields:
             v = getattr(module, field, None)
@@ -61,8 +62,8 @@ def get_gtk_version_info() -> dict:
         MAJORMICROMINOR("gtk",  Gtk)
         MAJORMICROMINOR("glib", GLib)
 
-        av("cairo", cairo.version_info)  #pylint: disable=no-member
-        av("pango", Pango.version_string())
+        av("cairo", parse_version(cairo.version_info))  #pylint: disable=no-member
+        av("pango", parse_version(Pango.version_string()))
     return GTK_VERSION_INFO.copy()
 
 

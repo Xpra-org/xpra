@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.version_util import version_compat_check
+from xpra.version_util import version_compat_check, parse_version
 from xpra.os_util import bytestostr
 from xpra.util import typedict, get_util_logger
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -27,8 +27,10 @@ def get_remote_lib_versions(c : typedict,
                 v = typedict(d).get("version", None)
         if v:
             if isinstance(v, (tuple, list)):
-                v = ".".join(str(p) for p in v)
-            versions[x] = bytestostr(v)
+                v = tuple(v)
+            else:
+                v = parse_version(v)
+            versions[x] = v
     return versions
 
 

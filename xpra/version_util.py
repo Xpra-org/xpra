@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -183,14 +183,27 @@ def get_build_info(full:int=1) -> dict:
                   }.items():
             v = getattr(build_info, bk, None)
             if v is not None:
+                if bk.endswith("_VERSION"):
+                    v = parse_version(v)
                 info[k] = v
         #record library versions:
         if full>1:
-            info["lib"] = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
+            info["lib"] = dict((k.lstrip("lib_"), parse_version(getattr(build_info, k))) for k in dir(build_info) if k.startswith("lib_"))
     except Exception as e:
         warn("missing some build information: %s", e)
     log(f"get_build_info({full})={info}")
     return info
+
+def parse_version(v):
+    if isinstance(v, str):
+        def maybeint(v):
+            try:
+                return int(v)
+            except ValueError:
+                return v
+        v = tuple(maybeint(x) for x in v.split("."))
+    return v
+
 
 def do_get_platform_info() -> dict:
     # pylint: disable=import-outside-toplevel

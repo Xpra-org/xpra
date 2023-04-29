@@ -20,7 +20,7 @@ from threading import Thread, Lock
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
-    get_platform_info, get_host_info,
+    get_platform_info, get_host_info, parse_version,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
@@ -2288,7 +2288,7 @@ class ServerCore:
         now = time()
         info.update({
             "type"              : "Python",
-            "python"            : {"version" : platform.python_version()},
+            "python"            : {"version" : parse_version(platform.python_version())[:FULL_INFO+1]},
             "start_time"        : int(self.start_time),
             "current_time"      : int(now),
             "elapsed_time"      : int(now - self.start_time),

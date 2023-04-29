@@ -9,6 +9,7 @@ import os.path
 
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, WIN32
+from xpra.version_util import parse_version
 from xpra.codecs.codec_constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -154,7 +155,7 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
             v = getattr(module, f)
             if fieldname.endswith("()") and v:
                 v = v()
-            codec_versions[name] = v
+            codec_versions[name] = parse_version(v)
             #optional info:
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
