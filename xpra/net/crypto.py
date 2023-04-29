@@ -10,9 +10,10 @@ import secrets
 from struct import pack
 
 from xpra.util import envint, envbool, csv
-from xpra.log import Logger
+from xpra.version_util import parse_version
 from xpra.os_util import hexstr, strtobytes, memoryview_to_bytes, OSX
 from xpra.net.digest import get_salt
+from xpra.log import Logger
 
 log = Logger("network", "crypto")
 
@@ -230,7 +231,7 @@ def get_crypto_caps(full=True) -> dict:
     if full and cryptography:
         caps["python-cryptography"] = {
                 ""          : True,
-                "version"   : cryptography.__version__,
+                "version"   : parse_version(cryptography.__version__),
                 }
     return caps
 

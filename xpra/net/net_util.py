@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ import socket
 import sys
 
 from xpra.os_util import WIN32
+from xpra.version_util import parse_version
 from xpra.net.common import FLUSH_HEADER
 from xpra.common import FULL_INFO
 from xpra.log import Logger
@@ -26,7 +27,7 @@ def import_netifaces() -> object:
             import netifaces                #@UnresolvedImport pylint: disable=import-outside-toplevel
             log("netifaces loaded successfully")
             _netifaces = netifaces
-            netifaces_version = netifaces.version        #@UndefinedVariable
+            netifaces_version = parse_version(netifaces.version)    #@UndefinedVariable
         except ImportError:
             _netifaces = False
             log.warn("Warning: the python netifaces package is missing")
@@ -379,8 +380,8 @@ def get_ssl_info(show_constants=False) -> dict:
         if v is not None:
             info[name] = v
     for k, idef in {
-                    ""           : ("version", str),
-                    "_INFO"      : ("version-info", str),
+                    ""           : ("version-str", str),
+                    "_INFO"      : ("version", parse_version),
                     "_NUMBER"    : ("version-number", int),
                     }.items():
         v = getattr(ssl, f"OPENSSL_VERSION{k}", None)
