@@ -470,6 +470,31 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
+    if args and mode in ("seamless", "desktop", "monitor"):
+        #all args that aren't specifying a connection will be interpreted as a start-child command:
+        #ie: "xpra" "start" "xterm"
+        #ie: "xpra" "start-desktop" "ssh://host/" "fluxbox"
+        from xpra.net.common import SOCKET_TYPES
+        commands = []
+        connargs = []
+        for arg in tuple(args):
+            if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
+                #keep this one
+                connargs.append(arg)
+            else:
+                commands.append(arg)
+        if commands:
+            args = connargs
+            #figure out if we also auto-enable:
+            # * --exit-with-children:
+            if not any(x.startswith("--exit-with-children") or x=="--no-exit-with-children" for x in cmdline):
+                options.exit_with_children = True
+            # * --attach if we have a real display:
+            if not any(x.startswith("--attach") or x=="--no-attach" for x in cmdline):
+                options.attach = OSX or WIN32 or bool(
+                    (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")) and not os.environ.get("SSH_CONNECTION"))
+            for command in commands:
+                options.start_child.append(command)
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
         if display_is_remote:
             #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
