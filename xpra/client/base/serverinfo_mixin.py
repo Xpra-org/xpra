@@ -97,7 +97,7 @@ class ServerInfoMixin(StubClientMixin):
             self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:
-            vstr = ".".join(str(x) for x in self._remote_version)
+            vstr = ".".join(str(x) for x in (self._remote_version or ()))
             self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
             return False
         return True
