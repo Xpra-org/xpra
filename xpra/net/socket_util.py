@@ -589,7 +589,6 @@ def normalize_local_display_name(local_display_name):
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     log = get_network_logger()
-    log.enable_debug()
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     log(f"setup_local_sockets%s XPRA_SESSION_DIR={session_dir}",
         (bind, socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions, username, uid, gid))
