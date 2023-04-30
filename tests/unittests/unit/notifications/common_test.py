@@ -25,10 +25,11 @@ class TestCommon(unittest.TestCase):
         assert p((10, 10, 30, False, 24, 3, b"0"*30*10)) is not None
 
     def test_parse_image_path(self):
-        from xpra.platform.paths import get_icon_filename
-        filename = get_icon_filename("xpra")
+        iconname = "xpra"
+        from xpra.platform.paths import get_icon_filename, get_icon_dir
+        filename = get_icon_filename(iconname)
         if not common.parse_image_path(filename):
-            raise RuntimeError(f"failed to parse image path for {filename}")
+            raise RuntimeError(f"failed to parse image path for {filename} for icon {iconname} and icon_dir={get_icon_dir()}")
         f = tempfile.NamedTemporaryFile(prefix="test-invalid-file", delete=False)
         try:
             f.file.write(b"0000000000000001111111111111111111111")
