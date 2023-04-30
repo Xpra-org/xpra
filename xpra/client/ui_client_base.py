@@ -396,8 +396,8 @@ class UIXpraClient(ClientBaseClass):
                     uuid = get_uuid()
                     if uuid:
                         caps["server_uuid"] = uuid
-            except ImportError:
-                pass
+            except (ImportError, RuntimeError):
+                log("skipped server uuid lookup", exc_info=True)
         for x in (#generic feature flags:
             "wants_events", "setting-change",
             "xdg-menu-update", "mouse",
