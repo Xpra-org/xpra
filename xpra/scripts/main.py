@@ -478,7 +478,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         commands = []
         connargs = []
         for arg in tuple(args):
-            if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
+            if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES) or arg.startswith(":") or arg.startswith("wayland-"):
                 #keep this one
                 connargs.append(arg)
             else:
