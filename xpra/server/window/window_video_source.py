@@ -2017,9 +2017,12 @@ class WindowVideoSource(WindowSource):
         del scrolls
         #send the rest as rectangles:
         if non_scroll:
+            if self.content_type.find("text")>=0:
+                quality = 100
+                options["quality"] = quality
             #boost quality a bit, because lossless saves refreshing,
             #more so if we have a high match percentage (less to send):
-            if self._fixed_quality<=0:
+            elif self._fixed_quality<=0:
                 quality = options.get("quality", self._current_quality)
                 quality = min(100, quality + max(60, match_pct)//2)
                 options["quality"] = quality
