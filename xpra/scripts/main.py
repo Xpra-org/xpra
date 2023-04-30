@@ -470,26 +470,25 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
-    if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen") and display_is_remote:
-        #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
-        return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
-
-    if mode in ("seamless", "desktop", "monitor") and args and parse_bool("attach", options.attach) is True:
-        assert not display_is_remote
-        #maybe the server is already running
-        #and we don't need to bother trying to start it:
-        try:
-            display = pick_display(error_cb, options, args, cmdline)
-        except Exception:
-            pass
-        else:
-            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
-            if display_name:
-                state = dotxpra.get_display_state(display_name)
-                if state==DotXpra.LIVE:
-                    noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
+    if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
+        if display_is_remote:
+            #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
+            return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
+        elif args and parse_bool("attach", options.attach) is True:
+            #maybe the server is already running
+            #and we don't need to bother trying to start it:
+            try:
+                display = pick_display(error_cb, options, args, cmdline)
+            except Exception:
+                pass
+            else:
+                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+                display_name = display.get("display_name")
+                if display_name:
+                    state = dotxpra.get_display_state(display_name)
+                    if state==DotXpra.LIVE:
+                        noerr(sys.stdout.write, "existing live display found, attaching")
+                        return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in (
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
