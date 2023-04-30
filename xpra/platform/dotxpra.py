@@ -71,6 +71,9 @@ class DotXpra:
         elif d!="/tmp":
             try:
                 st_mode = os.stat(d).st_mode & 0o777
+                if st_mode==0o750 and d.startswith("/run/xpra"):
+                    #this directory is for shared sockets, o750 is OK
+                    return
                 if st_mode!=mode:
                     #perhaps this directory lives in $XDG_RUNTIME_DIR
                     #ie: /run/user/$UID/xpra or /run/user/$UID/xpra/100
