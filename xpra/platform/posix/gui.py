@@ -114,7 +114,7 @@ def get_native_tray_classes():
     c = []
     if USE_NATIVE_TRAY:
         try:
-            from xpra.platform.xposix.appindicator_tray import AppindicatorTray
+            from xpra.platform.posix.appindicator_tray import AppindicatorTray
             c.append(AppindicatorTray)
         except (ImportError, ValueError):
             traylog("cannot load appindicator tray", exc_info=True)
@@ -621,7 +621,7 @@ class ClientExtras:
         self.setup_dbus_signals()
 
     def ready(self):
-        """ unused on xposix """
+        """ unused on posix """
 
     def init_x11_filter(self):
         if self.x11_filter:

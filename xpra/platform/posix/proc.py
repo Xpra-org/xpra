@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 try:
-    from xpra.platform.xposix.proc_libproc import get_parent_pid
+    from xpra.platform.posix.proc_libproc import get_parent_pid
 except ImportError:
     try:
-        from xpra.platform.xposix.proc_procps import get_parent_pid
+        from xpra.platform.posix.proc_procps import get_parent_pid
     except ImportError:
         get_parent_pid = None
 

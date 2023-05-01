@@ -39,7 +39,7 @@ class Keyboard(KeyboardBase):
         self.keyboard_bindings = None
 
     def __repr__(self):
-        return "xposix.Keyboard"
+        return "posix.Keyboard"
 
     def get_keymap_modifiers(self):
         if self.keymap_modifiers is None:
@@ -122,12 +122,14 @@ class Keyboard(KeyboardBase):
             return ""
         xkb_rules_names = ""
         # pylint: disable=import-outside-toplevel
-        from xpra.platform.xposix.gui import _get_X11_root_property
-        prop = _get_X11_root_property("_XKB_RULES_NAMES", "STRING")
-        log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
-        #ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
-        if prop:
-            xkb_rules_names = bytestostr(prop).split("\0")
+        from xpra.gtk_common.error import xlog
+        from xpra.x11.common import get_X11_root_property
+        with xlog:
+            prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
+            log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
+            #ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
+            if prop:
+                xkb_rules_names = bytestostr(prop).split("\0")
             #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return xkb_rules_names

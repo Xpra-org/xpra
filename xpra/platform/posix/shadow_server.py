@@ -18,7 +18,7 @@ def warn(*messages):
 def load_screencast():
     if envbool("XPRA_SHADOW_SCREENCAST", True):
         try:
-            from xpra.platform.xposix import screencast
+            from xpra.platform.posix import screencast
             return screencast.ScreenCast
         except ImportError as e:
             warn("Warning: unable to load the screencast backend",
@@ -28,7 +28,7 @@ def load_screencast():
 def load_remotedesktop():
     if envbool("XPRA_SHADOW_REMOTEDESKTOP", True):
         try:
-            from xpra.platform.xposix import remotedesktop
+            from xpra.platform.posix import remotedesktop
             return remotedesktop.RemoteDesktop
         except ImportError as e:
             warn("Warning: unable to load the remotedesktop backend",

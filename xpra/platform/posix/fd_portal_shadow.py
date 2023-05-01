@@ -16,7 +16,7 @@ from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.platform.xposix.fd_portal import (
+from xpra.platform.posix.fd_portal import (
     SCREENCAST_IFACE, PORTAL_SESSION_INTERFACE,
     dbus_sender_name,
     get_portal_interface, get_session_interface,

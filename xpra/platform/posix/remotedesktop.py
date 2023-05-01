@@ -12,8 +12,8 @@ from dbus.types import UInt32, Int32
 
 from xpra.util import net_utf8
 from xpra.dbus.helper import native_to_dbus
-from xpra.platform.xposix.fd_portal import REMOTEDESKTOP_IFACE
-from xpra.platform.xposix.fd_portal_shadow import PortalShadow
+from xpra.platform.posix.fd_portal import REMOTEDESKTOP_IFACE
+from xpra.platform.posix.fd_portal_shadow import PortalShadow
 from xpra.log import Logger
 
 log = Logger("shadow")
