@@ -17,10 +17,11 @@ from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
+from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
 from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk_x11.prop import raw_prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
@@ -168,10 +169,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 display = os.environ.get("DISPLAY", "")
                 #make sure we don't kill the vfb since we don't own it:
                 self._upgrading = EXITING_CODE
-                from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
-                from xpra.platform.xposix.gui import get_x11_wm_name
-                wm_name = get_x11_wm_name() or "another window manager"
-                err = "%s is already active on display %r" % (wm_name, display)
+                wm_name = "another window manager"
+                with xsync:
+                    wm_name = f"{get_wm_name()!r}"
+                err = f"{wm_name} is already active on display {display}"
                 raise InitException(err) from None
             except XError as e:
                 x11_errors.append(e)

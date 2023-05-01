@@ -1,18 +1,17 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
-import struct
 
 from xpra.os_util import (
-    bytestostr, hexstr, get_saved_env,
+    bytestostr, get_saved_env,
     is_X11, is_Wayland, get_saved_env_var,
     )
-from xpra.util import u, envbool, envint, csv, ellipsizer
+from xpra.util import envbool, envint, csv
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -91,27 +90,12 @@ def do_get_wm_name(env):
             wm_name += " on wayland"
         else:
             wm_name = "wayland"
-    elif is_X11():
-        wm_name = get_x11_wm_name()
+    elif is_X11() and x11_bindings():
+        from xpra.x11.common import get_wm_name as get_x11_wm_name
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            wm_name = get_x11_wm_name()
     return wm_name
-
-def get_x11_wm_name():
-    if not is_X11() or not x11_bindings():
-        return None
-    try:
-        wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
-        if wm_check:
-            xid = struct.unpack(b"@L", wm_check)[0]
-            traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
-            wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
-            traylog("_NET_WM_NAME=%s", wm_name)
-            if wm_name:
-                return u(wm_name)
-    except Exception as e:
-        screenlog("get_x11_wm_name()", exc_info=True)
-        screenlog.error("Error accessing window manager information:")
-        screenlog.estr(e)
-    return None
 
 
 def get_clipboard_native_class():
@@ -163,62 +147,19 @@ def get_session_type():
     return os.environ.get("XDG_SESSION_TYPE", "")
 
 
-#we duplicate some of the code found in gtk_x11.prop ...
-#which is still better than having dependencies on that GTK2 code
-def _get_X11_window_property(xid, name, req_type):
-    try:
-        from xpra.gtk_common.error import xsync
-        from xpra.x11.bindings.window_bindings import PropertyError #@UnresolvedImport
-        try:
-            with xsync:
-                prop = X11WindowBindings().XGetWindowProperty(xid, name, req_type)
-            log("_get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or []))
-            return prop
-        except PropertyError as e:
-            log("_get_X11_window_property(%#x, %s, %s): %s", xid, name, req_type, e)
-    except Exception as e:
-        log.warn("Warning: failed to get X11 window property '%s' on window %#x: %s", name, xid, e)
-        log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
-    return None
-def _get_X11_root_property(name, req_type):
-    try:
-        root_xid = X11WindowBindings().getDefaultRootWindow()
-        return _get_X11_window_property(root_xid, name, req_type)
-    except Exception as e:
-        log("_get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
-        log.warn("Warning: failed to get X11 root property '%s'", name)
-        log.warn(" %s", e)
-    return None
-
 
 def _get_xsettings():
     if not x11_bindings():
         return None
     from xpra.gtk_common.error import xlog
-    X11Window = X11WindowBindings()
+    from xpra.x11.common import get_xsettings
     with xlog:
-        selection = "_XSETTINGS_S0"
-        owner = X11Window.XGetSelectionOwner(selection)
-        if not owner:
-            return None
-        XSETTINGS = "_XSETTINGS_SETTINGS"
-        data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-        if not data:
-            return None
-        from xpra.x11.xsettings_prop import get_settings
-        return get_settings(data)
+        return get_xsettings()
     return None
 
 def _get_xsettings_dict():
-    d = {}
-    if not x11_bindings():
-        return d
-    v = _get_xsettings()
-    if v:
-        _, values = v
-        for setting_type, prop_name, value, _ in values:
-            d[bytestostr(prop_name)] = (setting_type, value)
-    return d
+    from xpra.x11.common import xsettings_to_dict
+    return xsettings_to_dict(_get_xsettings())
 
 
 def _get_xsettings_dpi():
@@ -244,17 +185,10 @@ def _get_xsettings_dpi():
 
 def _get_randr_dpi():
     if RANDR_DPI and x11_bindings():
+        from xpra.x11.common import get_randr_dpi
         from xpra.gtk_common.error import xlog
         with xlog:
-            randr_bindings = X11RandRBindings()
-            if randr_bindings and randr_bindings.has_randr():
-                wmm, hmm = randr_bindings.get_screen_size_mm()
-                if wmm>0 and hmm>0:
-                    w, h =  randr_bindings.get_screen_size()
-                    dpix = round(w * 25.4 / wmm)
-                    dpiy = round(h * 25.4 / hmm)
-                    screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-                    return dpix, dpiy
+            return get_randr_dpi()
     return -1, -1
 
 def get_xdpi():
@@ -272,29 +206,10 @@ def get_ydpi():
 
 def get_icc_info():
     if x11_bindings():
-        try:
-            data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
-            if data:
-                screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
-                version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-                screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
-                          hexstr(version or ""), hexstr(data))
-                icc = {
-                        "source"    : "_ICC_PROFILE",
-                        "data"      : data,
-                        }
-                if version:
-                    try:
-                        version = ord(version)
-                    except TypeError:
-                        pass
-                    icc["version"] = version
-                screenlog("get_icc_info()=%s", icc)
-                return icc
-        except Exception as e:
-            screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
-            screenlog.estr(e)
-            screenlog("get_icc_info()", exc_info=True)
+        from xpra.x11.common import get_icc_data as get_x11_icc_data
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_icc_data()
     from xpra.platform.gui import default_get_icc_info
     return default_get_icc_info()
 
@@ -337,125 +252,50 @@ def get_antialias_info():
 
 
 def get_current_desktop():
-    v = -1
     if x11_bindings():
-        d = None
-        try:
-            d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
-            if d:
-                v = struct.unpack(b"@L", d)[0]
-        except Exception as e:
-            log.warn("failed to get current desktop: %s", e)
-        log("get_current_desktop() %s=%s", hexstr(d or ""), v)
-    return v
+        from xpra.x11.common import get_current_desktop as get_x11_current_desktop
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_current_desktop()
+    return -1
 
 def get_workarea():
     if x11_bindings():
-        try:
-            d = get_current_desktop()
-            if d<0:
-                return None
-            workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
-            if not workarea:
-                return None
-            screenlog("get_workarea() _NET_WORKAREA=%s (%s), len=%s",
-                      ellipsizer(workarea), type(workarea), len(workarea))
-            #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
-            sizeof_long = struct.calcsize(b"@L")
-            if len(workarea)<(d+1)*4*sizeof_long:
-                screenlog.warn("get_workarea() invalid _NET_WORKAREA value")
-            else:
-                cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
-                v = struct.unpack(b"@LLLL", cur_workarea)
-                screenlog("get_workarea() %s=%s", hexstr(cur_workarea), v)
-                return v
-        except Exception as e:
-            screenlog("get_workarea()", exc_info=True)
-            screenlog.warn("Warning: failed to query workarea: %s", e)
+        from xpra.x11.common import get_workarea as get_x11_workarea
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_workarea()
     return None
 
-
 def get_number_of_desktops():
-    v = 0
     if x11_bindings():
-        d = None
-        try:
-            d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
-            if d:
-                v = struct.unpack(b"@L", d)[0]
-        except Exception as e:
-            screenlog.warn("failed to get number of desktop: %s", e)
-        v = max(1, v)
-        screenlog("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
-    return v
+        from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_number_of_desktops()
+    return 0
 
 def get_desktop_names():
-    v = []
     if x11_bindings():
-        v = ("Main", )
-        d = None
-        try:
-            d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
-            if d:
-                v = d.split(b"\0")
-                if len(v)>1 and v[-1]==b"":
-                    v = v[:-1]
-                return tuple(x.decode("utf8") for x in v)
-        except Exception as e:
-            screenlog.warn("failed to get desktop names: %s", e)
-        screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)
-    return v
+        from xpra.x11.common import get_desktop_names as get_x11_desktop_names
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_desktop_names()
+    return ("Main", )
 
 
 def get_vrefresh():
-    v = -1
     if x11_bindings():
-        try:
-            from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
-            randr = RandRBindings()
-            if randr.has_randr():
-                v = randr.get_vrefresh()
-        except Exception as e:
-            log("get_vrefresh()", exc_info=True)
-            log.warn("Warning: failed to query the display vertical refresh rate:")
-            log.warn(" %s", e)
-        screenlog("get_vrefresh()=%s", v)
-    return v
+        from xpra.x11.common import get_vrefresh as get_x11_vrefresh
+        return get_x11_vrefresh()
+    return -1
 
-
-def _get_xresources():
-    if not x11_bindings():
-        return None
-    try:
-        from xpra.x11.gtk_x11.prop import prop_get
-        from xpra.gtk_common.gtk_util import get_default_root_window
-        root = get_default_root_window()
-        value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-        log(f"RESOURCE_MANAGER={value}")
-        if value is None:
-            return None
-        #parse the resources into a dict:
-        values={}
-        options = value.split("\n")
-        for option in options:
-            if not option:
-                continue
-            parts = option.split(":\t", 1)
-            if len(parts)!=2:
-                log(f"skipped invalid option: {option!r}")
-                continue
-            values[parts[0]] = parts[1]
-        return values
-    except Exception as e:
-        log(f"_get_xresources error: {e!r}")
-    return None
 
 def get_cursor_size():
-    d = _get_xresources() or {}
-    try:
-        return int(d.get("Xcursor.size", 0))
-    except ValueError:
-        return -1
+    if x11_bindings():
+        from xpra.x11.common import get_cursor_size as get_x11_cursor_size
+        return get_x11_cursor_size()
+    return -1
 
 
 def _get_xsettings_int(name, default_value):
@@ -482,7 +322,7 @@ def get_window_frame_sizes():
     return {}
 
 
-def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
+def system_bell(*args):
     if not x11_bindings():
         return False
     global device_bell
@@ -491,17 +331,10 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
         return False
     from xpra.gtk_common.error import XError
     def x11_bell():
-        global device_bell
-        if device_bell is None:
-            #try to load it:
-            try:
-                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
-                device_bell = X11KeyboardBindings().device_bell
-            except ImportError:
-                log("x11_bell()", exc_info=True)
-                log.warn("Warning: cannot use X11 bell device without the X11 bindings")
-                device_bell = False
-        device_bell(window.get_xid(), device, bell_class, bell_id, percent, bell_name)
+        from xpra.x11.common import system_bell as x11_system_bell
+        if not x11_system_bell(*args):
+            global device_bell
+            device_bell = False
     try:
         from xpra.gtk_common.error import xlog
         with xlog:
@@ -541,22 +374,9 @@ def _send_client_message(window, message_type, *values):
     if not x11_bindings():
         log(f"cannot send client message {message_type} without the X11 bindings")
         return
-    try:
-        from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
-        X11Window = X11WindowBindings()
-        root_xid = X11Window.getDefaultRootWindow()
-        if window:
-            xid = window.get_xid()
-        else:
-            xid = root_xid
-        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
-        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
-        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-        from xpra.gtk_common.error import xsync
-        with xsync:
-            X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
-    except Exception as e:
-        log.warn(f"Warning: failed to send client message {message_type!r} with values={values}: {e}")
+    from xpra.x11.common import send_client_message
+    send_client_message(window, message_type, *values)
+
 
 def show_desktop(b):
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))

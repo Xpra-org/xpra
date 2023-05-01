@@ -616,6 +616,10 @@ class ServerCore:
         def webbrowser_open():
             httplog.info(f"opening html5 client using URL {url!r}")
             if POSIX and not OSX:
+                saved_env = get_saved_env()
+                if not (saved_env.get("DISPLAY") or saved_env.get("WAYLAND_DISPLAY")):
+                    httplog.warn(f" no display, cannot open a browser window")
+                    return
                 #run using a subprocess so we can specify the environment:
                 #(which will run it against the correct X11 display!)
                 try:
@@ -655,7 +659,7 @@ class ServerCore:
         if opts.html and os.path.isabs(opts.html):
             www_dir = opts.html
             self._html = True
-        elif not opts.html or opts.html in FALSE_OPTIONS or opts.html in TRUE_OPTIONS:
+        elif not opts.html or (opts.html.lower() in FALSE_OPTIONS or opts.html.lower() in TRUE_OPTIONS or opts.html.lower()=="auto"):
             self._html = parse_bool("html", opts.html)
         else:
             #assume that the html option is a request to open a browser

@@ -1,7 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import struct
+
+from xpra.util import u, ellipsizer
+from xpra.os_util import hexstr, bytestostr
+from xpra.log import Logger
+log = Logger("x11")
 
 
 class Unmanageable(Exception):
@@ -28,3 +35,264 @@ class X11Event:
                 fn = REPR_FUNCTIONS.get(type(v), str)
                 d[k] = fn(v)
         return f"<X11:{self.name} {d!r}>"
+
+
+#we duplicate some of the code found in gtk_x11.prop ...
+#which is still better than having dependencies on that GTK2 code
+def get_X11_window_property(xid, name, req_type):
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
+        try:
+            prop = X11WindowBindings().XGetWindowProperty(xid, name, req_type)
+            log("get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or ()))
+            return prop
+        except PropertyError as e:
+            log("get_X11_window_property(%#x, %s, %s): %s", xid, name, req_type, e)
+    except Exception as e:
+        log.warn(f"Warning: failed to get X11 window property {name!r} on window {xid:x}: {e}")
+        log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
+    return None
+
+def get_X11_root_property(name, req_type):
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings
+        root_xid = X11WindowBindings().getDefaultRootWindow()
+        return get_X11_window_property(root_xid, name, req_type)
+    except Exception as e:
+        log("get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
+        log.warn(f"Warning: failed to get X11 root property {name!r}")
+        log.warn(" %s", e)
+    return None
+
+
+def get_wm_name():
+    try:
+        wm_check = get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
+        if wm_check:
+            xid = struct.unpack(b"@L", wm_check)[0]
+            log("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
+            wm_name = get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
+            log("_NET_WM_NAME=%s", wm_name)
+            if wm_name:
+                return u(wm_name)
+    except Exception as e:
+        log("get_wm_name()", exc_info=True)
+        log.error("Error accessing window manager information:")
+        log.estr(e)
+    return None
+
+
+def get_icc_data():
+    icc = {}
+    try:
+        data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
+        if data:
+            log("_ICC_PROFILE=%s (%s)", type(data), len(data))
+            version = get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
+            log("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
+                      hexstr(version or ""), hexstr(data))
+            icc.update({
+                    "source"    : "_ICC_PROFILE",
+                    "data"      : data,
+                    })
+            if version:
+                try:
+                    version = ord(version)
+                except TypeError:
+                    pass
+                icc["version"] = version
+    except Exception as e:
+        log.error("Error: cannot access _ICC_PROFILE X11 window property")
+        log.estr(e)
+        log("get_icc_info()", exc_info=True)
+    log("get_x11_icc_data()=%s", icc)
+    return icc
+
+
+def get_current_desktop():
+    v = -1
+    d = None
+    try:
+        d = get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
+        if d:
+            v = struct.unpack(b"@L", d)[0]
+    except Exception as e:
+        log("get_current_desktop()", exc_info=True)
+        log.error(f"Error: accessing _NET_CURRENT_DESKTOP:")
+        log.estr(e)
+    log("get_current_desktop() %s=%s", hexstr(d or ""), v)
+    return v
+
+def get_number_of_desktops():
+    v = 0
+    d = None
+    try:
+        d = get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
+        if d:
+            v = struct.unpack(b"@L", d)[0]
+    except Exception as e:
+        log("get_number_of_desktops()", exc_info=True)
+        log.error(f"Error: accessing _NET_NUMBER_OF_DESKTOPS:")
+        log.estr(e)
+    v = max(1, v)
+    log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
+    return v
+
+def get_workarea():
+    try:
+        d = get_current_desktop()
+        if d<0:
+            return None
+        workarea = get_X11_root_property("_NET_WORKAREA", "CARDINAL")
+        if not workarea:
+            return None
+        log("get_workarea() _NET_WORKAREA=%s (%s), len=%s",
+            ellipsizer(workarea), type(workarea), len(workarea))
+        #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
+        sizeof_long = struct.calcsize(b"@L")
+        if len(workarea)<(d+1)*4*sizeof_long:
+            log.warn(f"Warning: invalid _NET_WORKAREA value length: {workarea!r}")
+        else:
+            cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
+            v = struct.unpack(b"@LLLL", cur_workarea)
+            log("get_workarea() %s=%s", hexstr(cur_workarea), v)
+            return v
+    except Exception as e:
+        log("get_workarea()", exc_info=True)
+        log.error("Error: querying the x11 workarea:")
+        log.estr(e)
+    return None
+
+def get_desktop_names():
+    v = ("Main", )
+    d = None
+    try:
+        d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
+        if d:
+            v = d.split(b"\0")
+            if len(v)>1 and v[-1]==b"":
+                v = v[:-1]
+            return tuple(x.decode("utf8") for x in v)
+    except Exception as e:
+        log.error("Error querying _NET_DESKTOP_NAMES:")
+        log.estr(e)
+    log("get_desktop_names() %s=%s", hexstr(d or ""), v)
+    return v
+
+def get_vrefresh():
+    v = -1
+    try:
+        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
+        randr = RandRBindings()
+        if randr.has_randr():
+            v = randr.get_vrefresh()
+    except Exception as e:
+        log("get_vrefresh()", exc_info=True)
+        log.error("Error querying the display vertical refresh rate:")
+        log.estr(e)
+    log("get_vrefresh()=%s", v)
+    return v
+
+
+def send_client_message(window, message_type, *values):
+    try:
+        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  # @UnresolvedImport
+        X11Window = X11WindowBindings()
+        root_xid = X11Window.getDefaultRootWindow()
+        if window:
+            xid = window.get_xid()
+        else:
+            xid = root_xid
+        SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+        SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+        event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+        X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
+    except Exception as e:
+        log.warn(f"Warning: failed to send client message {message_type!r} with values={values}: {e}")
+
+
+device_bell = None
+def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
+    global device_bell
+    if device_bell is False:
+        #failed already
+        return False
+    if device_bell is None:
+        #try to load it:
+        try:
+            from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
+            device_bell = X11KeyboardBindings().device_bell
+        except ImportError:
+            log("x11_bell()", exc_info=True)
+            log.warn("Warning: cannot use X11 bell device without the X11 bindings")
+            return False
+    device_bell(window.get_xid(), device, bell_class, bell_id, percent, bell_name)
+    return True
+
+
+def get_xsettings():
+    from xpra.x11.bindings.window_bindings import X11WindowBindings  # @UnresolvedImport
+    X11Window = X11WindowBindings()
+    selection = "_XSETTINGS_S0"
+    owner = X11Window.XGetSelectionOwner(selection)
+    if not owner:
+        return None
+    XSETTINGS = "_XSETTINGS_SETTINGS"
+    data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+    if not data:
+        return None
+    from xpra.x11.xsettings_prop import get_settings
+    return get_settings(data)
+
+def xsettings_to_dict(v):
+    d = {}
+    if v:
+        _, values = v
+        for setting_type, prop_name, value, _ in values:
+            d[bytestostr(prop_name)] = (setting_type, value)
+    return d
+
+
+def get_randr_dpi():
+    from xpra.x11.bindings.randr_bindings import RandRBindings  # @UnresolvedImport
+    randr_bindings = RandRBindings()
+    if randr_bindings and randr_bindings.has_randr():
+        wmm, hmm = randr_bindings.get_screen_size_mm()
+        if wmm>0 and hmm>0:
+            w, h =  randr_bindings.get_screen_size()
+            dpix = round(w * 25.4 / wmm)
+            dpiy = round(h * 25.4 / hmm)
+            log("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
+            return dpix, dpiy
+    return -1, -1
+
+
+
+def get_xresources():
+    try:
+        value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
+        log(f"RESOURCE_MANAGER={value}")
+        if value is None:
+            return None
+        #parse the resources into a dict:
+        values = {}
+        options = bytestostr(value).split("\n")
+        for option in options:
+            if not option:
+                continue
+            parts = option.split(":\t", 1)
+            if len(parts)!=2:
+                log(f"skipped invalid option: {option!r}")
+                continue
+            values[parts[0]] = parts[1]
+        return values
+    except Exception as e:
+        log(f"_get_xresources error: {e!r}")
+    return None
+
+def get_cursor_size():
+    d = get_xresources() or {}
+    try:
+        return int(d.get("Xcursor.size", 0))
+    except ValueError:
+        return -1
