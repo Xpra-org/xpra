@@ -474,7 +474,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
         return
     print("  %-20s -> %s" % (bsrc, bdst))
     pandoc = os.environ.get("PANDOC", "pandoc")
-    cmd = [pandoc, "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
+    cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html":
         if is_Ubuntu() and get_distribution_version_id()<="18.04":
             print("pandoc is missing the lua-filter option")
