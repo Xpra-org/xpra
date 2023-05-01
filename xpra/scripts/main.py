@@ -42,7 +42,7 @@ from xpra.scripts.parsing import (
     MODE_ALIAS,
     )
 from xpra.scripts.config import (
-    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS,
+    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS, ALL_BOOLEAN_OPTIONS,
     NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
@@ -490,7 +490,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
             if not any(x.startswith("--exit-with-children") or x=="--no-exit-with-children" for x in cmdline):
                 options.exit_with_children = True
             # * --attach if we have a real display:
-            if not any(x.startswith("--attach") or x=="--no-attach" for x in cmdline):
+            # but not if attach was specified on the command line
+            # and not if we have html=open
+            html_open = (options.html or "").lower() not in (list(ALL_BOOLEAN_OPTIONS)+["auto", "none", None])
+            if not html_open and not any(x.startswith("--attach") or x=="--no-attach" for x in cmdline):
                 options.attach = OSX or WIN32 or bool(
                     (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")) and not os.environ.get("SSH_CONNECTION"))
             for command in commands:
