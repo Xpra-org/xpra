@@ -400,7 +400,7 @@ def create_sockets(opts, error_cb, retry=0):
     # systemd socket activation:
     if POSIX and not OSX:
         try:
-            from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
+            from xpra.platform.posix.sd_listen import get_sd_listen_sockets
         except ImportError as e:
             log("no systemd socket activation: %s", e)
         else:

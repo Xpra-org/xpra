@@ -87,7 +87,7 @@ class WebcamMixin(StubSourceMixin):
                     "device" : self.webcam_device,
                     },
                    }
-        from xpra.platform.xposix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
+        from xpra.platform.posix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
         return get_virtual_video_devices()
 
 

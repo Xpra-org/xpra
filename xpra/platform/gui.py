@@ -243,12 +243,12 @@ def show_desktop(_show):
     """ If possible, show the desktop """
 
 def set_fullscreen_monitors(_window, _fsm, _source_indication=0):
-    """ Only overridden by xposix """
+    """ Only overridden by posix """
 
 def set_shaded(_window, _shaded):
     """
     GTK never exposed the 'shaded' window attribute,
-    xposix clients will hook it up here.
+    posix clients will hook it up here.
     """
 
 def pointer_grab(_window):

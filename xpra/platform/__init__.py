@@ -114,7 +114,7 @@ def platform_import(where, pm, required, *imports):
     elif OSX:           # pragma: no cover
         p = "darwin"
     elif POSIX:         # pragma: no cover
-        p = "xposix"
+        p = "posix"
     else:               # pragma: no cover
         raise OSError("Unknown OS %s" % (os.name))
 

@@ -227,7 +227,7 @@ class MenuProvider:
         if not POSIX or OSX:
             return None
         if force_reload or self.desktop_sessions is None:
-            from xpra.platform.xposix.menu_helper import load_desktop_sessions  #pylint: disable=import-outside-toplevel
+            from xpra.platform.posix.menu_helper import load_desktop_sessions  #pylint: disable=import-outside-toplevel
             self.desktop_sessions = load_desktop_sessions()
         desktop_sessions = self.desktop_sessions
         if remove_icons:

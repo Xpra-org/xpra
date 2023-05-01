@@ -18,7 +18,7 @@ class ChildCommandMixinTest(ServerMixinTest):
 
     def test_command_server(self):
         try:
-            from xpra.platform.xposix.xdg_helper import log
+            from xpra.platform.posix.xdg_helper import log
             c = silence_info(log)
         except ImportError:
             c = DummyContextManager()

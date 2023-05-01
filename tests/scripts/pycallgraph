@@ -97,7 +97,7 @@ misc = ['xpra.dotxpra.*', 'xpra.x11.bindings.wait_for_server.*',
         'xpra.gtk_common.gtk_util.add_gtk_version_info',
         'xpra.build_info.*']
 
-xsettings = ['xpra.platform.xposix.xroot_props.*', 'xpra.platform.xposix.xsettings.*', 'xpra.x11.xsettings_prop.*']
+xsettings = ['xpra.platform.posix.xroot_props.*', 'xpra.platform.posix.xsettings.*', 'xpra.x11.xsettings_prop.*']
 clipboard = ['xpra.clipboard.*',
              'xpra.client.*.*clipboard_helper',
              'xpra.gtk_common.gdk_atoms.*',

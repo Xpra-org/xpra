@@ -253,7 +253,7 @@ class SourceMixinsTest(unittest.TestCase):
         if not POSIX or OSX:
             get_util_logger().info("webcam test skipped: %s not supported yet", sys.platform)
             return
-        from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
+        from xpra.platform.posix.webcam import get_virtual_video_devices, check_virtual_dir
         if not check_virtual_dir():
             get_util_logger().info("webcam test skipped: no virtual video device directory")
             return

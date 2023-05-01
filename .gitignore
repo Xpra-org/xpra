@@ -164,10 +164,10 @@ tests/unittests/test-file*
 /xpra/net/qrcode/qrencode.c
 /xpra/platform/darwin/gdk3_bindings.c
 /xpra/platform/win32/propsys.cpp
-/xpra/platform/xposix/netdev_query.c
-/xpra/platform/xposix/sd_listen.c
-/xpra/platform/xposix/proc_libproc.c
-/xpra/platform/xposix/proc_procps.c
+/xpra/platform/posix/netdev_query.c
+/xpra/platform/posix/sd_listen.c
+/xpra/platform/posix/proc_libproc.c
+/xpra/platform/posix/proc_procps.c
 /xpra/server/cystats.c
 /xpra/server/pam.c
 /xpra/server/sd_listen.c

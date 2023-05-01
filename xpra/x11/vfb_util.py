@@ -160,7 +160,7 @@ def get_xauthority_path(display_name, username, uid, gid):
             log = get_vfb_logger()
             log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
     # pylint: disable=import-outside-toplevel
-    from xpra.platform.xposix.paths import _get_xpra_runtime_dir
+    from xpra.platform.posix.paths import _get_xpra_runtime_dir
     if PRIVATE_XAUTH:
         d = _get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:

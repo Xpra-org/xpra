@@ -90,7 +90,7 @@ def get_xorg_bin():
 
 
 def get_Xdummy_confdir():
-    from xpra.platform.xposix.paths import get_runtime_dir
+    from xpra.platform.posix.paths import get_runtime_dir
     xrd = get_runtime_dir()
     if xrd:
         base = "${XPRA_SESSION_DIR}"

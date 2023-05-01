@@ -139,7 +139,7 @@ class AudioServer(StubServerMixin):
         #    session can have its own server,
         #    create a directory for each display:
         if PRIVATE_PULSEAUDIO and POSIX and not OSX:
-            from xpra.platform.xposix.paths import _get_xpra_runtime_dir, get_runtime_dir  # pylint: disable=import-outside-toplevel
+            from xpra.platform.posix.paths import _get_xpra_runtime_dir, get_runtime_dir  # pylint: disable=import-outside-toplevel
             rd = osexpand(get_runtime_dir())
             if not rd or not os.path.exists(rd) or not os.path.isdir(rd):
                 log.warn("Warning: the runtime directory '%s' does not exist,", rd)

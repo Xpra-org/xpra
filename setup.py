@@ -1136,10 +1136,10 @@ def clean():
                    "xpra/x11/bindings/xi2_bindings.c",
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/platform/darwin/gdk3_bindings.c",
-                   "xpra/platform/xposix/sd_listen.c",
-                   "xpra/platform/xposix/netdev_query.c",
-                   "xpra/platform/xposix/proc_libproc.c",
-                   "xpra/platform/xposix/proc_procps.c",
+                   "xpra/platform/posix/sd_listen.c",
+                   "xpra/platform/posix/netdev_query.c",
+                   "xpra/platform/posix/proc_libproc.c",
+                   "xpra/platform/posix/proc_procps.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
                    "xpra/net/brotli/compressor.c",
@@ -1266,7 +1266,7 @@ if WIN32:
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
     if modules_ENABLED:
         add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
-    remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
+    remove_packages("xpra.platform.darwin", "xpra.platform.posix")
 
     #this is where the win32 gi installer will put things:
     gnome_include_path = os.environ.get("MINGW_PREFIX")
@@ -1896,12 +1896,12 @@ else:
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         add_packages("xpra.platform.darwin")
-        remove_packages("xpra.platform.win32", "xpra.platform.xposix")
+        remove_packages("xpra.platform.win32", "xpra.platform.posix")
         #to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
         external_excludes.append("numpy")
     else:
-        add_packages("xpra.platform.xposix")
+        add_packages("xpra.platform.posix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
             #not supported by all distros, but doesn't hurt to install them anyway:
@@ -2136,9 +2136,9 @@ if pam_ENABLED:
     ace("xpra.server.pam", **pam_kwargs)
 
 #platform:
-tace(sd_listen_ENABLED, "xpra.platform.xposix.sd_listen", "libsystemd")
-tace(proc_ENABLED and proc_use_procps, "xpra.platform.xposix.proc_procps", "libprocps", extra_compile_args = "-Wno-error")
-tace(proc_ENABLED and proc_use_libproc, "xpra.platform.xposix.proc_libproc", "libproc2", extra_compile_args = "-Wno-error")
+tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")
+tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libprocps", extra_compile_args = "-Wno-error")
+tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2", extra_compile_args = "-Wno-error")
 
 #codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
@@ -2392,7 +2392,7 @@ toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(qrencode_ENABLED, "xpra.net.qrcode")
 tace(qrencode_ENABLED, "xpra.net.qrcode.qrencode", extra_link_args="-lqrencode", extra_compile_args=ECA_WIN32SIGN)
-tace(netdev_ENABLED, "xpra.platform.xposix.netdev_query")
+tace(netdev_ENABLED, "xpra.platform.posix.netdev_query")
 toggle_packages(vsock_ENABLED, "xpra.net.vsock")
 tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 toggle_packages(lz4_ENABLED, "xpra.net.lz4")

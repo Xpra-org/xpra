@@ -40,7 +40,7 @@ if not XRes.check_xres():
     log.warn("Warning: X Resource Extension missing or too old")
     XRes = None
 
-from xpra.platform.xposix.proc import get_parent_pid
+from xpra.platform.posix.proc import get_parent_pid
 if get_parent_pid is None:
     log("proc.get_parent_pid is not available")
 

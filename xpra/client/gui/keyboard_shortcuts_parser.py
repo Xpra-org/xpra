@@ -16,7 +16,7 @@ log = Logger("keyboard")
 def get_modifier_names(mod_meanings):
     #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
     #but the user expects the name of the key to be used, ie: "alt" or "super"
-    #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
+    #whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
     #so generate a map from one to the other:
     modifier_names = {}
     meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS

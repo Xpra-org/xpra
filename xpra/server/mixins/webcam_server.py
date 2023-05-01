@@ -102,7 +102,7 @@ class WebcamServer(StubServerMixin):
             log.info("webcam forwarding requires the v4l2 virtual video module")
             return 0
         try:
-            from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
+            from xpra.platform.posix.webcam import get_virtual_video_devices, check_virtual_dir
         except ImportError as e:
             log.warn("Warning: cannot load webcam components")
             log.warn(" %s", e)

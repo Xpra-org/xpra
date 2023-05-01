@@ -2127,7 +2127,7 @@ def find_wayland_display_sockets(uid=getuid(), gid=getgid()):
     def addwaylandsock(d, p):
         if os.path.isabs(p) and is_socket(p) and os.path.exists(p) and d not in displays:
             displays[d] = p
-    from xpra.platform.xposix.paths import get_runtime_dir
+    from xpra.platform.posix.paths import get_runtime_dir
     xrd = osexpand(get_runtime_dir(), uid=uid, gid=gid)
     #try the one from the environment first:
     wd = os.environ.get("WAYLAND_DISPLAY")
