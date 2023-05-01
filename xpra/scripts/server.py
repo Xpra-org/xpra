@@ -124,9 +124,7 @@ def sanitize_env():
              "GNOME_DESKTOP_SESSION_ID",
              "SESSION_MANAGER",
              "XDG_VTNR",
-             #we must keep this value on Debian / Ubuntu
-             #to avoid breaking menu loading:
-             #"XDG_MENU_PREFIX",
+             "XDG_MENU_PREFIX",
              "XDG_CURRENT_DESKTOP",
              "XDG_SESSION_DESKTOP",
              "XDG_SESSION_TYPE",

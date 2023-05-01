@@ -392,6 +392,11 @@ def load_xdg_menu_data():
                 if d not in config_dirs:
                     config_dirs.append(d)
             prefixes = [None, ""]
+            #we sanitize the environment,
+            #but perhaps the value from the existing environment was useful:
+            prefix = get_saved_env().get("XDG_MENU_PREFIX")
+            if prefix:
+                prefixes.append(prefix)
             desktop = os.environ.get("XDG_SESSION_DESKTOP", "")
             if desktop:
                 prefixes.append(f"{desktop}-")      #ie: "gnome-"
