@@ -24,7 +24,6 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
     csv, envbool, envint, nonl, pver, engs,
     noerr, sorted_nicely, typedict,
-    DEFAULT_PORTS,
     )
 from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -51,6 +50,7 @@ from xpra.scripts.config import (
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_sound_support, name_to_field,
     )
+from xpra.net.common import DEFAULT_PORTS
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
 

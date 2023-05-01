@@ -25,7 +25,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
+from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -47,7 +47,7 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import (
     get_app_dir, get_system_conf_dirs, get_user_conf_dirs,
-    get_icon_filename, get_python_exec_command,
+    get_icon_filename,
     )
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
@@ -58,7 +58,7 @@ from xpra.os_util import (
     getuid, hexstr,
     POSIX, OSX,
     parse_encoded_bin_data, load_binary_file,
-    osexpand, which, get_saved_env, OSEnvContext,
+    osexpand, which, get_saved_env,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
@@ -70,7 +70,7 @@ from xpra.util import (
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
-    ConnectionMessage, DEFAULT_PORTS,
+    ConnectionMessage,
     )
 from xpra.log import Logger, get_info as get_log_info
 

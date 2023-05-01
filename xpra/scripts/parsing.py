@@ -15,7 +15,8 @@ import optparse
 from urllib import parse
 
 from xpra.version_util import full_version_str
-from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import envbool, csv, parse_simple_dict
+from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS,

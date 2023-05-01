@@ -82,19 +82,6 @@ class ConnectionMessage(StrEnum):
     CLIENT_EXIT             = "client exit"
 
 
-DEFAULT_PORT = 14500
-
-DEFAULT_PORTS = {
-    "ws"    : 80,
-    "wss"   : 443,
-    "ssl"   : DEFAULT_PORT, #could also default to 443?
-    "ssh"   : 22,
-    "tcp"   : DEFAULT_PORT,
-    "vnc"   : 5900,
-    "quic"  : 20000,
-    }
-
-
 #magic value for "workspace" window property, means unset
 WORKSPACE_UNSET = 65535
 WORKSPACE_ALL = 0xffffffff

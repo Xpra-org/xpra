@@ -27,8 +27,9 @@ from xpra.gtk_common.gtk_util import (
     imagebutton, get_icon_pixbuf,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.net.common import DEFAULT_PORTS
 from xpra.net.net_util import if_indextoname
-from xpra.util import typedict, DEFAULT_PORTS
+from xpra.util import typedict
 from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 

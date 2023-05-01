@@ -11,6 +11,7 @@ from ctypes import Structure, c_uint8, sizeof
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
+from xpra.net.common import DEFAULT_PORT
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
@@ -20,7 +21,6 @@ from xpra.os_util import (
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict, print_nested_dict, std,
     ellipsizer, noerr,
-    DEFAULT_PORT,
     )
 from xpra.make_thread import start_thread
 
