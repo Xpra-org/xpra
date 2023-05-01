@@ -47,7 +47,7 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import (
     get_app_dir, get_system_conf_dirs, get_user_conf_dirs,
-    get_icon_filename,
+    get_icon_filename, get_python_exec_command,
     )
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
@@ -56,9 +56,9 @@ from xpra.os_util import (
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, hexstr,
-    POSIX,
+    POSIX, OSX,
     parse_encoded_bin_data, load_binary_file,
-    osexpand,
+    osexpand, which, get_saved_env, OSEnvContext,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
@@ -70,7 +70,7 @@ from xpra.util import (
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
-    ConnectionMessage,
+    ConnectionMessage, DEFAULT_PORTS,
     )
 from xpra.log import Logger, get_info as get_log_info
 
@@ -590,6 +590,63 @@ class ServerCore:
     def save_uuid(self):
         pass
 
+    def open_html_url(self, html="open", mode="tcp", bind="127.0.0.1"):
+        httplog("open_html_url%s", (html, mode, bind))
+        import urllib
+        result = urllib.parse.urlsplit(f"//{bind}")
+        host = result.hostname
+        if host in ("0.0.0.0", "*"):
+            host = "localhost"
+        elif host=="::":
+            host = "::1"
+        port = result.port or DEFAULT_PORTS.get(mode)
+        ssl = mode in ("wss", "ssl")
+        url = "https" if ssl else "http"
+        url += f"://{host}"
+        if (ssl and port!=443) or (not ssl and port!=80):
+            url += f":{port}"
+        url += "/"
+        def exec_open(*cmd):
+            httplog(f"exec_open{cmd}")
+            from subprocess import Popen
+            proc = Popen(args=cmd, env=get_saved_env())
+            from xpra.child_reaper import getChildReaper
+            getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
+            return
+        def webbrowser_open():
+            httplog.info(f"opening html5 client using URL {url!r}")
+            if POSIX and not OSX:
+                #run using a subprocess so we can specify the environment:
+                #(which will run it against the correct X11 display!)
+                try:
+                    exec_open(f"python{sys.version_info.major}", "-m", "webbrowser", "-t", url)
+                except Exception:
+                    log("failed exec_open:", exc_info=True)
+                else:
+                    return
+                #racy alternative to subprocess:
+                #with OSEnvContext():
+                #    os.environ.clear()
+                #    os.environ.update(get_saved_env())
+                #    import webbrowser
+                #    webbrowser.open_new_tab(url)
+            import webbrowser
+            webbrowser.open_new_tab(url)
+        def open_url():
+            if html.lower() not in ("open", "connect"):
+                #is a command?
+                open_cmd = which(html)
+                if open_cmd:
+                    httplog.info(f"opening html5 client using {html!r} at URL {url!r}")
+                    exec_open(open_cmd, url)
+                    return
+                #fall through to webbrowser:
+                log.warn(f"Warning: {html!r} is not a valid command")
+            webbrowser_open()
+        #open via timeout_add so that the server is running by then,
+        #plus a slight delay so that it can settle down:
+        self.timeout_add(1000, open_url)
+
 
     def init_html_proxy(self, opts):
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
@@ -598,8 +655,24 @@ class ServerCore:
         if opts.html and os.path.isabs(opts.html):
             www_dir = opts.html
             self._html = True
-        else:
+        elif not opts.html or opts.html in FALSE_OPTIONS or opts.html in TRUE_OPTIONS:
             self._html = parse_bool("html", opts.html)
+        else:
+            #assume that the html option is a request to open a browser
+            self._html = True
+            #find a socket we can connect the browser to:
+            for mode, bind in {
+                "ws"    : opts.bind_ws,
+                "wss"   : opts.bind_wss,
+                "tcp"   : opts.bind_tcp,
+                "ssl"   : opts.bind_ssl,
+                }.items():
+                if bind:    #ie: ["0.0.0.0:10000", "127.0.0.1:20000"]
+                    self.open_html_url(opts.html, mode, bind[0])
+                    break
+            else:
+                log.warn(f"Warning: cannot open html client in a browser")
+                log.warn(f" no compatible socket found")
         if self._html is not False:     #True or None (for "auto")
             if not (opts.bind_tcp or opts.bind_ws or opts.bind_wss or opts.bind or opts.bind_ssl):
                 #we need a socket!
