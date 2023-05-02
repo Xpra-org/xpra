@@ -587,10 +587,14 @@ class SessionInfo(Gtk.Window):
 
     def add_graph_button(self, tooltip, click_cb):
         button = Gtk.EventBox()
+        try:
+            arrow_down = Gdk.Cursor.new(Gdk.CursorType.BASED_ARROW_DOWN)
+        except TypeError:
+            arrow_down = None
         def set_cursor(widget):
-            cursor = Gdk.Cursor.new(Gdk.CursorType.BASED_ARROW_DOWN)
-            widget.get_window().set_cursor(cursor)
-        button.connect("realize", set_cursor)
+            widget.get_window().set_cursor(arrow_down)
+        if arrow_down:
+            button.connect("realize", set_cursor)
         graph = Gtk.Image()
         graph.set_size_request(0, 0)
         button.connect("button_press_event", click_cb, graph)
