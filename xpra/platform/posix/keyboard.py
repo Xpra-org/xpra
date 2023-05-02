@@ -10,7 +10,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
 from xpra.os_util import is_X11, is_Wayland, bytestostr
-if not is_Wayland():
+if is_X11():
     from xpra.gtk_common.error import xsync
 
 log = Logger("keyboard", "posix")
@@ -50,6 +50,7 @@ class Keyboard(KeyboardBase):
         if not self.keyboard_bindings:
             if is_Wayland():
                 log.warn("Warning: incomplete keymap support under Wayland")
+                return {}, [], ["mod2", ]
             return {}, [], []
         try:
             with xsync:
