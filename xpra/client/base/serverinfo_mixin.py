@@ -13,7 +13,7 @@ from xpra.exit_codes import ExitCode
 
 def get_remote_lib_versions(c : typedict,
                             libs=("glib", "gobject", "gtk", "gdk", "cairo", "pango",
-                                  "sound.gst", "sound.pygst",
+                                  "sound.gst",
                                   "python",
                                   )
                             ):

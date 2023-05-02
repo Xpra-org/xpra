@@ -233,9 +233,7 @@ class SessionInfo(Gtk.Window):
             log("cannot load sound information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strtupleget("gst.version")
-        pygst_version = props.strtupleget("pygst.version")
         csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst"))
-        csrow("pygst", make_version_str(pygst_version), server_vinfo("sound.pygst"))
         def clientgl(prop="opengl", default_value="n/a"):
             if not show_client:
                 return ""
