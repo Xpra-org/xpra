@@ -501,7 +501,8 @@ class ServerBase(ServerBaseClass):
                 self.send_disconnect(proto, "cannot connect a client running on the same display"
                                      +" that the server it connects to is managing - this would create a loop!")
                 return  False
-            log.warn("This client is running within the Xpra server %s", server_uuid)
+            log.warn("Warning: this client is running nested")
+            log.warn(f" in the Xpra server session {server_uuid!r}")
         return True
 
 
