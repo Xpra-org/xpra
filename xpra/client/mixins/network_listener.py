@@ -52,7 +52,7 @@ class NetworkListener(StubClientMixin):
         if opts.bind and (not WIN32 or WIN32_LOCAL_SOCKETS or opts.bind!="auto"):
             try:
                 local_sockets = setup_local_sockets(opts.bind,
-                                                None, opts.client_socket_dirs,
+                                                None, opts.client_socket_dirs, None,
                                                 str(os.getpid()), True,
                                                 opts.mmap_group, opts.socket_permissions)
             except (OSError, InitExit) as e:

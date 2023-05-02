@@ -1359,7 +1359,7 @@ def _do_run_server(script_file, cmdline,
         #setup unix domain socket:
         netlog = get_network_logger()
         local_sockets = setup_local_sockets(opts.bind,
-                                            opts.socket_dir, opts.socket_dirs,
+                                            opts.socket_dir, opts.socket_dirs, session_dir,
                                             display_name, clobber,
                                             opts.mmap_group, opts.socket_permissions,
                                             username, uid, gid)
