@@ -287,14 +287,18 @@ def get_desktop_names():
 def get_vrefresh():
     if x11_bindings():
         from xpra.x11.common import get_vrefresh as get_x11_vrefresh
-        return get_x11_vrefresh()
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_vrefresh()
     return -1
 
 
 def get_cursor_size():
     if x11_bindings():
         from xpra.x11.common import get_cursor_size as get_x11_cursor_size
-        return get_x11_cursor_size()
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            return get_x11_cursor_size()
     return -1
 
 
