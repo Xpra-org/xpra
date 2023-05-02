@@ -9,8 +9,9 @@ from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
-from xpra.platform.gui import get_wm_name
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
+from xpra.gtk_common.error import xsync
+from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
@@ -71,8 +72,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         root = screen.get_root_window()
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
-        self.update_icon()
         self.update_wm_name()
+        self.update_icon()
         self.resize_timer = None
         self.resize_value = None
 
@@ -92,7 +93,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def update_wm_name(self):
         try:
-            wm_name = get_wm_name()     #pylint: disable=assignment-from-none
+            with xsync:
+                wm_name = get_wm_name()     #pylint: disable=assignment-from-none
         except Exception:
             wm_name = ""
         iconlog("update_wm_name() wm-name=%s", wm_name)
@@ -101,7 +103,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def update_icon(self):
         icons = None
         try:
-            wm_name = get_wm_name()     #pylint: disable=assignment-from-none
+            wm_name = self.get_property("wm-name")
             if not wm_name:
                 return
             icon_name = get_icon_filename(wm_name.lower()+".png")
@@ -134,7 +136,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return icon.get_width(), icon.get_height(), "RGBA", icon.get_pixels()
 
     def get_title(self):
-        return get_wm_name() or "xpra desktop"
+        return self.get_property("wm-name") or "xpra desktop"
 
     def get_property(self, prop):
         if prop=="depth":
