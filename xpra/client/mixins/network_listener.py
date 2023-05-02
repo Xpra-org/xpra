@@ -226,8 +226,11 @@ class NetworkListener(StubClientMixin):
                         response = str(e)
                     hello_reply({"command_response"  : (code, response)})
                 self.idle_add(process_control)
-            else:
+            elif request:
                 log.info("request '%s' is not handled by this client", request)
+                proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+            else:
+                log.info("the client connection only handles generic requests")
                 proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         elif packet_type in (CONNECTION_LOST, GIBBERISH):
             close()
