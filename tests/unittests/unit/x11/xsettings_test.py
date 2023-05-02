@@ -19,7 +19,7 @@ class XSettingsTest(unittest.TestCase):
         from xpra.x11.xsettings_prop import (
             get_settings, set_settings,
             get_local_byteorder,
-            XSettingsTypeInteger, XSettingsTypeString, XSettingsTypeColor,
+            XSettingsType,
             )
         for DEBUG_XSETTINGS in (True, False):
             with OSEnvContext():
@@ -37,9 +37,9 @@ class XSettingsTest(unittest.TestCase):
                 #test all types, set then get:
                 #setting_type, prop_name, value, last_change_serial = setting
                 settings = (
-                    (XSettingsTypeInteger, "int1", 1, 0),
-                    (XSettingsTypeString, "str1", "1", 0),
-                    (XSettingsTypeColor, "color1", (128, 128, 64, 32), 0),
+                    (XSettingsType.Integer, "int1", 1, 0),
+                    (XSettingsType.String, "str1", "1", 0),
+                    (XSettingsType.Color, "color1", (128, 128, 64, 32), 0),
                     )
                 serial = 2
                 data = set_settings((serial, settings))
@@ -55,7 +55,7 @@ class XSettingsTest(unittest.TestCase):
             for settings in (
                 (
                     #invalid color causes exception
-                    (XSettingsTypeColor, "bad-color", (128, ), 0),
+                    (XSettingsType.Color, "bad-color", (128, ), 0),
                 ),
                 (
                     #invalid setting type is skipped with an error message:

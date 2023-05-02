@@ -165,7 +165,7 @@ def _get_xsettings_dict():
 def _get_xsettings_dpi():
     if XSETTINGS_DPI and x11_bindings():
         try:
-            from xpra.x11.xsettings_prop import XSettingsTypeInteger
+            from xpra.x11.xsettings_prop import XSettingsType
         except ImportError:
             return -1
         d = _get_xsettings_dict()
@@ -177,7 +177,7 @@ def _get_xsettings_dpi():
             }.items():
             if k in d:
                 value_type, value = d.get(k)
-                if value_type==XSettingsTypeInteger:
+                if value_type==XSettingsType.Integer:
                     actual_value = max(10, min(1000, value//div))
                     screenlog("_get_xsettings_dpi() found %s=%s, div=%i, actual value=%i", k, value, div, actual_value)
                     return actual_value
@@ -219,13 +219,13 @@ def get_antialias_info():
     if not x11_bindings():
         return info
     try:
-        from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
+        from xpra.x11.xsettings_prop import XSettingsType
         d = _get_xsettings_dict()
         for prop_name, name in {"Xft/Antialias"    : "enabled",
                                 "Xft/Hinting"      : "hinting"}.items():
             if prop_name in d:
                 value_type, value = d.get(prop_name)
-                if value_type==XSettingsTypeInteger and value>0:
+                if value_type==XSettingsType.Integer and value>0:
                     info[name] = bool(value)
         def get_contrast(value):
             #win32 API uses numerical values:
@@ -241,7 +241,7 @@ def get_antialias_info():
                                          ):
             if prop_name in d:
                 value_type, value = d.get(prop_name)
-                if value_type==XSettingsTypeString:
+                if value_type==XSettingsType.String:
                     cval = convert(value)
                     if cval is not None:
                         info[name] = cval
@@ -307,8 +307,8 @@ def _get_xsettings_int(name, default_value):
     if name not in d:
         return default_value
     value_type, value = d.get(name)
-    from xpra.x11.xsettings_prop import XSettingsTypeInteger
-    if value_type!=XSettingsTypeInteger:
+    from xpra.x11.xsettings_prop import XSettingsType
+    if value_type!=XSettingsType.Integer:
         return default_value
     return value
 

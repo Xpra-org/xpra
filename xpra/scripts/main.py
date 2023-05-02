@@ -1771,6 +1771,7 @@ def make_client(error_cb, opts):
             if os.environ.get("XDG_SESSION_TYPE")=="wayland":
                 Logger("opengl").debug("wayland session detected, OpenGL disabled")
                 opts.opengl = "no"
+                app.show_progress(20, "no OpenGL acceleration on Wayland")
             else:
                 app.show_progress(20, "validating OpenGL configuration")
                 probe, glinfo = run_opengl_probe()

@@ -16,7 +16,7 @@ from xpra.server import EXITING_CODE
 from xpra.common import SYNC_ICC
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
+from xpra.x11.xsettings_prop import XSettingsType, BLACKLISTED_XSETTINGS
 from xpra.log import Logger
 
 log = Logger("x11", "server")
@@ -408,7 +408,7 @@ class X11ServerBase(X11ServerCore):
                 def set_xsettings_int(name, value):
                     if value<0: #not set, return v unchanged
                         return v
-                    return set_xsettings_value(name, XSettingsTypeInteger, value)
+                    return set_xsettings_value(name, XSettingsType.Integer, value)
                 if dpi>0:
                     v = set_xsettings_int("Xft/DPI", dpi*1024)
                 if double_click_time>0:
@@ -418,8 +418,8 @@ class X11ServerBase(X11ServerCore):
                     v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
                     v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
                     orientation = ad.strget("orientation", "none").lower()
-                    v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, orientation)
-                    v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, _get_antialias_hintstyle(ad))
+                    v = set_xsettings_value("Xft/RGBA",     XSettingsType.String, orientation)
+                    v = set_xsettings_value("Xft/HintStyle", XSettingsType.String, _get_antialias_hintstyle(ad))
                 if double_click_distance!=(-1, -1):
                     #some platforms give us a value for each axis,
                     #but X11 only has one, so take the average

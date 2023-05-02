@@ -17,6 +17,7 @@ It is used by xpra.x11.gtk_x11.prop
 import os
 import sys
 import struct
+from enum import IntEnum
 
 from xpra.log import Logger
 from xpra.util import envbool
@@ -38,14 +39,17 @@ def get_local_byteorder():
     return BIG_ENDIAN   # pragma: no cover
 
 #the 3 types of settings supported:
-XSettingsTypeInteger = 0
-XSettingsTypeString = 1
-XSettingsTypeColor = 2
+
+
+class XSettingsType(IntEnum):
+    Integer = 0
+    String = 1
+    Color = 2
 
 XSettingsNames = {
-                XSettingsTypeInteger    : "Integer",
-                XSettingsTypeString     : "String",
-                XSettingsTypeColor      : "Color",
+                XSettingsType.Integer    : "Integer",
+                XSettingsType.String     : "String",
+                XSettingsType.Color      : "Color",
                 }
 
 
@@ -88,18 +92,18 @@ def get_settings(d):
             remain = len(d)-pos
             if remain<nbytes:
                 raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
-        if setting_type==XSettingsTypeInteger:
+        if setting_type==XSettingsType.Integer:
             req("int", 4)
             value = int(struct.unpack(b"=I", d[pos:pos+4])[0])
             pos += 4
-        elif setting_type==XSettingsTypeString:
+        elif setting_type==XSettingsType.String:
             req("string length", 4)
             value_len = struct.unpack(b"=I", d[pos:pos+4])[0]
             pos += 4
             req("string", value_len)
             value = d[pos:pos+value_len]
             pos += (value_len + 0x3) & ~0x3
-        elif setting_type==XSettingsTypeColor:
+        elif setting_type==XSettingsType.Color:
             req("color", 8)
             red, blue, green, alpha = struct.unpack(b"=HHHH", d[pos:pos+8])
             value = (red, blue, green, alpha)
@@ -132,16 +136,16 @@ def set_settings(d):
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
             x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
-            if setting_type==XSettingsTypeInteger:
+            if setting_type==XSettingsType.Integer:
                 assert isinstance(value, int), f"invalid value type: integer wanted, not {type(value)}"
                 x += struct.pack(b"=I", int(value))
-            elif setting_type==XSettingsTypeString:
+            elif setting_type==XSettingsType.String:
                 value = strtobytes(value)
                 x += struct.pack(b"=I", len(value))
                 x += value
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
                 x += b'\0'*pad_len
-            elif setting_type==XSettingsTypeColor:
+            elif setting_type==XSettingsType.Color:
                 red, blue, green, alpha = value
                 x += struct.pack(b"=HHHH", red, blue, green, alpha)
             else:
