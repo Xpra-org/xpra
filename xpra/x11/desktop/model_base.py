@@ -15,12 +15,14 @@ from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
+from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
 RandR = RandRBindings()
 
+eventlog = Logger("server", "window", "event")
 geomlog = Logger("server", "window", "geometry")
 iconlog = Logger("icon")
 
@@ -33,6 +35,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
                          "client-contents-changed"  : one_arg_signal,
                          "motion"                   : one_arg_signal,
                          "xpra-motion-event"        : one_arg_signal,
+                         "xpra-property-notify-event" : one_arg_signal,
                          })
 
     __gproperties__ = {
@@ -84,8 +87,21 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         X11Window.addDefaultEvents(xid)
         self._managed = True
         self._setup_done = True
+        #listen for property changes on the root window:
+        add_event_receiver(self.client_window, self)
+
+    def do_xpra_property_notify_event(self, event):
+        eventlog(f"do_xpra_property_notify_event: {event.atom}")
+        #update the wm-name (and therefore the window's "title")
+        #whenever this property changes:
+        if str(event.atom) == "_NET_SUPPORTING_WM_CHECK":
+            if self.update_wm_name():
+                self.update_icon()
+                self.notify("title")
+        return True
 
     def unmanage(self, exiting=False):
+        remove_event_receiver(self.client_window, self)
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
         self.cancel_resize_timer()
