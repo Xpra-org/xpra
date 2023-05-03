@@ -518,7 +518,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
             except ValueError:
                 vnc_uri += "/"
             args.append(vnc_uri)
-        ssh_desc = get_ssh_display_attributes(desc, args, opts.ssh)
+        ssh_desc = get_ssh_display_attributes(args, opts.ssh)
         desc.update(ssh_desc)
         ssh = parse_ssh_option(opts.ssh)
         full_ssh = ssh + get_ssh_args(desc, ssh)
@@ -620,7 +620,7 @@ def parse_ssh_option(ssh_setting):
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def get_ssh_display_attributes(desc, args, ssh_option="auto"):
+def get_ssh_display_attributes(args, ssh_option="auto"):
     #ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
