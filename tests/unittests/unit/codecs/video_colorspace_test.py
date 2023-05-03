@@ -242,7 +242,7 @@ class Test_Roundtrip(unittest.TestCase):
                 index, v1, v2 = err
                 log.warn("the encoder unexpectedly modified the input buffer!")
                 raise Exception(f"expected {hex(v1)} but got {hex(v2)}"+
-                                f" for x={index}/{width}, y={y}/{height} of {in_csc}"+
+                                f" for {width}x{height} of {in_csc}"+
                                 f" with {encoding} encoded using {encoder_class}")
             if in_csc==out_csc:
                 compare = {"direct" : out_image}
