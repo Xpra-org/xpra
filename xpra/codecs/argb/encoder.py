@@ -36,13 +36,13 @@ def encode(coding : str, image, options : dict):
     elif pixel_format in ("RGB", "BGR"):
         rgb_formats = options.get("rgb_formats", ("RGB", "BGR"))
     else:
-        raise Exception(f"unsupported pixel format {pixel_format!r}")
+        raise ValueError(f"unsupported pixel format {pixel_format!r}")
     supports_transparency = options.get("alpha", True)
     if pixel_format not in rgb_formats:
         log("rgb_encode reformatting because %s not in %s, supports_transparency=%s",
             pixel_format, rgb_formats, supports_transparency)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
-            raise Exception(f"no compatible rgb format for {pixel_format!r}! (only: {rgb_formats})")
+            raise ValueError(f"no compatible rgb format for {pixel_format!r}! (only: {rgb_formats})")
         #get the new format:
         pixel_format = image.get_pixel_format()
         #switch encoding if necessary:
@@ -51,7 +51,7 @@ def encode(coding : str, image, options : dict):
         elif len(pixel_format)==3:
             coding = "rgb24"
         else:
-            raise Exception(f"invalid pixel format {pixel_format!r}")
+            raise ValueError(f"invalid pixel format {pixel_format!r}")
     #we may still want to re-stride:
     image.may_restride()
     #always tell client which pixel format we are sending:

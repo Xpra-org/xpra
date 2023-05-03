@@ -790,7 +790,7 @@ class ApplicationWindow:
 
     def start_client(self, display_desc):
         def raise_exception(*args):
-            raise Exception(*args)
+            raise RuntimeError(*args)
         self.client = make_client(raise_exception, self.config)
         self.client.show_progress(30, "client configuration")
         self.client.init(self.config)

@@ -292,7 +292,7 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
                         rgb_data[y*stride+x+i] = plane_values[i]
                         x += Bpp
         return makeimage(bytes(rgb_data), bytesperpixel=Bpp, rowstride=stride)
-    raise Exception(f"don't know how to create a {pixel_format} image")
+    raise ValueError(f"don't know how to create a {pixel_format} image")
 
 
 def testdecoder(decoder_module, full):
@@ -358,7 +358,7 @@ def testdecoding(decoder_module, encoding, full):
                     except Exception:
                         image = None
                     if image is not None:
-                        raise Exception(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
+                        raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
             finally:
                 decoder.clean()
 
@@ -473,7 +473,7 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
             image = make_test_image(cs_in, W, H)
             v = e.compress_image(image)
             if v is None:
-                raise Exception(f"{encoding} compression failed on image {i+1} of {N}")
+                raise RuntimeError(f"{encoding} compression failed on image {i+1} of {N}")
             data, meta = v
             if not data:
                 delayed = meta.get("delayed", 0)
@@ -585,6 +585,6 @@ def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_
                         except Exception:
                             out = None
                         if out is not None:
-                            raise Exception(f"converting an image of a smaller size with {cstype} should have failed, got {out} instead")
+                            raise RuntimeError(f"converting an image of a smaller size with {cstype} should have failed, got {out} instead")
             finally:
                 e.clean()

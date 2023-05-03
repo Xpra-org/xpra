@@ -507,7 +507,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if err:
                 log.error("OpenGL shader %s failed:", name)
                 log.error(" %s", err)
-                raise Exception(f"OpenGL shader {name} setup failure: {err}")
+                raise RuntimeError(f"OpenGL shader {name} setup failure: {err}")
             log("%s shader initialized", name)
 
     def gl_init(self, skip_fbo=False):

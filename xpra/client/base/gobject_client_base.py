@@ -574,14 +574,14 @@ class ShellXpraClient(SendCommandConnectClient):
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
     def _process_shell_reply(self, packet):
-        fd = packet[1]
+        fd = int(packet[1])
         message = packet[2]
         if fd==1:
             stream = sys.stdout
         elif fd==2:
             stream = sys.stderr
         else:
-            raise Exception("invalid file descriptor %i" % fd)
+            raise ValueError(f"invalid file descriptor f{fd}")
         s = net_utf8(message)
         if s.endswith("\n"):
             s = s[:-1]

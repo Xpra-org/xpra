@@ -520,7 +520,7 @@ class WindowBackingBase:
             elif encoding=="jpega":
                 rgb_format = "BGRA"
             else:
-                raise Exception(f"invalid encoding {encoding!r}")
+                raise ValueError(f"invalid encoding {encoding!r}")
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
@@ -633,7 +633,7 @@ class WindowBackingBase:
             elif bpp==32:
                 paint_fn = self._do_paint_rgb32
             else:
-                raise Exception(f"invalid rgb format {rgb_format!r}")
+                raise ValueError(f"invalid rgb format {rgb_format!r}")
             options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
@@ -672,7 +672,7 @@ class WindowBackingBase:
             log.error(f"Error: no csc options for {src_format!r} input, only found:")
             for k,v in CSC_OPTIONS.items():
                 log.error(" * %-8s : %s", k, csv(v))
-            raise Exception(f"no csc options for {src_format!r} input in "+csv(CSC_OPTIONS.keys()))
+            raise ValueError(f"no csc options for {src_format!r} input in "+csv(CSC_OPTIONS.keys()))
         videolog("make_csc%s",
             (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
         for dst_format in dst_format_options:
@@ -711,7 +711,7 @@ class WindowBackingBase:
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     videolog.error("       "+v[0], *v[1:])
-        raise Exception("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
+        raise ValueError("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
                         (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
                          dst_width, dst_height, CSC_OPTIONS))
 

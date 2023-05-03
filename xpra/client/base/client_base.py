@@ -668,7 +668,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._protocol.start()
 
     def quit(self, exit_code=0):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def warn_and_quit(self, exit_code, message):
         log.warn(message)

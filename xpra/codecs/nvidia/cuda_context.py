@@ -581,7 +581,7 @@ def get_CUDA_function(function_name):
         fn = function_name
         CUDA_function = mod.get_function(fn)
     except LogicError as e:
-        raise Exception(f"failed to load {function_name!r} from {mod}: {e}") from None
+        raise ValueError(f"failed to load {function_name!r} from {mod}: {e}") from None
     end = monotonic()
     log(f"loading function {function_name!r} from pre-compiled cubin took %.1fms", 1000.0*(end-start))
     return CUDA_function

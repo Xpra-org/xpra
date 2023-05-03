@@ -40,9 +40,9 @@ def get_None(*_args):
 def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 def no_timeout_add(*_args, **_kwargs):
-    raise Exception("timeout_add should not have been called")
+    raise RuntimeError("timeout_add should not have been called")
 def no_source_remove(*_args, **_kwargs):
-    raise Exception("source_remove should not have been called")
+    raise RuntimeError("source_remove should not have been called")
 
 class FakeClient(AdHocStruct):
     def __init__(self):

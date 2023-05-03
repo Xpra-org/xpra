@@ -83,7 +83,7 @@ class GLDrawingArea(GLWindowBackingBase):
             return None
         gdk_window = b.get_window()
         if not gdk_window:
-            raise Exception("backing %s does not have a gdk window!" % b)
+            raise RuntimeError(f"backing {b} does not have a gdk window!")
         self.window_context = self.context.get_paint_context(gdk_window)
         return self.window_context
 

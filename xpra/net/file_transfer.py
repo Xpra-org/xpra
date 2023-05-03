@@ -943,7 +943,7 @@ class FileTransferHandler(FileTransferAttributes):
         if 0<chunk_size<filesize:
             in_progress = len(self.send_chunks_in_progress)
             if in_progress>=MAX_CONCURRENT_FILES:
-                raise Exception(f"too many file transfers in progress: {in_progress}")
+                raise RuntimeError(f"too many file transfers in progress: {in_progress}")
             #chunking is supported and the file is big enough
             chunk_id = uuid.uuid4().hex
             options["file-chunk-id"] = chunk_id

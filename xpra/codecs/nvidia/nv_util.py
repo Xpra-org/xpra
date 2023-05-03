@@ -286,7 +286,7 @@ def validate_driver_yuv444lossless():
     else:
         bl = is_blacklisted()
     if bl is True:
-        raise Exception(f"NVidia driver version {pver(v)} is blacklisted, it does not work with NVENC")
+        raise ValueError(f"NVidia driver version {pver(v)} is blacklisted, it does not work with NVENC")
     if bl is None:
         global _version_warning
         if _version_warning:

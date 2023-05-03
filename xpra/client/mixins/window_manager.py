@@ -525,7 +525,7 @@ class WindowClient(StubClientMixin):
             new_cursor = packet[1]
         else:
             if len(packet)<9:
-                raise Exception(f"invalid cursor packet: {len(packet)} items")
+                raise ValueError(f"invalid cursor packet: {len(packet)} items")
             #trim packet-type:
             new_cursor = packet[1:]
             encoding = u(new_cursor[0])

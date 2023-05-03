@@ -71,7 +71,7 @@ def get_subsampling_divs(pixel_format):
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
-        raise Exception(f"invalid pixel format: {pixel_format!r}")
+        raise ValueError(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
 def preforder(encodings):

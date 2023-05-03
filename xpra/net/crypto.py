@@ -171,7 +171,7 @@ def pad(padding, size):
         return b" "*size
     if padding==PADDING_PKCS7:
         return pack("B", size)*size
-    raise Exception(f"invalid padding: {padding}")
+    raise ValueError(f"invalid padding: {padding}")
 
 def choose_padding(options):
     if PREFERRED_PADDING in options:
@@ -179,7 +179,7 @@ def choose_padding(options):
     for x in options:
         if x in PADDING_OPTIONS:
             return x
-    raise Exception(f"cannot find a valid padding in {options}")
+    raise ValueError(f"cannot find a valid padding in {options}")
 
 
 def get_iv():

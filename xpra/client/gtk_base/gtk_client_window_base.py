@@ -2161,9 +2161,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         bw = self.cx(ww)
         bh = self.cy(wh)
         if max(ww, wh)>=32000 or min(ww, wh)<0:
-            raise Exception("invalid window size %ix%i" % (ww, wh))
+            raise ValueError("invalid window size %ix%i" % (ww, wh))
         if max(bw, bh)>=32000:
-            raise Exception("invalid window backing size %ix%i" % (bw, bh))
+            raise ValueError("invalid window backing size %ix%i" % (bw, bh))
         if b:
             prev_render_size = b.render_size
             b.init(ww, wh, bw, bh)

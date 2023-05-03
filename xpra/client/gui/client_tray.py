@@ -223,7 +223,7 @@ class TrayBacking(WindowBackingBase):
         return GLib.idle_add(*args, **kwargs)
 
     def paint_scroll(self, img_data, options, callbacks):
-        raise Exception("scroll should not be used with tray icons")
+        raise RuntimeError("scroll should not be used with tray icons")
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         assert width==render_width and height==render_height, "tray rgb must not use scaling"

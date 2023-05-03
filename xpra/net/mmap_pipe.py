@@ -106,7 +106,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 if mmap_dir and not os.path.exists(mmap_dir):
                     os.mkdir(mmap_dir, 0o700)
                 if not mmap_dir or not os.path.exists(mmap_dir):
-                    raise Exception("mmap directory %s does not exist!" % mmap_dir)
+                    raise RuntimeError("mmap directory %s does not exist!" % mmap_dir)
                 #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
                 #that the file is readable and writable only by the creating user ID
                 try:

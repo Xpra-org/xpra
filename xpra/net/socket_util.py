@@ -577,7 +577,7 @@ def normalize_local_display_name(local_display_name):
     if WIN32 or OSX:
         if after_sc.isalnum():
             return local_display_name
-        raise Exception(f"non alphanumeric character in display name {local_display_name!r}")
+        raise ValueError(f"non alphanumeric character in display name {local_display_name!r}")
     #we used to strip the screen from the display string, ie: ":0.0" -> ":0"
     #but now we allow it.. (untested!)
     for char in after_sc:

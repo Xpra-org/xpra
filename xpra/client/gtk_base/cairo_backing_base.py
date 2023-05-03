@@ -260,7 +260,7 @@ class CairoBackingBase(WindowBackingBase):
             img = Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
         except ValueError as e:
             log("PIL Image frombytes:", exc_info=True)
-            raise Exception(f"failed to parse raw {rgb_format} data as {src_format} to {oformat}: {e}") from None
+            raise ValueError(f"failed to parse raw {rgb_format} data as {src_format} to {oformat}: {e}") from None
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
         # pixbuf = new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)

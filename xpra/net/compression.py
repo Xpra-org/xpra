@@ -178,7 +178,7 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
     if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
-        raise Exception(f"uncompressed data is too large: {sizemb}MB, limit is {maxmb}MB")
+        raise ValueError(f"uncompressed data is too large: {sizemb}MB, limit is {maxmb}MB")
     try:
         algo = next(x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION)
     except StopIteration:
