@@ -47,6 +47,7 @@ class Keyboard(KeyboardBase):
             log.warn(" expect keyboard mapping problems")
             if is_Wayland():
                 log.warn(" (incomplete wayland support)")
+                return {}, [], ["mod2", ]
             return {}, [], []
         try:
             with xsync:

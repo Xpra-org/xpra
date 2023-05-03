@@ -134,7 +134,7 @@ class KeyboardHelper:
                 extra_modifiers.remove(rm)
             except ValueError:
                 pass        #same modifier listed twice?
-        kmod = self.keyboard.get_keymap_modifiers()[0]
+        kmod, _, ignored = self.keyboard.get_keymap_modifiers()
         if not kmod and self.keyboard.modifier_keys:
             #fallback to server supplied map:
             kmod = self.keyboard.modifier_keys
@@ -143,6 +143,9 @@ class KeyboardHelper:
         ignoremod = ("Caps_Lock", "Num_Lock")
         for x in ignoremod:
             mod = kmod.get(x)
+            if mod in extra_modifiers:
+                extra_modifiers.remove(mod)
+        for mod in ignored:
             if mod in extra_modifiers:
                 extra_modifiers.remove(mod)
         if extra_modifiers:
