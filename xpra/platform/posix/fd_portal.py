@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import re
 from enum import IntEnum
 
 from xpra.dbus.common import loop_init, init_session_bus
@@ -36,7 +35,7 @@ class AvailableSourceTypes(IntEnum):
     VIRTUAL = 4
 
 
-dbus_sender_name : str = re.sub(r'\.', r'_', bus.get_unique_name()[1:])
+dbus_sender_name : str = (bus.get_unique_name()[1:]).replace(".", "_")
 request_counter : int = 0
 
 def screenscast_dbus_call(method, callback, *args, options=None):
