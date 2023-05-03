@@ -1505,7 +1505,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
             if "auto" in opts.bind:
                 opts.bind.remove("auto")
             local_sockets = setup_local_sockets(opts.bind,
-                                                opts.socket_dir, opts.socket_dirs,
+                                                opts.socket_dir, opts.socket_dirs, None,
                                                 None, False,
                                                 opts.mmap_group, opts.socket_permissions,
                                                 get_username(), getuid, getgid)

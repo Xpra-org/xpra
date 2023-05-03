@@ -513,14 +513,13 @@ def normalize_local_display_name(local_display_name):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
+def setup_local_sockets(bind, socket_dir, socket_dirs, session_dir, display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     log = get_network_logger()
-    log("setup_local_sockets%s", (bind, socket_dir, socket_dirs, display_name, clobber,
+    log("setup_local_sockets%s", (bind, socket_dir, socket_dirs, session_dir, display_name, clobber,
                                   mmap_group, socket_permissions, username, uid, gid))
     if not bind:
         return {}
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         if WIN32:
             socket_dirs = [""]
