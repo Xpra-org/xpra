@@ -105,7 +105,6 @@ def parse_content_types(lines) -> dict:
         if len(parts)!=2:
             log.warn("Warning: invalid content-type definition")
             log.warn(f" {line!r} is missing a '='")
-            raise Exception(f"line={line}")
             continue
         match_str, content_type = parts
         parts = match_str.split(":", 1)
