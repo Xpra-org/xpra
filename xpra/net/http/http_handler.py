@@ -402,7 +402,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if not self.directory_listing:
                     self.send_error(403, "Directory listing forbidden")
                     return None
-                return list_directory(self, path).read()
+                return list_directory(path).read()
 
         try:
             code, extra_headers, content = load_path(self.headers, path)
