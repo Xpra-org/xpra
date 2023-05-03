@@ -151,8 +151,8 @@ class UInputTouchpadDevice(UInputDevice):
     def __repr__(self):
         return "UInput touchpad device %s" % self.device_path
 
-    def move_pointer(self, screen_no, x, y, props):
-        log("UInputTouchpadDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
+    def move_pointer(self, x, y, props=None):
+        log("UInputTouchpadDevice.move_pointer(%s, %s, %s)", x, y, props)
         self.device.emit(BTN_TOUCH, 1, syn=False)
         self.device.emit(ABS_X, x*(2**24)//self.root_w, syn=False)
         self.device.emit(ABS_Y, y*(2**24)//self.root_h, syn=False)
