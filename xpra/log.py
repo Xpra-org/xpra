@@ -458,8 +458,7 @@ class Logger:
         global_logging_handler(self.logger.log, self.level_override or level, msg, *args, **kwargs)
 
     def __call__(self, msg : str, *args, **kwargs):
-        if self.debug_enabled:
-            self.log(logging.DEBUG, msg, *args, **kwargs)
+        self.debug(msg, *args, **kwargs)
     def debug(self, msg : str, *args, **kwargs):
         if self.debug_enabled:
             self.log(logging.DEBUG, msg, *args, **kwargs)

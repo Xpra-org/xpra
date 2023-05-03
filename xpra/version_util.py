@@ -317,6 +317,5 @@ def version_update_check():
     if latest_version_no>our_version_no or FAKE_NEW_VERSION:
         log("version_update_check() newer version found")
         log(" local version is {our_version_no} and the latest version available is {latest_version_no}")
-        #latest_version = ".".join([str(x) for x in latest_version_no])
         return latest_version_no
     return False

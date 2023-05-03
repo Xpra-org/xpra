@@ -2412,7 +2412,6 @@ def run_glcheck(opts):
                 init_gdk_display_source()
             except ImportError as e:
                 log(f"no gtk3 x11 bindings: {e}")
-                pass
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
     try:

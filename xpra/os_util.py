@@ -558,7 +558,7 @@ def force_quit(status=1):
 def no_idle(fn, *args, **kwargs):
     fn(*args, **kwargs)
 def register_SIGUSR_signals(idle_add=no_idle):
-    if not os.name=="posix":
+    if os.name!="posix":
         return
     from xpra.util import dump_all_frames, dump_gc_frames
     def sigusr1(*_args):
@@ -967,11 +967,10 @@ def is_socket(sockpath, check_uid=None) -> bool:
         return False
     if not stat.S_ISSOCK(s.st_mode):
         return False
-    if check_uid is not None:
-        if s.st_uid!=check_uid:
-            #socket uid does not match
-            get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
-            return False
+    if check_uid is not None and s.st_uid!=check_uid:
+        #socket uid does not match
+        get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
+        return False
     return True
 
 def is_writable(path, uid=getuid(), gid=getgid()):

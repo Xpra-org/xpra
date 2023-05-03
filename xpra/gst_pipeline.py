@@ -198,11 +198,12 @@ class Pipeline(GObject.GObject):
 
 
     def onstart(self):
-        pass
+        """ this is overriden in some subclasses """
 
 
     def parse_tag_message(self, message):
-        pass
+        """ this is overriden in some subclasses """
+
 
     def on_message(self, _bus, message) -> int:
         #log("on_message(%s, %s)", bus, message)

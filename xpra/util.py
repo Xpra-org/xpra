@@ -478,14 +478,12 @@ class typedict(dict):
             self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s", k, type(v))
             return default_value
-        if min_items is not None:
-            if len(v)<min_items:
-                self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
-                return default_value
-        if max_items is not None:
-            if len(v)>max_items:
-                self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
-                return default_value
+        if min_items is not None and len(v)<min_items:
+            self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
+            return default_value
+        if max_items is not None and len(v)>max_items:
+            self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
+            return default_value
         aslist = list(v)
         if item_type:
             for i, x in enumerate(aslist):
@@ -682,10 +680,8 @@ def dump_all_frames(logger=None):
 
 def dump_gc_frames(logger=None):
     import gc
-    #import types
     import inspect
     gc.collect()
-    #frames = tuple(x for x in gc.get_objects() if isinstance(x, types.FrameType))
     frames = tuple((None, x) for x in gc.get_objects() if inspect.isframe(x))
     dump_frames(frames, logger)
 
@@ -754,9 +750,7 @@ class ellipsizer:
         self.obj = obj
         self.limit = limit
     def __str__(self):
-        if self.obj is None:
-            return "None"
-        return repr_ellipsized(self.obj, self.limit)
+        return self.__repr__()
     def __repr__(self):
         if self.obj is None:
             return "None"
@@ -874,7 +868,7 @@ def sorted_nicely(l):
         if text.isdigit():
             return int(text)
         return text
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', bytestostr(key))]
+    alphanum_key = lambda key: [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
 def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None,

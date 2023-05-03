@@ -29,7 +29,7 @@ LINES = envint("XPRA_SPLASH_LINES", 4)
 READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 
-#PULSE_CHARS = "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
+#alternative: "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
 PULSE_CHARS = "◐◓◑◒"
 if OSX:
     DONE_CHAR = "-"
