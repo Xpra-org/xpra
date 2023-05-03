@@ -62,7 +62,7 @@ class XTestPointerDevice:
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, x, y, props):
+    def move_pointer(self, x, y, props=None):
         mouselog("xtest_fake_motion%s", (x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(-1, x, y)
