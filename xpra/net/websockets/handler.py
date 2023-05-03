@@ -44,18 +44,18 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             log(f" {k}={v}")
         ver = self.headers.get("Sec-WebSocket-Version")
         if ver is None:
-            raise Exception("Missing Sec-WebSocket-Version header")
+            raise ValueError("Missing Sec-WebSocket-Version header")
 
         if ver not in SUPPORT_HyBi_PROTOCOLS:
-            raise Exception(f"Unsupported protocol version {ver}")
+            raise ValueError(f"Unsupported protocol version {ver}")
 
         protocols = self.headers.get("Sec-WebSocket-Protocol", "").split(",")
         if "binary" not in protocols:
-            raise Exception("client does not support 'binary' protocol")
+            raise ValueError("client does not support 'binary' protocol")
 
         key = self.headers.get("Sec-WebSocket-Key")
         if key is None:
-            raise Exception("Missing Sec-WebSocket-Key header")
+            raise ValueError("Missing Sec-WebSocket-Key header")
         accept = make_websocket_accept_hash(key)
         log(f"websocket hash for key {key!r} = {accept!r}")
         for upgrade_string in (

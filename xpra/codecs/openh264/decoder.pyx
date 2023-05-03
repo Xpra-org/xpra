@@ -115,7 +115,7 @@ cdef class Decoder:
         self.frames = 0
         cdef long r = WelsCreateDecoder(&self.context)
         if r:
-            raise Exception(f"error {r} creating openh264 decoder")
+            raise RuntimeError(f"error {r} creating openh264 decoder")
         cdef SDecodingParam dec_param
         memset(&dec_param, 0, sizeof(SDecodingParam))
         #dec_param.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
@@ -182,7 +182,7 @@ cdef class Decoder:
                 r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len,
                                                     yuv, &buf_info)
         if r:
-            raise Exception(f"openh264 frame decoding error {r}")
+            raise RuntimeError(f"openh264 frame decoding error {r}")
         end = monotonic()
         cdef int ystride = buf_info.UsrData.sSystemBuffer.iStride[0]
         cdef int uvstride = buf_info.UsrData.sSystemBuffer.iStride[1]

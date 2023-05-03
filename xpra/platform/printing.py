@@ -28,7 +28,7 @@ def get_default_printer():
     return None
 
 def print_files(printer, filenames, title, options):
-    raise Exception("no print implementation available")
+    raise RuntimeError("no print implementation available")
 
 def printing_finished(_printpid):
     return True

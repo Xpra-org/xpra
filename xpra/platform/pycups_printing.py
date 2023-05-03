@@ -260,7 +260,7 @@ def exec_lpadmin(args, success_cb=None):
             success_cb()
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)
     if proc.poll() not in (None, 0):
-        raise Exception(f"lpadmin command {command!r} failed and returned {proc.poll()}")
+        raise RuntimeError(f"lpadmin command {command!r} failed and returned {proc.poll()}")
 
 
 def sanitize_name(name):
@@ -414,7 +414,7 @@ def get_printer_attributes(name):
 
 def print_files(printer, filenames, title, options):
     if printer not in get_printers():
-        raise Exception("invalid printer: '%s'" % printer)
+        raise ValueError("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
     s = bytestostr

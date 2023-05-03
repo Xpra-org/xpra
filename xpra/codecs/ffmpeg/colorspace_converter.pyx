@@ -555,7 +555,7 @@ cdef class ColorspaceConverter:
                 if i<iplanes:
                     input_stride[i] = strides[i]
                     if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                        raise ValueError("failed to read pixel data from %s" % type(pixels[i]))
                     input_image[i] = <const uint8_t*> py_buf[i].buf
                 else:
                     #some versions of swscale check all 4 planes

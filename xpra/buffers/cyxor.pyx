@@ -21,18 +21,18 @@ def xor_str(a, b):
     cdef Py_buffer py_bufa
     memset(&py_bufa, 0, sizeof(Py_buffer))
     if PyObject_GetBuffer(a, &py_bufa, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read pixel data from %s" % type(a))
+        raise ValueError(f"failed to read pixel data from {type(a)}")
     cdef Py_buffer py_bufb
     memset(&py_bufb, 0, sizeof(Py_buffer))
     if PyObject_GetBuffer(b, &py_bufb, PyBUF_ANY_CONTIGUOUS):
         PyBuffer_Release(&py_bufa)
-        raise Exception("failed to read pixel data from %s" % type(b))
+        raise ValueError(f"failed to read pixel data from {type(b)}")
     cdef Py_ssize_t alen = py_bufa.len
     cdef Py_ssize_t blen = py_bufb.len
     if alen!=blen:
         PyBuffer_Release(&py_bufa)
         PyBuffer_Release(&py_bufb)
-        raise Exception("python or cython bug? buffers don't have the same length?")
+        raise RuntimeError(f"python or cython bug? buffers don't have the same length?")
     cdef MemBuf out_buf = getbuf(alen)
     cdef uintptr_t op = <uintptr_t> out_buf.get_mem()
     cdef unsigned char *acbuf = <unsigned char *> py_bufa.buf

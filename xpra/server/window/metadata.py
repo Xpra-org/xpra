@@ -155,4 +155,4 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
         if not frame:
             return {}
         return {propname : tuple(frame)}
-    raise Exception("unhandled property name: %s" % propname)
+    raise ValueError(f"unhandled property name: {propname}")

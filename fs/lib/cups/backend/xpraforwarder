@@ -166,12 +166,12 @@ def do_main():
 
     source = aget("source")
     if not source:
-        raise Exception("Device URI: client source uuid is missing")
+        raise ValueError("Device URI: client source uuid is missing")
     socket_path = aget("socket-path")
     display = aget("display", os.environ.get("DISPLAY"))
     socket_dir = aget("socket-dir")
     if not display and not socket_path:
-        raise Exception("Device URI: display number and socket path are not specified!")
+        raise ValueError("Device URI: display number and socket path are not specified!")
     mimetype = aget("mimetype", "application/postscript")
     printer = aget("remote-printer")
     password_file = aget("password-file")

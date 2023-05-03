@@ -605,7 +605,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef size_t l = sizeof(XRectangle) * n_rects
         cdef XRectangle *rects = <XRectangle*> malloc(l)
         if rects==NULL:
-            raise Exception("failed to allocate %i bytes of memory for xshape rectangles" % l)
+            raise RuntimeError("failed to allocate %i bytes of memory for xshape rectangles" % l)
         cdef int i = 0
         for r in rectangles:
             rects[i].x = r[0]

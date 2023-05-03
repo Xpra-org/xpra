@@ -1355,7 +1355,7 @@ def csvstr(value):
         return ",".join(str(x).strip() for x in value if x)
     if isinstance(value, str):
         return value.strip()
-    raise Exception(f"don't know how to convert {type(value)} to a csv list!")
+    raise ValueError(f"don't know how to convert {type(value)} to a csv list!")
 
 def csvstrl(value):
     return csvstr(value).lower()

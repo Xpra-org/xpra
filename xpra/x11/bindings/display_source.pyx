@@ -25,7 +25,7 @@ def get_display_ptr():
 cdef int set_display(Display *d) except 1:
     global display
     if display!=NULL and d!=NULL and d!=display:
-        raise Exception("display is already set")
+        raise RuntimeError("display is already set")
     display = d
     return 0
 

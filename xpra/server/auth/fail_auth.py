@@ -6,4 +6,4 @@
 
 class Authenticator:
     def __init__(self, **kwargs):
-        raise Exception("failing")
+        raise RuntimeError("failing")

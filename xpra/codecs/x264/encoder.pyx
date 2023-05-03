@@ -855,7 +855,7 @@ cdef class Encoder:
                 assert len(pixels)>0
                 assert istrides>0
                 if PyObject_GetBuffer(pixels, &py_buf[0], PyBUF_ANY_CONTIGUOUS):
-                    raise Exception("failed to read pixel data from %s" % type(pixels))
+                    raise ValueError(f"failed to read pixel data from {type(pixels)}")
                 pic_in.img.plane[0] = <uint8_t*> py_buf.buf
                 pic_in.img.i_stride[0] = istrides
                 self.bytes_in += py_buf.len
@@ -865,7 +865,7 @@ cdef class Encoder:
                 assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
                 for i in range(3):
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                        raise ValueError(f"failed to read pixel data from {type(pixels[i])}")
                     pic_in.img.plane[i] = <uint8_t*> py_buf[i].buf
                     pic_in.img.i_stride[i] = istrides[i]
                     self.bytes_in += py_buf[i].len
@@ -900,7 +900,7 @@ cdef class Encoder:
                     "delayed" : self.delayed_frames,
                     "frame"   : self.frames,
                     }
-            raise Exception("x264_encoder_encode produced no data (frame=%i, frame-size=%i, b-frames=%s, delayed-frames=%i)" % (self.frames, frame_size, self.b_frames, self.delayed_frames))
+            raise RuntimeError("x264_encoder_encode produced no data (frame=%i, frame-size=%i, b-frames=%s, delayed-frames=%i)" % (self.frames, frame_size, self.b_frames, self.delayed_frames))
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i",
@@ -1007,7 +1007,7 @@ cdef class Encoder:
         self.tune_param(param, typedict())
         #apply it:
         if x264_encoder_reconfig(self.context, param)!=0:
-            raise Exception("x264_encoder_reconfig failed")
+            raise RuntimeError("x264_encoder_reconfig failed")
 
 
 def selftest(full=False):

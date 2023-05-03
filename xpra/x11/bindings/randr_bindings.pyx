@@ -389,7 +389,7 @@ cdef get_output_properties(Display *display, RROutput output):
         elif actual_format == 32:
             fmt = b"L"
         else:
-            raise Exception("invalid format %r" % actual_format)
+            raise ValueError(f"invalid format {actual_format}")
         log(f"{prop_name!r} : {at} / {actual_format}")
         try:
             bytes_per_item = struct.calcsize(b"@%s" % fmt)
@@ -708,7 +708,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
         if config==NULL:
-            raise Exception("failed to get screen info")
+            raise RuntimeError("failed to get screen info")
         try:
             xrrs = XRRConfigSizes(config, &num_sizes)
             if num_sizes==0:
@@ -716,12 +716,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 #so fallback to DisplayWidth / DisplayHeight:
                 return XDisplayWidth(self.display, 0), XDisplayHeight(self.display, 0)
             if xrrs==NULL:
-                raise Exception("failed to get screen sizes")
+                raise RuntimeError("failed to get screen sizes")
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
             if size_id<0:
-                raise Exception("failed to get current configuration")
+                raise RuntimeError("failed to get current configuration")
             if size_id>=num_sizes:
-                raise Exception(f"invalid XRR size ID {size_id} (num sizes={num_sizes})")
+                raise RuntimeError(f"invalid XRR size ID {size_id} (num sizes={num_sizes})")
 
             width = xrrs[size_id].width
             height = xrrs[size_id].height
@@ -989,7 +989,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log.error("Error: cannot access screen resources")
             return {}
         if output<0 or output>=rsc.noutput:
-            raise Exception(f"invalid output number {output}, only {rsc.noutput} outputs")
+            raise ValueError(f"invalid output number {output}, only {rsc.noutput} outputs")
         cdef RROutput rro = rsc.outputs[output]
         cdef Atom prop = self.xatom(prop_name)
         cdef Atom ptype = self.xatom("INTEGER")
@@ -1141,7 +1141,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                           CurrentTime, x, y, mode,
                           RR_Rotate_0, &output, noutput)
                     if r:
-                        raise Exception(f"failed to set crtc config for monitor {i}")
+                        raise RuntimeError(f"failed to set crtc config for monitor {i}")
                     mmw = m.get("width-mm", 0) or dpi96(width)
                     mmh = m.get("height-mm", 0) or dpi96(height)
                     self.set_output_int_property(i, "WIDTH_MM", mmw)

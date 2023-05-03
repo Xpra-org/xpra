@@ -154,7 +154,7 @@ def webp_check(int ret):
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
-    raise Exception("error: %s" % err)
+    raise RuntimeError("error: %s" % err)
 
 def get_encodings():
     return ("webp", )

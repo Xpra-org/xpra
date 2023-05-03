@@ -449,7 +449,7 @@ class ServerBase(ServerBaseClass):
         #adds try:except around parse hello ui code:
         try:
             if self._closing:
-                raise Exception("server is shutting down")
+                raise RuntimeError("server is shutting down")
 
             self.notify_new_user(ss)
 
@@ -462,7 +462,7 @@ class ServerBase(ServerBaseClass):
             self.client_startup_complete(ss)
 
             if self._closing:
-                raise Exception("server is shutting down")
+                raise RuntimeError("server is shutting down")
         except Exception:
             #log exception but don't disclose internal details to the client
             p = ss.protocol

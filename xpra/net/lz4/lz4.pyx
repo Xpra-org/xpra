@@ -52,7 +52,7 @@ cdef class compressor:
     def compress(self, data, int acceleration=1, int max_size=0, int store_size=True):
         cdef Py_buffer in_buf
         if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
-            raise Exception("failed to read data from %s" % type(data))
+            raise ValueError("failed to read data from %s" % type(data))
         if in_buf.len>LZ4_MAX_INPUT_SIZE:
             log("input is too large")
             PyBuffer_Release(&in_buf)
@@ -87,12 +87,12 @@ def decompress(data, int max_size=0, int size=0):
         size = struct.unpack_from(b"@I", data[:4])[0]
         size_header = 4
     if max_size>0 and size>max_size:
-        raise Exception("data would overflow max-size %i" % max_size)
+        raise ValueError("data would overflow max-size %i" % max_size)
     if size>LZ4_MAX_INPUT_SIZE:
-        raise Exception("data would overflow lz4 max input size %i" % LZ4_MAX_INPUT_SIZE)
+        raise ValueError("data would overflow lz4 max input size %i" % LZ4_MAX_INPUT_SIZE)
     cdef Py_buffer in_buf
     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read data from %s" % type(data))
+        raise ValueError("failed to read data from %s" % type(data))
     cdef MemBuf out_buf = getbuf(size)
     cdef char *in_ptr = <char*> ((<uintptr_t> in_buf.buf) + size_header)
     cdef char *out_ptr = <char *> out_buf.get_mem()

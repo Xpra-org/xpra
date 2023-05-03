@@ -122,7 +122,7 @@ def bdecode(x):
     cdef unsigned int f = 0
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(xs, &py_buf, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to access buffer of %s" % type(xs))
+        raise ValueError("failed to access buffer of %s" % type(xs))
     try:
         return decode(<const unsigned char*> py_buf.buf, f, py_buf.len, "bencoded string")
     except (IndexError, KeyError):

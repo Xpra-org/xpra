@@ -873,7 +873,7 @@ class WindowSource(WindowIconSource):
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
         self.common_encodings = preforder(common_encodings)
         if not self.common_encodings:
-            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
+            raise ValueError("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
                 csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
         if (encoding in self.common_encodings or encoding in ("auto", "grayscale")) and len(self.common_encodings)>1:
@@ -2661,7 +2661,7 @@ class WindowSource(WindowIconSource):
         if encoder is None:
             if self.is_cancelled(sequence):
                 return nodata("cancelled")
-            raise Exception(f"BUG: no encoder found for {coding!r} with options={options}")
+            raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
         ret = encoder(coding, image, options)
         if ret is None:
             return nodata("encoder %s returned None for %s",

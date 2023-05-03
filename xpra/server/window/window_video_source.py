@@ -1470,7 +1470,7 @@ class WindowVideoSource(WindowSource):
                     continue
                 if width*num/den<=mw and height*num/den<=mh:
                     return (num, den)
-            raise Exception(f"BUG: failed to find a scaling value for window size {width}x{height}")
+            raise ValueError(f"BUG: failed to find a scaling value for window size {width}x{height}")
         def mrs(v=(1, 1), info="using minimum required scaling"):
             sv = get_min_required_scaling(v)
             if info:

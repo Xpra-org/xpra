@@ -188,7 +188,7 @@ def argb_to_gray(image):
     cdef int dst_stride = width*4
     cdef MemBuf output_buffer = getbuf(dst_stride*height)
     if not output_buffer:
-        raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
+        raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
     cdef int result = -1
     cdef const uint8_t* src
@@ -219,7 +219,7 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
     cdef int dst_stride = dst_width*4
     cdef MemBuf output_buffer = getbuf(dst_stride*dst_height)
     if not output_buffer:
-        raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
+        raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
     cdef int result = -1
     cdef const uint8_t* src
@@ -307,7 +307,7 @@ cdef class ColorspaceConverter:
             self.rgb_scaling = False
             self.out_buffer_size = dst_width*len(dst_format)*dst_height
         else:
-            raise Exception("invalid destination format: %s" % dst_format)
+            raise ValueError(f"invalid destination format: {dst_format!r}")
 
     def init_yuv_output(self):
         #pre-calculate unscaled YUV plane heights:
@@ -341,7 +341,7 @@ cdef class ColorspaceConverter:
             #re-use the same temporary buffer every time before scaling:
             self.output_buffer = <uint8_t *> memalign(self.out_buffer_size)
             if self.output_buffer==NULL:
-                raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
+                raise RuntimeError("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
 
@@ -458,7 +458,7 @@ cdef class ColorspaceConverter:
                 uv = <uintptr_t> int(uv_buf)
                 rgb_buffer = getbuf(self.out_buffer_size)
                 if not rgb_buffer:
-                    raise Exception("failed to allocate %i bytes for output buffer" % (self.out_buffer_size))
+                    raise RuntimeError("failed to allocate %i bytes for output buffer" % (self.out_buffer_size))
                 rgb = <uint8_t*> rgb_buffer.get_mem()
                 if self.dst_format=="RGB":
                     with nogil:
@@ -516,7 +516,7 @@ cdef class ColorspaceConverter:
             #allocate output buffer:
             output_buffer = <unsigned char*> memalign(self.out_buffer_size)
             if output_buffer==NULL:
-                raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
+                raise RuntimeError("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         for i in range(self.planes):
             #offsets are aligned, so this is safe and gives us aligned pointers:
             out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
@@ -548,7 +548,7 @@ cdef class ColorspaceConverter:
             start = monotonic()
             scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
-                raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
+                raise RuntimeError("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
             with nogil:
                 for i in range(self.planes):
                     scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]

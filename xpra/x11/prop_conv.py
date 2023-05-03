@@ -36,7 +36,7 @@ InputHint       = constants["InputHint"]
 
 
 def unsupported(*_args):
-    raise Exception("unsupported")
+    raise RuntimeError("unsupported")
 
 def _force_length(name, data, length, noerror_length=None):
     if len(data)==length:

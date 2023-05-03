@@ -88,13 +88,13 @@ INPUT_PIXEL_FORMATS = {
 cdef check(avifResult r, message):
     if r != AVIF_RESULT_OK:
         err = avifResultToString(r) or AVIF_RESULT.get(r, r)
-        raise Exception("%s : %s" % (message, err))
+        raise RuntimeError("%s : %s" % (message, err))
 
 def encode(coding, image, options=None):
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:
-        raise Exception("invalid input format: %s" % pixel_format)
+        raise ValueError("invalid input format: %s" % pixel_format)
     pixels = image.get_pixels()
     cdef uint8_t grayscale = options.boolget("grayscale", False)
     cdef uint8_t alpha = pixel_format.find("A")>=0
@@ -102,7 +102,7 @@ def encode(coding, image, options=None):
     cdef int height = image.get_height()
     cdef avifImage *avif_image = avifImageCreate(width, height, 8, AVIF_PIXEL_FORMAT_YUV444)
     if avif_image==NULL:
-        raise Exception("failed to allocate avif image")
+        raise RuntimeError("failed to allocate avif image")
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
 
@@ -153,7 +153,7 @@ def encode(coding, image, options=None):
             encoder = avifEncoderCreate()
             log("avifEncoderCreate()=%#x", <uintptr_t> encoder)
             if encoder==NULL:
-                raise Exception("failed to create avif encoder")
+                raise RuntimeError("failed to create avif encoder")
             # Configure your encoder here (see avif/avif.h):
             encoder.speed = 9+int(speed>=50)
             encoder.maxThreads = THREADS

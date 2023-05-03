@@ -155,7 +155,7 @@ class SysAuthenticatorBase:
             return server_salt
         salt = gendigest(self.salt_digest, client_salt, server_salt)
         if salt in SysAuthenticator.USED_SALT:
-            raise Exception("danger: an attempt was made to re-use the same computed salt")
+            raise RuntimeError("danger: an attempt was made to re-use the same computed salt")
         log("combined salt(%s, %s)=%s", hexstr(server_salt), hexstr(client_salt), hexstr(salt))
         SysAuthenticator.USED_SALT.append(salt)
         return salt
@@ -247,10 +247,10 @@ class SysAuthenticator(SysAuthenticatorBase):
 
     def get_uid(self) -> int:
         if self.pw is None:
-            raise Exception(f"username {self.username!r} not found")
+            raise RuntimeError(f"username {self.username!r} not found")
         return self.pw.pw_uid
 
     def get_gid(self) -> int:
         if self.pw is None:
-            raise Exception(f"username {self.username!r} not found")
+            raise RuntimeError(f"username {self.username!r} not found")
         return self.pw.pw_gid

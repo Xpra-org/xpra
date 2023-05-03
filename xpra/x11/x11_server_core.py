@@ -122,7 +122,7 @@ class X11ServerCore(GTKServerBase):
 
     def x11_init(self):
         if FAKE_X11_INIT_ERROR:
-            raise Exception("fake x11 init error")
+            raise RuntimeError("fake x11 init error")
         self.init_fake_xinerama()
         with xlog:
             clean_keyboard_state()

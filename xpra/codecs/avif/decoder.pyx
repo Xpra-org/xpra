@@ -67,14 +67,14 @@ def get_encodings():
 cdef check(avifResult r, message):
     if r != AVIF_RESULT_OK:
         err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
-        raise Exception("%s : %s" % (message, err))
+        raise RuntimeError("%s : %s" % (message, err))
 
 def decompress(data, options=None, yuv=False):
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()
     if decoder==NULL:
-        raise Exception("failed to create avif decoder")
+        raise RuntimeError("failed to create avif decoder")
     decoder.ignoreExif = 1
     decoder.ignoreXMP = 1
     #decoder.imageSizeLimit = 4096*4096
@@ -147,7 +147,7 @@ def decompress(data, options=None, yuv=False):
             r = avifImageYUVToRGB(image, &rgb)
             check(r, "Conversion from YUV failed")
             if rgb.depth>8:
-                raise Exception("cannot handle depth %s" % rgb.depth)
+                raise ValueError("cannot handle depth %s" % rgb.depth)
             may_save_image("avif", data)
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")

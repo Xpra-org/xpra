@@ -44,7 +44,7 @@ cdef class rectangle:
 
     def __richcmp__(self, object other, const int op):
         if type(other)!=rectangle:
-            raise Exception("cannot compare rectangle and %s" % type(other))
+            raise ValueError("cannot compare rectangle and %s" % type(other))
         cdef rectangle o = other
         if op==2:   #==
             return self.hash==o.hash and self.x==o.x and self.y==o.y and self.width==o.width and self.height==o.height
@@ -59,7 +59,7 @@ cdef class rectangle:
         elif op==5: #>=
             return self.x>=o.x or self.y>=o.y or self.width>=o.width or self.height>=o.height
         else:
-            raise Exception("invalid richcmp operator: %s" % op)
+            raise ValueError("invalid richcmp operator: %s" % op)
 
     def intersects(self, const int x, const int y, const int w, const int h):
         cdef int  ix = MAX(self.x, x)

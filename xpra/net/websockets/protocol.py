@@ -101,7 +101,7 @@ class WebSocketProtocol(SocketProtocol):
             else:
                 if self.ws_payload and self.ws_payload_opcode:
                     op = OPCODES.get(opcode, opcode)
-                    raise Exception(f"expected a continuation frame not {op}")
+                    raise ValueError(f"expected a continuation frame not {op}")
                 full_payload = payload
                 if not fin:
                     if opcode not in (OPCODE_BINARY, OPCODE_TEXT):

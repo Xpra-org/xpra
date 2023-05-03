@@ -255,7 +255,7 @@ cdef class XImageWrapper:
             else:
                 self.pixel_format = r210
         else:
-            raise Exception("invalid image depth: %i bpp" % self.depth)
+            raise ValueError(f"invalid image depth: {self.depth} bpp")
 
     def __repr__(self):
         return "XImageWrapper(%s: %i, %i, %i, %i)" % (self.pixel_format, self.x, self.y, self.width, self.height)
@@ -315,14 +315,15 @@ cdef class XImageWrapper:
         return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), False)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
-        assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
+        if w<=0 or h<=0:
+            raise ValueError(f"invalid sub-image size: {w}x{h}")
         if x+w>self.width:
-            raise Exception("invalid sub-image width: %i+%i greater than image width %i" % (x, w, self.width))
+            raise ValueError(f"invalid sub-image width: {x}+{w} greater than image width {self.width}")
         if y+h>self.height:
-            raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
+            raise ValueError(f"invalid sub-image height: {y}+{h} greater than image height {self.height}")
         cdef void *src = self.get_pixels_ptr()
         if src==NULL:
-            raise Exception("source image does not have pixels!")
+            raise ValueError("source image does not have any pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
         image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
@@ -383,13 +384,13 @@ cdef class XImageWrapper:
 
         cdef Py_buffer py_buf
         if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
-            raise Exception("failed to read pixel data from %s" % type(pixels))
+            raise ValueError(f"failed to read pixel data from {type(pixels)}")
 
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
         if posix_memalign(<void **> &self.pixels, 64, py_buf.len):
             PyBuffer_Release(&py_buf)
-            raise Exception("posix_memalign failed!")
+            raise RuntimeError("posix_memalign failed!")
         assert self.pixels!=NULL
         #from now on, we own the buffer,
         #so we're no longer a direct sub-image,
@@ -460,7 +461,7 @@ cdef class XImageWrapper:
         assert img_buf!=NULL, "this image wrapper is empty!"
         cdef void *new_buf
         if posix_memalign(<void **> &new_buf, 64, (newsize+rowstride)):
-            raise Exception("posix_memalign failed!")
+            raise RuntimeError("posix_memalign failed!")
         cdef void *to = new_buf
         cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,

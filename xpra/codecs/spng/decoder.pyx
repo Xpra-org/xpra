@@ -63,12 +63,12 @@ def log_error(int r, msg):
 def decompress(data):
     cdef spng_ctx *ctx = spng_ctx_new(0)
     if ctx==NULL:
-        raise Exception("failed to instantiate an spng context")
+        raise RuntimeError("failed to instantiate an spng context")
 
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
         spng_ctx_free(ctx)
-        raise Exception("failed to read compressed data from %s" % type(data))
+        raise ValueError(f"failed to read compressed data from {type(data)}")
 
     cdef int r
     def close():

@@ -81,7 +81,7 @@ def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_AN
     cdef int sockfd = socket(AF_VSOCK, sock_type, 0)
     log("socket(..)=%i", sockfd)
     if sockfd<0:
-        raise Exception("AF_VSOCK not supported")
+        raise RuntimeError("AF_VSOCK not supported")
     cdef sockaddr_vm vmsock
     memset(&vmsock, 0, sizeof(sockaddr_vm))
     vmsock.svm_family = AF_VSOCK
@@ -90,12 +90,12 @@ def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_AN
 
     if bind(sockfd, <sockaddr*> &vmsock, sizeof(sockaddr_vm)):
         close(sockfd)
-        raise Exception("failed to bind to AF_VSOCK socket %i:%i", cid, port)
+        raise RuntimeError("failed to bind to AF_VSOCK socket %i:%i", cid, port)
 
     cdef socklen_t socklen = sizeof(sockaddr_vm)
     if getsockname(sockfd, <sockaddr *> &vmsock, &socklen):
         close(sockfd)
-        raise Exception("getsockname failed")
+        raise RuntimeError("getsockname failed")
     log("cid=%s, port=%i", CID_TYPES.get(vmsock.svm_cid, vmsock.svm_cid), vmsock.svm_port)
     vsock = VSocket(sockfd)
     return vsock
@@ -115,7 +115,7 @@ class VSocket:
         memset(&vmsock, 0, socklen)
         cdef int fd = accept(self.sockfd, <sockaddr*> &vmsock, &socklen)
         if fd<0:
-            raise Exception("accept failed: %s" % fd)
+            raise RuntimeError("accept failed: %s" % fd)
         self.address = (vmsock.svm_cid, vmsock.svm_port)
         conn = pysocket.fromfd(fd, AF_VSOCK, 0)
         return VSocket(conn.fileno()), self.address
@@ -138,7 +138,7 @@ def connect_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_ANY, port=VMADDR_PORT_
     cdef int sockfd = socket(AF_VSOCK, sock_type, 0)
     log("socket(AF_VSOCK, SOCK_DGRAM, 0)=%i", sockfd)
     if sockfd<0:
-        raise Exception("AF_VSOCK not supported")
+        raise RuntimeError("AF_VSOCK not supported")
 
     cdef sockaddr_vm vmsock
     memset(&vmsock, 0, sizeof(sockaddr_vm))
@@ -147,7 +147,7 @@ def connect_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_ANY, port=VMADDR_PORT_
     vmsock.svm_port = port
 
     if connect(sockfd, <sockaddr *> &vmsock, sizeof(sockaddr_vm)):
-        raise Exception("failed to connect to server vsock %i:%i" % (cid, port))
+        raise RuntimeError("failed to connect to server vsock %i:%i" % (cid, port))
 
     vsock = VSocket(sockfd)
     return vsock

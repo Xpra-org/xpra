@@ -364,9 +364,9 @@ cdef class Encoder:
         assert self.param!=NULL
         x265_param_default(self.param)
         if x265_param_apply_profile(self.param, self.profile)!=0:
-            raise Exception("failed to set profile: %s" % self.profile)
+            raise ValueError(f"failed to set profile: {self.profile}")
         if x265_param_default_preset(self.param, self.preset, b"zero-latency")!=0:
-            raise Exception("failed to set preset: %s" % self.preset)
+            raise ValueError(f"failed to set preset: {self.preset}")
 
         self.param.sourceWidth = self.width
         self.param.sourceHeight = self.height

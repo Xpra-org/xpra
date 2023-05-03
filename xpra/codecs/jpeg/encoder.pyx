@@ -173,7 +173,7 @@ cdef class Encoder:
         self.width = self.height = self.quality = self.frames = 0
         self.compressor = tjInitCompress()
         if self.compressor==NULL:
-            raise Exception("Error: failed to instantiate a JPEG compressor")
+            raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
     def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
         assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
@@ -342,7 +342,7 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
-        raise Exception("invalid pixel format %s" % pfstr)
+        raise ValueError(f"invalid pixel format {pfstr!r}")
     cdef TJPF tjpf = pf
     cdef TJSAMP subsamp
     if grayscale:

@@ -154,7 +154,7 @@ cdef write_buffer_char(char **buf, unsigned int *pos, char c):
 cdef write_buffer(char **buf, unsigned int *pos, void* data, int size):
     buf[0] = <char*>realloc(buf[0], pos[0] + size)
     if buf[0] == NULL:
-        raise MemoryError("Error in realloc, %d bytes needed", size)
+        raise MemoryError(f"Error in realloc, {size} bytes needed")
     memcpy(&buf[0][pos[0]], data, size)
     pos[0] += size
 
@@ -214,7 +214,7 @@ cdef encode_float64(char **buf, unsigned int *pos, double x):
 cdef encode_memoryview(char **buf, unsigned int *pos, mem):
     cdef Py_buffer mv
     if PyObject_GetBuffer(mem, &mv, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read data from %s" % type(mem))
+        raise ValueError(f"failed to read data from {type(mem)}")
     cdef int lx = mv.len
     s = b"%i/" % lx
     cdef char *p = s
@@ -294,7 +294,7 @@ cdef encode(char **buf, unsigned int *pos, data):
         else:
             s = str(data).encode("ascii")
             if len(s) >= MAX_INT_LENGTH:
-                raise ValueError("Number is longer than %d characters" % MAX_INT_LENGTH)
+                raise ValueError(f"Number is longer than {MAX_INT_LENGTH} characters")
             encode_big_number(buf, pos, s)
 
     elif t == float:
@@ -324,7 +324,7 @@ cdef encode(char **buf, unsigned int *pos, data):
         encode_dict(buf, pos, data)
 
     else:
-        raise Exception("type %s not handled" % t)
+        raise ValueError(f"type {t} not handled")
 
 
 def dumps(data):
@@ -391,8 +391,7 @@ cdef decode_big_number(char *data, unsigned int *pos, long long data_length):
     while (data[pos[0]+x] != CHR_TERM):
         x += 1
         if x >= MAX_INT_LENGTH:
-            raise ValueError(
-                "Number is longer than %d characters" % MAX_INT_LENGTH)
+            raise ValueError(f"Number is longer than {MAX_INT_LENGTH} characters")
         check_pos(data, pos[0]+x, data_length)
 
     big_number = int(data[pos[0]:pos[0]+x])
@@ -470,7 +469,7 @@ cdef decode_dict(char *data, unsigned int *pos, long long data_length):
 
 cdef inline check_pos(char *data, unsigned int pos, long long data_length):
     if pos >= data_length:
-        raise IndexError("Tried to access data[%d] but data len is: %d" % (pos, data_length))
+        raise IndexError(f"Tried to access data[{pos}] but data len is: {data_length}")
 
 
 cdef decode(char *data, unsigned int *pos, long long data_length):
@@ -517,7 +516,7 @@ cdef decode(char *data, unsigned int *pos, long long data_length):
     elif typecode == CHR_DICT:
         return decode_dict(data, pos, data_length)
     else:
-        raise Exception("unsupported typecode %i" % typecode)
+        raise ValueError(f"unsupported typecode {typecode}")
 
 def loads(data):
     """

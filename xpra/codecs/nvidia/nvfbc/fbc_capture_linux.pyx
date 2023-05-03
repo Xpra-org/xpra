@@ -499,7 +499,7 @@ cdef class NvFBC_SysCapture:
         global PIXEL_FORMAT_CONST, INIT_DONE
         assert INIT_DONE, "module not initialized"
         if pixel_format not in PIXEL_FORMAT_CONST:
-            raise Exception("unsupported pixel format '%s'" % pixel_format)
+            raise ValueError(f"unsupported pixel format {pixel_format!r}")
         cdef NVFBC_BUFFER_FORMAT buffer_format = PIXEL_FORMAT_CONST[pixel_format]
         log("NVFBC_BUFFER_FORMAT for %s: %i", pixel_format, buffer_format)
         self.pixel_format = pixel_format
@@ -630,13 +630,13 @@ cdef class NvFBC_CUDACapture:
         self.setup = False
         assert select_device, "CUDA is missing"
         if pixel_format not in PIXEL_FORMAT_CONST:
-            raise Exception("unsupported pixel format '%s'" % pixel_format)
+            raise ValueError(f"unsupported pixel format {pixel_format!r}")
         cdef NVFBC_BUFFER_FORMAT buffer_format = PIXEL_FORMAT_CONST[pixel_format]
         self.pixel_format = pixel_format
         #CUDA init:
         self.cuda_device_id, self.cuda_device = select_device()
         if not self.cuda_device:
-            raise Exception("no valid CUDA device")
+            raise RuntimeError("no valid CUDA device")
         d = self.cuda_device
         self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
@@ -683,7 +683,7 @@ cdef class NvFBC_CUDACapture:
         if res<0:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
-            raise Exception(f"CUDA Grab Frame failed: {get_error_name(res)}")
+            raise RuntimeError(f"CUDA Grab Frame failed: {get_error_name(res)}")
         cdef double end = monotonic()
         log("NvFBCCudaGrabFrame: cuDevicePtr=%#x, info=%s, elapsed=%ims", <uintptr_t> self.cuDevicePtr, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)

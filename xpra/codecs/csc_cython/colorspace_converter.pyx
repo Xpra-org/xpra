@@ -413,7 +413,7 @@ cdef class ColorspaceConverter:
                 assert dst_format=="BGRX"
                 self.convert_image_function = self.GBRP_to_BGRX
         else:
-            raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
+            raise ValueError("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
     def clean(self):
         #overzealous clean is cheap!
@@ -544,7 +544,7 @@ cdef class ColorspaceConverter:
 
         cdef Py_buffer py_buf
         if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
-            raise Exception("failed to read pixel data from %s" % type(pixels))
+            raise ValueError("failed to read pixel data from %s" % type(pixels))
         cdef const unsigned char *input_image = <const unsigned char *> py_buf.buf
 
         #from now on, we can release the gil:
@@ -691,7 +691,7 @@ cdef class ColorspaceConverter:
         for i in range(3):
             YUVstrides[i] = input_strides[i]
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
             YUV[i] = <const unsigned short *> py_buf[i].buf
             min_len = YUVstrides[i]*image.get_height()
             assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
@@ -772,7 +772,7 @@ cdef class ColorspaceConverter:
         cdef Py_buffer py_buf[3]
         for i in range(3):
             if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                raise ValueError("failed to read pixel data from %s" % type(pixels[i]))
             gbrp10[i] = <uintptr_t> py_buf[i].buf
             assert (<unsigned long> py_buf[i].len)>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], py_buf[i].len)
 
@@ -829,7 +829,7 @@ cdef class ColorspaceConverter:
         cdef int i
         for i in range(3):
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
             min_len = input_strides[i]*image.get_height()
             assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
         cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf
@@ -907,7 +907,7 @@ cdef class ColorspaceConverter:
         cdef int i
         for i in range(3):
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
             min_len = input_strides[i]*image.get_height()
             assert py_buf.len>=min_len, "buffer for G plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
         cdef unsigned char *Gbuf = <unsigned char*> py_buf[Gsrc].buf

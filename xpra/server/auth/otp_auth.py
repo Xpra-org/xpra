@@ -79,7 +79,7 @@ class Authenticator(SysAuthenticator):
         r = totp.verify(bytestostr(password), valid_window=self.valid_window)
         log("otp.check(%s)=%s", obsc(password), r)
         if not r:
-            raise Exception("invalid OTP value")
+            raise ValueError("invalid OTP value")
         return True
 
     def __repr__(self):

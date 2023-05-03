@@ -392,7 +392,7 @@ def webp_check(int ret):
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
-    raise Exception("error: %s" % err)
+    raise RuntimeError("error: %s" % err)
 
 cdef float fclamp(int v):
     if v<0:
@@ -463,7 +463,7 @@ cdef class Encoder:
     cdef configure_encoder(self):
         cdef int ret = WebPConfigInit(&self.config)
         if not ret:
-            raise Exception("failed to initialize webp config")
+            raise RuntimeError("failed to initialize webp config")
         config_init(&self.config)
         self.preset = get_preset(self.width, self.height, self.content_type)
         configure_preset(&self.config, self.preset, self.quality)
@@ -584,7 +584,7 @@ cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type
 cdef config_init(WebPConfig *config):
     cdef int ret = WebPConfigInit(config)
     if not ret:
-        raise Exception("failed to initialize webp config")
+        raise RuntimeError("failed to initialize webp config")
 
 cdef configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
@@ -627,7 +627,7 @@ cdef configure_encoder(WebPConfig *config,
 cdef configure_preset(WebPConfig *config, WebPPreset preset, int quality):
     ret = WebPConfigPreset(config, preset, fclamp(quality))
     if not ret:
-        raise Exception("failed to set webp preset")
+        raise ValueError(f"failed to set webp preset {preset} and quality {quality}")
     log("webp config: preset=%-8s", PRESETS.get(preset, preset))
 
 cdef configure_image_hint(WebPConfig *config, content_type):
@@ -639,7 +639,7 @@ cdef validate_config(WebPConfig *config):
     ret = WebPValidateConfig(config)
     if not ret:
         info = get_config_info(config)
-        raise Exception("invalid webp configuration: %s" % info)
+        raise RuntimeError("invalid webp configuration: %s" % info)
 
 
 def encode(coding, image, options=None):
@@ -647,7 +647,7 @@ def encode(coding, image, options=None):
     assert coding=="webp"
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:
-        raise Exception("unsupported pixel format %s" % pixel_format)
+        raise ValueError(f"unsupported pixel format {pixel_format!r}")
     options = options or {}
 
     cdef unsigned int width = image.get_width()
@@ -716,7 +716,7 @@ cdef import_picture(WebPPicture *pic,
     memset(pic, 0, sizeof(WebPPicture))
     ret = WebPPictureInit(pic)
     if not ret:
-        raise Exception("failed to initialise webp picture")
+        raise RuntimeError("failed to initialise webp picture")
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     pic.width = width
     pic.height = height
@@ -752,7 +752,7 @@ cdef import_picture(WebPPicture *pic,
                 ret = WebPPictureImportBGRA(pic, src, stride)
     if not ret:
         WebPPictureFree(pic)
-        raise Exception("WebP importing image failed: %s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code)))
+        raise RuntimeError("WebP importing image failed: %s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code)))
     end = monotonic()
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
@@ -762,7 +762,7 @@ cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_
         ret = WebPPictureRescale(pic, scaled_width, scaled_height)
     if not ret:
         WebPPictureFree(pic)
-        raise Exception("WebP failed to resize to %ix%i" % (scaled_width, scaled_height))
+        raise RuntimeError("WebP failed to resize to %ix%i" % (scaled_width, scaled_height))
     cdef double end = monotonic()
     log("webp %s resizing took %.1fms", 1000*(end-start))
 
@@ -771,7 +771,7 @@ cdef to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     with nogil:
         ret = WebPPictureARGBToYUVA(pic, csp)
     if not ret:
-        raise Exception("WebPPictureARGBToYUVA failed")
+        raise RuntimeError("WebPPictureARGBToYUVA failed")
     cdef double end = monotonic()
     log("webp subsampling ARGB to %s took %.1fms", CSP_NAMES.get(csp, csp), 1000*(end-start))
 
@@ -788,7 +788,7 @@ cdef webp_encode(WebPConfig *config, WebPPicture *pic):
         with nogil:
             ret = WebPEncode(config, pic)
         if not ret:
-            raise Exception("WebPEncode failed: %s, config=%s" % (
+            raise RuntimeError("WebPEncode failed: %s, config=%s" % (
                 ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(config)))
         cdata = memory_writer.mem[:memory_writer.size]
     finally:

@@ -70,7 +70,7 @@ class GLXWindowContext:
         log("glXMakeCurrent: xid=%#x, context=%s", self.xid, self.context)
         with xsync:
             if not GLX.glXMakeCurrent(self.xdisplay, self.xid, self.context):
-                raise Exception("glXMakeCurrent failed")
+                raise RuntimeError("glXMakeCurrent failed")
         self.valid = True
 
     def __exit__(self, *_args):

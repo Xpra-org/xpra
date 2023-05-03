@@ -396,7 +396,7 @@ def init_nvfbc_library():
         return NvFBC
     if not WIN32:
         NvFBC = False
-        raise Exception("nvfbc is not supported on %s" % sys.platform)
+        raise RuntimeError(f"nvfbc is not supported on {sys.platform}")
     load = ctypes.WinDLL
     #we only support 64-bit:
     nvfbc_libname = "NvFBC64.dll"
@@ -466,7 +466,7 @@ def check_status():
             log.info("NvFBC capture cannot be enabled")
             log.info(f" {e}")
             log.info(f" you may need to run `NvFBC_capture.exe enable` as administrator")
-        raise Exception("NvFBC status error: capture is not possible")
+        raise RuntimeError("NvFBC status error: capture is not possible")
     if status.get("currently-capturing"):
         raise TransientCodecException("NvFBC status error: currently capturing")
     if not status.get("can-create-now"):
@@ -580,7 +580,7 @@ cdef class NvFBC_SysCapture:
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         global SYS_PIXEL_FORMAT_CONST
         if pixel_format not in SYS_PIXEL_FORMAT_CONST:
-            raise Exception("unsupported pixel format '%s'" % pixel_format)
+            raise ValueError(f"unsupported pixel format {pixel_format!r}")
         self.pixel_format = pixel_format
         self.framebuffer = NULL
         info = create_context(-1, -1, NVFBC_TO_SYS)
@@ -711,12 +711,12 @@ cdef class NvFBC_CUDACapture:
     def init_context(self, int width=-1, int height=-1, pixel_format="BGRX"):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         if pixel_format not in ("BGRX", "r210"):
-            raise Exception("unsupported pixel format '%s'" % pixel_format)
+            raise ValueError(f"unsupported pixel format {pixel_format!r}")
         self.pixel_format = pixel_format
         #CUDA init:
         self.cuda_device_id, self.cuda_device = select_device()
         if not self.cuda_device:
-            raise Exception("no valid CUDA device")
+            raise RuntimeError("no valid CUDA device")
         d = self.cuda_device
         self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
@@ -789,7 +789,7 @@ cdef class NvFBC_CUDACapture:
         if res<0:
             raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
-            raise Exception(f"CUDA Grab Frame failed: {get_error_name(res)}")
+            raise RuntimeError(f"CUDA Grab Frame failed: {get_error_name(res)}")
         cdef double end = monotonic()
         log("NvFBCCudaGrabFrame: info=%s, elapsed=%ims", get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         assert x==0 and y==0 and width>0 and height>0

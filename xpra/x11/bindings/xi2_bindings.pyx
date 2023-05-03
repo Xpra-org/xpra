@@ -620,15 +620,15 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                                xreq_type, &xactual_type,
                                &actual_format, &nitems, &bytes_after, &prop)
         if status != Success:
-            raise Exception("failed to retrieve XI property")
+            raise RuntimeError("failed to retrieve XI property")
         if xactual_type == XNone:
             return None
         if xreq_type and xreq_type != xactual_type:
-            raise Exception("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
+            raise RuntimeError("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after:
-            raise Exception("reserved %i bytes for buffer, but data is bigger by %i bytes!" % (buffer_size, bytes_after))
+            raise RuntimeError("reserved %i bytes for buffer, but data is bigger by %i bytes!" % (buffer_size, bytes_after))
         assert actual_format > 0
         #unlike XGetProperty, we don't need to special case 64-bit:
         cdef int bytes_per_item = actual_format // 8

@@ -740,7 +740,7 @@ class ProxyInstance:
                 self.video_encoders_dst_formats = dst_formats
             else:
                 if not self.video_encoders_dst_formats:
-                    raise Exception("BUG: dst_formats not specified for proxy and we don't have it either")
+                    raise ValueError("BUG: dst_formats not specified for proxy and we don't have it either")
                 dst_formats = self.video_encoders_dst_formats
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve

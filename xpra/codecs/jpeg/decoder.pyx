@@ -132,19 +132,19 @@ def get_error_str():
 def decompress_to_yuv(data, unsigned char nplanes=3):
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
-        raise Exception("failed to instantiate a JPEG decompressor")
+        raise RuntimeError("failed to instantiate a JPEG decompressor")
 
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
         tjDestroy(decompressor)
-        raise Exception("failed to read compressed data from %s" % type(data))
+        raise RuntimeError(f"failed to read compressed data from {type(data)}")
 
     cdef int r
     def close():
         PyBuffer_Release(&py_buf)
         r = tjDestroy(decompressor)
         if r:
-            log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
+            log.error(f"Error: failed to destroy the JPEG decompressor, code {r}:")
             log.error(" %s", get_error_str())
 
     cdef int w, h, subsamp, cs
@@ -154,7 +154,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
     if r:
         err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % err)
+        raise RuntimeError(f"failed to decompress JPEG header: {err!r}")
 
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420, TJSAMP_GRAY), "unsupported JPEG colour subsampling: %s" % subsamp_str
@@ -213,7 +213,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
                                         <const unsigned char*> py_buf.buf, py_buf.len,
                                         planes, w, strides, h, flags)
         if r:
-            raise Exception("failed to decompress %s JPEG data to YUV: %s" % (subsamp_str, get_error_str()))
+            raise RuntimeError("failed to decompress %s JPEG data to YUV: %s" % (subsamp_str, get_error_str()))
     finally:
         close()
     if LOG_PERF:
@@ -229,12 +229,12 @@ def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
 
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
-        raise Exception("failed to instantiate a JPEG decompressor")
+        raise RuntimeError("failed to instantiate a JPEG decompressor")
 
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
         tjDestroy(decompressor)
-        raise Exception("failed to read compressed data from %s" % type(data))
+        raise ValueError(f"failed to read compressed data from {type(data)}")
 
     cdef int r
     def close():
@@ -256,7 +256,7 @@ def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
     if r:
         err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % err)
+        raise RuntimeError(f"failed to decompress JPEG header: {err!r}")
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
@@ -274,7 +274,7 @@ def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
                           w, stride, h, pixel_format, flags)
     if r:
         close()
-        raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
+        raise RuntimeError("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
     #deal with alpha channel if there is one:
     cdef int aw, ah
     cdef unsigned char *planes[3]
@@ -316,7 +316,7 @@ def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
                                         planes, w, strides, h, flags)
         if r:
             close()
-            raise Exception("failed to decompress %s JPEG alpha data: %s" % (subsamp_str, get_error_str()))
+            raise RuntimeError("failed to decompress %s JPEG alpha data: %s" % (subsamp_str, get_error_str()))
         #merge alpha into rgb buffer:
         for y in range(h):
             for x in range(w):
@@ -346,6 +346,6 @@ def selftest(full=False):
                 except:
                     pass
                 else:
-                    raise Exception("should not be able to decompress incomplete data, but got %s" % v)
+                    raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
     finally:
         pass

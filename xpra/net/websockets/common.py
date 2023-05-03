@@ -88,7 +88,7 @@ def write_request(write, http_request):
     while http_request:
         elapsed = monotonic()-now
         if elapsed>=MAX_WRITE_TIME:
-            raise Exception(f"http write timeout, took more {elapsed:.1f} seconds")
+            raise RuntimeError(f"http write timeout, took more {elapsed:.1f} seconds")
         w = write(http_request)
         http_request = http_request[w:]
 
@@ -115,21 +115,21 @@ def parse_response_header(response):
 def verify_response_headers(headers, key):
     log(f"verify_response_headers({headers!r}, {key!r})")
     if not headers:
-        raise Exception("no http headers found in response")
+        raise ValueError("no http headers found in response")
     if headers.get("www-authenticate"):
-        raise Exception("http connection requires authentication")
+        raise ValueError("http connection requires authentication")
     upgrade = headers.get("upgrade")
     if not upgrade:
-        raise Exception("http connection was not upgraded to websocket")
+        raise ValueError("http connection was not upgraded to websocket")
     if upgrade!="websocket":
-        raise Exception(f"invalid http upgrade: {upgrade!r}")
+        raise ValueError(f"invalid http upgrade: {upgrade!r}")
     protocol = headers.get("sec-websocket-protocol")
     if protocol!="binary":
-        raise Exception(f"invalid websocket protocol: {protocol!r}")
+        raise ValueError(f"invalid websocket protocol: {protocol!r}")
     accept_key = headers.get("sec-websocket-accept")
     if not accept_key:
-        raise Exception("websocket accept key is missing")
+        raise ValueError("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
     if bytestostr(accept_key)!=bytestostr(expected_key):
         log(f"expected {expected_key!r}, received {accept_key!r}")
-        raise Exception("websocket accept key is invalid")
+        raise ValueError("websocket accept key is invalid")

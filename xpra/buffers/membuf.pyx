@@ -106,7 +106,7 @@ cdef class BufferContext:
         assert self.obj
         assert self.py_buf.buf==NULL
         if PyObject_GetBuffer(self.obj, &self.py_buf, PyBUF_ANY_CONTIGUOUS):
-            raise Exception("failed to access buffer of %s" % type(self.obj))
+            raise RuntimeError(f"failed to access buffer of {type(self.obj)}")
         return self
     def __exit__(self, *_args):
         assert self.py_buf.buf!=NULL

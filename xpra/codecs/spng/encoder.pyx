@@ -119,11 +119,11 @@ def encode(coding, image, options=None):
             pixels = rgb_to_l(pixels)
             rgb_format = "L"
         else:
-            raise Exception("invalid rgb pixel format %s" % rgb_format)
+            raise ValueError(f"invalid rgb pixel format {rgb_format!r}")
 
     cdef spng_ctx *ctx = spng_ctx_new(SPNG_CTX_ENCODER)
     if ctx==NULL:
-        raise Exception("failed to instantiate an spng context")
+        raise RuntimeError("failed to instantiate an spng context")
 
     cdef spng_ihdr ihdr
     ihdr.width = scaled_width
@@ -138,7 +138,7 @@ def encode(coding, image, options=None):
     elif rgb_format=="RGB":
         ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR
     else:
-        raise Exception("unsupported input pixel format %s" % rgb_format)
+        raise ValueError(f"unsupported input pixel format {rgb_format!r}")
 
     ihdr.compression_method = 0
     ihdr.filter_method = 0

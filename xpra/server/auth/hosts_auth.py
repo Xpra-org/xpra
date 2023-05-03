@@ -47,7 +47,7 @@ class Authenticator(SysAuthenticator):
         try:
             from xpra.net.bytestreams import SocketConnection  #pylint: disable=import-outside-toplevel
             if not connection and isinstance(connection, SocketConnection):
-                raise Exception("hosts: invalid connection '%s' (not a socket connection)" % connection)
+                raise ValueError(f"hosts: invalid connection {connection!r} (not a socket connection)")
             info = connection.get_info()
             log("hosts.Authenticator(..) connection info=%s", info)
             host = info.get("remote")[0]

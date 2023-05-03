@@ -1955,7 +1955,7 @@ class ServerCore:
                 try:
                     for o in ("self", ):
                         if o in opts:
-                            raise Exception(f"illegal authentication module options {o!r}")
+                            raise ValueError(f"illegal authentication module options {o!r}")
                     authlog(f"{auth_name} : {aclass}({opts})")
                     authenticator = aclass(**opts)
                 except Exception:
@@ -2192,7 +2192,7 @@ class ServerCore:
     def call_hello_oked(self, proto, c, auth_caps):
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
-                raise Exception("Simulating a server error")
+                raise RuntimeError("Simulating a server error")
             self.hello_oked(proto, c, auth_caps)
         except ClientException as e:
             log("call_hello_oked(%s, %s, %s)", proto, ellipsizer(c), auth_caps, exc_info=True)

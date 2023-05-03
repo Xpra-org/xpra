@@ -745,7 +745,7 @@ cdef class Decoder:
         elif self.encoding=="mpeg4":
             CodecID = AV_CODEC_ID_MPEG4
         else:
-            raise Exception("invalid codec; %s" % self.encoding)
+            raise ValueError(f"invalid codec {self.encoding!r}")
         self.codec = avcodec_find_decoder(CodecID)
         if self.codec==NULL:
             log.error("codec %s not found!" % self.encoding)
@@ -754,7 +754,7 @@ cdef class Decoder:
         #from here on, we have to call clean_decoder():
         self.codec_ctx = avcodec_alloc_context3(self.codec)
         if self.codec_ctx==NULL:
-            log.error("failed to allocate codec context!")
+            log.error("Error: failed to allocate codec context!")
             self.clean_decoder()
             return  False
 
@@ -910,7 +910,7 @@ cdef class Decoder:
             src = <const void*> (<uintptr_t> int(bc))
             padded_buf = <unsigned char *> memalign(buf_len+128)
             if padded_buf==NULL:
-                raise Exception("failed to allocate %i bytes of memory" % (buf_len+128))
+                raise RuntimeError("failed to allocate %i bytes of memory" % (buf_len+128))
             memcpy(padded_buf, src, buf_len)
         memset(padded_buf+buf_len, 0, 128)
 
@@ -985,7 +985,7 @@ cdef class Decoder:
                 else:
                     av_frame_unref(av_frame)
                     av_frame_free(&av_frame)
-                    raise Exception("invalid height divisor %s" % dy)
+                    raise ValueError(f"invalid height divisor {dy} for {cs}")
                 stride = av_frame.linesize[i]
                 size = height * stride
                 outsize += size
@@ -1004,9 +1004,9 @@ cdef class Decoder:
         if outsize==0:
             av_frame_unref(av_frame)
             av_frame_free(&av_frame)
-            raise Exception("output size is zero!")
+            raise RuntimeError("output size is zero!")
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
-            raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
+            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         cdef AVFrameWrapper framewrapper = AVFrameWrapper()

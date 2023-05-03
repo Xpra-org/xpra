@@ -78,7 +78,7 @@ class Authenticator(SysAuthenticator):
                 continue
             self.public_keys[origin] = k
         if not self.public_keys:
-            raise Exception("u2f authenticator requires at least one public key")
+            raise RuntimeError("u2f authenticator requires at least one public key")
 
     def get_challenge(self, digests):
         if "u2f" not in digests:

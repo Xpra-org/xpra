@@ -308,12 +308,12 @@ class SocketProtocol:
             return
         log("send_now(%s ...)", packet[0])
         if self._get_packet_cb:
-            raise Exception(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
+            raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
         def packet_cb():
             self._get_packet_cb = None
             if not tmp_queue:
-                raise Exception("packet callback used more than once!")
+                raise RuntimeError("packet callback used more than once!")
             packet = tmp_queue.pop()
             return (packet, )
         self._get_packet_cb = packet_cb

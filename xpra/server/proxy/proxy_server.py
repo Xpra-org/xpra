@@ -581,7 +581,7 @@ class ProxyServer(ServerCore):
             raise ValueError(f"invalid start-new-session mode {mode!r}")
         display = sns.strget("display")
         if display in displays:
-            raise Exception(f"display {display} is already active!")
+            raise ValueError(f"display {display} is already active!")
         log("starting new server subprocess: mode=%s, display=%s", mode, display)
         args = []
         if display:

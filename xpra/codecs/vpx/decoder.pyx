@@ -157,7 +157,7 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
         return vpx_codec_vp8_dx()
     if encoding=="vp9":
         return vpx_codec_vp9_dx()
-    raise Exception("unsupported encoding: %s" % encoding)
+    raise ValueError(f"unsupported encoding: {encoding!r}")
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     return VPX_IMG_FMT_I420
@@ -202,7 +202,7 @@ cdef class Decoder:
         dec_cfg.threads = self.max_threads
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
-            raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
+            raise RuntimeError("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
         if SAVE_TO_FILE:
             filename = f"./{monotonic()}.{self.encoding}"
             self.file = open(filename, "wb")
@@ -299,7 +299,7 @@ cdef class Decoder:
             elif dy==2:
                 height = (self.height+1)>>1
             else:
-                raise Exception("invalid height divisor %s" % dy)
+                raise ValueError(f"invalid height divisor {dy} for {self.get_colorspace()}")
             stride = img.stride[i]
             strides.append(stride)
 

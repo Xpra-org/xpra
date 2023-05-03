@@ -919,4 +919,4 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             log(f"channel exec_command({cmd!r})")
             chan.exec_command(cmd)
             return chan
-    raise Exception("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
+    raise RuntimeError("all SSH remote proxy commands have failed - is xpra installed on the remote host?")

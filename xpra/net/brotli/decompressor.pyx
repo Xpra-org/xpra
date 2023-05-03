@@ -83,7 +83,7 @@ def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
     chunks = []
 
     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read data from %s" % type(data))
+        raise ValueError("failed to read data from %s" % type(data))
     in_ptr = <const uint8_t*> in_buf.buf
     available_in = in_buf.len
     log("brotli.decompress(%i bytes, %i)", available_in, maxsize)

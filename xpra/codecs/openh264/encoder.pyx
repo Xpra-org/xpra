@@ -328,7 +328,7 @@ cdef class Encoder:
         cdef int r = WelsCreateSVCEncoder(&self.context)
         log("WelsCreateSVCEncoder context=%#x", <uintptr_t> self.context)
         if r or self.context==NULL:
-            raise Exception(f"failed to create openh264 svc encoder, error {r}")
+            raise RuntimeError(f"failed to create openh264 svc encoder, error {r}")
         cdef int trace_level = WELS_LOG_ERROR
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
         #self.context.SetOption(ENCODER_OPTION_TRACE_CALLBACK, <void*> &log_cb)
@@ -440,7 +440,7 @@ cdef class Encoder:
             assert len(strides)==3, "image strides does not have 3 values! (found %s)" % len(strides)
             for i in range(3):
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                    raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                    raise ValueError("failed to read pixel data from %s" % type(pixels[i]))
                 pic.pData[i] = <uint8_t*> py_buf[i].buf
             with nogil:
                 r = self.context.EncodeFrame(&pic, &frame_info)
@@ -449,7 +449,7 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
         if r:
-            raise Exception(f"openh264 failed to encode frame, error {r}")
+            raise RuntimeError(f"openh264 failed to encode frame, error {r}")
         if frame_info.eFrameType==videoFrameTypeSkip:
             return b"", {"skip" : True}
         data = []

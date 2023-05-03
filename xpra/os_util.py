@@ -615,7 +615,7 @@ def shellsub(s : str, subs=None) -> str:
                     s = s.replace(f"${var}", vstr)
                     s = s.replace("${%s}" % var, vstr)
             except (TypeError, ValueError):
-                raise Exception(f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}") from None
+                raise ValueError(f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}") from None
     return s
 
 
@@ -908,7 +908,7 @@ def setuidgid(uid, gid) -> None:
         try:
             username = getpwuid(uid).pw_name
         except KeyError:
-            raise Exception(f"uid {uid} not found") from None
+            raise ValueError(f"uid {uid} not found") from None
         #set the groups:
         if hasattr(os, "initgroups"):   # python >= 2.7
             os.initgroups(username, gid)

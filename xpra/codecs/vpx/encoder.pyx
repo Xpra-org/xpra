@@ -252,7 +252,7 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
         return vpx_codec_vp8_cx()
     if encoding=="vp9":
         return vpx_codec_vp9_cx()
-    raise Exception("unsupported encoding: %s" % encoding)
+    raise ValueError(f"unsupported encoding {encoding!r}")
 
 
 #educated guess:
@@ -298,7 +298,7 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
         return VPX_IMG_FMT_I444
     if colorspace=="YUV444P10":
         return VPX_IMG_FMT_I44416
-    raise Exception("invalid colorspace %s" % colorspace)
+    raise ValueError(f"invalid colorspace {colorspace!r}")
 
 def get_error_string(int err):
     estr = vpx_codec_err_to_string(<vpx_codec_err_t> err)[:]
@@ -359,7 +359,7 @@ cdef class Encoder:
             self.max_threads = 2
 
         if vpx_codec_enc_config_default(codec_iface, &self.cfg, 0)!=0:
-            raise Exception("failed to create vpx encoder config")
+            raise RuntimeError("failed to create vpx encoder config")
         log("%s codec defaults:", self.encoding)
         self.log_cfg()
         self.initial_bitrate_per_pixel = self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
@@ -394,7 +394,7 @@ cdef class Encoder:
 
         self.context = <vpx_codec_ctx_t *> malloc(sizeof(vpx_codec_ctx_t))
         if self.context==NULL:
-            raise Exception("failed to allocate memory for vpx encoder context")
+            raise RuntimeError("failed to allocate memory for vpx encoder context")
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
 
         log("our configuration:")
@@ -404,7 +404,7 @@ cdef class Encoder:
             free(self.context)
             self.context = NULL
             log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
-            raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
+            raise RuntimeError("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
             tile_columns = 0
@@ -580,7 +580,7 @@ cdef class Encoder:
             for i in range(3):
                 xdiv, ydiv = divs[i]
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                    raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                    raise ValueError(f"failed to read pixel data from {type(pixels[i])}")
                 assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
                 assert py_buf[i].len>=istrides[i]*(self.height//ydiv), "invalid buffer length %i for plane %s, at least %i needed" % (
                     py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
@@ -626,7 +626,7 @@ cdef class Encoder:
             image.x_chroma_shift = 0
             image.y_chroma_shift = 0
         else:
-            raise Exception("invalid colorspace: %s" % self.src_format)
+            raise ValueError(f"invalid colorspace {self.src_format!r}")
 
         image.bps = 0
         if self.frames==0:

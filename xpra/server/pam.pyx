@@ -167,7 +167,7 @@ cdef class pam_session:
             conv.conv = <void_p> &password_conv
             assert self.password, "no password to use for pam_start"
             if PyObject_GetBuffer(self.password, &view, PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read password data")
+                raise RuntimeError("failed to read password data")
             conv.appdata_ptr = view.buf
         else:
             conv.conv = <void_p> misc_conv

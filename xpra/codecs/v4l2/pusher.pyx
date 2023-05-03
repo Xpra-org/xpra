@@ -443,7 +443,7 @@ cdef class Pusher:
         cdef Py_buffer py_buf[3]
         for i in range(3):
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+                raise ValueError(f"failed to read pixel data from {type(planes[i])}")
             min_len = input_strides[i]*(image.get_height()//divs[i][1])
             assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
 

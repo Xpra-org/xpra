@@ -160,10 +160,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             log("release()", exc_info=True)
             log.error("Error releasing the dbus notification forwarder:")
             for x in str(e).split(": "):
-                log.error(" %s", x)
+                log.estr(x)
 
     def __str__(self):
-        return  "DBUS-NotificationsForwarder(%s)" % BUS_NAME
+        return f"DBUS-NotificationsForwarder({BUS_NAME})"
 
 
 def register(notify_callback=None, close_callback=None, replace=False):
@@ -173,9 +173,9 @@ def register(notify_callback=None, close_callback=None, replace=False):
     if replace:
         flags |= dbus.bus.NAME_FLAG_REPLACE_EXISTING
     request = bus.request_name(BUS_NAME, flags)
-    log("notifications: bus name '%s', request=%s" % (BUS_NAME, request))
+    log(f"notifications: bus name {BUS_NAME!r}, request={request}")
     if request==dbus.bus.REQUEST_NAME_REPLY_EXISTS:
-        raise Exception("the name '%s' is already claimed on the session bus" % BUS_NAME)
+        raise ValueError(f"the name {BUS_NAME!r} is already claimed on the session bus")
     return DBUSNotificationsForwarder(bus, notify_callback, close_callback)
 
 

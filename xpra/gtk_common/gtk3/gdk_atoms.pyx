@@ -31,7 +31,7 @@ cdef extern from "gtk-3.0/gdk/gdkproperty.h":
 def gdk_atom_objects_from_gdk_atom_array(atom_string):
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(atom_string, &py_buf, PyBUF_ANY_CONTIGUOUS):
-        raise Exception("failed to read atom buffer of %s" % type(atom_string))
+        raise ValueError(f"failed to read atom buffer of {type(atom_string)}")
     cdef unsigned int array_len = py_buf.len // sizeof(GdkAtom)
     objects = []
     cdef unsigned int i

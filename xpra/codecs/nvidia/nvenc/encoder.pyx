@@ -1154,7 +1154,7 @@ cdef GUID c_parseguid(src) except *:
     sample_guid = b"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     bsrc = strtobytes(src.upper())
     if len(bsrc)!=len(sample_guid):
-        raise Exception("invalid GUID format: expected %s characters but got %s" % (len(sample_guid), len(src)))
+        raise ValueError("invalid GUID format: expected %s characters but got %s" % (len(sample_guid), len(src)))
     cdef int i
     #validate the input bytestring:
     hexords = tuple(x for x in b"0123456789ABCDEF")
@@ -1162,12 +1162,12 @@ cdef GUID c_parseguid(src) except *:
         if sample_guid[i]==ord(b"-"):
             #dash must be in the same place:
             if bsrc[i]!=ord(b"-"):
-                raise Exception("invalid GUID format: character at position %s is not '-': %s" % (i, src[i]))
+                raise ValueError("invalid GUID format: character at position %s is not '-': %s" % (i, src[i]))
         else:
             #must be an hex number:
             c = bsrc[i]
             if c not in hexords:
-                raise Exception("invalid GUID format: character at position %s is not in hex: %s" % (i, chr(c)))
+                raise ValueError("invalid GUID format: character at position %s is not in hex: %s" % (i, chr(c)))
     parts = bsrc.split(b"-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
@@ -1476,7 +1476,7 @@ cdef inline int roundup(int n, int m):
 cdef uintptr_t cmalloc(size_t size, what) except 0:
     cdef void *ptr = malloc(size)
     if ptr==NULL:
-        raise Exception("failed to allocate %i bytes of memory for %s" % (size, what))
+        raise RuntimeError("failed to allocate %i bytes of memory for %s" % (size, what))
     return <uintptr_t> ptr
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
@@ -1629,7 +1629,7 @@ cdef class Encoder:
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(preset_guid)
-        raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
+        raise ValueError("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
     def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
@@ -1772,7 +1772,7 @@ cdef class Encoder:
                 if hasyuv420:
                     v = "NV12"
                 else:
-                    raise Exception("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (
+                    raise ValueError("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (
                         quality, self.scaling, hasyuv420, hasyuv444, self.codec_name, self.dst_formats))
         log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
             quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
@@ -1856,7 +1856,7 @@ cdef class Encoder:
             wmult = 1
             hmult = 3
         else:
-            raise Exception("BUG: invalid dst format: %s" % self.pixel_format)
+            raise ValueError(f"BUG: invalid dst format {self.pixel_format!r}")
 
         #allocate CUDA "output" buffer (on device):
         #this is the buffer we feed into the encoder
@@ -2027,7 +2027,7 @@ cdef class Encoder:
         elif self.pixel_format=="YUV444P":
             chromaFormatIDC = 3
         else:
-            raise Exception("unknown pixel format %s" % self.pixel_format)
+            raise ValueError(f"unknown pixel format {self.pixel_format!r}")
         log("chromaFormatIDC(%s)=%s", self.pixel_format, chromaFormatIDC)
 
         if self.codec_name=="H264":
@@ -2516,7 +2516,7 @@ cdef class Encoder:
             #one pixel at a time:
             dx, dy = 1, 1
         else:
-            raise Exception("bug: invalid pixel format '%s'" % self.pixel_format)
+            raise ValueError(f"bug: invalid pixel format {self.pixel_format!r}")
 
         #FIXME: find better values and validate against max_block/max_grid:
         #calculate grids/blocks:
@@ -2967,7 +2967,7 @@ cdef class Encoder:
             else:
                 msg = "context is NULL"
             last_context_failure = monotonic()
-            raise Exception("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
+            raise RuntimeError("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
@@ -2982,7 +2982,7 @@ def init_module():
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
     if NVENCAPI_MAJOR_VERSION<0x9:
-        raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+        raise RuntimeError("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     cdef Encoder test_encoder
@@ -3120,7 +3120,7 @@ def init_module():
                                 log("a license key is required")
                         elif e.code==NV_ENC_ERR_INVALID_VERSION:
                             #we can bail out already:
-                            raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
+                            raise RuntimeError("version mismatch, you need a newer/older codec build or newer/older drivers")
                         else:
                             #it seems that newer version will fail with
                             #seemingly random errors when we supply the wrong key
@@ -3154,9 +3154,9 @@ def init_module():
     else:
         #we got license key error(s)
         if len(failed_keys)>0:
-            raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
+            raise ValueError("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
         else:
-            raise Exception("you may need to provide a license key")
+            raise RuntimeError("you may need to provide a license key")
     global _init_message
     if ENCODINGS and not _init_message:
         log.info("NVENC v%i successfully initialized with codecs: %s", NVENCAPI_MAJOR_VERSION, csv(ENCODINGS))

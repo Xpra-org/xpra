@@ -90,7 +90,7 @@ def get_client_connection_class(caps):
                     bc.init_from(self, protocol, server)
                 except Exception as e:
                     log.error("%s.__init__(..)", bc, exc_info=True)
-                    raise Exception("failed to initialize %s: %s" % (bc, e)) from None
+                    raise RuntimeError(f"failed to initialize {bc}: {e}") from None
 
             for c in CC_BASES:
                 c.init_state(self)
@@ -106,7 +106,7 @@ def get_client_connection_class(caps):
                     log("%s.cleanup()", bc, exc_info=True)
                     log.error("Error closing connection")
                     log.estr(e)
-                    raise Exception("failed to close %s: %s" % (bc, e)) from None
+                    raise RuntimeError(f"failed to close {bc}: {e}") from None
 
         def send_hello(self, server_capabilities):
             capabilities = server_capabilities.copy()

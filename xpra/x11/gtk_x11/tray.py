@@ -141,9 +141,9 @@ class SystemTray(GObject.GObject):
         root = get_default_root_window()
         screen = root.get_screen()
         owner = X11Window.XGetSelectionOwner(SELECTION)
-        log("setup tray: current selection owner=%#x", owner)
+        log(f"setup tray: current selection owner={owner:x}")
         if owner!=XNone:
-            raise Exception(f"{SELECTION} already owned by {owner}")
+            raise RuntimeError(f"{SELECTION} already owned by {owner}")
         visual = screen.get_system_visual()
         if TRANSPARENCY:
             visual = screen.get_rgba_visual()

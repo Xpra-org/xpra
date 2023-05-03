@@ -206,7 +206,7 @@ cdef class Encoder:
         with cuda_device_context:
             self.cuda_kernel = get_CUDA_function(kernel_name)
         if not self.cuda_kernel:
-            raise Exception("missing %s kernel" % kernel_name)
+            raise RuntimeError(f"missing {kernel_name!r} kernel")
         self.init_nvjpeg()
 
     def init_nvjpeg(self):
@@ -482,7 +482,7 @@ def get_device_context():
     cdef double start = monotonic()
     cuda_device_id, cuda_device = select_device()
     if cuda_device_id<0 or not cuda_device:
-        raise Exception("failed to select a cuda device")
+        raise RuntimeError("failed to select a cuda device")
     log("using device %s", cuda_device)
     cuda_context = cuda_device_context(cuda_device_id, cuda_device)
     cdef double end = monotonic()

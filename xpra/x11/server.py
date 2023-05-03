@@ -1207,7 +1207,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             img_data = bgr565_to_rgbx(img_data)
             rowstride *= 2
         else:
-            raise Exception("xync-xvfb root overlay paint code does not handle %s pixel format" % image.get_pixel_format())
+            raise ValueError(f"xync-xvfb root overlay paint code does not handle {rgb_format} pixel format")
         img_data = memoryview_to_bytes(img_data)
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)

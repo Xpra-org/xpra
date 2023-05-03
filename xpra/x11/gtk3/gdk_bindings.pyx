@@ -323,7 +323,7 @@ def get_pyatom(xatom):
 
 cdef _get_pyatom(display, int xatom):
     if int(xatom) > 2**32:
-        raise Exception("weirdly huge purported xatom: %s" % xatom)
+        raise ValueError(f"weirdly huge purported xatom: {xatom}")
     if xatom==0:
         return ""
     cdef GdkDisplay *disp = get_raw_display_for(display)
