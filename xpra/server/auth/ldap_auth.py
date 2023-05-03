@@ -106,8 +106,8 @@ class Authenticator(SysAuthenticatorBase):
                 log("ldap encoded password as %s", self.encoding)
             except Exception:
                 pass
-            v = conn.simple_bind_s(user, password)
-            log("simple_bind_s(%s, %s)=%s", user, obsc(password), v)
+            conn.simple_bind_s(user, password)
+            log("simple_bind_s(%s, %s) done", user, obsc(password))
             return True
         except INVALID_CREDENTIALS:
             log("check(..)", exc_info=True)
