@@ -16,10 +16,9 @@ class Handler:
     def __init__(self, client, **kwargs):
         self.client = client
         self.password_file = kwargs.get("filename", None)
-        if not self.password_file:
-            if client.password_file:
-                self.password_file = client.password_file[0]
-                client.password_file = client.password_file[1:]
+        if not self.password_file and client.password_file:
+            self.password_file = client.password_file[0]
+            client.password_file = client.password_file[1:]
 
     def __repr__(self):
         return "file"
