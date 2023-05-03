@@ -261,7 +261,7 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
             raise RuntimeError("YUV from file not implemented yet!")
             #yuv = img.convert("YCbCr")
             #yuv444 = yuv.tobytes("raw", "YCbCr")
-            planes = ()
+            #planes = ()
         else:
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
