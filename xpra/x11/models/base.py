@@ -573,7 +573,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 elif mode==_NET_WM_STATE_TOGGLE:
                     v = not bool(current)
                 else:
-                    log.warn("Warning: invalid mode for _NET_WM_STATE: %s", mode)
+                    log.warn(f"Warning: invalid mode for _NET_WM_STATE: {mode}")
                     return
                 log("process_client_message_event(%s) window %s=%s after %s (current state=%s)",
                     event, prop, v, STATE_STRING.get(mode, mode), current)
@@ -610,8 +610,8 @@ class BaseWindowModel(CoreX11WindowModel):
             elif atom1=="_NET_WM_STATE_DEMANDS_ATTENTION":
                 update_wm_state("attention-requested")
             else:
-                log.info("Unhandled _NET_WM_STATE request: '%s'", atom1)
-                log.info(" event%s", event)
+                log.info(f"Unhandled _NET_WM_STATE request: {atom1!r}")
+                log.info(f" event {event!r}")
             return True
         if event.message_type=="WM_CHANGE_STATE":
             iconic = event.data[0]
