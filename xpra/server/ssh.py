@@ -524,5 +524,4 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             chan.close()
             #the client may now make another request on a new channel:
             ssh_server.event.clear()
-            continue
     return None

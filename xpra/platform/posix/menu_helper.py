@@ -149,7 +149,6 @@ def load_entry_icon(props):
         name = props.get(x)
         if name and name not in names:
             names.append(name)
-            continue
     for x in ("Exec", "TryExec"):
         cmd = props.get(x)
         if cmd and not cmd.endswith(os.path.sep):

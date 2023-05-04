@@ -612,7 +612,6 @@ class ServerCore:
             proc = Popen(args=cmd, env=get_saved_env())
             from xpra.child_reaper import getChildReaper
             getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
-            return
         def webbrowser_open():
             httplog.info(f"opening html5 client using URL {url!r}")
             if POSIX and not OSX:

@@ -665,7 +665,6 @@ class PrintClient(SendCommandConnectClient):
             self.warn_and_quit(ExitCode.FILE_TOO_BIG,
                                "the file is too large: %sB (the file size limit is %sB)" % (
                                    std_unit(size), std_unit(self.file_size_limit)))
-            return
         if self.filename=="-":
             #replace with filename proposed
             self.filename = command[2]

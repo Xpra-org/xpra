@@ -93,7 +93,6 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         def send_token(*token_data):
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
-            return
         if not (self._want_targets or self._greedy_client):
             send_token()
             return

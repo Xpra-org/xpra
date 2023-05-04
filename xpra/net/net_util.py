@@ -509,7 +509,6 @@ def main(): # pragma: no cover
             for i, idef in enumerate(idefs):
                 if isinstance(idef, (list, tuple)):
                     print(f" [{i}]           "+csv(idef))
-                    continue
 
         print("")
         print("Protocol Capabilities:")
