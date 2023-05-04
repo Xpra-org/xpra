@@ -168,9 +168,6 @@ def get_iface(ip) -> str:
                 return None
             else:
                 return iface
-    if ip.find(":")>=0:
-        #ipv6?
-        return None
     if any(x for x in ip if (".:0123456789").find(x)<0):
         #extra characters, assume this is a hostname:
         try:
@@ -188,9 +185,13 @@ def get_iface(ip) -> str:
         log("get_iface(%s) sockaddr=%s", ip, sockaddr)
         ip = sockaddr[0]
 
-    ip_parts = ip.split(".")
-    if len(ip_parts)!=4:
-        return None
+    if ip.find(":")>=0:
+        #ipv6?
+        ip_parts = ip.split(":")
+    else:
+        ip_parts = ip.split(".")
+        if len(ip_parts)!=4:
+            return None
 
     best_match = None
     get_bind_IPs()
