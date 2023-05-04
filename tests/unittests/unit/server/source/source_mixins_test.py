@@ -167,9 +167,9 @@ class SourceMixinsTest(unittest.TestCase):
     def test_mmap(self):
         from xpra.server.source import mmap_connection
         import tempfile
-        file = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
-        file.write(b"0"*1024*1024)
-        for server_mmap_filename in (None, file.name, "/this-path/should-not-exist"):
+        tmp = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
+        tmp.write(b"0"*1024*1024)
+        for server_mmap_filename in (None, tmp.name, "/this-path/should-not-exist"):
             for supports_mmap in (False, True):
                 for has_file in (True, False):
                     caps = {
@@ -177,8 +177,8 @@ class SourceMixinsTest(unittest.TestCase):
                         "min_mmap_size"     : 128*1024,
                         }
                     if has_file:
-                        caps["mmap.file"] = file.name
-                        caps["mmap_file"] = file.name
+                        caps["mmap.file"] = tmp.name
+                        caps["mmap_file"] = tmp.name
                     with LoggerSilencer(mmap_connection, ("error", "warn")):
                         self._test_mixin_class(mmap_connection.MMAP_Connection, {
                             "mmap_filename" : server_mmap_filename,

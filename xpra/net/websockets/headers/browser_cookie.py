@@ -18,7 +18,7 @@ def get_headers(host, port):    #pylint: disable=unused-argument
         for c in cj:
             cookie = c.name + "=" + c.value + "; "
             # add if cookie doesn't already exist from subdomain
-            if not c.name + "=" in cookie_string:
+            if c.name + "=" not in cookie_string:
                 cookie_string += cookie
         cookie_domain = cookie_domain.split('.', 1)[1]
     headers[b"Cookie"] = strtobytes(cookie_string)

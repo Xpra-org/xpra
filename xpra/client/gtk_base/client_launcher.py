@@ -453,13 +453,13 @@ class ApplicationWindow:
                     scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
                     Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
                 try:
-                    reload = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
+                    builtin_reload = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
                 except Exception:
                     log("button: failed to load icon after adding to builtins", exc_info=True)
                     size = 32
                     pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
                 else:
-                    pixbuf = reload
+                    pixbuf = builtin_reload
         if pixbuf:
             image = Gtk.Image.new_from_pixbuf(pixbuf)
             button.add(image)

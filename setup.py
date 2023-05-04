@@ -622,7 +622,7 @@ def do_add_modules(op, *mods):
             for f in os.listdir(pathname):
                 #make sure we only include python files,
                 #and ignore eclipse copies
-                if f.endswith(".py") and not f.startswith("Copy ")<0:
+                if f.endswith(".py") and not f.startswith("Copy "):
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = f"{x}."+f.replace(".py", "")

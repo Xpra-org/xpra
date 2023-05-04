@@ -49,7 +49,7 @@ def get_version_info():
     return {}
 
 def _get_pwd():
-    if not os.name=="posix":
+    if os.name!="posix":
         return None
     try:
         import pwd

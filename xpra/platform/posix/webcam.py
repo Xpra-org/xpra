@@ -24,7 +24,7 @@ def _can_capture_video(dev_file, dev_info):
     caps = dev_info.get("capabilities", [])
     if "DEVICE_CAPS" in caps:
         caps = dev_info.get("device_caps", [])
-    if not "VIDEO_CAPTURE" in caps:
+    if "VIDEO_CAPTURE" not in caps:
         log(f"device {dev_file!r} does not support video capture, capabilities={caps}")
         return False
     return True

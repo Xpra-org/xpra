@@ -1596,7 +1596,7 @@ class ServerCore:
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
             redirect_https = False
-            if HTTP_HTTPS_REDIRECT and not req_info in ("ws", "wss"):
+            if HTTP_HTTPS_REDIRECT and req_info not in ("ws", "wss"):
                 redirect_https = not is_ssl and self.ssl_mode.lower() in TRUE_OPTIONS
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
                                     self._www_dir, self._http_headers_dirs, scripts,

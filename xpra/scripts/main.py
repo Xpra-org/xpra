@@ -3881,7 +3881,7 @@ def run_showconfig(options, args):
     VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)
     #hide irrelevant options:
     HIDDEN = []
-    if not "all" in args:
+    if "all" not in args:
         #this logic probably belongs somewhere else:
         if OSX or WIN32:
             #these options don't make sense on win32 or osx:

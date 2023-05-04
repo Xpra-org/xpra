@@ -831,7 +831,7 @@ def get_x11_client_window_info(display, *app_name_strings):
             continue
         found = True
         for x in app_name_strings:
-            if not line.find(x)>=0:
+            if line.find(x)<0:
                 found = False
                 break
         if not found:
@@ -906,7 +906,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
                 out = f.read()
             #print("get_vnc_stats(%s) tcbench output=%s" % (last_record, out))
             for line in out.splitlines():
-                if not line.find("Frames/sec:")>=0:
+                if line.find("Frames/sec:")<0:
                     continue
                 parts = line.split()
                 regions_s = parts[-1]
