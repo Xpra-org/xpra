@@ -594,7 +594,7 @@ class BaseWindowModel(CoreX11WindowModel):
             elif atom1=="_NET_WM_STATE_DEMANDS_ATTENTION":
                 update_wm_state("attention-requested")
             else:
-                log.info("Unhandled _NET_WM_STATE request: '%s'", event, atom1)
+                log.info("Unhandled _NET_WM_STATE request: '%s'", atom1)
                 log.info(" event%s", event)
             return True
         if event.message_type=="WM_CHANGE_STATE":
