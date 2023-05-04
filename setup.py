@@ -109,7 +109,7 @@ try:
     print(f"found Cython version {cython.__version__}")
     cython_version = int(cython.__version__.split('.')[0])
 except (ValueError, ImportError):
-    print(f"WARNING: unable to detect Cython version")
+    print("WARNING: unable to detect Cython version")
     cython_version = 0
 
 
@@ -551,7 +551,7 @@ external_excludes = [
                     #not used:
                     "curses", "pdb",
                     "tty",
-                    "setuptools", "doctest"
+                    "setuptools", "doctest",
                     "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
                     "Cython", "cython", "pyximport",
                     "pydoc_data",
@@ -1467,7 +1467,7 @@ if WIN32:
             add_DLLs("faac", "faad", "flac", "mpg123")      #"mad" is no longer included?
             #add the gstreamer plugins we need:
             GST_PLUGINS = ("app",
-                           "cutter", "removesilence"
+                           "cutter", "removesilence",
                            #muxers:
                            "gdp", "matroska", "ogg", "isomp4",
                            "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
