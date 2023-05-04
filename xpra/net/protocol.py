@@ -74,7 +74,7 @@ def force_flush_queue(q):
         #discard all elements in the old queue and push the None marker:
         try:
             while q.qsize()>0:
-                q.read(False)
+                q.get(False)
         except Exception:
             pass
         q.put_nowait(None)
