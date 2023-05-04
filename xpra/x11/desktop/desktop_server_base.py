@@ -212,13 +212,11 @@ class DesktopServerBase(DesktopServerBaseClass):
         changes = []
         #boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
         iconified = new_window_state.get("iconified")
-        if iconified is not None:
-            if window._updateprop("iconic", iconified):
-                changes.append("iconified")
+        if iconified is not None and window._updateprop("iconic", iconified):
+            changes.append("iconified")
         focused = new_window_state.get("focused")
-        if focused is not None:
-            if window._updateprop("focused", focused):
-                changes.append("focused")
+        if focused is not None and window._updateprop("focused", focused):
+            changes.append("focused")
         return changes
 
 

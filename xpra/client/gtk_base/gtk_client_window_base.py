@@ -1139,7 +1139,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not lazy_shape:
             try:
                 from PIL import Image, ImageDraw        #@UnresolvedImport
-            except:
+            except ImportError:
                 lazy_shape = True
         if lazy_shape:
             #scale the rectangles without a bitmap...
@@ -1325,61 +1325,64 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if atom=="_NET_WM_DESKTOP":
             if self._been_mapped and not self._override_redirect and self._can_set_workspace:
                 self.do_workspace_changed(event)
-        elif atom=="_NET_FRAME_EXTENTS":
-            if prop_get:
-                v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-                statelog("_NET_FRAME_EXTENTS: %s", v)
-                if v:
-                    if v==self._current_frame_extents:
-                        #unchanged
-                        return
-                    if not self._been_mapped:
-                        #map event will take care of sending it
-                        return
-                    if self.is_OR() or self.is_tray():
-                        #we can't do it: the server can't handle configure packets for OR windows!
-                        return
-                    if not self._client.server_window_frame_extents:
-                        #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
-                        return
-                    #tell server about new value:
-                    self._current_frame_extents = v
-                    statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
-                    self._window_state["frame"] = self.crect(*v)
-                    self.send_configure_event(True)
-        elif atom=="XKLAVIER_STATE":
-            if prop_get:
-                #unused for now, but log it:
-                xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
-                keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
-        elif atom=="_NET_WM_STATE":
-            if prop_get:
-                wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
-                #code mostly duplicated from gtk_x11/window.py:
-                WM_STATE_NAME = {
-                    "fullscreen"    : ("_NET_WM_STATE_FULLSCREEN", ),
-                    "maximized"     : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
-                    "shaded"        : ("_NET_WM_STATE_SHADED", ),
-                    "sticky"        : ("_NET_WM_STATE_STICKY", ),
-                    "skip-pager"    : ("_NET_WM_STATE_SKIP_PAGER", ),
-                    "skip-taskbar"  : ("_NET_WM_STATE_SKIP_TASKBAR", ),
-                    "above"         : ("_NET_WM_STATE_ABOVE", ),
-                    "below"         : ("_NET_WM_STATE_BELOW", ),
-                    "focused"       : ("_NET_WM_STATE_FOCUSED", ),
-                    }
-                state_atoms = set(wm_state_atoms or [])
-                state_updates = {}
-                for state, atoms in WM_STATE_NAME.items():
-                    var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
-                    cur_state = getattr(self, var)
-                    wm_state_is_set = set(atoms).issubset(state_atoms)
-                    if wm_state_is_set and not cur_state:
-                        state_updates[state] = True
-                    elif cur_state and not wm_state_is_set:
-                        state_updates[state] = False
-                log("_NET_WM_STATE=%s, state_updates=%s", wm_state_atoms, state_updates)
-                if state_updates:
-                    self.update_window_state(state_updates)
+            return
+        #the remaining handlers need `prop_get`:
+        if not prop_get:
+            return
+        if atom=="_NET_FRAME_EXTENTS":
+            v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+            statelog("_NET_FRAME_EXTENTS: %s", v)
+            if v:
+                if v==self._current_frame_extents:
+                    #unchanged
+                    return
+                if not self._been_mapped:
+                    #map event will take care of sending it
+                    return
+                if self.is_OR() or self.is_tray():
+                    #we can't do it: the server can't handle configure packets for OR windows!
+                    return
+                if not self._client.server_window_frame_extents:
+                    #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
+                    return
+                #tell server about new value:
+                self._current_frame_extents = v
+                statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
+                self._window_state["frame"] = self.crect(*v)
+                self.send_configure_event(True)
+            return
+        if atom=="XKLAVIER_STATE":
+            #unused for now, but log it:
+            xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
+            keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
+            return
+        if atom=="_NET_WM_STATE":
+            wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
+            #code mostly duplicated from gtk_x11/window.py:
+            WM_STATE_NAME = {
+                "fullscreen"    : ("_NET_WM_STATE_FULLSCREEN", ),
+                "maximized"     : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+                "shaded"        : ("_NET_WM_STATE_SHADED", ),
+                "sticky"        : ("_NET_WM_STATE_STICKY", ),
+                "skip-pager"    : ("_NET_WM_STATE_SKIP_PAGER", ),
+                "skip-taskbar"  : ("_NET_WM_STATE_SKIP_TASKBAR", ),
+                "above"         : ("_NET_WM_STATE_ABOVE", ),
+                "below"         : ("_NET_WM_STATE_BELOW", ),
+                "focused"       : ("_NET_WM_STATE_FOCUSED", ),
+                }
+            state_atoms = set(wm_state_atoms or [])
+            state_updates = {}
+            for state, atoms in WM_STATE_NAME.items():
+                var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
+                cur_state = getattr(self, var)
+                wm_state_is_set = set(atoms).issubset(state_atoms)
+                if wm_state_is_set and not cur_state:
+                    state_updates[state] = True
+                elif cur_state and not wm_state_is_set:
+                    state_updates[state] = False
+            log("_NET_WM_STATE=%s, state_updates=%s", wm_state_atoms, state_updates)
+            if state_updates:
+                self.update_window_state(state_updates)
 
 
     ######################################################################

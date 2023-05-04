@@ -617,7 +617,7 @@ class ServerCore:
             if POSIX and not OSX:
                 saved_env = get_saved_env()
                 if not (saved_env.get("DISPLAY") or saved_env.get("WAYLAND_DISPLAY")):
-                    httplog.warn(f" no display, cannot open a browser window")
+                    httplog.warn(" no display, cannot open a browser window")
                     return
                 #run using a subprocess so we can specify the environment:
                 #(which will run it against the correct X11 display!)
@@ -674,8 +674,8 @@ class ServerCore:
                     self.open_html_url(opts.html, mode, bind[0])
                     break
             else:
-                log.warn(f"Warning: cannot open html client in a browser")
-                log.warn(f" no compatible socket found")
+                log.warn("Warning: cannot open html client in a browser")
+                log.warn(" no compatible socket found")
         if self._html is not False:     #True or None (for "auto")
             if not (opts.bind_tcp or opts.bind_ws or opts.bind_wss or opts.bind or opts.bind_ssl):
                 #we need a socket!
@@ -944,12 +944,10 @@ class ServerCore:
                 socktypes.append("ssh")
             if rfb_upgrades:
                 socktypes.append("rfb")
-        elif socktype=="ws":
-            if ssl:
-                socktypes.append("wss")
-        elif socktype=="socket":
-            if ssh_access:
-                socktypes = ["ssh"]
+        elif socktype=="ws" and ssl:
+            socktypes.append("wss")
+        elif socktype=="socket" and ssh_access:
+            socktypes = ["ssh"]
         return socktypes
 
     def get_mdns_info(self) -> dict:
@@ -2474,9 +2472,8 @@ class ServerCore:
                     add_address("ssl", address, port)
                 if self.ssh_upgrade:
                     add_address("ssh", address, port)
-            if socktype=="ws":
-                if self._ssl_attributes:
-                    add_address("wss", address, port)
+            if socktype=="ws" and self._ssl_attributes:
+                add_address("wss", address, port)
         netifaces = import_netifaces()
         for sock_details, options in self._socket_info.items():
             socktype, _, info, _ = sock_details

@@ -301,12 +301,11 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s",
                     keycode, entries)
                 continue
-            if drop_extra_keys:
-                if not any(keysym for keysym, index in entries if (
-                    X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)
+            if drop_extra_keys and not any(keysym for keysym, index in entries if (
+                X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)
                 ):
-                    log("keymapping removed keycode entry %s pointing to optional keys: %s", keycode, entries)
-                    continue
+                log("keymapping removed keycode entry %s pointing to optional keys: %s", keycode, entries)
+                continue
             filtered[keycode] = f_entries
         if invalid_keysyms:
             log.warn("Warning: the following keysyms are invalid and have not been mapped")
@@ -531,10 +530,9 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
         #ignoring indexes, but requiring at least as many keysyms:
         for p_keycode, p_entries in preserve_keycode_matches.items():
             p_keysyms = set(keysym for keysym,_ in p_entries)
-            if keysyms.issubset(p_keysyms):
-                if len(p_entries)>len(entries):
-                    l("found keysym preserve superset with more keys for %s : %s", tuple(entries), tuple(p_entries))
-                    return do_assign(client_keycode, p_keycode, p_entries, override_server_keycode=True)
+            if keysyms.issubset(p_keysyms) and len(p_entries)>len(entries):
+                l("found keysym preserve superset with more keys for %s : %s", tuple(entries), tuple(p_entries))
+                return do_assign(client_keycode, p_keycode, p_entries, override_server_keycode=True)
             if p_keysyms.issubset(keysyms):
                 l("found keysym superset of preserve with more keys for %s : %s", tuple(entries), tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, entries, override_server_keycode=True)

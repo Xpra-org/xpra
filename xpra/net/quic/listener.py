@@ -55,9 +55,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 self._http = H3Connection(self._quic, enable_webtransport=True)
             elif event.alpn_protocol in H0_ALPN:
                 self._http = H0Connection(self._quic)
-        elif isinstance(event, DatagramFrameReceived):
-            if event.data == b"quack":
-                self._quic.send_datagram_frame(b"quack-ack")
+        elif isinstance(event, DatagramFrameReceived) and event.data == b"quack":
+            self._quic.send_datagram_frame(b"quack-ack")
         #  pass event to the HTTP layer
         log(f"hsp:quic_event_received(..) http={self._http}")
         if self._http is not None:

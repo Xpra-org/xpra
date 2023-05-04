@@ -52,9 +52,8 @@ class Worker_Thread(Thread):
     def add(self, item, allow_duplicates=True, daemon=False):
         if self.items.qsize()>10:
             log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
-        if not allow_duplicates:
-            if item in self.items.queue:
-                return
+        if not allow_duplicates and item in self.items.queue:
+            return
         self.items.put(item)
         if daemon:
             self.daemon_work_items.add(item)

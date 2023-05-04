@@ -1280,15 +1280,13 @@ class ClientExtras:
             log.info("received console event %s", str(event_name).replace("_EVENT", ""))
         else:
             log.warn("unknown console event: %s", event_name)
-        if event==win32con.CTRL_C_EVENT:
-            if c:
-                log("calling=%s", c.signal_disconnect_and_quit)
-                c.signal_disconnect_and_quit(0, "CTRL_C")
-                return 1
-        if event==win32con.CTRL_CLOSE_EVENT:
-            if c:
-                c.signal_disconnect_and_quit(0, "CTRL_CLOSE")
-                return 1
+        if c and event==win32con.CTRL_C_EVENT:
+            log("calling=%s", c.signal_disconnect_and_quit)
+            c.signal_disconnect_and_quit(0, "CTRL_C")
+            return 1
+        if c and event==win32con.CTRL_CLOSE_EVENT:
+            c.signal_disconnect_and_quit(0, "CTRL_CLOSE")
+            return 1
         return 0
 
 

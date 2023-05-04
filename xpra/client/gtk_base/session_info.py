@@ -727,9 +727,8 @@ class SessionInfo(Gtk.Window):
         if self.is_closed:
             return False
         #now re-populate the tab we are seeing:
-        if self.populate_cb:
-            if not self.populate_cb():
-                self.populate_cb = None
+        if self.populate_cb and not self.populate_cb():
+            self.populate_cb = None
         return not self.is_closed
 
 

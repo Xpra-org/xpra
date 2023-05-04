@@ -1161,7 +1161,7 @@ class GTKTrayMenuBase(MenuHelper):
                 set_sensitive(keyboard, False)
                 return keyboard
         elif not FULL_LAYOUT_LIST:
-            keyboard.set_tooltip_text(f"No keyboard layouts detected")
+            keyboard.set_tooltip_text("No keyboard layouts detected")
             set_sensitive(keyboard, False)
             return keyboard
         else:

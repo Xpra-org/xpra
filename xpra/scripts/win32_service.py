@@ -21,10 +21,10 @@ def get_commonappdata_dir():
         return None
 
 def main(argv):
-    if len(argv)>1:
-        if argv[1]!="start":
-            assert argv[1]=="stop"
-            return run_mode("stop", argv[:1]+["stop", "named-pipe://%s" % PIPE_NAME])
+    if len(argv)>1 and argv[1]!="start":
+        if argv[1]!="stop":
+            raise ValueError(f"unsupported subcommand {argv[1]!r}")
+        return run_mode("stop", argv[:1]+["stop", "named-pipe://%s" % PIPE_NAME])
 
     from multiprocessing import freeze_support #@UnresolvedImport
     freeze_support()

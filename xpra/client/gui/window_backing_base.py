@@ -92,10 +92,9 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
 
 def verify_checksum(img_data, options):
     l = options.intget("z.len")
-    if l:
-        if l!=len(img_data):
-            raise ValueError("compressed pixel data failed length integrity check:"+
-                             f" expected {l} bytes but got {len(img_data)}")
+    if l and l!=len(img_data):
+        raise ValueError("compressed pixel data failed length integrity check:"+
+                         f" expected {l} bytes but got {len(img_data)}")
     chksum = options.get("z.sha256")
     if chksum:
         h = hashlib.sha256(img_data)

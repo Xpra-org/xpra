@@ -227,7 +227,7 @@ class Encodings(StubClientMixin):
 
         #generic rgb compression flags:
         if "lz4" in compression.get_enabled_compressors():
-            caps[f"rgb_lz4"] = True
+            caps["rgb_lz4"] = True
         #these are the defaults - when we instantiate a window,
         #we can send different values as part of the map event
         #these are the RGB modes we want (the ones we are expected to be able to paint with):
@@ -310,7 +310,7 @@ class Encodings(StubClientMixin):
             if encoding not in self.server_encodings:
                 log.error(f"Error: encoding {encoding} is not supported by the server")
                 log.error(" the only encodings allowed are:")
-                log.error(f" "+csv(self.server_encodings))
+                log.error(" "+csv(self.server_encodings))
                 return
             self.encoding = encoding
         self.send("encoding", self.encoding)

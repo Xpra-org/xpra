@@ -374,9 +374,8 @@ class Encoder(VideoPipeline):
             data = image.get_pixels()
             rowstride = image.get_rowstride()
             want_rowstride = roundup(self.width, 2)*len(self.colorspace)
-            if rowstride!=want_rowstride:
-                if not image.restride(want_rowstride):
-                    raise RuntimeError(f"failed to restride image from {rowstride}to {want_rowstride}")
+            if rowstride!=want_rowstride and not image.restride(want_rowstride):
+                raise RuntimeError(f"failed to restride image from {rowstride}to {want_rowstride}")
         else:
             #merge all planes into a single buffer:
             data = b"".join(image.get_pixels())

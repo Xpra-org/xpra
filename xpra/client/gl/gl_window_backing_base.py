@@ -435,7 +435,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         try:
             s = msg[0] % msg[1:]
-        except:
+        except TypeError:
             s = str(msg)
         from ctypes import c_char_p  # pylint: disable=import-outside-toplevel
         c_string = c_char_p(s)

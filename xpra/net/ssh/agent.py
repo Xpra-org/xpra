@@ -100,7 +100,7 @@ def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
             os.unlink(agent_uuid_sockpath)
         except OSError as e:
             sshlog(f"os.unlink({agent_uuid_sockpath!r})", exc_info=True)
-            sshlog.error(f"Error: removing the broken ssh agent symlink")
+            sshlog.error("Error: removing the broken ssh agent symlink")
             sshlog.estr(e)
     sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
     try:

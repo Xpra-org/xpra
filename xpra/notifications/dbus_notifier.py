@@ -158,9 +158,8 @@ class DBUS_Notifier(NotifierBase):
     def ActionInvoked(self, actual_id : int, action):
         nid = self._find_nid(actual_id)
         log("ActionInvoked(%s, %s) nid=%s", actual_id, action, nid)
-        if nid:
-            if self.action_cb:
-                self.action_cb(nid, str(action))
+        if nid and self.action_cb:
+            self.action_cb(nid, str(action))
 
     def NotifyError(self, dbus_error, *_args):
         try:

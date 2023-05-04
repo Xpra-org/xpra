@@ -102,7 +102,7 @@ def get_icc_data():
                     pass
                 icc["version"] = version
     except Exception as e:
-        log.error("Error: cannot access _ICC_PROFILE X11 window property")
+        log.error("Error: cannot access `_ICC_PROFILE` X11 window property")
         log.estr(e)
         log("get_icc_info()", exc_info=True)
     log("get_x11_icc_data()=%s", icc)
@@ -118,7 +118,7 @@ def get_current_desktop():
             v = struct.unpack(b"@L", d)[0]
     except Exception as e:
         log("get_current_desktop()", exc_info=True)
-        log.error(f"Error: accessing _NET_CURRENT_DESKTOP:")
+        log.error("Error: accessing `_NET_CURRENT_DESKTOP`:")
         log.estr(e)
     log("get_current_desktop() %s=%s", hexstr(d or ""), v)
     return v
@@ -132,7 +132,7 @@ def get_number_of_desktops():
             v = struct.unpack(b"@L", d)[0]
     except Exception as e:
         log("get_number_of_desktops()", exc_info=True)
-        log.error(f"Error: accessing _NET_NUMBER_OF_DESKTOPS:")
+        log.error("Error: accessing `_NET_NUMBER_OF_DESKTOPS`:")
         log.estr(e)
     v = max(1, v)
     log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
@@ -151,7 +151,7 @@ def get_workarea():
         #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
         sizeof_long = struct.calcsize(b"@L")
         if len(workarea)<(d+1)*4*sizeof_long:
-            log.warn(f"Warning: invalid _NET_WORKAREA value length: {workarea!r}")
+            log.warn(f"Warning: invalid `_NET_WORKAREA` value length: {workarea!r}")
         else:
             cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
             v = struct.unpack(b"@LLLL", cur_workarea)
@@ -174,7 +174,7 @@ def get_desktop_names():
                 v = v[:-1]
             return tuple(x.decode("utf8") for x in v)
     except Exception as e:
-        log.error("Error querying _NET_DESKTOP_NAMES:")
+        log.error("Error querying `_NET_DESKTOP_NAMES`:")
         log.estr(e)
     log("get_desktop_names() %s=%s", hexstr(d or ""), v)
     return v

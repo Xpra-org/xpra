@@ -174,9 +174,8 @@ def ensure_item_selected(submenu, item, recurse=True):
                     a = get_active_item(submenu.get_children())
                     if a:
                         return a
-            if isinstance(x, Gtk.CheckMenuItem):
-                if x.get_active():
-                    return x
+            if isinstance(x, Gtk.CheckMenuItem) and x.get_active():
+                return x
         return None
     active = get_active_item(submenu.get_children())
     if active:

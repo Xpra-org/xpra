@@ -877,10 +877,9 @@ class ServerBase(ServerBaseClass):
                     c.last_client_exited(self)
                 except Exception:
                     log("last_client_exited calling %s", c.last_client_exited, exc_info=True)
-        if self.exit_with_client:
-            if not self._closing:
-                netlog.info("Last client has disconnected, terminating")
-                self.clean_quit(False)
+        if self.exit_with_client and not self._closing:
+            netlog.info("Last client has disconnected, terminating")
+            self.clean_quit(False)
 
 
     def set_ui_driver(self, source):

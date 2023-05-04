@@ -590,7 +590,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, session_dir,
                         display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     log = get_network_logger()
-    log(f"setup_local_sockets%s",
+    log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group, socket_permissions, username, uid, gid))
     if not bind:
         return {}

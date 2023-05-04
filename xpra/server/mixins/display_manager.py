@@ -405,12 +405,11 @@ class DisplayManager(StubServerMixin):
             self.calculate_workarea(width, height)
         dpix = attrs.intget("dpi.x") or attrs.intget("dpi")
         dpiy = attrs.intget("dpi.y") or attrs.intget("dpi")
-        if dpix and dpiy:
-            if dpix!=self.xdpi or dpiy!=self.ydpi:
-                self.xdpi, self.ydpi = dpix, dpiy
-                log("new dpi: %ix%i", dpix, dpiy)
-                self.dpi = round((dpix + dpiy)/2)
-                self.dpi_changed()
+        if dpix and dpiy and (dpix!=self.xdpi or dpiy!=self.ydpi):
+            self.xdpi, self.ydpi = dpix, dpiy
+            log("new dpi: %ix%i", dpix, dpiy)
+            self.dpi = round((dpix + dpiy)/2)
+            self.dpi_changed()
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)

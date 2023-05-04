@@ -25,7 +25,7 @@ def get_x11_property(atom_name):
     except ImportError:
         from xpra.util import first_time, envint
         if first_time("pulse-x11-bindings") and not envint("XPRA_SKIP_UI", 0):
-            log.info(f"unable to query display properties without the X11 bindings")
+            log.info("unable to query display properties without the X11 bindings")
         return b""
     try:
         from xpra.gtk_common.error import xswallow

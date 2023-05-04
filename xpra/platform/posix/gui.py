@@ -666,10 +666,9 @@ class ClientExtras:
             if self.login1_match:
                 bus._clean_up_signal_match(self.login1_match)
                 self.login1_match = None
-        if self.session_bus:
-            if self.screensaver_match:
-                self.session_bus._clean_up_signal_match(self.screensaver_match)
-                self.screensaver_match = None
+        if self.session_bus and self.screensaver_match:
+            self.session_bus._clean_up_signal_match(self.screensaver_match)
+            self.screensaver_match = None
         global WINDOW_METHOD_OVERRIDES
         WINDOW_METHOD_OVERRIDES = {}
 

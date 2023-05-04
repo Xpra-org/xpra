@@ -119,7 +119,7 @@ class ClipboardServer(StubServerMixin):
             from xpra.platform.gui import get_clipboard_native_class
             clipboard_class = get_clipboard_native_class()
             if not clipboard_class:
-                raise RuntimeError(f"no native clipboard support on this platform")
+                raise RuntimeError("no native clipboard support on this platform")
             parts = clipboard_class.split(".")
             mod = ".".join(parts[:-1])
             module = __import__(mod, {}, {}, [parts[-1]])

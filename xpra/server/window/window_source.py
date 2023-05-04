@@ -935,11 +935,10 @@ class WindowSource(WindowIconSource):
         weight = 1 + int(self.is_OR or self.is_tray or self.is_shadow)*2
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * weight)
         crs = self.client_render_size
-        if crs and DOWNSCALE:
-            if crs[0]<ww or crs[1]<wh:
-                #client will downscale, best to avoid sending rgb,
-                #so we can more easily downscale at this end:
-                max_rgb_threshold = 1024
+        if crs and DOWNSCALE and (crs[0]<ww or crs[1]<wh):
+            #client will downscale, best to avoid sending rgb,
+            #so we can more easily downscale at this end:
+            max_rgb_threshold = 1024
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         #for deciding between small regions and full screen updates:
         self.max_small_regions : int = 40

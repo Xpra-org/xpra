@@ -191,13 +191,14 @@ class MotifWMHints:
                                  MotifWMHints.STATUS_STR)
 
     def __str__(self):
-        return "MotifWMHints(%s)" % {
+        attrs = {
             "flags"         : self.flags_strs(),
             "functions"     : self.functions_strs(),
             "decorations"   : self.decorations_strs(),
             "input_mode"    : self.input_strs(),
             "status"        : self.status_strs(),
             }
+        return f"MotifWMHints({attrs})"
 
 
 def _read_image(stream):

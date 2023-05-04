@@ -276,7 +276,7 @@ def setup_capture(window):
         except ImportError:
             log(f"not using X11 capture using gstreamer: {e}")
         except Exception:
-            log(f"not using X11 capture using gstreamer", exc_info=True)
+            log("not using X11 capture using gstreamer", exc_info=True)
     if XSHM:
         try:
             from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel

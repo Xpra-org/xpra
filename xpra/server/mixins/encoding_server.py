@@ -191,11 +191,10 @@ class EncodingServer(StubServerMixin):
         for e in ve:
             for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
                 for espec in especs:
-                    if espec.has_lossless_mode:
-                        if e not in lossless:
-                            log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
-                            lossless.append(e)
-                            break
+                    if espec.has_lossless_mode and e not in lossless:
+                        log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
+                        lossless.append(e)
+                        break
         #now update the variables:
         encs.append("grayscale")
         self.encodings = encs

@@ -360,12 +360,10 @@ class ProxyInstance:
                 self.client_protocol.close()
             else:
                 self.stop(None, "disconnect from client", *reasons)
-        elif packet_type=="send-file":
-            if packet[6]:
-                packet[6] = Compressed("file-data", packet[6])
-        elif packet_type=="send-file-chunk":
-            if packet[3]:
-                packet[3] = Compressed("file-chunk-data", packet[3])
+        elif packet_type=="send-file" and packet[6]:
+            packet[6] = Compressed("file-data", packet[6])
+        elif packet_type=="send-file-chunk" and packet[3]:
+            packet[3] = Compressed("file-chunk-data", packet[3])
         self.queue_server_packet(packet)
 
 

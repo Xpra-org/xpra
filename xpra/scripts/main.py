@@ -196,7 +196,7 @@ def configure_logging(options, mode):
         "splash", "qrcode",
         "opengl-test",
         "desktop-greeter",
-        "show-menu", "show-about", "show-session-info"
+        "show-menu", "show-about", "show-session-info",
         "webcam",
         "showconfig",
         ):
@@ -319,7 +319,7 @@ def check_gtk_client():
         from xpra.client import gui, gtk3
         assert gui, gtk3
     except ImportError:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, f"xpra-client-gtk3 is not installed") from None
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
     if POSIX and not OSX and not os.environ.get("GDK_BACKEND") and (
         os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" or os.environ.get("SSH_TTY")
         ):

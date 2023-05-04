@@ -87,7 +87,7 @@ class XpraMonitorServer(DesktopServerBase):
         if not getattr(ss, "desktop_fullscreen", False):
             return current()
         #try to match this client's layout:
-        log(f"will try to mirror")
+        log("will try to mirror")
         #prevent this monitor layout change
         #from triggering a call to via reconfigure_monitors via reconfigure:
         try:

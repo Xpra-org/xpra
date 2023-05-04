@@ -1270,7 +1270,7 @@ class WindowVideoSource(WindowSource):
                 scorelog(f" change of csc output format from {csce.get_dst_format()} to {enc_in_format}")
                 return False
             if csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
-                scorelog(f" change of csc input dimensions from %ix%i to %ix%i",
+                scorelog(" change of csc input dimensions from %ix%i to %ix%i",
                          csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
                 return False
             if csce.get_dst_width()!=enc_width or csce.get_dst_height()!=enc_height:

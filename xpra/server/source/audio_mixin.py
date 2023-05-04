@@ -301,7 +301,7 @@ class AudioMixin(StubSourceMixin):
             timer = self.timeout_add(NEW_STREAM_SOUND_STOP*1000, stop_new_stream_notification)
             self.new_stream_timers[proc] = timer
         except Exception as e:
-            log(f"new_stream_sound() error playing new stream sound", exc_info=True)
+            log("new_stream_sound() error playing new stream sound", exc_info=True)
             log.error("Error playing new-stream sound")
             log.error(f" using: {cmd_str}:")
             log.estr(e)

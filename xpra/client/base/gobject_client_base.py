@@ -317,7 +317,7 @@ class InfoXpraClient(CommandConnectClient):
                     if k.endswith("xid"):
                         try:
                             v = hex(int(v))
-                        except:
+                        except (TypeError, ValueError):
                             pass
                     if k.endswith("version") and isinstance(v, (tuple, list)):
                         v = ".".join(str(x) for x in v)
