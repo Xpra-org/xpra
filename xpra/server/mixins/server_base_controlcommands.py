@@ -272,7 +272,7 @@ class ServerBaseControlCommands(StubServerMixin):
             uuids = tuple(ss.uuid for ss in sources)
             notfound = any(x for x in client_uuids if x not in uuids)
             if notfound:
-                log.warn("client connection not found for uuid(s): %s", notfound)
+                log.warn(f"Warning: client connection not found for uuid(s): {notfound}")
         return sources
 
     def control_command_send_notification(self, nid, title, message, client_uuids):
@@ -309,7 +309,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            raise ControlError(f"no clients found matching: {client_uuids}")
+            raise ControlError(f"no clients found matching: {client_uuids!r}")
         clients = 0
         for ss in sources:
             if hasattr(ss, "send_open_url") and ss.send_open_url(url):
@@ -338,7 +338,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            raise ControlError(f"no clients found matching: {client_uuids}")
+            raise ControlError(f"no clients found matching: {client_uuids!r}")
         def checksize(file_size):
             if file_size>self.file_transfer.file_size_limit:
                 raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (
@@ -371,10 +371,10 @@ class ServerBaseControlCommands(StubServerMixin):
                     l = log
                 else:
                     l = log.warn
-                l("Warning: cannot %s '%s' to %s client", command_type, filename, ss.client_type)
-                l(" client %s does not support this feature", ss.uuid)
+                l(f"Warning: cannot {command_type} {filename!r} to {ss.client_type} client")
+                l(f" client {ss.uuid} does not support this feature")
             elif file_size>ss.file_size_limit:
-                log.warn("Warning: cannot %s '%s'", command_type, filename)
+                log.warn(f"Warning: cannot {command_type} {filename!r}")
                 log.warn(" client %s file size limit is %sB (file is %sB)",
                          ss, std_unit(ss.file_size_limit), std_unit(file_size))
             else:
@@ -430,7 +430,7 @@ class ServerBaseControlCommands(StubServerMixin):
         for source in tuple(self._server_sources.values()):
             # forwards to *the* client, if there is *one*
             if client_command[0] not in source.control_commands:
-                log.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
+                log.info(f"client command {client_command!r} not forwarded to client {source} (not supported)")
             else:
                 source.send_client_command(*client_command)
 
@@ -453,7 +453,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_name(self, name):
         self.session_name = name
-        log.info("changed session name: %s", self.session_name)
+        log.info(f"changed session name: {self.session_name!r}")
         #self.all_send_client_command("name", name)    not supported by any clients, don't bother!
         self.setting_changed("session_name", name)
         self.mdns_update()
@@ -475,7 +475,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 if wid in self._id_to_window:
                     wids.append(wid)
                 else:
-                    log("window id %s does not exist", wid)
+                    log(f"window id {wid} does not exist")
         wss = []
         for csource in tuple(self._server_sources.values()):
             for wid in wids:
@@ -621,8 +621,8 @@ class ServerBaseControlCommands(StubServerMixin):
         for ws in self._ws_from_args(wid):
             vs = getattr(ws, "video_subregion", None)
             if not vs:
-                log.warn("Warning: cannot set video region enabled flag on window %i:", wid)
-                log.warn(" no video subregion attribute found in %s", type(ws))
+                log.warn(f"Warning: cannot set video region enabled flag on window {wid}")
+                log.warn(f" no video subregion attribute found in {type(ws)}")
                 continue
             video_subregions.append(vs)
         #log("_control_video_subregions_from_wid(%s)=%s", wid, video_subregions)
@@ -698,7 +698,7 @@ class ServerBaseControlCommands(StubServerMixin):
         if len(ss)>1:
             return f"more than one source found for uuid {uuid!r}"
         self.set_ui_driver(ss)
-        return "ui-driver set to {ss}"
+        return f"ui-driver set to {ss}"
 
     def control_command_key(self, keycode_str, press = True):
         if self.readonly:
@@ -777,7 +777,7 @@ class ServerBaseControlCommands(StubServerMixin):
             if resize_window:
                 resize_window(wid, window, w, h)
                 count += 1
-        return f"window {wid} resized to {x}x{h} for {count} clients"
+        return f"window {wid} resized to {w}x{h} for {count} clients"
 
     def control_command_moveresize(self, wid, x, y, w, h):
         window = self._id_to_window.get(wid)
