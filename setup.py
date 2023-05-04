@@ -1765,11 +1765,16 @@ else:
             else:
                 install_data.run(self)
             print(f"install_data_override.run() install_dir={install_dir}")
-
-            root_prefix = install_dir.rstrip("/")
+            root_prefix = None
+            for x in sys.argv:
+                if x.startswith("--prefix="):
+                    root_prefix = x[len("--prefix="):]
+            if not root_prefix:
+                root_prefix = install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
                 #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
+            print(f"install_data_override.run() root_prefix={root_prefix}")
             build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):

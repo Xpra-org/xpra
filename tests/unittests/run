@@ -24,7 +24,7 @@ PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'
 
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 pushd $SRC_DIR
-$PYTHON ./setup.py install --without-printing  --without-docs --with-scripts --with-cython_tracing --home=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
+$PYTHON ./setup.py install --without-printing --without-docs --with-scripts --with-cython_tracing --prefix=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
 
 if [ `uname` == "Linux" ]; then
