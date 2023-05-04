@@ -13,7 +13,6 @@ from xpra.util import csv
 from xpra.os_util import hexstr, strtobytes
 from xpra.codecs.codec_debug import may_save_image
 from xpra.log import Logger
-from scipy.optimize._zeros_py import VALUEERR
 
 log = Logger("encoder", "pillow")
 
