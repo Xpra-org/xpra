@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
-from xpra.os_util import OSEnvContext, pollwait, POSIX, OSX
+from xpra.os_util import OSEnvContext, pollwait, getuid, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop
@@ -42,11 +42,16 @@ class TestMain(unittest.TestCase):
             if not use_systemd_run(s):
                 continue
             for user in (True, False):
-                for systemd_run_args in ("", "-d"):
+                for systemd_run_args in (None, "-d"):
                     assert systemd_run_command("mode", systemd_run_args, user=user)[0]=="systemd-run"
-            with OSEnvContext():
-                os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
-                assert systemd_run_wrap("unused", ["xpra", "--version"], stdout=DEVNULL, stderr=DEVNULL)==0
+        if not use_systemd_run("auto"):
+            return
+        with OSEnvContext():
+            os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
+            os.environ["XPRA_LOG_SYSTEMD_WRAP_COMMAND"] = "0"
+            r = systemd_run_wrap("unused", ["xpra", "--version"], user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL)
+            if r:
+                raise ValueError(f"expected return code 0 but got {r}")
 
     def test_display_type_check(self):
         for arg in ("ssh:host", "ssh/host", "tcp:IP", "ssl/host", "vsock:port"):
