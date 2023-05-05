@@ -480,7 +480,10 @@ class InputServer(StubServerMixin):
         self.setup_input_devices()
 
     def setup_input_devices(self):
-        pass
+        """
+        subclasses can override this method
+        the x11 servers use this to map devices
+        """
 
 
     def init_packet_handlers(self):
