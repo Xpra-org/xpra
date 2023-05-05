@@ -47,6 +47,10 @@ class LoggingServer(StubServerMixin):
 
     def get_server_features(self, _source=None) -> dict:
         return {
+            "remote-logging"            : {
+                "receive"       : self.remote_logging_receive,
+                "send"          : self.remote_logging_send,
+                },
             "remote-logging"            : self.remote_logging_receive,  #pre-v4.1 feature name
             "remote-logging.receive"    : self.remote_logging_receive,
             "remote-logging.multi-line" : True,

@@ -47,9 +47,14 @@ class RemoteLogging(StubClientMixin):
 
 
     def parse_server_capabilities(self, c : typedict) -> bool:
-        if self.remote_logging.lower() in ("send", "both", "yes", "true", "on") and (
-            #'remote-logging.receive' was only added in v4.1 so check both:
-            c.boolget("remote-logging") or c.boolget("remote-logging.receive")):
+        receive = c.boolget("remote-logging.receive")
+        send = c.boolget("remote-logging.send")
+        v = c.get("remote-logging")
+        if isinstance(v, dict):
+            c = typedict(v)
+            receive = c.boolget("receive")
+            send = c.boolget("send")
+        if self.remote_logging.lower() in ("send", "both", "yes", "true", "on") and receive:
             #check for debug:
             from xpra.log import is_debug_enabled
             conflict = tuple(v for v in ("network", "crypto", "websocket", "quic") if is_debug_enabled(v))
@@ -62,7 +67,7 @@ class RemoteLogging(StubClientMixin):
                 log.info(" see server log file for further output")
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         elif self.remote_logging.lower()=="receive":
-            self.request_server_log = c.boolget("remote-logging.send")
+            self.request_server_log = send
             if not self.request_server_log:
                 log.warn("Warning: cannot receive log output from the server")
                 log.warn(" the feature is not enabled or not supported by the server")

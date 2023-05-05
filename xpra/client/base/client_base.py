@@ -48,6 +48,7 @@ from xpra.util import (
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
 from xpra.client.base.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import ExitCode, exit_str
+from hgext.clonebundles import capabilities
 
 log = Logger("client")
 netlog = Logger("network")
@@ -453,7 +454,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         capabilities.update(self.get_file_transfer_features())
         def up(prefix, d):
             updict(capabilities, prefix, d)
-        up("build",     self.get_version_info())
+        vi = self.get_version_info()
+        capabilities["build"] = vi
+        #legacy format:
+        up("build", vi)
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid

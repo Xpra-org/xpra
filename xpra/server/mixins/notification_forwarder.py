@@ -44,7 +44,10 @@ class NotificationForwarder(StubServerMixin):
 
     def get_server_features(self, _source=None) -> dict:
         return {
-            "notifications"                : self.notifications,
+            "notifications"                : {
+                "close"     : self.notifications,
+                "actions"   : self.notifications,
+                },
             "notifications.close"          : self.notifications,    #added in v2.3
             "notifications.actions"        : self.notifications,    #added in v2.3
             }

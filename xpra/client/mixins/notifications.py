@@ -66,11 +66,19 @@ class NotificationClient(StubClientMixin):
 
 
     def get_caps(self) -> dict:
-        return updict({}, "notifications", {
-            ""            : self.client_supports_notifications,
-            "close"       : self.client_supports_notifications,
-            "actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
+        enabled = self.client_supports_notifications
+        actions = bool(self.client_supports_notifications and self.notifier and self.notifier.handles_actions)
+        caps = updict({}, "notifications", {
+            ""            : enabled,
+            "close"       : enabled,
+            "actions"     : actions,
             })
+        caps["notifications"] = {
+            "enabled"   : enabled,
+            "close"     : enabled,
+            "actions"   : actions,
+            }
+        return caps
 
 
     def init_authenticated_packet_handlers(self):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,12 @@ class NotificationMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        return caps.boolget("notifications", False)
+        v = caps.get("notifications")
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, dict):
+            return typedict(v).boolget("enabled", False)
+        return False
 
 
     def init_state(self):
@@ -24,8 +29,14 @@ class NotificationMixin(StubSourceMixin):
         self.notification_callbacks = {}
 
     def parse_client_caps(self, c : typedict):
-        self.send_notifications = c.boolget("notifications")
-        self.send_notifications_actions = c.boolget("notifications.actions")
+        v = c.get("notifications")
+        if isinstance(v, dict):
+            c = typedict(v)
+            self.send_notifications = c.boolget("enabled")
+            self.send_notifications_actions = c.boolget("actions")
+        elif isinstance(v, bool):
+            self.send_notifications = c.boolget("notifications")
+            self.send_notifications_actions = c.boolget("notifications.actions")
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
 
     def get_info(self) -> dict:
