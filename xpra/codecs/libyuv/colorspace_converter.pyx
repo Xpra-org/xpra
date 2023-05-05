@@ -308,6 +308,7 @@ cdef class ColorspaceConverter:
             self.out_buffer_size = dst_width*len(dst_format)*dst_height
         else:
             raise ValueError(f"invalid destination format: {dst_format!r}")
+        log(f"{src_format} -> {dst_format} planes={self.planes}, yuv-scaling={self.yuv_scaling}, rgb-scaling={self.rgb_scaling}, output buffer-size={self.out_buffer_size}")
 
     def init_yuv_output(self):
         #pre-calculate unscaled YUV plane heights:
@@ -436,8 +437,10 @@ cdef class ColorspaceConverter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
-        assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
-        assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
+        if width<self.src_width:
+            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
+        if height<self.src_height:
+            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if iplanes!=2:
             raise ValueError(f"invalid plane input format: {iplanes}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
@@ -452,13 +455,14 @@ cdef class ColorspaceConverter:
         cdef uintptr_t y, uv
         cdef uint8_t *rgb
         cdef int r = 0
+        log("convert_nv12_image(%s) to %s", image, self.dst_format)
         with buffer_context(pixels[0]) as y_buf:
             y = <uintptr_t> int(y_buf)
             with buffer_context(pixels[1]) as uv_buf:
                 uv = <uintptr_t> int(uv_buf)
                 rgb_buffer = getbuf(self.out_buffer_size)
                 if not rgb_buffer:
-                    raise RuntimeError("failed to allocate %i bytes for output buffer" % (self.out_buffer_size))
+                    raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
                 rgb = <uint8_t*> rgb_buffer.get_mem()
                 if self.dst_format=="RGB":
                     with nogil:
@@ -498,9 +502,12 @@ cdef class ColorspaceConverter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
-        assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
-        assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
-        assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
+        if iplanes!=ImageWrapper.PACKED:
+            raise ValueError(f"invalid plane input format: {iplanes}")
+        if width<self.src_width:
+            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
+        if height<self.src_height:
+            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if self.rgb_scaling:
             #first downscale:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
@@ -516,7 +523,7 @@ cdef class ColorspaceConverter:
             #allocate output buffer:
             output_buffer = <unsigned char*> memalign(self.out_buffer_size)
             if output_buffer==NULL:
-                raise RuntimeError("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
+                raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         for i in range(self.planes):
             #offsets are aligned, so this is safe and gives us aligned pointers:
             out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
@@ -537,7 +544,8 @@ cdef class ColorspaceConverter:
                                         out_planes[1], self.out_stride[1],
                                         out_planes[2], self.out_stride[2],
                                         width, height)
-        assert result==0, "libyuv ARGBToJ420/NV12 failed and returned %i" % result
+        if result!=0:
+            raise RuntimeError(f"libyuv ARGBToJ420/NV12 failed and returned {result}")
         cdef double elapsed = monotonic()-start
         log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
@@ -548,7 +556,7 @@ cdef class ColorspaceConverter:
             start = monotonic()
             scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
-                raise RuntimeError("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
+                raise RuntimeError(f"failed to allocate {self.scaled_buffer_size} bytes for scaled buffer")
             with nogil:
                 for i in range(self.planes):
                     scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
