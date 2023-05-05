@@ -30,7 +30,10 @@ popd
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
-export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python*`:.
+#why is every workaround for setuptools so cumbersome?
+XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | grep -v etc/xpra | head -n 1 | tr -d '\n'`
+export PYTHONPATH=".:`dirname $XPRA_MODULE_DIR`"
+echo "found PYTHONPATH=${PYTHONPATH}"
 export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/bin/xpra}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
