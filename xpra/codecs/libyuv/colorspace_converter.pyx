@@ -291,17 +291,20 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
         self.output_buffer = NULL
+        cdef uint8_t scaling = int(src_width!=dst_width or src_height!=dst_height)
         if dst_format=="YUV420P":
             self.planes = 3
-            self.yuv_scaling = int(src_width!=dst_width or src_height!=dst_height)
+            self.yuv_scaling = scaling
             self.rgb_scaling = False
             self.init_yuv_output()
         elif dst_format=="NV12":
             self.planes = 2
             self.yuv_scaling = False
-            self.rgb_scaling = int(src_width!=dst_width or src_height!=dst_height)
+            self.rgb_scaling = scaling
             self.init_yuv_output()
         elif dst_format in ("RGB", "BGRX", "RGBX"):
+            if scaling:
+                raise ValueError(f"cannot scale {src_format} to {dst_format}")
             self.planes = 1
             self.yuv_scaling = False
             self.rgb_scaling = False
@@ -445,6 +448,8 @@ cdef class ColorspaceConverter:
             raise ValueError(f"invalid plane input format: {iplanes}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
             raise ValueError(f"invalid dst format {self.dst_format}")
+        if self.rgb_scaling:
+            raise ValueError(f"cannot scale {self.src_format}")
         pixels = image.get_pixels()
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
@@ -589,7 +594,7 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.libyuv import colorspace_converter
     maxw, maxh = MAX_WIDTH, MAX_HEIGHT
-    testcsc(colorspace_converter, True, full)
+    testcsc(colorspace_converter, full)
     if full:
         mw, mh = get_csc_max_size(colorspace_converter, limit_w=32768, limit_h=32768)
         MAX_WIDTH = min(maxw, mw)

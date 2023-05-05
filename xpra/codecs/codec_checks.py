@@ -519,12 +519,12 @@ def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, 
             e.clean()
 
 
-def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=None):
+def testcsc(csc_module, full=False, test_cs_in=None, test_cs_out=None):
     W = 48
     H = 32
     log("test_csc%s", (csc_module, full, test_cs_in, test_cs_out))
     do_testcsc(csc_module, W, H, W, H, full, test_cs_in, test_cs_out)
-    if full and scaling:
+    if full:
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
         do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
@@ -562,6 +562,10 @@ def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_
         if cs_out_list is None:
             cs_out_list = csc_module.get_output_colorspaces(cs_in)
         for cs_out in cs_out_list:
+            if iw!=ow or ih!=oh:
+                spec = csc_module.get_spec(cs_in, cs_out)
+                if not spec.can_scale:
+                    continue
             log(f"{cstype}: testing {cs_in} -> {cs_out}")
             e = csc_module.ColorspaceConverter()
             try:

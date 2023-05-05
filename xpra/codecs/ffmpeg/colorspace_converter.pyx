@@ -613,7 +613,7 @@ def selftest(full=False):
                 #test planar to packed:
                 if packed not in get_output_colorspaces(planar):
                     continue
-                testcsc(colorspace_converter, True, full, [planar], [packed])
+                testcsc(colorspace_converter, full, [planar], [packed])
                 if full:
                     mw, mh = get_csc_max_size(colorspace_converter, [planar], [packed])
                     maxw = min(maxw, mw)
@@ -623,7 +623,7 @@ def selftest(full=False):
                     continue
                 if planar not in get_output_colorspaces(packed):
                     continue
-                testcsc(colorspace_converter, True, full, [packed], [planar])
+                testcsc(colorspace_converter, full, [packed], [planar])
                 if full:
                     mw, mh = get_csc_max_size(colorspace_converter, [packed], [planar])
                     maxw = min(maxw, mw)
