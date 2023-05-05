@@ -455,14 +455,14 @@ cdef class ColorspaceConverter:
         cdef uintptr_t y, uv
         cdef uint8_t *rgb
         cdef int r = 0
+        rgb_buffer = getbuf(self.out_buffer_size)
+        if not rgb_buffer:
+            raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         log("convert_nv12_image(%s) to %s", image, self.dst_format)
         with buffer_context(pixels[0]) as y_buf:
             y = <uintptr_t> int(y_buf)
             with buffer_context(pixels[1]) as uv_buf:
                 uv = <uintptr_t> int(uv_buf)
-                rgb_buffer = getbuf(self.out_buffer_size)
-                if not rgb_buffer:
-                    raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
                 rgb = <uint8_t*> rgb_buffer.get_mem()
                 if self.dst_format=="RGB":
                     with nogil:
