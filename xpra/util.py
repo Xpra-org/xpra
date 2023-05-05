@@ -9,7 +9,6 @@ import re
 import sys
 import binascii
 import traceback
-import threading
 from itertools import chain
 from enum import Enum, IntEnum
 try:
@@ -172,7 +171,7 @@ def noerr(fn, *args):
         return None
 
 
-def net_utf8(value):
+def net_utf8(value) -> str:
     """
     Given a value received by the network layer,
     convert it to a string.
@@ -213,7 +212,7 @@ def remove_dupes(seq):
     seen_add = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a, b, path=None):
+def merge_dicts(a : dict, b : dict, path:str=None):
     """ merges b into a """
     if path is None:
         path = []
@@ -248,46 +247,47 @@ def make_instance(class_options, *args):
     return None
 
 
-def roundup(n, m):
+def roundup(n : int, m : int) -> int:
     return (n + m - 1) & ~(m - 1)
 
 
 class AtomicInteger:
     __slots__ = ("counter", "lock")
-    def __init__(self, integer = 0):
-        self.counter = integer
-        self.lock = threading.RLock()
+    def __init__(self, integer : int = 0):
+        self.counter : int = integer
+        from threading import RLock
+        self.lock : RLock = RLock()
 
-    def increase(self, inc = 1):
+    def increase(self, inc = 1) -> int:
         with self.lock:
             self.counter = self.counter + inc
             return self.counter
 
-    def decrease(self, dec = 1):
+    def decrease(self, dec = 1) -> int:
         with self.lock:
             self.counter = self.counter - dec
             return self.counter
 
-    def get(self):
+    def get(self) -> int:
         return self.counter
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.counter)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"AtomicInteger({self.counter})"
 
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self.counter
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         try:
             return self.counter==int(other)
         except ValueError:
             return -1
 
-    def __cmp__(self, other):
+    def __cmp__(self, other) -> int:
         try:
             return self.counter-int(other)
         except ValueError:
@@ -296,43 +296,43 @@ class AtomicInteger:
 
 class MutableInteger(object):
     __slots__ = ("counter")
-    def __init__(self, integer = 0):
-        self.counter = integer
+    def __init__(self, integer : int = 0):
+        self.counter : int = integer
 
-    def increase(self, inc = 1):
+    def increase(self, inc = 1) -> int:
         self.counter = self.counter + inc
         return self.counter
 
-    def decrease(self, dec = 1):
+    def decrease(self, dec = 1) -> int:
         self.counter = self.counter - dec
         return self.counter
 
-    def get(self):
+    def get(self) -> int:
         return self.counter
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.counter)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MutableInteger({self.counter})"
 
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self.counter
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.counter==int(other)
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return self.counter!=int(other)
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.counter<int(other)
-    def __le__(self, other):
+    def __le__(self, other) -> bool:
         return self.counter<=int(other)
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         return self.counter>int(other)
-    def __ge__(self, other):
+    def __ge__(self, other) -> bool:
         return self.counter>=int(other)
-    def __cmp__(self, other):
+    def __cmp__(self, other) -> int:
         return self.counter-int(other)
 
 
@@ -431,22 +431,22 @@ class typedict(dict):
     def uget(self, k, default=None):
         return self.conv_get(k, default, u)
 
-    def strget(self, k, default=None):
+    def strget(self, k, default=None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k : str, default=None):
+    def bytesget(self, k : str, default=None) -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k : str, default=0):
+    def intget(self, k : str, default=0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k : str, default=False):
+    def boolget(self, k : str, default=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default=None):
+    def dictget(self, k : str, default=None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k : str, default_value=None):
+    def intpair(self, k : str, default_value=None) -> tuple:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -458,19 +458,19 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k : str, default_value=(), min_items=None, max_items=None):
+    def strtupleget(self, k : str, default_value=(), min_items=None, max_items=None) -> tuple:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k : str, default_value=(), min_items=None, max_items=None):
+    def inttupleget(self, k : str, default_value=(), min_items=None, max_items=None) -> tuple:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k : str, default_value=(), item_type=None, min_items=None, max_items=None):
+    def tupleget(self, k : str, default_value=(), item_type=None, min_items=None, max_items=None) -> tuple:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         if isinstance(v, list):
             v = tuple(v)
         return v
 
-    def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None):
+    def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None) -> list:
         v = self.get(k)
         if v is None:
             return default_value
@@ -541,7 +541,7 @@ def log_screen_sizes(root_w, root_h, sizes):
     except Exception as e:
         get_util_logger().warn("failed to parse screen size information: %s", e, exc_info=True)
 
-def prettify_plug_name(s, default=""):
+def prettify_plug_name(s, default="") -> str:
     if not s:
         return default
     try:
@@ -639,7 +639,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             continue
         log.info("    "+istr)
 
-def get_screen_info(screen_sizes):
+def get_screen_info(screen_sizes) -> dict:
     #same format as above
     if not screen_sizes:
         return {}
@@ -756,7 +756,7 @@ class ellipsizer:
             return "None"
         return repr_ellipsized(self.obj, self.limit)
 
-def repr_ellipsized(obj, limit=100):
+def repr_ellipsized(obj, limit=100) -> str:
     if isinstance(obj, str):
         if len(obj)>limit>6:
             return nonl(obj[:limit//2-2]+" .. "+obj[2-limit//2:])
@@ -774,18 +774,18 @@ def repr_ellipsized(obj, limit=100):
     return repr_ellipsized(repr(obj), limit)
 
 
-def rindex(alist, avalue):
+def rindex(alist, avalue) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-def notypedict(d):
+def notypedict(d:dict) -> dict:
     for k in list(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info, sep="."):
+def flatten_dict(info:dict, sep:str=".") -> dict:
     to = {}
     _flatten_dict(to, sep, None, info)
     return to
@@ -804,7 +804,7 @@ def _flatten_dict(to, sep, path, d):
         elif v is not None:
             to[npath] = v
 
-def parse_simple_dict(s="", sep=","):
+def parse_simple_dict(s:str="", sep:str=",") -> dict:
     #parse the options string and add the pairs:
     d = {}
     for el in s.split(sep):
@@ -844,7 +844,7 @@ def updict(todict, prefix, d, suffix="", flatten_dicts=False):
                 todict[k] = v
     return todict
 
-def pver(v, numsep=".", strsep=", "):
+def pver(v, numsep:str=".", strsep:str=", ") -> str:
     #print for lists with version numbers, or CSV strings
     if isinstance(v, (list, tuple)):
         types = list(set(type(x) for x in v))
@@ -910,14 +910,14 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
-def reverse_dict(d):
+def reverse_dict(d:dict) -> dict:
     reversed_d = {}
     for k,v in d.items():
         reversed_d[v] = k
     return reversed_d
 
 
-def std(s, extras="-,./: "):
+def std(s, extras="-,./: ") -> str:
     s = s or ""
     try:
         s = s.decode("latin1")
@@ -932,7 +932,7 @@ def std(s, extras="-,./: "):
         return str.isalnum(c(v)) or v in extras
     return "".join(filter(f, s))
 
-def alnum(s):
+def alnum(s) -> str:
     try:
         s = s.encode("latin1")
     except Exception:
@@ -946,12 +946,12 @@ def alnum(s):
         return str.isalnum(c(v))
     return "".join(c(v) for v in filter(f, s))
 
-def nonl(x):
+def nonl(x) -> str:
     if x is None:
         return None
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
-def engs(v):
+def engs(v) -> str:
     if isinstance(v, int):
         l = v
     else:
@@ -962,14 +962,14 @@ def engs(v):
     return "s" if l!=1 else ""
 
 
-def obsc(v):
+def obsc(v) -> str:
     OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)
     if OBSCURE_PASSWORDS:
         return "".join("*" for _ in (v or ""))
     return v
 
 
-def csv(v):
+def csv(v) -> str:
     try:
         return ", ".join(str(x) for x in v)
     except Exception:
@@ -980,13 +980,13 @@ def unsetenv(*varnames):
     for x in varnames:
         os.environ.pop(x, None)
 
-def envint(name : str, d=0):
+def envint(name : str, d:int=0) -> int:
     try:
         return int(os.environ.get(name, d))
     except ValueError:
         return d
 
-def envbool(name : str, d=False):
+def envbool(name : str, d:bool=False):
     try:
         v = os.environ.get(name, "").lower()
         if v is None:
@@ -999,7 +999,7 @@ def envbool(name : str, d=False):
     except ValueError:
         return d
 
-def envfloat(name : str, d=0):
+def envfloat(name : str, d:float=0):
     try:
         return float(os.environ.get(name, d))
     except ValueError:
@@ -1008,7 +1008,7 @@ def envfloat(name : str, d=0):
 
 #give warning message just once per key then ignore:
 _once_only = set()
-def first_time(key):
+def first_time(key:str) -> bool:
     if key not in _once_only:
         _once_only.add(key)
         return True

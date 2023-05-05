@@ -926,7 +926,7 @@ def setuidgid(uid, gid) -> None:
             #don't run as root!
             raise
         log.estr(e)
-        log.error(" continuing with gid={os.getgid()}")
+        log.error(f" continuing with gid={os.getgid()}")
     try:
         if os.getuid()!=uid:
             os.setuid(uid)
@@ -973,7 +973,7 @@ def is_socket(sockpath, check_uid=None) -> bool:
         return False
     return True
 
-def is_writable(path, uid=getuid(), gid=getgid()):
+def is_writable(path : str, uid=getuid(), gid=getgid()) -> bool:
     if uid==0:
         return True
     try:
