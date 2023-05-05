@@ -27,7 +27,7 @@ def main(args):
         #only include xpra in the report,
         #and to do that, we need the path to the module (weird):
         import xpra
-        xpra_mod_dir = os.path.dirname(xpra.__file__)
+        xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR") or os.path.dirname(xpra.__file__)
         run_cmd = ["coverage", "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
         #make sure we continue to use coverage to run sub-commands:
         def which(command):
