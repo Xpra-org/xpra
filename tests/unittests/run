@@ -30,7 +30,7 @@ popd
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
-export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
+export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python*`:.
 export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/bin/xpra}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
