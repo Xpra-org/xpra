@@ -290,8 +290,8 @@ def systemd_run_command(mode, systemd_run_args=None, user=True):
         cmd += shlex.split(systemd_run_args)
     return cmd
 
-def systemd_run_wrap(mode, args, systemd_run_args=None, **kwargs):
-    cmd = systemd_run_command(mode, systemd_run_args)
+def systemd_run_wrap(mode, args, systemd_run_args=None, user=True, **kwargs):
+    cmd = systemd_run_command(mode, systemd_run_args, user)
     cmd += args
     cmd.append("--systemd-run=no")
     werr = getattr(sys.stderr, "write", None)
@@ -354,7 +354,10 @@ def use_systemd_run(s):
     if not is_systemd_pid1():
         return False    # pragma: no cover
     #test it:
-    cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
+    cmd = ["systemd-run", "--quiet"]
+    if getuid()!=0:
+        cmd += ["--user"]
+    cmd += ["--scope", "--", "true"]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
     try:
         proc.communicate(timeout=2)
@@ -404,7 +407,7 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         argv = list(cmdline)
         if argv[0].find("python")<0:
             argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
-        return systemd_run_wrap(mode, argv, options.systemd_run_args)
+        return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid()!=0)
     configure_env(options.env)
     configure_logging(options, mode)
     if mode not in (
