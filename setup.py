@@ -474,7 +474,7 @@ external_excludes = [
                     #not used:
                     "curses", "pdb",
                     "tty",
-                    "setuptools", "doctest"
+                    "setuptools", "doctest",
                     "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
                     "Cython", "cython", "pyximport",
                     "pydoc_data",
