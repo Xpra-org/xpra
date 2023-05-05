@@ -37,10 +37,10 @@ class X11ClientTest(X11ClientTestUtil):
         #killing the Xvfb should kill the client
         xvfb1.terminate()
         xvfb2.terminate()
-        assert pollwait(xvfb1, CLIENT_TIMEOUT) is not None
-        assert pollwait(xvfb2, CLIENT_TIMEOUT) is not None
-        assert pollwait(client1, CLIENT_TIMEOUT) is not None
-        assert pollwait(client2, CLIENT_TIMEOUT) is not None
+        assert pollwait(xvfb1, CLIENT_TIMEOUT) is not None, "xvfb1 has not terminated"
+        assert pollwait(xvfb2, CLIENT_TIMEOUT) is not None, "xvfb2 has not terminated"
+        assert pollwait(client1, CLIENT_TIMEOUT) is not None, "client1 has not terminated"
+        assert pollwait(client2, CLIENT_TIMEOUT) is not None, "client2 has not terminated"
         server.terminate()
 
 
@@ -100,7 +100,10 @@ class X11ClientTest(X11ClientTestUtil):
             assert pollwait(client, CLIENT_TIMEOUT) is None
             #send a file to this client:
             send_file_command = ["control", display, "send-file", f.name, "0", "*"]
-            send_file = self.run_xpra(send_file_command)
+            env = os.environ.copy()
+            import secrets
+            env["XPRA_USER_UUID"] = secrets.token_urlsafe(16)
+            send_file = self.run_xpra(send_file_command, env=env)
             assert pollwait(send_file, CLIENT_TIMEOUT)==0, "send-file command returncode is %s" % send_file.poll()
             time.sleep(1)
             #now verify the file can be found in the download directory
