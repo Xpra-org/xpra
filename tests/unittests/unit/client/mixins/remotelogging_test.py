@@ -25,7 +25,7 @@ class MixinsTest(ClientMixinTest):
 		opts.remote_logging = "yes"
 		with silence_info(remote_logging):
 			self._test_mixin_class(remote_logging.RemoteLogging, opts, {
-				"remote-logging"	: True,
+				"remote-logging" : {"receive"	: True},
 				})
 		assert len(self.packets)==0
 		logger = Logger("util")
