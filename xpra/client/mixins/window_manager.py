@@ -339,6 +339,7 @@ class WindowClient(StubClientMixin):
             "mouse.initial-position"    : self.get_mouse_position(),
             "named_cursors"             : False,
             "cursors"                   : self.client_supports_cursors,
+            "wants_default_cursor"      : self.client_supports_cursors,
             "double_click.time"         : get_double_click_time(),
             "double_click.distance"     : get_double_click_distance(),
             #features:
@@ -347,7 +348,6 @@ class WindowClient(StubClientMixin):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             #system tray forwarding:
             "system_tray"               : self.client_supports_system_tray,
-            "wants_default_cursor"      : True,
             }
         updict(caps, "window", self.get_window_caps())
         updict(caps, "encoding", {
@@ -523,12 +523,16 @@ class WindowClient(StubClientMixin):
         if len(packet)==2:
             #marker telling us to use the default cursor:
             new_cursor = packet[1]
+            setdefault = False
         else:
             if len(packet)<9:
-                raise ValueError(f"invalid cursor packet: {len(packet)} items")
+                raise ValueError(f"invalid cursor packet: only {len(packet)} items")
             #trim packet-type:
             new_cursor = packet[1:]
             encoding = u(new_cursor[0])
+            setdefault = encoding.startswith("default:")
+            if setdefault:
+                encoding = encoding.split(":")[1]
             new_cursor[0] = encoding
             if encoding=="png":
                 pixels = new_cursor[8]
@@ -544,7 +548,11 @@ class WindowClient(StubClientMixin):
             elif encoding!="raw":
                 cursorlog.warn(f"Warning: invalid cursor encoding: {encoding}")
                 return
-        self.set_windows_cursor(self._id_to_window.values(), new_cursor)
+        if setdefault:
+            cursorlog(f"setting default cursor={new_cursor}")
+            self.default_cursor_data = new_cursor
+        else:
+            self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def reset_cursor(self):
         self.set_windows_cursor(self._id_to_window.values(), [])

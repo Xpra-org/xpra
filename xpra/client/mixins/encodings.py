@@ -282,7 +282,7 @@ class Encodings(StubClientMixin):
         return preforder(cenc)
 
     def get_cursor_encodings(self):
-        e = ["raw"]
+        e = ["raw", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
         return e

@@ -18,7 +18,7 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, NotificationID
 from xpra.log import Logger
 
@@ -143,6 +143,7 @@ class WindowsMixin(StubSourceMixin):
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.cursor_encodings = c.strtupleget("encodings.cursor")
+        cursorlog(f"cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
         self.send_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
@@ -152,8 +153,6 @@ class WindowsMixin(StubSourceMixin):
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
         self.window_restack = c.boolget("window.restack", False)
         self.window_pre_map = c.boolget("window.pre-map", False)
-        log("cursors=%s (encodings=%s), bell=%s",
-            self.send_cursors, self.cursor_encodings, self.send_bell)
         #window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -272,7 +271,7 @@ class WindowsMixin(StubSourceMixin):
             self.cursor_timer = None
             self.source_remove(ct)
 
-    def do_send_cursor(self, delay, cursor_data, cursor_sizes):
+    def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix=""):
         #skip first two fields (if present) as those are coordinates:
         if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
             cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
@@ -282,8 +281,7 @@ class WindowsMixin(StubSourceMixin):
         #compress pixels if needed:
         encoding = "raw"
         if pixels is not None:
-            #convert bytearray to string:
-            cpixels = strtobytes(pixels)
+            cpixels = memoryview_to_bytes(pixels)
             if "png" in self.cursor_encodings and Image:
                 cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
@@ -308,7 +306,7 @@ class WindowsMixin(StubSourceMixin):
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
                   w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
-        args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
+        args = [encoding_prefix+encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         self.send_more("cursor", *args)
 
     def send_empty_cursor(self):

@@ -351,8 +351,19 @@ class X11ServerCore(GTKServerBase):
                 if len(sizes)>1:
                     capabilities["screen-sizes"] = sizes
             if self.default_cursor_image and "default_cursor" in source.wants:
-                capabilities["cursor.default"] = self.default_cursor_image
+                ce = getattr(source, "cursor_encodings", ())
+                if "default" not in ce:
+                    #we have to send it this way
+                    #instead of using send_initial_cursors()
+                    capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
+
+    def send_initial_cursors(self, ss, sharing=False):
+        dci = self.default_cursor_image
+        cursorlog(f"default_cursor_image={dci}, cursors_enabled=%s", getattr(self, "cursors", False))
+        if dci and getattr(self, "cursors", False):
+            ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
+
 
     def do_get_info(self, proto, server_sources) -> dict:
         start = monotonic()
