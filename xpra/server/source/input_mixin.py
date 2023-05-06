@@ -39,8 +39,14 @@ class InputMixin(StubSourceMixin):
 
     def parse_client_caps(self, c : typedict):
         self.pointer_relative = c.boolget("pointer.relative")
-        self.double_click_time = c.intget("double_click.time")
-        self.double_click_distance = c.intpair("double_click.distance")
+        dc = c.dictget("double_click")
+        if dc:
+            dc = typedict(dc)
+            self.double_click_time = dc.intget("time")
+            self.double_click_distance = dc.intpair("distance")
+        else:
+            self.double_click_time = c.intget("double_click.time")
+            self.double_click_distance = c.intpair("double_click.distance")
         self.mouse_show = c.boolget("mouse.show")
         self.mouse_last_position = c.intpair("mouse.initial-position")
 

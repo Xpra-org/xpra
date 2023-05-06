@@ -342,6 +342,10 @@ class WindowClient(StubClientMixin):
             "wants_default_cursor"      : self.client_supports_cursors,
             "double_click.time"         : get_double_click_time(),
             "double_click.distance"     : get_double_click_distance(),
+            "double_click" : {
+                "time"         : get_double_click_time(),
+                "distance"     : get_double_click_distance(),
+                },
             #features:
             "bell"                      : self.client_supports_bell,
             "windows"                   : self.windows_enabled,
