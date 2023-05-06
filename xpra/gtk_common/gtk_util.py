@@ -177,9 +177,9 @@ def get_root_size(default=(1920, 1024)):
         h = screen.get_height()
     if w<=0 or h<=0 or w>32768 or h>32768:
         if first_time("Gtk root window dimensions"):
-            log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
+            log.warn(f"Warning: Gdk returned invalid root window dimensions: {w}x{h}")
             w, h = default
-            log.warn(f" using {default} instead", w, h)
+            log.warn(f" using {w}x{h} instead")
             if WIN32:
                 log.warn(" no access to the display?")
     return w, h
