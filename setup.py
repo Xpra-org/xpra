@@ -2252,7 +2252,8 @@ if nvidia_ENABLED:
 
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
-tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc")
+tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc",
+     extra_compile_args="-Wno-error=sign-compare" if get_gcc_version()<(8, ) else "")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
