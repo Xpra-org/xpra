@@ -48,7 +48,6 @@ from xpra.util import (
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
 from xpra.client.base.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import ExitCode, exit_str
-from hgext.clonebundles import capabilities
 
 log = Logger("client")
 netlog = Logger("network")
