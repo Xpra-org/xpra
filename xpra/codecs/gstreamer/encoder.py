@@ -116,11 +116,12 @@ DEFAULT_ENCODER_OPTIONS = {
     #    "speed"             : 9,
     #    "tune"              : 0,
     #    }
-    "av1enc" : {
+    }
+if not OSX:
+    DEFAULT_ENCODER_OPTIONS["av1enc"] = {
         "cpu-used"          : 5,
         "end-usage"         : 2,    #cq
         }
-    }
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
