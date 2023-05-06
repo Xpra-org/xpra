@@ -27,7 +27,7 @@ def DBUS_Notifier_factory(*args):
     try:
         return DBUS_Notifier(*args)
     except Exception as e:
-        log.warn("failed to instantiate the dbus notification handler:")
+        log.warn("Warning: failed to instantiate the dbus notification handler")
         if str(e).startswith("org.freedesktop.DBus.Error.ServiceUnknown:"):
             log.warn(" you may need to start a notification service for 'org.freedesktop.Notifications'")
         else:
@@ -184,7 +184,7 @@ class DBUS_Notifier(NotifierBase):
         except Exception:
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
-        log.error(" %s", dbus_error)
+        log.estr(dbus_error)
         return False
 
     def close_notify(self, nid : int):
