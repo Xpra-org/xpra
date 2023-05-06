@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -62,20 +62,28 @@ class MmapClient(StubClientMixin):
         return 1024, 1024
 
     def parse_server_capabilities(self, c : typedict) -> bool:
-        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
+        mmap_caps = c.dictget("mmap")
+        if mmap_caps:
+            #new format with namespace
+            c = typedict(mmap_caps)
+            def iget(attrname, default_value=0):
+                return c.intget(attrname, default_value)
+        else:
+            def iget(attrname, default_value=0):
+                #legacy format: try different forms, at top level:
+                return c.intget(f"mmap.{attrname}") or c.intget(f"mmap_{attrname}", default_value)
+        self.mmap_enabled = bool(self.supports_mmap and self.mmap_enabled and iget("enabled"))
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_BYTES
-            def iget(attrname, default_value=0):
-                return c.intget("mmap_%s" % attrname) or c.intget("mmap.%s" % attrname) or default_value
             mmap_token = iget("token")
             mmap_token_index = iget("token_index", 0)
             mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
             token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             if token!=mmap_token:
                 log.error("Error: mmap token verification failed!")
-                log.error(" expected '%#x'", token)
-                log.error(" found '%#x'", mmap_token)
+                log.error(f" expected {token:x}")
+                log.error(f" found {mmap_token:x}")
                 self.mmap_enabled = False
                 self.quit(ExitCode.MMAP_TOKEN_FAILURE)
                 return
@@ -105,6 +113,8 @@ class MmapClient(StubClientMixin):
         #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
         for k,v in raw_caps.items():
             caps["mmap_%s" % k] = v
+        caps["mmap.namespace"] = True   #this client understands "mmap.ATTRIBUTE" format
+        log.warn(f"mmap caps={caps}")
         return caps
 
     def get_raw_caps(self):
@@ -114,7 +124,6 @@ class MmapClient(StubClientMixin):
             "token"         : self.mmap_token,
             "token_index"   : self.mmap_token_index,
             "token_bytes"   : self.mmap_token_bytes,
-            "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
             }
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -55,31 +55,37 @@ class MMAP_Connection(StubSourceMixin):
         # pylint: disable=import-outside-toplevel
         import os
         from xpra.os_util import WIN32
-        self.mmap_client_namespace = c.boolget("mmap.namespace", False)
-        sep = "." if self.mmap_client_namespace else "_"
-        def mmapattr(k):
-            return f"mmap{sep}{k}"
-        mmap_filename = c.strget(mmapattr("file"))
+        mmap_caps = c.dictget("mmap")
+        if mmap_caps:
+            self.mmap_client_namespace = True
+            c = typedict(mmap_caps)
+            prefix = ""
+        else:
+            #legacy:
+            self.mmap_client_namespace = c.boolget("mmap.namespace", False)
+            sep = "." if self.mmap_client_namespace else "_"
+            prefix = f"mmap{sep}"
+        mmap_filename = c.strget(f"{prefix}file")
         if not mmap_filename:
             return
-        mmap_size = c.intget(mmapattr("size"), 0)
+        mmap_size = c.intget(f"{prefix}size", 0)
         log("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget(mmapattr("token"))
-        log("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
+        mmap_token = c.intget(f"{prefix}token")
+        log(f"mmap supported={self.supports_mmap}, token={mmap_token:x}")
         if self.mmap_filename:
             if os.path.isdir(self.mmap_filename):
                 #use the client's filename, but at the server path:
                 mmap_filename = os.path.join(self.mmap_filename, os.path.basename(mmap_filename))
-                log("using global server specified mmap directory: '%s'", self.mmap_filename)
+                log(f"using global server specified mmap directory: {self.mmap_filename!r}")
             else:
-                log("using global server specified mmap file path: '%s'", self.mmap_filename)
+                log(f"using global server specified mmap file path: {self.mmap_filename!r}")
                 mmap_filename = self.mmap_filename
         if not self.supports_mmap:
-            log("client enabled mmap but mmap mode is not supported", mmap_filename)
+            log("client enabled mmap but mmap mode is not supported")
         elif WIN32 and mmap_filename.startswith("/"):
-            log("mmap_file '%s' is a unix path", mmap_filename)
+            log(f"mmap_file {mmap_filename!r} is a unix path")
         elif not os.path.exists(mmap_filename):
-            log("mmap_file '%s' cannot be found!", mmap_filename)
+            log(f"mmap_file {mmap_filename!r} cannot be found!")
         else:
             from xpra.net.mmap_pipe import (
                 init_server_mmap,
@@ -91,13 +97,12 @@ class MMAP_Connection(StubSourceMixin):
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
             if self.mmap_size>0:
-                index = c.intget(mmapattr("token_index"), 0)
-                count = c.intget(mmapattr("token_bytes"), DEFAULT_TOKEN_BYTES)
+                index = c.intget(f"{prefix}token_index", 0)
+                count = c.intget(f"{prefix}token_bytes", DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)
-                log("mmap_token=%#x, verification=%#x", mmap_token, v)
                 if v!=mmap_token:
                     log.warn("Warning: mmap token verification failed, not using mmap area!")
-                    log.warn(" expected '%#x', found '%#x'", mmap_token, v)
+                    log.warn(f" expected {mmap_token:x}, found {v:x}")
                     self.mmap.close()
                     self.mmap = None
                     self.mmap_size = 0
@@ -122,11 +127,14 @@ class MMAP_Connection(StubSourceMixin):
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict:
-        caps = {"mmap_enabled" : self.mmap_size>0}
+        caps = {}
+        sep = "." if self.mmap_client_namespace else "_"
+        def mmapattr(name, value):
+            #easy: just send both for now
+            caps.setdefault("mmap", {})[name] = value
+            caps[f"mmap{sep}{name}"] = value
+        mmapattr("enabled", self.mmap_size>0)
         if self.mmap_client_token:
-            sep = "." if self.mmap_client_namespace else "_"
-            def mmapattr(name, value):
-                caps[f"mmap{sep}{name}"] = value
             mmapattr("token",       self.mmap_client_token)
             mmapattr("token_index", self.mmap_client_token_index)
             mmapattr("token_bytes", self.mmap_client_token_bytes)
