@@ -762,6 +762,28 @@ def get_clang_version():
     #not found!
     return clang_version
 
+def get_gcc_version():
+    if CC_is_clang():
+        return (0, )
+    cc = os.environ.get("CC", "gcc")
+    r, _, err = get_status_output([cc, "-v"])
+    if r==0:
+        V_LINE = "gcc version "
+        tmp_version = []
+        for line in err.splitlines():
+            if not line.startswith(V_LINE):
+                continue
+            v_str = line[len(V_LINE):].strip().split(" ")[0]
+            for p in v_str.split("."):
+                try:
+                    tmp_version.append(int(p))
+                except ValueError:
+                    break
+            print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
+            break
+        return tuple(tmp_version)
+    return (0, )
+
 
 def vernum(s):
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
@@ -2196,27 +2218,6 @@ if nvidia_ENABLED:
         if len(nvcc_versions)>1:
             print(f" using version {nvcc_version} from {nvcc}")
     if cuda_kernels_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED):
-        def get_gcc_version():
-            if CC_is_clang():
-                return (0, )
-            cc = os.environ.get("CC", "gcc")
-            r, _, err = get_status_output([cc, "-v"])
-            if r==0:
-                V_LINE = "gcc version "
-                tmp_version = []
-                for line in err.splitlines():
-                    if not line.startswith(V_LINE):
-                        continue
-                    v_str = line[len(V_LINE):].strip().split(" ")[0]
-                    for p in v_str.split("."):
-                        try:
-                            tmp_version.append(int(p))
-                        except ValueError:
-                            break
-                    print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
-                    break
-                return tuple(tmp_version)
-            return (0, )
         assert nvcc, "cannot find nvcc compiler!"
         def get_nvcc_args():
             nvcc_cmd = [nvcc, "-fatbin"]
@@ -2322,7 +2323,8 @@ toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 #platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
 tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.fbc_capture_{fbcplatform}", "nvfbc", language="c++")
-tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
+tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc",
+     extra_compile_args="-Wno-error=sign-compare" if get_gcc_version()<(8, ) else "")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
