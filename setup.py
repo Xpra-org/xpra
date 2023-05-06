@@ -606,7 +606,7 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
     pkgc = pkgconfig(*pkgconfig_names, optimize=optimize)
     for addto in ("extra_link_args", "extra_compile_args"):
         value = kwargs.pop(addto, None)
-        if value is not None:
+        if value:
             if isinstance(value, str):
                 value = (value, )
             add_to_keywords(pkgc, addto, *value)
@@ -2253,7 +2253,7 @@ if nvidia_ENABLED:
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 tace(nvenc_ENABLED, "xpra.codecs.nvenc.encoder", "nvenc",
-     extra_compile_args="-Wno-error=sign-compare" if get_gcc_version()<(8, ) else "")
+     extra_compile_args="-Wno-error=sign-compare" if get_gcc_version()<(8, ) else None)
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
