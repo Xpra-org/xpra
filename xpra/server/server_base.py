@@ -590,10 +590,7 @@ class ServerBase(ServerBaseClass):
                          "root_window_size"     : root_size,
                          })
         if "aliases" in self._aliases and server_source.wants:
-            reverse_aliases = {}
-            for i, packet_type in self._aliases.items():
-                reverse_aliases[packet_type] = i
-            capabilities["aliases"] = reverse_aliases
+            capabilities["aliases"] = dict((v, k) for k,v in self._aliases.items())
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)

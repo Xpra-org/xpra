@@ -511,15 +511,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return get_version_info(FULL_INFO)
 
     def make_hello(self):
-        capabilities = {}
-        #no need to set "randr_notify" and "windows" capabilities to False,
-        #they are only enabled by GUI clients.
-        if self._aliases:
-            reverse_aliases = {}
-            for i, packet_type in self._aliases.items():
-                reverse_aliases[packet_type] = i
-            capabilities["aliases"] = reverse_aliases
-        return capabilities
+        return {"aliases" : self.get_network_aliases()}
+
+    def get_network_aliases(self):
+        return dict((v,k) for k,v in self._aliases.items())
+
 
     def compressed_wrapper(self, datatype, data, level=5, **kwargs):
         if level>0 and len(data)>=256:
