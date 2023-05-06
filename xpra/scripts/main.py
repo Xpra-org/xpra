@@ -3736,7 +3736,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT):
         except OSError:
             pass
     if not reprobe:
-        return 0
+        return
     sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in sockets))))
     counter = 0
     while reprobe and counter<timeout:
@@ -3776,7 +3776,6 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT):
     for state, display, sockpath in unknown:
         state = dotxpra.get_server_state(sockpath)
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
-    return 0
 
 
 def run_list_windows(error_cb, opts, extra_args):
