@@ -56,28 +56,47 @@ URL_MODES = {
 
 #this is used for generating aliases:
 PACKET_TYPES = [
-    "hello", "info",
-    "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
-    "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
-    "ping", "ping_echo",
-    "info-response", "server-event",
+    #generic:
+    "hello",
+    "info", "info-response",
+    #server state:
+    "server-event", "startup-complete",
+    "setting-change", "control",
+    #network layer:
     "disconnect", "set_deflate", "connection-lost", "gibberish", "invalid",
+    #pings:
+    "ping", "ping_echo",
+    #file transfers:
+    "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
+    #audio:
+    "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
+    #display:
     "show-desktop", "desktop_size",
+    #windows and trays:
     "new-window", "new-override-redirect", "new-tray",
     "raise-window", "initiate-moveresize", "window-move-resize", "window-resized", "window-metadata",
     "configure-override-redirect", "lost-window", "window-icon",
     "draw",
+    "encodings",
     "eos", "cursor", "bell",
     #pointer motion and events:
     "pointer-position", "pointer",
     "button-action", "pointer-button",
     "pointer-grab", "pointer-ungrab",
+    "input-devices",
+    #keyboard:
+    "set-keyboard-sync-enabled",
+    "key-action", "key-repeat",
+    "layout-changed", "keymap-changed",
+    #webcam:
     "webcam-stop", "webcam-ack",
+    #clipboard:
     "set-clipboard-enabled", "clipboard-token", "clipboard-request",
     "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
+    #notifications:
     "notify_show", "notify_close",
-    "rpc-reply", "startup-complete", "setting-change", "control",
-    "encodings",
+    #rpc:
+    "rpc-reply",
     ]
 
 def get_log_packets(exclude=False):
