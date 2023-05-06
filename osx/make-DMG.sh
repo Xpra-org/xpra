@@ -23,10 +23,7 @@ VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(
 REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 BUILD_BIT=`${PYTHON} -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_BIT))"`
-BUILD_INFO="${BUILD_INFO}-Python${PYTHON_MAJOR_VERSION}"
-if [ "$BUILD_BIT" != "32bit" ]; then
-	BUILD_INFO="${BUILD_INFO}-x86_64"
-fi
+BUILD_INFO="${BUILD_INFO}-Python${PYTHON_MAJOR_VERSION}-`uname -m`"
 
 DMG_NAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
 if [ "${CLIENT_ONLY}" == "1" ]; then
