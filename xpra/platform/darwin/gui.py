@@ -814,21 +814,22 @@ class ClientExtras(object):
     def check_display(self):
         log("check_display()")
         try:
+            c = self.client
             asleep = None
             if not can_access_display():
                 asleep = True
             else:
                 did = CG.CGMainDisplayID()
                 log("check_display() CGMainDisplayID()=%#x", did)
-                if did and self.client:
+                if did and c:
                     asleep = bool(CG.CGDisplayIsAsleep(did))
                     log("check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
-            if asleep is not None and self.display_is_asleep!=asleep:
+            if c and asleep is not None and self.display_is_asleep!=asleep:
                 self.display_is_asleep = asleep
                 if asleep:
-                    self.client.suspend()
+                    c.suspend()
                 else:
-                    self.client.resume()
+                    c.resume()
             return True
         except Exception:
             log.error("Error checking display sleep status", exc_info=True)
