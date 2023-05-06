@@ -283,11 +283,11 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     cmd = systemd_run_command(mode, systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
-    if LOG_SYSTEMD_WRAP:
-        stderr = sys.stderr
+    werr = getattr(sys.stderr, "write", None)
+    if LOG_SYSTEMD_WRAP and werr:
         try:
-            stderr.write("using systemd-run to wrap '%s' server command\n" % mode)
-            stderr.write("%s\n" % " ".join(["'%s'" % x for x in cmd]))
+            werr("using systemd-run to wrap '%s' server command\n" % mode)
+            werr("%s\n" % " ".join(["'%s'" % x for x in cmd]))
         except IOError:
             pass
     try:
