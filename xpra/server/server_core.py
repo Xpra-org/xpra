@@ -164,8 +164,8 @@ class ServerCore:
         self.auth_classes = {}
         self.child_reaper = None
         self.original_desktop_display = None
-        self.session_type = "unknown"
-        self.display_name = ""
+        self.session_type : str = "unknown"
+        self.display_name : str = ""
         self.display_options = ""
         self.dotxpra = None
 
@@ -193,15 +193,15 @@ class ServerCore:
         self._ws_timeout = 5
         self._socket_dir = None
         self._socket_dirs = []
-        self.dbus_pid = 0
+        self.dbus_pid : int = 0
         self.dbus_env = {}
         self.dbus_control = False
         self.dbus_server = None
         self.unix_socket_paths = []
-        self.touch_timer = None
+        self.touch_timer : int = 0
         self.exec_cwd = os.getcwd()
         self.pidfile = None
-        self.pidinode = 0
+        self.pidinode : int = 0
         self.session_files = [
             "cmdline", "server.env", "config", "server.log*",
             #notifications may use a TMP dir:
@@ -483,7 +483,8 @@ class ServerCore:
         self._potential_protocols = []
         if self.pidfile:
             netlog("cleanup removing pidfile %s", self.pidfile)
-            self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
+            rm_pidfile(self.pidfile, self.pidinode)
+            self.pidinode = 0
 
     def clean_session_files(self):
         self.do_clean_session_files(*self.session_files)
@@ -526,7 +527,7 @@ class ServerCore:
 
     ######################################################################
     # dbus:
-    def init_dbus(self, dbus_pid, dbus_env):
+    def init_dbus(self, dbus_pid : int, dbus_env : dict):
         if not POSIX:
             return
         self.dbus_pid = dbus_pid
@@ -1011,7 +1012,7 @@ class ServerCore:
     def cancel_touch_timer(self):
         tt = self.touch_timer
         if tt:
-            self.touch_timer = None
+            self.touch_timer = 0
             self.source_remove(tt)
 
     def touch_sockets(self):

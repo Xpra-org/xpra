@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -45,7 +45,7 @@ def source_env(source=()) -> dict:
     return env
 
 
-def decode_dict(out):
+def decode_dict(out) -> dict:
     env = {}
     for line in out.splitlines():
         parts = line.split("=", 1)
@@ -59,7 +59,7 @@ def decode_json(out):
 
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
-def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
+def env_from_sourcing(file_to_source_path, include_unexported_variables=False) -> dict:
     log = Logger("exec")
     cmd = shlex.split(file_to_source_path)
     filename = cmd[0]
@@ -127,7 +127,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
 def sh_quotemeta(s):
     return b"'" + s.replace(b"'", b"'\\''") + b"'"
 
-def xpra_env_shell_script(socket_dir, env):
+def xpra_env_shell_script(socket_dir, env) -> bytes:
     script = [b"#!/bin/sh", b""]
     for var, value in env.items():
         # these aren't used by xpra, and some should not be exposed
@@ -167,7 +167,7 @@ def xpra_env_shell_script(socket_dir, env):
     script.append(b"")
     return b"\n".join(script)
 
-def xpra_runner_shell_script(xpra_file, starting_dir):
+def xpra_runner_shell_script(xpra_file, starting_dir) -> bytes:
     script = []
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
@@ -265,7 +265,7 @@ def open_log_file(logpath):
     except OSError as e:
         raise InitException(f"cannot open log file {logpath!r}: {e}") from None
 
-def select_log_file(log_dir, log_file, display_name):
+def select_log_file(log_dir, log_file, display_name) -> str:
     """ returns the log file path we should be using given the parameters,
         this may return a temporary logpath if display_name is not available.
     """
@@ -326,7 +326,7 @@ def daemonize():
         os._exit(0)     #pylint: disable=protected-access
 
 
-def write_pidfile(pidfile):
+def write_pidfile(pidfile) -> int:
     log = get_util_logger()
     pidstr = str(os.getpid())
     inode = 0
@@ -346,7 +346,7 @@ def write_pidfile(pidfile):
         log.error(f" {e}")
     return inode
 
-def rm_pidfile(pidfile, inode):
+def rm_pidfile(pidfile : str, inode : int):
     #verify this is the right file!
     log = get_util_logger()
     log("cleanuppidfile(%s, %s)", pidfile, inode)
@@ -355,14 +355,13 @@ def rm_pidfile(pidfile, inode):
             i = os.stat(pidfile).st_ino
             log("cleanuppidfile: current inode=%i", i)
             if i!=inode:
-                return 0
+                return
         except OSError:
             pass
     try:
         os.unlink(pidfile)
     except OSError:
         log("rm_pidfile(%s, %s)", pidfile, inode, exc_info=True)
-    return 0
 
 
 def get_uinput_device_path(device):
@@ -400,7 +399,7 @@ def get_uinput_device_path(device):
         log.estr(e)
     return None
 
-def has_uinput():
+def has_uinput() -> bool:
     if not envbool("XPRA_UINPUT", True):
         return False
     try:
