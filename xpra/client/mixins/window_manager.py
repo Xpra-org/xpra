@@ -657,11 +657,11 @@ class WindowClient(StubClientMixin):
                 self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
         if coding=="default":
             img = self.overlay_image
-        elif coding == "BGRA":
+        elif coding in ("RGBA", "BGRA"):
             rowstride = width*4
-            img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
+            img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", coding, rowstride, 1)
             has_alpha = True
-        elif coding in ("BGRA", "premult_argb32"):
+        elif coding=="premult_argb32":
             if coding == "premult_argb32":
                 #we usually cannot do in-place and this is not performance critical
                 from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
