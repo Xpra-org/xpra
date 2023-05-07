@@ -631,6 +631,8 @@ fi
 
 
 %changelog
+* Sun May 07 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
+- TODO
 * Tue Mar 14 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
 - TODO
 * Thu Mar 09 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
