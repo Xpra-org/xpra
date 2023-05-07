@@ -632,9 +632,64 @@ fi
 
 %changelog
 * Sun May 07 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
-- TODO
-* Tue Mar 14 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
-- TODO
+- major fixes:
+   ensure X11 errors don't propagate to GTK
+   fix legacy URL format parsing
+   brolti errors on some platforms
+   keyboard shortcuts with Wayland clients and NumLock
+   client sockets overwriting server sockets
+   network queue flushing
+   correct check for disabled monitors
+- packaging:
+   modules not excluded due to typo
+   avoid permissions issues with mv
+   remove legacy MacOS bundler workaround
+   support MacOS arm64 builds
+   compilation errors with gcc version 7 and older
+   RHEL 8.x needs pycuda 2022.1 or older
+   RHEL 9.x can install pandoc from EPEL
+   silence python cryptography OpenSSL warning on MacOS
+   workaround even more exotic library version strings
+   try harder to find a working appindicator DEB package
+   better compatibility with newer versions of Cython
+   we never want a python2 shebang
+   evdi file missing from MANIFEST
+   missing explicit dependency on `pkgconfig` in RPM spec file
+   skip xsettings dpi when the x11 bindings are missing
+   ignore setuptools generated cruft
+   silence rencode RPM patch warnings
+- encodings:
+   always use lossless encoding for `text`
+   honour png palette encodings
+   option parsing
+   help command error
+   handle `RGBA` window icon data
+   `ffmpeg` encoder error values
+- minor:
+   handle malformed display names more gracefully
+   if we don't have keycodes to map, don't try to translate them
+   X11 clipboard debug logging parsing of window names
+   remove unused, potentially problematic statement
+   make it possible to disable `SHA1`
+   avoid errors if `MD5` has already been removed
+   don't try to show an exception that does not exist
+   window debug logging error
+   correctly parse OpenGL diagnostics
+   window forwarding require encoding module
+   mmap debug flood
+   continue with session info despite cursor errors
+   handle client server uuid errors more gracefully
+   silence shared socket permission warning
+   handle missing server attributes without erroring out
+   correct default method signature
+   parse IPv6 when looking up network devices
+   run servers with missing stderr
+   skip systemd-run tests on unsupported platforms
+   missing test dependency on OracleLinux 8.x
+   MacOS test tool errors
+   skip useless 'unknown' message
+   more useful codec loader validation message
+
 * Thu Mar 09 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10
 - major fixes:
    focus change failures, errors with OR windows

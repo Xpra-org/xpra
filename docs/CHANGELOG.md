@@ -1,10 +1,63 @@
 # Changelog
 
 ## [4.4.5] 2023-05-07
-* TODO
-
-## [4.4.5] 2023-03-14
-* TODO
+* major fixes:
+    * [ensure X11 errors don't propagate to GTK](https://github.com/Xpra-org/xpra/commit/ae2b0f7c827ee4731717f5607844b833a7efbf93)
+    * [fix legacy URL format parsing](https://github.com/Xpra-org/xpra/commit/f7dd338a803c1ca7ba45ece31bfd7a38a2f0f40c)
+    * [brolti errors on some platforms](https://github.com/Xpra-org/xpra/commit/cb1819ee5c0feb447276ed8c09c0b0ee99479fb7)
+    * [keyboard shortcuts with Wayland clients and NumLock](https://github.com/Xpra-org/xpra/commit/466e60625be63503c80ebc58ae8815a871bb6916)
+    * [client sockets overwriting server sockets](https://github.com/Xpra-org/xpra/commit/ae52c7c8bf6fc253955eda9e0d31c6c3deffb726)
+    * [network queue flushing](https://github.com/Xpra-org/xpra/commit/bcc39fea455898e9d51a82c0eb460aca51516431)
+    * [correct check for disabled monitors](https://github.com/Xpra-org/xpra/commit/0e426927c1076f611e26723dfda599f04bae2795)
+* packaging:
+    * [modules not excluded due to typo](https://github.com/Xpra-org/xpra/commit/364cc6b7abe966ccb56591dd8ccd9103dc52aaf5)
+    * [avoid permissions issues with mv](https://github.com/Xpra-org/xpra/commit/8891c2c16aa592f342b8130633df46cc49106696)
+    * [remove legacy MacOS bundler workaround](https://github.com/Xpra-org/xpra/commit/ed79b148cde00204dd16b9378b8a317be2477c0f)
+    * [support MacOS arm64 builds](https://github.com/Xpra-org/xpra/commit/7e7519a0b8f68f8ec144c149f56903752e484f83)
+    * [compilation errors](https://github.com/Xpra-org/xpra/commit/0758655f98f6d05a7407f0bd4698b65ccb992301) [with gcc version 7 and older](https://github.com/Xpra-org/xpra/commit/9fe67037f97dd77e184762abb4c00d250203519d)
+    * [RHEL 8.x needs pycuda 2022.1 or older](https://github.com/Xpra-org/xpra/commit/7c742de33aa2e7d0d6f5cee96aa550396ab81901)
+    * [RHEL 9.x can install pandoc from EPEL](https://github.com/Xpra-org/xpra/commit/9c3828bdecdba4c6b8802ce7b9ca0de557583ba8)
+    * [silence python cryptography OpenSSL warning on MacOS](https://github.com/Xpra-org/xpra/commit/d5662c6a859503ceb397f1f739d32d86ba86dd90)
+    * [workaround even more exotic library version strings](https://github.com/Xpra-org/xpra/commit/068cd5cb42333f668665adfc5f317a4a46a0c957)
+    * [try](https://github.com/Xpra-org/xpra/commit/1058a9e6f6f978b412b829a5825ac74655eb8c01) [harder](https://github.com/Xpra-org/xpra/commit/ebfdccaa1dd78558a243cc90c764fffe54c81d4c) [to find a working appindicator DEB package](https://github.com/Xpra-org/xpra/commit/7529a2cc55c325e0bad85982c1de926dca0d07b8)
+    * [better compatibility with newer versions of Cython](https://github.com/Xpra-org/xpra/commit/a2ef12623de8f7ee76c3ceaabd20ada21254b0f5)
+    * [we never want a python2 shebang](https://github.com/Xpra-org/xpra/commit/732073c53fb3d2212f7628955be3d8f57a4448d7)
+    * [evdi file missing from MANIFEST](https://github.com/Xpra-org/xpra/commit/20419dea7a824118d2b04d183ea1ebea784554fb)
+    * [missing explicit dependency on `pkgconfig` in RPM spec file](https://github.com/Xpra-org/xpra/commit/0c54f7c2d55fa1eb24ae214e585b83940aba026e)
+    * [skip xsettings dpi when the x11 bindings are missing](https://github.com/Xpra-org/xpra/commit/a762be36c6cacca21a074376622296657579b112)
+    * [ignore setuptools generated cruft](https://github.com/Xpra-org/xpra/commit/303a2c1703ca6efd969d822cea87b3b914ee4282)
+    * [silence rencode RPM patch warnings](https://github.com/Xpra-org/xpra/commit/44ad45e51aef2eb02e7d7e6d605fb9e1cdde4a03)
+* encodings:
+    * [always use lossless encoding for `text`](https://github.com/Xpra-org/xpra/commit/c8950ceab353e15debb1d94958cd7efdf963d209)
+    * [honour png palette encodings](https://github.com/Xpra-org/xpra/commit/c5c8a105fb6c2b535bfed0169208d72433df43c5)
+    * [option parsing](https://github.com/Xpra-org/xpra/commit/21c37edd02ace34668037660f5c8703b3ad432b1)
+    * [help command error](https://github.com/Xpra-org/xpra/commit/29a2ba32de16cf7a669d5d33b02f617a0700f56b)
+    * [handle `RGBA` window icon data](https://github.com/Xpra-org/xpra/commit/22c6afead6fbb2b06ab1eddae477c77e73f714b3)
+    * [`ffmpeg` encoder error values](https://github.com/Xpra-org/xpra/commit/1dfdbc3ed8f6dee4faf4040223906f9cb522be0b)
+* minor:
+    * [handle malformed display names more gracefully](https://github.com/Xpra-org/xpra/commit/0c08c4c3d8f3253bb6fe9c67cf9761c5086f3957)
+    * [if we don't have keycodes to map, don't try to translate them](https://github.com/Xpra-org/xpra/commit/ab639645a52952d7a57b01f9537f2c013a45208a)
+    * [X11 clipboard debug logging parsing of window names](https://github.com/Xpra-org/xpra/commit/dc682aff7512a315296e8b7c92f2a40a79b03336)
+    * [remove unused, potentially problematic statement](https://github.com/Xpra-org/xpra/commit/eff316e444f7cfc9b4d011a2cbbfb75212a9ec6f)
+    * [make it possible to disable `SHA1`](https://github.com/Xpra-org/xpra/commit/77cacbb5d58142654947374e19bbe4da15bb7864)
+    * [avoid errors if `MD5` has already been removed](https://github.com/Xpra-org/xpra/commit/239602d0ad220d53b4bb4a8b539075bcd1d68d70)
+    * [don't try to show an exception that does not exist](https://github.com/Xpra-org/xpra/commit/30d7951bc8014d878d8e07c1ce9f4a769d026773)
+    * [window debug logging error](https://github.com/Xpra-org/xpra/commit/b77f15201bdfdcc6ffb35701890fb37534690de1)
+    * [correctly parse OpenGL diagnostics](https://github.com/Xpra-org/xpra/commit/94a7b28d739089cf96fa543214152bbb07af5d43)
+    * [window forwarding require encoding module](https://github.com/Xpra-org/xpra/commit/f2dd74bac2c4a459cf368ab67461a9467eb2b54d)
+    * [mmap debug flood](https://github.com/Xpra-org/xpra/commit/e9322228b526c85df8c23f4b43e01a8ee95c1016)
+    * [continue with session info despite cursor errors](https://github.com/Xpra-org/xpra/commit/3eae4604af0fcf87853ca4e546e5b65986f1c267)
+    * [handle client server uuid errors more gracefully](https://github.com/Xpra-org/xpra/commit/47f70eea0beeba963f84700a3db0285b795f281d)
+    * [silence shared socket permission warning](https://github.com/Xpra-org/xpra/commit/8f820c7f5ad36c614dc3319f5ff5946d4e7375ba)
+    * [handle missing server attributes without erroring out](https://github.com/Xpra-org/xpra/commit/58d02a34e8753364066c7fbf1ff8f9be5b1f3988)
+    * [correct default method signature](https://github.com/Xpra-org/xpra/commit/8e1be99fdbf57d91e32de97b47a311d1cf3b58a8)
+    * [parse IPv6 when looking up network devices](https://github.com/Xpra-org/xpra/commit/773212798f8b28bdb30e3371731dd3030aeb04f0)
+    * [run servers with missing stderr](https://github.com/Xpra-org/xpra/commit/32d2704878013d0ce245ef4a1b409e087d76a411)
+    * [skip systemd-run tests on unsupported platforms](https://github.com/Xpra-org/xpra/commit/05315424f2df69af00388aff241fc15fc1192b22)
+    * [missing test dependency on OracleLinux 8.x](https://github.com/Xpra-org/xpra/commit/7aca69dcf562f4c80babe668cb24506923f18e60)
+    * [MacOS test tool errors](https://github.com/Xpra-org/xpra/commit/28619b69d5131d9a57a4c34796de2353751397ab)
+    * [skip useless 'unknown' message](https://github.com/Xpra-org/xpra/commit/8f6fb5b6819bea424f2cdcd8bb95349dec66361b)
+    * [more useful codec loader validation message](https://github.com/Xpra-org/xpra/commit/1fd1f792ee6b551e4a64c8cfbb74c6ae7adc0604)
 
 ## [4.4.4] 2023-03-09
 * major fixes:
