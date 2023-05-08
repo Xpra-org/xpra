@@ -518,7 +518,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
-                        noerr(sys.stdout.write, "existing live display found, attaching")
+                        get_util_logger().info(f"existing live display found on {display_name}, attaching")
+                        #we're connecting locally, so no need for these:
+                        options.csc_modules = ["none"]
+                        options.video_decoders = ["none"]
                         return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in (
@@ -1888,7 +1891,10 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
-                        noerr(sys.stdout.write, "existing live display found, attaching")
+                        get_util_logger().info(f"existing live display found on {display_name}, attaching")
+                        #we're connecting locally, so no need for these:
+                        options.csc_modules = ["none"]
+                        options.video_decoders = ["none"]
                         return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
         #we can't load gtk on posix if the server is local,
         #(as we would need to unload the initial display to attach to the new one)
