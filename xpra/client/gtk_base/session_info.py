@@ -204,7 +204,7 @@ class SessionInfo(Gtk.Window):
                                            plat("platform"),
                                            plat("linux_distribution"))
         csrow("Operating System", LOCAL_PLATFORM_NAME, SERVER_PLATFORM_NAME)
-        csrow("Xpra", XPRA_VERSION, cattr("_remote_version", "unknown"))
+        csrow("Xpra", XPRA_VERSION, make_version_str(cattr("_remote_version", "unknown")))
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
         except ImportError:
@@ -241,7 +241,7 @@ class SessionInfo(Gtk.Window):
         def servergl(prop="opengl", default_value="n/a"):
             if not show_server:
                 return ""
-            return make_version_str(typedict(self.client.server_opengl or {}).strget(prop, default_value))
+            return make_version_str(typedict(self.client.server_opengl or {}).get(prop, default_value))
         for prop in ("OpenGL", "Vendor", "PyOpenGL"):
             key = prop.lower()
             csrow(prop, clientgl(key), servergl(key))
