@@ -114,7 +114,7 @@ class MmapClient(StubClientMixin):
         for k,v in raw_caps.items():
             caps["mmap_%s" % k] = v
         caps["mmap.namespace"] = True   #this client understands "mmap.ATTRIBUTE" format
-        log.warn(f"mmap caps={caps}")
+        log(f"mmap caps={caps}")
         return caps
 
     def get_raw_caps(self):
