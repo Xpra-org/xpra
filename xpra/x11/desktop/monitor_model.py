@@ -7,7 +7,8 @@
 from collections import namedtuple
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.platform.gui import get_wm_name
+from xpra.gtk_common.error import xlog
+from xpra.x11.common import get_wm_name
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.rectangle import rectangle  #@UnresolvedImport
 from xpra.log import Logger
@@ -52,7 +53,8 @@ class MonitorDesktopModel(DesktopModelBase):
             })
 
     def get_title(self):
-        title = get_wm_name()  # pylint: disable=assignment-from-none
+        with xlog:
+            title = get_wm_name()  # pylint: disable=assignment-from-none
         if self.name:
             if not title:
                 return self.name
