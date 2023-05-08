@@ -37,16 +37,15 @@ class XpraDesktopServer(DesktopServerBase):
     def server_init(self):
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
-        screenlog("server_init() randr=%s, initial-resolutions=%s",
-                       self.randr, self.initial_resolutions)
+        screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
         if not self.randr or self.initial_resolutions==() or not server_features.display:
             return
         res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
         if len(res)>1:
-            log.warn("Warning: cannot set desktop resolution to %s", res)
+            log.warn(f"Warning: cannot set desktop resolution to {res}")
             log.warn(" multi monitor mode is not enabled")
-            log.warn(" using %r", res[0])
             res = (res[0], )
+            log.warn(f" using {res!r}")
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
@@ -59,7 +58,7 @@ class XpraDesktopServer(DesktopServerBase):
             return root_w, root_h
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         if len(sss)!=1:
-            screenlog.info("screen used by %i clients:", len(sss))
+            screenlog.info(f"screen used by {len(sss)} clients:")
             return root_w, root_h
         ss = sss[0]
         requested_size = ss.desktop_mode_size
@@ -101,8 +100,8 @@ class XpraDesktopServer(DesktopServerBase):
                     win.emit("resized")
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
-            geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
-            geomlog.error(" %s", str(e) or type(e))
+            geomlog.error(f"Error: failed to resize desktop display to {rw}x{rh}")
+            geomlog.estr(e)
 
 
     def get_server_mode(self):
@@ -111,9 +110,7 @@ class XpraDesktopServer(DesktopServerBase):
     def make_hello(self, source):
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities.update({
-                                 "desktop"          : True,
-                                 })
+            capabilities["desktop"] =True
         return capabilities
 
 

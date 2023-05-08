@@ -46,8 +46,7 @@ class XpraMonitorServer(DesktopServerBase):
     def server_init(self):
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
-        screenlog("server_init() randr=%s, initial-resolutions=%s",
-                       self.randr, self.initial_resolutions)
+        screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
         if self.initial_resolutions==():
             return
         res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
@@ -76,12 +75,14 @@ class XpraMonitorServer(DesktopServerBase):
             #don't try to match the client
             from gi.repository import Gdk  # @UnresolvedImport
             screen = Gdk.Screen.get_default()
+            if not screen:
+                raise RuntimeError("cannot access the display")
             root = screen.get_root_window()
             return root.get_geometry()[2:4]
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         log(f"configure_best_screen_size() sources={sss}")
         if len(sss)!=1:
-            screenlog.info("screen used by %i clients:", len(sss))
+            screenlog.info(f"screen used by {len(sss)} clients:")
             return current()
         ss = sss[0]
         if not getattr(ss, "desktop_fullscreen", False):
@@ -153,19 +154,19 @@ class XpraMonitorServer(DesktopServerBase):
             for i, crtc_info in crtcs.items():
                 #find the monitor for this crtc:
                 if crtc_info.get("noutput", 0)!=1:
-                    screenlog("no outputs on crtc %i", i)
+                    screenlog(f"no outputs on crtc {i}")
                     continue
                 output_id = crtc_info.get("outputs")[0]
                 output_info = outputs.get(output_id)
                 if not output_info:
-                    screenlog("output %i not found", output_id)
+                    screenlog(f"output {output_id} not found")
                     continue
                 if output_info.get("connection")!="Connected":
-                    screenlog("output %i is not connected", output_id)
+                    screenlog(f"output {output_id} is not connected")
                     continue
                 monitor_info = find_monitor(output_id)
                 if not monitor_info:
-                    screenlog("no monitor found for output id %i", output_id)
+                    screenlog(f"no monitor found for output id {output_id}")
                     return
                 #get the geometry from the crtc:
                 mdef = dict((k,v) for k,v in crtc_info.items() if k in ("x", "y", "width", "height"))
@@ -174,7 +175,7 @@ class XpraMonitorServer(DesktopServerBase):
                 #and some monitor attributes:
                 mdef.update((k, v) for k,v in output_info.items() if k in ("primary", "automatic", "name"))
                 mdefs[i] = mdef
-                screenlog("do_reconfigure() %i: %s", i, mdef)
+                screenlog(f"do_reconfigure() {i}: {mdef}")
             if self.sync_monitors_to_models(mdefs) and not self.reconfigure_locked:
                 self.reconfigure_monitors()
         self.refresh_all_windows()
@@ -203,7 +204,7 @@ class XpraMonitorServer(DesktopServerBase):
                 mods += 1
             if mdef.get("name", "")!=monitor.get("name", ""):
                 model.name = monitor.get("name")
-                screenlog("monitor name has changed to %r", model.name)
+                screenlog(f"monitor {i} name has changed to {model.name!r}")
                 #name is used to generate the window "title":
                 model.notify("title")
         return mods
@@ -256,7 +257,7 @@ class XpraMonitorServer(DesktopServerBase):
                     })
                 model.init(mdef)
 
-    def _adjust_monitors(self, after_wid, delta_x, delta_y):
+    def _adjust_monitors(self, after_wid : int, delta_x : int, delta_y : int):
         models = dict((wid, model) for wid, model in self._id_to_window.items() if wid>after_wid)
         screenlog("adjust_monitors(%i, %i, %i) models=%s", after_wid, delta_x, delta_y, models)
         if (delta_x==0 and delta_y==0) or not models:
@@ -264,7 +265,7 @@ class XpraMonitorServer(DesktopServerBase):
         for wid, model in models.items():
             self._adjust_monitor(model, delta_x, delta_y)
 
-    def _adjust_monitor(self, model, delta_x, delta_y):
+    def _adjust_monitor(self, model, delta_x : int, delta_y : int):
         screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
         if (delta_x==0 and delta_y==0):
             return
@@ -272,8 +273,7 @@ class XpraMonitorServer(DesktopServerBase):
         new_x = max(0, x+delta_x)
         new_y = max(0, y+delta_y)
         if new_x!=x or new_y!=y:
-            screenlog("adjusting monitor %s from %s to %s",
-                      model, (x, y), (new_x, new_y))
+            screenlog(f"adjusting monitor {model} from {x},{y} to {new_x},{new_y}")
             mdef = model.get_definition()
             mdef.update({
                 "x"         : new_x,
@@ -290,16 +290,18 @@ class XpraMonitorServer(DesktopServerBase):
             monitor_defs[i] = monitor
         return monitor_defs
 
-    def apply_monitor_config(self, monitor_defs):
+    def apply_monitor_config(self, monitor_defs : dict):
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 
 
-    def remove_monitor(self, wid):
+    def remove_monitor(self, wid : int):
         model = self._id_to_window.get(wid)
         screenlog("removing monitor for wid %i : %s", wid, model)
-        assert model, "monitor %r not found" % wid
-        assert len(self._id_to_window)>1, "cannot remove the last monitor"
+        if not model:
+            raise ValueError(f"monitor {wid} not found")
+        if len(self._id_to_window)<=1:
+            raise RuntimeError("cannot remove the last monitor")
         delta_x = -model.get_definition().get("width", 0)
         delta_y = 0 #model.monitor.get("width", 0)
         model.unmanage()
@@ -308,10 +310,16 @@ class XpraMonitorServer(DesktopServerBase):
         self._adjust_monitors(wid, delta_x, delta_y)
         self.reconfigure_monitors()
 
-    def add_monitor(self, width, height):
-        assert len(self._id_to_window)<16, "already too many monitors: %i" % len(self._id_to_window)
-        assert isinstance(width, int) and isinstance(height, int)
-        assert (width, height)>=MIN_SIZE and (width, height)<=MAX_SIZE
+    def add_monitor(self, width : int, height : int):
+        count = len(self._id_to_window)
+        if count>=16:
+            raise RuntimeError(f"already too many monitors: {count}")
+        if not (isinstance(width, int) and isinstance(height, int)):
+            raise ValueError(f"invalid dimension types: {width} ({type(width)}) and {height} ({type(height)})")
+        if (width, height)<MIN_SIZE:
+            raise ValueError(f"monitor size {width}x{height} is too small, minimum is {MIN_SIZE}")
+        if (width, height)>MAX_SIZE:
+            raise ValueError(f"monitor size {width}x{height} is too large, maximum is {MIN_SIZE}")
         #find the wid to use:
         #prefer just incrementing the wid, but we cannot go higher than 16
         def rightof(wid):
@@ -348,7 +356,7 @@ class XpraMonitorServer(DesktopServerBase):
         index = wid-1
         monitor = {
             "index"     : index,
-            "name"      : "VFB-%i" % index,
+            "name"      : f"VFB-{index}",
             "x"         : x,
             "y"         : y,
             "width"     : width,
@@ -376,7 +384,7 @@ class XpraMonitorServer(DesktopServerBase):
                 #index is zero-based
                 wid = value+1
             else:
-                raise ValueError("unsupported monitor identifier %r" % identifier)
+                raise ValueError(f"unsupported monitor identifier {identifier!r}")
             self.remove_monitor(wid)
         elif action=="add":
             resolution = packet[2]
@@ -386,7 +394,7 @@ class XpraMonitorServer(DesktopServerBase):
             width, height = resolution
             self.add_monitor(width, height)
         else:
-            raise ValueError("unsupported 'configure-monitor' action %r" % action)
+            raise ValueError(f"unsupported 'configure-monitor' action {action!r}")
         self.refresh_all_windows()
 
 
