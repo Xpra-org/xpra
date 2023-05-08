@@ -272,6 +272,8 @@ class WindowsMixin(StubSourceMixin):
             self.source_remove(ct)
 
     def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix=""):
+        #copy to a new list we can modify (ie: compress):
+        cursor_data = list(cursor_data)
         #skip first two fields (if present) as those are coordinates:
         if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
             cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
