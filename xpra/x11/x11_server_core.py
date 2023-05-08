@@ -360,12 +360,15 @@ class X11ServerCore(GTKServerBase):
 
     def send_initial_cursors(self, ss, sharing=False):
         dci = self.default_cursor_image
-        cursorlog(f"default_cursor_image={dci}, cursors_enabled=%s", getattr(self, "cursors", False))
-        if dci and getattr(self, "cursors", False):
-            try:
-                ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
-            except Exception:
-                cursorlog.error("Error sending default cursor", exc_info=True)
+        ce = getattr(ss, "cursor_encodings", ())
+        enabled = getattr(self, "cursors", False)
+        if not (enabled and ("default" in ce) and dci):
+            return
+        cursorlog(f"default_cursor_image={dci}, cursors_enabled=%s, encodings={ce}", )
+        try:
+            ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
+        except Exception:
+            cursorlog.error("Error sending default cursor", exc_info=True)
 
 
     def do_get_info(self, proto, server_sources) -> dict:
