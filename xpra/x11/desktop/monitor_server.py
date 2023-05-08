@@ -158,7 +158,7 @@ class XpraMonitorServer(DesktopServerBase):
                 output_id = crtc_info.get("outputs")[0]
                 output_info = outputs.get(output_id)
                 if not output_info:
-                    screenlog("output %i not found")
+                    screenlog("output %i not found", output_id)
                     continue
                 if output_info.get("connection")!="Connected":
                     screenlog("output %i is not connected", output_id)
