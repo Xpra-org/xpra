@@ -952,6 +952,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = Gdk.Display.get_default()
+        if not display:
+            return
         cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
                   ellipsizer(cursor_data),
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
