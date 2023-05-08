@@ -8,9 +8,9 @@
 
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
-Version:   0.4.0
+Version:   0.4.1
 
-Release:   3.xpra1%{?dist}
+Release:   1.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -33,7 +33,7 @@ X.Org X11 dummy video driver.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "e78ceae5c8c0588c7cb658f2afc3a9fac9ef665b52a75b01f8e9c5449a4e1e5a" ]; then
+if [ "${sha256}" != "351920a7fd0f759a3ac972a5999b3ffed46f07fb52a99f319bfb5b6a59d3dfaf" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -59,6 +59,9 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Mon May 08 2023 Antoine Martin <antoine@xpra.org> - 0.4.1-1.xpra1
+- new upstream release
+
 * Fri Apr 15 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-3.xpra1
 - add disconnect patch
 
