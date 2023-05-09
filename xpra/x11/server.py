@@ -517,7 +517,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _add_new_window(self, window):
-        self._add_new_window_common(window)
+        wid = self._add_new_window_common(window)
         geometry = window.get_property("geometry")
         log("Discovered new ordinary window: %s (geometry=%s)", window, geometry)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
@@ -528,7 +528,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #so we can send the pixel data immediately after:
             sources = tuple(filter(lambda source : getattr(source, "window_pre_map", False), self._server_sources.values()))
             if sources:
-                wid = self._window_to_id.get(window)
                 log("pre-mapping window %i for %s at %s", wid, sources, geometry)
                 geometry = self.clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
