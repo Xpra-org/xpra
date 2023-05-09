@@ -3538,7 +3538,7 @@ def get_x11_display_info(display, sessions_dir=None):
                             display_info["state"] = "UNKNOWN"
                     except (TypeError, ValueError):
                         xvfb_pid = 0
-                    xauthority = (load_session_file("xauthority") or "").decode()
+                    xauthority = (load_session_file("xauthority") or b"").decode()
                     log(f"xauthority({display})={xauthority}")
                     if not os.path.exists(session_file_path("server.pid")) and not os.path.exists(session_file_path("socket")):
                         #looks like the server has exited
