@@ -264,9 +264,11 @@ class PortalShadow(GTKShadowServerBase):
         for w in tuple(self._id_to_window.values()):
             self.refresh_window(w)
 
-    def capture_error(self, *args):
-        log.warn(f"capture_error{args}")
-        self.quit(ExitCode.INTERNAL_ERROR)
+
+    def capture_error(self, capture, message):
+        log(f"capture_error({capture}, {message})")
+        log.error("Error capturing screen:")
+        log.estr(message)
 
     def capture_state_changed(self, capture, state):
         log(f"screencast capture state: {state}")
