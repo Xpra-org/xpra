@@ -2224,10 +2224,10 @@ def guess_display(dotxpra, current_display, uid=getuid(), gid=getgid(), sessions
             displays.append(current_display)
         all_displays = all_displays or displays
         if len(displays)>1:
-            #remove xpra's own displays to narrow things down:
+            #remove xpra's own X11 displays to narrow things down:
             results = dotxpra.sockets()
-            xpra_displays = [display for _, display in results]
-            displays = list(set(displays)-set(xpra_displays))
+            xpra_x11_displays = [display for _, display in results if display.startswith(":")]
+            displays = list(set(displays)-set(xpra_x11_displays))
         if len(displays)>1:
             #keep only LIVE ones (assume that they are),
             #and skip XWayland displays:
