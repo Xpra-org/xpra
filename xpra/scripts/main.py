@@ -564,7 +564,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk_client()
         return run_sessions_gui(options)
     elif mode == "displays":
-        check_gtk_client()
+        no_gtk()
         return run_displays(options, args)
     elif mode == "clean-displays":
         no_gtk()
