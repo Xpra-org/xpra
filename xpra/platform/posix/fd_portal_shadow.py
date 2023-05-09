@@ -244,6 +244,7 @@ class PortalShadow(GTKShadowServerBase):
         w, h = props.inttupleget("size", (0, 0))
         el = f"pipewiresrc fd={fd} path={node_id}"
         self.capture = Capture(el, pixel_format="BGRX", width=w, height=h)
+        self.capture.node_id = node_id
         self.capture.connect("state-changed", self.capture_state_changed)
         self.capture.connect("error", self.capture_error)
         self.capture.connect("new-image", self.capture_new_image)
@@ -256,7 +257,7 @@ class PortalShadow(GTKShadowServerBase):
         model.pipewire_props = props
         #must be called from the main thread:
         log(f"new model: {model}")
-        self._add_new_window(model)
+        self.do_add_new_window_common(node_id, model)
 
     def capture_new_image(self, capture, frame):
         log(f"capture_new_image({capture}, {frame})")
