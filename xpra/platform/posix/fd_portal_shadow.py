@@ -7,13 +7,16 @@
 
 import os
 import random
+from time import monotonic
 from dbus.types import UInt32
 from dbus.types import Dictionary
 
 from xpra.exit_codes import ExitCode
-from xpra.util import typedict, ConnectionMessage
+from xpra.util import typedict, envbool, ConnectionMessage
+from xpra.net.compression import Compressed
 from xpra.dbus.helper import dbus_to_native
-from xpra.codecs.gstreamer.capture import Capture
+from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.posix.fd_portal import (
@@ -28,6 +31,8 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 session_counter : int = random.randint(0, 2**24)
+
+VIDEO_MODE = envbool("XPRA_PIPEWIRE_VIDEO_MODE", True)
 
 
 class PipewireWindowModel(RootWindowModel):
@@ -57,18 +62,8 @@ class PortalShadow(GTKShadowServerBase):
 
     def last_client_exited(self):
         super().last_client_exited()
-        c = self.capture
-        if c:
-            self.capture = None
-            c.stop()
-        if self.session:
-            #https://gitlab.gnome.org/-/snippets/1122
-            log(f"trying to close the session {self.session}")
-            try:
-                self.session.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
-            except Exception as e:
-                log(f"ignoring error closing session {self.session}: {e}")
-            self.session = None
+        self.stop_capture()
+        self.stop_session()
 
     def client_auth_error(self, message):
         self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
@@ -112,6 +107,18 @@ class PortalShadow(GTKShadowServerBase):
         GTKShadowServerBase.cleanup(self)
         self.portal_interface = None
 
+
+    def stop_session(self):
+        s = self.session
+        if not s:
+            return
+        self.session = None
+        #https://gitlab.gnome.org/-/snippets/1122
+        log(f"trying to close the session {s}")
+        try:
+            s.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
+        except Exception as e:
+            log(f"ignoring error closing session {s}: {e}")
 
     def create_session(self):
         global session_counter
@@ -231,8 +238,22 @@ class PortalShadow(GTKShadowServerBase):
             log.warn(" keyboard and pointer events cannot be forwarded")
 
 
+    def create_capture_pipeline(self, fd : int, node_id : int, w : int, h : int):
+        el = f"pipewiresrc fd={fd} path={node_id} do-timestamp=true"
+        c = self.authenticating_client
+        if VIDEO_MODE:
+            encs = getattr(c, "core_encodings", ())
+            log(f"core_encodings({c})={encs}")
+            if "h264" in encs:
+                return CaptureAndEncode(el, pixel_format="BGRX", width=w, height=h)
+        return Capture(el, pixel_format="BGRX", width=w, height=h)
+
     def start_pipewire_capture(self, node_id, props):
         log(f"start_pipewire_capture({node_id}, {props})")
+        x, y = props.inttupleget("position", (0, 0))
+        w, h = props.inttupleget("size", (0, 0))
+        if w<=0 or h<=0:
+            raise ValueError(f"invalid dimensions: {w}x{h}")
         empty_dict = Dictionary(signature="sv")
         fd_object = self.portal_interface.OpenPipeWireRemote(
             self.session_handle,
@@ -240,10 +261,7 @@ class PortalShadow(GTKShadowServerBase):
             dbus_interface=SCREENCAST_IFACE,
             )
         fd = fd_object.take()
-        x, y = props.inttupleget("position", (0, 0))
-        w, h = props.inttupleget("size", (0, 0))
-        el = f"pipewiresrc fd={fd} path={node_id}"
-        self.capture = Capture(el, pixel_format="BGRX", width=w, height=h)
+        self.capture = self.create_capture_pipeline(fd, node_id, w, h)
         self.capture.node_id = node_id
         self.capture.connect("state-changed", self.capture_state_changed)
         self.capture.connect("error", self.capture_error)
@@ -258,18 +276,50 @@ class PortalShadow(GTKShadowServerBase):
         #must be called from the main thread:
         log(f"new model: {model}")
         self.do_add_new_window_common(node_id, model)
+        self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, frame):
-        log(f"capture_new_image({capture}, {frame})")
-        #FIXME: only match the window that just got refreshed!
-        for w in tuple(self._id_to_window.values()):
-            self.refresh_window(w)
+    def capture_new_image(self, capture, frame, coding, data):
+        wid = capture.node_id
+        model = self._id_to_window.get(wid)
+        log(f"capture_new_image({capture}, {frame}, {coding}, {type(data)}) model({wid})={model}")
+        if not model:
+            log.error(f"Error: cannot find window model for node {wid}")
+            return
+        if isinstance(data, ImageWrapper):
+            self.refresh_window(model)
+            return
+        if not isinstance(data, bytes):
+            log.warn(f"Warning: unexpected image datatype: {type(data)}")
+            return
+        #this is a frame from a compressed stream,
+        #send it to all the window sources for this window:
+        cdata = Compressed(coding, data)
+        client_options = {
+            "frame" : frame,
+            }
+        options = {}
+        x = y = 0
+        w, h = model.geometry[2:4]
+        outstride = 0
+        damage_time = process_damage_time = monotonic()
+        for ss in tuple(self._server_sources.values()):
+            if not hasattr(ss, "get_window_source"):
+                #client is not showing any windows
+                continue
+            ws = ss.get_window_source(wid)
+            if not ws:
+                #client not showing this window
+                continue
+            log(f"sending {len(data)} bytes packet of {coding} stream to {ws} of {ss}")
+            packet = ws.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_options, options)
+            ws.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 
     def capture_error(self, capture, message):
         log(f"capture_error({capture}, {message})")
         log.error("Error capturing screen:")
         log.estr(message)
+        #perhaps we should "lose" the window here?
 
     def capture_state_changed(self, capture, state):
         log(f"screencast capture state: {state}")

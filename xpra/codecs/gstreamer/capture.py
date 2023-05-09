@@ -7,7 +7,7 @@ from queue import Queue, Empty, Full
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gst_common import import_gst, GST_FLOW_OK
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gst_pipeline import Pipeline
 from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
@@ -28,7 +28,7 @@ class Capture(Pipeline):
     Uses a GStreamer pipeline to capture the screen
     """
     __gsignals__ = Pipeline.__generic_signals__.copy()
-    __gsignals__["new-image"] = one_arg_signal
+    __gsignals__["new-image"] = n_arg_signal(3)
 
     def __init__(self, element : str="ximagesrc", pixel_format : str="BGRX",
                  width : int=0, height : int=0):
@@ -83,7 +83,7 @@ class Capture(Pipeline):
             except Full:
                 log("image queue is already full")
             else:
-                self.emit("new-image", self.frames)
+                self.emit("new-image", self.frames, self.pixel_format, image)
         return GST_FLOW_OK
 
     def on_new_preroll(self, _appsink):
@@ -105,6 +105,58 @@ class Capture(Pipeline):
     def clean(self):
         self.stop()
 
+GObject.type_register(Capture)
+
+
+class CaptureAndEncode(Capture):
+    """
+    Uses a GStreamer pipeline to capture the screen
+    and encode it to a video stream
+    """
+
+    def create_pipeline(self,
+                        capture_element:str="ximagesrc",
+                        encode_element:str="x264enc pass=4 speed-preset=1 tune=4 byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
+                        #encode_element="x264enc threads=8 pass=4 speed-preset=1 tune=zerolatency byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
+                        #encode_element="vp8enc deadline=1 min-quantizer=60 max-quantizer=63 cq-level=61"):
+                        #encode_element="vp9enc deadline=1 error-resilient=1 min-quantizer=60 end-usage=2"):
+        elements = [
+            capture_element,   #ie: ximagesrc or pipewiresrc
+            #"videorate",
+            #"video/x-raw,framerate=20/1",
+            #"queue leaky=2 max-size-buffers=1",
+            "videoconvert",
+            encode_element,
+            "appsink name=sink emit-signals=true max-buffers=1 drop=false sync=false async=true qos=true",
+            ]
+        if not self.setup_pipeline_and_bus(elements):
+            raise RuntimeError("failed to setup gstreamer pipeline")
+        self.sink   = self.pipeline.get_by_name("sink")
+        def sh(sig, handler):
+            self.element_connect(self.sink, sig, handler)
+        sh("new-sample", self.on_new_sample)
+        sh("new-preroll", self.on_new_preroll)
+
+    def on_new_sample(self, _bus):
+        sample = self.sink.emit("pull-sample")
+        buf = sample.get_buffer()
+        size = buf.get_size()
+        log("on_new_sample size=%s", size)
+        if size:
+            data = buf.extract_dup(0, size)
+            self.frames += 1
+            self.emit("new-image", self.frames, "h264", data)
+        return GST_FLOW_OK
+
+    def on_new_preroll(self, _appsink):
+        log("new-preroll")
+        return GST_FLOW_OK
+
+    def refresh(self):
+        return True
+
+    def clean(self):
+        self.stop()
 
 GObject.type_register(Capture)
 
