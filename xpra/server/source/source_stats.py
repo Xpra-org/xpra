@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -113,11 +113,11 @@ class GlobalPerformanceStatistics:
         self.client_latency.append((wid, now, pixels, net_total_latency))
         self.frame_total_latency.append((wid, now, pixels, latency))
 
-    def get_damage_pixels(self, wid):
-        """ returns the list of (event_time, pixelcount) for the given window id """
-        return [(event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid]
+    def get_damage_pixels(self, wid) -> tuple:
+        """ returns the tuple of (event_time, pixelcount) for the given window id """
+        return tuple((event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid)
 
-    def update_averages(self):
+    def update_averages(self) -> None:
         def latency_averages(values):
             avg, recent = calculate_time_weighted_average(values)
             return max(0.001, avg), max(0.001, recent)
@@ -168,7 +168,7 @@ class GlobalPerformanceStatistics:
             #(wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
-    def get_factors(self, pixel_count):
+    def get_factors(self, pixel_count) -> list:
         factors = []
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:

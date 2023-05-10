@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -25,7 +25,7 @@ log = Logger("stats")
 #how many historical records to keep
 #for the various statistics we collect:
 #(cannot be lower than DamageBatchConfig.max_events)
-NRECS = 100
+NRECS : int = 100
 
 TARGET_LATENCY_TOLERANCE = envint("XPRA_TARGET_LATENCY_TOLERANCE", 20)/1000.0
 
@@ -38,12 +38,12 @@ class WindowPerformanceStatistics:
         self.reset()
 
     #assume 100ms until we get some data to compute the real values
-    DEFAULT_DAMAGE_LATENCY = 0.1
-    DEFAULT_NETWORK_LATENCY = 0.1
-    DEFAULT_TARGET_LATENCY = 0.1
+    DEFAULT_DAMAGE_LATENCY : float = 0.1
+    DEFAULT_NETWORK_LATENCY : float = 0.1
+    DEFAULT_TARGET_LATENCY : float = 0.1
 
     def reset(self):
-        self.init_time = monotonic()
+        self.init_time : float = monotonic()
         self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
                                                             #(ack_time, no of pixels, decoding_time*1000*1000)
         self.encoding_stats = deque(maxlen=NRECS)           #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
@@ -78,12 +78,12 @@ class WindowPerformanceStatistics:
         self.avg_decode_speed = -1
         self.recent_decode_speed = -1
 
-    def reset_backlog(self):
+    def reset_backlog(self) -> None:
         #this should be a last resort..
         self.damage_ack_pending = {}
 
 
-    def update_averages(self):
+    def update_averages(self) -> None:
         #damage "in" latency: (the time it takes for damage requests to be processed only)
         dil = tuple(self.damage_in_latency)
         if dil:
@@ -108,7 +108,7 @@ class WindowPerformanceStatistics:
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self, bandwidth_limit=0):
+    def get_factors(self, bandwidth_limit=0) -> list:
         factors = []
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:
@@ -215,7 +215,7 @@ class WindowPerformanceStatistics:
         return info
 
 
-    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010, jitter=0):
+    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010, jitter=0) -> float:
         """ geometric mean of the minimum (+20%) and average latency
             but not higher than twice more than the minimum,
             and not lower than abs_min.
@@ -230,7 +230,7 @@ class WindowPerformanceStatistics:
         max_latency = min(avg_latency, 4.0*min_latency+0.100)
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency + jitter/1000.0
 
-    def get_client_backlog(self):
+    def get_client_backlog(self) -> tuple:
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if self.damage_ack_pending:
             sent_before = monotonic()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
@@ -260,10 +260,10 @@ class WindowPerformanceStatistics:
                     self.damage_ack_pending.pop(sequence, None)
         return packets_backlog, pixels_backlog, bytes_backlog
 
-    def get_acks_pending(self):
+    def get_acks_pending(self) -> int:
         return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
 
-    def get_late_acks(self, latency):
+    def get_late_acks(self, latency) -> int:
         now = monotonic()
         sent_before = now-latency
         #start_send_at = item[0]
@@ -273,14 +273,14 @@ class WindowPerformanceStatistics:
             1000*latency, late, len(self.damage_ack_pending))
         return late
 
-    def get_pixels_encoding_backlog(self):
+    def get_pixels_encoding_backlog(self) -> tuple:
         pixels, count = 0, 0
         for _, w, h in self.encoding_pending.values():
             pixels += w*h
             count += 1
         return pixels, count
 
-    def get_bitrate(self, max_elapsed=1):
+    def get_bitrate(self, max_elapsed : float=1):
         cutoff = monotonic()-max_elapsed
         recs = tuple((v[0], v[4]) for v in tuple(self.encoding_stats) if v[0]>=cutoff)
         if len(recs)<2:
@@ -291,6 +291,6 @@ class WindowPerformanceStatistics:
             return 0
         return int(bits/elapsed)
 
-    def get_damage_pixels(self, elapsed=1):
+    def get_damage_pixels(self, elapsed=1) -> int:
         cutoff = monotonic()-elapsed
         return sum(v[3]*v[4] for v in tuple(self.last_damage_events) if v[0]>cutoff)
