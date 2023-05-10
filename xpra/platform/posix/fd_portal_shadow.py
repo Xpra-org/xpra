@@ -12,10 +12,11 @@ from dbus.types import UInt32
 from dbus.types import Dictionary
 
 from xpra.exit_codes import ExitCode
-from xpra.util import typedict, envbool, ConnectionMessage
+from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
 from xpra.net.compression import Compressed
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode
+from xpra.gst_common import get_element_str
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -230,7 +231,7 @@ class PortalShadow(GTKShadowServerBase):
             return
         log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
-            self.start_pipewire_capture(node_id, typedict(props))
+            self.start_pipewire_capture(int(node_id), typedict(props))
         self.input_devices = res.intget("devices")
         if not self.input_devices and not self.readonly:
             #ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
@@ -239,7 +240,11 @@ class PortalShadow(GTKShadowServerBase):
 
 
     def create_capture_pipeline(self, fd : int, node_id : int, w : int, h : int):
-        el = f"pipewiresrc fd={fd} path={node_id} do-timestamp=true"
+        el = get_element_str("pipewiresrc", {
+            "fd" : fd,
+            "path" : str(node_id),
+            "do-timestamp" : True,
+            })
         c = self.authenticating_client
         if VIDEO_MODE:
             encs = getattr(c, "core_encodings", ())
@@ -319,7 +324,11 @@ class PortalShadow(GTKShadowServerBase):
         log(f"capture_error({capture}, {message})")
         log.error("Error capturing screen:")
         log.estr(message)
-        #perhaps we should "lose" the window here?
+        wid = capture.node_id
+        if wid in self._window_to_id:
+            self._remove_window(wid)
+        for ss in tuple(self._server_sources.values()):
+            ss.may_notify(NotificationID.FAILURE, "Session Capture Failed", str(message))
 
     def capture_state_changed(self, capture, state):
         log(f"screencast capture state: {state}")
