@@ -255,6 +255,8 @@ class PortalShadow(GTKShadowServerBase):
 
     def start_pipewire_capture(self, node_id, props):
         log(f"start_pipewire_capture({node_id}, {props})")
+        if not isinstance(node_id, int):
+            raise ValueError(f"node-id is a {type(node_id)}, must be an int")
         x, y = props.inttupleget("position", (0, 0))
         w, h = props.inttupleget("size", (0, 0))
         if w<=0 or h<=0:
@@ -321,12 +323,13 @@ class PortalShadow(GTKShadowServerBase):
 
 
     def capture_error(self, capture, message):
-        log(f"capture_error({capture}, {message})")
+        wid = capture.node_id
+        log(f"capture_error({capture}, {message}) wid={wid}")
         log.error("Error capturing screen:")
         log.estr(message)
-        wid = capture.node_id
-        if wid in self._window_to_id:
-            self._remove_window(wid)
+        model = self._id_to_window.get(wid)
+        if model:
+            self._remove_window(model)
         for ss in tuple(self._server_sources.values()):
             ss.may_notify(NotificationID.FAILURE, "Session Capture Failed", str(message))
 

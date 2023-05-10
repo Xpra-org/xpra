@@ -463,13 +463,14 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
 
     def _process_window_common(self, wid):
-        window = self._id_to_window.get(wid)
-        assert window is not None, "wid %s does not exist" % wid
-        return window
+        return self._id_to_window.get(wid)
 
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
         window = self._process_window_common(wid)
+        if not window:
+            #already gone
+            return
         self._window_mapped_at(proto, wid, window, (x, y, width, height))
         self.refresh_window_area(window, 0, 0, width, height)
         if len(packet)>=7:
@@ -479,6 +480,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
         window = self._process_window_common(wid)
+        if not window:
+            #already gone
+            return
         self._window_mapped_at(proto, wid, window)
         #TODO: deal with more than one window / more than one client
         #and stop refresh if all the windows are unmapped everywhere
@@ -488,6 +492,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._process_window_common(wid)
+        if not window:
+            #already gone
+            return
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self.refresh_window_area(window, 0, 0, w, h)
         if len(packet)>=7:
@@ -495,8 +502,14 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
-        self._process_window_common(wid)
-        self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
+        window = self._process_window_common(wid)
+        if not window:
+            #already gone
+            return
+        #FIXME: with multiple windows / clients,
+        #we have to keep track of mappings!
+        if len(self._window_to_id)==1:
+            self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
 
 
     def do_make_screenshot_packet(self):
