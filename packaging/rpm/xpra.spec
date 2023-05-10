@@ -208,6 +208,8 @@ Suggests:			mesa-va-drivers-freeworld
 Recommends:			gstreamer1-plugins-ugly
 #av1:
 Recommends:			gstreamer1-plugins-bad-free-extras
+#pipewire:
+Recommends:			pipewire-gstreamer
 %description codecs-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.

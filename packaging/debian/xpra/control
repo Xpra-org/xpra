@@ -296,6 +296,7 @@ Depends: xpra-codecs (= ${binary:Version})
 Recommends:
         ,gstreamer-plugins-ugly
         ,gstreamer1.0-vaapi
+        ,gstreamer1.0-pipewire
 Description: Extra picture and video codecs
  for the xpra server and client.
 
