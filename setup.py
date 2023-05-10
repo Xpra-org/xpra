@@ -762,9 +762,14 @@ def get_clang_version():
     #not found!
     return clang_version
 
+_gcc_version = None
 def get_gcc_version():
+    global _gcc_version
+    if _gcc_version is not None:
+        return _gcc_version
+    _gcc_version = (0, )
     if CC_is_clang():
-        return (0, )
+        return _gcc_version
     cc = os.environ.get("CC", "gcc")
     r, _, err = get_status_output([cc, "-v"])
     if r==0:
@@ -781,8 +786,8 @@ def get_gcc_version():
                     break
             print("found gcc version: %s" % ".".join(str(x) for x in tmp_version))
             break
-        return tuple(tmp_version)
-    return (0, )
+        _gcc_version = tuple(tmp_version)
+    return _gcc_version
 
 
 def vernum(s):
