@@ -9,12 +9,12 @@ import weakref
 from xpra.util import envint
 
 
-FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
+FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERRED_ENCODING_ORDER = (
+PREFERRED_ENCODING_ORDER : tuple = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
@@ -24,13 +24,13 @@ PREFERRED_ENCODING_ORDER = (
     "grayscale",
     )
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = (
+EDGE_ENCODING_ORDER : tuple = (
     "rgb24", "rgb32",
     "png", "webp",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
     )
 
-HELP_ORDER = (
+HELP_ORDER : tuple = (
     "auto",
     "grayscale",
     "h264", "h265", "av1", "vp8", "vp9", "mpeg4",
@@ -41,19 +41,19 @@ HELP_ORDER = (
 
 
 #value: how much smaller the output is
-LOSSY_PIXEL_FORMATS = {
+LOSSY_PIXEL_FORMATS : dict = {
     "NV12"    : 2,
     "YUV420P" : 2,
     "YUV422P" : 1.5,
     }
 
-def get_plane_name(pixel_format="YUV420P", index=0):
+def get_plane_name(pixel_format : str="YUV420P", index : int=0) -> str:
     return {
         "NV12" : ("Y", "UV"),
         }.get(pixel_format, list(pixel_format))[index]
 
 
-PIXEL_SUBSAMPLING = {
+PIXEL_SUBSAMPLING : dict = {
     #NV12 is actually subsampled horizontally too - just like YUV420P
     #(but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
@@ -67,14 +67,14 @@ PIXEL_SUBSAMPLING = {
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
-def get_subsampling_divs(pixel_format):
+def get_subsampling_divs(pixel_format) -> tuple:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
         raise ValueError(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
-def preforder(encodings):
+def preforder(encodings) -> tuple:
     encs = set(encodings)
     return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
 
@@ -122,14 +122,14 @@ class CodecStateException(Exception):
 
 class _codec_spec:
 
-    def __init__(self, codec_class, codec_type="",
-                    quality=50, speed=50,
-                    size_efficiency=50,
-                    setup_cost=50, cpu_cost=100, gpu_cost=0,
-                    min_w=1, min_h=1, max_w=4*1024, max_h=4*1024,
-                    can_scale=False,
-                    score_boost=0,
-                    width_mask=0xFFFF, height_mask=0xFFFF):
+    def __init__(self, codec_class, codec_type : str="",
+                    quality:int=50, speed:int=50,
+                    size_efficiency:int=50,
+                    setup_cost:int=50, cpu_cost:int=100, gpu_cost:int=0,
+                    min_w:int=1, min_h:int=1, max_w:int=4*1024, max_h:int=4*1024,
+                    can_scale:bool=False,
+                    score_boost:int=0,
+                    width_mask:int=0xFFFF, height_mask:int=0xFFFF):
         self.codec_class = codec_class          #ie: xpra.codecs.x264.encoder.Encoder
         self.codec_type : str = codec_type            #ie: "nvenc"
         self.quality : int = quality
@@ -161,7 +161,7 @@ class _codec_spec:
         self._all_fields = list(self._exported_fields)+["instances"]
 
 
-    def make_instance(self):
+    def make_instance(self) -> object:
         # pylint: disable=import-outside-toplevel
         #I can't imagine why someone would have more than this many
         #encoders or csc modules active at the same time!
@@ -212,8 +212,8 @@ class _codec_spec:
 
 class video_spec(_codec_spec):
 
-    def __init__(self, encoding, input_colorspace, output_colorspaces, has_lossless_mode,
-                 codec_class, codec_type, min_w=2, min_h=2, **kwargs):
+    def __init__(self, encoding : str, input_colorspace : str, output_colorspaces : tuple, has_lossless_mode : bool,
+                 codec_class, codec_type : str, min_w:int=2, min_h:int=2, **kwargs):
         self.encoding : str = encoding                        #ie: "h264"
         self.input_colorspace : str = input_colorspace
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
@@ -222,12 +222,12 @@ class video_spec(_codec_spec):
         self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
     def __repr__(self):
-        return "%s(%s to %s)" % (self.codec_type, self.input_colorspace, self.encoding)
+        return f"{self.codec_type}({self.input_colorspace} to {self.encoding}"
 
 
 class csc_spec(_codec_spec):
 
-    def __init__(self, input_colorspace, output_colorspace, codec_class, codec_type, **kwargs):
+    def __init__(self, input_colorspace:str, output_colorspace:str, codec_class, codec_type:str, **kwargs):
         self.input_colorspace : str = input_colorspace
         self.output_colorspace : str = output_colorspace
         super().__init__(codec_class, codec_type, **kwargs)

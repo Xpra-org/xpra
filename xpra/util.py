@@ -156,7 +156,7 @@ def get_util_logger():
 
 
 #convenience method based on the strings above:
-def disconnect_is_an_error(reason):
+def disconnect_is_an_error(reason) -> bool:
     return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=ConnectionMessage.IDLE_TIMEOUT)
 
 
@@ -190,7 +190,7 @@ def net_utf8(value) -> str:
     return u(strtobytes(value))
 
 
-def u(v):
+def u(v) -> str:
     if isinstance(v, str):
         return v
     try:
@@ -207,7 +207,7 @@ class AdHocStruct:
                 % (type(self).__name__, self.__dict__))
 
 
-def remove_dupes(seq):
+def remove_dupes(seq) -> list:
     seen = set()
     seen_add = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
@@ -976,7 +976,7 @@ def csv(v) -> str:
         return str(v)
 
 
-def unsetenv(*varnames):
+def unsetenv(*varnames) -> None:
     for x in varnames:
         os.environ.pop(x, None)
 
@@ -986,7 +986,7 @@ def envint(name : str, d:int=0) -> int:
     except ValueError:
         return d
 
-def envbool(name : str, d:bool=False):
+def envbool(name : str, d:bool=False) -> bool:
     try:
         v = os.environ.get(name, "").lower()
         if v is None:
@@ -999,7 +999,7 @@ def envbool(name : str, d:bool=False):
     except ValueError:
         return d
 
-def envfloat(name : str, d:float=0):
+def envfloat(name : str, d:float=0) -> float:
     try:
         return float(os.environ.get(name, d))
     except ValueError:

@@ -22,7 +22,7 @@ log = Logger("network", "stats")
 NRECS = 500
 
 
-def safeint(v, default=0):
+def safeint(v, default : int=0) -> int:
     try:
         return int(v)
     except ValueError:
