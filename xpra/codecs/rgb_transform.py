@@ -8,7 +8,7 @@ from time import monotonic
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import first_time, csv
-from xpra.codecs.avif.decoder import ImageWrapper
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 try:
     from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
