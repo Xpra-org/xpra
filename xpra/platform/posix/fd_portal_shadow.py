@@ -34,6 +34,7 @@ log = Logger("shadow")
 session_counter : int = random.randint(0, 2**24)
 
 VIDEO_MODE = envbool("XPRA_PIPEWIRE_VIDEO_MODE", True)
+VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8,vp9,av1").split(",")
 
 
 class PipewireWindowModel(RootWindowModel):
@@ -248,9 +249,14 @@ class PortalShadow(GTKShadowServerBase):
         c = self.authenticating_client
         if VIDEO_MODE:
             encs = getattr(c, "core_encodings", ())
-            log(f"core_encodings({c})={encs}")
-            if "h264" in encs:
-                return CaptureAndEncode(el, pixel_format="BGRX", width=w, height=h)
+            common_video = tuple(x for x in VIDEO_MODE_ENCODINGS if x in encs)
+            log(f"core_encodings({c})={encs}, common video encodings={common_video}")
+            for encoding in common_video:
+                try:
+                    return CaptureAndEncode(el, encoding, width=w, height=h)
+                except ValueError as e:
+                    log("CaptureAndEncode%s", (el, encoding, w, h), exc_info=True)
+                    log.info(f"cannot use {encoding}: {e}")
         return Capture(el, pixel_format="BGRX", width=w, height=h)
 
     def start_pipewire_capture(self, node_id, props):
@@ -285,10 +291,10 @@ class PortalShadow(GTKShadowServerBase):
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, frame, coding, data):
+    def capture_new_image(self, capture, coding, data, client_info):
         wid = capture.node_id
         model = self._id_to_window.get(wid)
-        log(f"capture_new_image({capture}, {frame}, {coding}, {type(data)}) model({wid})={model}")
+        log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")
         if not model:
             log.error(f"Error: cannot find window model for node {wid}")
             return
@@ -301,9 +307,6 @@ class PortalShadow(GTKShadowServerBase):
         #this is a frame from a compressed stream,
         #send it to all the window sources for this window:
         cdata = Compressed(coding, data)
-        client_options = {
-            "frame" : frame,
-            }
         options = {}
         x = y = 0
         w, h = model.geometry[2:4]
@@ -318,7 +321,7 @@ class PortalShadow(GTKShadowServerBase):
                 #client not showing this window
                 continue
             log(f"sending {len(data)} bytes packet of {coding} stream to {ws} of {ss}")
-            packet = ws.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_options, options)
+            packet = ws.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_info, options)
             ws.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 

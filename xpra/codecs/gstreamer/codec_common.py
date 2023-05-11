@@ -1,11 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from queue import Queue, Empty
 
-from xpra.util import typedict, envint
+from xpra.util import typedict, envint, parse_simple_dict
+from xpra.os_util import OSX
 from xpra.gst_common import import_gst, GST_FLOW_OK
 from xpra.gst_pipeline import Pipeline
 from xpra.log import Logger
@@ -15,6 +17,108 @@ log = Logger("encoder", "gstreamer")
 
 FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
 FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3)
+
+
+def get_default_encoder_options():
+    options = {
+        "vaapih264enc" : {
+            "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
+            #"tune"          : 3,    #low-power
+            #"rate-control" : 8, #qvbr
+            "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
+            #"keyframe-period"   : 9999,
+            #"prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
+            #"quality-factor" : 10,
+            #"quality-level" : 50,
+            #"bitrate"   : 2000,
+            #"prediction-type" : 1,    #Hierarchical P frame encode
+            #"keyframe-period" : 4294967295,
+            "aud"   : True,
+            },
+        "vaapih265enc" : {
+            "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
+            #"tune"          : 3,    #low-power
+            #"rate-control" : 8, #qvbr
+            },
+        "x264enc" : {
+            "speed-preset"  : "ultrafast",
+            "tune"          : "zerolatency",
+            "byte-stream"   : True,
+            "threads"       : 1,
+            "key-int-max"   : 15,
+            "intra-refresh" : True,
+            },
+        "vp8enc" : {
+            "deadline"      : 1,
+            "error-resilient" : 0,
+            },
+        "vp9enc" : {
+            "deadline"      : 1,
+            "error-resilient" : 0,
+            "lag-in-frames" : 0,
+            "cpu-used"      : 16,
+            },
+        "nvh264enc" : {
+            "zerolatency"   : True,
+            "rc-mode"       : 3,    #vbr
+            "preset"        : 5,    #low latency, high performance
+            "bframes"       : 0,
+            "aud"           : True,
+            },
+        "nvh265enc" : {
+            "zerolatency"   : True,
+            "rc-mode"       : 3,    #vbr
+            "preset"        : 5,    #low latency, high performance
+            #should be in GStreamer 1.18, but somehow missing?
+            #"bframes"       : 0,
+            "aud"           : True,
+            },
+        "nvd3d11h264enc" : {
+            "bframes"       : 0,
+            "aud"           : True,
+            "preset"        : 5,    #low latency, high performance
+            "zero-reorder-delay"    : True,
+            },
+        "nvd3d11h265enc" : {
+            "bframes"       : 0,
+            "aud"           : True,
+            "preset"        : 5,    #low latency, high performance
+            "zero-reorder-delay"    : True,
+            },
+        "svtav1enc" : {
+        #    "speed"         : 12,
+        #    "gop-size"      : 251,
+            "intra-refresh" : 1,    #open gop
+        #    "lookahead"     : 0,
+        #    "rc"            : 1,    #vbr
+            },
+        "svtvp9enc" : {
+            },
+        #"svthevcenc" : {
+        #    "b-pyramid"         : 0,
+        #    "baselayer-mode"    : 1,
+        #    "enable-open-gop"   : True,
+        #    "key-int-max"       : 255,
+        #    "lookahead"         : 0,
+        #    "pred-struct"       : 0,
+        #    "rc"                : 1, #vbr
+        #    "speed"             : 9,
+        #    "tune"              : 0,
+        #    }
+        }
+    if not OSX:
+        options["av1enc"] = {
+            "cpu-used"          : 5,
+            "end-usage"         : 2,    #cq
+            }
+    #now apply environment overrides:
+    for element in options.keys():
+        enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
+        if enc_options_str:
+            encoder_options = parse_simple_dict(enc_options_str)
+            log(f"user overridden options for {element}: {encoder_options}")
+            options[element] = encoder_options
+    return options
 
 
 def get_version():
@@ -31,6 +135,60 @@ def init_module():
 
 def cleanup_module():
     log("gstreamer.cleanup_module()")
+
+
+def get_gst_rgb_format(rgb_format : str) -> str:
+    if rgb_format in (
+        "NV12",
+        "RGBA", "BGRA", "ARGB", "ABGR",
+        "RGB", "BGR",
+        "RGB15", "RGB16", "BGR15",
+        "r210",
+        "BGRP", "RGBP",
+        ):
+        #identical name:
+        return rgb_format
+    #translate to gstreamer name:
+    return {
+        "YUV420P"   : "I420",
+        "YUV444P"   : "Y444",
+        "BGRX"      : "BGRx",
+        "XRGB"      : "xRGB",
+        "XBGR"      : "xBGR",
+        "YUV400"    : "GRAY8",
+        #"RGB8P"
+        }[rgb_format]
+
+
+def get_video_encoder_caps(encoder="x264enc"):
+    if encoder=="av1enc":
+        return {
+            "alignment"     : "tu",
+            "stream-format" : "obu-stream",
+            }
+    return {
+        "alignment"     : "au",
+        "stream-format" : "byte-stream",
+        }
+
+def get_video_encoder_options(encoder:str="x264", profile:str=None, options:typedict=None):
+    eopts = get_default_encoder_options().get(encoder, {})
+    eopts["name"] = "encoder"
+    if encoder=="x264enc" and options:
+        from xpra.codecs.codec_constants import get_x264_quality, get_x264_preset
+        q = get_x264_quality(options.intget("quality", 50), profile)
+        s = options.intget("speed", 50)
+        eopts.update({
+            "pass"  : "qual",
+            "quantizer" : q,
+            "speed-preset" : get_x264_preset(s),
+            })
+    #if "bframes" in self.encoder_options:
+    #    eopts["bframes"] = int(options.boolget("b-frames", False))
+    return eopts
+
+def get_gst_encoding(encoding):
+    return {"hevc" : "h265"}.get(encoding, encoding)
 
 
 class VideoPipeline(Pipeline):

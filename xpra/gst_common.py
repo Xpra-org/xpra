@@ -70,27 +70,16 @@ def import_gst():
     return Gst
 
 
-def get_gst_rgb_format(rgb_format : str) -> str:
-    if rgb_format in (
-        "NV12",
-        "RGBA", "BGRA", "ARGB", "ABGR",
-        "RGB", "BGR",
-        "RGB15", "RGB16", "BGR15",
-        "r210",
-        "BGRP", "RGBP",
-        ):
-        #identical name:
-        return rgb_format
-    #translate to gstreamer name:
+def get_default_appsink_attributes():
     return {
-        "YUV420P"   : "I420",
-        "YUV444P"   : "Y444",
-        "BGRX"      : "BGRx",
-        "XRGB"      : "xRGB",
-        "XBGR"      : "xBGR",
-        "YUV400"    : "GRAY8",
-        #"RGB8P"
-        }[rgb_format]
+        "name"          : "sink",
+        "emit-signals"  : True,
+        "max-buffers"   : 1,
+        "drop"          : False,
+        "sync"          : False,
+        "async"         : False,
+        "qos"           : True,
+        }
 
 
 def wrap_buffer(data):

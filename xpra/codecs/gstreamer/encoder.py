@@ -8,16 +8,19 @@ from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time, typedict
-from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
+from xpra.codecs.codec_constants import video_spec, get_profile
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
-    get_caps_str, get_element_str, get_gst_rgb_format, wrap_buffer,
+    get_caps_str, get_element_str, wrap_buffer,
+    get_default_appsink_attributes,
     STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
+    get_gst_encoding, get_gst_rgb_format, get_video_encoder_caps,
+    get_video_encoder_options,
     )
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -31,97 +34,6 @@ NVENC = envbool("XPRA_GSTREAMER_NVENC", False)
 FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 assert get_version and init_module and cleanup_module
-DEFAULT_ENCODER_OPTIONS = {
-    "vaapih264enc" : {
-        "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
-        #"tune"          : 3,    #low-power
-        #"rate-control" : 8, #qvbr
-        "compliance-mode" : 0,  #restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
-        #"keyframe-period"   : 9999,
-        #"prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
-        #"quality-factor" : 10,
-        #"quality-level" : 50,
-        #"bitrate"   : 2000,
-        #"prediction-type" : 1,    #Hierarchical P frame encode
-        #"keyframe-period" : 4294967295,
-        "aud"   : True,
-        },
-    "vaapih265enc" : {
-        "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
-        #"tune"          : 3,    #low-power
-        #"rate-control" : 8, #qvbr
-        },
-    "x264enc" : {
-        "speed-preset"  : "ultrafast",
-        "tune"          : "zerolatency",
-        "byte-stream"   : True,
-        "threads"       : 1,
-        "key-int-max"   : 15,
-        "intra-refresh" : True,
-        },
-    "vp8enc" : {
-        "deadline"      : 1,
-        "error-resilient" : 0,
-        },
-    "vp9enc" : {
-        "deadline"      : 1,
-        "error-resilient" : 0,
-        "lag-in-frames" : 0,
-        "cpu-used"      : 16,
-        },
-    "nvh264enc" : {
-        "zerolatency"   : True,
-        "rc-mode"       : 3,    #vbr
-        "preset"        : 5,    #low latency, high performance
-        "bframes"       : 0,
-        "aud"           : True,
-        },
-    "nvh265enc" : {
-        "zerolatency"   : True,
-        "rc-mode"       : 3,    #vbr
-        "preset"        : 5,    #low latency, high performance
-        #should be in GStreamer 1.18, but somehow missing?
-        #"bframes"       : 0,
-        "aud"           : True,
-        },
-    "nvd3d11h264enc" : {
-        "bframes"       : 0,
-        "aud"           : True,
-        "preset"        : 5,    #low latency, high performance
-        "zero-reorder-delay"    : True,
-        },
-    "nvd3d11h265enc" : {
-        "bframes"       : 0,
-        "aud"           : True,
-        "preset"        : 5,    #low latency, high performance
-        "zero-reorder-delay"    : True,
-        },
-    "svtav1enc" : {
-    #    "speed"         : 12,
-    #    "gop-size"      : 251,
-        "intra-refresh" : 1,    #open gop
-    #    "lookahead"     : 0,
-    #    "rc"            : 1,    #vbr
-        },
-    "svtvp9enc" : {
-        },
-    #"svthevcenc" : {
-    #    "b-pyramid"         : 0,
-    #    "baselayer-mode"    : 1,
-    #    "enable-open-gop"   : True,
-    #    "key-int-max"       : 255,
-    #    "lookahead"         : 0,
-    #    "pred-struct"       : 0,
-    #    "rc"                : 1, #vbr
-    #    "speed"             : 9,
-    #    "tune"              : 0,
-    #    }
-    }
-if not OSX:
-    DEFAULT_ENCODER_OPTIONS["av1enc"] = {
-        "cpu-used"          : 5,
-        "end-usage"         : 2,    #cq
-        }
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
@@ -142,22 +54,15 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
     return out_colorspaces
 
-def ElementEncoderClass(element, options=None):
+def ElementEncoderClass(element):
     class ElementEncoder(Encoder):
         pass
     ElementEncoder.encoder_element = element
-    ElementEncoder.encoder_options = options or {}
     return ElementEncoder
 
 def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
     #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     #each with different pipeline arguments based on the make_spec parameters:
-    enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
-    if enc_options_str:
-        encoder_options = parse_simple_dict(enc_options_str)
-        log(f"user overridden options for {element}: {encoder_options}")
-    else:
-        encoder_options = dict(DEFAULT_ENCODER_OPTIONS.get(element, {}))
     if cs_in in PACKED_RGB_FORMATS:
         width_mask = height_mask = 0xFFFF
     else:
@@ -166,7 +71,7 @@ def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
         encoding=encoding, input_colorspace=cs_in,
         output_colorspaces=css_out,
         has_lossless_mode=False,
-        codec_class=ElementEncoderClass(element, encoder_options), codec_type=f"gstreamer-{element}",
+        codec_class=ElementEncoderClass(element), codec_type=f"gstreamer-{element}",
         quality=40, speed=40,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
         width_mask=width_mask, height_mask=height_mask,
@@ -260,7 +165,6 @@ class Encoder(VideoPipeline):
     def create_pipeline(self, options : typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
-        self.extra_client_info = {}
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
         vcaps = {
@@ -272,11 +176,13 @@ class Encoder(VideoPipeline):
             "colorimetry" : "bt709",
             }
         CAPS = get_caps_str("video/x-raw", vcaps)
-        eopts, vopts = self.get_encoder_options(options)
-        self.extra_client_info = vopts.copy()
-        gst_encoding = {
-            "hevc"  : "h265",
-            }.get(self.encoding, self.encoding)
+        self.profile = self.get_profile(options)        #ie: "high"
+        eopts = get_video_encoder_options(self.encoder_element, self.profile, options)
+        vcaps = get_video_encoder_caps(self.encoder_element)
+        self.extra_client_info = vcaps.copy()
+        if self.profile:
+            vcaps["profile"] = self.profile
+            self.extra_client_info["profile"] = self.profile
         appsrc_opts = {
             "name"          : "src",
             "emit-signals"  : 0,
@@ -288,28 +194,17 @@ class Encoder(VideoPipeline):
             "caps"          : CAPS,
             #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
             }
+        gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),
             get_element_str(self.encoder_element, eopts),
-            get_caps_str(f"video/x-{gst_encoding}", vopts),
+            get_caps_str(f"video/x-{gst_encoding}", vcaps),
+            get_element_str("appsink", get_default_appsink_attributes())
             ]
-        elements.append("appsink name=sink emit-signals=true max-buffers=10 drop=false sync=false async=false qos=true")
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
-    def get_encoder_options(self, options:typedict):
-        eopts = self.encoder_options.copy()
-        eopts["name"] = "encoder"
-        if self.encoder_element=="av1enc":
-            vopts = {
-                "alignment"     : "tu",
-                "stream-format" : "obu-stream",
-                }
-        else:
-            vopts = {
-                "alignment"     : "au",
-                "stream-format" : "byte-stream",
-                }
+    def get_profile(self, options : dict):
         default_profile = {
             #"x264enc"   : "constrained-baseline",
             #"vaapih264enc" : "constrained-baseline",
@@ -317,21 +212,7 @@ class Encoder(VideoPipeline):
             "vp8enc"   : None, #0-4
             "vp9enc"   : None, #0-4
             }.get(self.encoder_element)
-        profile = get_profile(options, self.encoding, self.colorspace, default_profile)
-        if profile:
-            vopts["profile"] = profile
-        if self.encoder_element=="x264enc":
-            q = get_x264_quality(options.intget("quality", 50), profile)
-            s = options.intget("speed", 50)
-            eopts.update({
-                "pass"  : "qual",
-                "quantizer" : q,
-                "speed-preset" : get_x264_preset(s),
-                })
-            vopts.update(self.extra_client_info)
-        #if "bframes" in self.encoder_options:
-        #    eopts["bframes"] = int(options.boolget("b-frames", False))
-        return eopts, vopts
+        return get_profile(options, self.encoding, self.colorspace, default_profile)
 
     def get_src_format(self):
         return self.colorspace
