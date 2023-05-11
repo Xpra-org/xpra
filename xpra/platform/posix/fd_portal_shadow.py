@@ -337,4 +337,5 @@ class PortalShadow(GTKShadowServerBase):
             ss.may_notify(NotificationID.FAILURE, "Session Capture Failed", str(message))
 
     def capture_state_changed(self, capture, state):
-        log(f"screencast capture state: {state}")
+        wid = capture.node_id
+        log(f"screencast capture state changed for model {wid}: {state!r}")
