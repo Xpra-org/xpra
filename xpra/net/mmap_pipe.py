@@ -55,8 +55,10 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
     mmap_temp_file = None
     delete = True
     def validate_size(size : int):
-        assert size>=64*1024*1024, "mmap size is too small: %sB (minimum is 64MB)" % std_unit(size)
-        assert size<=4*1024*1024*1024, "mmap is too big: %sB (maximum is 4GB)" % std_unit(size)
+        if size<64*1024*1024:
+            raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
+        if size>16*1024*1024*1024:
+            raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
     try:
         import mmap
         unit = max(4096, mmap.PAGESIZE)
@@ -112,7 +114,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 try:
                     temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 except OSError as e:
-                    log.error("Error: cannot create mmap file:")
+                    log.error("Error: cannot create mmap temporary file:")
                     log.estr(e)
                     return rerr()
                 #keep a reference to it so it does not disappear!
@@ -175,7 +177,7 @@ def clean_mmap(mmap_filename):
             log.error("Error: failed to remove the mmap file '%s':", mmap_filename)
             log.estr(e)
 
-DEFAULT_TOKEN_BYTES = 128
+DEFAULT_TOKEN_BYTES : int = 128
 
 def write_mmap_token(mmap_area, token, index, count=DEFAULT_TOKEN_BYTES):
     assert count>0
@@ -188,7 +190,7 @@ def write_mmap_token(mmap_area, token, index, count=DEFAULT_TOKEN_BYTES):
         v = v>>8
     assert v==0, "token value is too big"
 
-def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES):
+def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES) -> int:
     assert count>0
     v = 0
     for i in range(0, count):
@@ -199,7 +201,7 @@ def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES):
     return v
 
 
-def init_server_mmap(mmap_filename, mmap_size=0):
+def init_server_mmap(mmap_filename:str, mmap_size=0):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
@@ -237,8 +239,8 @@ def init_server_mmap(mmap_filename, mmap_size=0):
             mmap_area.close()
         return None, 0
 
-def int_from_buffer(mmap_area, pos):
-    return c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
+def int_from_buffer(mmap_area, pos) -> int:
+    return int(c_uint32.from_buffer(mmap_area, pos))      #@UndefinedVariable
 
 
 #descr_data is a list of (offset, length)
@@ -264,7 +266,7 @@ def mmap_read(mmap_area, *descr_data):
     return b"".join(data)
 
 
-def mmap_write(mmap_area, mmap_size, data):
+def mmap_write(mmap_area, mmap_size:int, data):
     """
         Sends 'data' to the client via the mmap shared memory region,
         returns the chunks of the mmap area used (or None if it failed)

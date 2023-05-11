@@ -26,17 +26,17 @@ class MmapClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.mmap_enabled = False
+        self.mmap_enabled : bool = False
         self.mmap = None
-        self.mmap_token = None
-        self.mmap_token_index = 0
-        self.mmap_token_bytes = 0
-        self.mmap_filename = None
-        self.mmap_size = 0
-        self.mmap_group = None
+        self.mmap_token : int = 0
+        self.mmap_token_index : int = 0
+        self.mmap_token_bytes : int = 0
+        self.mmap_filename : str = ""
+        self.mmap_size : int = 0
+        self.mmap_group : str = ""
         self.mmap_tempfile = None
-        self.mmap_delete = False
-        self.supports_mmap = True
+        self.mmap_delete : bool = False
+        self.supports_mmap : bool = True
 
 
     def init(self, opts):
@@ -94,7 +94,7 @@ class MmapClient(StubClientMixin):
         return True
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         if not self.mmap_enabled:
             return {}
         mmap_info = self.get_raw_caps()
@@ -117,7 +117,7 @@ class MmapClient(StubClientMixin):
         log(f"mmap caps={caps}")
         return caps
 
-    def get_raw_caps(self):
+    def get_raw_caps(self) -> dict:
         return {
             "file"          : self.mmap_filename,
             "size"          : self.mmap_size,
