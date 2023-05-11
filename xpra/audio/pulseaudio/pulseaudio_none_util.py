@@ -7,7 +7,7 @@
 import sys
 
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("audio")
 
 
 def has_pa():

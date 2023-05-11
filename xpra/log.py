@@ -316,8 +316,8 @@ STRUCT_KNOWN_FILTERS = {
                 "stats"         : "Server statistics",
                 "xshm"          : "XShm pixel capture",
                 },
-    "Sound" : {
-                "sound"         : "All sound",
+    "Audio" : {
+                "audio"         : "All audio",
                 "gstreamer"     : "GStreamer internal messages",
                 "av-sync"       : "Audio-video sync",
                 },

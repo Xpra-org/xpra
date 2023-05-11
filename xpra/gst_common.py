@@ -11,7 +11,7 @@ from xpra.os_util import WIN32, OSX
 from xpra.util import csv
 from xpra.log import Logger
 
-log = Logger("sound", "gstreamer")
+log = Logger("audio", "gstreamer")
 # pylint: disable=import-outside-toplevel
 GST_FLOW_OK = 0     #Gst.FlowReturn.OK
 

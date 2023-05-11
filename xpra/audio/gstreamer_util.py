@@ -11,7 +11,7 @@ from xpra.gst_common import (
     has_plugins, get_all_plugin_names,
     import_gst, get_gst_version,
     )
-from xpra.sound.common import (
+from xpra.audio.common import (
     FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
     AAC_MPEG4, WAV_LZ4, \
     VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2, \
@@ -21,7 +21,7 @@ from xpra.os_util import WIN32, OSX, POSIX, bytestostr
 from xpra.util import csv, engs, parse_simple_dict, reverse_dict, envint, envbool
 from xpra.log import Logger
 
-log = Logger("sound", "gstreamer")
+log = Logger("audio", "gstreamer")
 
 
 # pylint: disable=import-outside-toplevel
@@ -76,11 +76,11 @@ PLUGIN_TO_DESCRIPTION = {
 
 NAME_TO_INFO_PLUGIN = {
     "auto"          : "Automatic audio source selection",
-    "alsa"          : "ALSA Linux Sound",
-    "oss"           : "OSS sound cards",
-    "oss4"          : "OSS version 4 sound cards",
-    "jack"          : "JACK audio sound server",
-    "osx"           : "Mac OS X sound cards",
+    "alsa"          : "Advanced Linux Sound Architecture",
+    "oss"           : "OSS audio cards",
+    "oss4"          : "OSS version 4 audio cards",
+    "jack"          : "JACK audio audio server",
+    "osx"           : "Mac OS X audio cards",
     "test"          : "Test signal",
     "pulse"         : "PulseAudio",
     "direct"        : "Microsoft Windows Direct Sound",
@@ -258,7 +258,7 @@ def init_codecs():
             continue
         add_encoder(encoding, encoder, payloader, stream_compressor)
         add_decoder(encoding, decoder, depayloader, stream_compressor)
-    log("initialized sound codecs:")
+    log("initialized audio codecs:")
     def ci(v):
         return "%-22s" % (v or "")
     log("  - %s", "".join(ci(v) for v in ("encoder/decoder", "(de)payloader", "stream-compressor")))
@@ -292,7 +292,7 @@ def validate_encoding(elements):
     #full of quirks
     encoding = elements[0]
     if force_enabled(encoding):
-        log.info("sound codec %s force enabled", encoding)
+        log.info("audio codec %s force enabled", encoding)
         return True
     if encoding in (VORBIS_OGG, VORBIS) and get_gst_version()<(1, 12):
         log("skipping %s - not sure which GStreamer versions support it", encoding)
@@ -392,7 +392,7 @@ def get_source_plugins():
     sources = []
     if POSIX and not OSX:
         try:
-            from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+            from xpra.audio.pulseaudio.pulseaudio_util import has_pa
             #we have to put pulsesrc first if pulseaudio is installed
             #because using autoaudiosource does not work properly for us:
             #it may still choose pulse, but without choosing the right device.
@@ -418,12 +418,12 @@ def get_default_source():
     sources = get_source_plugins()
     if source:
         if source not in sources:
-            log.error("invalid default sound source: '%s' is not in %s", source, csv(sources))
+            log.error("invalid default audio source: '%s' is not in %s", source, csv(sources))
         else:
             return source
     if POSIX and not OSX:
         try:
-            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
             if has_pa():
                 s = get_pactl_server()
                 if not s:
@@ -447,7 +447,7 @@ def get_sink_plugins():
     SINKS.append("autoaudiosink")
     if POSIX and not OSX:
         try:
-            from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+            from xpra.audio.pulseaudio.pulseaudio_util import has_pa
             if has_pa():
                 SINKS.append("pulsesink")
         except ImportError as e:
@@ -461,12 +461,12 @@ def get_default_sink_plugin():
     sinks = get_sink_plugins()
     if sink:
         if sink not in sinks:
-            log.error("invalid default sound sink: '%s' is not in %s", sink, csv(sinks))
+            log.error("invalid default audio sink: '%s' is not in %s", sink, csv(sinks))
         else:
             return sink
     if POSIX and not OSX:
         try:
-            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
             if has_pa():
                 s = get_pactl_server()
                 if not s:
@@ -500,7 +500,7 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
     #make sure it is not muted:
     if POSIX and not OSX:
         try:
-            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
+            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
             if has_pa():
                 if input_or_output is True or want_monitor_device:
                     set_source_mute(device, mute=False)
@@ -517,7 +517,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     """
     log("get_pulse_device%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name))
     try:
-        from xpra.sound.pulseaudio.pulseaudio_util import (
+        from xpra.audio.pulseaudio.pulseaudio_util import (
             has_pa, get_pa_device_options,
             get_default_sink, get_pactl_server,
             get_pulse_id,
@@ -532,18 +532,18 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     pa_server = get_pactl_server()
     log("get_pactl_server()=%s", pa_server)
     if remote:
-        log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
+        log("start audio, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
         #only worth comparing if we have a real server string
         #one that starts with {UUID}unix:/..
         if pa_server and pa_server.startswith("{") and \
             remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
-            log.error("Error: sound is disabled to prevent a sound loop")
+            log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio server '%s'", pa_server)
             return None
         pa_id = get_pulse_id()
-        log("start sound, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
+        log("start audio, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
         if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
-            log.error("Error: sound is disabled to prevent a sound loop")
+            log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio ID '%s'", pa_id)
             return None
 
@@ -573,7 +573,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         devices = filtered
 
     if not devices:
-        log.error("Error: sound forwarding is disabled")
+        log.error("Error: audio forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
 
@@ -700,14 +700,14 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
                         }
     except Exception as e:
         log("get_directsound_source_defaults%s", (device_name_match, want_monitor_device, remote), exc_info=True)
-        log.error("Error querying sound devices:")
+        log.error("Error querying audio devices:")
         log.estr(e)
     return {}
 
 
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
-# to avoid sound loops for example)
+# to avoid audio loops for example)
 DEFAULT_SRC_PLUGIN_OPTIONS = {
     "test"                  : get_test_defaults,
     "direct"                : get_directsound_source_defaults,
@@ -719,14 +719,14 @@ if POSIX and not OSX:
 
 
 
-def get_sound_source_options(plugin, options_str, device, want_monitor_device, remote):
+def get_audio_source_options(plugin, options_str, device, want_monitor_device, remote):
     """
         Given a plugin (short name), options string and remote info,
         return the options for the plugin given,
         using the dynamic defaults (which may use remote info)
         and applying the options string on top.
     """
-    #ie: get_sound_source_options("audiotestsrc", "wave=4,freq=220", {remote_pulseaudio_server=XYZ}):
+    #ie: get_audio_source_options("audiotestsrc", "wave=4,freq=220", {remote_pulseaudio_server=XYZ}):
     #use the defaults as starting point:
     defaults_fn = DEFAULT_SRC_PLUGIN_OPTIONS.get(plugin)
     log("DEFAULT_SRC_PLUGIN_OPTIONS(%s)=%s", plugin, defaults_fn)
@@ -748,12 +748,12 @@ def get_sound_source_options(plugin, options_str, device, want_monitor_device, r
     return options
 
 
-def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_device, remote):
+def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_device, remote):
     #format: PLUGINNAME:options
     #ie: test:wave=2,freq=110,volume=0.4
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
-    plugin = sound_source_plugin.split(":")[0]
-    options_str = (sound_source_plugin+":").split(":",1)[1].rstrip(":")
+    plugin = audio_source_plugin.split(":")[0]
+    options_str = (audio_source_plugin+":").split(":",1)[1].rstrip(":")
     simple_str = (plugin).lower().strip()
     if not simple_str:
         simple_str = get_default_source()
@@ -763,22 +763,22 @@ def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_de
             if not options:
                 log.error("no source plugins available")
                 return None, {}
-            log("parse_sound_source: no plugin specified, using default: %s", options[0])
+            log("parse_audio_source: no plugin specified, using default: %s", options[0])
             simple_str = options[0]
     for s in ("src", "sound", "audio"):
         if simple_str.endswith(s):
             simple_str = simple_str[:-len(s)]
-    gst_sound_source_plugin = NAME_TO_SRC_PLUGIN.get(simple_str)
-    if not gst_sound_source_plugin:
-        log.error("unknown source plugin: '%s' / '%s'", simple_str, sound_source_plugin)
+    gst_audio_source_plugin = NAME_TO_SRC_PLUGIN.get(simple_str)
+    if not gst_audio_source_plugin:
+        log.error("unknown source plugin: '%s' / '%s'", simple_str, audio_source_plugin)
         return  None, {}
-    log("parse_sound_source(%s, %s, %s) plugin=%s", all_plugins, sound_source_plugin, remote, gst_sound_source_plugin)
-    options = get_sound_source_options(simple_str, options_str, device, want_monitor_device, remote)
-    log("get_sound_source_options%s=%s", (simple_str, options_str, remote), options)
+    log("parse_audio_source(%s, %s, %s) plugin=%s", all_plugins, audio_source_plugin, remote, gst_audio_source_plugin)
+    options = get_audio_source_options(simple_str, options_str, device, want_monitor_device, remote)
+    log("get_audio_source_options%s=%s", (simple_str, options_str, remote), options)
     if options is None:
         #means error
         return None, {}
-    return gst_sound_source_plugin, options
+    return gst_audio_source_plugin, options
 
 
 def loop_warning_messages(mode="speaker"):

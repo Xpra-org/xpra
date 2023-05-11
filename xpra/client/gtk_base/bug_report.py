@@ -97,11 +97,11 @@ class BugReport:
         load_codecs()
         show_codecs()
         try:
-            from xpra.sound.wrapper import query_sound
-            def get_sound_info():
-                return query_sound()
+            from xpra.audio.wrapper import query_audio
+            def get_audio_info():
+                return query_audio()
         except ImportError:
-            get_sound_info = None
+            get_audio_info = None
         def get_gl_info():
             if self.opengl_info:
                 return self.opengl_info
@@ -177,8 +177,8 @@ class BugReport:
              "Picture encodings supported"),
             ("opengl",       "txt",  "OpenGL",           get_gl_info,    bool(self.opengl_info),
              "OpenGL driver and features"),
-            ("sound",        "txt",  "Sound",            get_sound_info, bool(get_sound_info),
-             "Sound codecs and GStreamer version information"),
+            ("audio",        "txt",  "Audio",            get_audio_info, bool(get_audio_info),
+             "Audio codecs and GStreamer version information"),
             ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, True,
              "Keyboard layout and key mapping"),
             ("xpra-info",    "txt",  "Server Info",      self.get_server_info,   bool(self.get_server_info),

@@ -75,7 +75,7 @@ echo
 echo "Helpers:"
 ls -la@ appstore/Xpra.app/Contents/Helpers
 
-#sound sub-app has a different binary: "Xpra":
+#audio sub-app has a different binary: "Xpra":
 rm -fr ./appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS
 mkdir ./appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS
 gcc -arch i386 -o "appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS/Xpra" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/Info.plist

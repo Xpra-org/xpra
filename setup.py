@@ -230,7 +230,7 @@ qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
-sound_ENABLED           = DEFAULT
+audio_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
@@ -319,7 +319,7 @@ SWITCHES = [
     "gtk_x11", "service",
     "gtk3", "example",
     "pam", "xdg_open",
-    "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
+    "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs",
     "annotate", "warn", "strict",
@@ -538,7 +538,7 @@ assert "unittests" not in sys.argv, sys.argv
 #*******************************************************************************
 # default sets:
 external_includes = ["hashlib", "ctypes", "platform"]
-if gtk3_ENABLED or sound_ENABLED:
+if gtk3_ENABLED or audio_ENABLED:
     external_includes += ["gi"]
 
 external_excludes = [
@@ -1414,7 +1414,7 @@ if WIN32:
 
         #list of DLLs we want to include, without the "lib" prefix, or the version and extension
         #(ie: "libatk-1.0-0.dll" -> "atk")
-        if sound_ENABLED or gtk3_ENABLED:
+        if audio_ENABLED or gtk3_ENABLED:
             add_DLLs('gio', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
                      'orc', 'stdc++',
@@ -1449,7 +1449,7 @@ if WIN32:
             add_dir("share/themes/Windows-10", [
                 "CREDITS", "LICENSE.md", "README.md",
                 "gtk-3.20", "index.theme"])
-        if gtk3_ENABLED or sound_ENABLED:
+        if gtk3_ENABLED or audio_ENABLED:
             #causes warnings:
             #add_dir('lib', ["gio"])
             packages.append("gi")
@@ -1479,7 +1479,7 @@ if WIN32:
         if client_ENABLED or server_ENABLED:
             add_DLLs("qrencode")
 
-        if sound_ENABLED:
+        if audio_ENABLED:
             add_dir("share", ["gst-plugins-base", "gstreamer-1.0"])
             add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
                    "GstTag-1.0")
@@ -1616,12 +1616,12 @@ if WIN32:
         if client_ENABLED:
             add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
-        if sound_ENABLED:
-            add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
+        if audio_ENABLED:
+            add_console_exe("xpra/audio/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("fs/bin/xpra",                     "speaker.ico",      "Xpra_Audio")
             add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
-            #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
-            #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
+            #add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
+            #add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
             add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
@@ -2115,9 +2115,9 @@ if client_ENABLED:
     add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
 if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED or server_ENABLED, "xpra.gtk_common")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk_base", "xpra.client.gui")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
@@ -2145,8 +2145,8 @@ if WIN32 and client_ENABLED and gtk3_ENABLED:
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
-toggle_modules(sound_ENABLED, "xpra.sound")
-toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
+toggle_modules(audio_ENABLED, "xpra.audio")
+toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 tace(clipboard_ENABLED, "xpra.gtk_common.gtk3.gdk_atoms", "gtk+-3.0")

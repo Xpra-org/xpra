@@ -25,7 +25,7 @@ BuildRequires: gcc
 %global debug_package %{nil}
 
 %description
-This GStreamer plugin allows xpra to extract monotonic timestamps from the sound buffers.
+This GStreamer plugin allows xpra to extract monotonic timestamps from the audio buffers.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`

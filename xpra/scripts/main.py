@@ -38,7 +38,7 @@ from xpra.scripts.parsing import (
     info, warn, error,
     parse_display_name, parse_env,
     fixup_defaults,
-    validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
+    validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
     MODE_ALIAS,
     )
 from xpra.scripts.config import (
@@ -48,7 +48,7 @@ from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     fixup_options,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
-    make_defaults_struct, parse_bool, has_sound_support, name_to_field,
+    make_defaults_struct, parse_bool, has_audio_support, name_to_field,
     )
 from xpra.net.common import DEFAULT_PORTS
 from xpra.log import is_debug_enabled, Logger, get_debug_args
@@ -216,7 +216,7 @@ def configure_logging(options, mode):
         "shadow", "shadow-screen",
         "recover",
         "attach", "listen", "proxy",
-        "_sound_record", "_sound_play",
+        "_audio_record", "_audio_play",
         "stop", "print", "showconfig",
         "_dialog", "_pass",
         "pinentry",
@@ -224,7 +224,7 @@ def configure_logging(options, mode):
         ) or mode.startswith("upgrade") or mode.startswith("request-"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             server_mode = mode not in ("attach", "listen")
-            codec_help = show_sound_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
+            codec_help = show_audio_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(codec_help))
         fmt = LOG_FORMAT
         if mode in ("stop", "showconfig"):
@@ -446,8 +446,8 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                 warn(f" using {xrd!r}")
                 os.environ["XDG_RUNTIME_DIR"] = xrd
 
-    if not mode.startswith("_sound_"):
-        #sound commands don't want to set the name
+    if not mode.startswith("_audio_"):
+        #audio commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
         if mode not in (
@@ -614,11 +614,11 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode=="_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
-    elif mode in ("_sound_record", "_sound_play", "_sound_query"):
-        if not has_sound_support():
-            error_cb("no sound support!")
-        from xpra.sound.wrapper import run_sound
-        return run_sound(mode, error_cb, options, args)
+    elif mode in ("_audio_record", "_audio_play", "_audio_query"):
+        if not has_audio_support():
+            error_cb("no audio support!")
+        from xpra.audio.wrapper import run_audio
+        return run_audio(mode, error_cb, options, args)
     elif mode=="pinentry":
         check_gtk_client()
         from xpra.scripts.pinentry_wrapper import run_pinentry
@@ -1758,7 +1758,7 @@ def make_client(error_cb, opts):
         from xpra.client.gui import mixin_features
         mixin_features.display          = opts.windows
         mixin_features.windows          = opts.windows
-        mixin_features.audio            = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("sound")
+        mixin_features.audio            = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
         mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
         mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
         mixin_features.notifications    = opts.notifications and impcheck("notifications")

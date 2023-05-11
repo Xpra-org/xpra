@@ -7,7 +7,7 @@
 
 from xpra.util import csv, engs
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("audio")
 
 
 VORBIS = "vorbis"
@@ -45,8 +45,8 @@ MP3_ID3V2   = MP3+"+"+ID3V2
 
 
 #used for parsing codec names specified on the command line:
-def sound_option_or_all(name, options, all_values):
-    log("sound_option_or_all%s", (name, options, all_values))
+def audio_option_or_all(name, options, all_values):
+    log("audio_option_or_all%s", (name, options, all_values))
     if not options:
         v = all_values              #not specified on command line: use default
     else:

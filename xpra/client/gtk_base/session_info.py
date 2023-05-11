@@ -227,13 +227,13 @@ class SessionInfo(Gtk.Window):
             rlv = getattr(self.client, "_remote_lib_versions", {})
             return make_version_str(rlv.get(lib, ""))
         try:
-            from xpra.sound.wrapper import query_sound
-            props = query_sound()
+            from xpra.audio.wrapper import query_audio
+            props = query_audio()
         except Exception:
-            log("cannot load sound information: %s", exc_info=True)
+            log("cannot load audio information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strtupleget("gst.version")
-        csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst"))
+        csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst") or server_vinfo("gst"))
         def clientgl(prop="opengl", default_value="n/a"):
             if not show_client:
                 return ""
@@ -467,18 +467,18 @@ class SessionInfo(Gtk.Window):
             self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graph)
             self.latency_graph = self.add_graph_button(None, self.save_graph)
             if SHOW_SOUND_STATS:
-                self.sound_queue_graph = self.add_graph_button(None, self.save_graph)
+                self.audio_queue_graph = self.add_graph_button(None, self.save_graph)
             else:
-                self.sound_queue_graph = None
+                self.audio_queue_graph = None
             self.connect("realize", self.populate_graphs)
             self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
             self.net_in_bitcount = deque(maxlen=N_SAMPLES+4)
             self.net_out_bitcount = deque(maxlen=N_SAMPLES+4)
-            self.sound_in_bitcount = deque(maxlen=N_SAMPLES+4)
-            self.sound_out_bitcount = deque(maxlen=N_SAMPLES+4)
-            self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
-            self.sound_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
-            self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
+            self.audio_in_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.audio_out_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.audio_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
+            self.audio_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
+            self.audio_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -493,7 +493,7 @@ class SessionInfo(Gtk.Window):
         GLib.timeout_add(1000, self.populate)
         GLib.timeout_add(100, self.populate_tab)
         if mixin_features.audio and SHOW_SOUND_STATS and show_client:
-            GLib.timeout_add(100, self.populate_sound_stats)
+            GLib.timeout_add(100, self.populate_audio_stats)
         add_close_accel(self, self.destroy)
 
 
@@ -608,20 +608,20 @@ class SessionInfo(Gtk.Window):
             icon = get_icon_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
 
-    def populate_sound_stats(self, *_args):
+    def populate_audio_stats(self, *_args):
         #runs every 100ms
         if self.is_closed:
             return False
-        ss = self.client.sound_sink
+        ss = self.client.audio_sink
         if SHOW_SOUND_STATS and ss:
             info = ss.get_info()
             if info:
                 info = typedict(info)
                 def qlookup(attr):
                     return int(newdictlook(info, ("queue", attr), 0))
-                self.sound_out_queue_cur.append(qlookup("cur"))
-                self.sound_out_queue_min.append(qlookup("min"))
-                self.sound_out_queue_max.append(qlookup("max"))
+                self.audio_out_queue_cur.append(qlookup("cur"))
+                self.audio_out_queue_min.append(qlookup("min"))
+                self.audio_out_queue_max.append(qlookup("max"))
         return not self.is_closed
 
     def populate(self, *_args):
@@ -638,10 +638,10 @@ class SessionInfo(Gtk.Window):
             self.net_in_bitcount.append(conn.input_bytecount*8)
             self.net_out_bitcount.append(conn.output_bytecount*8)
             if mixin_features.audio and SHOW_SOUND_STATS:
-                if self.client.sound_in_bytecount>0:
-                    self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
-                if self.client.sound_out_bytecount>0:
-                    self.sound_out_bitcount.append(self.client.sound_out_bytecount * 8)
+                if self.client.audio_in_bytecount>0:
+                    self.audio_in_bitcount.append(self.client.audio_in_bytecount * 8)
+                if self.client.audio_out_bytecount>0:
+                    self.audio_out_bitcount.append(self.client.audio_out_bytecount * 8)
 
         if self.show_client and mixin_features.windows:
             #count pixels in the last second:
@@ -819,7 +819,7 @@ class SessionInfo(Gtk.Window):
             self.server_encodings_label.set_size_request(lw, -1)
             self.server_speaker_codecs_label.set_size_request(lw, -1)
             self.server_microphone_codecs_label.set_size_request(lw, -1)
-        #sound/video codec table:
+        #audio/video codec table:
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
@@ -827,11 +827,11 @@ class SessionInfo(Gtk.Window):
         if mixin_features.audio:
             c = self.client
             if self.show_server:
-                self.server_speaker_codecs_label.set_text(codec_info(c.server_sound_send, c.server_sound_encoders))
+                self.server_speaker_codecs_label.set_text(codec_info(c.server_audio_send, c.server_audio_encoders))
             if self.show_client:
                 self.client_speaker_codecs_label.set_text(codec_info(c.speaker_allowed, c.speaker_codecs))
             if self.show_server:
-                self.server_microphone_codecs_label.set_text(codec_info(c.server_sound_receive, c.server_sound_decoders))
+                self.server_microphone_codecs_label.set_text(codec_info(c.server_audio_receive, c.server_audio_decoders))
             if self.show_client:
                 self.client_microphone_codecs_label.set_text(codec_info(c.microphone_allowed, c.microphone_codecs))
         def encliststr(v):
@@ -898,14 +898,14 @@ class SessionInfo(Gtk.Window):
                 l.set_text("n/a")
 
         if mixin_features.audio:
-            def get_sound_info(supported, prop):
+            def get_audio_info(supported, prop):
                 if not supported:
                     return {"state" : "disabled"}
                 if prop is None:
                     return {"state" : "inactive"}
                 return prop.get_info()
-            def set_sound_info(label, details, supported, prop):
-                d = typedict(get_sound_info(supported, prop))
+            def set_audio_info(label, details, supported, prop):
+                d = typedict(get_audio_info(supported, prop))
                 state = d.strget("state", "")
                 codec_descr = d.strget("codec") or d.strget("codec_description")
                 container_descr = d.strget("container_description", "")
@@ -922,8 +922,8 @@ class SessionInfo(Gtk.Window):
                     if bitrate>0:
                         s = "%sbit/s" % std_unit(bitrate)
                     details.set_text(s)
-            set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
-            set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
+            set_audio_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.audio_sink)
+            set_audio_info(self.microphone_label, None, self.client.microphone_enabled, self.client.audio_source)
 
         self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()
@@ -1180,14 +1180,14 @@ class SessionInfo(Gtk.Window):
             pixel_scale, in_pixels = values_to_scaled_values(tuple(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
-        if mixin_features.audio and SHOW_SOUND_STATS and self.sound_in_bitcount:
-            sound_in_scale, sound_in_data = values_to_diff_scaled_values(tuple(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-            datasets.append(sound_in_data)
-            labels.append("Speaker %sb/s" % unit(sound_in_scale))
-        if mixin_features.audio and SHOW_SOUND_STATS and self.sound_out_bitcount:
-            sound_out_scale, sound_out_data = values_to_diff_scaled_values(tuple(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-            datasets.append(sound_out_data)
-            labels.append("Mic %sb/s" % unit(sound_out_scale))
+        if mixin_features.audio and SHOW_SOUND_STATS and self.audio_in_bitcount:
+            audio_in_scale, audio_in_data = values_to_diff_scaled_values(tuple(self.audio_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            datasets.append(audio_in_data)
+            labels.append("Speaker %sb/s" % unit(audio_in_scale))
+        if mixin_features.audio and SHOW_SOUND_STATS and self.audio_out_bitcount:
+            audio_out_scale, audio_out_data = values_to_diff_scaled_values(tuple(self.audio_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            datasets.append(audio_out_data)
+            labels.append("Mic %sb/s" % unit(audio_out_scale))
 
         if labels and datasets:
             surface = make_graph_imagesurface(datasets, labels=labels,
@@ -1231,19 +1231,19 @@ class SessionInfo(Gtk.Window):
                                           start_x_offset=start_x_offset)
         self.set_graph_surface(self.latency_graph, surface)
 
-        if mixin_features.audio and SHOW_SOUND_STATS and self.client.sound_sink:
-            #sound queue graph:
+        if mixin_features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
+            #audio queue graph:
             queue_values, queue_labels = norm_lists(
                 (
-                    (self.sound_out_queue_max, "Max"),
-                    (self.sound_out_queue_cur, "Level"),
-                    (self.sound_out_queue_min, "Min"),
+                    (self.audio_out_queue_max, "Max"),
+                    (self.audio_out_queue_cur, "Level"),
+                    (self.audio_out_queue_min, "Min"),
                     ), N_SAMPLES*10)
             surface = make_graph_imagesurface(queue_values, labels=queue_labels,
                                               width=w, height=h,
-                                              title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
+                                              title="Audio Buffer (ms)", min_y_scale=10, rounding=25,
                                               start_x_offset=start_x_offset)
-            self.set_graph_surface(self.sound_queue_graph, surface)
+            self.set_graph_surface(self.audio_queue_graph, surface)
         return True
 
     def save_graph(self, _ebox, btn, graph):
@@ -1299,8 +1299,8 @@ class SessionInfoClient(InfoTimerClient):
         def noop(*_args):
             pass
         self.send_ping = noop
-        self.server_sound_send = self.server_sound_receive = True
-        self.server_sound_encoders = self.server_sound_decoders = []
+        self.server_audio_send = self.server_audio_receive = True
+        self.server_audio_encoders = self.server_audio_decoders = []
         self.server_ping_latency = self.client_ping_latency = []
         self.server_start_time = 0
         protocol = super().setup_connection(conn)

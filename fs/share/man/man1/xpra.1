@@ -1500,13 +1500,13 @@ Override for the keyboard options sent to the server.
 This option only applies to MacOS clients, it swaps
 the \fIcommand\fP and \fIcontrol\fP keys and is enabled by default.
 .TP
-\fB--sound-source\fP=\fIPLUGIN\fP
-Specifies the GStreamer sound plugin used for capturing the sound stream.
+\fB--audio-source\fP=\fIPLUGIN\fP
+Specifies the GStreamer audio plugin used for capturing the audio stream.
 This affects "speaker forwarding" on the server, and "microphone" forwarding
 on the client.
 To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
-\fI--sound-source=
+\fI--audio-source=
 pulse\:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
 .TP
 \fB--speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB--microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|\fIon:DEVICE\fP|\fIoff:DEVICE\fP
@@ -1518,7 +1518,7 @@ With microphone forwarding, you may also be able to specify which
 device to use.
 .TP
 \fB--speaker-codec\fP=\fICODEC\fP and \fB--microphone-codec\fP=\fICODEC\fP
-Specify the codec(s) to use for sound output (speaker) or input (microphone).
+Specify the codec(s) to use for audio output (speaker) or input (microphone).
 This parameter can be specified multiple times and the order in which the codecs
 are specified defines the preferred codec order.
 Use the special value 'help' to get a list of options.

@@ -347,14 +347,14 @@ class SourceMixinsTest(unittest.TestCase):
             avi = i.get("av-sync")
             assert avi and not avi.get("enabled", True)
         #now enabled:
-        def get_sound_source_latency():
+        def get_audio_source_latency():
             return 20
         for e in (True, False):
             av = AVSyncMixin()
             av.av_sync = True
             av.window_sources = {}
             av.init_state()
-            av.get_sound_source_latency = get_sound_source_latency
+            av.get_audio_source_latency = get_audio_source_latency
             caps = typedict({"av-sync" : e})
             av.parse_client_caps(caps)
             i = av.get_info()
@@ -362,9 +362,9 @@ class SourceMixinsTest(unittest.TestCase):
             avi = i.get("av-sync")
             assert avi and avi.get("enabled", not e)==e
             av.set_av_sync_delay(10)
-            av.sound_control_av_sync_delta("100")
+            av.audio_control_av_sync_delta("100")
             try:
-                av.sound_control_av_sync_delta("invalid")
+                av.audio_control_av_sync_delta("invalid")
             except Exception:
                 pass
             assert av.get_info().get("av-sync").get("delta")==100

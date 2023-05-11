@@ -175,7 +175,7 @@ class TestMain(unittest.TestCase):
             "start --microphone-codec=help",
             "attach --speaker-codec=help",
             "attach --microphone-codec=help",
-            "_sound_query",
+            "_audio_query",
             "invalid-command",
             ):
             self._test_subcommand(args)

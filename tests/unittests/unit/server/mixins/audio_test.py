@@ -26,9 +26,9 @@ class AudioMixinTest(ServerMixinTest):
     def test_audio(self):
         from xpra.server.mixins import audio_server
         from xpra.server.source.audio_mixin import AudioMixin
-        from xpra.sound import gstreamer_util
+        from xpra.audio import gstreamer_util
         opts = AdHocStruct()
-        opts.sound_source = ""
+        opts.audio_source = ""
         opts.speaker = "on"
         opts.speaker_codec = gstreamer_util.CODEC_ORDER
         opts.microphone = "on"
@@ -37,7 +37,7 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
         opts.av_sync = True
-        with silence_info(audio_server, "soundlog"):
+        with silence_info(audio_server, "audiolog"):
             self._test_mixin_class(audio_server.AudioServer, opts, {
                 "sound.receive" : True,
                 "sound.decoders" : gstreamer_util.CODEC_ORDER,

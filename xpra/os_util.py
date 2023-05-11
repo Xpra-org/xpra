@@ -678,7 +678,7 @@ def path_permission_info(filename : str, ftype=None):
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
 #http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
-#used by the sound code to get rid of the stupid gst warning below:
+#used by the audio code to get rid of the stupid gst warning below:
 #"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
 #ideally we would redirect to a buffer so we could still capture and show these messages in debug out
 class HideStdErr:

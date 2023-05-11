@@ -216,7 +216,7 @@ def do_get_nodock_command():
         "Xpra_cmd",         #we should never end up using this one
         )
 
-def do_get_sound_command():
+def do_get_audio_command():
     return _get_xpra_exe_command(
         "Xpra_Audio",       #executable without a shell, and with a nicer name
         "Xpra",             #executable without a shell

@@ -14,7 +14,7 @@ from xpra.gst_common import import_gst, GST_FLOW_OK
 from xpra.gst_pipeline import Pipeline
 from xpra.log import Logger
 
-log = Logger("sound")
+log = Logger("audio")
 gstlog = Logger("gstreamer")
 
 SAVE_AUDIO = os.environ.get("XPRA_SAVE_AUDIO")
@@ -26,7 +26,7 @@ KNOWN_TAGS = set((
     ))
 
 
-class SoundPipeline(Pipeline):
+class AudioPipeline(Pipeline):
 
     generation = AtomicInteger()
     __generic_signals__ = Pipeline.__generic_signals__.copy()
@@ -94,7 +94,7 @@ class SoundPipeline(Pipeline):
         if not super().start():
             return
         register_SIGUSR_signals(self.idle_add)
-        log("SoundPipeline.start() codec=%s", self.codec)
+        log("AudioPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.update_state("active")
         gst = import_gst()
@@ -113,7 +113,7 @@ class SoundPipeline(Pipeline):
             def logsc():
                 self.gstloginfo(f"using stream compression {self.stream_compressor}")
             self.timeout_add(1000, logsc)
-        log("SoundPipeline.start() done")
+        log("AudioPipeline.start() done")
 
     def stop(self):
         if self.pipeline and self.state not in ("starting", "stopped", "ready", None):
@@ -178,7 +178,7 @@ class SoundPipeline(Pipeline):
                 gstlog("%s: %s", x, desc[1])
         if not set(tags).intersection(KNOWN_TAGS):
             structure = message.get_structure()
-            self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)
+            self.gstloginfo("unknown audio pipeline tag message: %s, tags=%s", structure.to_string(), tags)
 
 
     def new_codec_description(self, desc):

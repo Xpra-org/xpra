@@ -9,7 +9,7 @@ import sys
 
 from xpra.util import envbool
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("audio")
 
 
 def get_x11_property(atom_name):

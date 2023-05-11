@@ -284,7 +284,7 @@ def set_server_features(opts):
     server_features.notifications   = opts.notifications and impcheck("notifications")
     server_features.webcam          = b(opts.webcam) and impcheck("codecs")
     server_features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
-    server_features.audio           = b(opts.audio) and impcheck("sound")
+    server_features.audio           = b(opts.audio) and impcheck("audio")
     server_features.av_sync         = server_features.audio and b(opts.av_sync)
     server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
     server_features.mmap            = b(opts.mmap)

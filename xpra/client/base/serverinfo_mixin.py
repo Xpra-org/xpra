@@ -13,7 +13,7 @@ from xpra.exit_codes import ExitCode
 
 def get_remote_lib_versions(c : typedict,
                             libs=("glib", "gobject", "gtk", "gdk", "cairo", "pango",
-                                  "sound.gst",
+                                  "sound.gst", "audio.gst",
                                   "python",
                                   )
                             ):
@@ -25,6 +25,18 @@ def get_remote_lib_versions(c : typedict,
             d = c.get(x, None)
             if isinstance(d, dict):
                 v = typedict(d).get("version", None)
+            elif x.find(".")>0:
+                #recursive lookup:
+                parts = x.split(".")
+                while parts:
+                    x = parts[0]
+                    sub = c.get(x)
+                    if sub and isinstance(sub, dict):
+                        c = typedict(sub)
+                        parts = parts[1:]
+                    else:
+                        break
+                v = c.get("version", None)
         if v:
             if isinstance(v, (tuple, list)):
                 v = tuple(v)

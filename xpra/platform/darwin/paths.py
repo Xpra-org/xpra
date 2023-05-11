@@ -208,7 +208,7 @@ def do_get_nodock_command():
         return get_xpra_command()
     return [helper]
 
-def do_get_sound_command():
+def do_get_audio_command():
     return do_get_nodock_command()
 
 

@@ -13,7 +13,7 @@ from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
     get_caps_str, get_element_str, wrap_buffer,
     get_default_appsink_attributes, get_default_appsrc_attributes,
-    STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
+    BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,

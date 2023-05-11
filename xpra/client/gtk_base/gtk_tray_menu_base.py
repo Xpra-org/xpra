@@ -826,12 +826,12 @@ class GTKTrayMenuBase(MenuHelper):
 
     def spk_on(self, *args):
         log("spk_on(%s)", args)
-        self.client.start_receiving_sound()
+        self.client.start_receiving_audio()
     def spk_off(self, *args):
         log("spk_off(%s)", args)
-        self.client.stop_receiving_sound()
+        self.client.stop_receiving_audio()
     def make_speakermenuitem(self):
-        speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
+        speaker = self.menuitem("Speaker", "speaker.png", "Forward audio output from the server")
         set_sensitive(speaker, False)
         def is_speaker_on(*_args):
             return self.client.speaker_enabled
@@ -840,23 +840,23 @@ class GTKTrayMenuBase(MenuHelper):
                 set_sensitive(speaker, False)
                 speaker.set_tooltip_text("Speaker forwarding has been disabled")
                 return
-            if not self.client.server_sound_send:
+            if not self.client.server_audio_send:
                 set_sensitive(speaker, False)
                 speaker.set_tooltip_text("Server does not support speaker forwarding")
                 return
             set_sensitive(speaker, True)
-            speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
+            speaker.set_submenu(self.make_audiosubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
         self.after_handshake(speaker_state)
         return speaker
 
     def mic_on(self, *args):
         log("mic_on(%s)", args)
-        self.client.start_sending_sound()
+        self.client.start_sending_audio()
     def mic_off(self, *args):
         log("mic_off(%s)", args)
-        self.client.stop_sending_sound()
+        self.client.stop_sending_audio()
     def make_microphonemenuitem(self):
-        microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
+        microphone = self.menuitem("Microphone", "microphone.png", "Forward audio input to the server", None)
         set_sensitive(microphone, False)
         def is_microphone_on(*_args):
             return self.client.microphone_enabled
@@ -865,18 +865,18 @@ class GTKTrayMenuBase(MenuHelper):
                 set_sensitive(microphone, False)
                 microphone.set_tooltip_text("Microphone forwarding has been disabled")
                 return
-            if not self.client.server_sound_receive:
+            if not self.client.server_audio_receive:
                 set_sensitive(microphone, False)
                 microphone.set_tooltip_text("Server does not support microphone forwarding")
                 return
             set_sensitive(microphone, True)
-            microphone.set_submenu(self.make_soundsubmenu(is_microphone_on,
+            microphone.set_submenu(self.make_audiosubmenu(is_microphone_on,
                                                           self.mic_on, self.mic_off, "microphone-changed"))
         self.after_handshake(microphone_state)
         return microphone
 
-    def sound_submenu_activate(self, item, menu, cb):
-        log("submenu_uncheck(%s, %s, %s) ignore_events=%s, active=%s",
+    def audio_submenu_activate(self, item, menu, cb):
+        log("audio_submenu_activate(%s, %s, %s) ignore_events=%s, active=%s",
             item, menu, cb, menu.ignore_events, item.get_active())
         if menu.ignore_events:
             return
@@ -884,7 +884,7 @@ class GTKTrayMenuBase(MenuHelper):
         if item.get_active():
             cb()
 
-    def make_soundsubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
+    def make_audiosubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
         menu = Gtk.Menu()
         menu.ignore_events = False
         def onoffitem(label, active, cb):
@@ -892,17 +892,17 @@ class GTKTrayMenuBase(MenuHelper):
             c.set_draw_as_radio(True)
             c.set_active(active)
             set_sensitive(c, True)
-            c.connect('activate', self.sound_submenu_activate, menu, cb)
+            c.connect('activate', self.audio_submenu_activate, menu, cb)
             return c
         is_on = is_on_cb()
         on = onoffitem("On", is_on, on_cb)
         off = onoffitem("Off", not is_on, off_cb)
         menu.append(on)
         menu.append(off)
-        def update_soundsubmenu_state(*args):
+        def update_audiosubmenu_state(*args):
             menu.ignore_events = True
             is_on = is_on_cb()
-            log("update_soundsubmenu_state%s is_on=%s", args, is_on)
+            log("update_audiosubmenu_state%s is_on=%s", args, is_on)
             if is_on:
                 if not on.get_active():
                     on.set_active(True)
@@ -912,8 +912,8 @@ class GTKTrayMenuBase(MenuHelper):
                     off.set_active(True)
                     ensure_item_selected(menu, off)
             menu.ignore_events = False
-        self.client.connect(client_signal, update_soundsubmenu_state)
-        self.after_handshake(update_soundsubmenu_state)
+        self.client.connect(client_signal, update_audiosubmenu_state)
+        self.after_handshake(update_audiosubmenu_state)
         menu.show_all()
         return menu
 
@@ -931,7 +931,7 @@ class GTKTrayMenuBase(MenuHelper):
                 avsynclog("activate_cb(%s, %s) delta=%s", item, menu, delta)
                 if delta is None:
                     self.client.av_sync = False
-                    self.client.send_sound_sync(0)
+                    self.client.send_audio_sync(0)
                 else:
                     self.client.av_sync = True
                     self.client.av_sync_delta = delta
@@ -955,7 +955,7 @@ class GTKTrayMenuBase(MenuHelper):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text("video-sync is not supported by the server")
                 return
-            if not (self.client.speaker_allowed and self.client.server_sound_send):
+            if not (self.client.speaker_allowed and self.client.server_audio_send):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text("video-sync requires speaker forwarding")
                 return

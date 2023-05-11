@@ -46,9 +46,9 @@ def get_capture_devices():
 def main():
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color
-    with program_context("Sound Device Info", "Sound Device Info"):
+    with program_context("Audio Device Info", "Audio Device Info"):
         enable_color()
-        log = Logger("win32", "sound")
+        log = Logger("win32", "audio")
         import sys
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:

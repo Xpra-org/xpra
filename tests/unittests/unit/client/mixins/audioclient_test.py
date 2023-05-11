@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import WIN32, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
-from xpra.sound.gstreamer_util import CODEC_ORDER
+from xpra.audio.gstreamer_util import CODEC_ORDER
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
@@ -30,7 +30,7 @@ class AudioClientTestUtil(ClientMixinTest):
         opts.av_sync = True
         opts.speaker = "no"
         opts.microphone = "no"
-        opts.sound_source = ""
+        opts.audio_source = ""
         opts.speaker_codec = []
         opts.microphone_codec = []
         opts.tray_icon = ""
@@ -55,12 +55,12 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
         def check_packets():
             if len(self.packets)<5:
                 return True
-            self.mixin.stop_sending_sound()
+            self.mixin.stop_sending_audio()
             self.main_loop.quit()
             return False
         if not auto_start:
             def request_start():
-                self.mixin.start_sending_sound()
+                self.mixin.start_sending_audio()
             self.glib.timeout_add(500, request_start)
         self.glib.timeout_add(100, check_packets)
         self.glib.timeout_add(5000, self.main_loop.quit)
@@ -93,7 +93,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
             "sound.encoders" : CODEC_ORDER,
             })
         def stop():
-            x.stop_receiving_sound()
+            x.stop_receiving_audio()
             self.stop()
         if not self.mixin.speaker_codecs:
             stop()
@@ -117,7 +117,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
             self.handle_packet(packet)
             if packet_data:
                 return True
-            self.mixin.stop_receiving_sound()
+            self.mixin.stop_receiving_audio()
             self.main_loop.quit()
             return False
         def check_start():
@@ -135,7 +135,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         self.verify_packet(0, ("sound-control", "start", "opus"))
         self.verify_packet(1, ("sound-control", "new-sequence", 1))
         #assert not self.packets, "sent some unexpected packets: %s" % (self.packets,)
-        assert self.mixin.sound_sink is None, "sink is still active: %s" % self.mixin.sound_sink
+        assert self.mixin.audio_sink is None, "sink is still active: %s" % self.mixin.audio_sink
 
 
 def main():

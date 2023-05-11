@@ -8,12 +8,12 @@ import sys
 import hashlib
 import os.path
 
-from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
+from xpra.audio.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict
 from xpra.os_util import which, WIN32, OSX, bytestostr, strtobytes
 
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("audio")
 
 
 pactl_bin = None
@@ -120,7 +120,7 @@ def get_pulse_id():
 def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=("bell-window-system",)):
     """
     Finds the list of devices, monitors=False allows us to filter out monitors
-    (which could create sound loops if we use them)
+    (which could create audio loops if we use them)
     set input_or_output=True to get inputs only
     set input_or_output=False to get outputs only
     set input_or_output=None to get both

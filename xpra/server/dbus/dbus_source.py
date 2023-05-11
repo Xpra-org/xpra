@@ -150,12 +150,12 @@ class DBUS_Source(dbus.service.Object):
     def StartSpeaker(self, codec):
         codec = ns(codec)
         self.log(".StartSpeaker(%s)", codec)
-        self.source.start_sending_sound(codec)
+        self.source.start_sending_audio(codec)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def StopSpeaker(self):
         self.log(".StopSpeaker()")
-        self.source.stop_sending_sound()
+        self.source.stop_sending_audio()
 
 
     @dbus.service.method(INTERFACE, in_signature='i')

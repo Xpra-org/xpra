@@ -14,7 +14,6 @@ etc/xpra/conf.d/10_network.conf
 etc/xpra/conf.d/12_ssl.conf
 etc/xpra/conf.d/15_file_transfers.conf
 etc/xpra/conf.d/16_printing.conf
-etc/xpra/conf.d/20_sound.conf
 etc/xpra/conf.d/30_picture.conf
 etc/xpra/conf.d/35_webcam.conf
 usr/lib/python3*/*/xpra/buffers/

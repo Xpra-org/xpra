@@ -265,12 +265,12 @@ def do_get_nodock_command():
     return get_xpra_command()
 
 
-def get_sound_command():
-    envvalue = os.environ.get("XPRA_SOUND_COMMAND")
+def get_audio_command():
+    envvalue = os.environ.get("XPRA_AUDIO_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
-    return do_get_sound_command()
-def do_get_sound_command():
+    return do_get_audio_command()
+def do_get_audio_command():
     return get_xpra_command()
 
 
@@ -300,7 +300,7 @@ platform_import(globals(), "paths", True,
 platform_import(globals(), "paths", False,
                 "do_get_sshpass_command",
                 "do_get_xpra_command",
-                "do_get_sound_command",
+                "do_get_audio_command",
                 "do_get_nodock_command",
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
@@ -357,7 +357,7 @@ def get_info():
         "home"              : os.path.expanduser("~"),
         "xpra_command"      : get_xpra_command(),
         "nodock_command"    : get_nodock_command(),
-        "sound_command"     : get_sound_command(),
+        "audio_command"     : get_audio_command(),
         "sshpass_command"   : get_sshpass_command(),
         "python-exec"       : get_python_exec_command(),
         "python-execfile"   : get_python_execfile_command(),

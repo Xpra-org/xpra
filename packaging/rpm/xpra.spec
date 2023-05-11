@@ -480,7 +480,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/12_ssl.conf
 %config %{_sysconfdir}/xpra/conf.d/15_file_transfers.conf
 %config %{_sysconfdir}/xpra/conf.d/16_printing.conf
-%config %{_sysconfdir}/xpra/conf.d/20_sound.conf
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
@@ -541,7 +540,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files audio
-%{python3_sitearch}/xpra/sound/
+%config %{_sysconfdir}/xpra/conf.d/20_audio.conf
+%{python3_sitearch}/xpra/audio/
 
 %files client
 %{python3_sitearch}/xpra/client/auth/

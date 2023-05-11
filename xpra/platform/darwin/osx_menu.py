@@ -218,12 +218,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
             clipboard_menu.show_all()
             self.client.after_handshake(self.set_clipboard_menu, clipboard_menu)
         if mixin_features.audio and SHOW_SOUND_MENU:
-            sound_menu = self.make_menu()
+            audio_menu = self.make_menu()
             if self.client.speaker_allowed and self.client.speaker_codecs:
-                add(sound_menu, self.make_speakermenuitem())
+                add(audio_menu, self.make_speakermenuitem())
             if self.client.microphone_allowed and self.client.microphone_codecs:
-                add(sound_menu, self.make_microphonemenuitem())
-            menus.append(("Sound", sound_menu))
+                add(audio_menu, self.make_microphonemenuitem())
+            menus.append(("Audio", audio_menu))
         if mixin_features.windows and SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
             def set_encodings_menu(*_args):

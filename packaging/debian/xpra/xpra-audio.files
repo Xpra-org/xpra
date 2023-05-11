@@ -1,2 +1,3 @@
-usr/lib/python3*/*/xpra/sound/
+etc/xpra/conf.d/20_audio.conf
+usr/lib/python3*/*/xpra/audio/
 

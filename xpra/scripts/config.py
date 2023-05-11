@@ -52,16 +52,16 @@ if OSX or WIN32: # pragma: no cover
 # pylint: disable=import-outside-toplevel
 
 
-_has_sound_support = None
-def has_sound_support():
-    global _has_sound_support
-    if _has_sound_support is None:
+_has_audio_support = None
+def has_audio_support():
+    global _has_audio_support
+    if _has_audio_support is None:
         try:
-            import xpra.sound
-            _has_sound_support = bool(xpra.sound)
+            import xpra.audio
+            _has_audio_support = bool(xpra.audio)
         except ImportError:
-            _has_sound_support = False
-    return _has_sound_support
+            _has_audio_support = False
+    return _has_audio_support
 
 
 def get_xorg_bin():
@@ -557,7 +557,7 @@ OPTION_TYPES = {
                     "audio"             : bool,
                     "microphone"        : str,
                     "speaker"           : str,
-                    "sound-source"      : str,
+                    "audio-source"      : str,
                     "html"              : str,
                     "http-scripts"      : str,
                     "socket-permissions": str,
@@ -751,7 +751,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "remote-logging",
                   "lpadmin", "lpinfo",
                   "debug",
-                  "microphone", "speaker", "sound-source",
+                  "microphone", "speaker", "audio-source",
                   "microphone-codec", "speaker-codec",
                   "mmap", "encodings", "encoding",
                   "quality", "min-quality", "speed", "min-speed",
@@ -790,7 +790,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "title", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
     "input-method",
-    "audio", "microphone", "speaker", "sound-source", "pulseaudio",
+    "audio", "microphone", "speaker", "audio-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
     "use-display",
     "fake-xinerama", "resize-display", "dpi", "pixel-depth",
@@ -996,7 +996,7 @@ def get_defaults():
                     "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
                     "debug"             : "",
                     "input-method"      : "auto",
-                    "sound-source"      : "",
+                    "audio-source"      : "",
                     "html"              : "auto",
                     "http-scripts"      : "all",
                     "socket-permissions": "600",
@@ -1056,8 +1056,8 @@ def get_defaults():
                     "mmap"              : "yes",
                     "mmap-group"        : "auto",
                     "audio"             : True,
-                    "speaker"           : ["disabled", "on"][has_sound_support() and not is_arm()],
-                    "microphone"        : ["disabled", "off"][has_sound_support()],
+                    "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
+                    "microphone"        : ["disabled", "off"][has_audio_support()],
                     "video-scaling"     : "auto",
                     "readonly"          : False,
                     "keyboard-sync"     : True,

@@ -734,7 +734,7 @@ class TopSessionClient(InfoTimerClient):
             ) if s)
 
     def _audio_info(self, ci, mode="speaker"):
-        minfo = self.dictget(ci, "sound", mode)
+        minfo = self.dictget(ci, "audio", mode) or self.dictget(ci, "sound", mode)
         if not minfo:
             return f"{mode} off"
         minfo = self.td(minfo)

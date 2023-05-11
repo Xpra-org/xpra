@@ -9,7 +9,7 @@ import os.path
 
 from xpra.os_util import WIN32, OSX
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("audio")
 
 default_icon_path = None
 def set_icon_path(v):
@@ -38,15 +38,15 @@ def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
 try:
     #use "none" on win32 and osx:
     if WIN32 or OSX:
-        from xpra.sound.pulseaudio import pulseaudio_none_util as _pulseaudio_util
+        from xpra.audio.pulseaudio import pulseaudio_none_util as _pulseaudio_util
     else:
-        from xpra.sound.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
+        from xpra.audio.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
 except ImportError as e:
     #fallback forks a process and parses the output:
     log("cannot import default pulseaudio util: %s", e)
     log("using pulseaudio none fallback")
     del e
-    from xpra.sound.pulseaudio import pulseaudio_none_util as _pulseaudio_util
+    from xpra.audio.pulseaudio import pulseaudio_none_util as _pulseaudio_util
 
 get_info                = _pulseaudio_util.get_info
 has_pa                  = _pulseaudio_util.has_pa

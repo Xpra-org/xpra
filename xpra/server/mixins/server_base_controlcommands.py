@@ -91,7 +91,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("client-property",       "set a client property",            min_args=4, max_args=5, validation=[int]),
             ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
             ArgsControlCommand("key",                   "press or unpress a key",           min_args=1, max_args=2),
-            ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1, max_args=2),
+            ArgsControlCommand("audio-output",          "control audio forwarding",         min_args=1, max_args=2),
             #windows:
             ArgsControlCommand("workspace",             "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("close",                 "close a window",                   min_args=1, max_args=1, validation=[int]),
@@ -722,10 +722,10 @@ class ServerBaseControlCommands(StubServerMixin):
                                    csv(("1", "press", "0", "unpress")))
         self.fake_key(keycode, press)
 
-    def control_command_sound_output(self, *args):
+    def control_command_audio_output(self, *args):
         msg = []
         for csource in tuple(self._server_sources.values()):
-            msg.append(f"{csource} : " + str(csource.sound_control(*args)))
+            msg.append(f"{csource} : " + str(csource.audio_control(*args)))
         return csv(msg)
 
     def control_command_workspace(self, wid, workspace):

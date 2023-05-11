@@ -41,8 +41,8 @@ class FakeClient(FileTransferHandler):
         self.speaker_enabled = True
         self.microphone_allowed = True
         self.microphone_enabled = True
-        self.server_sound_send = True
-        self.server_sound_receive = True
+        self.server_audio_send = True
+        self.server_audio_receive = True
         self.server_readonly = False
         self.bell_enabled = True
         self.webcam_forwarding = True

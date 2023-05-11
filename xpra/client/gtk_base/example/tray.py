@@ -40,8 +40,8 @@ class FakeApplication:
         self.server_av_sync = True
         self.server_virtual_video_devices = 4
         self.server_webcam = True
-        self.server_sound_send = True
-        self.server_sound_receive = True
+        self.server_audio_send = True
+        self.server_audio_receive = True
         self.server_clipboard = False
         self.server_bandwidth_limit_change = 0
         self.server_encodings = ["png", "rgb"]

@@ -52,7 +52,7 @@ def bool_or(v, other_value, true_str, false_str, other_str):
     bv = parse_bool("", v)
     return enabled_str(bv, true_str, false_str)
 
-def sound_option(v):
+def audio_option(v):
     vl = v.lower()
     #ensures we return only: "on", "off" or "disabled" given any value
     if vl=="no":
@@ -98,7 +98,7 @@ class ModifiedOptionParser(optparse.OptionParser):
 
 
 def fixup_defaults(defaults):
-    for k in ("debug", "encoding", "sound-source", "microphone-codec", "speaker-codec"):
+    for k in ("debug", "encoding", "audio-source", "microphone-codec", "speaker-codec"):
         fn = k.replace("-", "_")
         v = getattr(defaults, fn)
         if "help" in v:
@@ -106,7 +106,7 @@ def fixup_defaults(defaults):
                 #skip-ui: we're running in subprocess, don't bother spamming stderr
                 warn(f"Warning: invalid 'help' option found in {k!r} configuration\n" +
                              " this should only be used as a command line argument\n")
-            if k in ("encoding", "debug", "sound-source"):
+            if k in ("encoding", "debug", "audio-source"):
                 setattr(defaults, fn, "")
             else:
                 v.remove("help")
@@ -1207,8 +1207,8 @@ def do_parse_cmdline(cmdline, defaults):
                   help="The commands used to configure the pulseaudio server. Default: '%default'.")
     group.add_option("--speaker", action="store", metavar="on|off|disabled",
                       dest="speaker", default=defaults.speaker,
-                      help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
-    CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
+                      help="Forward audio output to the client(s). Default: %s." % audio_option(defaults.speaker))
+    CODEC_HELP = """Specify the codec(s) to use for forwarding the %s audio output.
 This parameter can be specified multiple times and the order in which the codecs
 are specified defines the preferred codec order.
 Use the special value 'help' to get a list of options.
@@ -1218,17 +1218,18 @@ When unspecified, all the available codecs are allowed and the first one is used
                       help=CODEC_HELP % "speaker")
     group.add_option("--microphone", action="store", metavar="on|off|disabled",
                       dest="microphone", default=defaults.microphone,
-                      help="Forward sound input to the server. Default: %s." % sound_option(defaults.microphone))
+                      help="Forward audio input to the server. Default: %s." % audio_option(defaults.microphone))
     group.add_option("--microphone-codec", action="append",
                       dest="microphone_codec", default=list(defaults.microphone_codec or []),
                       help=CODEC_HELP % "microphone")
-    group.add_option("--sound-source", action="store",
-                      dest="sound_source", default=defaults.sound_source,
-                      help="Specifies which sound system to use to capture the sound stream "
+    replace_option("--sound-source", "--audio-source")
+    group.add_option("--audio-source", action="store",
+                      dest="audio_source", default=defaults.audio_source,
+                      help="Specifies which audio system to use to capture the audio stream "
                       +" (use 'help' for options)")
     group.add_option("--av-sync", action="store",
                       dest="av_sync", default=defaults.av_sync,
-                      help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
+                      help="Try to synchronize audio and video. Default: %s." % enabled_str(defaults.av_sync))
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
@@ -1730,12 +1731,12 @@ When unspecified, all the available codecs are allowed and the first one is used
                     for k,v in d.items():
                         h.append(f" * {k:<16}: {v}")
                 raise InitInfo("known logging filters: \n%s" % "\n".join(h))
-    if options.sound_source=="help":
-        from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
+    if options.audio_source=="help":
+        from xpra.audio.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
-            from xpra.sound.wrapper import query_sound
-            source_plugins = query_sound().strtupleget("sources", ())
-            source_default = query_sound().strget("source.default", "")
+            from xpra.audio.wrapper import query_audio
+            source_plugins = query_audio().strtupleget("sources", ())
+            source_default = query_audio().strget("source.default", "")
         except Exception as e:
             raise InitInfo(e) from None
         if source_plugins:
@@ -1859,11 +1860,11 @@ def do_validate_encryption(auth, tcp_auth,
     #        raise InitException("tcp-encryption %s should not use the same file"
     #                            +" as the password authentication file" % tcp_encryption)
 
-def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
-    from xpra.sound.wrapper import query_sound
-    props = query_sound()
+def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs):
+    from xpra.audio.wrapper import query_audio
+    props = query_audio()
     if not props:
-        return ["sound is not supported - gstreamer not present or not accessible"]
+        return ["audio is not supported - gstreamer not present or not accessible"]
     codec_help = []
     all_speaker_codecs = props.strtupleget("encoders" if is_server else "decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]

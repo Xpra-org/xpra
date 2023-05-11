@@ -41,7 +41,7 @@ class ClientConnection(StubSourceMixin):
     and the client specific WindowSource instances (which only know about window ids
     and manage window pixel compression).
     It sends messages to the client via its 'protocol' instance (the network connection),
-    directly for a number of cases (cursor, sound, notifications, etc)
+    directly for a number of cases (cursor, audio, notifications, etc)
     or on behalf of the window sources for pixel data.
 
     Strategy: if we have 'ordinary_packets' to send, send those.

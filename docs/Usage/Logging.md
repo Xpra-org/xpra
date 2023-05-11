@@ -157,7 +157,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 |stats|server statistics|
 |xshm|XShm pixel capture|
 |**Audio:**|
-|sound|all audio|
+|audio|all audio|
 |gstreamer|GStreamer internal messages|
 |av-sync|Audio-video sync|
 |**X11:**|

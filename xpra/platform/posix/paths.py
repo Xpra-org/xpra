@@ -162,7 +162,7 @@ def do_get_default_log_dirs():
     log_dirs.append(tempfile.gettempdir())
     return log_dirs
 
-def do_get_sound_command():
+def do_get_audio_command():
     from xpra.platform.paths import get_xpra_command
     return get_xpra_command()
 

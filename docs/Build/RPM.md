@@ -1,4 +1,4 @@
-# ![sound](../images/icons/package.png) Building RPMs
+# ![package](../images/icons/package.png) Building RPMs
 
 
 ## Build requirements

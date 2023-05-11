@@ -10,13 +10,13 @@ from collections import deque
 from threading import Lock
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.audio.audio_pipeline import AudioPipeline
 from xpra.gst_common import (
     normv, make_buffer, plugin_str,
     get_default_appsrc_attributes, get_element_str,
     GST_FLOW_OK,
     )
-from xpra.sound.gstreamer_util import (
+from xpra.audio.gstreamer_util import (
     get_decoder_elements, has_plugins,
     get_queue_time, get_decoders,
     get_default_sink_plugin, get_sink_plugins,
@@ -30,7 +30,7 @@ from xpra.util import csv, envint, envbool
 from xpra.make_thread import start_thread
 from xpra.log import Logger
 
-log = Logger("sound")
+log = Logger("audio")
 gstlog = Logger("gstreamer")
 
 SINK_SHARED_DEFAULT_ATTRIBUTES = {
@@ -57,9 +57,9 @@ UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 
-class SoundSink(SoundPipeline):
+class AudioSink(AudioPipeline):
 
-    __gsignals__ = SoundPipeline.__generic_signals__.copy()
+    __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__.update({
         "eos"       : one_arg_signal,
         })
@@ -70,7 +70,7 @@ class SoundSink(SoundPipeline):
         if sink_type not in get_sink_plugins():
             raise InitExit(1, "invalid sink: %s" % sink_type)
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_decoders())]
-        log("SoundSink(..) found matching codecs %s", matching)
+        log("AudioSink(..) found matching codecs %s", matching)
         if not matching:
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (
                 csv(codecs), csv(get_decoders().keys())))
@@ -157,7 +157,7 @@ class SoundSink(SoundPipeline):
         self.init_file(codec)
 
     def __repr__(self):  #pylint: disable=arguments-differ
-        return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
+        return "AudioSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
         super().cleanup()
@@ -459,13 +459,13 @@ class SoundSink(SoundPipeline):
             self.emit('error', "push-buffer error: %s" % r)
         return 1
 
-GObject.type_register(SoundSink)
+GObject.type_register(AudioSink)
 
 
 def main():
     from gi.repository import GLib  # @UnresolvedImport
     from xpra.platform import program_context
-    with program_context("Sound-Record"):
+    with program_context("Audio-Record"):
         args = sys.argv
         log.enable_debug()
         import os.path
@@ -505,7 +505,7 @@ def main():
         global QUEUE_LEAK, QUEUE_SILENT
         QUEUE_LEAK = GST_QUEUE_NO_LEAK
         QUEUE_SILENT = True
-        ss = SoundSink(codecs=codecs)
+        ss = AudioSink(codecs=codecs)
         def eos(*args):
             print("eos%s" % (args,))
             GLib.idle_add(glib_mainloop.quit)

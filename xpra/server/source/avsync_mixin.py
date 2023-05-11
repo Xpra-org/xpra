@@ -18,9 +18,16 @@ class AVSyncMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        if not (caps.boolget("sound.send") or caps.boolget("sound.receive")):
-            #no audio!
-            return False
+        audio = caps.get("audio")
+        if isinstance(audio, dict):
+            audio = typedict(audio)
+            if not (audio.boolget("send") or audio.boolget("receive")):
+                return False
+        else:
+            #legacy:
+            if not (caps.boolget("sound.send") or caps.boolget("sound.receive")):
+                #no audio!
+                return False
         return caps.boolget("av-sync") and caps.boolget("windows")
 
     def __init__(self):
@@ -77,9 +84,9 @@ class AVSyncMixin(StubSourceMixin):
         self.update_av_sync_delay_total()
 
     def update_av_sync_delay_total(self):
-        enabled = self.av_sync and bool(getattr(self, "sound_source", None))
+        enabled = self.av_sync and bool(getattr(self, "audio_source", None))
         if enabled:
-            encoder_latency = self.get_sound_source_latency()
+            encoder_latency = self.get_audio_source_latency()
             self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
             log("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, delta=%s)",
                 self.av_sync_delay_total, self.av_sync_delay, encoder_latency, self.av_sync_delta)
@@ -93,13 +100,13 @@ class AVSyncMixin(StubSourceMixin):
 
 
     ##########################################################################
-    # sound control commands:
-    def sound_control_sync(self, delay_str):
+    # audio control commands:
+    def audio_control_sync(self, delay_str):
         assert self.av_sync, "av-sync is not enabled"
         self.set_av_sync_delay(int(delay_str))
         return "av-sync delay set to %ims" % self.av_sync_delay
 
-    def sound_control_av_sync_delta(self, delta_str):
+    def audio_control_av_sync_delta(self, delta_str):
         assert self.av_sync, "av-sync is not enabled"
         self.set_av_sync_delta(int(delta_str))
         return "av-sync delta set to %ims" % self.av_sync_delta

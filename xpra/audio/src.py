@@ -12,11 +12,11 @@ from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import SIGNAMES
 from xpra.util import csv, envint, envbool, envfloat
-from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.audio.audio_pipeline import AudioPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gst_common import normv, has_plugins, plugin_str, GST_FLOW_OK,\
     get_default_appsink_attributes, get_element_str
-from xpra.sound.gstreamer_util import (
+from xpra.audio.gstreamer_util import (
     get_source_plugins, get_encoder_elements,
     get_encoder_default_options,
     get_encoders, get_queue_time,
@@ -27,7 +27,7 @@ from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
-log = Logger("sound")
+log = Logger("audio")
 gstlog = Logger("gstreamer")
 
 JITTER = envint("XPRA_SOUND_SOURCE_JITTER", 0)
@@ -42,9 +42,9 @@ CUTTER_PRE_LENGTH = envint("XPRA_CUTTER_PRE_LENGTH", 100)
 CUTTER_RUN_LENGTH = envint("XPRA_CUTTER_RUN_LENGTH", 1000)
 
 
-class SoundSource(SoundPipeline):
+class AudioSource(AudioPipeline):
 
-    __gsignals__ = SoundPipeline.__generic_signals__.copy()
+    __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__.update({
         "new-buffer"    : n_arg_signal(3),
         })
@@ -52,7 +52,7 @@ class SoundSource(SoundPipeline):
     def __init__(self, src_type=None, src_options=None, codecs=(), codec_options=None, volume=1.0):
         if not src_type:
             try:
-                from xpra.sound.pulseaudio.pulseaudio_util import get_pa_device_options
+                from xpra.audio.pulseaudio.pulseaudio_util import get_pa_device_options
                 monitor_devices = get_pa_device_options(True, False)
                 log.info("found pulseaudio monitor devices: %s", monitor_devices)
             except ImportError as e:
@@ -74,7 +74,7 @@ class SoundSource(SoundPipeline):
         if src_type not in get_source_plugins():
             raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_encoders())]
-        log("SoundSource(..) found matching codecs %s", matching)
+        log("AudioSource(..) found matching codecs %s", matching)
         if not matching:
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_encoders().keys())))
         codec = matching[0]
@@ -176,7 +176,7 @@ class SoundSource(SoundPipeline):
 
 
     def __repr__(self):  #pylint: disable=arguments-differ
-        return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
+        return "AudioSource('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
         super().cleanup()
@@ -264,7 +264,7 @@ class SoundSource(SoundPipeline):
 
     def _emit_buffer(self, data, metadata):
         if self.stream_compressor and data:
-            cdata = compressed_wrapper("sound", data, level=9, can_inline=True,
+            cdata = compressed_wrapper("audio", data, level=9, can_inline=True,
                                        zlib=False,
                                        lz4=self.stream_compressor=="lz4")
             if len(cdata)<len(data)*90//100:
@@ -312,12 +312,12 @@ class SoundSource(SoundPipeline):
         self.emit_info()
         return GST_FLOW_OK
 
-GObject.type_register(SoundSource)
+GObject.type_register(AudioSource)
 
 
 def main():
     from xpra.platform import program_context
-    with program_context("Xpra-Sound-Source"):
+    with program_context("Xpra-Audio-Source"):
         if "-v" in sys.argv:
             log.enable_debug()
             sys.argv.remove("-v")
@@ -356,7 +356,7 @@ def main():
         try:
             from xpra.platform.paths import get_icon_filename
             f = get_icon_filename("xpra.png")
-            from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
+            from xpra.audio.pulseaudio.pulseaudio_util import add_audio_tagging_env
             add_audio_tagging_env(icon_path=f)
         except Exception as e:
             log.warn("failed to setup pulseaudio tagging: %s", e)
@@ -366,9 +366,9 @@ def main():
             f = sys.stdout
         else:
             f = open(filename, "wb")
-        ss = SoundSource(codecs=[codec])
+        ss = AudioSource(codecs=[codec])
         lock = Lock()
-        def new_buffer(_soundsource, data, metadata, packet_metadata):
+        def new_buffer(_audiosource, data, metadata, packet_metadata):
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
                 if f:
