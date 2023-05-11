@@ -248,10 +248,6 @@ def platform_name(sys_platform=sys.platform, release=None) -> str:
     return rel(sys_platform)
 
 
-def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
-    import random
-    return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
-
 def get_hex_uuid() -> str:
     return uuid.uuid4().hex
 

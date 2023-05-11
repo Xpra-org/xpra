@@ -39,7 +39,6 @@ from xpra.os_util import (
     force_quit,
     which,
     get_saved_env, get_saved_env_var,
-    get_rand_chars,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, setuidgid,
     getuid, get_groups, get_group_id,
     get_hex_uuid, get_util_logger, osexpand,
@@ -1183,6 +1182,10 @@ def _do_run_server(script_file, cmdline,
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
+                #this only needs to be fairly unique:
+                def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
+                    import random
+                    return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom = ""
