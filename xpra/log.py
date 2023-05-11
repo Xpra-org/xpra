@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,11 +11,15 @@ import weakref
 import itertools
 # This module is used by non-GUI programs and thus must not import gtk.
 
-LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
-LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s")
+LOG_PREFIX = ""
+LOG_FORMAT = "%(asctime)s %(message)s"
+DEBUG_MODULES = ()
+if os.getuid()!=0:
+    LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
+    LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
+    DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
 NOPREFIX_FORMAT = "%(message)s"
 
-DEBUG_MODULES = [x for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x]
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
