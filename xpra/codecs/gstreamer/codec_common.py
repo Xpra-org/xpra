@@ -40,6 +40,12 @@ def get_default_encoder_options():
             #"tune"          : 3,    #low-power
             #"rate-control" : 8, #qvbr
             },
+        "amfh264enc" : {
+            "usage"    : "ultra-low-latency",
+            },
+        "amfh265enc" : {
+            "usage"    : "ultra-low-latency",
+            },
         "x264enc" : {
             "speed-preset"  : "ultrafast",
             "tune"          : "zerolatency",

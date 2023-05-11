@@ -130,6 +130,9 @@ def init_all_specs(*exclude):
     if NVENC:
         add("nvh264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
         add("nvh265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
+    if not OSX:
+        add("amfh264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
+        add("amfh265enc", "hevc", "NV12", ("YUV420P", ), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
     add("x264enc", "h264", "YUV444P", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
