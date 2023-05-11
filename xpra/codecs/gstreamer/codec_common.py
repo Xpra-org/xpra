@@ -189,8 +189,7 @@ def get_video_encoder_options(encoder:str="x264", profile:str=None, options:type
             "quantizer" : q,
             "speed-preset" : get_x264_preset(s),
             })
-    #if "bframes" in self.encoder_options:
-    #    eopts["bframes"] = int(options.boolget("b-frames", False))
+    #should check for "bframes" flag in options?
     return eopts
 
 def get_gst_encoding(encoding):

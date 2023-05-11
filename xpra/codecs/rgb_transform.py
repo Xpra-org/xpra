@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ from time import monotonic
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import first_time, csv
+from xpra.codecs.avif.decoder import ImageWrapper
 from xpra.log import Logger
 try:
     from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
@@ -38,7 +39,7 @@ PIL_conv_noalpha = {
              }
 
 
-def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
+def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) -> bool:
     """ convert the RGB pixel data into a format supported by the client """
     #need to convert to a supported format!
     pixel_format = image.get_pixel_format()

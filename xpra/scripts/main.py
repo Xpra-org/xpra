@@ -2152,7 +2152,7 @@ def find_wayland_display_sockets(uid=getuid(), gid=getgid()):
 
 
 X11_SOCKET_DIR = "/tmp/.X11-unix"
-def find_X11_display_sockets(max_display_no=None):
+def find_x11_display_sockets(max_display_no=None):
     displays = {}
     if not os.path.exists(X11_SOCKET_DIR):
         return displays
@@ -2257,7 +2257,7 @@ def find_displays(max_display_no=None, uid=getuid(), gid=getgid()):
     except ImportError:
         pass
     else:
-        displays = find_X11_display_sockets(max_display_no=max_display_no)
+        displays = find_x11_display_sockets(max_display_no=max_display_no)
     #add wayland displays:
     displays.update(find_wayland_display_sockets(uid, gid))
     #now verify that the sockets are usable

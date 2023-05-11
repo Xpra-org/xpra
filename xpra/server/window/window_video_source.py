@@ -1250,7 +1250,7 @@ class WindowVideoSource(WindowSource):
         scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format)
         scorelog(f"update_pipeline_scores({force_reload})={scores}")
 
-    def verify_csc_and_encoder(self) -> None:
+    def verify_csc_and_encoder(self) -> bool:
         """
         returns True only if the current video encoder and optional csc encoder
         match the best pipeline option.

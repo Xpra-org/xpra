@@ -39,7 +39,7 @@ CODEC_TO_MODULE = {
     "enc_gstreamer" : "gstreamer.encoder",
     }
 
-def has_codec_module(module_name):
+def has_codec_module(module_name:str):
     top_module = f"xpra.codecs.{module_name}"
     try:
         __import__(top_module, {}, {}, [])
@@ -49,10 +49,10 @@ def has_codec_module(module_name):
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
-def autoprefix(prefix, name):
+def autoprefix(prefix:str, name:str):
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name).replace("-", "_")
 
-def try_import_modules(prefix, *codec_names):
+def try_import_modules(prefix:str, *codec_names):
     names = []
     for codec_name in codec_names:
         codec_name = autoprefix(prefix, codec_name)
@@ -76,13 +76,13 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 #on top of that, there are compatibility problems with gtk at times: OpenCL AMD and TLS don't mix well
 
 
-def get_encoder_module_name(x):
+def get_encoder_module_name(x:str) -> str:
     return autoprefix("enc", x)
 
-def get_decoder_module_name(x):
+def get_decoder_module_name(x:str) -> str:
     return autoprefix("dec", x)
 
-def get_csc_module_name(x):
+def get_csc_module_name(x:str) -> str:
     return autoprefix("csc", x)
 
 
@@ -158,7 +158,7 @@ class VideoHelper:
             csv(video_encoders), csv(csc_modules), csv(video_decoders),
             csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         with self._lock:
             #check again with lock held (in case of race):
             if not self._initialized:
@@ -241,27 +241,27 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_encodings(self):
+    def get_encodings(self) -> tuple:
         return tuple(self._video_encoder_specs.keys())
 
-    def get_decodings(self):
+    def get_decodings(self) -> tuple:
         return tuple(self._video_decoder_specs.keys())
 
-    def get_csc_inputs(self):
+    def get_csc_inputs(self) -> tuple:
         return tuple(self._csc_encoder_specs.keys())
 
 
-    def get_encoder_specs(self, encoding):
+    def get_encoder_specs(self, encoding) -> dict:
         return self._video_encoder_specs.get(encoding, {})
 
-    def get_csc_specs(self, src_format):
+    def get_csc_specs(self, src_format) -> dict:
         return self._csc_encoder_specs.get(src_format, {})
 
-    def get_decoder_specs(self, encoding):
+    def get_decoder_specs(self, encoding) -> dict:
         return self._video_decoder_specs.get(encoding, {})
 
 
-    def init_video_encoders_options(self):
+    def init_video_encoders_options(self) -> None:
         log("init_video_encoders_options()")
         log(" will try video encoders: %s", csv(self.video_encoders))
         for x in self.video_encoders:
@@ -283,7 +283,7 @@ class VideoHelper:
         log("found %i video encoder formats: %s",
             len(self._video_encoder_specs), csv(self._video_encoder_specs))
 
-    def init_video_encoder_option(self, encoder_name):
+    def init_video_encoder_option(self, encoder_name:str) -> None:
         encoder_module = get_codec(encoder_name)
         log("init_video_encoder_option(%s)", encoder_name)
         log(" module=%s", encoder_module)
@@ -303,11 +303,11 @@ class VideoHelper:
                     self.add_encoder_spec(encoding, colorspace, spec)
         log("video encoder options: %s", self._video_encoder_specs)
 
-    def add_encoder_spec(self, encoding, colorspace, spec):
+    def add_encoder_spec(self, encoding:str, colorspace:str, spec):
         self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
 
 
-    def init_csc_options(self):
+    def init_csc_options(self) -> None:
         log("init_csc_options()")
         log(" will try csc modules: %s", csv(self.csc_modules))
         for x in self.csc_modules:
@@ -324,7 +324,7 @@ class VideoHelper:
                 log("  * %7s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
         log("csc options: %s", self._csc_encoder_specs)
 
-    def init_csc_option(self, csc_name):
+    def init_csc_option(self, csc_name:str) -> None:
         csc_module = get_codec(csc_name)
         log("init_csc_option(%s)", csc_name)
         log(" module=%s", csc_module)
@@ -340,11 +340,11 @@ class VideoHelper:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
 
-    def add_csc_spec(self, in_csc, out_csc, spec):
+    def add_csc_spec(self, in_csc:str, out_csc:str, spec) -> None:
         self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
 
 
-    def init_video_decoders_options(self):
+    def init_video_decoders_options(self) -> None:
         log("init_video_decoders_options()")
         log(" will try video decoders: %s", csv(self.video_decoders))
         for x in self.video_decoders:
@@ -358,7 +358,7 @@ class VideoHelper:
             len(self._video_decoder_specs), csv(self._video_decoder_specs))
         log("video decoder options: %s", self._video_decoder_specs)
 
-    def init_video_decoder_option(self, decoder_name):
+    def init_video_decoder_option(self, decoder_name:str) -> None:
         decoder_module = get_codec(decoder_name)
         log("init_video_decoder_option(%s)", decoder_name)
         log(" module=%s", decoder_module)
@@ -382,7 +382,7 @@ class VideoHelper:
                     log.warn("failed to add decoder %s: %s", decoder_module, e)
                     del e
 
-    def add_decoder(self, encoding, colorspace, decoder_name, decoder_module):
+    def add_decoder(self, encoding:str, colorspace:str, decoder_name:str, decoder_module):
         self._video_decoder_specs.setdefault(
             encoding, {}).setdefault(
                 colorspace, []).append(
@@ -390,7 +390,7 @@ class VideoHelper:
                     )
 
 
-    def get_server_full_csc_modes(self, *client_supported_csc_modes):
+    def get_server_full_csc_modes(self, *client_supported_csc_modes) -> dict:
         """ given a list of CSC modes the client can handle,
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
@@ -414,7 +414,7 @@ class VideoHelper:
         return full_csc_modes
 
 
-    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes):
+    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes) -> dict:
         """ given a list of RGB modes the client can handle,
             returns the CSC modes per encoding that the server can encode with,
             this will include the RGB modes themselves too.

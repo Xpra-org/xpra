@@ -7,7 +7,6 @@
 import sys
 import os
 
-from xpra.os_util import WIN32, OSX
 from xpra.util import csv
 from xpra.log import Logger
 
@@ -25,10 +24,10 @@ STREAM_TYPE = GST_APP_STREAM_TYPE_STREAM
 
 
 Gst = None
-def get_gst_version():
+def get_gst_version() -> tuple:
     if not Gst:
         return ()
-    return Gst.version()
+    return tuple(Gst.version())
 
 
 def import_gst():
@@ -36,6 +35,7 @@ def import_gst():
     if Gst is not None:
         return Gst
 
+    from xpra.os_util import WIN32, OSX
     #hacks to locate gstreamer plugins on win32 and osx:
     if WIN32:
         frozen = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
@@ -70,7 +70,7 @@ def import_gst():
     return Gst
 
 
-def get_default_appsink_attributes():
+def get_default_appsink_attributes() -> dict:
     return {
         "name"          : "sink",
         "emit-signals"  : True,
@@ -81,7 +81,7 @@ def get_default_appsink_attributes():
         "qos"           : False,
         }
 
-def get_default_appsrc_attributes():
+def get_default_appsrc_attributes() -> dict:
     return {
         "name"          : "src",
         "emit-signals"  : False,
@@ -104,7 +104,7 @@ def make_buffer(data):
     return buf
 
 
-def normv(v) -> int:
+def normv(v:int) -> int:
     if v==2**64-1:
         return -1
     return int(v)
@@ -148,17 +148,17 @@ def get_caps_str(ctype:str="video/x-raw", caps=None) -> str:
         els.append(f"{k}={s(v)}")
     return ",".join(els)
 
-def get_element_str(element:str, eopts=None):
+def get_element_str(element:str, eopts=None) -> str:
     s = element
     if eopts:
         s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
     return s
 
 
-def format_element_options(options):
+def format_element_options(options) -> str:
     return csv(f"{k}={v}" for k,v in options.items())
 
-def plugin_str(plugin, options):
+def plugin_str(plugin, options) -> str:
     if plugin is None:
         return None
     s = str(plugin)

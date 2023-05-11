@@ -124,7 +124,7 @@ class Pipeline(GObject.GObject):
         self.info["pipeline"] = self.pipeline_str
         return True
 
-    def do_get_state(self, state):
+    def do_get_state(self, state) -> str:
         if not self.pipeline:
             return  "stopped"
         return {

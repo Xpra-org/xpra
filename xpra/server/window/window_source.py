@@ -143,7 +143,7 @@ def get_encoder_type(encoder) -> str:
         return "none"
     mod = getattr(encoder, "__module__")    #ie: 'xpra.codecs.pillow.encoder'
     if not mod:
-        return None
+        return "none"
     if mod.endswith(".encoder"):
         mod = mod[:-len(".encoder")]    #ie: 'xpra.codecs.pillow'
         mod = mod.split(".")[-1]        #ie: 'pillow'
@@ -1786,7 +1786,7 @@ class WindowSource(WindowIconSource):
             if actual_delay>self.batch_config.timeout_delay:
                 log("send_delayed for wid %s, elapsed time %ims is above limit of %.1f",
                     self.wid, actual_delay, self.batch_config.timeout_delay)
-                key = ("timeout-damage-delay", self.wid, damage_time)
+                key = f"timeout-damage-delay:{self.wid}-{damage_time}"
                 if first_time(key):
                     log.warn("Warning: timeout on screen updates for window %i,", self.wid)
                     log.warn(" already delayed for more than %i seconds", actual_delay//1000)
@@ -1927,7 +1927,7 @@ class WindowSource(WindowIconSource):
             eoptions["content-type"] = self.content_type
         return eoptions
 
-    def do_send_delayed_regions(self, damage_time, regions : DelayedRegions, coding : str, options,
+    def do_send_delayed_regions(self, damage_time, regions, coding : str, options,
                                 exclude_region=None, get_best_encoding=None) -> None:
         ww,wh = self.window_dimensions
         options = self.assign_sq_options(options)

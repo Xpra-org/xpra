@@ -51,7 +51,6 @@ class LoggingServer(StubServerMixin):
                 "receive"       : self.remote_logging_receive,
                 "send"          : self.remote_logging_send,
                 },
-            "remote-logging"            : self.remote_logging_receive,  #pre-v4.1 feature name
             "remote-logging.receive"    : self.remote_logging_receive,
             "remote-logging.multi-line" : True,
             "remote-logging.send"       : self.remote_logging_send,

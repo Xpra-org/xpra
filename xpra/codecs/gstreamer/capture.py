@@ -53,7 +53,7 @@ class Capture(Pipeline):
     def create_pipeline(self, capture_element:str="ximagesrc"):
         #CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
-            capture_element,   #ie: ximagesrc
+            capture_element,
             #f"video/x-raw,framerate={self.framerate}/1",
             "videoconvert",
             #"videorate",

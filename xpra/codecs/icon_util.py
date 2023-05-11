@@ -47,7 +47,7 @@ def load_Rsvg():
     return _Rsvg
 
 
-def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
+def load_icon_from_file(filename : str, max_size=MAX_ICON_SIZE) -> tuple:
     if os.path.isdir(filename):
         log("load_icon_from_file(%s, %i) path is a directory!", filename, max_size)
         return None
@@ -84,7 +84,7 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
-def svg_to_png(filename, icondata, w=128, h=128):
+def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> bytes:
     if not SVG_TO_PNG:
         return None
     Rsvg = load_Rsvg()

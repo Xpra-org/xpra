@@ -28,8 +28,6 @@ class AudioMixin(StubSourceMixin):
         audio = caps.get("audio")
         if isinstance(audio, dict):
             audio = typedict(audio)
-            log.warn(f"audio: audio={audio}")
-            log.warn(f"audio: %s", audio.boolget("send") or audio.boolget("receive"))
             return audio.boolget("send") or audio.boolget("receive")
         #legacy:
         return caps.boolget("sound.send") or caps.boolget("sound.receive") 
