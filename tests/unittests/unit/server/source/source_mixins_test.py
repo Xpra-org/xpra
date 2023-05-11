@@ -19,8 +19,8 @@ from xpra.os_util import POSIX, OSX, get_util_logger
 class SourceMixinsTest(unittest.TestCase):
 
     AUDIO_SERVER_PROPS = {
-                "sound_properties"      : {},
-                "sound_source_plugin"   : None,
+                "audio_properties"      : {},
+                "audio_source_plugin"   : None,
                 "supports_microphone"   : True,
                 "microphone_codecs"     : (),
                 "supports_speaker"      : False,
@@ -324,14 +324,22 @@ class SourceMixinsTest(unittest.TestCase):
         server_props = SourceMixinsTest.AUDIO_SERVER_PROPS.copy()
         server_props.update({
             "av_sync" : True,
-            "sound_properties"  : {"foo" : "bar"},
+            "audio_properties"  : {"foo" : "bar"},
             "sound.pulseaudio_id"   : "fake-one",
             "sound.pulseaudio.server" : "some-path",
             })
         server_props.update(self._get_window_mixin_server_attributes())
         self._test_mixin_classes((WindowsMixin, AudioMixin, AVSyncMixin), server_props, {
-            "sound.send"    : True,
-            "sound.receive" : True,
+            "audio" : {
+                "send"    : True,
+                "receive" : True,
+                },
+            })
+        self._test_mixin_classes((WindowsMixin, AudioMixin, AVSyncMixin), server_props, {
+            "audio" : {
+                "send"    : True,
+                "receive" : True,
+                },
             })
         #test disabled:
         #what the client sets doesn't matter:

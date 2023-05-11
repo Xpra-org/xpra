@@ -39,8 +39,10 @@ class AudioMixinTest(ServerMixinTest):
         opts.av_sync = True
         with silence_info(audio_server, "audiolog"):
             self._test_mixin_class(audio_server.AudioServer, opts, {
-                "sound.receive" : True,
-                "sound.decoders" : gstreamer_util.CODEC_ORDER,
+                "audio" : {
+                    "receive" : True,
+                    "decoders" : gstreamer_util.CODEC_ORDER,
+                    },
                 }, AudioMixin)
             #init runs in a thread, give it time:
             time.sleep(2)

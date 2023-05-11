@@ -14,7 +14,7 @@ from xpra.audio import common
 
 class TestCommon(unittest.TestCase):
 
-    def test_sound_option(self):
+    def test_audio_option(self):
         ONE_OPTION = [common.VORBIS, ]
         assert common.audio_option_or_all("unspecified", None, ONE_OPTION)==ONE_OPTION
         assert common.audio_option_or_all("unspecified", (), ONE_OPTION)==ONE_OPTION

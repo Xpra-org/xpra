@@ -46,8 +46,10 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
         opts = self._default_opts()
         opts.microphone = "on" if auto_start else "off"
         self._test_audio(opts, {
-            "sound.receive" : True,
-            "sound.decoders" : CODEC_ORDER,
+            "audio" : {
+                "receive" : True,
+                "decoders" : CODEC_ORDER,
+                },
             })
         if not self.mixin.microphone_codecs:
             print("no microphone codecs, test skipped")
@@ -89,8 +91,10 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         opts = self._default_opts()
         opts.speaker = "yes"
         x = self._test_audio(opts, {
-            "sound.send" : True,
-            "sound.encoders" : CODEC_ORDER,
+            "audio" : {
+                "send" : True,
+                "encoders" : CODEC_ORDER,
+                },
             })
         def stop():
             x.stop_receiving_audio()
