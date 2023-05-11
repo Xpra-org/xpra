@@ -78,7 +78,16 @@ def get_default_appsink_attributes():
         "drop"          : False,
         "sync"          : False,
         "async"         : False,
-        "qos"           : True,
+        "qos"           : False,
+        }
+
+def get_default_appsrc_attributes():
+    return {
+        "name"          : "src",
+        "emit-signals"  : False,
+        "block"         : False,
+        "is-live"       : False,
+        "stream-type"   : STREAM_TYPE,
         }
 
 

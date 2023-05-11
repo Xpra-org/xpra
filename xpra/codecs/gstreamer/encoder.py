@@ -7,12 +7,12 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import WIN32, OSX
-from xpra.util import parse_simple_dict, envbool, csv, roundup, first_time, typedict
+from xpra.util import envbool, csv, roundup, first_time, typedict
 from xpra.codecs.codec_constants import video_spec, get_profile
 from xpra.gst_common import (
     import_gst, normv, get_all_plugin_names,
     get_caps_str, get_element_str, wrap_buffer,
-    get_default_appsink_attributes,
+    get_default_appsink_attributes, get_default_appsrc_attributes,
     STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
     )
 from xpra.codecs.gstreamer.codec_common import (
@@ -186,17 +186,14 @@ class Encoder(VideoPipeline):
         if self.profile:
             vcaps["profile"] = self.profile
             self.extra_client_info["profile"] = self.profile
-        appsrc_opts = {
-            "name"          : "src",
-            "emit-signals"  : 0,
-            "do-timestamp"  : 1,
-            "block"         : 0,
-            "is-live"       : 1,
-            "stream-type"   : STREAM_TYPE,
+        appsrc_opts = get_default_appsrc_attributes()
+        appsrc_opts.update({
+            "is-live"       : True,
+            "do-timestamp"  : True,
             "format"        : BUFFER_FORMAT,
             "caps"          : CAPS,
             #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
-            }
+            })
         gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),

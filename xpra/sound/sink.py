@@ -13,7 +13,8 @@ from gi.repository import GObject  # @UnresolvedImport
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gst_common import (
     normv, make_buffer, plugin_str,
-    STREAM_TYPE, BUFFER_FORMAT, GST_FLOW_OK,
+    get_default_appsrc_attributes, get_element_str,
+    GST_FLOW_OK,
     )
 from xpra.sound.gstreamer_util import (
     get_decoder_elements, has_plugins,
@@ -100,18 +101,7 @@ class SoundSink(SoundPipeline):
         self.last_max_update = monotonic()
         self.last_min_update = monotonic()
         self.level_lock = Lock()
-        pipeline_els = []
-        appsrc_el = [
-            "appsrc",
-            #"do-timestamp=1",
-            "name=src",
-            "emit-signals=0",
-            "block=0",
-            "is-live=0",
-            f"stream-type={STREAM_TYPE}",
-            f"format={BUFFER_FORMAT}",
-            ]
-        pipeline_els.append(" ".join(appsrc_el))
+        pipeline_els = [get_element_str("appsrc", get_default_appsrc_attributes())]
         if parser:
             pipeline_els.append(parser)
         if decoder:
@@ -120,16 +110,15 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         if QUEUE_TIME>0:
-            pipeline_els.append(" ".join([
-                "queue",
-                "name=queue",
-                "min-threshold-time=0",
-                "max-size-buffers=0",
-                "max-size-bytes=0",
-                f"max-size-time={QUEUE_TIME}",
-                f"leaky={QUEUE_LEAK}",
-                ]))
-        pipeline_els.append("volume name=volume volume=0")
+            pipeline_els.append(get_element_str("queue", {
+                "name"                  : "queue",
+                "min-threshold-time"    : 0,
+                "max-size-buffers"      : 0,
+                "max-size-bytes"        : 0,
+                "max-size-time"         : QUEUE_TIME,
+                "leaky"                 : QUEUE_LEAK,
+                }))
+        pipeline_els.append(get_element_str("volume", {"name" : "volume", "volume" : 0}))
         if CLOCK_SYNC:
             if not has_plugins("clocksync"):
                 log.warn("Warning: cannot enable clocksync, element not found")

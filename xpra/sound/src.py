@@ -14,7 +14,8 @@ from xpra.os_util import SIGNAMES
 from xpra.util import csv, envint, envbool, envfloat
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.gst_common import normv, has_plugins, plugin_str, GST_FLOW_OK
+from xpra.gst_common import normv, has_plugins, plugin_str, GST_FLOW_OK,\
+    get_default_appsink_attributes, get_element_str
 from xpra.sound.gstreamer_util import (
     get_source_plugins, get_encoder_elements,
     get_encoder_default_options,
@@ -29,7 +30,6 @@ from xpra.log import Logger
 log = Logger("sound")
 gstlog = Logger("gstreamer")
 
-APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
 JITTER = envint("XPRA_SOUND_SOURCE_JITTER", 0)
 SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
@@ -104,14 +104,14 @@ class SoundSource(SoundPipeline):
         if has_plugins("timestamp"):
             pipeline_els.append("timestamp name=timestamp")
         if SOURCE_QUEUE_TIME>0:
-            queue_el = ["queue",
-                        "name=queue",
-                        "min-threshold-time=0",
-                        "max-size-buffers=0",
-                        "max-size-bytes=0",
-                        f"max-size-time={SOURCE_QUEUE_TIME*MS_TO_NS}",
-                        f"leaky={GST_QUEUE_LEAK_DOWNSTREAM}"]
-            pipeline_els += [" ".join(queue_el)]
+            pipeline_els.append(get_element_str("queue", {
+                "name"                  : "queue",
+                "min-threshold-time"    : 0,
+                "max-size-buffers"      : 0,
+                "max-size-bytes"        : 0,
+                "max-size-time"         : SOURCE_QUEUE_TIME*MS_TO_NS,
+                "leaky"                 : GST_QUEUE_LEAK_DOWNSTREAM,
+                }))
         #if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
         pipeline_els += ["audioconvert"]
         if has_plugins("removesilence"):
@@ -120,14 +120,14 @@ class SoundSource(SoundPipeline):
                 "audioconvert",
                 "audioresample"
                 ]
-        pipeline_els.append(f"volume name=volume volume={volume}")
+        pipeline_els.append(get_element_str("volume", {"name" : "volume", "volume" : volume}))
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
             pipeline_els.append(encoder_str)
         if fmt:
             fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
             pipeline_els.append(fmt_str)
-        pipeline_els.append(APPSINK)
+        pipeline_els.append(get_element_str("appsink", get_default_appsink_attributes()))
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.timestamp = self.pipeline.get_by_name("timestamp")
@@ -144,7 +144,6 @@ class SoundSource(SoundPipeline):
         self.skipped_caps = set()
         if JITTER>0:
             self.jitter_queue = Queue()
-        #Gst 1.0:
         self.sink.connect("new-sample", self.on_new_sample)
         self.sink.connect("new-preroll", self.on_new_preroll)
         self.src = self.pipeline.get_by_name("src")
