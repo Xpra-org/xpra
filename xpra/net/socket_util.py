@@ -436,11 +436,11 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     try:
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
-        log("create_tcp_socket%s", (host, iport), exc_info=True)
+        log("create_tcp_socket%s", pretty_socket((host, iport)), exc_info=True)
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
     def cleanup_tcp_socket():
-        log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
+        log.info("closing %s socket %s", socktype.lower(), pretty_socket((host, iport)))
         try:
             tcp_socket.close()
         except OSError:
@@ -486,11 +486,11 @@ def setup_udp_socket(host, iport, socktype):
     try:
         udp_socket = create_udp_socket(host, iport)
     except Exception as e:
-        log("create_udp_socket%s", (host, iport), exc_info=True)
+        log("create_udp_socket%s", pretty_socket((host, iport)), exc_info=True)
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
     def cleanup_udp_socket():
-        log.info("closing %s socket %s:%s", socktype, host, iport)
+        log.info("closing %s socket %s", socktype, pretty_socket((host, iport)))
         try:
             udp_socket.close()
         except OSError:

@@ -24,6 +24,7 @@ from aioquic.quic.logger import QuicLogger
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
+from xpra.net.bytestreams import pretty_socket
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
@@ -182,7 +183,8 @@ def quic_connect(host : str, port : int, path : str,
         local_host = "localhost"
     local_port = 0
     sock = create_udp_socket(local_host, local_port)
-    log(f"create_udp_socket({local_host}:{local_port})={sock}")
+    addr = (local_host, local_port)
+    log(f"create_udp_socket({pretty_socket(addr)})={sock}")
     tl = get_threaded_loop()
 
     def create_protocol():
