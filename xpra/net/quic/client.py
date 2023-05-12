@@ -36,6 +36,7 @@ log = Logger("quic")
 HttpConnection = Union[H0Connection, H3Connection]
 
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
+FORCE_IPV6 = IPV6 and envbool("XPRA_FORCE_IPV6", False)
 
 quic_logger = QuicLogger()
 
@@ -177,14 +178,16 @@ def quic_connect(host : str, port : int, path : str,
     #configuration.secrets_log_file = open(args.secrets_log, "a")
     connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
 
-    if IPV6:
-        local_host = "::"
-    else:
-        local_host = "localhost"
-    local_port = 0
-    sock = create_udp_socket(local_host, local_port)
-    addr = (local_host, local_port)
-    log(f"create_udp_socket({pretty_socket(addr)})={sock}")
+    def create_local_socket(ipv6):
+        if ipv6:
+            local_host = "::"
+        else:
+            local_host = "localhost"
+        local_port = 0
+        sock = create_udp_socket(local_host, local_port)
+        addr = (local_host, local_port)
+        log(f"create_udp_socket({pretty_socket(addr)})={sock}")
+        return sock, addr
     tl = get_threaded_loop()
 
     def create_protocol():
@@ -195,16 +198,19 @@ def quic_connect(host : str, port : int, path : str,
         # lookup remote address
         infos = await tl.loop.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
         log(f"getaddrinfo({host}, {port}, SOCK_DGRAM)={infos}")
-        addr = infos[0][4]
-        if len(addr) == 2:
-            if IPV6:
-                addr = ("::ffff:" + addr[0], addr[1], 0, 0)
-            else:
-                addr = (addr[0], addr[1])
+        addr_info = infos[0]    #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
+        log(f"using {addr_info}")
+        af = addr_info[0]       #ie: AF_INET
+        addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
+        if len(addr) == 2 and af==socket.AF_INET and FORCE_IPV6:
+            addr = ("::ffff:" + addr[0], addr[1], 0, 0)
+            af = socket.AF_INET6
+            log(f"forced IPv6: {addr}")
+        sock, local_addr = create_local_socket(af==socket.AF_INET6)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"transport={transport}, protocol={protocol}")
         protocol = cast(QuicConnectionProtocol, protocol)
-        log(f"connecting to {addr}")
+        log(f"connecting from {local_addr} to {addr}")
         protocol.connect(addr)
         try:
             await protocol.wait_connected()
