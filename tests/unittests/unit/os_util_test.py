@@ -10,7 +10,6 @@ from xpra.os_util import (
     strtobytes, bytestostr, memoryview_to_bytes, hexstr,
     OSEnvContext,
     POSIX,
-    get_rand_chars,
     is_main_thread,
     getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
     get_hex_uuid, get_int_uuid, get_user_uuid,
@@ -104,11 +103,6 @@ class TestOSUtil(unittest.TestCase):
             os.environ["foo"] = "bar"
         assert os.environ.get("foo")!="bar"
         assert os.environ==env
-
-    def test_get_rand_chars(self):
-        for l in (0, 1, 512):
-            v = get_rand_chars(l)
-            assert len(v)==l
 
     def test_is_main_thread(self):
         assert is_main_thread()
