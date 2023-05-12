@@ -15,7 +15,7 @@ from xpra.util import ellipsizer, first_time
 from xpra.log import Logger
 log = Logger("quic")
 
-SUBSTREAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "sound,webcam,draw").split(",")
+SUBSTREAM_PACKET_TYPES = tuple(x for x in os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "sound,webcam,draw").split(",") if x)
 
 
 class ServerWebSocketConnection(XpraQuicConnection):
