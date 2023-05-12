@@ -57,6 +57,6 @@ else
 		debuild -us -uc -b
 	fi
 	ls -la ../xpra*deb
-	cp ../python*xpra*deb ../xpra*deb ../python*xpra*changes ../xpra*changes "$REPO_ARCH_PATH"
+	cp ../xpra*deb ../xpra*changes "$REPO_ARCH_PATH"
 fi
 popd
