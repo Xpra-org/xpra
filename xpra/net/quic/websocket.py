@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -59,36 +59,38 @@ class ServerWebSocketConnection(XpraQuicConnection):
             })
 
     def get_packet_stream_id(self, packet_type):
-        stream_type = None
+        stream_id = self.stream_id
         if SUBSTREAM_PACKET_TYPES and packet_type and any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
             #ie: "sound-data" -> "sound"
             stream_type = packet_type.split("-", 1)[0]
-        stream_id = self._packet_type_streams.setdefault(stream_type, self.stream_id)
-        if stream_type and stream_id==self.stream_id:
-            if self.closed:
-                raise RuntimeError(f"cannot send {packet_type} after connection is closed")
-            log(f"new quic stream {stream_type!r} started for {packet_type}")
-            #should use more "correct" values here
-            #(we don't need those headers,
-            # but the client would drop the packet without them..)
-            headers = binary_headers({
-                ":method" : self.scope.get("method", "CONNECT"),
-                ":scheme" : self.scope.get("scheme", "wss"),
-                ":authority" : self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
-                ":path" : self.scope.get("path", "/"),
-                })
-            try:
-                stream_id = self.connection.send_push_promise(self.stream_id, headers)
-            except NoAvailablePushIDError:
-                log(f"unable to allocate new stream-id using {self.stream_id} and {headers}", exc_info=True)
-                if first_time("quic-no-push-id"):
-                    log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
-            else:
-                log(f"new stream: {stream_id} with headers={headers}")
-                self._packet_type_streams[stream_type] = stream_id
-                self.send_headers(stream_id=stream_id, headers={
-                    ":status" : 200,
-                    "substream" : self.stream_id,
-                    "stream-type" : stream_type,
-                    })
+            stream_id = self._packet_type_streams.setdefault(stream_type, self.stream_id)
+            if stream_id==self.stream_id and not self.closed:
+                stream_id = self.allocate_new_stream_id(stream_type)
+        return stream_id
+
+    def allocate_new_stream_id(self, stream_type):
+        log(f"allocate_new_stream_id({stream_type!r})")
+        #should use more "correct" values here
+        #(we don't need those headers,
+        # but the client would drop the packet without them..)
+        headers = binary_headers({
+            ":method" : self.scope.get("method", "CONNECT"),
+            ":scheme" : self.scope.get("scheme", "wss"),
+            ":authority" : self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
+            ":path" : self.scope.get("path", "/"),
+            })
+        try:
+            stream_id = self.connection.send_push_promise(self.stream_id, headers)
+        except NoAvailablePushIDError:
+            log(f"unable to allocate new stream-id using {self.stream_id} and {headers}", exc_info=True)
+            if first_time("quic-no-push-id"):
+                log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
+            return 0
+        log(f"new stream: {stream_id} with headers={headers}")
+        self._packet_type_streams[stream_type] = stream_id
+        self.send_headers(stream_id=stream_id, headers={
+            ":status" : 200,
+            "substream" : self.stream_id,
+            "stream-type" : stream_type,
+            })
         return stream_id
