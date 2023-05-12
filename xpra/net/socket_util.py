@@ -754,7 +754,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     except ImportError as e:
         log("mdns support is not installed: %s", e)
         return ()
-    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
+    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False)
     imports = [import_zeroconf, import_avahi]
     if not PREFER_ZEROCONF:
         imports = reversed(imports)
@@ -763,6 +763,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     for i in imports:
         try:
             MDNSPublishers, get_interface_index = i()
+            break
         except ImportError as e:
             log("mdns import failure", exc_info=True)
             exceptions.append(e)
