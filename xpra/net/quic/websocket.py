@@ -9,6 +9,7 @@ from typing import Callable, Dict
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
 
+from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.util import ellipsizer, first_time
@@ -32,7 +33,10 @@ class ServerWebSocketConnection(XpraQuicConnection):
         return info
 
     def __repr__(self):
-        return f"ServerWebSocketConnection<{self.stream_id}>"
+        try:
+            return f"QuicConnection({pretty_socket(self.endpoint)}, {self.stream_id})"
+        except AttributeError:
+            return f"ServerWebSocketConnection<{self.stream_id}>"
 
     def http_event_received(self, event: H3Event) -> None:
         log("ws:http_event_received(%s)", ellipsizer(event))
