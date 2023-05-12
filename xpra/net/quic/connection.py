@@ -74,8 +74,10 @@ class XpraQuicConnection(Connection):
     def close(self):
         log("XpraQuicConnection.close()")
         if not self.closed:
-            self.closed = True
-            self.send_close()
+            try:
+                self.send_close()
+            finally:
+                self.closed = True
         Connection.close(self)
 
     def send_close(self, code : int = 1000, reason : str = ""):
