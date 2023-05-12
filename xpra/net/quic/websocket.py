@@ -60,7 +60,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
 
     def get_packet_stream_id(self, packet_type):
         stream_type = None
-        if packet_type and any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
+        if SUBSTREAM_PACKET_TYPES and packet_type and any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
             #ie: "sound-data" -> "sound"
             stream_type = packet_type.split("-", 1)[0]
         stream_id = self._packet_type_streams.setdefault(stream_type, self.stream_id)
