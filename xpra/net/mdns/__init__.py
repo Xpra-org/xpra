@@ -20,13 +20,6 @@ def get_listener_class():
     from xpra.os_util import get_util_logger
     log = get_util_logger()
     log("mdns.get_listener_class() AVAHI=%s, ZEROCONF=%s", AVAHI, ZEROCONF)
-    if AVAHI:
-        try:
-            from xpra.net.mdns.avahi_listener import AvahiListener
-            log("AvahiListener=%s", AvahiListener)
-            return AvahiListener
-        except ImportError:
-            log("failed to import AvahiListener", exc_info=True)
     if ZEROCONF:
         #workaround for MacOS Big Sur which broke ctypes,
         #ctypes is used in the ifaddr module which is imported by zeroconf:
@@ -40,4 +33,11 @@ def get_listener_class():
             return ZeroconfListener
         except (ImportError, OSError):
             log("failed to import ZeroconfListener", exc_info=True)
+    if AVAHI:
+        try:
+            from xpra.net.mdns.avahi_listener import AvahiListener
+            log("AvahiListener=%s", AvahiListener)
+            return AvahiListener
+        except ImportError:
+            log("failed to import AvahiListener", exc_info=True)
     return None

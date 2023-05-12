@@ -829,7 +829,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     except ImportError as e:
         log(f"mdns support is not installed: {e}")
         return ()
-    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False)
+    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
     imports = [import_zeroconf, import_avahi]
     if not PREFER_ZEROCONF:
         imports = reversed(imports)
