@@ -14,7 +14,7 @@ import itertools
 LOG_PREFIX = ""
 LOG_FORMAT = "%(asctime)s %(message)s"
 DEBUG_MODULES = ()
-if os.getuid()!=0:
+if os.name!="posix" or os.getuid()!=0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
     DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
