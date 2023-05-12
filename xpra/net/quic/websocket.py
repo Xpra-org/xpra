@@ -7,10 +7,11 @@ import os
 from typing import Callable, Dict
 
 from aioquic.h3.events import HeadersReceived, H3Event
+from aioquic.h3.exceptions import NoAvailablePushIDError
 
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
-from xpra.util import ellipsizer
+from xpra.util import ellipsizer, first_time
 from xpra.log import Logger
 log = Logger("quic")
 
@@ -76,12 +77,18 @@ class ServerWebSocketConnection(XpraQuicConnection):
                 ":authority" : self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
                 ":path" : self.scope.get("path", "/"),
                 })
-            stream_id = self.connection.send_push_promise(self.stream_id, headers)
-            log(f"new stream: {stream_id} with headers={headers}")
-            self._packet_type_streams[stream_type] = stream_id
-            self.send_headers(stream_id=stream_id, headers={
-                ":status" : 200,
-                "substream" : self.stream_id,
-                "stream-type" : stream_type,
-                })
+            try:
+                stream_id = self.connection.send_push_promise(self.stream_id, headers)
+            except NoAvailablePushIDError:
+                log(f"unable to allocate new stream-id using {self.stream_id} and {headers}", exc_info=True)
+                if first_time("quic-no-push-id"):
+                    log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
+            else:
+                log(f"new stream: {stream_id} with headers={headers}")
+                self._packet_type_streams[stream_type] = stream_id
+                self.send_headers(stream_id=stream_id, headers={
+                    ":status" : 200,
+                    "substream" : self.stream_id,
+                    "stream-type" : stream_type,
+                    })
         return stream_id
