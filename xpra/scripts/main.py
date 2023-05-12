@@ -1636,10 +1636,12 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
 
 def make_progress_process(title="Xpra"):
     #start the splash subprocess
+    env = os.environ.copy()
+    env["XPRA_LOG_PREFIX"] = "splash: "
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
     try:
-        progress_process = Popen(cmd, stdin=PIPE)
+        progress_process = Popen(cmd, stdin=PIPE, env=env)
     except OSError as e:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
