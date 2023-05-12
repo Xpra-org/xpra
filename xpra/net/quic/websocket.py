@@ -24,6 +24,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.scope: Dict = scope
         self._packet_type_streams = {}
+        self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)
 
     def get_info(self) -> dict:
         info = super().get_info()
@@ -58,17 +59,24 @@ class ServerWebSocketConnection(XpraQuicConnection):
             "sec-websocket-protocol" : "xpra",
             })
 
-    def get_packet_stream_id(self, packet_type):
-        stream_id = self.stream_id
-        if SUBSTREAM_PACKET_TYPES and packet_type and any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
-            #ie: "sound-data" -> "sound"
-            stream_type = packet_type.split("-", 1)[0]
-            stream_id = self._packet_type_streams.setdefault(stream_type, self.stream_id)
-            if stream_id==self.stream_id and not self.closed:
-                stream_id = self.allocate_new_stream_id(stream_type)
+    def get_packet_stream_id(self, packet_type) -> int:
+        if self.closed or not self._use_substreams or not packet_type:
+            return self.stream_id
+        if not any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
+            return self.stream_id
+        #ie: "sound-data" -> "sound"
+        stream_type = packet_type.split("-", 1)[0]
+        stream_id = self._packet_type_streams.get(stream_type)
+        if stream_id is not None:
+            #already allocated substream:
+            return stream_id
+        #allocate a new one and record it
+        #(even if it fails so we don't retry to allocate it again and again):
+        stream_id = self.allocate_new_stream_id(stream_type) or self.stream_id
+        self._packet_type_streams[stream_type] = stream_id
         return stream_id
 
-    def allocate_new_stream_id(self, stream_type):
+    def allocate_new_stream_id(self, stream_type) -> int:
         log(f"allocate_new_stream_id({stream_type!r})")
         #should use more "correct" values here
         #(we don't need those headers,
@@ -85,9 +93,11 @@ class ServerWebSocketConnection(XpraQuicConnection):
             log(f"unable to allocate new stream-id using {self.stream_id} and {headers}", exc_info=True)
             if first_time("quic-no-push-id"):
                 log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
+            else:
+                #more than one error, stop trying:
+                self._use_substreams = False
             return 0
         log(f"new stream: {stream_id} with headers={headers}")
-        self._packet_type_streams[stream_type] = stream_id
         self.send_headers(stream_id=stream_id, headers={
             ":status" : 200,
             "substream" : self.stream_id,
