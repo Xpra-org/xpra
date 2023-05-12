@@ -239,8 +239,8 @@ def init_server_mmap(mmap_filename:str, mmap_size=0):
             mmap_area.close()
         return None, 0
 
-def int_from_buffer(mmap_area, pos) -> int:
-    return int(c_uint32.from_buffer(mmap_area, pos))      #@UndefinedVariable
+def int_from_buffer(mmap_area, pos) -> c_uint32:
+    return c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
 
 
 #descr_data is a list of (offset, length)
@@ -250,7 +250,7 @@ def mmap_read(mmap_area, *descr_data):
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
     """
-    data_start = int_from_buffer(mmap_area, 0)
+    data_start : c_uint32 = int_from_buffer(mmap_area, 0)
     if len(descr_data)==1:
         #construct an array directly from the mmap zone:
         offset, length = descr_data[0]
@@ -281,8 +281,8 @@ def mmap_write(mmap_area, mmap_size:int, data):
     # '+' is for data we have written
     # '*' is for data we have just written in this call
     # E and S show the location pointed to by data_start/data_end
-    mmap_data_start = int_from_buffer(mmap_area, 0)
-    mmap_data_end = int_from_buffer(mmap_area, 4)
+    mmap_data_start : c_uint32 = int_from_buffer(mmap_area, 0)
+    mmap_data_end : c_uint32 = int_from_buffer(mmap_area, 4)
     start = max(8, mmap_data_start.value)
     end = max(8, mmap_data_end.value)
     l = len(data)
