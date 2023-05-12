@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import socket
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
 
 from xpra.log import Logger
-from xpra.util import envbool
+from xpra.util import envbool, first_time
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.net.net_util import get_iface
@@ -16,8 +16,19 @@ from xpra.net.net_util import get_iface
 log = Logger("network", "mdns")
 log("python-zeroconf version %s", zeroconf_version)
 
-IPV6 = envbool("XPRA_ZEROCONF_IPV6", False)
+IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
+IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
 
+
+LOOPBACK_AFAM = {
+    "0.0.0.0"   : socket.AF_INET,
+    "::"        : socket.AF_INET6,
+    }
+
+AFSTR = {
+    socket.AF_INET      : "INET",
+    socket.AF_INET6     : "INET6",
+    }
 
 def get_interface_index(host):
     #we don't use interface numbers with zeroconf,
@@ -68,17 +79,26 @@ class ZeroconfPublishers:
                 self.services.append(zp)
                 self.ports[service_name] = ports
         for host, port in listen_on:
+            if host.startswith("[") and host.endswith("]"):
+                host = host[1:-1]
             if host in ("0.0.0.0", "::"):
+                af = LOOPBACK_AFAM.get(host)
+                afstr = AFSTR.get(af, af)
+                if af==socket.AF_INET6 and not IPV6_LO:
+                    if first_time(f"zeroconf-{host}"):
+                        log.info(f"python-zeroconf: {host!r} {afstr} loopback address is not supported")
+                        log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
+                    #means that IPV6 is False and "::" is not supported
+                    #at time of writing, https://pypi.org/project/zeroconf/ says:
+                    #_Listening on localhost (::1) does not work. Help with understanding why is appreciated._
+                    continue
                 #annoying: we have to enumerate all interfaces
                 for iface, addresses in get_interfaces_addresses().items():
-                    for af in (socket.AF_INET, socket.AF_INET6):
-                        if af==socket.AF_INET6 and not IPV6:
-                            continue
-                        log("%s: %s", iface, addresses.get(socket.AF_INET, {}))
-                        for defs in addresses.get(af, {}):
-                            addr = defs.get("addr")
-                            if addr:
-                                add_address(addr, port, af)
+                    log("%s %s: %s", iface, afstr, addresses.get(af, {}))
+                    for defs in addresses.get(af, ()):
+                        addr = defs.get("addr")
+                        if addr:
+                            add_address(addr, port, af)
                 continue
             if host=="":
                 host = "127.0.0.1"
