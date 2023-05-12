@@ -420,7 +420,8 @@ def create_tcp_socket(host, iport):
     else:
         if host.startswith("[") and host.endswith("]"):
             host = host[1:-1]
-        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
+        if not socket.has_ipv6:
+            raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
         log("socket.getaddrinfo(%s, %s, AF_INET6, SOCK_STREAM, 0, SOL_TCP)=%s", host, iport, res)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
