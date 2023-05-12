@@ -171,8 +171,14 @@ def get_iface(ip) -> str:
                 return None
             else:
                 return iface
-    if any(x for x in ip if (".:0123456789").find(x)<0):
+    ipv6 = ip.find(":")>=0
+    af = socket.AF_INET6 if ipv6 else socket.AF_INET
+    ipchars = ".:0123456789"
+    if ipv6:
+        ipchars += "[]"
+    if any(x for x in ip if ipchars.find(x)<0):
         #extra characters, assume this is a hostname:
+        sockaddr = ()
         try:
             v = socket.getaddrinfo(ip, None)
             assert len(v)>0
@@ -183,13 +189,14 @@ def get_iface(ip) -> str:
         for i, x in enumerate(v):
             family, socktype, proto, canonname, sockaddr = x
             log("get_iface(%s) [%i]=%s", ip, i, (family, socktype, proto, canonname, sockaddr))
-            if family==socket.AF_INET:
+            if family==af:
                 break
-        log("get_iface(%s) sockaddr=%s", ip, sockaddr)
-        ip = sockaddr[0]
+        if sockaddr:
+            log("get_iface(%s) sockaddr=%s", ip, sockaddr)
+            ip = sockaddr[0]
 
-    if ip.find(":")>=0:
-        #ipv6?
+    ipv6 = ip.find(":")>=0
+    if ipv6:
         ip_parts = ip.split(":")
     else:
         ip_parts = ip.split(".")
@@ -204,8 +211,8 @@ def get_iface(ip) -> str:
                 #exact match
                 log("get_iface(%s)=%s", iface, ip)
                 return iface
-            ipv6 = len(test_ip.split(":"))>2
-            if ipv6:
+            if len(test_ip.split(":"))>2:
+                #test_ip is ipv6
                 test_ip_parts = test_ip.split("/")[0].split(":")
                 mask_parts = mask.split("/")[0].split(":")
             else:
