@@ -175,7 +175,7 @@ def get_iface(ip) -> str:
             assert len(v)>0
         except Exception as e:
             log("socket.getaddrinfo(%s, None)", ip, exc_info=True)
-            log.error(f"Error revolving {ip!r}: {e}")
+            log.error(f"Error resolving {ip!r}: {e}")
             return None
         for i, x in enumerate(v):
             family, socktype, proto, canonname, sockaddr = x
