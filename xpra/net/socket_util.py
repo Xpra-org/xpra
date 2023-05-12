@@ -457,7 +457,10 @@ def create_udp_socket(host, iport):
         listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sockaddr = (host, iport)
     else:
-        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
+        if host.startswith("[") and host.endswith("]"):
+            host = host[1:-1]
+        if not socket.has_ipv6:
+            raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         sockaddr = res[0][4]
