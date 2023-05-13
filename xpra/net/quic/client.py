@@ -20,7 +20,6 @@ from aioquic.h3.events import (
     PushPromiseReceived,
 )
 from aioquic.tls import SessionTicket
-from aioquic.quic.logger import QuicLogger
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
@@ -39,7 +38,6 @@ HttpConnection = Union[H0Connection, H3Connection]
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
-quic_logger = QuicLogger()
 
 def save_session_ticket(ticket: SessionTicket) -> None:
     pass
@@ -67,8 +65,8 @@ class ClientWebSocketConnection(XpraQuicConnection):
             while self.write_buffer.qsize()>0:
                 self.stream_write(*self.write_buffer.get())
         finally:
-            self.transmit()
             self.write_buffer = None
+            self.transmit()
 
     def write(self, buf, packet_type=None):
         log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)
@@ -158,8 +156,11 @@ class WebSocketClient(QuicConnectionProtocol):
 def quic_connect(host : str, port : int, path : str,
                  ssl_cert : str, ssl_key : str, ssl_key_password : str,
                  ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
-    configuration = QuicConfiguration(is_client=True, alpn_protocols=H3_ALPN)
-    configuration.max_datagram_frame_size = MAX_DATAGRAM_FRAME_SIZE
+    configuration = QuicConfiguration(
+        alpn_protocols=H3_ALPN,
+        is_client=True,
+        max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
+        )
     configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
