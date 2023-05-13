@@ -452,18 +452,18 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
-def create_udp_socket(host, iport):
-    if host.find(":")<0:
-        listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sockaddr = (host, iport)
-    else:
-        if host.startswith("[") and host.endswith("]"):
-            host = host[1:-1]
+def create_udp_socket(host, iport, family=socket.AF_INET):
+    if family==socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
-        res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
-        listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        if host.startswith("[") and host.endswith("]"):
+            host = host[1:-1]
+    res = socket.getaddrinfo(host, iport, family=family, type=socket.SOCK_DGRAM)
+    if res:
         sockaddr = res[0][4]
+    else:
+        sockaddr = (host, iport)
+    listener = socket.socket(family, socket.SOCK_DGRAM)
     try:
         listener.bind(sockaddr)
     except:
@@ -484,7 +484,7 @@ def setup_quic_socket(host, port):
 def setup_udp_socket(host, iport, socktype):
     log = get_network_logger()
     try:
-        udp_socket = create_udp_socket(host, iport)
+        udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":")>=0 else socket.AF_INET)
     except Exception as e:
         log("create_udp_socket%s", pretty_socket((host, iport)), exc_info=True)
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,

@@ -24,19 +24,20 @@ from aioquic.quic.logger import QuicLogger
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
+from xpra.os_util import POSIX
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
-from xpra.util import ellipsizer, envbool
+from xpra.util import ellipsizer, envbool, csv
 from xpra.log import Logger
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
-FORCE_IPV6 = IPV6 and envbool("XPRA_FORCE_IPV6", False)
+PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
 quic_logger = QuicLogger()
 
@@ -178,15 +179,15 @@ def quic_connect(host : str, port : int, path : str,
     #configuration.secrets_log_file = open(args.secrets_log, "a")
     connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
 
-    def create_local_socket(ipv6):
-        if ipv6:
+    def create_local_socket(family=socket.AF_INET):
+        if family==socket.AF_INET6:
             local_host = "::"
         else:
-            local_host = "localhost"
+            local_host = "127.0.0.1"
         local_port = 0
-        sock = create_udp_socket(local_host, local_port)
+        sock = create_udp_socket(local_host, local_port, family)
         addr = (local_host, local_port)
-        log(f"create_udp_socket({pretty_socket(addr)})={sock}")
+        log(f"create_udp_socket({pretty_socket(addr)}, {family})={sock}")
         return sock, addr
     tl = get_threaded_loop()
 
@@ -195,39 +196,61 @@ def quic_connect(host : str, port : int, path : str,
 
     async def connect():
         log("quic_connect: connect()")
-        # lookup remote address
-        infos = await tl.loop.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
-        log(f"getaddrinfo({host}, {port}, SOCK_DGRAM)={infos}")
-        addr_info = infos[0]    #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
-        log(f"using {addr_info}")
-        af = addr_info[0]       #ie: AF_INET
-        addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
-        if len(addr) == 2 and af==socket.AF_INET and FORCE_IPV6:
-            addr = ("::ffff:" + addr[0], addr[1], 0, 0)
-            af = socket.AF_INET6
-            log(f"forced IPv6: {addr}")
-        sock, local_addr = create_local_socket(af==socket.AF_INET6)
-        transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
-        log(f"transport={transport}, protocol={protocol}")
-        protocol = cast(QuicConnectionProtocol, protocol)
-        log(f"connecting from {local_addr} to {addr}")
-        protocol.connect(addr)
+        if IPV6:
+            family = socket.AF_UNSPEC
+            family_options = (socket.AF_INET, socket.AF_INET6)
+        else:
+            family = socket.AF_INET
+            family_options = (socket.AF_INET, )
         try:
-            await protocol.wait_connected()
+            infos = await tl.loop.getaddrinfo(host, port, family=family, type=socket.SOCK_DGRAM)
+            log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)={infos}")
         except Exception as e:
-            log("connect()", exc_info=True)
-            #try to get a more meaningful exception message:
-            einfo = str(e)
-            if not einfo:
-                quic_conn = getattr(protocol, "_quic", None)
-                if quic_conn:
-                    close_event = getattr(quic_conn, "_close_event", None)
-                    if close_event:
-                        raise Exception(close_event.reason_phrase) from None
-            raise
-        conn = protocol.open(host, port, path)
-        log(f"websocket connection {conn}")
-        return conn
+            log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)={infos}", exc_info=True)
+            raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
+        if PREFER_IPV6 and not any(addr_info[0]==socket.AF_INET6 for addr_info in infos):
+            #no ipv6 returned, cook one up:
+            ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0]==socket.AF_INET)
+            #ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
+            if ipv4_infos:
+                ipv4 = ipv4_infos[0]
+                addr = ipv4[4]          #ie: ('192.168.0.114', 10000)
+                if len(addr)==2:
+                    addr = ("::ffff:" + addr[0], addr[1], 0, 0)
+                    infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
+                    log(f"added IPv6 option: {infos[0]}")
+        errors = []
+        for addr_info in infos:
+            #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
+            log(f"trying {addr_info}")
+            af = addr_info[0]
+            if af not in family_options:
+                continue
+            sock, local_addr = create_local_socket(af)
+            transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
+            log(f"transport={transport}, protocol={protocol}")
+            protocol = cast(QuicConnectionProtocol, protocol)
+            addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
+            log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
+            protocol.connect(addr)
+            try:
+                await protocol.wait_connected()
+                conn = protocol.open(host, port, path)
+                log(f"websocket connection {conn}")
+                return conn
+            except Exception as e:
+                log("connect()", exc_info=True)
+                #try to get a more meaningful exception message:
+                einfo = str(e)
+                if not einfo:
+                    quic_conn = getattr(protocol, "_quic", None)
+                    if quic_conn:
+                        close_event = getattr(quic_conn, "_close_event", None)
+                        if close_event:
+                            errors.append(close_event.reason_phrase)
+                            continue
+                errors.append(str(e))
+        raise RuntimeError(f"failed to connect: {csv(errors)}")
     #protocol.close()
     #await protocol.wait_closed()
     #transport.close()
