@@ -11,6 +11,7 @@ from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 
+from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
 from xpra.net.quic.common import binary_headers
@@ -100,10 +101,7 @@ class XpraQuicConnection(Connection):
 
     def write(self, buf, packet_type=None):
         log("XpraQuicConnection.write(%s, %s)", ellipsizer(buf), packet_type)
-        try:
-            return self.stream_write(buf, packet_type)
-        finally:
-            self.transmit()
+        return self.stream_write(buf, packet_type)
 
     def stream_write(self, buf, packet_type):
         data = memoryview_to_bytes(buf)
@@ -116,7 +114,10 @@ class XpraQuicConnection(Connection):
         stream_id = self.get_packet_stream_id(packet_type)
         log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
-        self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+        def do_write():
+            self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+            self.transmit()
+        get_threaded_loop().call(do_write)
         return len(buf)
 
     def get_packet_stream_id(self, packet_type):

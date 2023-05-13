@@ -62,11 +62,10 @@ class ClientWebSocketConnection(XpraQuicConnection):
     def flush_writes(self):
         #flush the buffered writes:
         try:
-            while self.write_buffer.qsize()>0:
+            while self.write_buffer.qsize():
                 self.stream_write(*self.write_buffer.get())
         finally:
             self.write_buffer = None
-            self.transmit()
 
     def write(self, buf, packet_type=None):
         log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)

@@ -7,6 +7,7 @@ import time
 import asyncio
 from queue import Queue
 from collections import namedtuple
+from collections.abc import Coroutine, Generator
 
 from time import monotonic
 from xpra.make_thread import start_thread
@@ -74,7 +75,10 @@ class threaded_asyncio_loop:
             log(f"creating task for {f}")
             self.loop.create_task(f)
         log("call_soon_threadsafe")
-        self.loop.call_soon_threadsafe(tsafe)
+        if isinstance(f, (Coroutine, Generator)):
+            self.loop.call_soon_threadsafe(tsafe)
+        else:
+            self.loop.call_soon_threadsafe(f)
 
 
     def sync(self, async_fn, *args):
