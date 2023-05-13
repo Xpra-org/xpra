@@ -235,7 +235,7 @@ echo "include all xpra modules found: "
 find $PYTHON_PACKAGES/xpra/* -type d -maxdepth 0 -exec basename {} \;
 rsync -rpl $PYTHON_PACKAGES/xpra/* $LIBDIR/python/xpra/
 echo "removing files that should not be installed in the first place (..)"
-for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
+for x in "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
 	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm "{}" \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
 done
@@ -261,7 +261,7 @@ fi
 
 echo
 echo "*******************************************************************************"
-echo "Xpra without a tray..."
+echo "Xpra_NoDock: same app contents but without a dock icon"
 for app in Xpra_NoDock.app; do
 	SUB_APP="${APP_DIR}/Contents/${app}"
 	rsync -rplvtog ${app} ${APP_DIR}/Contents/
