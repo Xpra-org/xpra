@@ -137,8 +137,9 @@ def init_all_specs(*exclude):
     add("x264enc", "h264", "YUV444P", ("YUV444P", ), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
     add("vp9enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
-    add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
-    add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
+    if not OSX:
+        add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
+        add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
     #svt encoders error out:
     #add("svtav1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
     #add("svtvp9enc", "vp9", "YUV420P", ("YUV420P", ), 100, 0)
