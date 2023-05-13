@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,7 @@ log = Logger("quic")
 HttpConnection = Union[H0Connection, H3Connection]
 
 #DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
-DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "").split(",")
+DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "").split(",") if x.strip())
 
 
 class XpraQuicConnection(Connection):

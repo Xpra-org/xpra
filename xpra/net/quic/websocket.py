@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("quic")
 
 #can be used to use substreams based on packet prefix: sound,webcam,draw
-SUBSTREAM_PACKET_TYPES = tuple(x for x in os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "").split(",") if x)
+SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "").split(",") if x.strip())
 
 
 class ServerWebSocketConnection(XpraQuicConnection):
