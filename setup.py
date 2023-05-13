@@ -177,7 +177,9 @@ if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
 print("using INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
 CPP = os.environ.get("CPP", "cpp")
+CC = os.environ.get("CC", "gcc")
 print(f"CPP={CPP}")
+print(f"CC={CPP}")
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
@@ -730,8 +732,7 @@ def checkdirs(*dirs):
             raise Exception(f"cannot find a directory which is required for building: {d!r}")
 
 def CC_is_clang():
-    cc = os.environ.get("CC", "gcc")
-    if cc.find("clang")>=0:
+    if CC.find("clang")>=0:
         return True
     return get_clang_version()>(0, )
 
@@ -740,8 +741,7 @@ def get_clang_version():
     global clang_version
     if clang_version is not None:
         return clang_version
-    cc = os.environ.get("CC", "gcc")
-    r, _, err = get_status_output([cc, "-v"])
+    r, _, err = get_status_output([CC, "-v"])
     clang_version = (0, )
     if r!=0:
         #not sure!
@@ -770,8 +770,7 @@ def get_gcc_version():
     _gcc_version = (0, )
     if CC_is_clang():
         return _gcc_version
-    cc = os.environ.get("CC", "gcc")
-    r, _, err = get_status_output([cc, "-v"])
+    r, _, err = get_status_output([CC, "-v"])
     if r==0:
         V_LINE = "gcc version "
         tmp_version = []
@@ -881,7 +880,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         addcflags("-Wall")
         addldflags("-Wall")
     if strict_ENABLED:
-        if os.environ.get("CC", "").find("clang")>=0:
+        if CC.find("clang")>=0:
             #clang emits too many warnings with cython code,
             #so we can't enable Werror without turning off some warnings:
             #this list of flags should allow clang to build the whole source tree,
