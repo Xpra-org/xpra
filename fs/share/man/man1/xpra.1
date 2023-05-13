@@ -1034,8 +1034,11 @@ run the clients on.  If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
 executable.  The default value used depends on your platform.
-For more information, see:
+The recommended command to use here is \fBXorg\fP with the \fBdummy\fP
+driver, also known as \fBXdummy\fP. See:
 https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md
+Some distributions are unable to configure it properly and will
+use \fBXvfb\fP instead.
 .TP
 \fB--sync-xvfb\fP=\fIDELAY\fP
 The windows are normally only displayed on the client(s), they are
