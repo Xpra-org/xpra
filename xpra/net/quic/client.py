@@ -183,7 +183,7 @@ def quic_connect(host : str, port : int, path : str,
         if family==socket.AF_INET6:
             local_host = "::"
         else:
-            local_host = "127.0.0.1"
+            local_host = "0.0.0.0"
         local_port = 0
         sock = create_udp_socket(local_host, local_port, family)
         addr = (local_host, local_port)
