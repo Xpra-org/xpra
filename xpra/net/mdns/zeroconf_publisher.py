@@ -25,10 +25,6 @@ LOOPBACK_AFAM = {
     "::"        : socket.AF_INET6,
     }
 
-AFSTR = {
-    socket.AF_INET      : "INET",
-    socket.AF_INET6     : "INET6",
-    }
 
 def get_interface_index(host):
     #we don't use interface numbers with zeroconf,
@@ -83,10 +79,9 @@ class ZeroconfPublishers:
                 host = host[1:-1]
             if host in ("0.0.0.0", "::"):
                 af = LOOPBACK_AFAM.get(host)
-                afstr = AFSTR.get(af, af)
                 if af==socket.AF_INET6 and not IPV6_LO:
                     if first_time(f"zeroconf-{host}"):
-                        log.info(f"python-zeroconf: {host!r} {afstr} loopback address is not supported")
+                        log.info(f"python-zeroconf: {host!r} {af} loopback address is not supported")
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
                     #means that IPV6 is False and "::" is not supported
                     #at time of writing, https://pypi.org/project/zeroconf/ says:
@@ -94,7 +89,7 @@ class ZeroconfPublishers:
                     continue
                 #annoying: we have to enumerate all interfaces
                 for iface, addresses in get_interfaces_addresses().items():
-                    log("%s %s: %s", iface, afstr, addresses.get(af, {}))
+                    log("%s %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
                         addr = defs.get("addr")
                         if addr:
