@@ -64,7 +64,7 @@ class XpraQuicConnection(Connection):
         return info
 
     def http_event_received(self, event: H3Event) -> None:
-        log("ws:http_event_received(%s)", ellipsizer(event))
+        log("quic:http_event_received(%s)", ellipsizer(event))
         if self.closed:
             return
         if isinstance(event, (DataReceived, DatagramReceived)):
@@ -73,7 +73,7 @@ class XpraQuicConnection(Connection):
             log.warn(f"Warning: unhandled websocket http event {event}")
 
     def close(self):
-        log("XpraQuicConnection.close()")
+        log("quic.close()")
         if not self.closed:
             try:
                 self.send_close()
@@ -100,7 +100,7 @@ class XpraQuicConnection(Connection):
             end_stream=self.closed)
 
     def write(self, buf, packet_type=None):
-        log("XpraQuicConnection.write(%s, %s)", ellipsizer(buf), packet_type)
+        log("quic.write(%s, %s)", ellipsizer(buf), packet_type)
         return self.stream_write(buf, packet_type)
 
     def stream_write(self, buf, packet_type):
@@ -112,7 +112,7 @@ class XpraQuicConnection(Connection):
             log(f"sending {packet_type} using datagram")
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)
-        log("XpraQuicConnection.stream_write(%s, %s) using stream id %s",
+        log("quic.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
         def do_write():
             self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
@@ -125,5 +125,5 @@ class XpraQuicConnection(Connection):
 
 
     def read(self, n):
-        log("XpraQuicConnection.read(%s)", n)
+        log("quic.read(%s)", n)
         return self.read_queue.get()
