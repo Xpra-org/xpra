@@ -14,8 +14,8 @@ from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
-from xpra.net.quic.common import binary_headers
-from xpra.util import ellipsizer
+from xpra.net.quic.common import binary_headers, override_aioquic_logger
+from xpra.util import ellipsizer, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("quic")
@@ -24,6 +24,9 @@ HttpConnection = Union[H0Connection, H3Connection]
 
 #DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "").split(",") if x.strip())
+
+if envbool("XPRA_QUIC_LOGGER", True):
+    override_aioquic_logger()
 
 
 class XpraQuicConnection(Connection):

@@ -390,7 +390,7 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-    __slots__ = ("categories", "level_override", "logger", "debug_enabled", "__weakref__")
+    __slots__ = ("categories", "level", "level_override", "logger", "debug_enabled", "__weakref__")
     def __init__(self, *categories):
         self.categories = list(categories)
         try:
@@ -401,7 +401,7 @@ class Logger:
             self.categories.insert(0, caller)
         self.level_override = 0
         self.logger = logging.getLogger(".".join(self.categories))
-        self.logger.setLevel(default_level)
+        self.setLevel(default_level)
         disabled = False
         enabled = False
         if caller in DEBUG_MODULES:
@@ -440,6 +440,11 @@ class Logger:
     def __repr__(self):
         return f"Logger{self.categories}"
 
+
+    def setLevel(self, level : int) -> None:
+        self.level = level
+        self.logger.setLevel(level)
+
     def is_debug_enabled(self) -> bool:
         return self.debug_enabled
 
@@ -475,6 +480,9 @@ class Logger:
     def estr(self, e, **kwargs):
         einfo = str(e) or type(e)
         self.error(f" {einfo}", **kwargs)
+
+    def handle(self, record) -> None:
+        self.log(record.levelno, record.msg, *record.args, exc_info=record.exc_info)
 
 
 class CaptureHandler(logging.Handler):
