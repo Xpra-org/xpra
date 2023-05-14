@@ -84,11 +84,7 @@ class XpraQuicConnection(Connection):
     def send_close(self, code : int = 1000, reason : str = ""):
         if self.accepted:
             data = close_packet(code, reason)
-            try:
-                self.write(data, "close")
-            except AssertionError as e:
-                #probably already closed
-                log(f"send_close: {e}")
+            self.write(data, "close")
         else:
             self.send_headers(self.stream_id, headers={":status" : code})
             self.transmit()
@@ -115,8 +111,14 @@ class XpraQuicConnection(Connection):
         log("quic.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
         def do_write():
-            self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
-            self.transmit()
+            try:
+                self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+                self.transmit()
+            except AssertionError:
+                if self.closed:
+                    log("connection is already closed, packet {packet_type} dropped")
+                    return
+                raise
         get_threaded_loop().call(do_write)
         return len(buf)
 
