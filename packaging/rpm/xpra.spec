@@ -631,7 +631,7 @@ fi
 
 
 %changelog
-* Sun May 07 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
+* Sun May 14 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
 - major fixes:
    ensure X11 errors don't propagate to GTK
    fix legacy URL format parsing
@@ -640,11 +640,17 @@ fi
    client sockets overwriting server sockets
    network queue flushing
    correct check for disabled monitors
+   stop as soon as we find a valid mDNS backend
+   only allow logging tweaks via env vars for non-root users
 - packaging:
+   dummy driver RPM version 0.4.1
    modules not excluded due to typo
    avoid permissions issues with mv
    remove legacy MacOS bundler workaround
    support MacOS arm64 builds
+   fail early with a more useful message on MacOS
+   setuptools packaging workarounds on MacOS
+   don't ship .cpp source files in MacOS app
    compilation errors with gcc version 7 and older
    RHEL 8.x needs pycuda 2022.1 or older
    RHEL 9.x can install pandoc from EPEL
@@ -660,6 +666,7 @@ fi
    silence rencode RPM patch warnings
 - encodings:
    always use lossless encoding for `text`
+   continue to monitor window metadata updates
    honour png palette encodings
    option parsing
    help command error
@@ -687,7 +694,7 @@ fi
    skip systemd-run tests on unsupported platforms
    missing test dependency on OracleLinux 8.x
    MacOS test tool errors
-   skip useless 'unknown' message
+   skip useless 'unknown' message, typo
    more useful codec loader validation message
 
 * Thu Mar 09 2023 Antoine Martin <antoine@xpra.org> 4.4.4-10

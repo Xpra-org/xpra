@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.5] 2023-05-07
+## [4.4.5] 2023-05-14
 * major fixes:
     * [ensure X11 errors don't propagate to GTK](https://github.com/Xpra-org/xpra/commit/ae2b0f7c827ee4731717f5607844b833a7efbf93)
     * [fix legacy URL format parsing](https://github.com/Xpra-org/xpra/commit/f7dd338a803c1ca7ba45ece31bfd7a38a2f0f40c)
@@ -9,11 +9,17 @@
     * [client sockets overwriting server sockets](https://github.com/Xpra-org/xpra/commit/ae52c7c8bf6fc253955eda9e0d31c6c3deffb726)
     * [network queue flushing](https://github.com/Xpra-org/xpra/commit/bcc39fea455898e9d51a82c0eb460aca51516431)
     * [correct check for disabled monitors](https://github.com/Xpra-org/xpra/commit/0e426927c1076f611e26723dfda599f04bae2795)
+    * [stop as soon as we find a valid mDNS backend](https://github.com/Xpra-org/xpra/commit/515b81034422cc5a0b0add6a5a9da8a5448c887b)
+    * [only allow logging tweaks via env vars for non-root users](https://github.com/Xpra-org/xpra/commit/9c6ea192025aa88633e2f729d61c2232cb2edfce)
 * packaging:
+    * [dummy driver RPM version 0.4.1](https://github.com/Xpra-org/xpra/commit/b74bdedc873ddc2c4ecda3107e3e57e8abc96c92)
     * [modules not excluded due to typo](https://github.com/Xpra-org/xpra/commit/364cc6b7abe966ccb56591dd8ccd9103dc52aaf5)
     * [avoid permissions issues with mv](https://github.com/Xpra-org/xpra/commit/8891c2c16aa592f342b8130633df46cc49106696)
     * [remove legacy MacOS bundler workaround](https://github.com/Xpra-org/xpra/commit/ed79b148cde00204dd16b9378b8a317be2477c0f)
     * [support MacOS arm64 builds](https://github.com/Xpra-org/xpra/commit/7e7519a0b8f68f8ec144c149f56903752e484f83)
+    * [fail early with a more useful message on MacOS](https://github.com/Xpra-org/xpra/commit/b814cd88c41b3afd1a014f714a7462c9098e5416)
+    * [setuptools packaging workarounds on MacOS](https://github.com/Xpra-org/xpra/commit/ff2d8237fa66e3bdefc054801d63b6621f8c7b03)
+    * [don't ship .cpp source files in MacOS app](https://github.com/Xpra-org/xpra/commit/b38dd4ba338a17c1e3483072aca6d007ff754bb4)
     * [compilation errors](https://github.com/Xpra-org/xpra/commit/0758655f98f6d05a7407f0bd4698b65ccb992301) [with gcc version 7 and older](https://github.com/Xpra-org/xpra/commit/9fe67037f97dd77e184762abb4c00d250203519d)
     * [RHEL 8.x needs pycuda 2022.1 or older](https://github.com/Xpra-org/xpra/commit/7c742de33aa2e7d0d6f5cee96aa550396ab81901)
     * [RHEL 9.x can install pandoc from EPEL](https://github.com/Xpra-org/xpra/commit/9c3828bdecdba4c6b8802ce7b9ca0de557583ba8)
@@ -29,6 +35,7 @@
     * [silence rencode RPM patch warnings](https://github.com/Xpra-org/xpra/commit/44ad45e51aef2eb02e7d7e6d605fb9e1cdde4a03)
 * encodings:
     * [always use lossless encoding for `text`](https://github.com/Xpra-org/xpra/commit/c8950ceab353e15debb1d94958cd7efdf963d209)
+    * [continue to monitor window metadata updates](https://github.com/Xpra-org/xpra/commit/448ebe940c47f4dc26c72d71945edffc55292767)
     * [honour png palette encodings](https://github.com/Xpra-org/xpra/commit/c5c8a105fb6c2b535bfed0169208d72433df43c5)
     * [option parsing](https://github.com/Xpra-org/xpra/commit/21c37edd02ace34668037660f5c8703b3ad432b1)
     * [help command error](https://github.com/Xpra-org/xpra/commit/29a2ba32de16cf7a669d5d33b02f617a0700f56b)
@@ -56,7 +63,7 @@
     * [skip systemd-run tests on unsupported platforms](https://github.com/Xpra-org/xpra/commit/05315424f2df69af00388aff241fc15fc1192b22)
     * [missing test dependency on OracleLinux 8.x](https://github.com/Xpra-org/xpra/commit/7aca69dcf562f4c80babe668cb24506923f18e60)
     * [MacOS test tool errors](https://github.com/Xpra-org/xpra/commit/28619b69d5131d9a57a4c34796de2353751397ab)
-    * [skip useless 'unknown' message](https://github.com/Xpra-org/xpra/commit/8f6fb5b6819bea424f2cdcd8bb95349dec66361b)
+    * [skip useless 'unknown' message](https://github.com/Xpra-org/xpra/commit/8f6fb5b6819bea424f2cdcd8bb95349dec66361b), [typo](https://github.com/Xpra-org/xpra/commit/4996a5090394230464675f2eeeed9d20a51eaa31)
     * [more useful codec loader validation message](https://github.com/Xpra-org/xpra/commit/1fd1f792ee6b551e4a64c8cfbb74c6ae7adc0604)
 
 ## [4.4.4] 2023-03-09
