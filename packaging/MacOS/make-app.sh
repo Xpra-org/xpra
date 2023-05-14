@@ -138,7 +138,10 @@ for m in pkg_resources gi; do
 done
 echo "OK"
 popd
-
+echo "py2app forgets uvloop._noop"
+UVLOOPDIR="./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/uvloop/"
+mkdir ${UVLOOPDIR}
+cp ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/uvloop/_noop.py ${UVLOOPDIR}/
 
 echo
 echo "*******************************************************************************"
@@ -175,7 +178,6 @@ if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
 fi
-#we have to make sure we use python2 here (not ported yet):
 gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
 	echo "ERROR: gtk-mac-bundler failed"
@@ -188,7 +190,6 @@ echo "make python softlink without version number"
 pushd ${LIBDIR} || exit 1
 ln -sf python3.${PYTHON_MINOR_VERSION} python
 cd python
-rmdir config
 echo "unzip site-packages"
 if [ -e "site-packages.zip" ]; then
 	unzip -nq site-packages.zip

@@ -559,7 +559,7 @@ external_excludes = [
                     "pydoc_data",
                     ]
 if not crypto_ENABLED:
-    external_excludes += ["ssl", "_ssl"]
+    external_excludes += ["ssl", "_ssl", "uvloop"]
 if not client_ENABLED:
     external_excludes += ["mimetools"]
 
@@ -2003,8 +2003,11 @@ if WIN32 or OSX:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
     if crypto_ENABLED or OSX:
         external_includes += ["cffi", "_cffi_backend"]
-    #python-cryptography needs workarounds for bundling:
     if crypto_ENABLED:
+        if OSX:
+            #quic:
+            add_packages("uvloop")
+        #python-cryptography needs workarounds for bundling:
         external_includes += [
             "cryptography", "idna", "idna.idnadata", "appdirs",
             ]

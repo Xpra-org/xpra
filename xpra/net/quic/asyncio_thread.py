@@ -51,11 +51,11 @@ class threaded_asyncio_loop:
             try:
                 import uvloop  # pylint: disable=import-outside-toplevel
             except ImportError:
-                log.info("no uvloop")
+                log.warn("Warning: uvloop not found")
             else:
                 log("installing uvloop")
                 uvloop.install()
-                log.info("uvloop installed")
+                log.info(f"uvloop {uvloop.__version__} installed")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.loop = loop
