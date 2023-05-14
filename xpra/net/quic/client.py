@@ -10,6 +10,7 @@ from typing import Dict, Callable, Optional, Union, cast
 
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
+from aioquic.quic.packet import QuicErrorCode
 from aioquic.h3.connection import H3_ALPN
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
@@ -24,6 +25,8 @@ from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
 from xpra.os_util import POSIX
+from xpra.scripts.config import InitExit
+from xpra.exit_codes import ExitCode
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
@@ -177,7 +180,6 @@ def quic_connect(host : str, port : int, path : str,
     #configuration.max_stream_data = args.max_stream_data
     #configuration.quic_logger = QuicFileLogger(args.quic_log)
     #configuration.secrets_log_file = open(args.secrets_log, "a")
-    connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
 
     def create_local_socket(family=socket.AF_INET):
         if family==socket.AF_INET6:
@@ -192,10 +194,10 @@ def quic_connect(host : str, port : int, path : str,
     tl = get_threaded_loop()
 
     def create_protocol():
+        connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
         return WebSocketClient(connection)
 
-    async def connect():
-        log("quic_connect: connect()")
+    async def get_address_options():
         if IPV6:
             family = socket.AF_UNSPEC
             family_options = (socket.AF_INET, socket.AF_INET6)
@@ -219,41 +221,59 @@ def quic_connect(host : str, port : int, path : str,
                     addr = ("::ffff:" + addr[0], addr[1], 0, 0)
                     infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
                     log(f"added IPv6 option: {infos[0]}")
-        errors = []
-        for addr_info in infos:
-            #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
-            log(f"trying {addr_info}")
-            af = addr_info[0]
-            if af not in family_options:
-                continue
-            sock, local_addr = create_local_socket(af)
-            transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
-            log(f"transport={transport}, protocol={protocol}")
-            protocol = cast(QuicConnectionProtocol, protocol)
-            addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
-            log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
-            protocol.connect(addr)
-            try:
-                await protocol.wait_connected()
-                conn = protocol.open(host, port, path)
-                log(f"websocket connection {conn}")
-                return conn
-            except Exception as e:
-                log("connect()", exc_info=True)
-                #try to get a more meaningful exception message:
-                einfo = str(e)
-                if not einfo:
-                    quic_conn = getattr(protocol, "_quic", None)
-                    if quic_conn:
-                        close_event = getattr(quic_conn, "_close_event", None)
-                        if close_event:
-                            errors.append(close_event.reason_phrase)
-                            continue
-                errors.append(str(e))
-        raise RuntimeError(f"failed to connect: {csv(errors)}")
+        #ensure only the family_options we want are included,
+        #(only really needed for AF_UNSPEC)
+        return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
+
+    addresses = tl.sync(get_address_options)
+
+    async def connect(addr_info):
+        #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
+        log(f"connect({addr_info})")
+        af = addr_info[0]
+        sock, local_addr = create_local_socket(af)
+        transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
+        log(f"transport={transport}, protocol={protocol}")
+        protocol = cast(QuicConnectionProtocol, protocol)
+        addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
+        log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
+        protocol.connect(addr)
+        try:
+            await protocol.wait_connected()
+            conn = protocol.open(host, port, path)
+            log(f"websocket connection {conn}")
+            return conn
+        except Exception as e:
+            log("connect()", exc_info=True)
+            #try to get a more meaningful exception message:
+            einfo = str(e)
+            if not einfo:
+                quic_conn = getattr(protocol, "_quic", None)
+                if quic_conn:
+                    close_event = getattr(quic_conn, "_close_event", None)
+                    log(f"close_event={close_event}, {dir(close_event)}")
+                    if close_event:
+                        err = close_event.error_code
+                        msg = close_event.reason_phrase
+                        if err & QuicErrorCode.CRYPTO_ERROR:
+                            raise InitExit(ExitCode.CONNECTION_FAILED, msg)
+                        #if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
+                        #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
+                        raise RuntimeError(close_event.reason_phrase) from None
+            raise RuntimeError(str(e)) from None
     #protocol.close()
     #await protocol.wait_closed()
     #transport.close()
-    conn = tl.sync(connect)
-    log(f"quic_connect() connect()={conn}")
-    return conn
+    if len(addresses)==1:
+        return tl.sync(connect, addresses[0])
+
+    errors = []
+    for address in addresses:
+        try:
+            return tl.sync(connect, address)
+        except Exception as e:
+            log("failed to connect:", exc_info=True)
+            estr = str(e) or type(e)
+            if estr not in errors:
+                errors.append(estr)
+    raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: "+csv(errors))
