@@ -10,8 +10,9 @@ from collections import namedtuple
 from collections.abc import Coroutine, Generator
 
 from time import monotonic
+from xpra.scripts.config import InitExit
 from xpra.make_thread import start_thread
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("quic")
@@ -28,7 +29,7 @@ def get_threaded_loop():
     return singleton
 
 
-ExceptionWrapper = namedtuple("ExceptionWrapper", "exception")
+ExceptionWrapper = namedtuple("ExceptionWrapper", "exception,args")
 
 
 class threaded_asyncio_loop:
@@ -88,9 +89,12 @@ class threaded_asyncio_loop:
             try:
                 r = await async_fn(*args)
                 response.put(r)
+            except InitExit as e:
+                log(f"error calling async function {async_fn} with {args}", exc_info=True)
+                response.put(ExceptionWrapper(InitExit, (e.status, str(e))))
             except Exception as e:
                 log(f"error calling async function {async_fn} with {args}", exc_info=True)
-                response.put(ExceptionWrapper(e))
+                response.put(ExceptionWrapper(RuntimeError, (str(e), )))
         def tsafe():
             r = awaitable()
             log(f"awaitable={r}")
@@ -100,7 +104,13 @@ class threaded_asyncio_loop:
         log("sync: waiting for response")
         r = response.get()
         if isinstance(r, ExceptionWrapper):
-            e = r.exception
-            raise Exception(str(e) or type(e))
+            log(f"sync: re-throwing {r}")
+            try:
+                instance = r.exception(*r.args)
+            except Exception:
+                log(f"failed to re-throw {r.exception}{r.args}", exc_info=True)
+                raise RuntimeError(csv(r.args)) from None
+            else:
+                raise instance
         log(f"sync: response={r}")
         return r
