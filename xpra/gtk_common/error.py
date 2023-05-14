@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -123,9 +123,8 @@ class _ErrorManager:
     def safe_x_exit(self):
         try:
             self.Xexit()
-        except XError:
-            log("XError detected while already in unwind; discarding",
-                exc_info=True)
+        except XError as e:
+            log(f"Warning: '{e}' detected while already in unwind; discarding")
 
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once
@@ -142,8 +141,7 @@ class _ErrorManager:
             try:
                 self.Xexit(need_sync)
             except XError as ee:
-                log("XError %s detected while already in unwind; discarding",
-                    ee, exc_info=True)
+                log(f"XError '{ee}' detected while already in unwind; discarding")
             raise
         self.Xexit(need_sync)
         return value
@@ -193,16 +191,14 @@ class XSyncContext:
     def __enter__(self):
         trap.Xenter()
 
-    def __exit__(self, e_typ, _e_val, _trcbak):
-        #log("xsync.exit%s", (e_typ, e_val, trcbak))
+    def __exit__(self, e_typ, _e_val, trcbak):
         try:
             trap.Xexit()
-        except XError:
+        except XError as e:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
                 raise
-            log("XError during Xexit on %s", e_typ)
-            log(" discarding", exc_info=True)
+            log(f"Ignoring {e_typ} during Xexit, {e_typ} will be raised instead", exc_info=e)
         #raise the original exception:
         return False
 
@@ -216,7 +212,7 @@ class XSwallowContext:
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
-            log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
+            log("XError swallowed: %s, %s", e_typ, e_val, exc_info=trcbak)
         trap.safe_x_exit()
         #don't raise exceptions:
         return True
@@ -231,7 +227,7 @@ class XLogContext:
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
-            log.error("XError: %s, %s", e_typ, e_val, exc_info=True)
+            log.error("Error: %s, %s", e_typ, e_val, exc_info=trcbak)
         trap.safe_x_exit()
         #don't raise exceptions:
         return True
