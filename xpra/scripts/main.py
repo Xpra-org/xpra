@@ -216,6 +216,7 @@ def configure_logging(options, mode):
         "shadow", "shadow-screen",
         "recover",
         "attach", "listen", "proxy",
+        "version", "info",
         "_audio_record", "_audio_play",
         "stop", "print", "showconfig",
         "_dialog", "_pass",
@@ -227,7 +228,7 @@ def configure_logging(options, mode):
             codec_help = show_audio_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(codec_help))
         fmt = LOG_FORMAT
-        if mode in ("stop", "showconfig"):
+        if mode in ("stop", "showconfig", "version", "info"):
             fmt = NOPREFIX_FORMAT
         if envbool("XPRA_COLOR_LOG", hasattr(to, "fileno") and os.isatty(to.fileno())):
             enable_color(to, fmt)
