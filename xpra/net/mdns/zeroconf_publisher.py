@@ -81,7 +81,7 @@ class ZeroconfPublishers:
                 af = LOOPBACK_AFAM.get(host)
                 if af==socket.AF_INET6 and not IPV6_LO:
                     if first_time(f"zeroconf-{host}"):
-                        log.info(f"python-zeroconf: {host!r} {af} loopback address is not supported")
+                        log.info(f"python-zeroconf: {host!r} IPv6 loopback address is not supported")
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
                     #means that IPV6 is False and "::" is not supported
                     #at time of writing, https://pypi.org/project/zeroconf/ says:
