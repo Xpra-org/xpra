@@ -2001,10 +2001,11 @@ if WIN32 or OSX:
     add_packages("socks")
     if pillow_ENABLED:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
+    if crypto_ENABLED or OSX:
+        external_includes += ["cffi", "_cffi_backend"]
     #python-cryptography needs workarounds for bundling:
     if crypto_ENABLED:
         external_includes += [
-            "cffi", "_cffi_backend",
             "cryptography", "idna", "idna.idnadata", "appdirs",
             ]
         add_modules("cryptography.hazmat.bindings._openssl",
