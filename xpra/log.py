@@ -13,8 +13,13 @@ from collections import OrderedDict
 
 from xpra.os_util import bytestostr
 
-LOG_PREFIX = bytestostr(os.environ.get("XPRA_LOG_PREFIX", ""))
-LOG_FORMAT = bytestostr(os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s"))
+LOG_PREFIX = ""
+LOG_FORMAT = "%(asctime)s %(message)s"
+DEBUG_MODULES = ()
+if os.name!="posix" || os.getuid()!=0:
+    LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
+    LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
+    DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
 
 DEBUG_MODULES = os.environ.get("XPRA_DEBUG_MODULES", "").split(",")
 NOPREFIX_FORMAT = u"%(message)s"
