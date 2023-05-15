@@ -1502,6 +1502,8 @@ if WIN32:
                            "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
                            "autodetect",
+                           #decodebin used for playing "new-client" sound:
+                           "playback", "typefindfunctions",
                            #video codecs:
                            "vpx", "x264", "aom", "openh264", "d3d11", "winscreencap",
                            "videoconvertscale", "videorate",
