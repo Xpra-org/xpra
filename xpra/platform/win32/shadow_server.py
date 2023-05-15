@@ -92,6 +92,8 @@ def init_capture(w, h, pixel_depth=32):
                     30  : "r210",
                     }[pixel_depth]
                 capture.init_context(w, h, pixel_format)
+                #this will test the capture and ensure we can call get_image()
+                capture.refresh()
                 return capture
             except Exception as e:
                 log("NvFBC_Capture", exc_info=True)
