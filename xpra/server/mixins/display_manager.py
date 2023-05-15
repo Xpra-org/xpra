@@ -101,7 +101,7 @@ class DisplayManager(StubServerMixin):
                 if props:
                     if props.get("success", "").lower() in TRUE_OPTIONS:
                         gllog.info(f"OpenGL is supported on display {self.display_name!r}")
-                        renderer = props.get("renderer")
+                        renderer = props.get("renderer").split(";")[0]
                         if renderer:
                             gllog.info(f" using {renderer!r} renderer")
                     else:
