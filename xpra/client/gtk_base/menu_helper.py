@@ -376,7 +376,8 @@ class MenuHelper:
             self.menu.popdown()
             self.menu_shown = False
 
-    def menu_deactivated(self, *_args):
+    def menu_deactivated(self, *args):
+        log(f"menu_deactivated{args}")
         self.menu_shown = False
 
     def activate(self, button=1, time=0):
