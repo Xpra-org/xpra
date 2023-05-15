@@ -1412,6 +1412,8 @@ if WIN32:
                            "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
                            "autodetect",
+                           #decodebin used for playing "new-client" sound:
+                           "playback", "typefindfunctions",
                            #no longer available: "mad"
                            #untested: a52dec, voaacenc
                            )
