@@ -125,6 +125,7 @@ class ZeroconfPublisher:
                 self.kwargs = {
                     "type_"         : st,       #_xpra._tcp.local.
                     "name"          : regname,
+                    "server"        : regname,
                     "port"          : port,
                     "properties"    : td,
                     "addresses"     : [self.address],
