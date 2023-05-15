@@ -70,7 +70,7 @@ from xpra.util import (
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
-    ConnectionMessage,
+    ConnectionMessage, nicestr,
     )
 from xpra.log import Logger, get_info as get_log_info
 
@@ -1814,7 +1814,7 @@ class ServerCore:
 
     def disconnect_protocol(self, protocol, *reasons):
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)
-        i = str(reasons[0])
+        i = nicestr(reasons[0])
         if len(reasons)>1:
             i += " (%s)" % csv(reasons[1:])
         proto_info = f" {protocol}"

@@ -171,6 +171,13 @@ def noerr(fn, *args):
         return None
 
 
+def nicestr(obj):
+    """ Python 3.10 and older don't give us a nice string representation for enums """
+    if isinstance(obj, Enum):
+        return str(obj.value)
+    return str(obj)
+
+
 def net_utf8(value) -> str:
     """
     Given a value received by the network layer,
