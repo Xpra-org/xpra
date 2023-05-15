@@ -392,7 +392,7 @@ class MenuHelper:
         if not self.menu:
             log.warn("menu is not available yet")
             return
-        self.menu.popup(None, None, None, None, button, time)
+        self.menu.popup_at_pointer(None)
         self.menu_shown = True
 
 
