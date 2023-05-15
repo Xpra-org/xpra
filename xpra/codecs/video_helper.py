@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import traceback
 from threading import Lock
 
 from xpra.scripts.config import csvstrl
@@ -146,11 +147,18 @@ class VideoHelper:
         #bits needed to ensure we can initialize just once
         #even when called from multiple threads:
         self._initialized = init
+        self._init_from = []
         self._lock = Lock()
 
     def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
-        assert not self._initialized, "too late to set modules, the helper is already initialized!"
+        if self._initialized:
+            log.error("Error: video helper modules have already been initialized")
+            for ifrom in self._initialized:
+                log.error("from:")
+                for tb in ifrom:
+                    log.error(" %s", tb)
+            raise RuntimeError(f"too late to set modules, the helper is already initialized")
         self.video_encoders = filt("enc", "video encoders" , video_encoders,   get_video_encoders,  ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      get_csc_modules,     ALL_CSC_MODULE_OPTIONS)
         self.video_decoders = filt("dec", "video decoders" , video_decoders,   get_video_decoders,  ALL_VIDEO_DECODER_OPTIONS)
@@ -231,6 +239,7 @@ class VideoHelper:
     def init(self):
         log("VideoHelper.init()")
         with self._lock:
+            self._init_from.append(traceback.format_stack())
             #check again with lock held (in case of race):
             log("VideoHelper.init() initialized=%s", self._initialized)
             if self._initialized:
