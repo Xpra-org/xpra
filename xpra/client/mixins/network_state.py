@@ -282,7 +282,7 @@ class NetworkState(StubClientMixin):
 
     def send_ping(self):
         p = self._protocol
-        if not p or p.TYPE!="xpra":
+        if not p or p.TYPE not in ("xpra", "websocket"):
             self.ping_timer = None
             return False
         now_ms = int(1000.0*monotonic())
