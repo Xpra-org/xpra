@@ -200,6 +200,8 @@ def init_capture(w, h, pixel_depth=32):
                         from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture  #@UnresolvedImport
                         capture = NvFBC_SysCapture()
                     capture.init_context(w, h, pixel_format)
+                    #this will test the capture and ensure we can call get_image()
+                    capture.refresh()
             except Exception as e:
                 capture = None
                 log("NvFBC_Capture", exc_info=True)
