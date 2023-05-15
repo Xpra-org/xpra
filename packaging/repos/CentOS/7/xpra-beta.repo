@@ -1,0 +1,9 @@
+[xpra-beta]
+name=Xpra Beta $releasever - $basearch
+enabled=1
+metadata_expire=1d
+gpgcheck=1
+gpgkey=https://xpra.org/gpg.asc
+       https://xpra.org/gpg-2018.asc
+baseurl=https://xpra.org/beta/CentOS/$releasever/$basearch/
+skip_if_unavailable = 1
