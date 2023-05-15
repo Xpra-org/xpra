@@ -41,6 +41,7 @@ class Capture(Pipeline):
     def __init__(self, element : str="ximagesrc", pixel_format : str="BGRX",
                  width : int=0, height : int=0):
         super().__init__()
+        self.capture_element = element.split(" ")[0]
         self.pixel_format : str = pixel_format
         self.width : int = width
         self.height : int = height
@@ -113,6 +114,9 @@ class Capture(Pipeline):
 
     def clean(self):
         self.stop()
+
+    def get_type(self):
+        return self.capture_element
 
 GObject.type_register(Capture)
 
@@ -199,6 +203,10 @@ class CaptureAndEncode(Capture):
 
     def clean(self):
         self.stop()
+
+    def get_type(self):
+        return f"{self.capture_element}-{self.pixel_format}"
+
 
 GObject.type_register(Capture)
 

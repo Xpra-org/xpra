@@ -51,6 +51,9 @@ class OSXRootCapture:
     def __repr__(self):
         return "OSXRootCapture"
 
+    def get_type(self):
+        return "CoreGraphics"
+
     def refresh(self):
         return True
 
@@ -62,7 +65,9 @@ class OSXRootCapture:
         return get_CG_imagewrapper(rect)
 
     def get_info(self) -> dict:
-        return {}
+        return {
+            "type" : "CoreGraphics",
+            }
 
     def take_screenshot(self):
         log("grabbing screenshot")

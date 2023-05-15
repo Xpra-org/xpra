@@ -57,6 +57,9 @@ class GTKImageCapture:
     def __repr__(self):
         return "GTKImageCapture(%s)" % self.window
 
+    def get_type(self):
+        return "GTK"
+
     def clean(self):
         pass
 

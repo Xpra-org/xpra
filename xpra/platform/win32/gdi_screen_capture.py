@@ -109,6 +109,9 @@ class GDICapture:
             "depth" : self.bit_depth,
             }
 
+    def get_type(self):
+        return "GDI"
+
     def refresh(self) -> bool:
         return True
 

@@ -205,6 +205,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def makeRootWindowModels(self):
         screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
         self.capture = self.setup_capture()
+        if not self.capture:
+            raise RuntimeError("failed to instantiate a capture backend")
+        log.info(f"capture using {self.capture.get_type()}")
         model_class = self.get_root_window_model_class()
         models = []
         display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
