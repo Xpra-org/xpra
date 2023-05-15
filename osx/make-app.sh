@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ -z "${JHBUILD_PREFIX}" ]; then
+	echo "JHBUILD_PREFIX is not set"
+	echo "this script must be executed from jhbuild shell"
+	exit 1
+fi
+
 if [ -z "${DYLD_FALLBACK_LIBRARY_PATH}" ]; then
 	export DYLD_FALLBACK_LIBRARY_PATH="${JHBUILD_PREFIX}/lib/"
 fi
