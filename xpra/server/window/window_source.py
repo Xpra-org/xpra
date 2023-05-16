@@ -693,7 +693,7 @@ class WindowSource(WindowIconSource):
 
     def refresh(self, options=None) -> None:
         self.ui_thread_check()
-        w, h = self.window.get_dimensions()
+        w, h = self.window_dimensions
         self.damage(0, 0, w, h, options)
 
 
