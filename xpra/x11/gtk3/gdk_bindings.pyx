@@ -7,6 +7,7 @@
 import os
 import traceback
 from time import monotonic
+from weakref import WeakKeyDictionary
 
 import gi
 gi.require_version('GdkX11', '3.0')
@@ -432,41 +433,34 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 # ClientMessages.  If they are sent with an empty mask, then they go to the
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
-WINDOW_EVENT_RECEIVERS_KEY = "_xpra_window_event_receivers"
+
+event_receivers_map = WeakKeyDictionary()
 
 def add_event_receiver(window, receiver, max_receivers=3):
-    receivers = getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
+    receivers = event_receivers_map.get(window)
     if receivers is None:
         receivers = set()
-        setattr(window, WINDOW_EVENT_RECEIVERS_KEY, receivers)
+        event_receivers_map[window] = receivers
     if max_receivers>0 and len(receivers)>max_receivers:
-        log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
+        log.warn("Warning: already too many event receivers")
+        log.warn(" for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
         traceback.print_stack()
     receivers.add(receiver)
 
 def remove_event_receiver(window, receiver):
-    receivers = getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
+    receivers = event_receivers_map.get(window)
     if receivers is None:
         return
     receivers.discard(receiver)
     if not receivers:
-        delattr(window, WINDOW_EVENT_RECEIVERS_KEY)
+        event_receivers_map.pop(window)
 
 #only used for debugging:
 def get_event_receivers(window):
-    return getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
+    return event_receivers_map.get(window)
 
 def cleanup_all_event_receivers():
-    root = Gdk.get_default_root_window()
-    try:
-        delattr(root, WINDOW_EVENT_RECEIVERS_KEY)
-    except AttributeError:
-        pass
-    for window in get_children(root):
-        try:
-            delattr(window, WINDOW_EVENT_RECEIVERS_KEY)
-        except AttributeError:
-            pass
+    event_receivers_map.clear()
 
 
 cdef int CursorNotify = -1
