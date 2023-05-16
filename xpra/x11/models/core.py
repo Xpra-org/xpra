@@ -288,18 +288,18 @@ class CoreX11WindowModel(WindowModelStub):
         except XError as e:
             log("failed to manage %#x", self.xid, exc_info=True)
             raise Unmanageable(e) from e
-        add_event_receiver(self.client_window, self)
+        add_event_receiver(self.xid, self)
         # Keith Packard says that composite state is undefined following a
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            self._composite = CompositeHelper(self.client_window)
+            self._composite = CompositeHelper(self.xid)
             with xsync:
                 self._composite.setup()
                 if X11Window.displayHasXShape():
                     X11Window.XShapeSelectInput(self.xid)
         except Exception as e:
-            remove_event_receiver(self.client_window, self)
+            remove_event_receiver(self.xid, self)
             log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)
             with xswallow:
                 self._composite.destroy()
@@ -344,7 +344,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._managed = False
         log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s",
             self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
-        remove_event_receiver(self.client_window, self)
+        remove_event_receiver(self.xid, self)
         GLib.idle_add(self.managed_disconnect)
         if self._composite:
             if self._damage_forward_handle:
@@ -562,7 +562,7 @@ class CoreX11WindowModel(WindowModelStub):
         if X11PROPERTY_SYNC and not any (name.startswith(x) for x in X11PROPERTY_SYNC_BLACKLIST):
             try:
                 with xsync:
-                    prop_type = prop_type_get(self.client_window, name)
+                    prop_type = prop_type_get(self.xid, name)
                     metalog("_handle_property_change(%s) property type=%s", name, prop_type)
                     if prop_type:
                         dtype, dformat = prop_type
@@ -667,11 +667,11 @@ class CoreX11WindowModel(WindowModelStub):
     #########################################
 
     def do_xpra_unmap_event(self, event):
-        log("do_xpra_unmap_event(%s) corral_window=%s, ", event, self.client_window)
+        log("do_xpra_unmap_event(%s) client_window=%s, ", event, self.client_window)
         self.unmanage()
 
     def do_xpra_destroy_event(self, event):
-        log("do_xpra_destroy_event(%s) corral_window=%s, ", event, self.client_window)
+        log("do_xpra_destroy_event(%s) client_window=%s, ", event, self.client_window)
         if event.delivered_to is self.client_window:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
@@ -800,7 +800,7 @@ class CoreX11WindowModel(WindowModelStub):
     ################################
 
     def raise_window(self):
-        X11Window.XRaiseWindow(self.client_window.get_xid())
+        X11Window.XRaiseWindow(self.xid)
 
     def set_active(self):
         self.root_prop_set("_NET_ACTIVE_WINDOW", "u32", self.xid)

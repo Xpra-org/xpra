@@ -98,16 +98,16 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
-        add_event_receiver(self._root, self)
+        add_event_receiver(self._root.get_xid(), self)
         self._add_watch()
 
     def cleanup(self):
-        remove_event_receiver(self._root, self)
+        remove_event_receiver(self._root.get_xid(), self)
 
     def _add_watch(self):
         owner = self.xsettings_owner()
         if owner is not None:
-            add_event_receiver(owner, self)
+            add_event_receiver(owner.get_xid(), self)
 
     def do_xpra_client_message_event(self, event):
         if (event.window is self._root

@@ -263,9 +263,6 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
 
 # Basic utilities:
 
-cdef int get_xwindow(pywindow):
-    return GDK_WINDOW_XID(<GdkWindow*>unwrap(pywindow, Gdk.Window))
-
 def get_pywindow(xwindow):
     display = Gdk.get_default_root_window().get_display()
     return _get_pywindow(display, xwindow)
@@ -332,34 +329,40 @@ cdef _get_pyatom(display, int xatom):
 
 
 # Children listing
-cdef _query_tree(pywindow):
+def get_children(xid : int):
     cdef Window root = 0, parent = 0
     cdef Window * children = <Window *> 0
     cdef unsigned int i, nchildren = 0
-    if not XQueryTree(get_xdisplay_for(pywindow),
-                      get_xwindow(pywindow),
+    display = Gdk.get_default_root_window().get_display()
+    cdef Display *xdisplay = get_xdisplay_for(display)
+    if not XQueryTree(xdisplay, xid,
                       &root, &parent, &children, &nchildren):
         return (None, [])
     cdef object pychildren = []
-    for i from 0 <= i < nchildren:
+    for i in range(nchildren):
         #we cannot get the gdk window for wid=0
         if children[i]>0:
-            pychildren.append(_get_pywindow(pywindow, children[i]))
+            pychildren.append(children[i])
     # Apparently XQueryTree sometimes returns garbage in the 'children'
     # pointer when 'nchildren' is 0, which then leads to a segfault when we
     # try to XFree the non-NULL garbage.
     if nchildren > 0 and children != NULL:
         XFree(children)
-    cdef object pyparent = None
-    if parent != XNone:
-        pyparent = _get_pywindow(pywindow, parent)
-    return (pyparent, pychildren)
+    return pychildren
 
-def get_children(pywindow):
-    return _query_tree(pywindow)[1]
-
-def get_parent(pywindow):
-    return _query_tree(pywindow)[0]
+def get_parent(xid : int) -> int:
+    cdef Window root = 0, parent = 0
+    cdef Window * children = <Window *> 0
+    cdef unsigned int i, nchildren = 0
+    display = Gdk.get_default_root_window().get_display()
+    cdef Display *xdisplay = get_xdisplay_for(display)
+    if not XQueryTree(xdisplay, xid, &root, &parent, &children, &nchildren):
+        return None
+    if nchildren > 0 and children != NULL:
+        XFree(children)
+    if parent==XNone:
+        return None
+    return int(parent)
 
 
 ###################################
@@ -429,32 +432,33 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
 
-event_receivers_map = WeakKeyDictionary()
+event_receivers_map : dict = dict()
 
-def add_event_receiver(window, receiver, max_receivers=3):
-    receivers = event_receivers_map.get(window)
+def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
+    receivers = event_receivers_map.get(xid)
     if receivers is None:
         receivers = set()
-        event_receivers_map[window] = receivers
+        event_receivers_map[xid] = receivers
     if max_receivers>0 and len(receivers)>max_receivers:
         log.warn("Warning: already too many event receivers")
-        log.warn(" for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
+        log.warn(f" for window {xid:x}: {len(receivers)}")
+        log.warn(f" adding {receiver!r} to {receivers}")
         traceback.print_stack()
     receivers.add(receiver)
 
-def remove_event_receiver(window, receiver):
-    receivers = event_receivers_map.get(window)
+def remove_event_receiver(xid:int, receiver:callable):
+    receivers = event_receivers_map.get(xid)
     if receivers is None:
         return
     receivers.discard(receiver)
     if not receivers:
-        event_receivers_map.pop(window)
+        event_receivers_map.pop(xid)
 
 #only used for debugging:
-def get_event_receivers(window):
-    return event_receivers_map.get(window)
+def get_event_receivers(xid:int):
+    return event_receivers_map.get(xid)
 
-def cleanup_all_event_receivers():
+def cleanup_all_event_receivers() -> None:
     event_receivers_map.clear()
 
 
@@ -753,7 +757,8 @@ cdef _route_event(int etype, event, signal, parent_signal):
             window = event.window
             if DEBUG:
                 log.info("  delivering event to window itself: %#x  (signal=%s)", window.get_xid(), signal)
-            handlers = get_event_receivers(window)
+            if window:
+                handlers = get_event_receivers(window.get_xid())
             _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window.get_xid())
         elif DEBUG:
             log.info("  received event on window itself but have no signal for that")
@@ -766,7 +771,7 @@ cdef _route_event(int etype, event, signal, parent_signal):
             else:
                 if DEBUG:
                     log.info("  delivering event to parent window: %#x (signal=%s)", window.get_xid(), parent_signal)
-                handlers = get_event_receivers(window)
+                handlers = get_event_receivers(window.get_xid())
                 _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.get_xid())
         else:
             if DEBUG:

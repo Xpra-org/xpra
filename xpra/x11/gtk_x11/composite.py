@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -37,8 +37,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         })
 
     # This may raise XError.
-    def __init__(self, window):
-        WindowDamageHandler.__init__(self, window)
+    def __init__(self, xid):
+        WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
         self._listening_to = None
 
@@ -49,10 +49,10 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         X11Window.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
-    def do_destroy(self, win):
+    def do_destroy(self):
         with xlog:
             X11Window.XCompositeUnredirectWindow(self.xid)
-            WindowDamageHandler.do_destroy(self, win)
+            WindowDamageHandler.do_destroy(self)
 
     def invalidate_pixmap(self):
         lt = self._listening_to
@@ -63,10 +63,10 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
 
     def _cleanup_listening(self, listening):
         if listening:
-            # Don't want to stop listening to self.client_window!:
-            assert self.client_window is None or self.client_window not in listening
             for w in listening:
-                remove_event_receiver(w, self)
+                # Don't want to stop listening to our xid!:
+                if w!=self.xid:
+                    remove_event_receiver(w, self)
 
     def _set_pixmap(self):
         # The tricky part here is that the pixmap returned by
@@ -86,17 +86,13 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         listening = []
         e = None
         try:
-            screen = self.client_window.get_screen()
-            if not screen:
-                log("cannot set pixmap on client window - maybe deleted?")
-                return
-            root = screen.get_root_window()
-            gdkworld = None
             world = get_world_window()
+            gdkworld = None
             if world:
                 gdkworld = world.get_window()
-            win = get_parent(self.client_window)
-            while win not in (None, root, gdkworld) and win.get_parent() is not None:
+            root = Gdk.Screen.get_default().get_root_window()
+            xid = get_parent(self.xid)
+            while xid not in (None, root, gdkworld):
                 # We have to use a lowlevel function to manipulate the
                 # event selection here, because SubstructureRedirectMask
                 # does not roundtrip through the GDK event mask
@@ -104,11 +100,13 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 # corral window selection masks, and those don't deserve
                 # clobbering.  They are our friends!  X is driving me
                 # slowly mad.
-                xid = win.get_xid()
+                parent = get_parent(xid)
+                if not parent:
+                    break
                 X11Window.addXSelectInput(xid, StructureNotifyMask)
-                add_event_receiver(win, self, max_receivers=-1)
-                listening.append(win)
-                win = get_parent(win)
+                add_event_receiver(xid, self, max_receivers=-1)
+                listening.append(xid)
+                xid = parent
             handle = XImage.get_xcomposite_pixmap(self.xid)
         except Exception:
             try:

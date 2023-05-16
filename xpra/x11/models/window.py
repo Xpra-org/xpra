@@ -204,7 +204,7 @@ class WindowModel(BaseWindowModel):
         log("setup() corral_window=%#x", cxid)
         prop_set(cxid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
-        add_event_receiver(self.corral_window, self)
+        add_event_receiver(cxid, self)
 
         # The child might already be mapped, in case we inherited it from
         # a previous window manager.  If so, we unmap it now, and save the
@@ -349,7 +349,7 @@ class WindowModel(BaseWindowModel):
         cwin = self.corral_window
         if cwin:
             self.corral_window = None
-            remove_event_receiver(cwin, self)
+            remove_event_receiver(cwin.get_xid(), self)
             geom = None
             #use a new context so we will XSync right here
             #and detect if the window is already gone:
@@ -532,8 +532,7 @@ class WindowModel(BaseWindowModel):
     def update_children(self):
         ww, wh = self.client_window.get_geometry()[2:4]
         children = []
-        for w in get_children(self.client_window):
-            xid = w.get_xid()
+        for xid in get_children(self.xid):
             if X11Window.is_inputonly(xid):
                 continue
             geom = X11Window.getGeometry(xid)

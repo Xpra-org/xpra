@@ -139,7 +139,7 @@ class ManagerSelection(GObject.GObject):
                 log("Previous owner is already gone? not blocking", exc_info=True)
             else:
                 log("Waiting for previous owner to exit...")
-                add_event_receiver(window, self)
+                add_event_receiver(window.get_xid(), self)
                 self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT*1000, self.exit_timeout)
                 Gtk.main()
                 if self.exit_timer:
@@ -171,7 +171,9 @@ class ManagerSelection(GObject.GObject):
             self.emit("selection-lost")
 
     def do_xpra_destroy_event(self, event):
-        remove_event_receiver(event.window, self)
+        w = event.window
+        if w:
+            remove_event_receiver(w.get_xid(), self)
         Gtk.main_quit()
 
     def window(self):

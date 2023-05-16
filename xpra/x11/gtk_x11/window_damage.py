@@ -42,9 +42,8 @@ class WindowDamageHandler:
                            }
 
     # This may raise XError.
-    def __init__(self, client_window, use_xshm=USE_XSHM):
-        self.client_window = client_window
-        self.xid = client_window.get_xid()
+    def __init__(self, xid : int, use_xshm : bool=USE_XSHM):
+        self.xid : int = xid
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm = use_xshm
         self._damage_handle = None
@@ -62,24 +61,21 @@ class WindowDamageHandler:
             raise Unmanageable(f"window {self.xid:x} disappeared already")
         self._border_width = geom[-1]
         self.create_damage_handle()
-        add_event_receiver(self.client_window, self, self.MAX_RECEIVERS)
+        add_event_receiver(self.xid, self, self.MAX_RECEIVERS)
 
     def create_damage_handle(self):
-        if self.client_window:
+        if self.xid:
             self._damage_handle = X11Window.XDamageCreate(self.xid)
             log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self):
-        if self.client_window is None:
+        if not self.xid:
             log.error(f"Error: damage window handler for {self.xid:x} already cleaned up!")
             return
-        #clear the reference to the window early:
-        win = self.client_window
-        self.client_window = None
-        self.do_destroy(win)
 
-    def do_destroy(self, win):
-        remove_event_receiver(win, self)
+    def do_destroy(self):
+        remove_event_receiver(self.xid, self)
+        self.xid = 0
         self.destroy_damage_handle()
 
     def destroy_damage_handle(self):
@@ -95,9 +91,7 @@ class WindowDamageHandler:
             self._xshm_handle = None
             with xlog:
                 sh.cleanup()
-        #note: this should be redundant since we cleared the
-        #reference to self.client_window and shortcut out in do_get_property_contents_handle
-        #but it's cheap anyway
+        #note: this should be redundant, but it's cheap and safer
         self.invalidate_pixmap()
 
     def acknowledge_changes(self):
@@ -106,7 +100,7 @@ class WindowDamageHandler:
         log("acknowledge_changes() xshm handle=%s, damage handle=%s", sh, dh)
         if sh:
             sh.discard()
-        if dh and self.client_window:
+        if dh and self.xid:
             #"Synchronously modifies the regions..." so unsynced?
             with xlog:
                 X11Window.XDamageSubtract(dh)
@@ -128,7 +122,8 @@ class WindowDamageHandler:
             return None
         if self._xshm_handle:
             sw, sh = self._xshm_handle.get_size()
-            ww, wh = self.client_window.get_geometry()[2:4]
+            with xsync:
+                ww, wh = X11Window.getGeometry(self.xid)[2:4]
             if sw!=ww or sh!=wh:
                 #size has changed!
                 #make sure the current wrapper gets garbage collected:
@@ -156,7 +151,7 @@ class WindowDamageHandler:
         self._contents_handle = XImage.get_xwindow_pixmap_wrapper(self.xid)
 
     def get_contents_handle(self):
-        if not self.client_window:
+        if not self.xid:
             #shortcut out
             return None
         if self._contents_handle is None:

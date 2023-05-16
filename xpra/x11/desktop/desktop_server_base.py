@@ -77,7 +77,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         assert display.get_n_screens()==1
         screen = display.get_screen(0)
         root = screen.get_root_window()
-        add_event_receiver(root, self)
+        add_event_receiver(root.get_xid(), self)
         add_catchall_receiver("xpra-motion-event", self)
         add_catchall_receiver("xpra-xkb-event", self)
         with xlog:

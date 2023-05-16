@@ -5,14 +5,22 @@
 # later version. See the file COPYING for details.
 
 
-def window_name(window):
+def window_name(xid):
     from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(window.get_xid(), "_NET_WM_NAME", "utf8", True) or "unknown"
+    return prop_get(xid, "_NET_WM_NAME", "utf8", True) or "unknown"
 
-def window_info(window):
+def window_info(xid):
     from xpra.x11.gtk_x11.prop import prop_get
-    net_wm_name = prop_get(window.get_xid(), "_NET_WM_NAME", "utf8", True)
-    return "%s %s visible=%s" % (net_wm_name, window.get_geometry(), window.is_visible())
+    net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
+    from xpra.x11.bindings.window_bindings import X11WindowBindings
+    X11Window = X11WindowBindings()
+    from xpra.gtk_common.error import xlog
+    geom = None     # @UnusedVariable
+    mapped = False  # @UnusedVariable
+    with xlog:
+        geom = X11Window.getGeometry(xid)
+        mapped = X11Window.is_mapped(xid)
+    return "%s %s mapped=%s" % (net_wm_name, geom, mapped)
 
 
 def dump_windows():
@@ -20,13 +28,16 @@ def dump_windows():
     log = Logger("x11", "window")
     from xpra.gtk_common.gtk_util import get_default_root_window
     root = get_default_root_window()
-    log("root window: %s" % root)
+    xid = root.get_xid()
+    log(f"root window: {xid:x}")
     try:
         from xpra.x11.gtk_x11.gdk_bindings import get_children #@UnresolvedImport
+        from xpra.gtk_common.error import xlog
     except ImportError:
         pass
     else:
-        children = get_children(root)
-        log("%s windows" % len(children))
-        for window in get_children(root):
-            log("found window: %s", window_info(window))
+        with xlog:
+            children = get_children(xid)
+            log("%s windows" % len(xid))
+            for cxid in children:
+                log("found window: %s", window_info(cxid))

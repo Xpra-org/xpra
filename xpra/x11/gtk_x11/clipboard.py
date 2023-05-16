@@ -121,13 +121,13 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         xid = self.window.get_xid()
         with xsync:
             X11Window.selectSelectionInput(xid)
-        add_event_receiver(self.window, self)
+        add_event_receiver(xid, self)
 
     def cleanup_window(self):
         w = self.window
         if w:
             self.window = None
-            remove_event_receiver(w, self)
+            remove_event_receiver(w.get_xid(), self)
             w.destroy()
 
     def cleanup(self):

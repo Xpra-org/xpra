@@ -27,11 +27,11 @@ class XRootPropWatcher(GObject.GObject):
         self._root = root_window
         self._saved_event_mask = self._root.get_events()
         self._root.set_events(self._saved_event_mask | Gdk.EventMask.PROPERTY_CHANGE_MASK)
-        add_event_receiver(self._root, self)
+        add_event_receiver(self._root.get_xid(), self)
 
     def cleanup(self):
         #this must be called from the UI thread!
-        remove_event_receiver(self._root, self)
+        remove_event_receiver(self._root.get_xid(), self)
         self._root.set_events(self._saved_event_mask)
 
 

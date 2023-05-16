@@ -480,7 +480,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     log.warn(" you may experience window focus issues")
             else:
                 grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
-                add_event_receiver(self.get_window(), self)
+                xid = self.get_window().get_xid()
+                add_event_receiver(xid, self)
         #other platforms should bet getting regular focus events instead:
         def focus_in(_window, event):
             focuslog("focus-in-event for wid=%s", self._id)

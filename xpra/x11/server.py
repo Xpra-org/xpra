@@ -402,16 +402,16 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self._add_new_window(window)
 
         root = get_default_root_window()
+        rxid = root.get_xid()
         try:
             with xsync:
-                children = get_children(root)
+                children = get_children(rxid)
         except XError:
             log("load_existing_windows()", exc_info=True)
             log("trying again")
             with xsync:
-                children = get_children(root)
-        for window in children:
-            xid = window.get_xid()
+                children = get_children(rxid)
+        for xid in children:
             can_add = False
             with xlog:
                 can_add = X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid)

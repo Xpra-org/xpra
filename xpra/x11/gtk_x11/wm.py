@@ -23,6 +23,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
     get_children,                                    #@UnresolvedImport
+    get_pywindow,                                    #@UnresolvedImport
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -229,25 +230,37 @@ class Wm(GObject.GObject):
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
-        add_event_receiver(self._root, self)
+        rxid = self._root.get_xid()
+        add_event_receiver(rxid, self)
         add_fallback_receiver("xpra-client-message-event", self)
         #when reparenting, the events may get sent
         #to a window that is already destroyed
         #and we don't want to miss those events, so:
         add_fallback_receiver("child-map-request-event", self)
-        rxid = self._root.get_xid()
         X11Window.substructureRedirect(rxid)
 
-        for w in get_children(self._root):
+        children = get_children(rxid)
+        log(f"root window children: {children}")
+        for xid in children:
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
-            xid = w.get_xid()
-            if (w.get_window_type() == Gdk.WindowType.FOREIGN
-                and not X11Window.is_override_redirect(xid)
-                and X11Window.is_mapped(xid)):
-                log("Wm managing pre-existing child window %#x", xid)
-                self._manage_client(w)
+            w = get_pywindow(xid)
+            log(f"pywindow({xid:x})={w}")
+            if not w:
+                continue
+            wtype = w.get_window_type()
+            if wtype!=Gdk.WindowType.FOREIGN:
+                log(f"skipping non foreign window %s", window_info(xid))
+                continue
+            if X11Window.is_override_redirect(xid):
+                log(f"skipping override redirect window %s", window_info(xid))
+                continue
+            if not X11Window.is_mapped(xid):
+                log(f"skipping unmapped window %s", window_info(xid))
+                continue
+            log(f"Wm managing pre-existing child window {xid:x}")
+            self._manage_client(w)
 
         # Also watch for focus change events on the root window
         X11Window.selectFocusChange(rxid)

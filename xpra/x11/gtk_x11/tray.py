@@ -117,15 +117,16 @@ class SystemTray(GObject.GObject):
             rxid = root.get_xid()
             X11Window.Unmap(wxid)
             X11Window.Reparent(wxid, rxid, 0, 0)
+        tray_xid = self.tray_window.get_xid()
         with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
-            if owner==self.tray_window.get_xid():
+            if owner==tray_xid:
                 X11Window.XSetSelectionOwner(0, SELECTION)
                 log("SystemTray.cleanup() reset %s selection owner to %#x",
                     SELECTION, X11Window.XGetSelectionOwner(SELECTION))
             else:
                 log.warn("Warning: we were no longer the tray selection owner")
-        remove_event_receiver(self.tray_window, self)
+        remove_event_receiver(tray_xid, self)
         tray_windows = self.tray_windows
         self.tray_windows = {}
         for window, tray_window in tray_windows.items():
@@ -171,7 +172,7 @@ class SystemTray(GObject.GObject):
                                   CurrentTime, SELECTION, xtray)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 assert owner==xtray, "we failed to get ownership of the tray selection"
-                add_event_receiver(self.tray_window, self)
+                add_event_receiver(xtray, self)
                 log("setup tray: done")
         except Exception:
             log("setup_tray failure", exc_info=True)
@@ -231,7 +232,7 @@ class SystemTray(GObject.GObject):
         em = Gdk.EventMask
         event_mask = em.STRUCTURE_MASK | em.EXPOSURE_MASK | em.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
-        add_event_receiver(window, self)
+        add_event_receiver(xid, self)
         w = max(1, min(MAX_TRAY_SIZE, w))
         h = max(1, min(MAX_TRAY_SIZE, h))
         title = prop_get(xid, "_NET_WM_NAME", "utf8", ignore_errors=True)

@@ -82,13 +82,12 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def setup(self):
         WindowDamageHandler.setup(self)
-        xid = self.client_window.get_xid()
-        self._depth = X11Window.get_depth(xid)
-        X11Window.addDefaultEvents(xid)
+        self._depth = X11Window.get_depth(self.xid)
+        X11Window.addDefaultEvents(self.xid)
         self._managed = True
         self._setup_done = True
         #listen for property changes on the root window:
-        add_event_receiver(self.client_window, self)
+        add_event_receiver(self.xid, self)
 
     def do_xpra_property_notify_event(self, event):
         eventlog(f"do_xpra_property_notify_event: {event.atom}")
@@ -101,7 +100,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return True
 
     def unmanage(self, exiting=False):
-        remove_event_receiver(self.client_window, self)
+        remove_event_receiver(self.xid, self)
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
         self.cancel_resize_timer()
