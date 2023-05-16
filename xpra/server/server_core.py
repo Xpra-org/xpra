@@ -251,6 +251,7 @@ class ServerCore(object):
         self.server_idle_timeout = 0
         self.server_idle_timer = None
         self.bandwidth_limit = 0
+        self.readonly = False
 
         self.init_uuid()
         sanity_checks()
