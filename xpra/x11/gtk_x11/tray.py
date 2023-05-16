@@ -255,7 +255,7 @@ class SystemTray(GObject.GObject):
         set_tray_window(tray_window, window)
         tray_window.show()
         self.tray_windows[window] = tray_window
-        self.window_trays[tray_window] = window
+        self.window_trays[xid] = window
         log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
         xwin = window.get_xid()
@@ -273,7 +273,7 @@ class SystemTray(GObject.GObject):
     def move_resize(self, window, x, y, w, h):
         #see SystemTrayWindowModel.move_resize:
         window.move_resize(x, y, w, h)
-        embedded_window = self.window_trays[window.client_window]
+        embedded_window = self.window_trays[window.xid]
         embedded_window.resize(w, h)
         log("system tray moved to %sx%s and resized to %sx%s", x, y, w, h)
 

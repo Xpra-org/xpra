@@ -354,11 +354,11 @@ def get_parent(xid : int) -> int:
     display = Gdk.get_default_root_window().get_display()
     cdef Display *xdisplay = get_xdisplay_for(display)
     if not XQueryTree(xdisplay, xid, &root, &parent, &children, &nchildren):
-        return None
+        return 0
     if nchildren > 0 and children != NULL:
         XFree(children)
     if parent==XNone:
-        return None
+        return 0
     return int(parent)
 
 

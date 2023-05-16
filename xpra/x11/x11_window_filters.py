@@ -8,6 +8,7 @@ from xpra.log import Logger
 from xpra.os_util import strtobytes
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
+from xpra.x11.gtk3.gdk_bindings import get_pywindow
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
 
 window_bindings = X11WindowBindings()
@@ -39,7 +40,7 @@ def get_window_value(filter_object, gdkwin):
     return get_x11_window_value(filter_object.property_name, gdkwin)
 
 def get_window(filter_object, window):
-    gdkwin = window.get_property("client-window")
+    gdkwin = get_pywindow(window.get_property("xid"))
     p = gdkwin
     log("get_window%s gdkwin=%s, recurse=%s", (filter_object, window), gdkwin, filter_object.recurse)
     while filter_object.recurse and p:

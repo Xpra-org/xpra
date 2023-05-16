@@ -31,7 +31,7 @@ class ScreenDesktopModel(DesktopModelBase):
         self.resize_exact = resize_exact
 
     def __repr__(self):
-        return f"ScreenDesktopModel({self.client_window.get_xid():x})"
+        return f"ScreenDesktopModel({self.xid:x})"
 
 
     def setup(self):

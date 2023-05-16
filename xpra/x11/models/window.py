@@ -189,7 +189,8 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         super().setup()
 
-        ogeom = self.client_window.get_geometry()
+        client_window = self.get_client_window()
+        ogeom = client_window.get_geometry()
         ox, oy, ow, oh = ogeom[:4]
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
@@ -253,11 +254,11 @@ class WindowModel(BaseWindowModel):
         elif (ow,oh)!=(nw,nh):
             self.corral_window.resize(nw, nh)
         if (ow,oh)!=(nw,nh):
-            self.client_window.resize(nw, nh)
-        self.client_window.show_unraised()
+            client_window.resize(nw, nh)
+        client_window.show_unraised()
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
-        self.client_window.get_geometry()
+        client_window.get_geometry()
         self._internal_set_property("shown", False)
         self._internal_set_property("resize-counter", 0)
         self._internal_set_property("client-geometry", None)
@@ -346,9 +347,10 @@ class WindowModel(BaseWindowModel):
         self.update_children()
 
     def do_unmanaged(self, wm_exiting):
-        log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
+        log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
         cwin = self.corral_window
         if cwin:
+            client_window = self.get_client_window()
             self.corral_window = None
             remove_event_receiver(cwin.get_xid(), self)
             geom = None
@@ -358,8 +360,8 @@ class WindowModel(BaseWindowModel):
                 geom = X11Window.getGeometry(self.xid)
             if geom is not None:
                 if self.client_reparented:
-                    self.client_window.reparent(get_default_root_window(), 0, 0)
-                self.client_window.set_events(self.client_window_saved_events)
+                    client_window.reparent(get_default_root_window(), 0, 0)
+                client_window.set_events(self.client_window_saved_events)
             self.client_reparented = False
             # It is important to remove from our save set, even after
             # reparenting, because according to the X spec, windows that are
@@ -374,7 +376,7 @@ class WindowModel(BaseWindowModel):
             with xswallow:
                 X11Window.sendConfigureNotify(self.xid)
             if wm_exiting:
-                self.client_window.show_unraised()
+                client_window.show_unraised()
             #it is now safe to destroy the corral window:
             cwin.destroy()
         super().do_unmanaged(wm_exiting)
@@ -503,11 +505,11 @@ class WindowModel(BaseWindowModel):
                 event, self.corral_xid, self.xid, self._managed)
         if not self._managed:
             return
-        if event.window==self.corral_window:
+        if event.window==self.corral_xid:
             #we only care about events on the client window
             geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_xid)
             return
-        if event.window!=self.client_window:
+        if event.window!=self.xid:
             #we only care about events on the client window
             geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored",
                     event.window)
@@ -515,7 +517,8 @@ class WindowModel(BaseWindowModel):
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
             return
-        if self.client_window is None or not self.client_window.is_visible():
+        client_window = self.get_client_window()
+        if client_window is None or not client_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: client window is not visible")
             return
         try:
@@ -526,11 +529,14 @@ class WindowModel(BaseWindowModel):
                 self.update_children()
         except XError as e:
             geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
-            geomlog.warn("Warning: failed to resize corral window %#x", cxid)
+            geomlog.warn("Warning: failed to resize corral window %#x", self.corral_xid)
             geomlog.warn(" %s", e)
 
     def update_children(self):
-        ww, wh = self.client_window.get_geometry()[2:4]
+        geom = X11Window.getGeometry(self.xid)
+        if not geom:
+            return
+        ww, wh = geom[2:4]
         children = []
         for xid in get_children(self.xid):
             if X11Window.is_inputonly(xid):
@@ -564,11 +570,12 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("requested-position", (x, y))
             self._internal_set_property("set-initial-position", True)
 
+        client_window = self.get_client_window()
         if resized:
             if moved:
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
-                self.client_window.move(0, 0)
+                client_window.move(0, 0)
                 self._updateprop("geometry", (x, y, w, h))
             else:
                 geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
@@ -577,7 +584,7 @@ class WindowModel(BaseWindowModel):
         elif moved:
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
-            self.client_window.move(0, 0)
+            client_window.move(0, 0)
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):

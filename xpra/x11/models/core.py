@@ -7,7 +7,7 @@
 import os
 import signal
 from socket import gethostname
-from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
+from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import bytestostr, get_proc_cmdline
@@ -21,6 +21,7 @@ from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk3.gdk_bindings import get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -115,10 +116,6 @@ class CoreX11WindowModel(WindowModelStub):
         the py_property_handlers do it in the other direction.
     """
     __common_properties__ = {
-        #the actual X11 client window
-        "client-window": (GObject.TYPE_PYOBJECT,
-                "gtk.gdk.Window representing the client toplevel", "",
-                GObject.ParamFlags.READABLE),
         #the X11 window id
         "xid": (GObject.TYPE_INT,
                 "X11 window id", "",
@@ -249,13 +246,11 @@ class CoreX11WindowModel(WindowModelStub):
         self.xid = client_window.get_xid()
         self.root_xid = client_window.get_screen().get_root_window().get_xid()
         log("new window %#x", self.xid)
-        self.client_window = client_window
-        self.client_window_saved_events = self.client_window.get_events()
+        self.client_window_saved_events = client_window.get_events()
         self._composite = None
         self._damage_forward_handle = None
         self._setup_done = False
         self._kill_count = 0
-        self._internal_set_property("client-window", client_window)
 
 
     def __repr__(self):  #pylint: disable=arguments-differ
@@ -265,6 +260,11 @@ class CoreX11WindowModel(WindowModelStub):
         except AttributeError:
             return repr(self)
 
+
+    def get_client_window(self):
+        if not self.xid:
+            return None
+        return get_pywindow(self.xid)
 
     #########################################
     # Setup and teardown
@@ -348,7 +348,7 @@ class CoreX11WindowModel(WindowModelStub):
         log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s",
             self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.xid, self)
-        GLib.idle_add(self.managed_disconnect)
+        self.managed_disconnect()
         if self._composite:
             if self._damage_forward_handle:
                 self._composite.disconnect(self._damage_forward_handle)

@@ -42,7 +42,8 @@ class SystemTrayWindowModel(CoreX11WindowModel):
     def move_resize(self, x : int, y : int, width : int, height : int):
         #Used by clients to tell us where the tray is located on screen
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
-        self.client_window.move_resize(x, y, width, height)
+        client_window = self.get_client_window()
+        client_window.move_resize(x, y, width, height)
         self._updateprop("geometry", (x, y, width, height))
         #force a refresh:
         event = TrayGeometryChanged()

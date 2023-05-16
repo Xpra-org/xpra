@@ -9,8 +9,8 @@ from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.gtk_common.error import xsync, xswallow
-from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
+from xpra.gtk_common.error import xsync, xswallow, xlog
+from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -322,7 +322,7 @@ class Wm(GObject.GObject):
         if wtype!=Gdk.WindowType.FOREIGN:
             log(f"skipping non foreign window %s", window_info(xid))
             return
-        if gdkwindow in self._windows:
+        if xid in self._windows:
             #already managed
             return
         try:
@@ -342,18 +342,19 @@ class Wm(GObject.GObject):
                 l(" window name: %s", window_name(gdkwindow))
                 l(" window info: %s", window_info(gdkwindow))
         else:
-            win.managed_connect("unmanaged", self._handle_client_unmanaged)
-            self._windows[gdkwindow] = win
-            self._windows_in_order.append(gdkwindow)
+            win.managed_connect("unmanaged", self._handle_client_unmanaged, xid)
+            self._windows[xid] = win
+            self._windows_in_order.append(xid)
             self.notify("windows")
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, window, _wm_exiting):
-        gdkwindow = window.get_property("client-window")
-        assert gdkwindow in self._windows
-        del self._windows[gdkwindow]
-        self._windows_in_order.remove(gdkwindow)
+    def _handle_client_unmanaged(self, model, _wm_exiting, xid):
+        if xid not in self._windows:
+            log.error(f"Error: gdk window {xid} not found in {self._windows}")
+            return
+        del self._windows[xid]
+        self._windows_in_order.remove(xid)
         self._update_window_list()
         self.notify("windows")
 
@@ -363,10 +364,12 @@ class Wm(GObject.GObject):
         # in a moment we'll get a signal telling us about the window that
         # doesn't exist anymore, will remove it from the list, and then call
         # _update_window_list again.
-        with xswallow:
-            self.root_set("_NET_CLIENT_LIST", ["window"], self._windows_in_order)
-            # This is a lie, but we don't maintain a stacking order, so...
-            self.root_set("_NET_CLIENT_LIST_STACKING", ["window"], self._windows_in_order)
+        dtype, dformat, window_xids = prop_encode(["u32"], tuple(self._windows_in_order))
+        log("prop_encode(%s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
+        xid = self._root.get_xid()
+        with xlog:
+            for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
+                raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)
 
     def do_xpra_client_message_event(self, event):
         # FIXME
