@@ -123,7 +123,10 @@ class WindowDamageHandler:
         if self._xshm_handle:
             sw, sh = self._xshm_handle.get_size()
             with xsync:
-                ww, wh = X11Window.getGeometry(self.xid)[2:4]
+                geom = X11Window.getGeometry(self.xid)[2:4]
+            if not geom:
+                return None
+            ww, wh = geom
             if sw!=ww or sh!=wh:
                 #size has changed!
                 #make sure the current wrapper gets garbage collected:

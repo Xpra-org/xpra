@@ -49,6 +49,9 @@ XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 
+
+CurrentTime = constants["CurrentTime"]
+
 # Re-stacking:
 Above = 0
 Below = 1
@@ -667,11 +670,11 @@ class CoreX11WindowModel(WindowModelStub):
     #########################################
 
     def do_xpra_unmap_event(self, event):
-        log("do_xpra_unmap_event(%s) client_window=%s, ", event, self.client_window)
+        log("do_xpra_unmap_event(%s) xid=%s, ", event, self.xid)
         self.unmanage()
 
     def do_xpra_destroy_event(self, event):
-        log("do_xpra_destroy_event(%s) client_window=%s, ", event, self.client_window)
+        log("do_xpra_destroy_event(%s) xid=%s, ", event, self.xid)
         if event.delivered_to is self.client_window:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
@@ -714,11 +717,11 @@ class CoreX11WindowModel(WindowModelStub):
         return False
 
     def do_xpra_configure_event(self, event):
-        if self.client_window is None or not self._managed:
+        if not self._managed:
             return
         #shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height)
-        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, new geometry=%s",
+        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) xid=%#x, new geometry=%s",
                 event, self.xid, geom)
         self._updateprop("geometry", geom)
 
@@ -827,11 +830,13 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn(" and FORCE_QUIT is disabled")
 
     def get_server_time(self):
-        return x11_get_server_time(self.client_window)
+        #TODO: re-implement gdk_x11_get_server_time
+        #without using a gdk window
+        return CurrentTime
 
     def send_delete(self):
         with xswallow:
-            send_wm_delete_window(self.xid, timestamp=self.get_server_time())
+            send_wm_delete_window(self.xid, timestamp=CurrentTime)
 
     def XKill(self):
         with xswallow:

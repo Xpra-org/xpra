@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject  # @UnresolvedImport
+from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
@@ -27,6 +27,7 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def __init__(self, resize_exact=False):
         super().__init__()
+        self.screen = Gdk.Screen.get_default()
         self.resize_exact = resize_exact
 
     def __repr__(self):
@@ -35,21 +36,20 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def setup(self):
         super().setup()
-        screen = self.client_window.get_screen()
-        screen.connect("size-changed", self._screen_size_changed)
-        self.update_size_hints(screen)
+        self.screen.connect("size-changed", self._screen_size_changed)
+        self.update_size_hints()
 
 
     def get_geometry(self):
-        return self.client_window.get_geometry()[:4]
+        return 0, 0, self.screen.get_width(), self.screen.get_height()
 
     def get_dimensions(self):
-        return self.client_window.get_geometry()[2:4]
+        return self.screen.get_width(), self.screen.get_height()
 
 
     def get_property(self, prop):
         if prop=="xid":
-            return int(self.client_window.get_xid())
+            return self.xid
         return super().get_property(prop)
 
 
@@ -79,15 +79,16 @@ class ScreenDesktopModel(DesktopModelBase):
             geomlog.error(" %s", str(e) or type(e))
 
     def _screen_size_changed(self, screen):
-        w, h = screen.get_width(), screen.get_height()
+        w, h = self.screen.get_width(), screen.get_height()
         screenlog("screen size changed: new size %ix%i", w, h)
-        screenlog("root window geometry=%s", self.client_window.get_geometry())
+        root = self.screen.get_root_window()
+        screenlog("root window geometry=%s", root.get_geometry())
         self.invalidate_pixmap()
-        self.update_size_hints(screen)
+        self.update_size_hints()
         self.emit("resized")
 
-    def update_size_hints(self, screen):
-        w, h = screen.get_width(), screen.get_height()
+    def update_size_hints(self):
+        w, h = self.screen.get_width(), self.screen.get_height()
         screenlog("screen dimensions: %ix%i", w, h)
         size_hints = {}
         def use_fixed_size():

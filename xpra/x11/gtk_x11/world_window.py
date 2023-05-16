@@ -10,7 +10,6 @@ from xpra.gtk_common.error import xlog
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.log import Logger
 
@@ -200,7 +199,7 @@ class WorldWindow(Gtk.Window):
         # server and then come back to our own process, which will then issue
         # an XSetInputFocus on itself.
         w = self.get_window()
-        send_wm_take_focus(w.get_xid(), x11_get_server_time(w))
+        send_wm_take_focus(w.get_xid(), CurrentTime)
 
     def reset_x_focus(self):
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
