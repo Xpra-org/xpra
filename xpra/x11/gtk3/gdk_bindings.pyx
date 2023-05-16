@@ -616,6 +616,7 @@ cdef init_x11_events():
         DamageNotify = XDamageNotify+event_base
         add_x_event_signal(DamageNotify, ("xpra-damage-event", None))
         add_x_event_type_name(DamageNotify, "DamageNotify")
+    set_debug_events()
 
 
 def add_x_event_signal(event, mapping):
@@ -630,14 +631,12 @@ def add_x_event_type_name(event, name):
     global x_event_type_names
     x_event_type_names[event] = name
     names_to_event_type[name] = event
-    set_debug_events()
 
 def add_x_event_type_names(event_type_names):
     global x_event_type_names, names_to_event_type
     x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
-    set_debug_events()
     verbose("x_event_signals=%s", x_event_signals)
     verbose("event_type_names=%s", x_event_type_names)
     verbose("names_to_event_type=%s", names_to_event_type)
