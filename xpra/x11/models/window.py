@@ -172,6 +172,7 @@ class WindowModel(BaseWindowModel):
         super().__init__(client_window)
         self.parking_window = parking_window
         self.corral_window = None
+        self.corral_xid : int = 0
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         #extra state attributes so we can unmanage() the window cleanly:
@@ -200,11 +201,11 @@ class WindowModel(BaseWindowModel):
                                         window_type=Gdk.WindowType.CHILD,
                                         event_mask=Gdk.EventMask.PROPERTY_CHANGE_MASK,
                                         title = "CorralWindow-%#x" % self.xid)
-        cxid = self.corral_window.get_xid()
-        log("setup() corral_window=%#x", cxid)
-        prop_set(cxid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
-        X11Window.substructureRedirect(cxid)
-        add_event_receiver(cxid, self)
+        self.corral_xid = self.corral_window.get_xid()
+        log("setup() corral_window=%#x", self.corral_xid)
+        prop_set(self.corral_xid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
+        X11Window.substructureRedirect(self.corral_xid)
+        add_event_receiver(self.corral_xid, self)
 
         # The child might already be mapped, in case we inherited it from
         # a previous window manager.  If so, we unmap it now, and save the
@@ -220,7 +221,7 @@ class WindowModel(BaseWindowModel):
         self.in_save_set = True
 
         log("setup() reparenting")
-        X11Window.Reparent(self.xid, cxid, 0, 0)
+        X11Window.Reparent(self.xid, self.corral_xid, 0, 0)
         self.client_reparented = True
 
         geom = X11Window.geometry_with_border(self.xid)
@@ -384,7 +385,7 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def raise_window(self):
-        X11Window.XRaiseWindow(self.corral_window.get_xid())
+        X11Window.XRaiseWindow(self.corral_xid)
         X11Window.XRaiseWindow(self.xid)
 
     def unmap(self):
@@ -406,7 +407,7 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def do_xpra_property_notify_event(self, event):
-        if event.delivered_to is self.corral_window:
+        if event.delivered_to==self.corral_xid:
             return
         super().do_xpra_property_notify_event(event)
 
@@ -421,10 +422,10 @@ class WindowModel(BaseWindowModel):
         log("do_child_map_request_event(%s)", event)
 
     def do_xpra_unmap_event(self, event):
-        log("do_xpra_unmap_event(%s) corral_window=%s, ", event, self.corral_window)
-        if event.delivered_to is self.corral_window or self.corral_window is None:
+        log(f"do_xpra_unmap_event({event}) corral_window={self.corral_xid:x}")
+        if event.delivered_to==self.corral_xid or self.corral_window is None:
             return
-        assert event.window is self.client_window
+        assert event.window==self.xid
         # The client window got unmapped.  The question is, though, was that
         # because it was withdrawn/destroyed, or was it because we unmapped it
         # going into IconicState?
@@ -437,10 +438,10 @@ class WindowModel(BaseWindowModel):
             self.unmanage()
 
     def do_xpra_destroy_event(self, event):
-        log("do_xpra_destroy_event(%s) corral_window=%s, ", event, self.corral_window)
-        if event.delivered_to is self.corral_window or self.corral_window is None:
+        log(f"do_xpra_destroy_event({event}) corral_window={self.corral_xid:x}")
+        if event.delivered_to==self.corral_xid or self.corral_window is None:
             return
-        assert event.window is self.client_window
+        assert event.window==self.xid
         super().do_xpra_destroy_event(event)
 
 
@@ -498,19 +499,18 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        cxid = self.corral_window.get_xid()
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s",
-                event, cxid, self.xid, self._managed)
+                event, self.corral_xid, self.xid, self._managed)
         if not self._managed:
             return
         if event.window==self.corral_window:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", cxid)
+            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_xid)
             return
         if event.window!=self.client_window:
             #we only care about events on the client window
             geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored",
-                    event.window.get_xid())
+                    event.window)
             return
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
@@ -581,10 +581,9 @@ class WindowModel(BaseWindowModel):
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):
-        cxid = self.corral_window.get_xid()
         hints = self.get_property("size-hints")
         geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
-                event, self.xid, cxid, configure_bits(event.value_mask), hints)
+                event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:

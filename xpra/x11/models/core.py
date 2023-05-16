@@ -20,7 +20,7 @@ from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
-from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver, x11_get_server_time
+from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -411,7 +411,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("xid", self.xid)
         self._updateprop("pid", pid)
         self._updateprop("ppid", ppid)
-        self._updateprop("has-alpha", depth==32)
+        self._updateprop("has-alpha", depth in (30, 32))
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
         #note: some of those are technically mutable,
@@ -424,7 +424,7 @@ class CoreX11WindowModel(WindowModelStub):
         for mutable in self._initial_x11_properties:
             handler = self._x11_property_handlers.get(mutable)
             if not handler:
-                log.error("BUG: unknown initial X11 property: %s", mutable)
+                log.error(f"Error: unknown initial X11 property: {mutable!r}")
             elif handler not in handlers:
                 handlers.add(handler)
                 try:
@@ -435,7 +435,7 @@ class CoreX11WindowModel(WindowModelStub):
                     raise
                 except Exception:
                     #try to continue:
-                    log.error("Error parsing initial property '%s':", mutable, exc_info=True)
+                    log.error("Error parsing initial property {mutable!r}", exc_info=True)
 
     def _scrub_x11(self):
         metalog("scrub_x11() x11 properties=%s", self._scrub_x11_properties)
@@ -551,7 +551,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_xpra_property_notify_event(self, event):
         #X11: PropertyNotify
-        assert event.window is self.client_window
+        assert event.window==self.xid
         self._handle_property_change(str(event.atom))
 
     def _handle_property_change(self, name):
@@ -675,7 +675,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_xpra_destroy_event(self, event):
         log("do_xpra_destroy_event(%s) xid=%s, ", event, self.xid)
-        if event.delivered_to is self.client_window:
+        if event.delivered_to==self.xid:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
             # However, this allows us to catch the destruction of unmapped
@@ -707,7 +707,7 @@ class CoreX11WindowModel(WindowModelStub):
             return True
         if event.message_type=="":
             log("empty message type: %s", event)
-            exid = event.window.get_xid()
+            exid = event.window
             if first_time(f"empty-x11-window-message-type-{exid:x}"):
                 log.warn(f"Warning: empty message type received for window {exid:x}")
                 log.warn(" %s", event)

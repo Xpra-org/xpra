@@ -516,7 +516,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         owned = self.owned
         xid = 0
         if event.owner:
-            xid = event.owner.get_xid()
+            xid = event.owner
         self.owned = xid and xid==self.xid
         log("do_selection_notify_event(%s) owned=%s, was %s (owner=%#x, xid=%#x), enabled=%s, can-send=%s",
             event, self.owned, owned, xid, self.xid, self._enabled, self._can_send)

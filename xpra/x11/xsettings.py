@@ -98,11 +98,12 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
-        add_event_receiver(self._root.get_xid(), self)
+        self.xid = self._root.get_xid()
+        add_event_receiver(self.xid, self)
         self._add_watch()
 
     def cleanup(self):
-        remove_event_receiver(self._root.get_xid(), self)
+        remove_event_receiver(self.xid, self)
 
     def _add_watch(self):
         owner = self.xsettings_owner()
@@ -110,7 +111,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
             add_event_receiver(owner.get_xid(), self)
 
     def do_xpra_client_message_event(self, event):
-        if (event.window is self._root
+        if (event.window is self.xid
             and event.message_type == "MANAGER"
             and event.data[1] == get_xatom(self._selection)):
             log("XSettings manager changed")

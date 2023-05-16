@@ -19,7 +19,7 @@ from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
-log = Logger("x11", "window")
+log = Logger("x11", "window", "damage")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
@@ -87,12 +87,13 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         e = None
         try:
             world = get_world_window()
-            gdkworld = None
+            wxid = None
             if world:
-                gdkworld = world.get_window()
+                wxid = world.get_window().get_xid()
             root = Gdk.Screen.get_default().get_root_window()
+            rxid = root.get_xid()
             xid = get_parent(self.xid)
-            while xid not in (None, root, gdkworld):
+            while xid not in (0, rxid, wxid):
                 # We have to use a lowlevel function to manipulate the
                 # event selection here, because SubstructureRedirectMask
                 # does not roundtrip through the GDK event mask

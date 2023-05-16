@@ -920,11 +920,12 @@ class X11ServerCore(GTKServerBase):
 
 
     def _bell_signaled(self, wm, event):
-        log("bell signaled on window %#x", event.window.get_xid())
+        log("bell signaled on window %#x", event.window)
         if not self.bell:
             return
         wid = 0
-        if event.window!=get_default_root_window() and event.window_model is not None:
+        rxid = get_default_root_window().get_xid()
+        if event.window!=rxid and event.window_model is not None:
             wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():

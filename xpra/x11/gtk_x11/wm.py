@@ -245,14 +245,6 @@ class Wm(GObject.GObject):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
-            w = get_pywindow(xid)
-            log(f"pywindow({xid:x})={w}")
-            if not w:
-                continue
-            wtype = w.get_window_type()
-            if wtype!=Gdk.WindowType.FOREIGN:
-                log(f"skipping non foreign window %s", window_info(xid))
-                continue
             if X11Window.is_override_redirect(xid):
                 log(f"skipping override redirect window %s", window_info(xid))
                 continue
@@ -260,7 +252,7 @@ class Wm(GObject.GObject):
                 log(f"skipping unmapped window %s", window_info(xid))
                 continue
             log(f"Wm managing pre-existing child window {xid:x}")
-            self._manage_client(w)
+            self._manage_client(xid)
 
         # Also watch for focus change events on the root window
         X11Window.selectFocusChange(rxid)
@@ -321,8 +313,14 @@ class Wm(GObject.GObject):
 
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
-    def _manage_client(self, gdkwindow):
+    def _manage_client(self, xid):
+        gdkwindow = get_pywindow(xid)
+        log(f"pywindow({xid:x})={gdkwindow}")
         if not gdkwindow:
+            return
+        wtype = gdkwindow.get_window_type()
+        if wtype!=Gdk.WindowType.FOREIGN:
+            log(f"skipping non foreign window %s", window_info(xid))
             return
         if gdkwindow in self._windows:
             #already managed
@@ -388,7 +386,7 @@ class Wm(GObject.GObject):
             #so this must be a an unmapped window
             frame = None
             with xswallow:
-                xid = event.window.get_xid()
+                xid = event.window
                 if not X11Window.is_override_redirect(xid):
                     #use the global default:
                     frame = self.root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
@@ -396,7 +394,7 @@ class Wm(GObject.GObject):
                     #fallback:
                     frame = (0, 0, 0, 0)
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
-                prop_set(event.window.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], frame)
+                prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)
@@ -410,9 +408,10 @@ class Wm(GObject.GObject):
         remove_fallback_receiver("child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
+        xid = self._ewmh_window.get_xid()
         with xswallow:
-            prop_del(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK")
-            prop_del(self._ewmh_window, "_NET_WM_NAME")
+            prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
+            prop_del(xid, "_NET_WM_NAME")
         destroy_world_window()
 
 
@@ -428,7 +427,10 @@ class Wm(GObject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
-        model = self._windows.get(event.window)
+        gdkwindow = get_pywindow(event.window)
+        if not gdkwindow:
+            return
+        model = self._windows.get(gdkwindow)
         if model:
             #the window has been reparented already,
             #but we're getting the configure request event on the root window

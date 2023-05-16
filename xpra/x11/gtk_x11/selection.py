@@ -43,7 +43,6 @@ class AlreadyOwned(Exception):
 class ManagerSelection(GObject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
-
         "xpra-destroy-event": one_arg_signal,
         }
 
@@ -55,8 +54,8 @@ class ManagerSelection(GObject.GObject):
         self.atom = selection
         atom = Gdk.Atom.intern(selection, False)
         self.clipboard = Gtk.Clipboard.get(atom)
-        self._xwindow = None
-        self.exit_timer = None
+        self.xid : int = 0
+        self.exit_timer : int = 0
 
     def _owner(self):
         return X11WindowBindings().XGetSelectionOwner(self.atom)
@@ -114,18 +113,18 @@ class ManagerSelection(GObject.GObject):
             ts_num = unpack("@L", ts_data[:Lsize])[0]
         else:
             ts_num = 0      #CurrentTime
-            log.warn("invalid data for 'TIMESTAMP': %s", ([hex(ord(x)) for x in ts_data]))
+            log.warn("invalid data for 'TIMESTAMP': %s", tuple(hex(ord(x)) for x in ts_data))
         log("selection timestamp(%s)=%s", ts_data, ts_num)
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
-        self._xwindow = X11WindowBindings().XGetSelectionOwner(self.atom)
+        self.xid = int(X11WindowBindings().XGetSelectionOwner(self.atom))
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         xid = root.get_xid()
         X11WindowBindings().sendClientMessage(xid, xid, False, StructureNotifyMask,
                           "MANAGER",
-                          ts_num, selection_xatom, self._xwindow)
+                          ts_num, selection_xatom, self.xid)
 
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
@@ -144,41 +143,41 @@ class ManagerSelection(GObject.GObject):
                 Gtk.main()
                 if self.exit_timer:
                     GLib.source_remove(self.exit_timer)
-                    self.exit_timer = None
+                    self.exit_timer = 0
                 log("...they did.")
-        window = get_pywindow(self._xwindow)
+        window = get_pywindow(self.xid)
         window.set_title("Xpra_ManagerSelection%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
 
     def exit_timeout(self):
-        self.exit_timer = None
+        self.exit_timer = 0
         log.error("selection timeout")
         log.error(" the current owner did not exit")
         sys.exit(ExitCode.TIMEOUT)
 
     def _owner_change(self, clipboard, event):
-        log("owner_change(%s, %s)", clipboard, event)
-        if str(event.selection)!=self.atom:
+        log(f"owner_change({clipboard}, {event}) selection={event.selection}")
+        if str(event.selection)!=self.atom or not event.owner:
             #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
             return
-        if event.owner:
-            owner = event.owner.get_xid()
-            if owner==self._xwindow:
-                log("_owner_change(..) we still own %s", event.selection)
-                return
-        if self._xwindow:
-            self._xwindow = None
+        owner = event.owner.get_xid()
+        log(f"owner_change({clipboard}, {event}) selection={event.selection}, owner={owner:x}, xid={self.xid:x}")
+        if owner==self.xid:
+            log("_owner_change(..) we still own %s", event.selection)
+            return
+        if self.xid:
+            self.xid = 0
             self.emit("selection-lost")
 
     def do_xpra_destroy_event(self, event):
-        w = event.window
-        if w:
-            remove_event_receiver(w.get_xid(), self)
+        xid = event.window
+        if xid:
+            remove_event_receiver(xid, self)
         Gtk.main_quit()
 
     def window(self):
-        if self._xwindow is None:
+        if self.xid is None:
             return None
-        return get_pywindow(self._xwindow)
+        return get_pywindow(self.xid)
 
 GObject.type_register(ManagerSelection)

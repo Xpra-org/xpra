@@ -28,6 +28,7 @@ from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,
     get_children,
+    get_pywindow,
     )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -416,7 +417,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             with xlog:
                 can_add = X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid)
             if can_add:
-                self._add_new_or_window(window)
+                self._add_new_or_window(xid)
 
     def _lookup_window(self, wid):
         if not isinstance(wid, int):
@@ -580,18 +581,18 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #if the window is smaller than before, or at least only send the new edges rather than the whole window
             ss.damage(wid, window, 0, 0, nw, nh)
 
-    def _add_new_or_window(self, raw_window):
-        xid = raw_window.get_xid()
+    def _add_new_or_window(self, xid):
         if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        if raw_window.get_window_type()==Gdk.WindowType.TEMP:
+        gdk_window = get_pywindow(xid)
+        if not gdk_window or gdk_window.get_window_type()==Gdk.WindowType.TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be Gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
-        wid = getattr(raw_window, WINDOW_MODEL_KEY, None)
+        wid = getattr(gdk_window, WINDOW_MODEL_KEY, None)
         window = self._id_to_window.get(wid)
         if window:
             if window.is_managed():
@@ -612,20 +613,20 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            tray_window = get_tray_window(raw_window)
+            tray_window = get_tray_window(gdk_window)
             if tray_window is not None:
                 assert self._tray
                 from xpra.x11.models.systray import SystemTrayWindowModel
-                window = SystemTrayWindowModel(raw_window)
+                window = SystemTrayWindowModel(gdk_window)
                 wid = self._add_new_window_common(window)
-                setattr(raw_window, WINDOW_MODEL_KEY, wid)
+                setattr(gdk_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 self._send_new_tray_window_packet(wid, window)
             else:
                 from xpra.x11.models.or_window import OverrideRedirectWindowModel
-                window = OverrideRedirectWindowModel(raw_window)
+                window = OverrideRedirectWindowModel(gdk_window)
                 wid = self._add_new_window_common(window)
-                setattr(raw_window, WINDOW_MODEL_KEY, wid)
+                setattr(gdk_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)

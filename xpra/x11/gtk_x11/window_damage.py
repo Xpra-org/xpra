@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -123,10 +123,10 @@ class WindowDamageHandler:
         if self._xshm_handle:
             sw, sh = self._xshm_handle.get_size()
             with xsync:
-                geom = X11Window.getGeometry(self.xid)[2:4]
+                geom = X11Window.getGeometry(self.xid)
             if not geom:
                 return None
-            ww, wh = geom
+            ww, wh = geom[2:4]
             if sw!=ww or sh!=wh:
                 #size has changed!
                 #make sure the current wrapper gets garbage collected:

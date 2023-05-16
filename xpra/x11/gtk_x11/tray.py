@@ -104,6 +104,7 @@ class SystemTray(GObject.GObject):
     def __init__(self):
         super().__init__()
         self.tray_window = None
+        self.xid = 0
         self.window_trays = {}
         self.tray_windows = {}
         self.setup_tray_window()
@@ -117,16 +118,15 @@ class SystemTray(GObject.GObject):
             rxid = root.get_xid()
             X11Window.Unmap(wxid)
             X11Window.Reparent(wxid, rxid, 0, 0)
-        tray_xid = self.tray_window.get_xid()
         with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
-            if owner==tray_xid:
+            if owner==self.xid:
                 X11Window.XSetSelectionOwner(0, SELECTION)
                 log("SystemTray.cleanup() reset %s selection owner to %#x",
                     SELECTION, X11Window.XGetSelectionOwner(SELECTION))
             else:
                 log.warn("Warning: we were no longer the tray selection owner")
-        remove_event_receiver(tray_xid, self)
+        remove_event_receiver(self.xid, self)
         tray_windows = self.tray_windows
         self.tray_windows = {}
         for window, tray_window in tray_windows.items():
@@ -155,24 +155,25 @@ class SystemTray(GObject.GObject):
         self.tray_window = GDKX11Window(root, width=1, height=1,
                                         title="Xpra-SystemTray",
                                         visual=visual)
-        xtray = self.tray_window.get_xid()
-        set_tray_visual(xtray, visual)
-        set_tray_orientation(xtray, TRAY_ORIENTATION_HORZ)
-        log("setup tray: tray window %#x", xtray)
+        self.xid = self.tray_window.get_xid()
+        set_tray_visual(self.xid, visual)
+        set_tray_orientation(self.xid, TRAY_ORIENTATION_HORZ)
+        log("setup tray: tray window %#x", self.xid)
         display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
         try:
             with xsync:
-                setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
+                setsel = X11Window.XSetSelectionOwner(self.xid, SELECTION)
                 log("setup tray: set selection owner returned %s, owner=%#x",
                     setsel, X11Window.XGetSelectionOwner(SELECTION))
                 event_mask = StructureNotifyMask
                 log("setup tray: sending client message")
                 xid = root.get_xid()
                 X11Window.sendClientMessage(xid, xid, False, event_mask, "MANAGER",
-                                  CurrentTime, SELECTION, xtray)
+                                  CurrentTime, SELECTION, self.xid)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
-                assert owner==xtray, "we failed to get ownership of the tray selection"
-                add_event_receiver(xtray, self)
+                if owner!=self.xid:
+                    raise RuntimeError("we failed to get ownership of the tray selection")
+                add_event_receiver(self.xid, self)
                 log("setup tray: done")
         except Exception:
             log("setup_tray failure", exc_info=True)
@@ -180,7 +181,7 @@ class SystemTray(GObject.GObject):
             raise
 
     def do_xpra_client_message_event(self, event):
-        if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.tray_window and event.format==32:
+        if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.xid and event.format==32:
             opcode = event.data[1]
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
