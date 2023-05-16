@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -103,39 +103,43 @@ PROP_TYPES.update({
     })
 
 
-def prop_set(target, key, etype, value):
-    raw_prop_set(target.get_xid(), key, etype, value)
+def prop_set(xid:int, key:str, etype, value):
+    dtype, dformat, data = prop_encode(etype, value)
+    raw_prop_set(xid, key, dtype, dformat, data)
 
-def raw_prop_set(xid, key, etype, value):
+def raw_prop_set(xid:int, key:str, dtype, dformat, data):
+    if not isinstance(xid, int):
+        raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:
-        dtype, dformat, data = prop_encode(etype, value)
         X11WindowBindings().XChangeProperty(xid, key, dtype, dformat, data)
 
 
-def prop_type_get(target, key):
+def prop_type_get(xid:int, key:str):
     try:
-        return X11WindowBindings().GetWindowPropertyType(target.get_xid(), key)
+        return X11WindowBindings().GetWindowPropertyType(xid, key)
     except XError:
-        log("prop_type_get%s", (target, key), exc_info=True)
+        log("prop_type_get%s", (xid, key), exc_info=True)
         return None
 
 
 # May return None.
-def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
-    data = raw_prop_get(target, key, etype, ignore_errors, raise_xerrors)
+def prop_get(xid:int, key:str, etype, ignore_errors:bool=False, raise_xerrors:bool=False):
+    data = raw_prop_get(xid, key, etype, ignore_errors, raise_xerrors)
     if data is None:
         return None
     return do_prop_decode(key, etype, data, ignore_errors)
 
-def _etypestr(etype):
+def _etypestr(etype) -> str:
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
         return f"array of {scalar_type}"
     return str(etype)
 
-def raw_prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
+def raw_prop_get(xid:int, key, etype, ignore_errors:bool=False, raise_xerrors:bool=False):
     def etypestr():
         return _etypestr(etype)
+    if not isinstance(xid, int):
+        raise TypeError(f"xid must be an int, not a {type(xid)}")
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
     else:
@@ -144,22 +148,22 @@ def raw_prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     try:
         buffer_size = PROP_SIZES.get(scalar_type, 64*1024)
         with XSyncContext():
-            data = X11WindowBindings().XGetWindowProperty(target.get_xid(), key, atom, etype, buffer_size)
+            data = X11WindowBindings().XGetWindowProperty(xid, key, atom, etype, buffer_size)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)
             return None
     except XError:
-        log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
+        log("raw_prop_get%s", (xid, key, etype, ignore_errors, raise_xerrors), exc_info=True)
         if raise_xerrors:
             raise
-        log.info("Missing window %s or wrong property type %s (%s)", target, key, etypestr())
+        log.info(f"Missing window {xid:x} or wrong property type {key} ({etypestr()})")
         return None
     except PropertyError as e:
-        log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
+        log("raw_prop_get%s", (xid, key, etype, ignore_errors, raise_xerrors), exc_info=True)
         if not ignore_errors:
-            log.info("Missing property or wrong property type %s (%s)", key, etypestr())
-            log.info(" %s", e)
+            log.info(f"Missing property or wrong property type {key} ({etypestr()})")
+            log.info(" %s", str(e) or type(e))
         return None
     return data
 
@@ -180,6 +184,8 @@ def do_prop_decode(key, etype, data, ignore_errors=False):
         log.warn(" data: %r", repr_ellipsized(str(data)), exc_info=True)
         raise
 
-def prop_del(target, key):
+def prop_del(xid:int, key:str):
+    if not isinstance(xid, int):
+        raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:
-        X11WindowBindings().XDeleteProperty(target.get_xid(), key)
+        X11WindowBindings().XDeleteProperty(xid, key)

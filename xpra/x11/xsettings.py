@@ -48,7 +48,7 @@ class XSettingsManager:
             log.warn("Warning: discarding xsettings because of incompatible format: %s", type(settings))
             return
         try:
-            prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
+            prop_set(self._window.get_xid(), XSETTINGS, XSETTINGS_TYPE, settings)
         except XError as e:
             log("set_settings(%s)", settings, exc_info=True)
             log.error("Error: XSettings not applied")
@@ -81,7 +81,7 @@ class XSettingsHelper:
         if owner is None:
             return None
         try:
-            return prop_get(owner, XSETTINGS, XSETTINGS_TYPE)
+            return prop_get(owner.get_xid(), XSETTINGS, XSETTINGS_TYPE)
         except XError:
             log("X error while fetching XSettings data; ignored", exc_info=True)
             return None

@@ -11,7 +11,6 @@ from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
-from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -266,10 +265,10 @@ class BaseWindowModel(CoreX11WindowModel):
         with xswallow:
             if workspace==WORKSPACE_UNSET:
                 workspacelog("removing _NET_WM_DESKTOP property from window %#x", self.xid)
-                prop_del(self.client_window, "_NET_WM_DESKTOP")
+                self.prop_del("_NET_WM_DESKTOP")
             else:
                 workspacelog("setting _NET_WM_DESKTOP=%s on window %#x", workspacestr(workspace), self.xid)
-                prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
+                self.prop_set("_NET_WM_DESKTOP", "u32", workspace)
 
 
     #########################################
@@ -280,13 +279,13 @@ class BaseWindowModel(CoreX11WindowModel):
         state = self.get_property("state")
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xswallow:
-            prop_set(self.client_window, "_NET_WM_STATE", ["atom"], state)
+            self.prop_set("_NET_WM_STATE", ["atom"], state)
 
     def _sync_iconic(self, *_args):
         def set_state(state):
             log("_handle_iconic_update: set_state(%s)", state)
             with xswallow:
-                prop_set(self.client_window, "WM_STATE", "state", state)
+                self.prop_set("WM_STATE", "state", state)
 
         if self.get("iconic"):
             set_state(IconicState)
@@ -640,8 +639,7 @@ class BaseWindowModel(CoreX11WindowModel):
             workspace = int(event.data[0])
             #query the workspace count on the root window
             #since we cannot access Wm from here..
-            root = self.client_window.get_screen().get_root_window()
-            ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
+            ndesktops = self.root_prop_get("_NET_NUMBER_OF_DESKTOPS", "u32")
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)
             if ndesktops>0 and (
@@ -663,7 +661,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data)
                 return False
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
-            prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
+            self.prop_set("_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
             return True
         if event.message_type=="_NET_RESTACK_WINDOW":
             source = {1 : "application", 2 : "pager"}.get(event.data[0], "default (%s)" % event.data[0])

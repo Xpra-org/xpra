@@ -141,8 +141,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.frame_request_window.realize()
         with xsync:
             win = self.frame_request_window.get_window()
-            framelog("setup_frame_request_windows() window=%#x", win.get_xid())
-            send_wm_request_frame_extents(root, win)
+            xid = win.get_xid()
+            framelog("setup_frame_request_windows() window=%#x", xid)
+            send_wm_request_frame_extents(root.get_xid(), xid)
 
     def run(self):
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
@@ -743,8 +744,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         root = self.get_root_window()
         with xsync:
             win = window.get_window()
-            framelog(f"request_frame_extents({window}) xid={win.get_xid()}")
-            send_wm_request_frame_extents(root, win)
+            xid = win.get_xid()
+            framelog(f"request_frame_extents({window}) xid={xid:x}")
+            send_wm_request_frame_extents(root.get_xid(), xid)
 
     def get_frame_extents(self, window):
         #try native platform code first:
@@ -761,7 +763,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.x11.gtk_x11.prop import prop_get
         gdkwin = window.get_window()
         assert gdkwin
-        v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+        v = prop_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
         framelog(f"get_frame_extents({window.get_title()})={v}")
         return v
 

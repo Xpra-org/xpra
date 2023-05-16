@@ -1,12 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
-from xpra.x11.gtk_x11.prop import prop_get, raw_prop_get
+from xpra.x11.gtk_x11.prop import raw_prop_get, prop_get, do_prop_decode
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -23,20 +23,24 @@ def get_wm_info():
         X11Window = X11WindowBindings()
         screen = display.get_default_screen()
         root = screen.get_root_window()
+        root_xid = root.get_xid()
         info = {
             "display"   : display.get_name(),
-            "root"      : root.get_xid(),
+            "root"      : root_xid,
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-        ewmh_xid = raw_prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False)
+        ewmh_xid = raw_prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False)
         if ewmh_xid:
-            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
-            if ewmh_wm:
-                info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
-                info["wmname"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True) or ""
-            else:
-                info["wmname"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True) or ""
+            wm_name = None
+            ewmh_window = do_prop_decode("_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
+            if ewmh_window:
+                info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
+                wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
+            if not wm_name:
+                wm_name = prop_get(root_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
+            if wm_name:
+                info["wmname"] = wm_name
         for name, prop_name, prop_type in (
             ("xpra-server-pid",     "XPRA_SERVER_PID",              "u32"),
             ("xpra-vfb-pid",        "XPRA_XVFB_PID",                "u32"),
@@ -46,8 +50,8 @@ def get_wm_info():
             ("dbus-pid",            "DBUS_SESSION_BUS_PID",         "u32"),
             ("dbus-window",         "DBUS_SESSION_BUS_WINDOW_ID",   "u32"),
             ):
-            v = prop_get(root, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
-            if v:
+            v = prop_get(root_xid, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
+            if v is not None:
                 info[name] = v
     log("get_wm_info()=%s", info)
     return info

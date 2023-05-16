@@ -163,7 +163,8 @@ class X11ServerCore(GTKServerBase):
         #check the property first,
         #because we may be inheriting this display,
         #in which case the screen sizes list may be longer than 1
-        eprop = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)
+        xid = self.root_window.get_xid()
+        eprop = prop_get(xid, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)
         screenlog("_XPRA_RANDR_EXACT_SIZE=%s", eprop)
         self.randr_exact_size = eprop==1 or RandR.get_version()>=(1, 6)
         if not self.randr_exact_size:

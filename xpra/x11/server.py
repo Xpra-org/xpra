@@ -22,7 +22,7 @@ from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
-from xpra.x11.gtk_x11.prop import raw_prop_set
+from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -133,14 +133,15 @@ class XpraServer(GObject.GObject, X11ServerBase):
         root = get_default_root_window()
         root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
         xid = root.get_xid()
-        raw_prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
+        prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
             try:
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
-                        raw_prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
+                        xid = self.root_overlay.get_xid()
+                        prop_set(xid, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
@@ -374,8 +375,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if DUMMY_DPI:
             root = get_default_root_window()
             xid = root.get_xid()
-            raw_prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
-            raw_prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
+            prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
+            prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
 

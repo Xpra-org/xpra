@@ -212,6 +212,7 @@ class ServerCore:
         self.session_name = ""
 
         #Features:
+        self.readonly = False
         self.mdns = False
         self.mdns_publishers = {}
         self.encryption = None

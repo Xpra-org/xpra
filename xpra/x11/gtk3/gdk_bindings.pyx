@@ -77,8 +77,7 @@ cdef extern from "gtk-3.0/gdk/gdk.h":
     int gdk_x11_display_error_trap_pop(GdkDisplay *display)
 
 cdef extern from "gtk-3.0/gdk/gdkx.h":
-    unsigned int gdk_x11_get_server_time(GdkWindow *window)
-    #define GDK_WINDOW_XID(win)           (gdk_x11_window_get_xid (win))
+    pass
 
 cdef extern from "gtk-3.0/gdk/gdkproperty.h":
     ctypedef int gint
@@ -263,10 +262,6 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
 
 
 # Basic utilities:
-
-def get_server_time(gdkwindow):
-    return gdk_x11_get_server_time(<GdkWindow*> unwrap(gdkwindow, Gdk.Window))
-
 
 cdef int get_xwindow(pywindow):
     return GDK_WINDOW_XID(<GdkWindow*>unwrap(pywindow, Gdk.Window))

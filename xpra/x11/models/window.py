@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.common import Unmanageable
@@ -202,7 +202,7 @@ class WindowModel(BaseWindowModel):
                                         title = "CorralWindow-%#x" % self.xid)
         cxid = self.corral_window.get_xid()
         log("setup() corral_window=%#x", cxid)
-        prop_set(self.corral_window, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
+        prop_set(cxid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
         add_event_receiver(self.corral_window, self)
 
@@ -385,7 +385,7 @@ class WindowModel(BaseWindowModel):
 
     def raise_window(self):
         X11Window.XRaiseWindow(self.corral_window.get_xid())
-        X11Window.XRaiseWindow(self.client_window.get_xid())
+        X11Window.XRaiseWindow(self.xid)
 
     def unmap(self):
         with xsync:
@@ -421,6 +421,7 @@ class WindowModel(BaseWindowModel):
         log("do_child_map_request_event(%s)", event)
 
     def do_xpra_unmap_event(self, event):
+        log("do_xpra_unmap_event(%s) corral_window=%s, ", event, self.corral_window)
         if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
@@ -436,6 +437,7 @@ class WindowModel(BaseWindowModel):
             self.unmanage()
 
     def do_xpra_destroy_event(self, event):
+        log("do_xpra_destroy_event(%s) corral_window=%s, ", event, self.corral_window)
         if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
@@ -686,8 +688,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_motif_wm_hints_change(self):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
-        motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints",
-                               ignore_errors=False, raise_xerrors=True)
+        motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
         if motif_hints:
             if motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT):
@@ -865,7 +866,7 @@ class WindowModel(BaseWindowModel):
             X11Window.XSetInputFocus(self.xid, now)
         if "WM_TAKE_FOCUS" in protocols:
             focuslog("... using WM_TAKE_FOCUS")
-            send_wm_take_focus(self.client_window, now)
+            send_wm_take_focus(self.xid, now)
         self.set_active()
 
 

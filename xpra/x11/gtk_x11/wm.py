@@ -259,10 +259,10 @@ class Wm(GObject.GObject):
         # (and notifications for both)
 
     def root_set(self, *args):
-        prop_set(self._root, *args)
+        prop_set(self._root.get_xid(), *args)
 
     def root_get(self, *args):
-        return prop_get(self._root, *args)
+        return prop_get(self._root.get_xid(), *args)
 
     def set_workarea(self, x, y, width, height):
         v = [x, y, width, height]
@@ -373,17 +373,17 @@ class Wm(GObject.GObject):
             #if we're here, that means the window model does not exist
             #(or it would have processed the event)
             #so this must be a an unmapped window
-            frame = (0, 0, 0, 0)
+            frame = None
             with xswallow:
-                if not X11Window.is_override_redirect(event.window.get_xid()):
+                xid = event.window.get_xid()
+                if not X11Window.is_override_redirect(xid):
                     #use the global default:
-                    frame = prop_get(self._root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
+                    frame = self.root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
                 if not frame:
                     #fallback:
                     frame = (0, 0, 0, 0)
-                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x",
-                         frame, event.window.get_xid())
-                prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
+                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
+                prop_set(event.window.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)
@@ -476,16 +476,17 @@ class Wm(GObject.GObject):
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
         self._ewmh_window = GDKX11Window(self._root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
-        prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
+        prop_set(self._ewmh_window.get_xid(), "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)
         self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
     def get_net_wm_name(self):
         try:
-            return prop_get(self._ewmh_window, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
+            return prop_get(self._ewmh_window.get_xid(), "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
         except Exception as e:
-            log.error("error querying _NET_WM_NAME: %s", e)
+            log.error("Error querying _NET_WM_NAME")
+            log.estr(e)
             return None
 
 GObject.type_register(Wm)

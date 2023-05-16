@@ -7,11 +7,11 @@
 
 def window_name(window):
     from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(window, "_NET_WM_NAME", "utf8", True) or "unknown"
+    return prop_get(window.get_xid(), "_NET_WM_NAME", "utf8", True) or "unknown"
 
 def window_info(window):
     from xpra.x11.gtk_x11.prop import prop_get
-    net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
+    net_wm_name = prop_get(window.get_xid(), "_NET_WM_NAME", "utf8", True)
     return "%s %s visible=%s" % (net_wm_name, window.get_geometry(), window.is_visible())
 
 

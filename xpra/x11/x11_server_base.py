@@ -16,6 +16,8 @@ from xpra.server import EXITING_CODE
 from xpra.common import SYNC_ICC
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.x11.gtk_x11.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLACKLISTED_XSETTINGS
 from xpra.log import Logger
 
@@ -31,9 +33,12 @@ SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 def root_prop_set(prop_name, prop_type, value):
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk_common.gtk_util import get_default_root_window
-    from xpra.x11.gtk_x11.prop import prop_set
-    prop_set(get_default_root_window(), prop_name, prop_type, value)
+    xid = get_default_root_window().get_xid()
+    prop_set(xid, prop_name, prop_type, value)
+
+def root_prop_del(prop_name):
+    xid = get_default_root_window().get_xid()
+    prop_del(xid, prop_name)
 
 def _get_antialias_hintstyle(antialias):
     hintstyle = antialias.strget("hintstyle", "").lower()
@@ -85,7 +90,7 @@ class X11ServerBase(X11ServerCore):
             self.init_all_server_settings()
 
     def save_pid(self):
-        root_prop_set(b"XPRA_SERVER_PID", "u32", os.getpid())
+        root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
 
     def clean_x11_properties(self):
         super().clean_x11_properties()
@@ -263,9 +268,8 @@ class X11ServerBase(X11ServerCore):
 
     def reset_icc_profile(self):
         screenlog("reset_icc_profile()")
-        from xpra.x11.gtk_x11.prop import prop_del
-        prop_del(self.root_window, "_ICC_PROFILE")
-        prop_del(self.root_window, "_ICC_PROFILE_IN_X_VERSION")
+        root_prop_del("_ICC_PROFILE")
+        root_prop_del("_ICC_PROFILE_IN_X_VERSION")
         self.icc_profile = b""
 
 

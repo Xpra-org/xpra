@@ -83,7 +83,8 @@ CurrentTime = constants["CurrentTime"]
 # have gone wonky.
 
 def root_set(*args):
-    prop_set(get_default_root_window(), *args)
+    xid = get_default_root_window().get_xid()
+    prop_set(xid, *args)
 
 world_window = None
 def get_world_window():
@@ -168,7 +169,7 @@ class WorldWindow(Gtk.Window):
             # (ICCCM violating) to use CurrentTime in a WM_TAKE_FOCUS message,
             # but GTK doesn't happen to care, and this guarantees that we
             # *will* get the focus, and thus a real FocusIn event.
-            send_wm_take_focus(self.get_window(), CurrentTime)
+            send_wm_take_focus(self.get_window().get_xid(), CurrentTime)
 
     def add(self, widget):
         w = widget.get_window()
@@ -199,8 +200,7 @@ class WorldWindow(Gtk.Window):
         # server and then come back to our own process, which will then issue
         # an XSetInputFocus on itself.
         w = self.get_window()
-        now = x11_get_server_time(w)
-        send_wm_take_focus(w, now)
+        send_wm_take_focus(w.get_xid(), x11_get_server_time(w))
 
     def reset_x_focus(self):
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())

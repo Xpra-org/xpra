@@ -1400,7 +1400,8 @@ def _do_run_server(script_file, cmdline,
                 from xpra.gtk_common.gtk_util import get_default_root_window
                 from xpra.x11.gtk_x11.prop import prop_get
                 try:
-                    return prop_get(get_default_root_window(), prop, "u32")
+                    xid = get_default_root_window().get_xid()
+                    return prop_get(xid, prop, "u32")
                 except Exception:
                     return None
             xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")

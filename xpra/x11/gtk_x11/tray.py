@@ -82,11 +82,11 @@ def get_tray_window(tray_window):
 def set_tray_window(tray_window, window):
     setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, window.get_xid())
 
-def set_tray_visual(tray_window, gdk_visual):
-    prop_set(tray_window, TRAY_VISUAL, "visual", gdk_visual)
+def set_tray_visual(xid, gdk_visual):
+    prop_set(xid, TRAY_VISUAL, "visual", gdk_visual)
 
-def set_tray_orientation(tray_window, orientation):
-    prop_set(tray_window, TRAY_ORIENTATION, "u32", orientation)
+def set_tray_orientation(xid, orientation):
+    prop_set(xid, TRAY_ORIENTATION, "u32", orientation)
 
 
 class SystemTray(GObject.GObject):
@@ -155,8 +155,8 @@ class SystemTray(GObject.GObject):
                                         title="Xpra-SystemTray",
                                         visual=visual)
         xtray = self.tray_window.get_xid()
-        set_tray_visual(self.tray_window, visual)
-        set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
+        set_tray_visual(xtray, visual)
+        set_tray_orientation(xtray, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
         display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
         try:
@@ -220,7 +220,7 @@ class SystemTray(GObject.GObject):
         root = get_default_root_window()
         window = GdkX11.X11Window.foreign_new_for_display(root.get_display(), xid)
         if window is None:
-            log.warn("could not find gdk window for tray window %#x", xid)
+            log.warn(f"Warning: could not find gdk window for tray window {xid:x}")
             return
         log("dock_tray: root=%s, window=%s", root, window)
         w, h = window.get_geometry()[2:4]
@@ -234,9 +234,9 @@ class SystemTray(GObject.GObject):
         add_event_receiver(window, self)
         w = max(1, min(MAX_TRAY_SIZE, w))
         h = max(1, min(MAX_TRAY_SIZE, h))
-        title = prop_get(window, "_NET_WM_NAME", "utf8", ignore_errors=True)
+        title = prop_get(xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
         if title is None:
-            title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
+            title = prop_get(xid, "WM_NAME", "latin1", ignore_errors=True)
         if title is None:
             title = ""
         xid = root.get_xid()

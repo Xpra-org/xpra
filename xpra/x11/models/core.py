@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,9 +18,9 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAP
 from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
-from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_type_get, PYTHON_TYPES
+from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
-from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver, x11_get_server_time
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -244,6 +244,7 @@ class CoreX11WindowModel(WindowModelStub):
     def __init__(self, client_window):
         super().__init__()
         self.xid = client_window.get_xid()
+        self.root_xid = client_window.get_screen().get_root_window().get_xid()
         log("new window %#x", self.xid)
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
@@ -489,15 +490,11 @@ class CoreX11WindowModel(WindowModelStub):
     # Python objects synced to X11 properties
     #########################################
 
-    def prop_set(self, key, ptype, value):
-        prop_set(self.client_window, key, ptype, value)
-
-
     def _sync_allowed_actions(self, *_args):
         actions = self.get_property("allowed-actions") or []
         metalog("sync_allowed_actions: setting _NET_WM_ALLOWED_ACTIONS=%s on %#x", actions, self.xid)
         with xswallow:
-            prop_set(self.client_window, "_NET_WM_ALLOWED_ACTIONS", ["atom"], actions)
+            self.prop_set("_NET_WM_ALLOWED_ACTIONS", ["atom"], actions)
     def _handle_frame_changed(self, *_args):
         #legacy name for _sync_frame() called from Wm
         self._sync_frame()
@@ -507,14 +504,13 @@ class CoreX11WindowModel(WindowModelStub):
         v = self.get_property("frame")
         framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):
-            root = self.client_window.get_screen().get_root_window()
-            v = prop_get(root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
+            v = self.root_prop_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
         if not v:
             #default for OR, or if we don't have any other value:
             v = (0, 0, 0, 0)
         framelog("sync_frame: setting _NET_FRAME_EXTENTS=%s on %#x", v, self.xid)
         with xswallow:
-            prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], v)
+            self.prop_set("_NET_FRAME_EXTENTS", ["u32"], v)
 
     _py_property_handlers = {
         "allowed-actions"    : _sync_allowed_actions,
@@ -534,7 +530,20 @@ class CoreX11WindowModel(WindowModelStub):
         """
         if ignore_errors is None and (not self._setup_done or not self._managed):
             ignore_errors = True
-        return prop_get(self.client_window, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
+        return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
+
+    def prop_del(self, key):
+        prop_del(self.xid, key)
+
+    def prop_set(self, key, ptype, value):
+        prop_set(self.xid, key, ptype, value)
+
+
+    def root_prop_get(self, key, ptype, ignore_errors=True):
+        return prop_get(self.root_xid, key, ptype, ignore_errors=ignore_errors)
+
+    def root_prop_set(self, key, ptype, value):
+        prop_set(self.root_xid, key, ptype, value)
 
 
     def do_xpra_property_notify_event(self, event):
@@ -657,10 +666,12 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 Events
     #########################################
 
-    def do_xpra_unmap_event(self, _event):
+    def do_xpra_unmap_event(self, event):
+        log("do_xpra_unmap_event(%s) corral_window=%s, ", event, self.client_window)
         self.unmanage()
 
     def do_xpra_destroy_event(self, event):
+        log("do_xpra_destroy_event(%s) corral_window=%s, ", event, self.client_window)
         if event.delivered_to is self.client_window:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
@@ -792,8 +803,7 @@ class CoreX11WindowModel(WindowModelStub):
         X11Window.XRaiseWindow(self.client_window.get_xid())
 
     def set_active(self):
-        root = self.client_window.get_screen().get_root_window()
-        prop_set(root, "_NET_ACTIVE_WINDOW", "u32", self.xid)
+        self.root_prop_set("_NET_ACTIVE_WINDOW", "u32", self.xid)
 
 
     ################################
@@ -816,9 +826,12 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn(" it does not support WM_DELETE_WINDOW")
                 log.warn(" and FORCE_QUIT is disabled")
 
+    def get_server_time(self):
+        return x11_get_server_time(self.client_window)
+
     def send_delete(self):
         with xswallow:
-            send_wm_delete_window(self.client_window)
+            send_wm_delete_window(self.xid, timestamp=self.get_server_time())
 
     def XKill(self):
         with xswallow:

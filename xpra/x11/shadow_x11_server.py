@@ -52,20 +52,14 @@ def window_matches(wspec, model_class):
     with xsync:
         allw = [wxid for wxid in wb.get_all_x11_windows() if
                 not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
-        class wrap():
-            def __init__(self, xid):
-                self.xid = xid
-            def get_xid(self):
-                return self.xid
         names = {}
         commands = {}
         classes = {}
         for wxid in allw:
-            w = wrap(wxid)
-            name = prop_get(w, "_NET_WM_NAME", "utf8", True) or prop_get(w, "WM_NAME", "latin1", True)
+            name = prop_get(wxid, "_NET_WM_NAME", "utf8", True) or prop_get(wxid, "WM_NAME", "latin1", True)
             if name:
                 names[wxid] = name
-            command = prop_get(w, "WM_COMMAND", "latin1", True)
+            command = prop_get(wxid, "WM_COMMAND", "latin1", True)
             if command:
                 commands[wxid] = command.strip("\0")
             class_instance = wb.getClassHint(wxid)
@@ -149,7 +143,7 @@ def window_matches(wspec, model_class):
         for xid, model in models.items():
             model.xid = xid
             model.override_redirect = wb.is_override_redirect(xid)
-            model.transient_for = prop_get(wrap(xid), "WM_TRANSIENT_FOR", "window", True)
+            model.transient_for = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
             rel_parent = model.transient_for
             if not rel_parent:
                 parent = xid

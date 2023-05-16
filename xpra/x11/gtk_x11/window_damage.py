@@ -65,12 +65,13 @@ class WindowDamageHandler:
         add_event_receiver(self.client_window, self, self.MAX_RECEIVERS)
 
     def create_damage_handle(self):
-        self._damage_handle = X11Window.XDamageCreate(self.xid)
-        log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
+        if self.client_window:
+            self._damage_handle = X11Window.XDamageCreate(self.xid)
+            log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self):
         if self.client_window is None:
-            log.warn("damage window handler for %s already cleaned up!", self)
+            log.error(f"Error: damage window handler for {self.xid:x} already cleaned up!")
             return
         #clear the reference to the window early:
         win = self.client_window

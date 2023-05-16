@@ -90,7 +90,7 @@ if USE_X11_BINDINGS:
             try:
                 #TODO: in theory this is not a proper check, meh - that will do
                 root = get_default_root_window()
-                supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
+                supported = prop_get(root.get_xid(), "_NET_SUPPORTED", ["atom"], ignore_errors=True)
                 return bool(supported) and "_NET_WM_DESKTOP" in supported
             except Exception as e:
                 workspacelog("x11 workspace bindings error", exc_info=True)
@@ -905,7 +905,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._client.request_frame_extents(self)
             if self.watcher_pid:
                 log("using watcher pid=%i for wid=%i", self.watcher_pid, self._id)
-                prop_set(self.get_window(), "_NET_WM_PID", "u32", self.watcher_pid)
+                self.do_set_x11_property("WM_COMMAND", "latin1", v)
+                self.do_set_x11_property("_NET_WM_PID", "u32", self.watcher_pid)
         if self.group_leader:
             self.get_window().set_group(self.group_leader)
 
@@ -1076,30 +1077,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def set_command(self, command):
+        v = net_utf8(command)
+        self.set_x11_property("WM_COMMAND", "latin1", v)
+
+    def set_x11_property(self, prop_name, dtype=None, value=None):
         if not HAS_X11_BINDINGS:
             return
-        v = net_utf8(command)
-        def do_set_command():
-            metalog("do_set_command() str(%s)='%r' (type=%s)", command, v, type(command))
-            prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
-        self.when_realized("command", do_set_command)
+        self.when_realized("x11-prop-%s" % prop_name, self.do_set_x11_property, prop_name, dtype, value)
 
-
-    def set_x11_property(self, prop_name, dtype, dformat, value):
-        metalog("set_x11_property%s", (prop_name, dtype, dformat, value))
+    def do_set_x11_property(self, prop_name, dtype=None, value=None):
+        metalog("do_set_x11_property%s", (prop_name, dtype, value))
         dtype = bytestostr(dtype)
         if dtype=="latin1":
             value = bytestostr(value)
         if isinstance(value, (list, tuple)):
             dtype = (dtype, )
-        def do_set_prop():
-            gdk_window = self.get_window()
-            if not dtype and not dformat:
-                #remove prop
-                prop_del(gdk_window, prop_name)
-            else:
-                prop_set(gdk_window, prop_name, dtype, value)
-        self.when_realized("x11-prop-%s" % prop_name, do_set_prop)
+        xid = self.get_window().get_xid()
+        if not dtype and not value:
+            #remove prop
+            prop_del(xid, prop_name)
+        else:
+            prop_set(xid, prop_name, dtype, value)
 
     def set_class_instance(self, wmclass_name, wmclass_class):
         if not self.get_realized():
@@ -1164,13 +1162,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return rectangles
 
     def set_bypass_compositor(self, v):
-        if not HAS_X11_BINDINGS:
-            return
         if v not in (0, 1, 2):
             v = 0
-        def do_set_bypass_compositor():
-            prop_set(self.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", v)
-        self.when_realized("bypass-compositor", do_set_bypass_compositor)
+        self.set_x11_property("_NET_WM_BYPASS_COMPOSITOR", "u32", v)
 
 
     def set_strut(self, strut):
@@ -1201,11 +1195,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 v = self.sy(v)
             values.append(v)
         log("setting strut=%s, has partial=%s", values, has_partial)
-        def do_set_strut():
-            if has_partial:
-                prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
-            prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
-        self.when_realized("strut", do_set_strut)
+        if has_partial:
+            self.set_x11_property("_NET_WM_STRUT_PARTIAL", ["u32"], values)
+        self.set_x11_property("_NET_WM_STRUT", ["u32"], values[:4])
 
 
     def set_window_type(self, window_types):
@@ -1294,8 +1286,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def set_xid(self, xid):
-        if not HAS_X11_BINDINGS:
-            return
         if xid.startswith("0x") and xid.endswith("L"):
             xid = xid[:-1]
         try:
@@ -1303,21 +1293,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         except Exception as e:
             log("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
             return
-        def do_set_xid():
-            self.xset_u32_property(self.get_window(), "XID", iid)
-        self.when_realized("xid", do_set_xid)
+        self.set_x11_property("XID", "u32", iid)
 
     def xget_u32_property(self, target, name):
         if prop_get:
-            v = prop_get(target, name, "u32", ignore_errors=True)
+            v = prop_get(target.get_xid(), name, "u32", ignore_errors=True)
             log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
             if isinstance(v, int):
                 return v
         return None
-
-    def xset_u32_property(self, target, name, value):
-        prop_set(target, name, "u32", value)
-
 
     def property_changed(self, widget, event):
         atom = str(event.atom)
@@ -1329,8 +1313,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #the remaining handlers need `prop_get`:
         if not prop_get:
             return
+        xid = self.get_window().get_xid()
         if atom=="_NET_FRAME_EXTENTS":
-            v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+            v = prop_get(xid, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
             if v:
                 if v==self._current_frame_extents:
@@ -1353,11 +1338,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if atom=="XKLAVIER_STATE":
             #unused for now, but log it:
-            xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
+            xklavier_state = prop_get(xid, "XKLAVIER_STATE", ["integer"], ignore_errors=False)
             keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
             return
         if atom=="_NET_WM_STATE":
-            wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
+            wm_state_atoms = prop_get(xid, "_NET_WM_STATE", ["atom"], ignore_errors=False)
             #code mostly duplicated from gtk_x11/window.py:
             WM_STATE_NAME = {
                 "fullscreen"    : ("_NET_WM_STATE_FULLSCREEN", ),
@@ -1488,7 +1473,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                      gdkwin.get_xid(), self.get_mapped(), gdkwin.is_visible())
         root = get_default_root_window()
         with xlog:
-            send_wm_workspace(root, gdkwin, workspace)
+            send_wm_workspace(root.get_xid(), gdkwin.get_xid(), workspace)
 
     def get_desktop_workspace(self):
         window = self.get_window()

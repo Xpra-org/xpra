@@ -26,7 +26,7 @@ def get_x11_window_value(prop, window):
         ptype = get_python_type(x11type)
         #log("%s: %s (%s)", filter_object.property_name, x11type, ptype)
         assert ptype, "type '%s' is not handled!" % x11type
-        v = prop_get(window, prop, ptype)
+        v = prop_get(window.get_xid(), prop, ptype)
         log("prop_get(%s, %s, %s)=%s", window, prop, ptype, v)
         if v and isinstance(v, str):
             v = strtobytes(v).replace("\0", "")
@@ -47,7 +47,7 @@ def get_window(filter_object, window):
         p = None
         try:
             prop = "WM_TRANSIENT_FOR"
-            p = prop_get(gdkwin, prop, "window", ignore_errors=True)
+            p = prop_get(gdkwin.get_xid(), prop, "window", ignore_errors=True)
             log("prop_get(%s, %s)=%s", gdkwin, prop, p)
         except Exception:
             log("prop_get(%s, %s)", gdkwin, prop, exc_info=True)
