@@ -216,6 +216,7 @@ class ServerCore:
         self.server_idle_timeout = 0
         self.server_idle_timer = None
         self.bandwidth_limit = 0
+        self.readonly = False
 
         self.init_thread = None
         self.init_thread_callbacks = []
