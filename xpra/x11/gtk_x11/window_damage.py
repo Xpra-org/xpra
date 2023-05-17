@@ -73,6 +73,7 @@ class WindowDamageHandler:
     def destroy(self):
         if not self.xid:
             log.error(f"Error: damage window handler for {self.xid:x} already cleaned up!")
+        self.do_destroy()
 
     def do_destroy(self):
         remove_event_receiver(self.xid, self)
