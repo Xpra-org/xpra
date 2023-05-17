@@ -187,7 +187,6 @@ class Wm(GObject.GObject):
         if display is None:
             display = Gdk.Display.get_default()
         self._display = display
-        self._root = self._display.get_default_screen().get_root_window()
         self._wm_name = wm_name
         self._ewmh_window = None
 
@@ -215,7 +214,8 @@ class Wm(GObject.GObject):
         self.set_desktop_list(("Main", ))
         self.set_current_desktop(0)
         # Start with the full display as workarea:
-        root_w, root_h = get_default_root_window().get_geometry()[2:4]
+        root = get_default_root_window()
+        root_w, root_h = root.get_geometry()[2:4]
         self.root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
         self.set_workarea(0, 0, root_w, root_h)
         self.set_desktop_geometry(root_w, root_h)
@@ -230,7 +230,7 @@ class Wm(GObject.GObject):
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
-        rxid = self._root.get_xid()
+        rxid = root.get_xid()
         add_event_receiver(rxid, self)
         add_fallback_receiver("xpra-client-message-event", self)
         #when reparenting, the events may get sent
@@ -264,10 +264,10 @@ class Wm(GObject.GObject):
         # (and notifications for both)
 
     def root_set(self, *args):
-        prop_set(self._root.get_xid(), *args)
+        prop_set(X11Window.get_root_xid(), *args)
 
     def root_get(self, *args):
-        return prop_get(self._root.get_xid(), *args)
+        return prop_get(X11Window.get_root_xid(), *args)
 
     def set_workarea(self, x, y, width, height):
         v = [x, y, width, height]
@@ -314,22 +314,15 @@ class Wm(GObject.GObject):
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
     def _manage_client(self, xid):
-        gdkwindow = get_pywindow(xid)
-        log(f"pywindow({xid:x})={gdkwindow}")
-        if not gdkwindow:
-            return
-        wtype = gdkwindow.get_window_type()
-        if wtype!=Gdk.WindowType.FOREIGN:
-            log(f"skipping non foreign window %s", window_info(xid))
-            return
         if xid in self._windows:
             #already managed
             return
         try:
             with xsync:
-                log("_manage_client(%s)", gdkwindow)
+                log("_manage_client(%x)", xid)
                 desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
-                win = WindowModel(self._root, gdkwindow, desktop_geometry, self.size_constraints)
+                root = get_default_root_window()
+                win = WindowModel(root, xid, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
                 l = log.warn
@@ -366,7 +359,7 @@ class Wm(GObject.GObject):
         # _update_window_list again.
         dtype, dformat, window_xids = prop_encode(["u32"], tuple(self._windows_in_order))
         log("prop_encode(%s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
-        xid = self._root.get_xid()
+        xid = X11Window.get_root_xid()
         with xlog:
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)
@@ -493,7 +486,8 @@ class Wm(GObject.GObject):
         # clobber any XSelectInput calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        self._ewmh_window = GDKX11Window(self._root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
+        root = get_default_root_window()
+        self._ewmh_window = GDKX11Window(root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
         prop_set(self._ewmh_window.get_xid(), "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)

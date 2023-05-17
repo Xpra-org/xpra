@@ -468,6 +468,18 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "override-redirect"     : attrs.override_redirect,
             }
 
+    def getEventMask(self, Window xwindow):
+        self.context_check("getEventMask")
+        cdef XWindowAttributes attrs
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
+        if status==0:
+            return 0
+        return attrs.your_event_mask;
+
+    def setEventMask(self, Window xwindow, int mask):
+        self.context_check("setEventMask")
+        XSelectInput(self.display, xwindow, mask)
+
 
     # Mapped status
     def is_mapped(self, Window xwindow):

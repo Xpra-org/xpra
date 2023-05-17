@@ -212,8 +212,8 @@ class BaseWindowModel(CoreX11WindowModel):
         "CHANGE_DESKTOP", "ABOVE", "BELOW")]
     _MODELTYPE = "Base"
 
-    def __init__(self, client_window):
-        super().__init__(client_window)
+    def __init__(self, xid:int):
+        super().__init__(xid)
         self.last_unmap_serial = 0
         self._input_field = True            # The WM_HINTS input field
         #watch for changes to properties that are used to derive the content-type:

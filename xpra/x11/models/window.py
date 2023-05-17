@@ -24,6 +24,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_children,
     calc_constrained_size,
     x11_get_server_time,
+    get_pywindow,
     )
 
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -162,19 +163,20 @@ class WindowModel(BaseWindowModel):
     _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window, client_window, desktop_geometry, size_constraints=None):
+    def __init__(self, parking_window, xid:int, desktop_geometry, size_constraints=None):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
         managed, for whatever reason.  ATM, this mostly means that the window
         died somehow before we could do anything with it."""
 
-        super().__init__(client_window)
+        super().__init__(xid)
         self.parking_window = parking_window
         self.corral_window = None
         self.corral_xid : int = 0
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
+        self.saved_events = -1
         #extra state attributes so we can unmanage() the window cleanly:
         self.in_save_set = False
         self.client_reparented = False
@@ -189,8 +191,9 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         super().setup()
 
-        client_window = self.get_client_window()
-        ogeom = client_window.get_geometry()
+        self.saved_events = X11Window.getEventMask(self.xid)
+
+        ogeom = X11Window.getGeometry(self.xid)
         ox, oy, ow, oh = ogeom[:4]
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
@@ -254,11 +257,12 @@ class WindowModel(BaseWindowModel):
         elif (ow,oh)!=(nw,nh):
             self.corral_window.resize(nw, nh)
         if (ow,oh)!=(nw,nh):
-            client_window.resize(nw, nh)
-        client_window.show_unraised()
+            X11Window.MoveResizeWindow(self.xid, x, y, nw, nh)
+        if not X11Window.is_mapped(self.xid):
+            X11Window.MapWindow(self.xid)
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
-        client_window.get_geometry()
+        assert X11Window.getGeometry(self.xid)
         self._internal_set_property("shown", False)
         self._internal_set_property("resize-counter", 0)
         self._internal_set_property("client-geometry", None)
@@ -350,7 +354,6 @@ class WindowModel(BaseWindowModel):
         log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
         cwin = self.corral_window
         if cwin:
-            client_window = self.get_client_window()
             self.corral_window = None
             remove_event_receiver(cwin.get_xid(), self)
             geom = None
@@ -359,9 +362,12 @@ class WindowModel(BaseWindowModel):
             with xswallow:
                 geom = X11Window.getGeometry(self.xid)
             if geom is not None:
-                if self.client_reparented:
-                    client_window.reparent(get_default_root_window(), 0, 0)
-                client_window.set_events(self.client_window_saved_events)
+                with xswallow:
+                    if self.client_reparented:
+                        X11Window.Reparent(self.xid, X11Window.get_root_xid(), 0, 0)
+                    if self.saved_events!=-1:
+                        with xswallow:
+                            X11Window.setEventMask(self.xid, self.saved_events)
             self.client_reparented = False
             # It is important to remove from our save set, even after
             # reparenting, because according to the X spec, windows that are
@@ -373,10 +379,12 @@ class WindowModel(BaseWindowModel):
                 with xswallow:
                     X11Window.XRemoveFromSaveSet(self.xid)
                 self.in_save_set = False
-            with xswallow:
-                X11Window.sendConfigureNotify(self.xid)
+            if geom:
+                self.send_configure_notify()
             if wm_exiting:
-                client_window.show_unraised()
+                with xswallow:
+                    if not X11Window.is_mapped(self.xid):
+                        X11Window.MapWindow(self.xid)
             #it is now safe to destroy the corral window:
             cwin.destroy()
         super().do_unmanaged(wm_exiting)
@@ -517,8 +525,7 @@ class WindowModel(BaseWindowModel):
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
             return
-        client_window = self.get_client_window()
-        if client_window is None or not client_window.is_visible():
+        if not (self.xid and X11Window.is_visible(self.xid)):
             geomlog("WindowModel.do_xpra_configure_event: client window is not visible")
             return
         try:
@@ -570,12 +577,11 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("requested-position", (x, y))
             self._internal_set_property("set-initial-position", True)
 
-        client_window = self.get_client_window()
         if resized:
             if moved:
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
-                client_window.move(0, 0)
+                X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
                 self._updateprop("geometry", (x, y, w, h))
             else:
                 geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
@@ -584,7 +590,7 @@ class WindowModel(BaseWindowModel):
         elif moved:
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
-            client_window.move(0, 0)
+            X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):

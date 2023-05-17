@@ -58,8 +58,7 @@ def get_X11_window_property(xid, name, req_type):
 def get_X11_root_property(name, req_type):
     try:
         from xpra.x11.bindings.window_bindings import X11WindowBindings
-        root_xid = X11WindowBindings().get_root_xid()
-        return get_X11_window_property(root_xid, name, req_type)
+        return get_X11_window_property(X11WindowBindings().get_root_xid(), name, req_type)
     except Exception as e:
         log("get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
         log.warn(f"Warning: failed to get X11 root property {name!r}")

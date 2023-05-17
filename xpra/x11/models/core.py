@@ -21,7 +21,6 @@ from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.x11.gtk3.gdk_bindings import get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -241,12 +240,12 @@ class CoreX11WindowModel(WindowModelStub):
                               #"_NET_WM_STATE",    # "..it should leave the property in place when it is shutting down"
                               "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
 
-    def __init__(self, client_window):
+    def __init__(self, xid):
         super().__init__()
-        self.xid = client_window.get_xid()
-        self.root_xid = client_window.get_screen().get_root_window().get_xid()
-        log("new window %#x", self.xid)
-        self.client_window_saved_events = client_window.get_events()
+        if not isinstance(xid, int):
+            raise TypeError(f"xid must be an int, not a {type(xid)}")
+        log("new window %#x", xid)
+        self.xid : int = xid
         self._composite = None
         self._damage_forward_handle = None
         self._setup_done = False
@@ -260,11 +259,6 @@ class CoreX11WindowModel(WindowModelStub):
         except AttributeError:
             return repr(self)
 
-
-    def get_client_window(self):
-        if not self.xid:
-            return None
-        return get_pywindow(self.xid)
 
     #########################################
     # Setup and teardown
@@ -356,6 +350,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._composite.destroy()
             self._composite = None
             self._scrub_x11()
+            self.xid = 0
 
 
     #########################################
@@ -543,10 +538,10 @@ class CoreX11WindowModel(WindowModelStub):
 
 
     def root_prop_get(self, key, ptype, ignore_errors=True):
-        return prop_get(self.root_xid, key, ptype, ignore_errors=ignore_errors)
+        return prop_get(X11Window.get_root_xid(), key, ptype, ignore_errors=ignore_errors)
 
     def root_prop_set(self, key, ptype, value):
-        prop_set(self.root_xid, key, ptype, value)
+        prop_set(X11Window.get_root_xid(), key, ptype, value)
 
 
     def do_xpra_property_notify_event(self, event):

@@ -33,12 +33,10 @@ SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 def root_prop_set(prop_name, prop_type, value):
     # pylint: disable=import-outside-toplevel
-    xid = X11Keyboard.get_root_xid()
-    prop_set(xid, prop_name, prop_type, value)
+    prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 
 def root_prop_del(prop_name):
-    xid = X11Keyboard.get_root_xid()
-    prop_del(xid, prop_name)
+    prop_del(X11Keyboard.get_root_xid(), prop_name)
 
 def _get_antialias_hintstyle(antialias):
     hintstyle = antialias.strget("hintstyle", "").lower()

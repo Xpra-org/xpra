@@ -6,10 +6,13 @@
 
 from gi.repository import GObject
 
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.models.core import CoreX11WindowModel
 from xpra.log import Logger
 
 log = Logger("x11", "window", "tray")
+
+X11Window = X11WindowBindings()
 
 
 class TrayGeometryChanged:  # pylint: disable=too-few-public-methods
@@ -28,8 +31,8 @@ class SystemTrayWindowModel(CoreX11WindowModel):
     _property_names = CoreX11WindowModel._property_names + ["tray"]
     _MODELTYPE = "Tray"
 
-    def __init__(self, client_window):
-        super().__init__(client_window)
+    def __init__(self, xid:int):
+        super().__init__(xid)
         self._updateprop("tray", True)
 
     def __repr__(self):
@@ -42,8 +45,8 @@ class SystemTrayWindowModel(CoreX11WindowModel):
     def move_resize(self, x : int, y : int, width : int, height : int):
         #Used by clients to tell us where the tray is located on screen
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
-        client_window = self.get_client_window()
-        client_window.move_resize(x, y, width, height)
+        if not X11Window.XMoveResizeWindow(self.xid, x, y, width, height):
+            return
         self._updateprop("geometry", (x, y, width, height))
         #force a refresh:
         event = TrayGeometryChanged()

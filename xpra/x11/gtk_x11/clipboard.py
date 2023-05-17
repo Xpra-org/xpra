@@ -312,8 +312,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     return
                 #send announcement:
                 log("claim_selection: sending message to root window")
-                root = get_default_root_window()
-                root_xid = root.get_xid()
+                root_xid = X11Window.get_root_xid()
                 event_mask = StructureNotifyMask
                 X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
                                   time or CurrentTime, self._selection, self.xid)
