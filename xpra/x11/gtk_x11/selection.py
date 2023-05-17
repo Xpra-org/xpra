@@ -129,14 +129,12 @@ class ManagerSelection(GObject.GObject):
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
-            try:
-                with xsync:
-                    window = get_pywindow(old_owner)
-                    window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
-                log("got window")
-            except XError:
-                log("Previous owner is already gone? not blocking", exc_info=True)
+            window = get_pywindow(old_owner)
+            if not window:
+                log(f"Previous owner {old_owner:x} is already gone? not blocking")
             else:
+                log(f"got owner window {window}")
+                window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window.get_xid(), self)
                 self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT*1000, self.exit_timeout)

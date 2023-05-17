@@ -246,10 +246,10 @@ class Wm(GObject.GObject):
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
             if X11Window.is_override_redirect(xid):
-                log(f"skipping override redirect window %s", window_info(xid))
+                log(f"skipping %s", window_info(xid))
                 continue
             if not X11Window.is_mapped(xid):
-                log(f"skipping unmapped window %s", window_info(xid))
+                log(f"skipping %s", window_info(xid))
                 continue
             log(f"Wm managing pre-existing child window {xid:x}")
             self._manage_client(xid)

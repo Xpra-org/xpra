@@ -270,14 +270,10 @@ def get_pywindow(Window xwindow):
     display = Gdk.get_default_root_window().get_display()
     disp = get_display_for(display)
     try:
-        win = GdkX11.X11Window.foreign_new_for_display(disp, xwindow)
+        return GdkX11.X11Window.foreign_new_for_display(disp, xwindow)
     except TypeError as e:
         verbose("cannot get gdk window for %s : %#x, %s", display, xwindow, e)
-        win = None
-    if win is None:
-        verbose("cannot get gdk window for %s : %#x", display, xwindow)
-        raise XError(BadWindow)
-    return win
+    return None
 
 def get_xvisual(pyvisual):
     cdef Visual *xvisual = _get_xvisual(pyvisual)
@@ -442,7 +438,7 @@ def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
     if max_receivers>0 and len(receivers)>max_receivers:
         from xpra.x11.window_info import window_info
         log.warn("Warning: already too many event receivers")
-        log.warn(f" for window {window_info(xid)}: {len(receivers)}")
+        log.warn(f" for {window_info(xid)!r}: {len(receivers)}")
         log.warn(f" adding {receiver!r} to {receivers}")
         traceback.print_stack()
     receivers.add(receiver)
@@ -734,8 +730,8 @@ cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="windo
             if DEBUG:
                 log.info("  forwarded")
         elif DEBUG:
-            log.info("  not forwarding to %s handler, it has no %r signal (it has: %s)",
-                type(handler).__name__, signal, signals)
+            log.info("  not forwarding to %s handler, it has no %r signal", type(handler).__name__, signal)
+            log.info("     only: %s", csv(f"{s!r}" for s in signals))
 
 cdef _route_event(int etype, event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
