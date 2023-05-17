@@ -33,6 +33,7 @@ class AudioMixinTest(ServerMixinTest):
         opts.speaker_codec = gstreamer_util.CODEC_ORDER
         opts.microphone = "on"
         opts.microphone_codec = ["mp3"]
+        opts.audio = True
         opts.pulseaudio = False
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []

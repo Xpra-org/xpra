@@ -104,7 +104,7 @@ class ServerTestUtil(ProcessTestUtil):
             "windows",
             "mdns",
             "rfb-upgrade", "ssh-upgrade",
-            "speaker", "microphone",
+            "speaker", "microphone", "audio",
             "systemd-run", "start-via-proxy",
             "splash", "printing", "opengl",
             "webcam", "bell", "system-tray", "notifications",
