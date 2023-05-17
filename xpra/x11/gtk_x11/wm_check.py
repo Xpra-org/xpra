@@ -21,9 +21,7 @@ def get_wm_info():
         from gi.repository import Gdk  #pylint: disable=import-outside-toplevel
         display = Gdk.Display.get_default()
         X11Window = X11WindowBindings()
-        screen = display.get_default_screen()
-        root = screen.get_root_window()
-        root_xid = root.get_xid()
+        root_xid = X11Window.get_root_xid()
         info = {
             "display"   : display.get_name(),
             "root"      : root_xid,

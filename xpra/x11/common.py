@@ -56,7 +56,7 @@ def get_X11_window_property(xid, name, req_type):
 def get_X11_root_property(name, req_type):
     try:
         from xpra.x11.bindings.window_bindings import X11WindowBindings
-        root_xid = X11WindowBindings().getDefaultRootWindow()
+        root_xid = X11WindowBindings().get_root_xid()
         return get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
         log("get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
@@ -198,7 +198,7 @@ def send_client_message(window, message_type, *values):
     try:
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  # @UnresolvedImport
         X11Window = X11WindowBindings()
-        root_xid = X11Window.getDefaultRootWindow()
+        root_xid = X11Window.get_root_xid()
         if window:
             xid = window.get_xid()
         else:

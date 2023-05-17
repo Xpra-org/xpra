@@ -40,7 +40,7 @@ def get_x11_property(atom_name):
         with X11DisplayContext(display):
             with xswallow:
                 X11Window = X11WindowBindingsInstance()
-                root = X11Window.getDefaultRootWindow()
+                root = X11Window.get_root_xid()
                 log("getDefaultRootWindow()=%#x", root)
                 try:
                     prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")

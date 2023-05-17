@@ -485,7 +485,7 @@ class XI2_Window:
 
     def get_parent_windows(self, oxid):
         windows = [oxid]
-        root = self.X11Window.getDefaultRootWindow()
+        root = self.X11Window.get_root_xid()
         xid = oxid
         while True:
             xid = self.X11Window.getParent(xid)

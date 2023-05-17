@@ -365,10 +365,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 raise ValueError("%s v%i.%i not supported; required: v%i.%i"
                                  % (extension, cmajor, cminor, major, minor))
 
-    def getDefaultRootWindow(self):
-        assert self.display
-        return XDefaultRootWindow(self.display)
-
 
     def get_all_x11_windows(self):
         cdef Window root = XDefaultRootWindow(self.display);

@@ -199,7 +199,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_display_bit_depth(self):
         with xlog:
-            return X11Window.get_depth(X11Window.getDefaultRootWindow())
+            return X11Window.get_depth(X11Window.get_root_xid())
         return 0
 
 

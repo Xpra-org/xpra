@@ -14,6 +14,7 @@ from xpra.x11.bindings.xlib cimport (
     XSynchronize, XSync, XFlush,
     CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
     PropModeReplace,
+    XDefaultRootWindow,
     )
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
@@ -75,6 +76,12 @@ cdef class X11CoreBindingsInstance:
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
+
+
+    def get_root_xid(self):
+        assert self.display
+        return XDefaultRootWindow(self.display)
+
 
     cdef Atom xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python

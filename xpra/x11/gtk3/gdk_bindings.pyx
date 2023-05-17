@@ -33,6 +33,7 @@ from xpra.x11.bindings.xlib cimport (
     XSelectionEvent,
     XFree, XGetErrorText,
     XQueryTree,
+    XDefaultRootWindow,
     )
 from libc.stdint cimport uintptr_t
 from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_raw_display_for
@@ -432,6 +433,8 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 event_receivers_map : dict = dict()
 
 def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
+    if not isinstance(xid, int):
+        raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
     if receivers is None:
         receivers = set()
@@ -445,6 +448,8 @@ def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
     receivers.add(receiver)
 
 def remove_event_receiver(xid:int, receiver:callable):
+    if not isinstance(xid, int):
+        raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
     if receivers is None:
         return
@@ -716,7 +721,7 @@ def remove_fallback_receiver(signal, handler):
 cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="window"):
     if not handlers:
         if DEBUG:
-            log.info("  no handler registered for %s (%s), ignoring event", hinfo, handlers)
+            log.info("  no handler registered for %s (%s)", hinfo, handlers)
         return
     # Copy the 'handlers' list, because signal handlers might cause items
     # to be added or removed from it while we are iterating:
@@ -741,39 +746,32 @@ cdef _route_event(int etype, event, signal, parent_signal):
     global debug_route_events, x_event_type_names
     cdef unsigned int DEBUG = etype in debug_route_events
     if DEBUG:
-        log.info("%s event %#x : %s", x_event_type_names.get(etype, etype), event.serial, event)
+        log.info(f"{event}")
     handlers = None
-    if event.window is None:
-        if DEBUG:
-            log.info("  event.window is None, ignoring")
-        #in GTK3, all events can have a None window
-        #ie: when running gtkperf -a
-        #assert etype in (CreateNotify, UnmapNotify, DestroyNotify, PropertyNotify), \
-        #        "event window is None for event type %s!" % (x_event_type_names.get(etype, etype))
-    elif event.window==event.delivered_to:
+    if event.window==event.delivered_to:
+        window = event.window
         if signal is not None:
-            window = event.window
             if DEBUG:
-                log.info("  delivering event to window itself: %#x  (signal=%s)", window, signal)
+                log.info(f"  delivering {signal!r} to window itself: {window:x}")
             if window:
                 handlers = get_event_receivers(window)
-            _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window)
+                _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window)
         elif DEBUG:
-            log.info("  received event on window itself but have no signal for that")
+            log.info(f"  received event on window {window:x} itself but have no signal for that")
     else:
+        window = event.delivered_to
         if parent_signal is not None:
-            window = event.delivered_to
-            if window is None:
+            if not window:
                 if DEBUG:
-                    log.info("  event.delivered_to is None, ignoring")
+                    log.info(f"  event.delivered_to={window}, ignoring")
             else:
                 if DEBUG:
-                    log.info("  delivering event to parent window: %#x (signal=%s)", window, parent_signal)
+                    log.info(f"  delivering {parent_signal!r} to parent window: {window:x}")
                 handlers = get_event_receivers(window)
                 _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window)
         else:
             if DEBUG:
-                log.info("  received event on a parent window but have no parent signal")
+                log.info(f"  received event on parent window {window:x} but have no parent signal")
     #fallback only fires if nothing else has fired yet:
     if not handlers:
         global fallback_receivers
