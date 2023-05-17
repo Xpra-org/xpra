@@ -136,8 +136,7 @@ class DBUS_Notifier(NotifierBase):
                 log.error("Error parsing notification image:")
                 log.estr(e)
         log("parse_hints(%s)=%s", h, hints)
-        #return dbus.types.Dictionary(hints, signature="sv")
-        return hints
+        return dbus.types.Dictionary(hints, signature="sv")
 
 
     def NotificationClosed(self, actual_id : int, reason):
