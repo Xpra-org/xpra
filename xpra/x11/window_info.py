@@ -5,11 +5,11 @@
 # later version. See the file COPYING for details.
 
 
-def window_name(xid):
+def window_name(xid:int):
     from xpra.x11.gtk_x11.prop import prop_get
     return prop_get(xid, "_NET_WM_NAME", "utf8", True) or "unknown"
 
-def window_info(xid) -> str:
+def window_info(xid:int) -> str:
     from xpra.x11.gtk_x11.prop import prop_get
     net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
     from xpra.x11.bindings.window_bindings import X11WindowBindings

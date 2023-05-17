@@ -335,12 +335,12 @@ class Wm(GObject.GObject):
                 l = log.warn
             else:
                 l = log
-            l("Warning: failed to manage client window %#x:", gdkwindow.get_xid())
+            l("Warning: failed to manage client window %#x:", xid)
             l(" %s", e)
             l("", exc_info=True)
             with xswallow:
-                l(" window name: %s", window_name(gdkwindow))
-                l(" window info: %s", window_info(gdkwindow))
+                l(" window name: %s", window_name(xid))
+                l(" window info: %s", window_info(xid))
         else:
             win.managed_connect("unmanaged", self._handle_client_unmanaged, xid)
             self._windows[xid] = win
@@ -445,7 +445,7 @@ class Wm(GObject.GObject):
         log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
             event, configure_bits(event.value_mask))
         with xswallow:
-            xid = event.window.get_xid()
+            xid = event.window
             x, y, w, h = X11Window.getGeometry(xid)[:4]
             if event.value_mask & CWX:
                 x = event.x
