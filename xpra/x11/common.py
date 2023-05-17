@@ -29,8 +29,10 @@ class X11Event:
         for k,v in self.__dict__.items():
             if k in ("name", "display", "type"):
                 continue
-            if k=="serial":
+            if k in ("serial", "window", "delivered_to"):
                 d[k] = f"{v:x}"
+            elif k=="send_event" and v is False:
+                continue
             else:
                 fn = REPR_FUNCTIONS.get(type(v), str)
                 d[k] = fn(v)
