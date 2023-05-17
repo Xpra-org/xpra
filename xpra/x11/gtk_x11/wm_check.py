@@ -31,12 +31,10 @@ def get_wm_info():
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
         ewmh_xid = raw_prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False)
-        if ewmh_xid:
-            wm_name = None
-            ewmh_window = do_prop_decode("_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
-            if ewmh_window:
-                info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
-                wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
+        ewmh_window = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
+        if ewmh_xid and ewmh_window:
+            info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
+            wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if not wm_name:
                 wm_name = prop_get(root_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if wm_name:
