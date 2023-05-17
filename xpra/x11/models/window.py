@@ -11,10 +11,10 @@ from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
-from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants

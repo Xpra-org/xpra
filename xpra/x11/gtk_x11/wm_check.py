@@ -6,7 +6,7 @@
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
-from xpra.x11.gtk_x11.prop import raw_prop_get, prop_get, do_prop_decode
+from xpra.x11.gtk_x11.prop import raw_prop_get, prop_get
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 

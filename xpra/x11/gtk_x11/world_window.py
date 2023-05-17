@@ -8,7 +8,7 @@ from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.error import xlog
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
-from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
+from xpra.x11.bindings.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.log import Logger

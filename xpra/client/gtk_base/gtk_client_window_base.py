@@ -67,7 +67,7 @@ if USE_X11_BINDINGS:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
-        from xpra.x11.gtk_x11.send_wm import send_wm_workspace
+        from xpra.x11.bindings.send_wm import send_wm_workspace
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)
         #gtk_util should have already logged a detailed warning
