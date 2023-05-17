@@ -24,10 +24,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_children,
     calc_constrained_size,
     x11_get_server_time,
-    get_pywindow,
     )
-
-from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.log import Logger
 
 log = Logger("x11", "window")
