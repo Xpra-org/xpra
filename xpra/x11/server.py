@@ -135,7 +135,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
         xid = root.get_xid()
         prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
-        add_event_receiver(root, self)
+        add_event_receiver(xid, self)
         if self.sync_xvfb>0:
             self.init_root_overlay()
         self.init_wm()
