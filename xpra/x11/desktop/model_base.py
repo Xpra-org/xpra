@@ -73,7 +73,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def __init__(self):
         screen = Gdk.Screen.get_default()
         root = screen.get_root_window()
-        WindowDamageHandler.__init__(self, root)
+        WindowDamageHandler.__init__(self, root.get_xid())
         WindowModelStub.__init__(self)
         self.update_wm_name()
         self.update_icon()
