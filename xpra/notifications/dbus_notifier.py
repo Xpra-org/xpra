@@ -116,7 +116,7 @@ class DBUS_Notifier(NotifierBase):
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
             v = h.get(x)
             if v is not None:
-                hints[x] = native_to_dbus(v)
+                hints[native_to_dbus(x)] = native_to_dbus(v)
         image_data = h.get("image-data")
         if image_data and bytestostr(image_data[0])=="png":
             try:
