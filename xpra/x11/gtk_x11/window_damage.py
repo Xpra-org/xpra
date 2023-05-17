@@ -43,6 +43,8 @@ class WindowDamageHandler:
 
     # This may raise XError.
     def __init__(self, xid : int, use_xshm : bool=USE_XSHM):
+        if not isinstance(xid, int):
+            raise ValueError(f"xid must be an int, not a {type(xid)}")
         self.xid : int = xid
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm = use_xshm
