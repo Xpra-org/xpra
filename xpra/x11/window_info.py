@@ -9,7 +9,7 @@ def window_name(xid):
     from xpra.x11.gtk_x11.prop import prop_get
     return prop_get(xid, "_NET_WM_NAME", "utf8", True) or "unknown"
 
-def window_info(xid):
+def window_info(xid) -> str:
     from xpra.x11.gtk_x11.prop import prop_get
     net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
     from xpra.x11.bindings.window_bindings import X11WindowBindings
@@ -18,9 +18,20 @@ def window_info(xid):
     geom = None     # @UnusedVariable
     mapped = False  # @UnusedVariable
     with xlog:
+        isor = X11Window.is_override_redirect(xid)
         geom = X11Window.getGeometry(xid)
         mapped = X11Window.is_mapped(xid)
-    return "%s %s mapped=%s" % (net_wm_name, geom, mapped)
+    info = [
+        "mapped" if mapped else "unmapped",
+        "override redirect window" if isor else "window"
+        ]
+    if net_wm_name:
+        info.append(net_wm_name)
+    else:
+        info.append(hex(xid))
+    if geom:
+        info.append(str(geom[:4]))
+    return " ".join(info)
 
 
 def dump_windows():
