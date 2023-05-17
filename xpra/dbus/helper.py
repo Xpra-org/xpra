@@ -61,25 +61,27 @@ def native_to_dbus(value, signature=None):
         return dbus.types.Array(value, signature=signature)
     if isinstance(value, dict):
         if not value:
-            return dbus.types.Dictionary({}, signature="sv")
-        keytypes = set(type(x) for x in value.keys())
-        sig = None
-        if len(keytypes)==1:
-            #just one type of key:
-            keytype = tuple(keytypes)[0]
-            if keytype is int:
-                sig = "i"
-            elif keytype is bool:
-                sig = "b"
-            elif keytype is float:
-                sig = "d"
-        if sig:
-            value = dict((k, native_to_dbus(v)) for k,v in value.items())
-        else:
-            sig = "s"
-            #use strings as keys
-            value = dict((str(k), native_to_dbus(v)) for k,v in value.items())
-        return dbus.types.Dictionary(value, signature="%sv" % sig)
+            return dbus.types.Dictionary({}, signature=signature or "sv")
+        if signature is None:
+            keytypes = set(type(x) for x in value.keys())
+            sig = None
+            if len(keytypes)==1:
+                #just one type of key:
+                keytype = tuple(keytypes)[0]
+                if keytype is int:
+                    sig = "i"
+                elif keytype is bool:
+                    sig = "b"
+                elif keytype is float:
+                    sig = "d"
+            if sig:
+                value = dict((k, native_to_dbus(v)) for k,v in value.items())
+            else:
+                sig = "s"
+                #use strings as keys
+                value = dict((str(k), native_to_dbus(v)) for k,v in value.items())
+            signature = f"{sig}sv"
+        return dbus.types.Dictionary(value, signature=signature)
     return dbus.types.String(value)
 
 
