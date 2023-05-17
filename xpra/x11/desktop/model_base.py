@@ -22,7 +22,7 @@ from xpra.log import Logger
 X11Window = X11WindowBindings()
 RandR = RandRBindings()
 
-eventlog = Logger("server", "window", "event")
+eventlog = Logger("server", "window", "events")
 geomlog = Logger("server", "window", "geometry")
 iconlog = Logger("icon")
 
