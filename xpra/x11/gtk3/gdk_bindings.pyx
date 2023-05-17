@@ -729,7 +729,7 @@ cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="windo
             if DEBUG:
                 log.info("  forwarded")
         elif DEBUG:
-            log.info("  not forwarding to %s handler, it has no %s signal (it has: %s)",
+            log.info("  not forwarding to %s handler, it has no %r signal (it has: %s)",
                 type(handler).__name__, signal, signals)
 
 cdef _route_event(int etype, event, signal, parent_signal):
@@ -865,7 +865,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     cdef object pyev = X11Event(event_type)
     pyev.type = etype
     pyev.display = d
-    pyev.send_event = e.xany.send_event
+    pyev.send_event = bool(e.xany.send_event)
     pyev.serial = e.xany.serial
     def atom(v):
         with xsync:
@@ -948,7 +948,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.mode = e.xcrossing.mode
             pyev.detail = e.xcrossing.detail
             pyev.subwindow = e.xcrossing.subwindow
-            pyev.focus = e.xcrossing.focus
+            pyev.focus = bool(e.xcrossing.focus)
         elif etype == ClientMessage:
             pyev.window = e.xany.window
             if int(e.xclient.message_type) > 2**32:
@@ -977,7 +977,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.height = e.xcreatewindow.height
         elif etype == MapNotify:
             pyev.window = e.xmap.window
-            pyev.override_redirect = e.xmap.override_redirect
+            pyev.override_redirect = bool(e.xmap.override_redirect)
         elif etype == UnmapNotify:
             pyev.window = e.xunmap.window
         elif etype == DestroyNotify:
@@ -1019,7 +1019,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.y_root = e.xmotion.y_root
             pyev.state = e.xmotion.state
             pyev.is_hint = e.xmotion.is_hint
-            pyev.same_screen = e.xmotion.same_screen
+            #pyev.same_screen = bool(e.xmotion.same_screen)
         elif etype == ShapeNotify:
             shape_e = <XShapeEvent*> e
             pyev.window = shape_e.window
