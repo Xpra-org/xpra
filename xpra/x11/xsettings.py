@@ -97,8 +97,8 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
     def __init__(self, screen_number=0):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
-        self._root = self._clipboard.get_display().get_default_screen().get_root_window()
-        self.xid = self._root.get_xid()
+        root = self._clipboard.get_display().get_default_screen().get_root_window()
+        self.xid = root.get_xid()
         add_event_receiver(self.xid, self)
         self._add_watch()
 
