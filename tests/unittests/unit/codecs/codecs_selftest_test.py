@@ -31,7 +31,7 @@ class TestDecoders(unittest.TestCase):
             loader.load_codec(codec_name)
             codec = loader.get_codec(codec_name)
             if not codec:
-                missing.append(codec)
+                missing.append(codec_name)
                 continue
             try:
                 #try to suspend error logging for full tests,
