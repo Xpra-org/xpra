@@ -137,25 +137,33 @@ class XpraServer(GObject.GObject, X11ServerBase):
         prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
-            try:
-                with xsync:
-                    self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
-                    if self.root_overlay:
-                        xid = self.root_overlay.get_xid()
-                        prop_set(xid, "WM_TITLE", "latin1", "RootOverlay")
-                        X11Window.AllowInputPassthrough(self.root_overlay)
-            except Exception as e:
-                log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
-                log.error("Error setting up xvfb synchronization:")
-                log.estr(e)
-                if self.root_overlay:
-                    with xswallow:
-                        X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
-                    self.root_overlay = None
+            self.init_root_overlay()
         self.init_wm()
         #for handling resize synchronization between client and server (this is not xsync!):
         self.last_client_configure_event = 0
         self.snc_timer = 0
+
+    def init_root_overlay(self):
+        xid = get_default_root_window().get_xid()
+        try:
+            with xsync:
+                self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
+                if self.root_overlay:
+                    xid = self.root_overlay.get_xid()
+                    prop_set(xid, "WM_TITLE", "latin1", "RootOverlay")
+                    X11Window.AllowInputPassthrough(self.root_overlay)
+        except Exception as e:
+            log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
+            log.error("Error setting up xvfb synchronization:")
+            log.estr(e)
+            self.release_root_overlay()
+
+    def release_root_overlay(self):
+        ro = self.root_overlay
+        if ro:
+            self.root_overlay = None
+            with xswallow:
+                X11Window.XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self):
         ### Create the WM object
@@ -197,10 +205,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self._tray.cleanup()
             self._tray = None
         self.cancel_repaint_root_overlay()
-        if self.root_overlay:
-            with xswallow:
-                X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
-            self.root_overlay = None
+        self.release_root_overlay()
         self.cancel_all_configure_damage()
         if self._wm:
             self._wm.cleanup()
