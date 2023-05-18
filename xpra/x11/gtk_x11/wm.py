@@ -227,6 +227,7 @@ class Wm(GObject.GObject):
         self._world_window = WorldWindow(self._display.get_default_screen())
         self.notify("toplevel")
         self._world_window.show_all()
+        wxid = self._world_window.get_window().get_xid()
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
@@ -242,9 +243,10 @@ class Wm(GObject.GObject):
         children = get_children(rxid)
         log(f"root window children: {children}")
         for xid in children:
-            # Checking for FOREIGN here filters out anything that we've
-            # created ourselves (like, say, the world window), and checking
-            # for mapped filters out any withdrawn windows.
+            # ignore windows we have created ourselves (ie: the world window),
+            # unmapped or OR windows:
+            if xid==wxid:
+                continue
             if X11Window.is_override_redirect(xid):
                 log(f"skipping %s", window_info(xid))
                 continue
