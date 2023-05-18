@@ -110,6 +110,52 @@ class WindowIconSource:
                 WindowIconSource.fallback_window_icon = False
         return WindowIconSource.fallback_window_icon
 
+    def get_default_window_icon(self, size=48):
+        #return the icon which would be used from the wmclass
+        wmclass_name = self.get_window_wm_class_name()
+        if not wmclass_name:
+            return None
+        from gi.repository import Gtk
+        it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
+        pixbuf = None
+        log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
+        for icon_name in (
+            f"{wmclass_name}-color",
+            wmclass_name,
+            f"{wmclass_name}_{size}x{size}",
+            f"application-x-{wmclass_name}",
+            f"{wmclass_name}-symbolic",
+            f"{wmclass_name}.symbolic",
+            ):
+            i = it.lookup_icon(icon_name, size, 0)
+            log("lookup_icon(%s)=%s", icon_name, i)
+            if not i:
+                continue
+            try:
+                pixbuf = i.load_icon()
+                log("load_icon()=%s", pixbuf)
+                if pixbuf:
+                    w, h = pixbuf.props.width, pixbuf.props.height
+                    log("using '%s' pixbuf %ix%i", icon_name, w, h)
+                    return w, h, "RGBA", pixbuf.get_pixels()
+            except Exception:
+                log("%s.load_icon()", i, exc_info=True)
+        return None
+
+    def get_window_wm_class_name(self):
+        try:
+            c_i = self.window.get_property("class-instance")
+        except Exception:
+            return None
+        if not c_i or len(c_i)!=2:
+            return None
+        return c_i[0]
+
+    def client_has_theme_icon(self):
+        wm_class = self.get_window_wm_class_name()
+        return wm_class and wm_class in self.theme_default_icons
+
+
     def send_window_icon(self):
         #some of this code could be moved to the work queue half, meh
         assert self.ui_thread == threading.current_thread()
@@ -119,30 +165,27 @@ class WindowIconSource:
         icons = self.window.get_property("icons")
         log("send_window_icon window %s found %i icons", self.window, len(icons or ()))
         if not icons:
-            #this is a bit dirty:
-            #we figure out if the client is likely to have an icon for this wmclass already,
-            #(assuming the window even has a 'class-instance'), and if not we send the default
-            try:
-                c_i = self.window.get_property("class-instance")
-            except Exception:
-                c_i = None
-            if c_i and len(c_i)==2:
-                wm_class = c_i[0]
-                if wm_class in self.theme_default_icons:
-                    log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
-                    return
-                #try to load the icon for this class-instance from the theme:
-                icons = []
-                done = set()
-                for sizes in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
-                    for size in sizes:
-                        if size in done:
-                            continue
-                        done.add(size)
-                        icon = self.window.get_default_window_icon(size)
-                        if icon:
-                            icons.append(icon)
-                log("send_window_icon window %s using default window icon", self.window)
+            if self.client_has_theme_icon():
+                log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
+                return
+            #try to load the icon for this class-instance from the theme:
+            icons = []
+            sizes = []
+            for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
+                if size:
+                    for dim in size:        #ie: 48
+                        if dim not in sizes:
+                            sizes.append(dim)
+            for size in sizes:
+                icon = self.window.get_default_window_icon(size)
+                if icon:
+                    icons.append(icon)
+            if not icons:
+                #try to find one using the wmclass:
+                icon = self.get_default_window_icon()
+                if icon:
+                    log("send_window_icon window %s using default window icon", self.window)
+                    icons.append(icon)
         max_w, max_h = self.window_icon_max_size
         icon = self.choose_icon(icons, max_w, max_h)
         if not icon:

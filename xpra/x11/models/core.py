@@ -7,7 +7,7 @@
 import os
 import signal
 from socket import gethostname
-from gi.repository import GObject, Gdk  # @UnresolvedImport
+from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import bytestostr, get_proc_cmdline
@@ -32,8 +32,6 @@ geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
-em = Gdk.EventMask
-ADDMASK = em.STRUCTURE_MASK | em.PROPERTY_CHANGE_MASK | em.FOCUS_CHANGE_MASK | em.POINTER_MOTION_MASK
 
 XRes = ResBindings()
 if not XRes.check_xres():

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk  # @UnresolvedImport
+from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
@@ -768,38 +768,6 @@ class WindowModel(BaseWindowModel):
 
 
     def get_default_window_icon(self, size=48):
-        #return the icon which would be used from the wmclass
-        c_i = self.get_property("class-instance")
-        iconlog("get_default_window_icon(%i) class-instance=%s", size, c_i)
-        if not c_i or len(c_i)!=2:
-            return None
-        wmclass_name = c_i[0]
-        if not wmclass_name:
-            return None
-        it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
-        pixbuf = None
-        iconlog("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
-        for icon_name in (
-            f"{wmclass_name}-color",
-            wmclass_name,
-            f"{wmclass_name}_{size}x{size}",
-            f"application-x-{wmclass_name}",
-            f"{wmclass_name}-symbolic",
-            f"{wmclass_name}.symbolic",
-            ):
-            i = it.lookup_icon(icon_name, size, 0)
-            iconlog("lookup_icon(%s)=%s", icon_name, i)
-            if not i:
-                continue
-            try:
-                pixbuf = i.load_icon()
-                iconlog("load_icon()=%s", pixbuf)
-                if pixbuf:
-                    w, h = pixbuf.props.width, pixbuf.props.height
-                    iconlog("using '%s' pixbuf %ix%i", icon_name, w, h)
-                    return w, h, "RGBA", pixbuf.get_pixels()
-            except Exception:
-                iconlog("%s.load_icon()", i, exc_info=True)
         return None
 
     def get_wm_state(self, prop):
