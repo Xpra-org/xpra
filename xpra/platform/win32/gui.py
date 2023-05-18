@@ -1094,6 +1094,9 @@ class ClientExtras:
                           }
         def low_level_keyboard_handler(nCode, wParam, lParam):
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
+            if nCode<0:
+                #docs say we should not process this event:
+                return CallNextHookEx(0, nCode, wParam, lParam)
             try:
                 scan_code = lParam.contents.scan_code
                 vk_code = lParam.contents.vk_code
