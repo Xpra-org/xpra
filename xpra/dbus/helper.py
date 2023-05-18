@@ -80,7 +80,7 @@ def native_to_dbus(value, signature=None):
                 sig = "s"
                 #use strings as keys
                 value = dict((str(k), native_to_dbus(v)) for k,v in value.items())
-            signature = f"{sig}sv"
+            signature = f"{sig}v"
         return dbus.types.Dictionary(value, signature=signature)
     return dbus.types.String(value)
 
