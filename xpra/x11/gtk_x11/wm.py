@@ -324,7 +324,7 @@ class Wm(GObject.GObject):
                 log("_manage_client(%x)", xid)
                 desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
                 root = get_default_root_window()
-                win = WindowModel(root, xid, desktop_geometry, self.size_constraints)
+                win = WindowModel(root.get_xid(), xid, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
                 l = log.warn

@@ -158,7 +158,7 @@ class WindowModel(BaseWindowModel):
     _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window, xid:int, desktop_geometry, size_constraints=None):
+    def __init__(self, parking_window_xid:int, xid:int, desktop_geometry, size_constraints=None):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
@@ -166,7 +166,7 @@ class WindowModel(BaseWindowModel):
         died somehow before we could do anything with it."""
 
         super().__init__(xid)
-        self.parking_window = parking_window
+        self.parking_window_xid = parking_window_xid
         self.corral_xid : int = 0
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
@@ -190,8 +190,7 @@ class WindowModel(BaseWindowModel):
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
         geomlog("setup() clamp_to_desktop(%s)=%s", ogeom, (x, y))
-        parking_xid = self.parking_window.get_xid()
-        self.corral_xid = X11Window.CreateCorralWindow(parking_xid, self.xid, x, y)
+        self.corral_xid = X11Window.CreateCorralWindow(self.parking_window_xid, self.xid, x, y)
         log("setup() corral_xid=%#x", self.corral_xid)
         prop_set(self.corral_xid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(self.corral_xid)
@@ -462,7 +461,7 @@ class WindowModel(BaseWindowModel):
         with xsync:
             if X11Window.is_mapped(self.corral_xid):
                 X11Window.Unmap(self.corral_xid)
-            X11Window.Reparent(self.corral_xid, self.parking_window.get_xid(), 0, 0)
+            X11Window.Reparent(self.corral_xid, self.parking_window_xid, 0, 0)
             X11Window.sendConfigureNotify(self.xid)
 
 
