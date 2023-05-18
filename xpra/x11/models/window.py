@@ -169,15 +169,14 @@ class WindowModel(BaseWindowModel):
 
         super().__init__(xid)
         self.parking_window = parking_window
-        self.corral_window = None
         self.corral_xid : int = 0
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         self.saved_events = -1
         #extra state attributes so we can unmanage() the window cleanly:
-        self.in_save_set = False
-        self.client_reparented = False
-        self.kill_count = 0
+        self.in_save_set : bool = False
+        self.client_reparented : bool = False
+        self.kill_count : int = 0
 
         self.call_setup()
 
@@ -384,6 +383,7 @@ class WindowModel(BaseWindowModel):
                         X11Window.MapWindow(self.xid)
             #it is now safe to destroy the corral window:
             cwin.destroy()
+            self.corral_xid = 0
         super().do_unmanaged(wm_exiting)
 
 
@@ -430,7 +430,7 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_unmap_event(self, event):
         log(f"do_xpra_unmap_event({event}) corral_window={self.corral_xid:x}")
-        if event.delivered_to==self.corral_xid or self.corral_window is None:
+        if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
         assert event.window==self.xid
         # The client window got unmapped.  The question is, though, was that
@@ -446,7 +446,7 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_destroy_event(self, event):
         log(f"do_xpra_destroy_event({event}) corral_window={self.corral_xid:x}")
-        if event.delivered_to==self.corral_xid or self.corral_window is None:
+        if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
         assert event.window==self.xid
         super().do_xpra_destroy_event(event)
@@ -519,7 +519,7 @@ class WindowModel(BaseWindowModel):
             geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored",
                     event.window)
             return
-        if self.corral_window is None or not self.corral_window.is_visible():
+        if not self.corral_xid or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
             return
         if not (self.xid and X11Window.is_visible(self.xid)):
@@ -841,8 +841,8 @@ class WindowModel(BaseWindowModel):
     def give_client_focus(self):
         """The focus manager has decided that our client should receive X
         focus.  See world_window.py for details."""
-        log("give_client_focus() corral_window=%s", self.corral_window)
-        if self.corral_window:
+        log("give_client_focus() corral_window=%s", self.corral_xid)
+        if self.corral_xid:
             with xlog:
                 self.do_give_client_focus()
 
