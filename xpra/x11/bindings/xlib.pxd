@@ -152,6 +152,23 @@ cdef extern from "X11/Xlib.h":
         unsigned short red, green, blue     # rgb values
         char flags                          # DoRed, DoGreen, DoBlue
 
+    ctypedef struct XSetWindowAttributes:
+        Pixmap background_pixmap            # background, None, or ParentRelative
+        unsigned long background_pixel      # background pixel
+        Pixmap border_pixmap                # border of the window or CopyFromParent
+        unsigned long border_pixel          # border pixel value
+        int bit_gravity                     # one of bit gravity values
+        int win_gravity                     # one of the window gravity values
+        int backing_store                   # NotUseful, WhenMapped, Always
+        unsigned long backing_planes        # planes to be preserved if possible
+        unsigned long backing_pixel         # value to use in restoring planes
+        Bool save_under                     # should bits under be saved? (popups)
+        long event_mask                     # set of events that should be saved
+        long do_not_propagate_mask          # set of events that should not propagate
+        Bool override_redirect              # boolean value for override_redirect
+        Colormap colormap                   # color map to be associated with window
+        Cursor cursor
+
     ctypedef struct XWindowChanges:
         int x, y, width, height, border_width
         Window sibling
@@ -263,6 +280,12 @@ cdef extern from "X11/Xlib.h":
     Status XGetWindowAttributes(Display * display, Window w,
                                 XWindowAttributes * attributes)
 
+    Window XCreateWindow(Display *display, Window parent,
+                         int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth,
+                         unsigned int _class, Visual *visual,
+                         unsigned long valuemask, XSetWindowAttributes *attributes)
+    int XDestroyWindow(Display *display, Window w)
+
     int XConfigureWindow(Display * display, Window w,
          unsigned int value_mask, XWindowChanges * changes)
     Status XReconfigureWMWindow(Display * display, Window w, int screen_number,
@@ -319,6 +342,8 @@ cdef extern from "X11/Xlib.h":
     int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
     int XConvertSelection(Display * display, Atom selection, Atom target, Atom property,
                           Window requestor, Time time)
+
+    int XIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(), XPointer arg)
 
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:

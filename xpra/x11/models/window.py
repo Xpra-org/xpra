@@ -4,13 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
+from gi.repository import GObject, Gtk  # @UnresolvedImport
 
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog
-from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
@@ -23,7 +22,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     get_children,
     calc_constrained_size,
-    x11_get_server_time,
     )
 from xpra.log import Logger
 
@@ -186,23 +184,15 @@ class WindowModel(BaseWindowModel):
 
     def setup(self):
         super().setup()
-
         self.saved_events = X11Window.getEventMask(self.xid)
-
         ogeom = X11Window.getGeometry(self.xid)
         ox, oy, ow, oh = ogeom[:4]
-        # We enable PROPERTY_CHANGE_MASK so that we can call
-        # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
         geomlog("setup() clamp_to_desktop(%s)=%s", ogeom, (x, y))
-        self.corral_window = GDKX11Window(self.parking_window,
-                                        x=x, y=y, width=ow, height=oh,
-                                        window_type=Gdk.WindowType.CHILD,
-                                        event_mask=Gdk.EventMask.PROPERTY_CHANGE_MASK,
-                                        title = "CorralWindow-%#x" % self.xid)
-        self.corral_xid = self.corral_window.get_xid()
-        log("setup() corral_window=%#x", self.corral_xid)
+        parking_xid = self.parking_window.get_xid()
+        self.corral_xid = X11Window.CreateCorralWindow(parking_xid, self.xid, x, y)
+        log("setup() corral_xid=%#x", self.corral_xid)
         prop_set(self.corral_xid, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(self.corral_xid)
         add_event_receiver(self.corral_xid, self)
@@ -246,14 +236,10 @@ class WindowModel(BaseWindowModel):
         self._updateprop("geometry", (nx, ny, nw, nh))
         geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
         #don't trigger a move or resize unless we have to:
-        if (ox,oy)!=(nx,ny) and (ow,oh)!=(nw,nh):
-            self.corral_window.move_resize(nx, ny, nw, nh)
-        elif (ox,oy)!=(nx,ny):
-            self.corral_window.move(nx, ny)
-        elif (ow,oh)!=(nw,nh):
-            self.corral_window.resize(nw, nh)
-        if (ow,oh)!=(nw,nh):
-            X11Window.MoveResizeWindow(self.xid, x, y, nw, nh)
+        if ox!=nx or oy!=ny or ow!=nw or oh!=nh:
+            X11Window.MoveResizeWindow(self.corral_xid, nx, ny, nw, nh)
+        if ow!=nw or oh!=nh:
+            X11Window.MoveResizeWindow(self.xid, 0, 0, nw, nh)
         if not X11Window.is_mapped(self.xid):
             X11Window.MapWindow(self.xid)
         #this is here to trigger X11 errors if any are pending
@@ -281,11 +267,12 @@ class WindowModel(BaseWindowModel):
         if self.desktop_geometry==(width, height):
             return  #no need to do anything
         self.desktop_geometry = (width, height)
-        x, y, w, h = self.corral_window.get_geometry()[:4]
+        with xsync:
+            x, y, w, h = X11Window.getGeometry(self.corral_xid)[:4]
         nx, ny = self._clamp_to_desktop(x, y, w, h)
         if nx!=x or ny!=y:
             log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
-            self.corral_window.move(nx, ny)
+            X11Window.MoveResizeWindow(nx, ny, w, h)
 
 
     def _read_initial_X11_properties(self):
@@ -348,10 +335,10 @@ class WindowModel(BaseWindowModel):
 
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
-        cwin = self.corral_window
-        if cwin:
-            self.corral_window = None
-            remove_event_receiver(cwin.get_xid(), self)
+        cxid = self.corral_xid
+        if cxid:
+            self.corral_xid = 0
+            remove_event_receiver(cxid, self)
             geom = None
             #use a new context so we will XSync right here
             #and detect if the window is already gone:
@@ -382,9 +369,13 @@ class WindowModel(BaseWindowModel):
                     if not X11Window.is_mapped(self.xid):
                         X11Window.MapWindow(self.xid)
             #it is now safe to destroy the corral window:
-            cwin.destroy()
-            self.corral_xid = 0
+            with xsync:
+                X11Window.DestroyWindow(cxid)
         super().do_unmanaged(wm_exiting)
+
+    def send_configure_notify(self):
+        with xswallow:
+            X11Window.sendConfigureNotify(self.xid)
 
 
     #########################################
@@ -429,7 +420,7 @@ class WindowModel(BaseWindowModel):
         log("do_child_map_request_event(%s)", event)
 
     def do_xpra_unmap_event(self, event):
-        log(f"do_xpra_unmap_event({event}) corral_window={self.corral_xid:x}")
+        log(f"do_xpra_unmap_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
         assert event.window==self.xid
@@ -445,7 +436,7 @@ class WindowModel(BaseWindowModel):
             self.unmanage()
 
     def do_xpra_destroy_event(self, event):
-        log(f"do_xpra_destroy_event({event}) corral_window={self.corral_xid:x}")
+        log(f"do_xpra_destroy_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
         assert event.window==self.xid
@@ -462,16 +453,16 @@ class WindowModel(BaseWindowModel):
         if self.get_property("iconic"):
             self.set_property("iconic", False)
         self._update_client_geometry()
-        self.corral_window.show_unraised()
+        with xsync:
+            if not X11Window.is_mapped(self.corral_xid):
+                X11Window.MapWindow(self.corral_xid)
 
     def hide(self):
         self._internal_set_property("shown", False)
-        self.corral_window.hide()
-        self.corral_window.reparent(self.parking_window, 0, 0)
-        self.send_configure_notify()
-
-    def send_configure_notify(self):
-        with xswallow:
+        with xsync:
+            if X11Window.is_mapped(self.corral_xid):
+                X11Window.Unmap(self.corral_xid)
+            X11Window.Reparent(self.corral_xid, self.parking_window.get_xid(), 0, 0)
             X11Window.sendConfigureNotify(self.xid)
 
 
@@ -500,34 +491,33 @@ class WindowModel(BaseWindowModel):
         x, y, allocated_w, allocated_h = geometry
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
-        self.corral_window.move_resize(x, y, w, h)
-        self._updateprop("geometry", (x, y, w, h))
         with xlog:
+            X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+            self._updateprop("geometry", (x, y, w, h))
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s",
                 event, self.corral_xid, self.xid, self._managed)
-        if not self._managed:
+        if not self._managed or not self.corral_xid or not self.xid:
             return
         if event.window==self.corral_xid:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_xid)
+            geomlog(f"ignored configure event on the corral window {self.corral_xid:x}")
             return
         if event.window!=self.xid:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored",
-                    event.window)
-            return
-        if not self.corral_xid or not self.corral_window.is_visible():
-            geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
-            return
-        if not (self.xid and X11Window.is_visible(self.xid)):
-            geomlog("WindowModel.do_xpra_configure_event: client window is not visible")
+            geomlog(f"ignored configure event on window {event.window:x} (not the client window)")
             return
         try:
             #workaround applications whose windows disappear from underneath us:
             with xsync:
+                if not X11Window.is_mapped(self.corral_xid):
+                    geomlog(f"WindowModel.do_xpra_configure_event: corral window {self.corral_xid:x} is not visible")
+                    return
+                if not X11Window.is_mapped(self.xid):
+                    geomlog(f"WindowModel.do_xpra_configure_event: client window {self.xid:x} is not visible")
+                    return
                 #event.border_width unused
                 self.resize_corral_window(event.x, event.y, event.width, event.height)
                 self.update_children()
@@ -561,7 +551,7 @@ class WindowModel(BaseWindowModel):
     def resize_corral_window(self, x : int, y : int, w : int, h : int):
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
-        cox, coy, cow, coh = self.corral_window.get_geometry()[:4]
+        cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
         #size changes (and position if any):
         hints = self.get_property("size-hints")
         w, h = self.calc_constrained_size(w, h, hints)
@@ -573,22 +563,13 @@ class WindowModel(BaseWindowModel):
         if moved:
             self._internal_set_property("requested-position", (x, y))
             self._internal_set_property("set-initial-position", True)
-
-        if resized:
-            if moved:
-                geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
-                self.corral_window.move_resize(x, y, w, h)
-                X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
-                self._updateprop("geometry", (x, y, w, h))
-            else:
-                geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
-                self.corral_window.resize(w, h)
-                self._updateprop("geometry", (cx, cy, w, h))
-        elif moved:
-            geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
-            self.corral_window.move(x, y)
+        if not moved or resized:
+            return
+        X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+        if moved:
+            #always keep it in the top corner:
             X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
-            self._updateprop("geometry", (x, y, cw, ch))
+        self._updateprop("geometry", (x, y, w, h))
 
     def do_child_configure_request_event(self, event):
         hints = self.get_property("size-hints")
@@ -640,25 +621,25 @@ class WindowModel(BaseWindowModel):
     def process_client_message_event(self, event):
         if event.message_type=="_NET_MOVERESIZE_WINDOW":
             #TODO: honour gravity, show source indication
-            geom = self.corral_window.get_geometry()
-            x, y, w, h, _ = geom
-            if event.data[0] & 0x100:
-                x = event.data[1]
-            if event.data[0] & 0x200:
-                y = event.data[2]
-            if event.data[0] & 0x400:
-                w = event.data[3]
-            if event.data[0] & 0x800:
-                h = event.data[4]
-            if (event.data[0] & 0x100) or (event.data[0] & 0x200):
-                self._internal_set_property("set-initial-position", True)
-                self._internal_set_property("requested-position", (x, y))
-            #honour hints:
-            hints = self.get_property("size-hints")
-            w, h = self.calc_constrained_size(w, h, hints)
-            geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
-                    self, event.data, geom, (x,y,w,h))
-            with xswallow:
+            with xsync:
+                geom = X11Window.getGeometry(self.corral_xid)
+                x, y, w, h, _ = geom
+                if event.data[0] & 0x100:
+                    x = event.data[1]
+                if event.data[0] & 0x200:
+                    y = event.data[2]
+                if event.data[0] & 0x400:
+                    w = event.data[3]
+                if event.data[0] & 0x800:
+                    h = event.data[4]
+                if (event.data[0] & 0x100) or (event.data[0] & 0x200):
+                    self._internal_set_property("set-initial-position", True)
+                    self._internal_set_property("requested-position", (x, y))
+                #honour hints:
+                hints = self.get_property("size-hints")
+                w, h = self.calc_constrained_size(w, h, hints)
+                geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
+                        self, event.data, geom, (x,y,w,h))
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
             return True
         return super().process_client_message_event(event)
@@ -841,7 +822,7 @@ class WindowModel(BaseWindowModel):
     def give_client_focus(self):
         """The focus manager has decided that our client should receive X
         focus.  See world_window.py for details."""
-        log("give_client_focus() corral_window=%s", self.corral_xid)
+        log("give_client_focus() corral_xid=%s", self.corral_xid)
         if self.corral_xid:
             with xlog:
                 self.do_give_client_focus()
@@ -855,7 +836,7 @@ class WindowModel(BaseWindowModel):
         # genuine race conditions here (e.g. suppose the client does not
         # actually get around to requesting the focus until after we have
         # already changed our mind and decided to give it to someone else).
-        now = x11_get_server_time(self.corral_window)
+        now = X11Window.get_server_time(self.corral_xid)
         # ICCCM 4.1.7 *claims* to describe how we are supposed to give focus
         # to a window, but it is completely opaque.  From reading the
         # metacity, kwin, gtk+, and qt code, it appears that the actual rules
