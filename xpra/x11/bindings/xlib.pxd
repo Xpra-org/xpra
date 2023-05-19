@@ -25,6 +25,7 @@ cdef extern from "X11/X.h":
     unsigned long NoSymbol
     unsigned long AnyPropertyType
     unsigned int PropModeReplace
+    unsigned int PropertyNotify
 
 cdef extern from "X11/Xutil.h":
     ctypedef struct aspect:
@@ -343,7 +344,8 @@ cdef extern from "X11/Xlib.h":
     int XConvertSelection(Display * display, Atom selection, Atom target, Atom property,
                           Window requestor, Time time)
 
-    int XIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(), XPointer arg)
+    ctypedef Bool (*XIf_predicate) (Display *display, XEvent *event, XPointer arg) nogil
+    int XIfEvent(Display *display, XEvent *event_return, XIf_predicate predicate, XPointer arg)
 
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:
@@ -458,6 +460,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct XDestroyWindowEvent:
         Window window
     ctypedef struct XPropertyEvent:
+        Window window
         Atom atom
         Time time
     ctypedef struct XKeyEvent:

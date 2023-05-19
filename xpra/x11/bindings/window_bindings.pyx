@@ -1,17 +1,17 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.gtk_common.error import XError
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor,
+    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
     GrabModeAsync, XGrabPointer,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
-    XCreateWindow, XDestroyWindow,
+    XCreateWindow, XDestroyWindow, XIfEvent, XIf_predicate, PropertyNotify,
     XSetWindowAttributes,
     XWindowAttributes, XWindowChanges,
     XDefaultRootWindow,
@@ -1282,4 +1282,26 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
 
     def get_server_time(self, Window xwindow):
-        return 0
+        cdef unsigned char c = b"a"
+        cdef Atom timestamp_prop = self.xatom("XPRA_TIMESTAMP_PROP")
+        XChangeProperty(self.display, xwindow, timestamp_prop,
+                   timestamp_prop,
+                   8, PropModeReplace, &c, 1)
+        cdef XEvent xevent
+        cdef xifevent_timestamp et
+        et.window = xwindow
+        et.atom = timestamp_prop
+        XIfEvent(self.display, &xevent, &timestamp_predicate, <XPointer> &et)
+        return xevent.xproperty.time;
+
+
+ctypedef struct xifevent_timestamp:
+    Window window
+    Atom atom
+
+cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg) nogil:
+    cdef xifevent_timestamp *et = <xifevent_timestamp*> arg
+    cdef Window xwindow = <Window> arg
+    if xevent.type!=PropertyNotify:
+        return False
+    return xevent.xproperty.window==et.window and xevent.xproperty.atom==et.atom
