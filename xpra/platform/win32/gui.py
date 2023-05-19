@@ -1125,7 +1125,9 @@ class ClientExtras:
                           }
         def low_level_keyboard_handler(nCode, wParam, lParam):
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
-            if POLL_LAYOUT and self.keyboard_poll_timer==0:
+            kh = getattr(self.client, "keyboard_helper", None)
+            locked = getattr(kh, "locked", False)
+            if POLL_LAYOUT and self.keyboard_poll_timer==0 and not locked:
                 self.keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
             if nCode<0:
                 #docs say we should not process this event:
