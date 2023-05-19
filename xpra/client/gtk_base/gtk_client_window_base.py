@@ -1672,14 +1672,24 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             x, y, w, h = abs_coords(*prev[2:5])
             self.repaint(x, y, w, h)
 
+    def _button_resolve(self, button):
+        if WIN32 and button in (4, 5):
+          # On Windows "X" buttons (the extra buttons sometimes found on the
+          # side of the mouse) are numbered 4 and 5, as there is a different
+          # API for scroll events. Convert them into the X11 convention of 8
+          # and 9.
+          return button + 4
+        return button
 
     def _do_button_press_event(self, event):
         #Gtk.Window.do_button_press_event(self, event)
-        self._button_action(event.button, event, True)
+        button = self._button_resolve(event.button)
+        self._button_action(button, event, True)
 
     def _do_button_release_event(self, event):
         #Gtk.Window.do_button_release_event(self, event)
-        self._button_action(event.button, event, False)
+        button = self._button_resolve(event.button)
+        self._button_action(button, event, False)
 
     ######################################################################
     # pointer motion
