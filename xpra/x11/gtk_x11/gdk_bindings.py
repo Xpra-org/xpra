@@ -1,13 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import POSIX, OSX, WIN32
-x11_get_server_time = None
-if POSIX and (not OSX or WIN32):
-    from gi.repository import GdkX11  #pylint: disable=wrong-import-position
-    x11_get_server_time = GdkX11.x11_get_server_time
 #pylint: disable=wrong-import-position, ungrouped-imports
 from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport
 

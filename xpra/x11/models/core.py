@@ -822,14 +822,10 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn(" it does not support WM_DELETE_WINDOW")
                 log.warn(" and FORCE_QUIT is disabled")
 
-    def get_server_time(self):
-        #TODO: re-implement gdk_x11_get_server_time
-        #without using a gdk window
-        return CurrentTime
-
     def send_delete(self):
         with xswallow:
-            send_wm_delete_window(self.xid, timestamp=CurrentTime)
+            now = X11Window.get_server_time(self.xid)
+            send_wm_delete_window(self.xid, timestamp=now)
 
     def XKill(self):
         with xswallow:
