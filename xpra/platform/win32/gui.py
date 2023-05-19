@@ -1078,6 +1078,10 @@ class ClientExtras:
         if khid:
             self.keyboard_hook_id = None
             UnhookWindowsHookEx(khid)
+        kpt = self.keyboard_poll_timer
+        if kpt:
+            self.keyboard_poll_timer = 0
+            GLib.source_remove(kpt)
         sst = self._screensaver_timer
         if sst:
             self._screensaver_timer = 0
@@ -1089,7 +1093,7 @@ class ClientExtras:
         name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
         if not GetKeyboardLayoutName(name_buf):
             return 0
-        log.warn(f"layout-name={name_buf.value}")
+        log(f"layout-name={name_buf.value}")
         try:
             #win32 API returns a hex string
             return int(name_buf.value, 16)
@@ -1259,7 +1263,7 @@ class ClientExtras:
 
     def inputlangchange(self, wParam, lParam):
         keylog("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
-	self.poll_layout()
+        self.poll_layout()
 
     def inichange(self, wParam, lParam):
         if lParam:
