@@ -16,6 +16,7 @@ from ctypes import (
     )
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ, LPCWSTR
 from ctypes.util import find_library
+from gi.repository import GLib
 
 from xpra.client.gui import mixin_features
 from xpra.exit_codes import ExitCode
@@ -37,6 +38,7 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo,
     GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
     GetMonitorInfo,
+    GetKeyboardLayoutName,
     )
 from xpra.common import KeyEvent
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
@@ -94,6 +96,7 @@ CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 #GTK3 is fixed, so we don't need this hook:
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
+POLL_LAYOUT = envint("XPRA_WIN32_POLL_LAYOUT", 10)
 
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
 WHEEL = envbool("XPRA_WHEEL", True)
@@ -569,7 +572,7 @@ def add_window_hooks(window):
 
         if LANGCHANGE:
             def inputlangchange(_hwnd, _event, wParam, lParam):
-                log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
+                keylog("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
 
@@ -1050,6 +1053,8 @@ class ClientExtras:
             log.error("Error: cannot register focus and power callbacks:")
             log.estr(e)
         self.keyboard_hook_id = None
+        self.keyboard_poll_timer : int = 0
+        self.keyboard_id : int = self.get_keyboard_layout_id()
         if FORWARD_WINDOWS_KEY and mixin_features.windows:
             from xpra.make_thread import start_thread
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
@@ -1080,12 +1085,33 @@ class ClientExtras:
         log("ClientExtras.cleanup() ended")
         #self.client = None
 
+    def get_keyboard_layout_id(self):
+        name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
+        if not GetKeyboardLayoutName(name_buf):
+            return 0
+        log.warn(f"layout-name={name_buf.value}")
+        try:
+            #win32 API returns a hex string
+            return int(name_buf.value, 16)
+        except ValueError:
+            log.warn("Warning: failed to parse keyboard layout code '%s'", name_buf.value)
+        return 0
+
+    def poll_layout(self):
+        self.keyboard_poll_timer = 0
+        klid = self.get_keyboard_layout_id()
+        if klid and klid!=self.keyboard_id:
+            self.keyboard_id = klid
+            self.client.window_keyboard_layout_changed()
+
     def init_keyboard_listener(self):
         class KBDLLHOOKSTRUCT(Structure):
             _fields_ = [("vk_code", DWORD),
                         ("scan_code", DWORD),
                         ("flags", DWORD),
                         ("time", c_int),]
+            def toString(self):
+                return f"KBDLLHOOKSTRUCT({self.vk_code}, {self.scan_code}, {self.flags:x}, {self.time})"
         DOWN = [win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN]
         #UP = [win32con.WM_KEYUP, win32con.WM_SYSKEYUP]
         ALL_KEY_EVENTS = {win32con.WM_KEYDOWN       : "KEYDOWN",
@@ -1095,6 +1121,8 @@ class ClientExtras:
                           }
         def low_level_keyboard_handler(nCode, wParam, lParam):
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
+            if POLL_LAYOUT and self.keyboard_poll_timer==0:
+                self.keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
             if nCode<0:
                 #docs say we should not process this event:
                 return CallNextHookEx(0, nCode, wParam, lParam)
@@ -1226,12 +1254,12 @@ class ClientExtras:
             log("will unfreeze all the windows")
             #don't unfreeze directly from here,
             #as the system may not be fully usable yet (see #997)
-            from gi.repository import GLib  # @UnresolvedImport
             GLib.idle_add(c.unfreeze)
 
 
     def inputlangchange(self, wParam, lParam):
-        log("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
+        keylog("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
+	self.poll_layout()
 
     def inichange(self, wParam, lParam):
         if lParam:
@@ -1300,8 +1328,6 @@ def main():
             from xpra.platform.win32.win32_events import log as win32_event_logger
             log.enable_debug()
             win32_event_logger.enable_debug()
-
-        from gi.repository import GLib  # @UnresolvedImport
 
         log.info("Event loop is running")
         loop = GLib.MainLoop()
