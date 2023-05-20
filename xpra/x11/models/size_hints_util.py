@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ log = Logger("x11", "window")
 MAX_ASPECT = 2**15-1
 
 
-def sanitize_size_hints(size_hints):
+def sanitize_size_hints(size_hints : dict):
     """
         Some applications may set nonsensical values,
         try our best to come up with something that can actually be used.

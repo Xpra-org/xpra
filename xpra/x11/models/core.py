@@ -14,6 +14,7 @@ from xpra.os_util import bytestostr, get_proc_cmdline
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_delete_window
@@ -250,7 +251,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._kill_count = 0
 
 
-    def __repr__(self):  #pylint: disable=arguments-differ
+    def __repr__(self) -> str:  #pylint: disable=arguments-differ
         try:
             classname = type(self).__name__
             return f"{classname}({self.xid:x})"
@@ -262,7 +263,7 @@ class CoreX11WindowModel(WindowModelStub):
     # Setup and teardown
     #########################################
 
-    def call_setup(self):
+    def call_setup(self) -> None:
         """
             Call this method to prepare the window:
             * makes sure it still exists
@@ -318,22 +319,22 @@ class CoreX11WindowModel(WindowModelStub):
             raise Unmanageable(e) from None
         self._setup_done = True
 
-    def setup_failed(self, e):
+    def setup_failed(self, e) -> None:
         log("cannot manage %s %#x: %s", self._MODELTYPE, self.xid, e)
         self.do_unmanaged(False)
 
-    def setup(self):
+    def setup(self) -> None:
         # Start listening for important events.
         X11Window.addDefaultEvents(self.xid)
         self._damage_forward_handle = self._composite.connect("contents-changed", self._forward_contents_changed)
         self._setup_property_sync()
 
 
-    def unmanage(self, exiting=False):
+    def unmanage(self, exiting=False) -> None:
         if self._managed:
             self.emit("unmanaged", exiting)
 
-    def do_unmanaged(self, wm_exiting):
+    def do_unmanaged(self, wm_exiting) -> None:
         if not self._managed:
             return
         self._managed = False
@@ -355,12 +356,13 @@ class CoreX11WindowModel(WindowModelStub):
     # Damage / Composite
     #########################################
 
-    def acknowledge_changes(self):
+    def acknowledge_changes(self) -> None:
         c = self._composite
-        assert c, "composite window destroyed outside the UI thread?"
+        if not c:
+            raise RuntimeError("composite window destroyed outside the UI thread?")
         c.acknowledge_changes()
 
-    def _forward_contents_changed(self, _obj, event):
+    def _forward_contents_changed(self, _obj, event) -> None:
         if self._managed:
             self.emit("client-contents-changed", event)
 
@@ -368,11 +370,11 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return c and c.has_xshm()
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x, y, width, height) -> ImageWrapper:
         return self._composite.get_image(x, y, width, height)
 
 
-    def _setup_property_sync(self):
+    def _setup_property_sync(self) -> None:
         metalog("setup_property_sync()")
         #python properties which trigger an X11 property to be updated:
         for prop, cb in self._py_property_handlers.items():
@@ -383,11 +385,11 @@ class CoreX11WindowModel(WindowModelStub):
         #this one is special, and overridden in BaseWindow too:
         self.managed_connect("notify::protocols", self._update_can_focus)
 
-    def _update_can_focus(self, *_args):
+    def _update_can_focus(self, *_args) -> None:
         can_focus = "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
 
-    def _read_initial_X11_properties(self):
+    def _read_initial_X11_properties(self) -> None:
         """ This is called within an XSync context,
             so that X11 calls can raise XErrors,
             pure GTK calls are not allowed. (they would trap the X11 error and crash!)
@@ -430,7 +432,7 @@ class CoreX11WindowModel(WindowModelStub):
                     #try to continue:
                     log.error("Error parsing initial property {mutable!r}", exc_info=True)
 
-    def _scrub_x11(self):
+    def _scrub_x11(self) -> None:
         metalog("scrub_x11() x11 properties=%s", self._scrub_x11_properties)
         if not self._scrub_x11_properties:
             return
@@ -443,7 +445,7 @@ class CoreX11WindowModel(WindowModelStub):
     # XShape
     #########################################
 
-    def _read_xshape(self, x=0, y=0):
+    def _read_xshape(self, x:int=0, y:int=0) -> dict:
         if not X11Window.displayHasXShape() or not XSHAPE:
             return {}
         extents = X11Window.XShapeQueryExtents(self.xid)
@@ -486,15 +488,15 @@ class CoreX11WindowModel(WindowModelStub):
     # Python objects synced to X11 properties
     #########################################
 
-    def _sync_allowed_actions(self, *_args):
+    def _sync_allowed_actions(self, *_args) -> None:
         actions = self.get_property("allowed-actions") or []
         metalog("sync_allowed_actions: setting _NET_WM_ALLOWED_ACTIONS=%s on %#x", actions, self.xid)
         with xswallow:
             self.prop_set("_NET_WM_ALLOWED_ACTIONS", ["atom"], actions)
-    def _handle_frame_changed(self, *_args):
+    def _handle_frame_changed(self, *_args) -> None:
         #legacy name for _sync_frame() called from Wm
         self._sync_frame()
-    def _sync_frame(self, *_args):
+    def _sync_frame(self, *_args) -> None:
         if not FRAME_EXTENTS:
             return
         v = self.get_property("frame")
@@ -508,7 +510,7 @@ class CoreX11WindowModel(WindowModelStub):
         with xswallow:
             self.prop_set("_NET_FRAME_EXTENTS", ["u32"], v)
 
-    _py_property_handlers = {
+    _py_property_handlers : dict = {
         "allowed-actions"    : _sync_allowed_actions,
         "frame"              : _sync_frame,
         }
@@ -518,7 +520,7 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 properties synced to Python objects
     #########################################
 
-    def prop_get(self, key, ptype, ignore_errors=None, raise_xerrors=False):
+    def prop_get(self, key, ptype, ignore_errors=None, raise_xerrors=False) -> object:
         """
             Get an X11 property from the client window,
             using the automatic type conversion code from prop.py
@@ -528,26 +530,26 @@ class CoreX11WindowModel(WindowModelStub):
             ignore_errors = True
         return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
-    def prop_del(self, key):
+    def prop_del(self, key) -> None:
         prop_del(self.xid, key)
 
-    def prop_set(self, key, ptype, value):
+    def prop_set(self, key, ptype, value) -> None:
         prop_set(self.xid, key, ptype, value)
 
 
-    def root_prop_get(self, key, ptype, ignore_errors=True):
+    def root_prop_get(self, key, ptype, ignore_errors=True) -> object:
         return prop_get(X11Window.get_root_xid(), key, ptype, ignore_errors=ignore_errors)
 
-    def root_prop_set(self, key, ptype, value):
+    def root_prop_set(self, key, ptype, value) -> None:
         prop_set(X11Window.get_root_xid(), key, ptype, value)
 
 
-    def do_xpra_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event) -> None:
         #X11: PropertyNotify
         assert event.window==self.xid
         self._handle_property_change(str(event.atom))
 
-    def _handle_property_change(self, name):
+    def _handle_property_change(self, name) -> None:
         #ie: _handle_property_change("_NET_WM_NAME")
         metalog("Property changed on %#x: %s", self.xid, name)
         x11proptype = X11_PROPERTIES_DEBUG.get(name)
@@ -587,17 +589,17 @@ class CoreX11WindowModel(WindowModelStub):
                 log.estr(e)
 
     #specific properties:
-    def _handle_pid_change(self):
+    def _handle_pid_change(self) -> None:
         pid = self.prop_get("_NET_WM_PID", "u32") or -1
         metalog("_NET_WM_PID=%s", pid)
         self._updateprop("wm-pid", pid)
 
-    def _handle_client_machine_change(self):
+    def _handle_client_machine_change(self) -> None:
         client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1")
         metalog("WM_CLIENT_MACHINE=%s", client_machine)
         self._updateprop("client-machine", client_machine)
 
-    def _handle_wm_name_change(self):
+    def _handle_wm_name_change(self) -> None:
         name = self.prop_get("_NET_WM_NAME", "utf8", True)
         metalog("_NET_WM_NAME=%s", name)
         if name is None:
@@ -606,18 +608,18 @@ class CoreX11WindowModel(WindowModelStub):
         if self._updateprop("title", sanestr(name)):
             metalog("wm_name changed")
 
-    def _handle_role_change(self):
+    def _handle_role_change(self) -> None:
         role = self.prop_get("WM_WINDOW_ROLE", "latin1")
         metalog("WM_WINDOW_ROLE=%s", role)
         self._updateprop("role", role)
 
-    def _handle_protocols_change(self):
+    def _handle_protocols_change(self) -> None:
         with xsync:
             protocols = X11Window.XGetWMProtocols(self.xid)
         metalog("WM_PROTOCOLS=%s", protocols)
         self._updateprop("protocols", protocols)
 
-    def _handle_command_change(self):
+    def _handle_command_change(self) -> None:
         command = self.prop_get("WM_COMMAND", "latin1")
         metalog("WM_COMMAND=%s", command)
         if command:
@@ -627,14 +629,14 @@ class CoreX11WindowModel(WindowModelStub):
             command = b" ".join(get_proc_cmdline(pid) or ())
         self._updateprop("command", command)
 
-    def _handle_class_change(self):
+    def _handle_class_change(self) -> None:
         class_instance = X11Window.getClassHint(self.xid)
         if class_instance:
             class_instance = tuple(v.decode("latin1") for v in class_instance)
         metalog("WM_CLASS=%s", class_instance)
         self._updateprop("class-instance", class_instance)
 
-    def _handle_opaque_region_change(self):
+    def _handle_opaque_region_change(self) -> None:
         rectangles = []
         v = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
         if OPAQUE_REGION and len(v)%4==0:
@@ -645,7 +647,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("opaque-region", tuple(rectangles))
 
     #these handlers must not generate X11 errors (must use XSync)
-    _x11_property_handlers = {
+    _x11_property_handlers : dict = {
         "_NET_WM_PID"       : _handle_pid_change,
         "WM_CLIENT_MACHINE" : _handle_client_machine_change,
         "WM_NAME"           : _handle_wm_name_change,
@@ -662,11 +664,11 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 Events
     #########################################
 
-    def do_xpra_unmap_event(self, event):
+    def do_xpra_unmap_event(self, event) -> None:
         log("do_xpra_unmap_event(%s) xid=%s, ", event, self.xid)
         self.unmanage()
 
-    def do_xpra_destroy_event(self, event):
+    def do_xpra_destroy_event(self, event) -> None:
         log("do_xpra_destroy_event(%s) xid=%s, ", event, self.xid)
         if event.delivered_to==self.xid:
             # This is somewhat redundant with the unmap signal, because if you
@@ -678,7 +680,7 @@ class CoreX11WindowModel(WindowModelStub):
             self.unmanage()
 
 
-    def process_client_message_event(self, event):
+    def process_client_message_event(self, event) -> bool:
         # FIXME
         # Need to listen for:
         #   _NET_CURRENT_DESKTOP
@@ -709,7 +711,7 @@ class CoreX11WindowModel(WindowModelStub):
         #not handled:
         return False
 
-    def do_xpra_configure_event(self, event):
+    def do_xpra_configure_event(self, event) -> None:
         if not self._managed:
             return
         #shouldn't the border width always be 0?
@@ -719,7 +721,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("geometry", geom)
 
 
-    def do_xpra_shape_event(self, event):
+    def do_xpra_shape_event(self, event) -> None:
         shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))  # @UndefinedVariable
         cur_shape = self.get_property("shape")
         if cur_shape and cur_shape.get("serial", 0)>=event.serial:
@@ -743,7 +745,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._internal_set_property("shape", v)
 
 
-    def do_xpra_xkb_event(self, event):
+    def do_xpra_xkb_event(self, event) -> None:
         #X11: XKBNotify
         log("WindowModel.do_xpra_xkb_event(%r)", event)
         if event.subtype!="bell":
@@ -753,7 +755,7 @@ class CoreX11WindowModel(WindowModelStub):
         event.window_model = self
         self.emit("bell", event)
 
-    def do_xpra_client_message_event(self, event):
+    def do_xpra_client_message_event(self, event) -> None:
         #X11: ClientMessage
         log("do_xpra_client_message_event(%s)", event)
         if not event.data or len(event.data)!=5:
@@ -763,7 +765,7 @@ class CoreX11WindowModel(WindowModelStub):
             log.warn("do_xpra_client_message_event(%s) not handled", event)
 
 
-    def do_xpra_focus_in_event(self, event):
+    def do_xpra_focus_in_event(self, event) -> None:
         #X11: FocusIn
         grablog("focus_in_event(%s) mode=%s, detail=%s",
             event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
@@ -772,13 +774,13 @@ class CoreX11WindowModel(WindowModelStub):
         else:
             self.may_emit_grab(event)
 
-    def do_xpra_focus_out_event(self, event):
+    def do_xpra_focus_out_event(self, event) -> None:
         #X11: FocusOut
         grablog("focus_out_event(%s) mode=%s, detail=%s",
             event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         self.may_emit_grab(event)
 
-    def may_emit_grab(self, event):
+    def may_emit_grab(self, event) -> None:
         if event.mode==NotifyGrab:
             grablog("emitting grab on %s", self)
             self.emit("grab", event)
@@ -787,7 +789,7 @@ class CoreX11WindowModel(WindowModelStub):
             self.emit("ungrab", event)
 
 
-    def do_xpra_motion_event(self, event):
+    def do_xpra_motion_event(self, event) -> None:
         self.emit("motion", event)
 
 
@@ -795,10 +797,10 @@ class CoreX11WindowModel(WindowModelStub):
     # Actions
     ################################
 
-    def raise_window(self):
+    def raise_window(self) -> None:
         X11Window.XRaiseWindow(self.xid)
 
-    def set_active(self):
+    def set_active(self) -> None:
         self.root_prop_set("_NET_ACTIVE_WINDOW", "u32", self.xid)
 
 
@@ -806,7 +808,7 @@ class CoreX11WindowModel(WindowModelStub):
     # Killing clients:
     ################################
 
-    def request_close(self):
+    def request_close(self) -> None:
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
             self.send_delete()
         else:
@@ -822,16 +824,16 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn(" it does not support WM_DELETE_WINDOW")
                 log.warn(" and FORCE_QUIT is disabled")
 
-    def send_delete(self):
+    def send_delete(self) -> None:
         with xswallow:
             now = X11Window.get_server_time(self.xid)
             send_wm_delete_window(self.xid, timestamp=now)
 
-    def XKill(self):
+    def XKill(self) -> None:
         with xswallow:
             X11Window.XKillClient(self.xid)
 
-    def force_quit(self):
+    def force_quit(self) -> None:
         machine = self.get_property("client-machine")
         pid = self.get_property("pid")
         if pid<=0:

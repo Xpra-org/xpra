@@ -1121,7 +1121,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetClassHint(self.display, xwindow, classhints)
         XFree(classhints)
 
-    def getClassHint(self, Window xwindow):
+    def getClassHint(self, Window xwindow) -> tuple:
         self.context_check("getClassHint")
         cdef XClassHint *classhints = XAllocClassHint()
         assert classhints!=NULL
@@ -1138,7 +1138,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         log("XGetClassHint(%#x) classhints: %s, %s", xwindow, _name, _class)
         return (_name, _class)
 
-    def getGeometry(self, Drawable d):
+    def getGeometry(self, Drawable d) -> tuple:
         self.context_check("getGeometry")
         cdef Window root_return
         cdef int x, y                                           #@pydev dupe
@@ -1148,7 +1148,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return None
         return x, y, width, height, border_width, depth
 
-    def getParent(self, Window xwindow):
+    def getParent(self, Window xwindow) -> XID:
         self.context_check("getParent")
         cdef Window root = 0, parent = 0
         cdef Window *children = NULL
@@ -1161,7 +1161,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return 0
         return int(parent)
 
-    def getSizeHints(self, Window xwindow):
+    def getSizeHints(self, Window xwindow) -> dict:
         self.context_check("getSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
@@ -1232,7 +1232,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetWMNormalHints(self.display, xwindow, size_hints)
         XFree(size_hints)
 
-    def getWMHints(self, Window xwindow):
+    def getWMHints(self, Window xwindow) -> dict:
         self.context_check("getWMHints")
         cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
         if wm_hints==NULL:
@@ -1257,7 +1257,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(wm_hints)
         return hints
 
-    def XGetWMProtocols(self, Window xwindow):
+    def XGetWMProtocols(self, Window xwindow) -> list:
         self.context_check("XGetWMProtocols")
         cdef Atom *protocols_return
         cdef int count_return
@@ -1271,7 +1271,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return protocols
 
 
-    def pointer_grab(self, Window xwindow):
+    def pointer_grab(self, Window xwindow) -> bool:
         self.context_check("pointer_grab")
         cdef Cursor cursor = 0
         cdef unsigned int event_mask = PointerMotionMask
@@ -1281,7 +1281,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return r==0
 
 
-    def get_server_time(self, Window xwindow):
+    def get_server_time(self, Window xwindow) -> int:
         cdef unsigned char c = b"a"
         cdef Atom timestamp_prop = self.xatom("XPRA_TIMESTAMP_PROP")
         XChangeProperty(self.display, xwindow, timestamp_prop,
@@ -1292,7 +1292,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         et.window = xwindow
         et.atom = timestamp_prop
         XIfEvent(self.display, &xevent, &timestamp_predicate, <XPointer> &et)
-        return xevent.xproperty.time;
+        return xevent.xproperty.time
 
 
 ctypedef struct xifevent_timestamp:

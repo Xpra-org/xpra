@@ -28,20 +28,20 @@ X11Window = X11WindowBindings()
 _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD    = 1
 _NET_WM_STATE_TOGGLE = 2
-STATE_STRING = {
+STATE_STRING : dict = {
     _NET_WM_STATE_REMOVE    : "REMOVE",
     _NET_WM_STATE_ADD       : "ADD",
     _NET_WM_STATE_TOGGLE    : "TOGGLE",
     }
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
-ICONIC_STATE_STRING = {
+ICONIC_STATE_STRING : dict = {
     IconicState  : "Iconic",
     NormalState  : "Normal",
     }
 
 #add user friendly workspace logging:
-WORKSPACE_STR = {
+WORKSPACE_STR : dict = {
     WORKSPACE_UNSET    : "UNSET",
     WORKSPACE_ALL      : "ALL",
     }
@@ -232,7 +232,7 @@ class BaseWindowModel(CoreX11WindowModel):
         return False
 
 
-    def _read_initial_X11_properties(self):
+    def _read_initial_X11_properties(self) -> None:
         metalog("%s.read_initial_X11_properties()", self._MODELTYPE)
         self._updateprop("state", frozenset(self._read_wm_state()))
         super()._read_initial_X11_properties()
@@ -255,7 +255,7 @@ class BaseWindowModel(CoreX11WindowModel):
     # Actions
     ################################
 
-    def move_to_workspace(self, workspace : int):
+    def move_to_workspace(self, workspace : int) -> None:
         #we send a message to ourselves, we could also just update the property
         current = self.get_property("workspace")
         if current==workspace:
@@ -275,13 +275,13 @@ class BaseWindowModel(CoreX11WindowModel):
     # Python objects synced to X11 properties
     #########################################
 
-    def _sync_state(self, *_args):
+    def _sync_state(self, *_args) -> None:
         state = self.get_property("state")
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xswallow:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
-    def _sync_iconic(self, *_args):
+    def _sync_iconic(self, *_args) -> None:
         def set_state(state):
             log("_handle_iconic_update: set_state(%s)", state)
             with xswallow:
@@ -295,7 +295,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
 
-    _py_property_handlers = dict(CoreX11WindowModel._py_property_handlers)
+    _py_property_handlers : dict = dict(CoreX11WindowModel._py_property_handlers)
     _py_property_handlers.update({
         "state"         : _sync_state,
         "iconic"        : _sync_iconic,
@@ -306,13 +306,13 @@ class BaseWindowModel(CoreX11WindowModel):
     # X11 properties synced to Python objects
     #########################################
 
-    def _handle_transient_for_change(self):
+    def _handle_transient_for_change(self) -> None:
         transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
         metalog("WM_TRANSIENT_FOR=%s", transient_for)
         # May be None
         self._updateprop("transient-for", transient_for)
 
-    def _handle_window_type_change(self):
+    def _handle_window_type_change(self) -> None:
         window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
         metalog("_NET_WM_WINDOW_TYPE=%s", window_types)
         if not window_types:
@@ -324,24 +324,24 @@ class BaseWindowModel(CoreX11WindowModel):
         window_types = [str(wt).replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
         self._updateprop("window-type", window_types)
 
-    def _handle_workspace_change(self):
+    def _handle_workspace_change(self) -> None:
         workspace = self.prop_get("_NET_WM_DESKTOP", "u32", True)
         if workspace is None:
             workspace = WORKSPACE_UNSET
         workspacelog("_NET_WM_DESKTOP=%s for window %#x", workspacestr(workspace), self.xid)
         self._updateprop("workspace", workspace)
 
-    def _handle_fullscreen_monitors_change(self):
+    def _handle_fullscreen_monitors_change(self) -> None:
         fsm = self.prop_get("_NET_WM_FULLSCREEN_MONITORS", ["u32"], True)
         metalog("_NET_WM_FULLSCREEN_MONITORS=%s", fsm)
         self._updateprop("fullscreen-monitors", fsm)
 
-    def _handle_bypass_compositor_change(self):
+    def _handle_bypass_compositor_change(self) -> None:
         bypass = self.prop_get("_NET_WM_BYPASS_COMPOSITOR", "u32", True) or 0
         metalog("_NET_WM_BYPASS_COMPOSITOR=%s", bypass)
         self._updateprop("bypass-compositor", bypass)
 
-    def _handle_wm_strut_change(self):
+    def _handle_wm_strut_change(self) -> None:
         strut = self.prop_get("_NET_WM_STRUT_PARTIAL", "strut-partial")
         metalog("_NET_WM_STRUT_PARTIAL=%s", strut)
         if strut is None:
@@ -350,12 +350,12 @@ class BaseWindowModel(CoreX11WindowModel):
         # Might be None:
         self._updateprop("strut", strut)
 
-    def _handle_opacity_change(self):
+    def _handle_opacity_change(self) -> None:
         opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
         metalog("_NET_WM_WINDOW_OPACITY=%s", opacity)
         self._updateprop("opacity", opacity)
 
-    def _handle_wm_hints_change(self):
+    def _handle_wm_hints_change(self) -> None:
         with xswallow:
             wm_hints = X11Window.getWMHints(self.xid)
         metalog("getWMHints(%#x)=%s", self.xid, wm_hints)
@@ -380,18 +380,18 @@ class BaseWindowModel(CoreX11WindowModel):
             self._input_field = int(_input)
             self._update_can_focus()
 
-    def _update_can_focus(self, *_args):
+    def _update_can_focus(self, *_args) -> None:
         can_focus = bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
 
 
-    def _content_type_related_property_change(self, *_args):
+    def _content_type_related_property_change(self, *_args) -> None:
         self._update_content_type()
 
-    def _handle_xpra_content_type_change(self):
+    def _handle_xpra_content_type_change(self) -> None:
         self._update_content_type()
 
-    def _update_content_type(self):
+    def _update_content_type(self) -> None:
         #watch for changes to properties that are used to derive the content-type:
         content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True)
         #the _XPRA_CONTENT_TYPE property takes precedence
@@ -403,23 +403,23 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("content-type", content_type)
 
 
-    def _handle_xpra_quality_change(self):
+    def _handle_xpra_quality_change(self) -> None:
         quality = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
         metalog("quality=%s", quality)
         self._updateprop("quality", max(-1, min(100, quality)))
 
-    def _handle_xpra_speed_change(self):
+    def _handle_xpra_speed_change(self) -> None:
         speed = self.prop_get("_XPRA_SPEED", "u32", True) or -1
         metalog("speed=%s", speed)
         self._updateprop("speed", max(-1, min(100, speed)))
 
-    def _handle_xpra_encoding_change(self):
+    def _handle_xpra_encoding_change(self) -> None:
         encoding = self.prop_get("_XPRA_ENCODING", "latin1", True) or ""
         metalog("encoding=%s", encoding)
         self._updateprop("encoding", encoding)
 
 
-    _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
+    _x11_property_handlers : dict = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
         "_NET_WM_WINDOW_TYPE"           : _handle_window_type_change,
@@ -456,7 +456,7 @@ class BaseWindowModel(CoreX11WindowModel):
     #      directly by the "state" property, and reading/writing them in fact
     #      accesses the "state" set directly.  This is done by overriding
     #      do_set_property and do_get_property.
-    _state_properties = {
+    _state_properties : dict = {
         "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
         "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
         "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
@@ -474,7 +474,7 @@ class BaseWindowModel(CoreX11WindowModel):
         for x in states:
             _state_properties_reversed[x] = k
 
-    def _state_add(self, *state_names):
+    def _state_add(self, *state_names) -> None:
         curr = set(self.get_property("state"))
         add = [s for s in state_names if s not in curr]
         if add:
@@ -484,7 +484,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._internal_set_property("state", frozenset(curr))
             self._state_notify(add)
 
-    def _state_remove(self, *state_names):
+    def _state_remove(self, *state_names) -> None:
         curr = set(self.get_property("state"))
         discard = [s for s in state_names if s in curr]
         if discard:
@@ -494,7 +494,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._internal_set_property("state", frozenset(curr))
             self._state_notify(discard)
 
-    def _state_notify(self, state_names):
+    def _state_notify(self, state_names) -> None:
         notify_props = set()
         for x in state_names:
             if x in self._state_properties_reversed:
@@ -502,16 +502,16 @@ class BaseWindowModel(CoreX11WindowModel):
         for x in tuple(notify_props):
             self.notify(x)
 
-    def _state_isset(self, state_name):
+    def _state_isset(self, state_name) -> bool:
         return state_name in self.get_property("state")
 
-    def _read_wm_state(self):
+    def _read_wm_state(self) -> list:
         wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
         metalog("read _NET_WM_STATE=%s", wm_state)
         return wm_state or []
 
 
-    def do_set_property(self, pspec, value):
+    def do_set_property(self, pspec, value) -> None:
         #intercept state properties to route via update_state()
         if pspec.name in self._state_properties:
             #virtual property for WM_STATE:
@@ -519,7 +519,7 @@ class BaseWindowModel(CoreX11WindowModel):
             return
         super().do_set_property(pspec, value)
 
-    def do_get_property(self, pspec):
+    def do_get_property(self, pspec) -> object:
         #intercept state properties to route via get_wm_state()
         if pspec.name in self._state_properties:
             #virtual property for WM_STATE:
@@ -527,7 +527,7 @@ class BaseWindowModel(CoreX11WindowModel):
         return super().do_get_property(pspec)
 
 
-    def update_wm_state(self, prop, b):
+    def update_wm_state(self, prop, b) -> None:
         state_names = self._state_properties.get(prop)
         if not state_names:
             raise ValueError(f"invalid window state {prop}")
@@ -536,7 +536,7 @@ class BaseWindowModel(CoreX11WindowModel):
         else:
             self._state_remove(*state_names)
 
-    def get_wm_state(self, prop):
+    def get_wm_state(self, prop) -> bool:
         state_names = self._state_properties.get(prop)
         if not state_names:
             raise ValueError(f"invalid window state {prop}")
@@ -552,7 +552,7 @@ class BaseWindowModel(CoreX11WindowModel):
     # X11 Events
     #########################################
 
-    def process_client_message_event(self, event):
+    def process_client_message_event(self, event) -> bool:
         # FIXME
         # Need to listen for:
         #   _NET_CURRENT_DESKTOP

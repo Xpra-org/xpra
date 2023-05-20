@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,14 +35,14 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         super().__init__(xid)
         self._updateprop("tray", True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"SystemTrayWindowModel({self.xid:x})"
 
-    def _read_initial_X11_properties(self):
+    def _read_initial_X11_properties(self) -> None:
         self._internal_set_property("has-alpha", True)
         super()._read_initial_X11_properties()
 
-    def move_resize(self, x : int, y : int, width : int, height : int):
+    def move_resize(self, x : int, y : int, width : int, height : int) -> None:
         #Used by clients to tell us where the tray is located on screen
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
         if not X11Window.XMoveResizeWindow(self.xid, x, y, width, height):

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,7 +29,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         super().__init__(xid)
         self._updateprop("override-redirect", True)
 
-    def setup(self):
+    def setup(self) -> None:
         super().setup()
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
