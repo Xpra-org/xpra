@@ -8,6 +8,7 @@ import os
 from xpra.util import csv, print_nested_dict
 from xpra.os_util import POSIX
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -114,9 +115,9 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
                         args.append(None)
                     elif x.find(".") != -1:
                         args.append(float(x))
-                    elif x in ("yes", "true", "on"):
+                    elif x.lower() in TRUE_OPTIONS:
                         args.append(True)
-                    elif x in ("no", "false", "off"):
+                    elif x.lower() in FALSE_OPTIONS:
                         args.append(False)
                     else:
                         args.append(int(x))
