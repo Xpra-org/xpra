@@ -30,6 +30,24 @@ class GTKKeyboardHelper(KeyboardHelper):
         if self._keymap:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
 
+    def next_layout(self, update_platform_layout):
+        log(f"next_layout(update_platform_layout={update_platform_layout})")
+        if self.layout_option not in self.layouts_option:
+            log("no layout change; use --keyboard-layout/--keyboard-layouts to specify the layouts order")
+            return
+        try:
+            layout_index = self.layouts_option.index(self.layout_option)
+        except ValueError as e:
+            log.warn("failed to find layout %s among layouts: %s", self.layout_option, e)
+            return
+        layout_index = (layout_index + 1) % len(self.layouts_option)
+        self.layout_option = self.layouts_option[layout_index]
+        log.info("calling keymap_changed to apply %s layout", self.layout_option)
+        self.keymap_changed()
+        if update_platform_layout:
+            log("updating the platform layout to %s", self.layout_option)
+            self.set_platform_layout(self.layout_option)
+
     def keymap_changed(self, *args):
         log("keymap_changed%s", args)
         if self._keymap_change_handler_id:
