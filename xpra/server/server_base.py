@@ -446,10 +446,15 @@ class ServerBase(ServerBaseClass):
 
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int):
+        def reject(message="server is shutting down"):
+            p = ss.protocol
+            if p:
+                self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, message)
         #adds try:except around parse hello ui code:
         try:
             if self._closing:
-                raise RuntimeError("server is shutting down")
+                self.reject()
+                return
 
             self.notify_new_user(ss)
 
@@ -462,14 +467,13 @@ class ServerBase(ServerBaseClass):
             self.client_startup_complete(ss)
 
             if self._closing:
-                raise RuntimeError("server is shutting down")
+                self.reject()
+                return
         except Exception:
             #log exception but don't disclose internal details to the client
-            p = ss.protocol
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
-            log.error("Error: processing new connection from %s:", p or ss, exc_info=True)
-            if p:
-                self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
+            log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
+            self.reject("error accepting new connection")
 
     def parse_hello(self, ss, c, send_ui):
         for bc in SERVER_BASES:
