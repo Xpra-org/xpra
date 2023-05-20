@@ -85,7 +85,8 @@ class Keyboard(KeyboardBase):
         index = self.__input_sources.get(layout)
         log("set_platform_layout(%s): index=%s", layout, index)
         if index is None:
-            return f"unknown layout: {layout}"
+            log(f"asked layout ({layout}) has no corresponding registered input source")
+            return
         self._dbus_gnome_shell_eval_ism(
             f".inputSources[{index}].activate()",
         )
