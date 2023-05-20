@@ -56,7 +56,7 @@ class KeyboardHelper:
 
     def set_platform_layout(self, layout):
         if hasattr(self.keyboard, "set_platform_layout"):
-            return self.keyboard.set_platform_layout(layout)
+            self.keyboard.set_platform_layout(layout)
 
     def mask_to_names(self, mask):
         return self.keyboard.mask_to_names(mask)
