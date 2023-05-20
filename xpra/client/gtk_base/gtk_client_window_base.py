@@ -492,7 +492,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def is_awt(self, metadata):
         wm_class = metadata.get("class-instance")
-        return wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11")
+        return wm_class and len(wm_class)==2 and bytestostr(wm_class[0]).startswith("sun-awt-X11")
 
     def _is_popup(self, metadata):
         #decide if the window type is POPUP or NORMAL
