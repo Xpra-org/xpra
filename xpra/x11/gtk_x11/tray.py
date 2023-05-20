@@ -167,8 +167,8 @@ class SystemTray(GObject.GObject):
                     setsel, X11Window.XGetSelectionOwner(SELECTION))
                 event_mask = StructureNotifyMask
                 log("setup tray: sending client message")
+                time = X11Window.get_server_time(self.xid)
                 xid = root.get_xid()
-                time = X11Window.get_server_time(xid)
                 X11Window.sendClientMessage(xid, xid, False, event_mask, "MANAGER",
                                   time, SELECTION, self.xid)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
