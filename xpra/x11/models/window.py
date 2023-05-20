@@ -4,13 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk, Gdk
+from gi.repository import GObject, Gtk
 
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog
-from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
@@ -24,6 +23,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_children,
     calc_constrained_size,
     x11_get_server_time,
+    get_pywindow,
     )
 
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -195,13 +195,10 @@ class WindowModel(BaseWindowModel):
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
         geomlog("setup() clamp_to_desktop(%s)=%s", ogeom, (x, y))
-        self.corral_window = GDKX11Window(self.parking_window,
-                                        x=x, y=y, width=ow, height=oh,
-                                        window_type=Gdk.WindowType.CHILD,
-                                        event_mask=Gdk.EventMask.PROPERTY_CHANGE_MASK,
-                                        title = "CorralWindow-%#x" % self.xid)
-        cxid = self.corral_window.get_xid()
-        log("setup() corral_window=%#x", cxid)
+        parking_xid = self.parking_window.get_xid()
+        cxid = X11Window.CreateCorralWindow(parking_xid, self.xid, x, y)
+        self.corral_window = get_pywindow(cxid)
+        log("setup() corral_xid=%#x, corral_window=", cxid, self.corral_window)
         prop_set(self.corral_window, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
         add_event_receiver(self.corral_window, self)
@@ -375,7 +372,10 @@ class WindowModel(BaseWindowModel):
             if wm_exiting:
                 self.client_window.show_unraised()
             #it is now safe to destroy the corral window:
-            cwin.destroy()
+            cxid = cwin.get_xid()
+            if cxid:
+                with xsync:
+                    X11Window.DestroyWindow(cxid)
         super().do_unmanaged(wm_exiting)
 
 

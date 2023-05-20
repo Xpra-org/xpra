@@ -15,6 +15,8 @@ from xpra.x11.bindings.xlib cimport (
     GrabModeAsync, XGrabPointer,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
+    XCreateWindow, XDestroyWindow,
+    XSetWindowAttributes,
     XWindowAttributes, XWindowChanges,
     XDefaultRootWindow,
     XInternAtom, XFree, XGetErrorText,
@@ -30,6 +32,8 @@ from xpra.x11.bindings.xlib cimport (
     XKillClient,
     )
 from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
+from libc.string cimport memset
+
 
 ###################################
 # Headers, python magic
@@ -48,6 +52,7 @@ cdef extern from "X11/Xlib.h":
     int CWWidth
     int CWHeight
     int InputOnly
+    int InputOutput
     int RevertToParent
     int ClientMessage
     int ButtonPress
@@ -56,6 +61,12 @@ cdef extern from "X11/Xlib.h":
     int Button3
     int SelectionNotify
     int ConfigureNotify
+
+    int CWEventMask
+    int CWColormap
+    int CWBorderWidth
+    int CWSibling
+    int CWStackMode
 
     int NoEventMask
     int KeyPressMask
@@ -84,9 +95,6 @@ cdef extern from "X11/Xlib.h":
     int ColormapChangeMask
     int OwnerGrabButtonMask
 
-    int CWBorderWidth
-    int CWSibling
-    int CWStackMode
     int AnyPropertyType
     int Success
     int PropModeReplace
@@ -870,6 +878,37 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Status s = XSendEvent(self.display, xwindow, False, StructureNotifyMask, &e)
         if s == 0:
             raise ValueError("failed to serialize ConfigureNotify")
+
+    def CreateCorralWindow(self, Window parent, Window xid, int x, int y):
+        self.context_check("CreateCorralWindow")
+        #copy most attributes from the window we will wrap:
+        cdef int ox, oy
+        cdef Window root_return
+        cdef unsigned int width, height, border_width, depth
+        if not XGetGeometry(self.display, xid, &root_return,
+                        &ox, &oy, &width, &height, &border_width, &depth):
+            return None
+        cdef XWindowAttributes attrs
+        cdef Status status = XGetWindowAttributes(self.display, xid, &attrs)
+        if status==0:
+            return None
+        cdef XSetWindowAttributes attributes
+        memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
+        # We enable PropertyChangeMask so that we can call
+        # get_server_time on this window.
+        attributes.event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
+        attributes.colormap = attrs.colormap
+        cdef Visual *visual = attrs.visual
+        cdef unsigned long valuemask = CWEventMask | CWColormap
+        cdef Window window = XCreateWindow(self.display, parent,
+                                           x, y, width, height, border_width, depth,
+                                           InputOutput, visual,
+                                           valuemask, &attributes)
+        return window
+
+    def DestroyWindow(self, Window w):
+        self.context_check("DestroyWindow")
+        return XDestroyWindow(self.display, w)
 
     def ConfigureWindow(self, Window xwindow,
                         int x, int y, int width, int height, int border=0,
