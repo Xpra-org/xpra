@@ -37,7 +37,6 @@ def _GetKeyboardLayoutList():
         layouts.append(int(handle_list[i]))
     return layouts
 
-
 def x11_layouts_to_win32_hkl():
     KMASKS = {
         0xffffffff : (0, 16),
@@ -69,8 +68,6 @@ def x11_layouts_to_win32_hkl():
         log("x11_layouts_to_win32_hkl()", exc_info=True)
     return layout_to_hkl
 
-
-
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 
@@ -99,11 +96,13 @@ class Keyboard(KeyboardBase):
     def set_platform_layout(self, layout):
         hkl = self.__x11_layouts_to_win32_hkl.get(layout)
         if hkl is None:
-            return 0
+            log(f"asked layout ({layout}) has no corresponding registered keyboard handle")
+            return
         # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-activatekeyboardlayout
         # KLF_SETFORPROCESS|KLF_REORDER = 0x108
         old_hkl_or_zero_on_failure = ActivateKeyboardLayout(hkl, 0x108)
-        return old_hkl_or_zero_on_failure
+        if old_hkl_or_zero_on_failure == 0:
+            log(f"ActivateKeyboardLayout: cannot change layout to {layout}")
 
     def __repr__(self):
         return "win32.Keyboard"
