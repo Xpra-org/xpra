@@ -20,6 +20,7 @@ log = Logger("x11", "bindings", "window")
 
 
 from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
+from libc.string cimport memset
 
 ###################################
 # Headers, python magic
@@ -44,6 +45,7 @@ ctypedef CARD32 Atom
 ctypedef XID Drawable
 ctypedef XID Window
 ctypedef XID Pixmap
+ctypedef XID Cursor
 ctypedef CARD32 Time
 ctypedef CARD32 VisualID
 ctypedef CARD32 Colormap
@@ -85,6 +87,7 @@ cdef extern from "X11/Xlib.h":
     int CWHeight
     int CurrentTime
     int InputOnly
+    int InputOutput
     int RevertToParent
     int ClientMessage
     int ButtonPress
@@ -121,6 +124,8 @@ cdef extern from "X11/Xlib.h":
     int ColormapChangeMask
     int OwnerGrabButtonMask
 
+    int CWEventMask
+    int CWColormap
     int CWBorderWidth
     int CWSibling
     int CWStackMode
@@ -278,6 +283,30 @@ cdef extern from "X11/Xlib.h":
                                 unsigned int value_mask, XWindowChanges *values)
     int XMoveResizeWindow(Display * display, Window w, int x, int y, int width, int height)
 
+    ctypedef struct XSetWindowAttributes:
+        Pixmap background_pixmap            # background, None, or ParentRelative
+        unsigned long background_pixel      # background pixel
+        Pixmap border_pixmap                # border of the window or CopyFromParent
+        unsigned long border_pixel          # border pixel value
+        int bit_gravity                     # one of bit gravity values
+        int win_gravity                     # one of the window gravity values
+        int backing_store                   # NotUseful, WhenMapped, Always
+        unsigned long backing_planes        # planes to be preserved if possible
+        unsigned long backing_pixel         # value to use in restoring planes
+        Bool save_under                     # should bits under be saved? (popups)
+        long event_mask                     # set of events that should be saved
+        long do_not_propagate_mask          # set of events that should not propagate
+        Bool override_redirect              # boolean value for override_redirect
+        Colormap colormap                   # color map to be associated with window
+        Cursor cursor
+
+    Window XCreateWindow(Display *display, Window parent,
+                         int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth,
+                         unsigned int _class, Visual *visual,
+                         unsigned long valuemask, XSetWindowAttributes *attributes)
+    int XDestroyWindow(Display *display, Window w)
+
+
     Bool XTranslateCoordinates(Display * display,
                                Window src_w, Window dest_w,
                                int src_x, int src_y,
@@ -352,6 +381,7 @@ constants = {
     "CurrentTime"       : CurrentTime,
     "IsUnmapped"        : IsUnmapped,
     "InputOnly"         : InputOnly,
+    "InputOutput"       : InputOutput,
     "RevertToParent"    : RevertToParent,
     "ClientMessage"     : ClientMessage,
     "ButtonPress"       : ButtonPress,
@@ -888,6 +918,38 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         s = XSendEvent(self.display, xtarget, propagate, event_mask, &e)
         if s == 0:
             raise ValueError("failed to serialize ClientMessage")
+
+    def CreateCorralWindow(self, Window parent, Window xid, int x, int y):
+        self.context_check()
+        #copy most attributes from the window we will wrap:
+        cdef int ox, oy
+        cdef Window root_return
+        cdef unsigned int width, height, border_width, depth
+        if not XGetGeometry(self.display, xid, &root_return,
+                        &ox, &oy, &width, &height, &border_width, &depth):
+            return None
+        cdef XWindowAttributes attrs
+        cdef Status status = XGetWindowAttributes(self.display, xid, &attrs)
+        if status==0:
+            return None
+        cdef XSetWindowAttributes attributes
+        memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
+        # We enable PropertyChangeMask so that we can call
+        # get_server_time on this window.
+        attributes.event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
+        attributes.colormap = attrs.colormap
+        cdef Visual *visual = attrs.visual
+        cdef unsigned long valuemask = CWEventMask | CWColormap
+        cdef Window window = XCreateWindow(self.display, parent,
+                                           x, y, width, height, border_width, depth,
+                                           InputOutput, visual,
+                                           valuemask, &attributes)
+        return window
+
+    def DestroyWindow(self, Window w):
+        self.context_check()
+        return XDestroyWindow(self.display, w)
+
 
     def sendClick(self, Window xtarget, int button, onoff, x_root, y_root, x, y):
         self.context_check()

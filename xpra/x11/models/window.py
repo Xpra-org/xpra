@@ -21,10 +21,10 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_children,
     calc_constrained_size,
     x11_get_server_time,
+    get_pywindow,
     )
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, icon_theme_get_default,
-    GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     PARAM_READABLE, PARAM_READWRITE,
     )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
@@ -185,13 +185,10 @@ class WindowModel(BaseWindowModel):
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
-        self.corral_window = GDKWindow(self.parking_window,
-                                        x=x, y=y, width=ow, height=oh,
-                                        window_type=GDKWINDOW_CHILD,
-                                        event_mask=PROPERTY_CHANGE_MASK,
-                                        title = "CorralWindow-%#x" % self.xid)
-        cxid = get_xwindow(self.corral_window)
-        log("setup() corral_window=%#x", cxid)
+        parking_xid = self.parking_window.get_xid()
+        cxid = X11Window.CreateCorralWindow(parking_xid, self.xid, x, y)
+        self.corral_window = get_pywindow(self.client_window.get_display(), cxid)
+        log("setup() corral_xid=%#x, corral_window=", cxid, self.corral_window)
         prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
         add_event_receiver(self.corral_window, self)
@@ -362,7 +359,10 @@ class WindowModel(BaseWindowModel):
             if wm_exiting:
                 self.client_window.show_unraised()
             #it is now safe to destroy the corral window:
-            cwin.destroy()
+            cxid = cwin.get_xid()
+            if cxid:
+                with xsync:
+                    X11Window.DestroyWindow(cxid)
         BaseWindowModel.do_unmanaged(self, wm_exiting)
 
 
