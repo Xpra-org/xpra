@@ -11,7 +11,6 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,             #@UnresolvedImport
     remove_event_receiver,          #@UnresolvedImport
-    get_parent,                     #@UnresolvedImport
     )
 from xpra.gtk_common.error import xlog
 from xpra.x11.gtk_x11.world_window import get_world_window
@@ -92,7 +91,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 wxid = world.get_window().get_xid()
             root = Gdk.Screen.get_default().get_root_window()
             rxid = root.get_xid()
-            xid = get_parent(self.xid)
+            xid = X11Window.getParent(self.xid)
             while xid not in (0, rxid, wxid):
                 # We have to use a lowlevel function to manipulate the
                 # event selection here, because SubstructureRedirectMask
@@ -101,7 +100,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 # corral window selection masks, and those don't deserve
                 # clobbering.  They are our friends!  X is driving me
                 # slowly mad.
-                parent = get_parent(xid)
+                parent = X11Window.getParent(xid)
                 if not parent:
                     break
                 X11Window.addXSelectInput(xid, StructureNotifyMask)

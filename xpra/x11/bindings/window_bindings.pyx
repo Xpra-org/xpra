@@ -1161,6 +1161,24 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return 0
         return int(parent)
 
+    def get_children(self, Window xwindow):
+        cdef Window root = 0, parent = 0
+        cdef Window * children = <Window *> 0
+        cdef unsigned int i, nchildren = 0
+        if not XQueryTree(self.display, xwindow, &root, &parent, &children, &nchildren):
+            return (None, [])
+        cdef object pychildren = []
+        for i in range(nchildren):
+            if children[i]>0:
+                pychildren.append(children[i])
+        # Apparently XQueryTree sometimes returns garbage in the 'children'
+        # pointer when 'nchildren' is 0, which then leads to a segfault when we
+        # try to XFree the non-NULL garbage.
+        if nchildren > 0 and children != NULL:
+            XFree(children)
+        return pychildren
+
+
     def getSizeHints(self, Window xwindow) -> dict:
         self.context_check("getSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()

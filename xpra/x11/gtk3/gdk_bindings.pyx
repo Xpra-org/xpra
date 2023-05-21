@@ -322,43 +322,6 @@ cdef _get_pyatom(display, int xatom):
     return pyname
 
 
-# Children listing
-def get_children(xid : int):
-    cdef Window root = 0, parent = 0
-    cdef Window * children = <Window *> 0
-    cdef unsigned int i, nchildren = 0
-    display = Gdk.get_default_root_window().get_display()
-    cdef Display *xdisplay = get_xdisplay_for(display)
-    if not XQueryTree(xdisplay, xid,
-                      &root, &parent, &children, &nchildren):
-        return (None, [])
-    cdef object pychildren = []
-    for i in range(nchildren):
-        #we cannot get the gdk window for wid=0
-        if children[i]>0:
-            pychildren.append(children[i])
-    # Apparently XQueryTree sometimes returns garbage in the 'children'
-    # pointer when 'nchildren' is 0, which then leads to a segfault when we
-    # try to XFree the non-NULL garbage.
-    if nchildren > 0 and children != NULL:
-        XFree(children)
-    return pychildren
-
-def get_parent(xid : int) -> int:
-    cdef Window root = 0, parent = 0
-    cdef Window * children = <Window *> 0
-    cdef unsigned int i, nchildren = 0
-    display = Gdk.get_default_root_window().get_display()
-    cdef Display *xdisplay = get_xdisplay_for(display)
-    if not XQueryTree(xdisplay, xid, &root, &parent, &children, &nchildren):
-        return 0
-    if nchildren > 0 and children != NULL:
-        XFree(children)
-    if parent==XNone:
-        return 0
-    return int(parent)
-
-
 ###################################
 # Event handling
 ###################################
@@ -618,20 +581,16 @@ cdef init_x11_events():
 
 
 def add_x_event_signal(event, mapping):
-    global x_event_signals
     x_event_signals[event] = mapping
 
 def add_x_event_signals(event_signals):
-    global x_event_signals
     x_event_signals.update(event_signals)
 
 def add_x_event_type_name(event, name):
-    global x_event_type_names
     x_event_type_names[event] = name
     names_to_event_type[name] = event
 
 def add_x_event_type_names(event_type_names):
-    global x_event_type_names, names_to_event_type
     x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
@@ -673,27 +632,22 @@ def set_debug_events():
 
 x_event_parsers = {}
 def add_x_event_parser(extension_opcode, parser):
-    global x_event_parsers
     x_event_parsers[extension_opcode] = parser
 
 
 #and change this debugging on the fly, programmatically:
 def add_debug_route_event(event_type):
-    global debug_route_events
     debug_route_events.append(event_type)
 def remove_debug_route_event(event_type):
-    global debug_route_events
     debug_route_events.remove(event_type)
 
 
 catchall_receivers = {}
 def add_catchall_receiver(signal, handler):
-    global catchall_receivers
     catchall_receivers.setdefault(signal, []).append(handler)
     log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 def remove_catchall_receiver(signal, handler):
-    global catchall_receivers
     receivers = catchall_receivers.get(signal)
     if receivers:
         receivers.remove(handler)
@@ -702,12 +656,10 @@ def remove_catchall_receiver(signal, handler):
 
 fallback_receivers = {}
 def add_fallback_receiver(signal, handler):
-    global fallback_receivers
     fallback_receivers.setdefault(signal, []).append(handler)
     log("add_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
 def remove_fallback_receiver(signal, handler):
-    global fallback_receivers
     receivers = fallback_receivers.get(signal)
     if receivers:
         receivers.remove(handler)

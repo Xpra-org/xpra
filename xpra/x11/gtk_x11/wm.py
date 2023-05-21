@@ -22,7 +22,6 @@ from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
-    get_children,                                    #@UnresolvedImport
     get_pywindow,                                    #@UnresolvedImport
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -240,7 +239,7 @@ class Wm(GObject.GObject):
         add_fallback_receiver("child-map-request-event", self)
         X11Window.substructureRedirect(rxid)
 
-        children = get_children(rxid)
+        children = X11Window.get_children(rxid)
         log(f"root window children: {children}")
         for xid in children:
             # ignore windows we have created ourselves (ie: the world window),

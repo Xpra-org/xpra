@@ -27,7 +27,6 @@ from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,
-    get_children,
     get_pywindow,
     )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
@@ -411,12 +410,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
         rxid = root.get_xid()
         try:
             with xsync:
-                children = get_children(rxid)
+                children = X11Window.get_children(rxid)
         except XError:
             log("load_existing_windows()", exc_info=True)
             log("trying again")
             with xsync:
-                children = get_children(rxid)
+                children = X11Window.get_children(rxid)
         for xid in children:
             can_add = False
             with xlog:

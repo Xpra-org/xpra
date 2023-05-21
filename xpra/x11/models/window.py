@@ -20,7 +20,6 @@ from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
-    get_children,
     calc_constrained_size,
     )
 from xpra.log import Logger
@@ -531,7 +530,7 @@ class WindowModel(BaseWindowModel):
             return
         ww, wh = geom[2:4]
         children = []
-        for xid in get_children(self.xid):
+        for xid in X11Window.get_children(self.xid):
             if X11Window.is_inputonly(xid):
                 continue
             geom = X11Window.getGeometry(xid)
