@@ -11,7 +11,7 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.x11.gtk_x11 import GDKX11Window
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk3.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
     init_x11_filter,

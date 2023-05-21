@@ -372,7 +372,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
     cdef register_parser(self):
         log("register_parser()")
         if self.opcode>0:
-            from xpra.x11.gtk_x11.gdk_bindings import add_x_event_parser
+            from xpra.x11.bindings.events import add_x_event_parser
             add_x_event_parser(self.opcode, self.parse_xi_event)
 
     cdef register_gdk_events(self):
@@ -380,7 +380,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         if self.opcode<=0:
             return
         global XI_EVENT_NAMES
-        from xpra.x11.gtk_x11.gdk_bindings import add_x_event_signal, add_x_event_type_name
+        from xpra.x11.bindings.events import add_x_event_signal, add_x_event_type_name
         for e, xi_event_name in {
             XI_DeviceChanged    : "device-changed",
             XI_KeyPress         : "key-press",
@@ -439,11 +439,11 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         XISelectEvents(self.display, win, evmasks, 1)
         XFlush(self.display)
 
-    def parse_xi_event(self, display, _cookie):
+    def parse_xi_event(self, cookie):
         with xlog:
-            return self.do_parse_xi_event(display, _cookie)
+            return self.do_parse_xi_event(cookie)
 
-    cdef do_parse_xi_event(self, display, uintptr_t _cookie):
+    cdef do_parse_xi_event(self, uintptr_t _cookie):
         self.context_check("parse_xi_event")
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
         cdef XIHierarchyEvent *hierarchy_e
@@ -472,7 +472,6 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
         pyev = X11Event(event_name)
         pyev.type = etype
-        pyev.display = display
         pyev.send_event = bool(xie.send_event)
         pyev.serial = xie.serial
         pyev.time = int(xie.time)

@@ -111,7 +111,7 @@ cdef class X11CoreBindingsInstance:
         free(atoms_return)
         assert s!=0, "failed to intern some atoms"
 
-    def get_xatom(self, str_or_int):
+    def get_xatom(self, str_or_int) -> Atom:
         return self.xatom(str_or_int)
 
     def XGetAtomName(self, Atom atom):
@@ -123,10 +123,10 @@ cdef class X11CoreBindingsInstance:
         XFree(v)
         return r
 
-    def get_error_text(self, code):
+    def get_error_text(self, code) -> str:
         assert self.display!=NULL, "display is closed"
         if type(code)!=int:
-            return code
+            return str(code)
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
         return (bytes(buffer[:128]).split(b"\0", 1)[0]).decode("latin1")

@@ -1,15 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal, SIGNAL_RUN_LAST
-from xpra.x11.gtk_x11.gdk_bindings import (
-    add_event_receiver, remove_event_receiver,
-    )
+from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "util")

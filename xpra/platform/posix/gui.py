@@ -631,7 +631,7 @@ class ClientExtras:
         if self.x11_filter:
             return
         try:
-            from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
+            from xpra.x11.gtk3.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
         except Exception as e:
@@ -644,7 +644,7 @@ class ClientExtras:
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self.x11_filter:
             self.x11_filter = None
-            from xpra.x11.gtk_x11.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @UnusedImport
+            from xpra.x11.gtk3.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @UnusedImport
             cleanup_x11_filter()
         if self._xsettings_watcher:
             self._xsettings_watcher.cleanup()

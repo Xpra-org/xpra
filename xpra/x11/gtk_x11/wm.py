@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,13 +19,13 @@ from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
-from xpra.x11.gtk_x11.gdk_bindings import (
-    add_event_receiver,                              #@UnresolvedImport
-    add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
-    get_pywindow,                                    #@UnresolvedImport
+from xpra.x11.gtk3.gdk_bindings import (
+    add_event_receiver,
+    add_fallback_receiver, remove_fallback_receiver,
+    get_pywindow,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window")

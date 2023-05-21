@@ -1152,6 +1152,7 @@ def clean():
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard_bindings.c",
                    "xpra/x11/bindings/display_source.c",
+                   "xpra/x11/bindings/events.c",
                    "xpra/x11/bindings/window_bindings.c",
                    "xpra/x11/bindings/randr_bindings.c",
                    "xpra/x11/bindings/res_bindings.c",
@@ -2074,6 +2075,7 @@ tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
+    ace("xpra.x11.bindings.events", "x11")
     ace("xpra.x11.bindings.xwait", "x11")
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")

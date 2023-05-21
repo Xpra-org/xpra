@@ -10,12 +10,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xlog, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk_x11.selection import ManagerSelection
-from xpra.x11.gtk_x11.gdk_bindings import (
-    add_event_receiver,          #@UnresolvedImport
-    remove_event_receiver,       #@UnresolvedImport
-    get_pywindow,                #@UnresolvedImport
-    get_xatom,                   #@UnresolvedImport
-    )
+from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom
 from xpra.log import Logger
 
 log = Logger("x11", "xsettings")

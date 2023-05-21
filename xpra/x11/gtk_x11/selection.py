@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,13 +17,12 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk_x11.gdk_bindings import (
-    get_xatom,                  #@UnresolvedImport
-    get_pywindow,               #@UnresolvedImport
+from xpra.x11.gtk3.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
+    get_xatom,                  #@UnresolvedImport
+    get_pywindow,               #@UnresolvedImport
     )
 from xpra.exit_codes import ExitCode
 from xpra.util import envint

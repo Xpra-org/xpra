@@ -185,6 +185,7 @@ tests/unittests/test-file*
 /xpra/x11/bindings/xwayland.c
 /xpra/x11/bindings/posix_display_source.c
 /xpra/x11/bindings/xi2_bindings.c
+/xpra/x11/bindings/events.c
 /xpra/x11/gtk3/gdk_display_source.c
 /xpra/x11/gtk3/gdk_bindings.c
 /xpra/x11/gtk_x11/gdk_display_source.c

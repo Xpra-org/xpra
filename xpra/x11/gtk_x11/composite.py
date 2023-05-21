@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,10 +8,7 @@ from gi.repository import GObject, Gdk
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.x11.gtk_x11.gdk_bindings import (
-    add_event_receiver,             #@UnresolvedImport
-    remove_event_receiver,          #@UnresolvedImport
-    )
+from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk_common.error import xlog
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
