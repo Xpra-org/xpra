@@ -40,7 +40,7 @@ cdef extern from "pygobject-3.0/pygobject.h":
         GType gtype
 
 
-def get_display_for(obj) -> Gtk.Display:
+def get_display_for(obj) -> Gdk.Display:
     if obj is None:
         raise TypeError("Cannot get a display: instance is None!")
     if isinstance(obj, Gdk.Display):
