@@ -2307,7 +2307,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
-        self._unfocus()
+        if self._client.has_focus(self._id):
+            self._unfocus()
         self.destroy = self.noop_destroy
 
 
