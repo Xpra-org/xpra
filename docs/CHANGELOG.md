@@ -2,6 +2,7 @@
 
 ## [4.4.5] 2023-05-14
 * major fixes:
+    * [use after free crash in GTK](https://github.com/Xpra-org/xpra/commit/a0cc7229a0ee8443e6b99d587e94143905bad337)
     * [ensure X11 errors don't propagate to GTK](https://github.com/Xpra-org/xpra/commit/ae2b0f7c827ee4731717f5607844b833a7efbf93)
     * [fix legacy URL format parsing](https://github.com/Xpra-org/xpra/commit/f7dd338a803c1ca7ba45ece31bfd7a38a2f0f40c)
     * [brolti errors on some platforms](https://github.com/Xpra-org/xpra/commit/cb1819ee5c0feb447276ed8c09c0b0ee99479fb7)
@@ -33,6 +34,7 @@
     * [skip xsettings dpi when the x11 bindings are missing](https://github.com/Xpra-org/xpra/commit/a762be36c6cacca21a074376622296657579b112)
     * [ignore setuptools generated cruft](https://github.com/Xpra-org/xpra/commit/303a2c1703ca6efd969d822cea87b3b914ee4282)
     * [silence rencode RPM patch warnings](https://github.com/Xpra-org/xpra/commit/44ad45e51aef2eb02e7d7e6d605fb9e1cdde4a03)
+    * [missing GStreamer elements for playing `bell` on MS Windows](https://github.com/Xpra-org/xpra/commit/bfc464a17c65ad31b0bb03a8acc6836bac0c11fb)
 * encodings:
     * [always use lossless encoding for `text`](https://github.com/Xpra-org/xpra/commit/c8950ceab353e15debb1d94958cd7efdf963d209)
     * [continue to monitor window metadata updates](https://github.com/Xpra-org/xpra/commit/448ebe940c47f4dc26c72d71945edffc55292767)
@@ -41,9 +43,13 @@
     * [help command error](https://github.com/Xpra-org/xpra/commit/29a2ba32de16cf7a669d5d33b02f617a0700f56b)
     * [handle `RGBA` window icon data](https://github.com/Xpra-org/xpra/commit/22c6afead6fbb2b06ab1eddae477c77e73f714b3)
     * [`ffmpeg` encoder error values](https://github.com/Xpra-org/xpra/commit/1dfdbc3ed8f6dee4faf4040223906f9cb522be0b)
+    * [validate NvFBC Sys capture before enabling it on MS Windows](https://github.com/Xpra-org/xpra/commit/5869397e43481ca9ca6814533443549589c9bb41)
 * minor:
+    * [X11 Atom name memory leak](https://github.com/Xpra-org/xpra/commit/4a4f45d5e39c814d495203b9cd0910cffc846a06)
     * [handle malformed display names more gracefully](https://github.com/Xpra-org/xpra/commit/0c08c4c3d8f3253bb6fe9c67cf9761c5086f3957)
     * [if we don't have keycodes to map, don't try to translate them](https://github.com/Xpra-org/xpra/commit/ab639645a52952d7a57b01f9537f2c013a45208a)
+    * [skip negative keyboard codes as per MS Windows specifications](https://github.com/Xpra-org/xpra/commit/0aeece96e41a59a669e1f082cb40d8d451de2dd9)
+    * [fix side buttons on MS Windows](https://github.com/Xpra-org/xpra/commit/034df57d9a4ecd6fd861d98e4e5bf0c7396f7cb6)
     * [X11 clipboard debug logging parsing of window names](https://github.com/Xpra-org/xpra/commit/dc682aff7512a315296e8b7c92f2a40a79b03336)
     * [remove unused, potentially problematic statement](https://github.com/Xpra-org/xpra/commit/eff316e444f7cfc9b4d011a2cbbfb75212a9ec6f)
     * [make it possible to disable `SHA1`](https://github.com/Xpra-org/xpra/commit/77cacbb5d58142654947374e19bbe4da15bb7864)
@@ -58,8 +64,11 @@
     * [silence shared socket permission warning](https://github.com/Xpra-org/xpra/commit/8f820c7f5ad36c614dc3319f5ff5946d4e7375ba)
     * [handle missing server attributes without erroring out](https://github.com/Xpra-org/xpra/commit/58d02a34e8753364066c7fbf1ff8f9be5b1f3988)
     * [correct default method signature](https://github.com/Xpra-org/xpra/commit/8e1be99fdbf57d91e32de97b47a311d1cf3b58a8)
+    * [missing latency data on websocket connections](https://github.com/Xpra-org/xpra/commit/3c4c2c1109c7abb5e278d8f29c948a0a8a04b713)
+    * [service update errors with newer versions of python zeroconf](https://github.com/Xpra-org/xpra/commit/72b111791e21a153eff148c3c01d5b58fa5f3ba4)
     * [parse IPv6 when looking up network devices](https://github.com/Xpra-org/xpra/commit/773212798f8b28bdb30e3371731dd3030aeb04f0)
     * [run servers with missing stderr](https://github.com/Xpra-org/xpra/commit/32d2704878013d0ce245ef4a1b409e087d76a411)
+    * [correct server initialization order for cleaner shutdowns on errors](https://github.com/Xpra-org/xpra/commit/7368f0292a669a7a83c1f2bae8f6dc3b3ac7b45e)
     * [skip systemd-run tests on unsupported platforms](https://github.com/Xpra-org/xpra/commit/05315424f2df69af00388aff241fc15fc1192b22)
     * [missing test dependency on OracleLinux 8.x](https://github.com/Xpra-org/xpra/commit/7aca69dcf562f4c80babe668cb24506923f18e60)
     * [MacOS test tool errors](https://github.com/Xpra-org/xpra/commit/28619b69d5131d9a57a4c34796de2353751397ab)

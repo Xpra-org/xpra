@@ -631,8 +631,9 @@ fi
 
 
 %changelog
-* Sun May 14 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
+* Sun May 21 2023 Antoine Martin <antoine@xpra.org> 4.4.5-10
 - major fixes:
+   use after free crash in GTK
    ensure X11 errors don't propagate to GTK
    fix legacy URL format parsing
    brolti errors on some platforms
@@ -664,6 +665,7 @@ fi
    skip xsettings dpi when the x11 bindings are missing
    ignore setuptools generated cruft
    silence rencode RPM patch warnings
+   missing GStreamer elements for playing 'bell' on MS Windows
 - encodings:
    always use lossless encoding for `text`
    continue to monitor window metadata updates
@@ -672,9 +674,13 @@ fi
    help command error
    handle `RGBA` window icon data
    `ffmpeg` encoder error values
+   validate NvFBC Sys capture before enabling it on MS Windows
 - minor:
+   X11 Atom name memory leak
    handle malformed display names more gracefully
    if we don't have keycodes to map, don't try to translate them
+   skip negative keyboard codes as per MS Windows specifications
+   fix side buttons on MS Windows
    X11 clipboard debug logging parsing of window names
    remove unused, potentially problematic statement
    make it possible to disable `SHA1`
@@ -689,8 +695,11 @@ fi
    silence shared socket permission warning
    handle missing server attributes without erroring out
    correct default method signature
+   missing latency data on websocket connections
+   service update errors with newer versions of python zeroconf
    parse IPv6 when looking up network devices
    run servers with missing stderr
+   correct server initialization order for cleaner shutdowns on errors
    skip systemd-run tests on unsupported platforms
    missing test dependency on OracleLinux 8.x
    MacOS test tool errors
