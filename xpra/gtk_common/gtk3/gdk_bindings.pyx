@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,9 @@ log = Logger("bindings", "gtk")
 import gi
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gdk                   #@UnresolvedImport
-from gi.repository import Gtk                   #@UnresolvedImport
-from gi.repository import GObject               #@UnresolvedImport
+from gi.repository import Gdk, Gtk, GObject
+assert Gdk and Gtk and GObject
+log(f"Gdk={Gdk}, Gtk={Gtk}, GObject={GObject}")
 
 
 cdef extern from "gtk-3.0/gdk/gdk.h":  #pylint: disable=syntax-error
