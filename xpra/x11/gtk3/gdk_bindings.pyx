@@ -330,9 +330,10 @@ cdef _get_pyatom(display, int xatom):
     cdef GdkDisplay *disp = get_raw_display_for(display)
     cdef Display *xdisplay = GDK_DISPLAY_XDISPLAY(disp)
     cdef char *name = XGetAtomName(xdisplay, xatom)
-    if not name:
+    if name==NULL:
         return ""
     pyname = bytestostr(name)
+    XFree(name)
     return pyname
 
 
