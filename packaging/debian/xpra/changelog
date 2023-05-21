@@ -2,6 +2,7 @@ xpra (4.4.5-1) UNRELEASED; urgency=low
   * major fixes:
     - use after free crash in GTK
     - ensure X11 errors don't propagate to GTK
+    - windows losing focus
     - fix legacy URL format parsing
     - brolti errors on some platforms
     - keyboard shortcuts with Wayland clients and NumLock
@@ -73,7 +74,7 @@ xpra (4.4.5-1) UNRELEASED; urgency=low
     - skip useless 'unknown' message, typo
     - more useful codec loader validation message
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 21 May 2023 20:58:48 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 21 May 2023 22:05:04 +0700
 
 xpra (4.4.4-1) UNRELEASED; urgency=low
   * major fixes:

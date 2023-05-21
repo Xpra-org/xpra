@@ -635,6 +635,7 @@ fi
 - major fixes:
    use after free crash in GTK
    ensure X11 errors don't propagate to GTK
+   windows losing focus
    fix legacy URL format parsing
    brolti errors on some platforms
    keyboard shortcuts with Wayland clients and NumLock

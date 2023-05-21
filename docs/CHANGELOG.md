@@ -4,6 +4,7 @@
 * major fixes:
     * [use after free crash in GTK](https://github.com/Xpra-org/xpra/commit/a0cc7229a0ee8443e6b99d587e94143905bad337)
     * [ensure X11 errors don't propagate to GTK](https://github.com/Xpra-org/xpra/commit/ae2b0f7c827ee4731717f5607844b833a7efbf93)
+    * [windows losing focus](https://github.com/Xpra-org/xpra/commit/a2c9596b3cb89f11b4082cc6b10bdc8da71fdfd1)
     * [fix legacy URL format parsing](https://github.com/Xpra-org/xpra/commit/f7dd338a803c1ca7ba45ece31bfd7a38a2f0f40c)
     * [brolti errors on some platforms](https://github.com/Xpra-org/xpra/commit/cb1819ee5c0feb447276ed8c09c0b0ee99479fb7)
     * [keyboard shortcuts with Wayland clients and NumLock](https://github.com/Xpra-org/xpra/commit/466e60625be63503c80ebc58ae8815a871bb6916)
