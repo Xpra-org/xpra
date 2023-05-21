@@ -126,7 +126,7 @@ class RFBClientProtocol(RFBProtocol):
             return
         self.position = packet[2], packet[3]
         log("window offset: %s", self.position)
-        #["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
+        #["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         #['configure-window', 1, 0, 37, 1280, 1024,
         #    {'encodings.rgb_formats': ['BGRA', 'BGRX', 'RGBA', 'RGBX', 'BGR', 'RGB', 'r210', 'BGR565'],
         #     'encoding.transparency': False,

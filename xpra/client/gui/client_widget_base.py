@@ -16,7 +16,7 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 class ClientWidgetBase:
 
     def __init__(self, client, watcher_pid, wid, has_alpha):
-        self._id = wid
+        self.wid = wid
         self.watcher_pid = watcher_pid
         #gobject-like scheduler:
         self.source_remove = client.source_remove
@@ -60,7 +60,7 @@ class ClientWidgetBase:
                 bc = FakeBacking
             log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s",
                 (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
-            backing = bc(self._id, self._window_alpha, self.pixel_depth)
+            backing = bc(self.wid, self._window_alpha, self.pixel_depth)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
         backing.init(ww, wh, bw, bh)

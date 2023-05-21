@@ -124,7 +124,7 @@ class ClientTray(ClientWidgetBase):
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
-            self._client.send("configure-window", self._id, sx, sy, sw, sh, client_properties)
+            self._client.send("configure-window", self.wid, sx, sy, sw, sh, client_properties)
         if self._size!=(w, h):
             self.new_backing(w, h)
 
@@ -140,7 +140,7 @@ class ClientTray(ClientWidgetBase):
         data = None
         if self._backing:
             data = self._backing.data
-        self._backing = TrayBacking(self._id, w, h, self._has_alpha, data)
+        self._backing = TrayBacking(self.wid, w, h, self._has_alpha, data)
         if self.mmap_enabled:
             self._backing.enable_mmap(self.mmap)
 
@@ -193,7 +193,7 @@ class ClientTray(ClientWidgetBase):
             tw.cleanup()
 
     def __repr__(self):
-        return f"ClientTray({self._id}:{self.title})"
+        return f"ClientTray({self.wid}:{self.title})"
 
 
 class TrayBacking(WindowBackingBase):

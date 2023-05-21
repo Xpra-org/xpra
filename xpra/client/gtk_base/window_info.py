@@ -180,7 +180,7 @@ class WindowInfo(Gtk.Window):
         if not w:
             return
         info = {
-            "wid"               : w._id,
+            "wid"               : w.wid,
             "title"             : w.get_title(),
             "override-redirect" : w._override_redirect,
             "state"             : get_window_state(w),
@@ -225,7 +225,7 @@ class WindowInfo(Gtk.Window):
                 update_fps()
                 fps = str(getattr(b, "fps_value", "n/a"))
             binfo = b.get_info()
-        self.wid_label.set_text(str(w._id))
+        self.wid_label.set_text(str(w.wid))
         self.rendering_label.set_text(binfo.get("type", "unknown"))
         self.title_label.set_text(w.get_title())
         self.bool_icon(self.or_image, w._override_redirect)

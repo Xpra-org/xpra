@@ -580,7 +580,7 @@ class AppDelegate(NSObject):
         dy = normalize_precision(deltay)
         if dx!=0 or dy!=0:
             client = window._client
-            wid = window._id
+            wid = window.wid
             pointer = window.get_mouse_position()
             device_id = -1
             client.wheel_event(device_id, wid, dx, dy, pointer)

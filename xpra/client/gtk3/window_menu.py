@@ -104,7 +104,7 @@ class WindowMenuHelper(MenuHelper):
     def make_refreshmenuitem(self):
         def force_refresh(*args):
             log("force refresh%s", args)
-            self.client.send_refresh(self.window._id)
+            self.client.send_refresh(self.window.wid)
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
@@ -113,7 +113,7 @@ class WindowMenuHelper(MenuHelper):
     def make_reinitmenuitem(self):
         def force_reinit(*args):
             log("force reinit%s", args)
-            self.client.reinit_window(self.window._id, self.window)
+            self.client.reinit_window(self.window.wid, self.window)
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()

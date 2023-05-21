@@ -484,10 +484,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 add_event_receiver(xid, self)
         #other platforms should bet getting regular focus events instead:
         def focus_in(_window, event):
-            focuslog("focus-in-event for wid=%s", self._id)
+            focuslog("focus-in-event for wid=%s", self.wid)
             self.do_xpra_focus_in_event(event)
         def focus_out(_window, event):
-            focuslog("focus-out-event for wid=%s", self._id)
+            focuslog("focus-out-event for wid=%s", self.wid)
             self.do_xpra_focus_out_event(event)
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
@@ -512,7 +512,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def send_latest_focus(self):
         focused = self._client._focused
-        focuslog("recheck_focus() wid=%i, focused=%s, latest=%s", self._id, focused, self._focus_latest)
+        focuslog("recheck_focus() wid=%i, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()
         else:
@@ -548,7 +548,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def _unfocus(self):
         client = self._client
         client.window_ungrab()
-        if client.pointer_grabbed and client.pointer_grabbed==self._id:
+        if client.pointer_grabbed and client.pointer_grabbed==self.wid:
             #we lost focus, assume we also lost the grab:
             client.pointer_grabbed = None
         changed = super()._unfocus()
@@ -900,12 +900,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             try:
                 x(*args)
             except Exception:
-                log.error("Error on realize callback %s for window %i", x, self._id, exc_info=True)
+                log.error("Error on realize callback %s for window %i", x, self.wid, exc_info=True)
         if HAS_X11_BINDINGS:
             #request frame extents if the window manager supports it
             self._client.request_frame_extents(self)
             if self.watcher_pid:
-                log("using watcher pid=%i for wid=%i", self.watcher_pid, self._id)
+                log("using watcher pid=%i for wid=%i", self.watcher_pid, self.wid)
                 self.do_set_x11_property("WM_COMMAND", "latin1", v)
                 self.do_set_x11_property("_NET_WM_PID", "u32", self.watcher_pid)
         if self.group_leader:
@@ -949,7 +949,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def unfreeze(self):
         if not self._frozen or not self._iconified:
             return
-        log("unfreeze() wid=%i, frozen=%s, iconified=%s", self._id, self._frozen, self._iconified)
+        log("unfreeze() wid=%i, frozen=%s, iconified=%s", self.wid, self._frozen, self._iconified)
         if not self._frozen or not self._iconified:
             #has been deiconified already
             return
@@ -1029,7 +1029,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     self.repaint(0, 0, ww, wh)
                 self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
             if REFRESH_MAXIMIZED:
-                self._client.send_refresh(self._id)
+                self._client.send_refresh(self.wid)
 
         self._window_state.update(server_updates)
         self.emit("state-updated")
@@ -1065,7 +1065,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def send_iconify(self):
         self.send_iconify_timer = 0
         if self._iconified:
-            self.send("unmap-window", self._id, True, self._window_state)
+            self.send("unmap-window", self.wid, True, self._window_state)
             #we have sent the window-state already:
             self._window_state = {}
             self.cancel_window_state_timer()
@@ -1384,7 +1384,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
         workspacelog("do_workspace_changed(%s) for window %i (window, desktop): from %s to %s",
-                     info, self._id,
+                     info, self.wid,
                      (wn(self._window_workspace), wn(self._desktop_workspace)),
                      (wn(window_workspace), wn(desktop_workspace)))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
@@ -1424,7 +1424,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
         options = {"refresh-now" : refresh}            #no need to refresh it
-        self._client.control_refresh(self._id, suspend_resume, refresh=refresh, options=options, client_properties=client_properties)
+        self._client.control_refresh(self.wid, suspend_resume, refresh=refresh, options=options, client_properties=client_properties)
 
     def get_workspace_count(self):
         if not self._can_set_workspace:
@@ -1453,7 +1453,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if workspace==desktop or workspace==WORKSPACE_ALL or desktop is None:
             #window is back in view
-            self._client.control_refresh(self._id, False, False)
+            self._client.control_refresh(self.wid, False, False)
         if (workspace<0 or workspace>=ndesktops) and workspace not in(WORKSPACE_UNSET, WORKSPACE_ALL):
             #this should not happen, workspace is unsigned (CARDINAL)
             #and the server should have the same list of desktops that we have here
@@ -1498,10 +1498,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         value = self.xget_u32_property(target, prop)
         if value is not None:
             workspacelog("do_get_workspace %s=%s on window %i: %#x",
-                         prop, wn(value), self._id, target.get_xid())
+                         prop, wn(value), self.wid, target.get_xid())
             return value & 0xffffffff
         workspacelog("do_get_workspace %s unset on window %i: %#x, returning default value=%s",
-                     prop, self._id, target.get_xid(), wn(default_value))
+                     prop, self.wid, target.get_xid(), wn(default_value))
         return  default_value
 
 
@@ -1550,7 +1550,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         gdkwin = self.get_window()
         #try platform specific variant first:
         if pointer_grab(gdkwin):
-            self._client.pointer_grabbed = self._id
+            self._client.pointer_grabbed = self.wid
             grablog(f"{pointer_grab}({gdkwin}) success")
             return
         em = Gdk.EventMask
@@ -1562,7 +1562,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                       em.LEAVE_NOTIFY_MASK)
         r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, Gdk.CURRENT_TIME)
         if r==Gdk.GrabStatus.SUCCESS:
-            self._client.pointer_grabbed = self._id
+            self._client.pointer_grabbed = self.wid
         grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
@@ -1584,8 +1584,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def toggle_pointer_grab(self):
         pg = self._client.pointer_grabbed
-        grablog("toggle_pointer_grab() pointer_grabbed=%s, our id=%s", pg, self._id)
-        if pg==self._id:
+        grablog("toggle_pointer_grab() pointer_grabbed=%s, our id=%s", pg, self.wid)
+        if pg==self.wid:
             self.pointer_ungrab()
         else:
             self.pointer_grab()
@@ -2007,12 +2007,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if wfs and len(wfs)==4:
                 state["frame"] = self.crect(*wfs)
                 self._current_frame_extents = wfs
-        geomlog("map-window wid=%s, geometry=%s, client props=%s, state=%s", self._id, (x, y, w, h), props, state)
+        geomlog("map-window wid=%s, geometry=%s, client props=%s, state=%s", self.wid, (x, y, w, h), props, state)
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         if self._backing is None:
             #we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
-        packet = ["map-window", self._id, sx, sy, sw, sh, props, state]
+        packet = ["map-window", self.wid, sx, sy, sw, sh, props, state]
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
@@ -2021,7 +2021,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             htf = self.has_toplevel_focus()
             focuslog("mapped: has-toplevel-focus=%s", htf)
             if htf:
-                self._client.update_focus(self._id, htf)
+                self._client.update_focus(self.wid, htf)
 
     def get_window_frame_size(self):
         frame = self._client.get_frame_extents(self)
@@ -2056,7 +2056,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             plug_name = "%i" % mid
         plug_name += " %ix%i at %i,%i" % (geom.width, geom.height, geom.x, geom.y)
-        eventslog.info("window %i has been moved to monitor %i: %s", self._id, mid, plug_name)
+        eventslog.info("window %i has been moved to monitor %i: %s", self.wid, mid, plug_name)
 
 
     def update_relative_position(self):
@@ -2145,8 +2145,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-        packet = ["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-        pwid = self._id
+        packet = ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
+        pwid = self.wid
         if self.is_OR():
             pwid = -1
         packet.append(pwid)
@@ -2235,7 +2235,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         context.clip()
 
     def move_resize(self, x, y, w, h, resize_counter=0):
-        geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
+        geomlog("window %i move_resize%s", self.wid, (x, y, w, h, resize_counter))
         x, y = self.adjusted_position(x, y)
         w = max(1, w)
         h = max(1, h)
@@ -2307,7 +2307,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
-        if self._client.has_focus(self._id):
+        if self._client.has_focus(self.wid):
             self._unfocus()
         self.destroy = self.noop_destroy
 
@@ -2317,12 +2317,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         eventslog("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:
-            self.send("unmap-window", self._id, False)
+            self.send("unmap-window", self.wid, False)
 
     def do_delete_event(self, event):
         #Gtk.Window.do_delete_event(self, event)
         eventslog("do_delete_event(%s)", event)
-        self._client.window_close_event(self._id)
+        self._client.window_close_event(self.wid)
         return True
 
 
@@ -2426,7 +2426,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             mouselog("smooth scroll event: %s", event)
             pointer = self.get_pointer_data(event)
             device_id = -1
-            self._client.wheel_event(device_id, self._id, event.delta_x, -event.delta_y, pointer)
+            self._client.wheel_event(device_id, self.wid, event.delta_x, -event.delta_y, pointer)
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",

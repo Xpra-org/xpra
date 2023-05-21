@@ -358,7 +358,7 @@ def pointer_grab(window, *args):
     clip = RECT(*coords)
     r = ClipCursor(clip)
     grablog("ClipCursor%s=%s", coords, r)
-    window._client.pointer_grabbed = window._id
+    window._client.pointer_grabbed = window.wid
     return True
 
 def pointer_ungrab(window, *args):
@@ -422,7 +422,7 @@ def fixup_window_style(self, *_args):
             if ws_visible:
                 #with opengl, we need to re-create the window (PITA):
                 if REINIT_VISIBLE_WINDOWS:
-                    client.reinit_window(self._id, self)
+                    client.reinit_window(self.wid, self)
                 self.send_control_refresh(False)
             else:
                 self.send_control_refresh(True)

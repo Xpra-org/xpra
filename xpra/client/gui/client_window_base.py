@@ -94,7 +94,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.finalize_window()
 
     def __repr__(self):
-        return f"ClientWindow({self._id})"
+        return f"ClientWindow({self.wid})"
 
     def init_window(self, metadata):
         self._backing = None
@@ -308,7 +308,7 @@ class ClientWindowBase(ClientWidgetBase):
             default_values = {
                 "title"           : "<untitled window>",
                 "client-machine"  : UNKNOWN_MACHINE,
-                "windowid"        : str(self._id),
+                "windowid"        : str(self.wid),
                 "server-machine"  : std(remote_hostname) or UNKNOWN_MACHINE,
                 "server-display"  : std(remote_display) or "<unknown display>",
                 }
@@ -443,7 +443,7 @@ class ClientWindowBase(ClientWidgetBase):
                     #win32 without opengl can't do transparency,
                     #so it triggers too many warnings
                     l = log.warn
-                l("Warning: window %#x changed its transparency attribute", self._id)
+                l("Warning: window %#x changed its transparency attribute", self.wid)
                 l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
@@ -476,7 +476,7 @@ class ClientWindowBase(ClientWidgetBase):
             was_decorated = self.get_decorated()
             if WIN32 and decorated!=was_decorated:
                 log.info("decorations flag toggled, now %s, re-initializing window", decorated)
-                self.idle_add(self._client.reinit_window, self._id, self)
+                self.idle_add(self._client.reinit_window, self.wid, self)
             else:
                 self.set_decorated(metadata.boolget("decorations"))
                 self.apply_geometry_hints(self.geometry_hints)
@@ -696,7 +696,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def toggle_debug(self, *_args):
         b = self._backing
-        log.info("toggling debug on backing %s for window %i", b, self._id)
+        log.info("toggling debug on backing %s for window %i", b, self.wid)
         if not b:
             return
         if b.paint_box_line_width>0:
@@ -801,8 +801,8 @@ class ClientWindowBase(ClientWidgetBase):
         raise NotImplementedError("no repaint on %s" % type(self))
 
     def refresh_window(self, *args):
-        log("refresh_window(%s) wid=%s", args, self._id)
-        self._client.send_refresh(self._id)
+        log("refresh_window(%s) wid=%s", args, self.wid)
+        self._client.send_refresh(self.wid)
 
     def refresh_all_windows(self, *_args):
         #this method is only here because we may want to fire it
@@ -814,7 +814,7 @@ class ClientWindowBase(ClientWidgetBase):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing
         if not backing:
-            log("draw_region: window %s has no backing, gone?", self._id)
+            log("draw_region: window %s has no backing, gone?", self.wid)
             fire_paint_callbacks(callbacks, -1, "no backing")
             return
         #only register this callback if we actually need it:
@@ -875,10 +875,10 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def _focus(self):
-        return self._client.update_focus(self._id, True)
+        return self._client.update_focus(self.wid, True)
 
     def _unfocus(self):
-        return self._client.update_focus(self._id, False)
+        return self._client.update_focus(self.wid, False)
 
     def quit(self):
         self._client.quit(0)
@@ -934,13 +934,13 @@ class ClientWindowBase(ClientWidgetBase):
             log.error("Error: cannot send remote dbus call:")
             log.error(" this server does not support dbus-proxying")
             return
-        rpc_args = [self._id]+args
+        rpc_args = [self.wid]+args
         self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
     def get_mouse_event_wid(self, *_args):
         #used to be overridden in GTKClientWindowBase
-        return self._id
+        return self.wid
 
     def _do_motion_notify_event(self, event):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
@@ -948,7 +948,7 @@ class ClientWindowBase(ClientWidgetBase):
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 event, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
+                 event, wid, self._client._focused, self.wid, self._device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
         self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
 
@@ -964,7 +964,7 @@ class ClientWindowBase(ClientWidgetBase):
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
+                 button, event, depressed, wid, self._client._focused, self.wid, self._device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
         def send_button(pressed, **kwargs):
             sprops = props or {}

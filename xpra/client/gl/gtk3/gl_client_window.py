@@ -22,7 +22,7 @@ MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 class GLClientWindowBase(GTK3ClientWindow):
 
     def __repr__(self):
-        return "GLClientWindow(%s : %s)" % (self._id, self._backing)
+        return "GLClientWindow(%s : %s)" % (self.wid, self._backing)
 
     def get_backing_class(self):
         raise NotImplementedError()
@@ -32,7 +32,7 @@ class GLClientWindowBase(GTK3ClientWindow):
 
     def spinner(self, ok):
         b = self._backing
-        log("spinner(%s) opengl window %s: backing=%s", ok, self._id, b)
+        log("spinner(%s) opengl window %s: backing=%s", ok, self.wid, b)
         if not b:
             return
         b.paint_spinner = self.can_have_spinner() and not ok
