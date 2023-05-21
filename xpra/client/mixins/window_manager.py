@@ -1244,6 +1244,9 @@ class WindowClient(StubClientMixin):
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
+    def has_focus(self, wid):
+        return self._focused and self._focused==wid
+
     def update_focus(self, wid, gotit):
         focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
         if gotit:
