@@ -231,13 +231,9 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
         pass
 
     ctypedef GdkFilterReturn (*GdkFilterFunc)(GdkXEvent *, GdkEvent *, void *) except GDK_FILTER_CONTINUE
-    void gdk_window_add_filter(GdkWindow * w,
-                               GdkFilterFunc filter,
-                               void * userdata)
+    void gdk_window_add_filter(GdkWindow * w, GdkFilterFunc function, void * userdata)
 
-    void gdk_window_remove_filter(GdkWindow *window,
-                               GdkFilterFunc function,
-                               void * data)
+    void gdk_window_remove_filter(GdkWindow *window, GdkFilterFunc function, void * data)
 
 
 # No need to select for ClientMessage; in fact, one cannot select for
