@@ -72,6 +72,7 @@ class GTKServerBase(ServerBase):
     def stop_keymap_timer(self):
         kct = self.keymap_changing_timer
         if kct:
+            self.keymap_changing_timer = 0
             self.source_remove(kct)
 
     def install_signal_handlers(self, callback):
