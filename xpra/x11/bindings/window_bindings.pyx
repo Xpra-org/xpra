@@ -60,6 +60,8 @@ cdef extern from "X11/Xlib.h":
     int SelectionNotify
     int ConfigureNotify
 
+    int CopyFromParent
+
     int CWEventMask
     int CWColormap
     int CWBorderWidth
@@ -889,26 +891,26 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("CreateCorralWindow")
         #copy most attributes from the window we will wrap:
         cdef int ox, oy
-        cdef Window root_return
+        cdef Window root
         cdef unsigned int width, height, border_width, depth
-        if not XGetGeometry(self.display, xid, &root_return,
+        if not XGetGeometry(self.display, xid, &root,
                         &ox, &oy, &width, &height, &border_width, &depth):
-            return None
-        cdef XWindowAttributes attrs
-        cdef Status status = XGetWindowAttributes(self.display, xid, &attrs)
-        if status==0:
             return None
         cdef XSetWindowAttributes attributes
         memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
         # We enable PropertyChangeMask so that we can call
         # get_server_time on this window.
         attributes.event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
-        attributes.colormap = attrs.colormap
-        cdef Visual *visual = attrs.visual
-        cdef unsigned long valuemask = CWEventMask | CWColormap
+        #get depth from parent window:
+        cdef int px, py
+        cdef unsigned int pw, ph, pborder, pdepth
+        if not XGetGeometry(self.display, parent, &root,
+                        &px, &py, &pw, &ph, &pborder, &pdepth):
+            return None
+        cdef unsigned long valuemask = CWEventMask
         cdef Window window = XCreateWindow(self.display, parent,
-                                           x, y, width, height, border_width, depth,
-                                           InputOutput, visual,
+                                           x, y, width, height, 0, pdepth,
+                                           InputOutput, <Visual*> CopyFromParent,
                                            valuemask, &attributes)
         return window
 
