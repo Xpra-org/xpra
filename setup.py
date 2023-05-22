@@ -66,18 +66,23 @@ url = "https://xpra.org/"
 
 XPRA_VERSION = xpra.__version__         #@UndefinedVariable
 setup_options = {
-                 "name"             : "xpra",
-                 "version"          : XPRA_VERSION,
-                 "license"          : "GPLv2+",
-                 "author"           : "Antoine Martin",
-                 "author_email"     : "antoine@xpra.org",
-                 "url"              : url,
-                 "download_url"     : "https://xpra.org/src/",
-                 "description"      : description,
-                 "long_description" : long_description,
-                 "data_files"       : data_files,
-                 "py_modules"       : modules,
-                 }
+    "name"              : "xpra",
+    "version"           : XPRA_VERSION,
+    "license"           : "GPLv2+",
+    "author"            : "Antoine Martin",
+    "author_email"      : "antoine@xpra.org",
+    "url"               : url,
+    "download_url"      : "https://xpra.org/src/",
+    "description"       : description,
+    "long_description"  : long_description,
+    "data_files"        : data_files,
+    "py_modules"        : modules,
+    "project_urls"      : {
+        "Documentation" : "https://github.com/Xpra-org/xpra/tree/master/docs",
+        "Funding"       : "https://github.com/sponsors/totaam",
+        "Source"        : "https://github.com/Xpra-org/xpra",
+        },
+    }
 
 
 if "pkg-info" in sys.argv:
