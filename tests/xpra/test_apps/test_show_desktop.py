@@ -15,7 +15,7 @@ def main():
 	vbox = Gtk.VBox()
 
 	def send_net_showing_desktop(v):
-		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+		from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		init_gdk_display_source()
 		X11Window = X11WindowBindings()

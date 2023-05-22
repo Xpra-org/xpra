@@ -71,7 +71,7 @@ class DisplayContext(OSEnvContext):
             self.xvfb_process = self.stu.start_Xvfb()
             os.environ["GDK_BACKEND"] = "x11"
             os.environ["DISPLAY"] = self.xvfb_process.display or ""
-            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
 
     def __exit__(self, *_args):

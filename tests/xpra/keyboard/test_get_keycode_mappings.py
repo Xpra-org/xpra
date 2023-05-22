@@ -2,7 +2,7 @@
 # This file is part of Xpra.
 # Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 
-from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
 keyboard_bindings = X11KeyboardBindings()
