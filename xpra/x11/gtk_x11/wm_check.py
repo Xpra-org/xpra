@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envbool
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
@@ -25,14 +25,18 @@ def get_wm_info() -> dict:
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
+    ewmh_xid = 0
+    with xlog:
         ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
         if ewmh_xid:
             try:
-                X11Window.getGeometry(ewmh_xid)
+                with xsync:
+                    X11Window.getGeometry(ewmh_xid)
             except Exception as e:
                 log(f"getGeometry({ewmh_xid:x}) {e}")
                 #invalid
                 ewmh_xid = 0
+    with xlog:
         if ewmh_xid:
             info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
             wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
@@ -40,18 +44,18 @@ def get_wm_info() -> dict:
                 wm_name = prop_get(root_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if wm_name:
                 info["wmname"] = wm_name
-        for name, prop_name, prop_type in (
-            ("xpra-server-pid",     "XPRA_SERVER_PID",              "u32"),
-            ("xpra-vfb-pid",        "XPRA_XVFB_PID",                "u32"),
-            ("xpra-server-version", "XPRA_SERVER",                  "latin1"),
-            ("xpra-server-mode",    "XPRA_SERVER_MODE",             "latin1"),
-            ("dbus-address",        "DBUS_SESSION_BUS_ADDRESS",     "latin1"),
-            ("dbus-pid",            "DBUS_SESSION_BUS_PID",         "u32"),
-            ("dbus-window",         "DBUS_SESSION_BUS_WINDOW_ID",   "u32"),
-            ):
-            v = prop_get(root_xid, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
-            if v is not None:
-                info[name] = v
+    for name, prop_name, prop_type in (
+        ("xpra-server-pid",     "XPRA_SERVER_PID",              "u32"),
+        ("xpra-vfb-pid",        "XPRA_XVFB_PID",                "u32"),
+        ("xpra-server-version", "XPRA_SERVER",                  "latin1"),
+        ("xpra-server-mode",    "XPRA_SERVER_MODE",             "latin1"),
+        ("dbus-address",        "DBUS_SESSION_BUS_ADDRESS",     "latin1"),
+        ("dbus-pid",            "DBUS_SESSION_BUS_PID",         "u32"),
+        ("dbus-window",         "DBUS_SESSION_BUS_WINDOW_ID",   "u32"),
+        ):
+        v = prop_get(root_xid, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
+        if v is not None:
+            info[name] = v
     log("get_wm_info()=%s", info)
     return info
 
