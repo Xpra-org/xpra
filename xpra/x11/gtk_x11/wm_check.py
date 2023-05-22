@@ -16,7 +16,7 @@ WM_S0 = "WM_S0"
 _NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
-def get_wm_info():
+def get_wm_info() -> dict:
     with xsync:
         from gi.repository import Gdk  #pylint: disable=import-outside-toplevel
         display = Gdk.Display.get_default()
@@ -52,7 +52,7 @@ def get_wm_info():
     log("get_wm_info()=%s", info)
     return info
 
-def wm_check(upgrading=False):
+def wm_check(upgrading=False) -> bool:
     info = get_wm_info()
     display_name = info.get("display")
     name = info.get("wmname")

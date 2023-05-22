@@ -30,8 +30,8 @@ metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
 
-MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", True)
-MULTI_MONITORS = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
+MODIFY_GSETTINGS : bool = envbool("XPRA_MODIFY_GSETTINGS", True)
+MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 
@@ -62,16 +62,16 @@ class DesktopServerBase(DesktopServerBaseClass):
         for c in DESKTOPSERVER_BASES:
             if c!=X11ServerBase:
                 c.__init__(self)  # pylint: disable=non-parent-init-called
-        self.gsettings_modified = {}
+        self.gsettings_modified : dict = {}
         self.root_prop_watcher = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         for c in DESKTOPSERVER_BASES:
             if c!=GObject.GObject:
                 c.init(self, opts)
 
 
-    def x11_init(self):
+    def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
         display = Gdk.Display.get_default()
         assert display.get_n_screens()==1
@@ -87,14 +87,14 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 
-    def root_prop_changed(self, watcher, prop):
+    def root_prop_changed(self, watcher, prop) -> None:
         iconlog("root_prop_changed(%s, %s)", watcher, prop)
         for window in self._id_to_window.values():
             window.update_wm_name()
             window.update_icon()
 
 
-    def modify_gsettings(self):
+    def modify_gsettings(self) -> None:
         #try to suspend animations:
         self.gsettings_modified = self.do_modify_gsettings({
             "org.mate.interface" : ("gtk-enable-animations", "enable-animations"),
@@ -102,7 +102,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
             })
 
-    def do_modify_gsettings(self, defs, value=False):
+    def do_modify_gsettings(self, defs:dict, value=False) -> dict:
         modified = {}
         schemas = Gio.Settings.list_schemas()
         for schema, attributes in defs.items():
@@ -124,7 +124,7 @@ class DesktopServerBase(DesktopServerBaseClass):
                 log.estr(e)
         return modified
 
-    def do_cleanup(self):
+    def do_cleanup(self) -> None:
         remove_catchall_receiver("xpra-motion-event", self)
         X11ServerBase.do_cleanup(self)
         if MODIFY_GSETTINGS:
@@ -134,24 +134,24 @@ class DesktopServerBase(DesktopServerBaseClass):
             self.root_prop_watcher = None
             rpw.cleanup()
 
-    def restore_gsettings(self):
+    def restore_gsettings(self) -> None:
         self.do_modify_gsettings(self.gsettings_modified, True)
 
-    def notify_dpi_warning(self, body):
+    def notify_dpi_warning(self, body) -> None:
         """ ignore DPI warnings in desktop mode """
 
 
-    def print_screen_info(self):
+    def print_screen_info(self) -> None:
         super().print_screen_info()
         root_w, root_h = get_root_size()
         log.info(" initial resolution: %ix%i", root_w, root_h)
         sss = get_screen_sizes()
         log_screen_sizes(root_w, root_h, sss)
 
-    def parse_screen_info(self, ss):
+    def parse_screen_info(self, ss) -> None:
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
-    def do_screen_changed(self, screen):
+    def do_screen_changed(self, screen) -> None:
         pass
 
 
@@ -161,10 +161,10 @@ class DesktopServerBase(DesktopServerBaseClass):
         pass
 
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -183,12 +183,12 @@ class DesktopServerBase(DesktopServerBaseClass):
         raise NotImplementedError
 
 
-    def send_initial_windows(self, ss, sharing=False):
+    def send_initial_windows(self, ss, sharing:bool=False) -> None:
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for model in self._id_to_window.values():
             self.send_new_desktop_model(model, ss, sharing)
 
-    def send_new_desktop_model(self, model, ss, sharing=False):
+    def send_new_desktop_model(self, model, ss, sharing:bool=False) -> None:
         x, y, w, h = model.get_geometry()
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid)
@@ -197,15 +197,15 @@ class DesktopServerBase(DesktopServerBaseClass):
         ss.damage(wid, model, 0, 0, w, h)
 
 
-    def _lost_window(self, window, wm_exiting=False):
+    def _lost_window(self, window, wm_exiting=False) -> None:
         pass
 
-    def _contents_changed(self, window, event):
+    def _contents_changed(self, window, event) -> None:
         log("contents changed on %s: %s", window, event)
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
 
-    def _set_window_state(self, proto, wid, window, new_window_state):
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> list:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
@@ -225,7 +225,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         return 0, 0
 
 
-    def _process_map_window(self, proto, packet):
+    def _process_map_window(self, proto, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
@@ -240,7 +240,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _process_unmap_window(self, proto, packet):
+    def _process_unmap_window(self, proto, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if not window:
@@ -256,7 +256,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         #iconified = len(packet)>=3 and bool(packet[2])
 
 
-    def _process_configure_window(self, proto, packet):
+    def _process_configure_window(self, proto, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         if len(packet)>=13 and server_features.input_devices and not self.readonly:
             pwid = packet[10]
@@ -289,7 +289,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _adjust_pointer(self, proto, device_id, wid, pointer):
+    def _adjust_pointer(self, proto, device_id:int, wid:int, pointer):
         mouselog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
         if not window:
@@ -307,7 +307,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.restore_cursor(proto)
         return pointer
 
-    def _move_pointer(self, device_id, wid, pos, props=None):
+    def _move_pointer(self, device_id:int, wid:int, pos, props=None):
         if wid>=0:
             window = self._id_to_window.get(wid)
             if not window:
@@ -317,27 +317,27 @@ class DesktopServerBase(DesktopServerBaseClass):
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
 
-    def _process_close_window(self, proto, packet):
+    def _process_close_window(self, proto, packet) -> None:
         #disconnect?
         pass
 
 
-    def _process_desktop_size(self, proto, packet):
+    def _process_desktop_size(self, proto, packet) -> None:
         pass
     def calculate_workarea(self, w, h):
         pass
 
 
-    def make_dbus_server(self):
+    def make_dbus_server(self) -> None:
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
         self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
-    def show_all_windows(self):
+    def show_all_windows(self) -> None:
         log.warn("Warning: show_all_windows not implemented for desktop server")
 
 
-    def do_make_screenshot_packet(self):
+    def do_make_screenshot_packet(self) -> tuple:
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0

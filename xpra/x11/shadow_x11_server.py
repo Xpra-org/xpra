@@ -23,10 +23,10 @@ from xpra.log import Logger
 
 log = Logger("x11", "shadow")
 
-XSHM = envbool("XPRA_SHADOW_XSHM", True)
-POLL_CURSOR = envint("XPRA_SHADOW_POLL_CURSOR", 20)
-NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
-GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", False)
+XSHM : bool = envbool("XPRA_SHADOW_XSHM", True)
+POLL_CURSOR : int = envint("XPRA_SHADOW_POLL_CURSOR", 20)
+NVFBC : bool = envbool("XPRA_SHADOW_NVFBC", True)
+GSTREAMER : bool = envbool("XPRA_SHADOW_GSTREAMER", False)
 nvfbc = None
 if NVFBC:
     try:
@@ -182,17 +182,17 @@ class XImageCapture:
     def __repr__(self):
         return f"XImageCapture({self.xwindow:x})"
 
-    def clean(self):
+    def clean(self) -> None:
         self.close_xshm()
 
-    def close_xshm(self):
+    def close_xshm(self) -> None:
         xshm = self.xshm
         if self.xshm:
             self.xshm = None
             with xlog:
                 xshm.cleanup()
 
-    def _err(self, e, op="capture pixels"):
+    def _err(self, e, op="capture pixels") -> None:
         if getattr(e, "msg", None)=="BadMatch":
             log("BadMatch - temporary error in %s of window #%x", op, self.xwindow, exc_info=True)
         else:
@@ -200,7 +200,7 @@ class XImageCapture:
             log.warn(" %s", e)
         self.close_xshm()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         if self.xshm:
             #discard to ensure we will call XShmGetImage next time around
             self.xshm.discard()
@@ -215,7 +215,7 @@ class XImageCapture:
             self._err(e, "xshm setup")
         return True
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x:int, y:int, width:int, height:int):
         log("XImageCapture.get_image%s for %#x", (x, y, width, height), self.xwindow)
         if self.xshm is None:
             log("no xshm, cannot get image")
@@ -290,7 +290,7 @@ class X11ShadowModel(RootWindowModel):
         super().__init__(root_window, capture, title, geometry)
         self.property_names += ["transient-for", "parent", "relative-position"]
         self.dynamic_property_names += ["transient-for", "parent", "relative-position"]
-        self.override_redirect = False
+        self.override_redirect : bool = False
         self.transient_for = None
         self.parent = None
         self.relative_position = ()
@@ -300,10 +300,10 @@ class X11ShadowModel(RootWindowModel):
         except Exception:
             self.xid = 0
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.xid
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = ", OR" if self.override_redirect else ""
         return f"X11ShadowModel({self.capture} : {self.geometry} : {self.xid:x}{info})"
 
@@ -312,26 +312,26 @@ class X11ShadowModel(RootWindowModel):
 #so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
-    def __init__(self, multi_window=True):
+    def __init__(self, multi_window:bool=True):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         X11ServerCore.__init__(self)
         self.session_type = "X11 shadow"
         self.modify_keymap = False
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
         #don't call init on X11ServerCore,
         #this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.do_init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
-    def init_fake_xinerama(self):
+    def init_fake_xinerama(self) -> None:
         #don't enable fake xinerama with shadow servers,
         #we want to keep whatever settings they have
         self.libfakeXinerama_so = None
 
 
-    def set_keymap(self, server_source, force=False):
+    def set_keymap(self, server_source, force:bool=False) -> None:
         if self.readonly:
             return
         if self.modify_keymap:
@@ -339,7 +339,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         else:
             ShadowServerBase.set_keymap(self, server_source, force)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)     #@UndefinedVariable
         for fn in (del_mode, del_uuid):
@@ -355,7 +355,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return capture
 
 
-    def get_root_window_model_class(self):
+    def get_root_window_model_class(self) -> type:
         return X11ShadowModel
 
 
@@ -370,7 +370,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return window_matches(self.window_matches, model_class)
 
 
-    def client_startup_complete(self, ss):
+    def client_startup_complete(self, ss) -> None:
         super().client_startup_complete(ss)
         log("is_Wayland()=%s", is_Wayland())
         if is_Wayland():
@@ -381,21 +381,22 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                           icon_name="unticked")
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         GTKShadowServerBase.last_client_exited(self)
         X11ServerCore.last_client_exited(self)
 
 
-    def do_get_cursor_data(self):
+    def do_get_cursor_data(self) -> tuple:
         return X11ServerCore.get_cursor_data(self)
 
 
-    def send_initial_data(self, ss, c, send_ui, share_count):
+    def send_initial_data(self, ss, c, send_ui:bool, share_count:int) -> None:
         super().send_initial_data(ss, c, send_ui, share_count)
         if getattr(ss, "ui_client", True) and getattr(ss, "send_windows", True):
             self.verify_capture(ss)
 
-    def verify_capture(self, ss):
+
+    def verify_capture(self, ss) -> None:
         #verify capture works:
         log(f"verify_capture({ss})")
         try:
@@ -422,29 +423,29 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args):
+    def get_info(self, proto, *_args) -> dict:
         info = X11ServerCore.get_info(self, proto)
         merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk3/x11-shadow"
         return info
 
-    def do_make_screenshot_packet(self):
+    def do_make_screenshot_packet(self) -> tuple:
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressed
-        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
+        return ("screenshot", w, h, encoding, rowstride, Compressed(encoding, data))
 
 
-def snapshot(filename):
+def snapshot(filename) -> int:
     #pylint: disable=import-outside-toplevel
     from io import BytesIO
     from xpra.os_util import memoryview_to_bytes
@@ -487,6 +488,7 @@ def main(*args):
     gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
     for w in window_matches(args, cb):
         print(f"{w}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -63,16 +63,16 @@ class X11ServerBase(X11ServerCore):
 
     def __init__(self):
         super().__init__()
-        self._default_xsettings = {}
-        self._settings = {}
-        self.double_click_time = 0
-        self.double_click_distance = 0
-        self.dpi = 0
-        self.default_dpi = 0
+        self._default_xsettings : dict = {}
+        self._settings : dict = {}
+        self.double_click_time : int = 0
+        self.double_click_distance : int = 0
+        self.dpi : int = 0
+        self.default_dpi : int = 0
         self._xsettings_manager = None
-        self._xsettings_enabled = False
-        self.display_pid = 0
-        self.icc_profile = b""
+        self._xsettings_enabled : bool = False
+        self.display_pid : int = 0
+        self.icc_profile : bytes = b""
 
     def do_init(self, opts):
         super().do_init(opts)
@@ -95,7 +95,7 @@ class X11ServerBase(X11ServerCore):
         self.do_clean_x11_properties("XPRA_SERVER_PID")
 
 
-    def init_display_pid(self, pid):
+    def init_display_pid(self, pid:int):
         if not pid:
             log.info("xvfb pid not found")
         else:
@@ -133,7 +133,7 @@ class X11ServerBase(X11ServerCore):
         return root_w, root_h
 
 
-    def init_dbus(self, dbus_pid, dbus_env):
+    def init_dbus(self, dbus_pid:int, dbus_env:dict):
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environb.update(dbus_env)
@@ -170,7 +170,7 @@ class X11ServerBase(X11ServerCore):
         self.reset_settings()
         super().last_client_exited()
 
-    def init_virtual_devices(self, devices):
+    def init_virtual_devices(self, devices:dict):
         # pylint: disable=import-outside-toplevel
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
@@ -219,12 +219,12 @@ class X11ServerBase(X11ServerCore):
         self.timeout_add(1000, verify_uinput_moved)
 
 
-    def dpi_changed(self):
+    def dpi_changed(self) -> None:
         #re-apply the same settings, which will apply the new dpi override to it:
         self.update_server_settings()
 
 
-    def get_info(self, proto=None, client_uuids=None):
+    def get_info(self, proto=None, client_uuids=None) -> dict:
         info = super().get_info(proto=proto, client_uuids=client_uuids)
         display_info = info.setdefault("display", {})
         if self.display_pid:
@@ -240,7 +240,7 @@ class X11ServerBase(X11ServerCore):
             icc_info["profile"] = hexstr(self.icc_profile)
         return icc_info
 
-    def set_icc_profile(self):
+    def set_icc_profile(self) -> None:
         if not SYNC_ICC:
             return
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
@@ -264,20 +264,20 @@ class X11ServerBase(X11ServerCore):
         root_prop_set("_ICC_PROFILE", ["u32"], [ord(x) for x in data])
         root_prop_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0*100+4) #0.4 -> 0*100+4*1
 
-    def reset_icc_profile(self):
+    def reset_icc_profile(self) -> None:
         screenlog("reset_icc_profile()")
         root_prop_del("_ICC_PROFILE")
         root_prop_del("_ICC_PROFILE_IN_X_VERSION")
         self.icc_profile = b""
 
 
-    def reset_settings(self):
+    def reset_settings(self) -> None:
         if not self._xsettings_enabled:
             return
         log("resetting xsettings to: %s", self._default_xsettings)
         self.set_xsettings(self._default_xsettings or (0, ()))
 
-    def set_xsettings(self, v):
+    def set_xsettings(self, v) -> None:
         if not self._xsettings_enabled:
             return
         log("set_xsettings(%s)", v)
@@ -287,7 +287,7 @@ class X11ServerBase(X11ServerCore):
                 self._xsettings_manager = XSettingsManager()
             self._xsettings_manager.set_settings(v)
 
-    def init_all_server_settings(self):
+    def init_all_server_settings(self) -> None:
         log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
         #almost like update_all, except we use the default_dpi,
         #since this is called before the first client connects
@@ -296,20 +296,20 @@ class X11ServerBase(X11ServerCore):
             "xsettings-blob"    : (0, [])
             }, reset = True, dpi = self.default_dpi, cursor_size=24)
 
-    def update_all_server_settings(self, reset=False):
+    def update_all_server_settings(self, reset=False) -> None:
         self.update_server_settings({
             "resource-manager"  : b"",
             "xsettings-blob"    : (0, []),
             }, reset=reset)
 
-    def update_server_settings(self, settings=None, reset=False):
+    def update_server_settings(self, settings=None, reset=False) -> None:
         self.do_update_server_settings(settings or self._settings, reset,
                                 self.dpi, self.double_click_time, self.double_click_distance,
                                 self.antialias, self.cursor_size)
 
     def do_update_server_settings(self, settings, reset=False,
                                   dpi=0, double_click_time=0, double_click_distance=(-1, -1),
-                                  antialias=None, cursor_size=-1):
+                                  antialias=None, cursor_size=-1) -> None:
         if not self._xsettings_enabled:
             log(f"ignoring xsettings update: {settings}")
             return

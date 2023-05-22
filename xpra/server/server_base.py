@@ -102,19 +102,19 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.__init__()")
         self.init_uuid()
 
-        self._authenticated_packet_handlers = {}
-        self._authenticated_ui_packet_handlers = {}
+        self._authenticated_packet_handlers : dict = {}
+        self._authenticated_ui_packet_handlers : dict = {}
 
-        self.display_pid = 0
-        self._server_sources = {}
-        self.client_properties = {}
+        self.display_pid : int = 0
+        self._server_sources : dict = {}
+        self.client_properties : dict = {}
         self.ui_driver = None
-        self.sharing = None
-        self.lock = None
+        self.sharing : bool = None
+        self.lock : bool = None
 
-        self.idle_timeout = 0
+        self.idle_timeout : int = 0
         #duplicated from Server Source...
-        self.client_shutdown = CLIENT_CAN_SHUTDOWN
+        self.client_shutdown : bool = CLIENT_CAN_SHUTDOWN
 
         if SSH_AGENT_DISPATCH and "ssh" not in self.session_files:
             self.session_files.append("ssh/*")
@@ -124,17 +124,17 @@ class ServerBase(ServerBaseClass):
         self.init_aliases()
 
 
-    def idle_add(self, *args, **kwargs):
+    def idle_add(self, *args, **kwargs) -> int:
         raise NotImplementedError()
 
-    def timeout_add(self, *args, **kwargs):
+    def timeout_add(self, *args, **kwargs) -> int:
         raise NotImplementedError()
 
-    def source_remove(self, timer):
+    def source_remove(self, timer) -> None:
         raise NotImplementedError()
 
 
-    def server_event(self, *args):
+    def server_event(self, *args) -> None:
         for s in self._server_sources.values():
             s.send_server_event(*args)
         if self.dbus_server:
@@ -144,7 +144,7 @@ class ServerBase(ServerBaseClass):
         return self._server_sources.get(proto)
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         #from now on, use the logger for parsing errors:
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
@@ -158,7 +158,7 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = opts.idle_timeout
         self.bandwidth_detection = opts.bandwidth_detection
 
-    def setup(self):
+    def setup(self) -> None:
         log("starting component init")
         for c in SERVER_BASES:
             start = monotonic()
@@ -166,7 +166,7 @@ class ServerBase(ServerBaseClass):
             end = monotonic()
             log("%3ims in %s.setup", 1000*(end-start), c)
 
-    def threaded_init(self):
+    def threaded_init(self) -> None:
         super().do_threaded_init()
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
@@ -179,12 +179,12 @@ class ServerBase(ServerBaseClass):
         super().call_init_thread_callbacks()
 
 
-    def server_is_ready(self):
+    def server_is_ready(self) -> None:
         ServerCore.server_is_ready(self)
         self.server_event("ready")
 
 
-    def do_cleanup(self):
+    def do_cleanup(self) -> None:
         self.server_event("exit")
         self.wait_for_threaded_init()
         log("do_cleanup() calling on %s", SERVER_BASES)
@@ -196,11 +196,11 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # override http scripts to expose just the current session / display
-    def get_displays(self):
+    def get_displays(self) -> dict:
         from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
         return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"), ))
 
-    def get_xpra_sessions(self):
+    def get_xpra_sessions(self) -> dict:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
 

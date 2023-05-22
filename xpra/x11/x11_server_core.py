@@ -87,27 +87,27 @@ class X11ServerCore(GTKServerBase):
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
-        self.pointer_device_map = {}
-        self.keys_pressed = {}
+        self.pointer_device_map : dict = {}
+        self.keys_pressed : dict = {}
         self.libfakeXinerama_so = None
         self.initial_resolution = None
         self.x11_filter = False
-        self.randr_sizes_added = []
+        self.randr_sizes_added : list = []
         super().__init__()
         log("XShape=%s", X11Window.displayHasXShape())
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.do_init(opts)
         super().init(opts)
 
-    def server_init(self):
+    def server_init(self) -> None:
         self.x11_init()
         if server_features.windows:
             from xpra.x11.x11_window_filters import init_x11_window_filters
             init_x11_window_filters()
         super().server_init()
 
-    def do_init(self, opts):
+    def do_init(self, opts) -> None:
         try:
             self.initial_resolutions = parse_resolutions(opts.resize_display, opts.refresh_rate)
         except ValueError:
@@ -120,7 +120,7 @@ class X11ServerCore(GTKServerBase):
         self.current_keyboard_group = None
 
 
-    def x11_init(self):
+    def x11_init(self) -> None:
         if FAKE_X11_INIT_ERROR:
             raise RuntimeError("fake x11 init error")
         self.init_fake_xinerama()
@@ -146,10 +146,10 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             self.save_mode()
 
-    def save_mode(self):
+    def save_mode(self) -> None:
         save_mode(self.get_server_mode())
 
-    def init_fake_xinerama(self):
+    def init_fake_xinerama(self) -> None:
         if self.fake_xinerama in FALSE_OPTIONS:
             self.libfakeXinerama_so = None
         elif os.path.isabs(self.fake_xinerama):
@@ -157,7 +157,7 @@ class X11ServerCore(GTKServerBase):
         else:
             self.libfakeXinerama_so = find_libfakeXinerama()
 
-    def init_randr(self):
+    def init_randr(self) -> None:
         self.randr = RandR.has_randr()
         screenlog("randr=%s", self.randr)
         #check the property first,
@@ -184,7 +184,7 @@ class X11ServerCore(GTKServerBase):
             screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
 
 
-    def init_cursor(self):
+    def init_cursor(self) -> None:
         #cursor:
         self.default_cursor_image = None
         self.last_cursor_serial = None
@@ -197,13 +197,13 @@ class X11ServerCore(GTKServerBase):
             get_default_cursor()
             X11Keyboard.selectCursorChange(True)
 
-    def get_display_bit_depth(self):
+    def get_display_bit_depth(self) -> int:
         with xlog:
             return X11Window.get_depth(X11Window.get_root_xid())
         return 0
 
 
-    def init_x11_atoms(self):
+    def init_x11_atoms(self) -> None:
         #some applications (like openoffice), do not work properly
         #if some x11 atoms aren't defined, so we define them in advance:
         atom_names = tuple("_NET_WM_WINDOW_TYPE"+wtype for wtype in (
@@ -227,7 +227,7 @@ class X11ServerCore(GTKServerBase):
         X11Core.intern_atoms(atom_names)
 
 
-    def set_keyboard_layout_group(self, grp):
+    def set_keyboard_layout_group(self, grp) -> None:
         kc = self.keyboard_config
         if not kc:
             keylog(f"set_keyboard_layout_group({grp}) ignored, no config")
@@ -254,13 +254,13 @@ class X11ServerCore(GTKServerBase):
             keylog.error(f"Error: failed to set keyboard layout group {grp}")
             keylog.estr(e)
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packet_handler("force-ungrab", self._process_force_ungrab)
         self.add_packet_handler("wheel-motion", self._process_wheel_motion)
 
 
-    def init_virtual_devices(self, _devices):
+    def init_virtual_devices(self, _devices) -> None:
         self.input_devices = "xtest"
 
 
@@ -271,7 +271,7 @@ class X11ServerCore(GTKServerBase):
             env["LD_PRELOAD"] = self.libfakeXinerama_so
         return env
 
-    def do_cleanup(self):
+    def do_cleanup(self) -> None:
         log("do_cleanup() x11_filter=%s", self.x11_filter)
         if self.x11_filter:
             self.x11_filter = False
@@ -300,10 +300,10 @@ class X11ServerCore(GTKServerBase):
         close_gdk_display_source()
 
 
-    def clean_x11_properties(self):
+    def clean_x11_properties(self) -> None:
         self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")
 
-    def do_clean_x11_properties(self, *properties):
+    def do_clean_x11_properties(self, *properties) -> None:
         root = get_default_root_window()
         for prop in properties:
             try:
@@ -312,13 +312,13 @@ class X11ServerCore(GTKServerBase):
                 log("prop_del(%s, %s) %s", root, prop, e)
 
 
-    def get_uuid(self):
+    def get_uuid(self) -> str:
         return get_uuid()
 
-    def save_uuid(self):
+    def save_uuid(self) -> None:
         save_uuid(str(self.uuid))
 
-    def set_keyboard_repeat(self, key_repeat):
+    def set_keyboard_repeat(self, key_repeat) -> None:
         with xlog:
             if key_repeat:
                 self.key_repeat_delay, self.key_repeat_interval = key_repeat
@@ -334,7 +334,7 @@ class X11ServerCore(GTKServerBase):
                 X11Keyboard.set_key_repeat_rate(500, 30)
                 keylog("keyboard repeat disabled")
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if "features" in source.wants:
@@ -359,7 +359,7 @@ class X11ServerCore(GTKServerBase):
                     capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
-    def send_initial_cursors(self, ss, sharing=False):
+    def send_initial_cursors(self, ss, sharing=False) -> None:
         dci = self.default_cursor_image
         ce = getattr(ss, "cursor_encodings", ())
         enabled = getattr(self, "cursors", False)
@@ -455,7 +455,7 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
-    def get_window_id(self, gdkwindow):
+    def get_window_id(self, gdkwindow) -> int:
         if not gdkwindow:
             return 0
         xid = gdkwindow.get_xid()
@@ -477,7 +477,7 @@ class X11ServerCore(GTKServerBase):
         return keyboard_config
 
 
-    def set_keymap(self, server_source, force=False):
+    def set_keymap(self, server_source, force=False) -> None:
         if self.readonly:
             return
 
@@ -498,7 +498,7 @@ class X11ServerCore(GTKServerBase):
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)    #pylint: disable=access-member-before-definition
             self.keyboard_config = server_source.keyboard_config
 
-    def clear_keys_pressed(self):
+    def clear_keys_pressed(self) -> None:
         if self.readonly:
             return
         keylog("clear_keys_pressed()")
@@ -516,7 +516,7 @@ class X11ServerCore(GTKServerBase):
         clean_keyboard_state()
 
 
-    def get_cursor_sizes(self):
+    def get_cursor_sizes(self) -> tuple:
         display = Gdk.Display.get_default()
         return display.get_default_cursor_size(), display.get_maximal_cursor_size()
 
@@ -525,7 +525,7 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             return X11Keyboard.get_cursor_image()
 
-    def get_cursor_data(self, skip_default=True):
+    def get_cursor_data(self, skip_default=True) -> tuple:
         #must be called from the UI thread!
         cursor_image = self.get_cursor_image()
         if cursor_image is None:
@@ -542,7 +542,7 @@ class X11ServerCore(GTKServerBase):
         return (cursor_image, cursor_sizes)
 
 
-    def get_all_screen_sizes(self):
+    def get_all_screen_sizes(self) -> tuple:
         #workaround for #2910: the resolutions we add are not seen by XRRSizes!
         # so we keep track of the ones we have added ourselves:
         sizes = list(RandR.get_xrr_screen_sizes())
@@ -551,7 +551,7 @@ class X11ServerCore(GTKServerBase):
                 sizes.append((w, h))
         return tuple(sizes)
 
-    def get_max_screen_size(self):
+    def get_max_screen_size(self) -> tuple:
         max_w, max_h = self.root_window.get_geometry()[2:4]
         if self.randr:
             sizes = self.get_all_screen_sizes()
@@ -836,41 +836,41 @@ class X11ServerCore(GTKServerBase):
         return mdef
 
 
-    def notify_dpi_warning(self, body):
+    def notify_dpi_warning(self, body) -> None:
         sources = tuple(self._server_sources.values())
         if len(sources)==1:
             ss = sources[0]
             if first_time("DPI-warning-%s" % ss.uuid):
                 sources[0].may_notify(NotificationID.DPI, "DPI Issue", body, icon_name="font")
 
-    def set_dpi(self, xdpi, ydpi):
+    def set_dpi(self, xdpi, ydpi) -> None:
         """ overridden in the seamless server """
 
 
-    def _process_server_settings(self, _proto, packet):
+    def _process_server_settings(self, _proto, packet) -> None:
         settings = packet[1]
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
 
-    def update_server_settings(self, _settings, _reset=False):
+    def update_server_settings(self, _settings, _reset=False) -> None:
         #implemented in the X11 xpra server only for now
         #(does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
 
 
-    def _process_force_ungrab(self, proto, _packet):
+    def _process_force_ungrab(self, proto, _packet) -> None:
         #ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()
 
-    def X11_ungrab(self):
+    def X11_ungrab(self) -> None:
         grablog("X11_ungrab")
         with xsync:
             X11Core.UngrabKeyboard()
             X11Core.UngrabPointer()
 
 
-    def fake_key(self, keycode, press):
+    def fake_key(self, keycode, press) -> None:
         keylog("fake_key(%s, %s)", keycode, press)
         mink, maxk = X11Keyboard.get_minmax_keycodes()
         if keycode<mink or keycode>maxk:
@@ -879,7 +879,7 @@ class X11ServerCore(GTKServerBase):
             X11Keyboard.xtest_fake_key(keycode, press)
 
 
-    def do_xpra_cursor_event(self, event):
+    def do_xpra_cursor_event(self, event) -> None:
         if not self.cursors:
             return
         if self.last_cursor_serial==event.cursor_serial:
@@ -891,7 +891,7 @@ class X11ServerCore(GTKServerBase):
             ss.send_cursor()
 
 
-    def _motion_signaled(self, model, event):
+    def _motion_signaled(self, model, event) -> None:
         mouselog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         #find the window model for this gdk window:
         wid = self._window_to_id.get(model)
@@ -903,7 +903,7 @@ class X11ServerCore(GTKServerBase):
                     ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
 
-    def do_xpra_xkb_event(self, event):
+    def do_xpra_xkb_event(self, event) -> None:
         #X11: XKBNotify
         log("server do_xpra_xkb_event(%r)" % event)
         if event.subtype!="bell":
@@ -920,7 +920,7 @@ class X11ServerCore(GTKServerBase):
                     event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
-    def _bell_signaled(self, wm, event):
+    def _bell_signaled(self, wm, event) -> None:
         log("bell signaled on window %#x", event.window)
         if not self.bell:
             return
@@ -935,7 +935,7 @@ class X11ServerCore(GTKServerBase):
                     event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
-    def setup_input_devices(self):
+    def setup_input_devices(self) -> None:
         xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
         if not server_features.input_devices:
             return
@@ -976,7 +976,7 @@ class X11ServerCore(GTKServerBase):
                 self.pointer_device_map[deviceid] = self.touchpad_device
 
 
-    def _process_wheel_motion(self, proto, packet):
+    def _process_wheel_motion(self, proto, packet) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
         if not ss:
@@ -991,7 +991,7 @@ class X11ServerCore(GTKServerBase):
                 self._update_modifiers(proto, wid, modifiers)
                 self.pointer_device.wheel_motion(button, distance/1000.0)   #pylint: disable=no-member
 
-    def get_pointer_device(self, deviceid):
+    def get_pointer_device(self, deviceid:int):
         #mouselog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
         if self.input_devices_data:
             device_data = self.input_devices_data.get(deviceid)
@@ -1053,14 +1053,14 @@ class X11ServerCore(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props) -> None:
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         props = {}
         if self._process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id, wid, pointer, button, pressed, props):
+    def button_action(self, device_id, wid, pointer, button, pressed, props) -> None:
         device = self.get_pointer_device(device_id)
         assert device, "pointer device %s not found" % device_id
         if button in (4, 5) and wid:
@@ -1073,16 +1073,16 @@ class X11ServerCore(GTKServerBase):
             mouselog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
             mouselog.error("Error: failed (un)press mouse button %s", button)
 
-    def record_wheel_event(self, wid, button):
+    def record_wheel_event(self, wid, button) -> None:
         mouselog("recording scroll event for button %i", button)
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 
-    def make_screenshot_packet_from_regions(self, regions):
+    def make_screenshot_packet_from_regions(self, regions) -> tuple:
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")
-            return ["screenshot", 0, 0, "png", -1, ""]
+            return ("screenshot", 0, 0, "png", -1, "")
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
         minx = min(x for (_,x,_,_) in regions)
         miny = min(y for (_,_,y,_) in regions)
@@ -1118,6 +1118,6 @@ class X11ServerCore(GTKServerBase):
         screenshot.save(buf, "png")
         data = buf.getvalue()
         buf.close()
-        packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
+        packet = ("screenshot", width, height, "png", width*4, Compressed("png", data))
         log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet

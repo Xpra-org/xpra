@@ -43,15 +43,15 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
-        self.cursor_suspended = False
+        self.idle_add : callable = GLib.idle_add
+        self.timeout_add : callable = GLib.timeout_add
+        self.source_remove : callable = GLib.source_remove
+        self.cursor_suspended : bool = False
         self.ui_watcher = None
         self.keymap_changing_timer : int = 0
         super().__init__()
 
-    def watch_keymap_changes(self):
+    def watch_keymap_changes(self) -> None:
         ### Set up keymap change notification:
         display = Gdk.Display.get_default()
         if not display:
@@ -69,19 +69,19 @@ class GTKServerBase(ServerBase):
             self.keymap_changing_timer = self.timeout_add(500, do_keys_changed)
         keymap.connect("keys-changed", keys_changed)
 
-    def stop_keymap_timer(self):
+    def stop_keymap_timer(self) -> None:
         kct = self.keymap_changing_timer
         if kct:
             self.keymap_changing_timer = 0
             self.source_remove(kct)
 
-    def install_signal_handlers(self, callback):
+    def install_signal_handlers(self, callback) -> None:
         sstr = self.get_server_mode()+" server"
         register_os_signals(callback, sstr)
         from xpra.gtk_common.gobject_compat import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals(sstr)
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         log("do_quit: calling Gtk.main_quit")
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
@@ -89,21 +89,21 @@ class GTKServerBase(ServerBase):
         from xpra.os_util import register_SIGUSR_signals    # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals()
 
-    def late_cleanup(self):
+    def late_cleanup(self) -> None:
         log("GTKServerBase.late_cleanup()")
         self.stop_keymap_timer()
         super().late_cleanup()
         self.stop_ui_watcher()
         self.close_gtk_display()
 
-    def stop_ui_watcher(self):
+    def stop_ui_watcher(self) -> None:
         uiw = self.ui_watcher
         log("stop_ui_watcher() ui watcher=%s", uiw)
         if uiw:
             self.ui_watcher = None
             uiw.stop()
 
-    def close_gtk_display(self):
+    def close_gtk_display(self) -> None:
         # Close our display(s) first, so the server dying won't kill us.
         # (if gtk has been loaded)
         gdk_mod = sys.modules.get("gi.repository.Gdk")
@@ -120,7 +120,7 @@ class GTKServerBase(ServerBase):
                 d.close()
 
 
-    def do_run(self):
+    def do_run(self) -> None:
         if UI_THREAD_WATCHER:
             from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
             self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
@@ -138,7 +138,7 @@ class GTKServerBase(ServerBase):
         log("do_run() end of gtk.main()")
 
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()
@@ -153,7 +153,7 @@ class GTKServerBase(ServerBase):
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 
-    def get_ui_info(self, proto, *args):
+    def get_ui_info(self, proto, *args) -> dict:
         info = super().get_ui_info(proto, *args)
         display = Gdk.Display.get_default()
         if display:
@@ -165,7 +165,7 @@ class GTKServerBase(ServerBase):
         return info
 
 
-    def suspend_cursor(self, proto):
+    def suspend_cursor(self, proto) -> None:
         #this is called by shadow and desktop servers
         #when we're receiving pointer events but the pointer
         #is no longer over the active window area,
@@ -178,7 +178,7 @@ class GTKServerBase(ServerBase):
             ss.cancel_cursor_timer()
             ss.send_empty_cursor()
 
-    def restore_cursor(self, proto):
+    def restore_cursor(self, proto) -> None:
         #see suspend_cursor
         if not self.cursor_suspended:
             return
@@ -188,7 +188,7 @@ class GTKServerBase(ServerBase):
             ss.send_cursor()
 
 
-    def send_initial_cursors(self, ss, _sharing=False):
+    def send_initial_cursors(self, ss, _sharing=False) -> None:
         #cursors: get sizes and send:
         display = Gdk.Display.get_default()
         if display:
@@ -213,7 +213,7 @@ class GTKServerBase(ServerBase):
             cinfo[f"{prop}_size"] = size
         return cinfo
 
-    def do_get_info(self, proto, *args):
+    def do_get_info(self, proto, *args) -> dict:
         start = monotonic()
         info = super().do_get_info(proto, *args)
         vi = dict_version_trim(get_gtk_version_info())
@@ -275,7 +275,7 @@ class GTKServerBase(ServerBase):
         """ overridden by X11 seamless and desktop servers """
 
 
-    def _move_pointer(self, device_id, wid, pos, props=None):
+    def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
         x, y = pos
         display = Gdk.Display.get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
@@ -301,5 +301,5 @@ class GTKServerBase(ServerBase):
         try:
             from xpra.notifications.common import get_notification_icon
         except ImportError:
-            return []
+            return ()
         return get_notification_icon(icon_string)

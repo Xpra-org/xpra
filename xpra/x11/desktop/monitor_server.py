@@ -39,11 +39,11 @@ class XpraMonitorServer(DesktopServerBase):
                 DISPLAY = os.environ.get("DISPLAY", "")
                 raise InitException(f"the vfb display {DISPLAY!r} cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
-        self.session_type = "monitor"
-        self.reconfigure_timer = 0
-        self.reconfigure_locked = False
+        self.session_type : str = "monitor"
+        self.reconfigure_timer : int = 0
+        self.reconfigure_locked : bool = False
 
-    def server_init(self):
+    def server_init(self) -> None:
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
         screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
@@ -54,10 +54,10 @@ class XpraMonitorServer(DesktopServerBase):
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "X11 monitor"
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -105,7 +105,7 @@ class XpraMonitorServer(DesktopServerBase):
         return current()
 
 
-    def load_existing_windows(self):
+    def load_existing_windows(self) -> None:
         with xlog:
             monitors = RandR.get_monitor_properties()
             for i, monitor in monitors.items():
@@ -116,7 +116,7 @@ class XpraMonitorServer(DesktopServerBase):
         #screen.connect("monitors-changed", self.monitors_changed)
 
 
-    def do_xpra_configure_event(self, event):
+    def do_xpra_configure_event(self, event) -> None:
         #the root window changed,
         #check to see if a monitor has been modified
         #do this via a timer to avoid running multiple times
@@ -125,13 +125,13 @@ class XpraMonitorServer(DesktopServerBase):
         if not self.reconfigure_timer:
             self.reconfigure_timer = self.timeout_add(50, self.reconfigure)
 
-    def reconfigure(self):
+    def reconfigure(self) -> None:
         try:
             self.do_reconfigure()
         finally:
             self.reconfigure_timer = 0
 
-    def do_reconfigure(self):
+    def do_reconfigure(self) -> None:
         #verify that our models are up to date
         #we look for the crtcs because that's what tools like `xrandr` can modify easily
         # ie: xrandr --output DUMMY1 --mode 1024x768
@@ -180,7 +180,7 @@ class XpraMonitorServer(DesktopServerBase):
                 self.reconfigure_monitors()
         self.refresh_all_windows()
 
-    def sync_monitors_to_models(self, monitors):
+    def sync_monitors_to_models(self, monitors) -> int:
         #now update the monitor models with this data:
         screenlog("sync_monitors_to_models(%s)", monitors)
         mods = 0
@@ -210,7 +210,7 @@ class XpraMonitorServer(DesktopServerBase):
         return mods
 
 
-    def add_monitor_model(self, wid, monitor):
+    def add_monitor_model(self, wid:int, monitor) -> MonitorDesktopModel:
         model = MonitorDesktopModel(monitor)
         model.setup()
         screenlog("adding monitor model %s", model)
@@ -220,7 +220,7 @@ class XpraMonitorServer(DesktopServerBase):
         model.managed_connect("motion", self._motion_signaled)
         return model
 
-    def monitor_resized(self, model):
+    def monitor_resized(self, model) -> None:
         delta_x, delta_y = model.resize_delta
         wid = self._window_to_id[model]
         w, h = model.get_dimensions()
@@ -237,7 +237,7 @@ class XpraMonitorServer(DesktopServerBase):
         self._adjust_monitors(wid, delta_x, delta_y)
         self.reconfigure_monitors()
 
-    def reconfigure_monitors(self):
+    def reconfigure_monitors(self) -> None:
         #now we can do the virtual crtcs, outputs and monitors
         defs = self.get_monitor_config()
         screenlog("reconfigure_monitors() definitions=%s", defs)
@@ -245,7 +245,7 @@ class XpraMonitorServer(DesktopServerBase):
         #and tell the client:
         self.setting_changed("monitors", defs)
 
-    def validate_monitors(self):
+    def validate_monitors(self) -> None:
         for model in self._id_to_window.values():
             x, y, width, height = model.get_geometry()
             if x+width>=MAX_SIZE[0] or y+height>=MAX_SIZE[1]:
@@ -257,7 +257,7 @@ class XpraMonitorServer(DesktopServerBase):
                     })
                 model.init(mdef)
 
-    def _adjust_monitors(self, after_wid : int, delta_x : int, delta_y : int):
+    def _adjust_monitors(self, after_wid : int, delta_x : int, delta_y : int) -> None:
         models = dict((wid, model) for wid, model in self._id_to_window.items() if wid>after_wid)
         screenlog("adjust_monitors(%i, %i, %i) models=%s", after_wid, delta_x, delta_y, models)
         if (delta_x==0 and delta_y==0) or not models:
@@ -265,7 +265,7 @@ class XpraMonitorServer(DesktopServerBase):
         for wid, model in models.items():
             self._adjust_monitor(model, delta_x, delta_y)
 
-    def _adjust_monitor(self, model, delta_x : int, delta_y : int):
+    def _adjust_monitor(self, model, delta_x : int, delta_y : int) -> None:
         screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
         if (delta_x==0 and delta_y==0):
             return
@@ -281,7 +281,7 @@ class XpraMonitorServer(DesktopServerBase):
                 })
             model.init(mdef)
 
-    def get_monitor_config(self):
+    def get_monitor_config(self) -> dict:
         monitor_defs = {}
         for wid, model in self._id_to_window.items():
             monitor = model.get_definition()
@@ -290,12 +290,12 @@ class XpraMonitorServer(DesktopServerBase):
             monitor_defs[i] = monitor
         return monitor_defs
 
-    def apply_monitor_config(self, monitor_defs : dict):
+    def apply_monitor_config(self, monitor_defs : dict) -> None:
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 
 
-    def remove_monitor(self, wid : int):
+    def remove_monitor(self, wid : int) -> None:
         model = self._id_to_window.get(wid)
         screenlog("removing monitor for wid %i : %s", wid, model)
         if not model:
@@ -310,7 +310,7 @@ class XpraMonitorServer(DesktopServerBase):
         self._adjust_monitors(wid, delta_x, delta_y)
         self.reconfigure_monitors()
 
-    def add_monitor(self, width : int, height : int):
+    def add_monitor(self, width : int, height : int) -> None:
         count = len(self._id_to_window)
         if count>=16:
             raise RuntimeError(f"already too many monitors: {count}")
@@ -373,7 +373,7 @@ class XpraMonitorServer(DesktopServerBase):
                 continue
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, proto, packet):
+    def _process_configure_monitor(self, proto, packet) -> None:
         action = packet[1]
         if action=="remove":
             identifier = packet[2]
@@ -398,7 +398,7 @@ class XpraMonitorServer(DesktopServerBase):
         self.refresh_all_windows()
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packet_handlers({
             "configure-monitor"       : self._process_configure_monitor,

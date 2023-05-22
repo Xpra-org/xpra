@@ -896,7 +896,7 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
-def get_ssl_attributes(opts, server_side=True, overrides=None):
+def get_ssl_attributes(opts, server_side=True, overrides=None) -> dict:
     args = {
         "server-side"   : server_side,
         }
