@@ -453,7 +453,7 @@ class ServerBase(ServerBaseClass):
         #adds try:except around parse hello ui code:
         try:
             if self._closing:
-                self.reject()
+                reject()
                 return
 
             self.notify_new_user(ss)
@@ -467,13 +467,13 @@ class ServerBase(ServerBaseClass):
             self.client_startup_complete(ss)
 
             if self._closing:
-                self.reject()
+                reject()
                 return
         except Exception:
             #log exception but don't disclose internal details to the client
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
-            self.reject("error accepting new connection")
+            reject("error accepting new connection")
 
     def parse_hello(self, ss, c, send_ui):
         for bc in SERVER_BASES:
