@@ -242,7 +242,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #in case the python property isn't set yet
         if not self.is_OR():
             transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
-            if transient_for is not None:
+            if transient_for:
                 # EWMH says that even if it's transient-for, we MUST check to
                 # see if it's override-redirect (and if so treat as NORMAL).
                 # But we wouldn't be here if this was override-redirect.
@@ -310,7 +310,8 @@ class BaseWindowModel(CoreX11WindowModel):
         transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
         metalog("WM_TRANSIENT_FOR=%s", transient_for)
         # May be None
-        self._updateprop("transient-for", transient_for)
+        window = get_pywindow(transient_for) if transient_for else None
+        self._updateprop("transient-for", window)
 
     def _handle_window_type_change(self) -> None:
         window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])

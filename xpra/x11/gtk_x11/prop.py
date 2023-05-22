@@ -15,12 +15,8 @@ the conversions for plain python types is found in prop_conv.py
 """
 
 import struct
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gdk  # @UnresolvedImport
 
-from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES, PROP_SIZES
-from xpra.x11.gtk3.gdk_bindings import get_pywindow, get_xvisual
+from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError
 from xpra.gtk_common.error import xsync, XError, XSyncContext
 from xpra.util import repr_ellipsized
@@ -76,24 +72,10 @@ def get_python_type(scalar_type):
 def _to_atom(a):
     return struct.pack(b"@L", _get_xatom(a))
 
-def _to_visual(c):
-    return struct.pack(b"@L", get_xvisual(c))
-
-def _to_window(w):
-    return struct.pack(b"@L", w.get_xid())
-
-def get_window(w):
-    return get_pywindow(struct.unpack(b"@L", w)[0])
-
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
     "atom": (str, "ATOM", 32, _to_atom, _get_atom, b""),
-    "visual": (Gdk.Visual, "VISUALID", 32, _to_visual, unsupported, b""),
-    "window": (Gdk.Window, "WINDOW", 32, _to_window, get_window, b""),
-    "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
-                           set_xsettings,
-                           get_xsettings,
-                           None),
+    "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8, set_xsettings, get_xsettings, None),
     })
 
 

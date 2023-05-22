@@ -143,7 +143,14 @@ def window_matches(wspec, model_class):
         for xid, model in models.items():
             model.xid = xid
             model.override_redirect = wb.is_override_redirect(xid)
-            model.transient_for = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
+            transient_for_xid = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
+            model.transient_for = None
+            if transient_for_xid:
+                try:
+                    from xpra.x11.gtk3.gdk_bindings import get_pywindow
+                    model.transient_for = get_pywindow(transient_for_xid)
+                except ImportError:
+                    pass
             rel_parent = model.transient_for
             if not rel_parent:
                 parent = xid

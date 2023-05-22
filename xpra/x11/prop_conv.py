@@ -271,14 +271,11 @@ PROP_TYPES = {
     "state": (int, "WM_STATE", 32, _to_long, _from_long, b""),
     "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),
     "integer": (int, "INTEGER", 32, _to_long, _from_long, b""),
-    "strut": (NetWMStrut, "CARDINAL", 32,
-              unsupported, NetWMStrut, None),
-    "strut-partial": (NetWMStrut, "CARDINAL", 32,
-                      unsupported, NetWMStrut, None),
-    "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32,
-              unsupported, MotifWMHints, None),
-    "icons": (list, "CARDINAL", 32,
-              unsupported, NetWMIcons, None),
+    "strut": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),
+    "strut-partial": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),
+    "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32, unsupported, MotifWMHints, None),
+    "icons": (list, "CARDINAL", 32, unsupported, NetWMIcons, None),
+    "window": (int, "WINDOW", 32, _to_long, _from_long, b""),
     }
 
 PROP_SIZES = {

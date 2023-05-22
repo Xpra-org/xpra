@@ -40,20 +40,21 @@ def get_window_value(filter_object, gdkwin):
     return get_x11_window_value(filter_object.property_name, gdkwin)
 
 def get_window(filter_object, window):
-    gdkwin = get_pywindow(window.get_property("xid"))
-    p = gdkwin
-    log("get_window%s gdkwin=%s, recurse=%s", (filter_object, window), gdkwin, filter_object.recurse)
+    xid = window.get_property("xid")
+    p = xid
+    log(f"get_window({filter_object}, {window}) xid={xid:x}, recurse={filter_object.recurse}")
+    WM_TRANSIENT_FOR = "WM_TRANSIENT_FOR"
     while filter_object.recurse and p:
-        gdkwin = p
-        p = None
         try:
-            prop = "WM_TRANSIENT_FOR"
-            p = prop_get(gdkwin.get_xid(), prop, "window", ignore_errors=True)
-            log("prop_get(%s, %s)=%s", gdkwin, prop, p)
+            xid = prop_get(p, WM_TRANSIENT_FOR, "window", ignore_errors=True)
+            log(f"prop_get({p:x}, {WM_TRANSIENT_FOR})={xid}")
+            if not xid:
+                return p
+            p = xid
         except Exception:
-            log("prop_get(%s, %s)", gdkwin, prop, exc_info=True)
+            log(f"prop_get({p:x}, {WM_TRANSIENT_FOR})", exc_info=True)
             break
-    return gdkwin
+    return p
 
 def init_x11_window_filters():
     from xpra.server.window import filters

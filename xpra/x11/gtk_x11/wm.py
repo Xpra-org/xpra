@@ -489,9 +489,9 @@ class Wm(GObject.GObject):
         # are detected on it, anyway.
         root = get_default_root_window()
         self._ewmh_window = GDKX11Window(root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
-        prop_set(self._ewmh_window.get_xid(), "_NET_SUPPORTING_WM_CHECK",
-                 "window", self._ewmh_window)
-        self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)
+        xid = self._ewmh_window.get_xid()
+        prop_set(xid, "_NET_SUPPORTING_WM_CHECK", "window", xid)
+        self.root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
         self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
     def get_net_wm_name(self):

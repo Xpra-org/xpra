@@ -18,19 +18,22 @@ _NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 def get_wm_info() -> dict:
     with xsync:
-        from gi.repository import Gdk  #pylint: disable=import-outside-toplevel
-        display = Gdk.Display.get_default()
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()
         info = {
-            "display"   : display.get_name(),
             "root"      : root_xid,
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-        ewmh_xid = raw_prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False)
-        ewmh_window = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
-        if ewmh_xid and ewmh_window:
+        ewmh_xid = raw_prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "integer", ignore_errors=False)
+        if ewmh_xid:
+            try:
+                X11Window.getGeometry(ewmh_xid)
+            except Exception as e:
+                log(f"getGeometry({ewmh_xid:x}) {e}")
+                #invalid
+                ewmh_xid = 0
+        if ewmh_xid:
             info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
             wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if not wm_name:

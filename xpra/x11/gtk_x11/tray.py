@@ -3,19 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import struct
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set, prop_get, raw_prop_set
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk3.gdk_bindings import (
-    add_event_receiver,                          #@UnresolvedImport
-    remove_event_receiver,                       #@UnresolvedImport
-    )
+from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver, get_xvisual
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
@@ -74,16 +72,18 @@ IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
 MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
 
-def get_tray_window(tray_window):
-    return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, None)
+def get_tray_window(tray_window) -> int:
+    return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, 0)
 
-def set_tray_window(tray_window, window):
-    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, window.get_xid())
+def set_tray_window(tray_window, xid:int):
+    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, xid)
 
-def set_tray_visual(xid, gdk_visual):
-    prop_set(xid, TRAY_VISUAL, "visual", gdk_visual)
+def set_tray_visual(xid:int, gdk_visual):
+    xvisual = get_xvisual(gdk_visual)
+    value = struct.pack(b"@L", xvisual)
+    raw_prop_set(xid, TRAY_VISUAL, "VISUALID", 32, value)
 
-def set_tray_orientation(xid, orientation):
+def set_tray_orientation(xid:int, orientation:int):
     prop_set(xid, TRAY_ORIENTATION, "u32", orientation)
 
 
@@ -251,13 +251,13 @@ class SystemTray(GObject.GObject):
                                    override_redirect=True,
                                    visual=visual)
         log("dock_tray(%#x) setting tray properties", xid)
-        set_tray_window(tray_window, window)
+        xwin = window.get_xid()
+        set_tray_window(tray_window, xwin)
         tray_window.show()
         self.tray_windows[window] = tray_window
         self.window_trays[xid] = window
         log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
-        xwin = window.get_xid()
         xtray = tray_window.get_xid()
         X11Window.Withdraw(xwin)
         X11Window.Reparent(xwin, xtray, 0, 0)
