@@ -6,7 +6,7 @@
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
-from xpra.x11.gtk_x11.prop import raw_prop_get, prop_get
+from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -25,7 +25,7 @@ def get_wm_info() -> dict:
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-        ewmh_xid = raw_prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "integer", ignore_errors=False)
+        ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
         if ewmh_xid:
             try:
                 X11Window.getGeometry(ewmh_xid)
@@ -100,7 +100,7 @@ def wm_check(upgrading=False) -> bool:
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+    from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
     wm_check()
 

@@ -30,7 +30,7 @@ def make_window():
 
     def initiate(x_root, y_root, direction, button, source_indication):
         #print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core_bindings import X11CoreBindings                    #@UnresolvedImport
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport

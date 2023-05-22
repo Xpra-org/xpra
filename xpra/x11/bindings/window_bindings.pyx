@@ -992,7 +992,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-    def XGetWindowProperty(self, Window xwindow, property, req_type=None, etype=None, int buffer_size=64*1024, delete=False, incr=False):
+    def XGetWindowProperty(self, Window xwindow, property, req_type=None, int buffer_size=64*1024, delete=False, incr=False):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger)
@@ -1026,7 +1026,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after and not incr:
-            raise PropertyOverflow("reserved %i bytes for %s buffer, but data is bigger by %i bytes!" % (buffer_size, etype, bytes_after))
+            raise PropertyOverflow("reserved %i bytes for %s buffer, but data is bigger by %i bytes!" % (buffer_size, req_type, bytes_after))
         # actual_format is in (8, 16, 32), and is the number of bits in a logical
         # element.  However, this doesn't mean that each element is stored in that
         # many bits, oh no.  On a 32-bit machine it is, but on a 64-bit machine,

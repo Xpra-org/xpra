@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,8 +10,6 @@ This code deals with:
 * extracting data from XSETTINGS into nice python data structures
 and
 * converting those structures back into XSETTINGS format
-
-It is used by xpra.x11.gtk_x11.prop
 """
 
 import os
@@ -54,7 +52,7 @@ XSettingsNames = {
 
 
 XSETTINGS_CACHE = {}
-def get_settings(d):
+def bytes_to_xsettings(d:bytes):
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
@@ -117,9 +115,9 @@ def get_settings(d):
         settings.append(setting)
     log("get_settings(..) settings=%s", settings)
     XSETTINGS_CACHE = (serial, settings)
-    return  serial, settings
+    return serial, settings
 
-def set_settings(d):
+def xsettings_to_bytes(d) -> bytes:
     if len(d)!=2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d
@@ -163,7 +161,7 @@ def set_settings(d):
     v += b"".join(all_bin_settings)  #values
     v += b'\0'                       #null terminated
     log("set_settings(%s)=%s", d, tuple(v))
-    return  v
+    return v
 
 
 def main(): # pragma: no cover
@@ -196,7 +194,7 @@ def main(): # pragma: no cover
             XSETTINGS = "_XSETTINGS_SETTINGS"
             if owner:
                 data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-                serial, settings = get_settings(data)
+                serial, settings = bytes_to_xsettings(data)
                 print(f"serial={serial}")
                 print(f"{len(settings)} settings:")
                 for s in settings:

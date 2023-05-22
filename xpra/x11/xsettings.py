@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,9 +8,10 @@ from gi.repository import GObject, Gdk, Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xlog, XError
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom
+from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
 log = Logger("x11", "xsettings")
@@ -43,7 +44,8 @@ class XSettingsManager:
             log.warn("Warning: discarding xsettings because of incompatible format: %s", type(settings))
             return
         try:
-            prop_set(self._window.get_xid(), XSETTINGS, XSETTINGS_TYPE, settings)
+            data = xsettings_to_bytes(settings)
+            raw_prop_set(self._window.get_xid(), XSETTINGS, "_XSETTINGS_SETTINGS", 8, data)
         except XError as e:
             log("set_settings(%s)", settings, exc_info=True)
             log.error("Error: XSettings not applied")
@@ -75,11 +77,10 @@ class XSettingsHelper:
         log("Fetching current XSettings data, owner=%s", owner)
         if owner is None:
             return None
-        try:
-            return prop_get(owner.get_xid(), XSETTINGS, XSETTINGS_TYPE)
-        except XError:
-            log("X error while fetching XSettings data; ignored", exc_info=True)
-            return None
+        data = raw_prop_get(owner.get_xid(), XSETTINGS, "_XSETTINGS_SETTINGS", ignore_errors=True, raise_xerrors=False)
+        if data:
+            return bytes_to_xsettings(data)
+        return None
 
 
 class XSettingsWatcher(XSettingsHelper, GObject.GObject):
@@ -124,7 +125,7 @@ GObject.type_register(XSettingsWatcher)
 def main():
     # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import XSettingsNames
-    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+    from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
     s = XSettingsHelper().get_settings()
     assert s

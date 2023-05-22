@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util import std, csv, envbool, typedict
 from xpra.os_util import bytestostr

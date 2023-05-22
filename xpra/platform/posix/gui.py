@@ -900,7 +900,7 @@ class ClientExtras:
 
 def main():
     try:
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
     except ImportError:
         pass

@@ -6,7 +6,7 @@
 import sys
 
 from xpra.util import print_nested_dict
-from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 from xpra.x11.bindings.randr_bindings import RandRBindings  #pylint: disable=no-name-in-module
 
 def main():
