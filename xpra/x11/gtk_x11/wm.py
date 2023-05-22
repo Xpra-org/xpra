@@ -223,7 +223,7 @@ class Wm(GObject.GObject):
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
         # Load up our full-screen widget
-        self._world_window = WorldWindow(self._display.get_default_screen())
+        self._world_window = WorldWindow()
         self.notify("toplevel")
         self._world_window.show_all()
         wxid = self._world_window.get_window().get_xid()

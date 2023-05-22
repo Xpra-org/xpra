@@ -99,12 +99,11 @@ def destroy_world_window():
 
 
 class WorldWindow(Gtk.Window):
-    def __init__(self, screen=Gdk.Screen.get_default()):
+    def __init__(self):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
         super().__init__()
-        self.set_screen(screen)
         self.set_title("Xpra-WorldWindow")
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -122,9 +121,9 @@ class WorldWindow(Gtk.Window):
 
         # Make sure that we are always the same size as the screen
         self.set_resizable(False)
-        screen.connect("size-changed", self._resize)
         self.move(0, 0)
         self._resize()
+        self.get_screen().connect("size-changed", self._resize)
 
     def __repr__(self):  #pylint: disable=arguments-differ
         xid = 0
