@@ -154,7 +154,7 @@ class VideoHelper:
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         if self._initialized:
             log.error("Error: video helper modules have already been initialized")
-            for ifrom in self._initialized:
+            for ifrom in self._init_from:
                 log.error("from:")
                 for tb in ifrom:
                     log.error(" %s", tb)
