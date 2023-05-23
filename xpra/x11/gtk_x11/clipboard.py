@@ -45,6 +45,8 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 
+MAX_DATA_SIZE = 4*1024*1024
+
 BLACKLISTED_CLIPBOARD_CLIENTS = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 def parse_translated_targets(v):
@@ -230,17 +232,17 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         "send-clipboard-request"                : n_arg_signal(2),
         }
 
-    def __init__(self, xid, selection="CLIPBOARD"):
+    def __init__(self, xid:int, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
-        self.xid = xid
-        self.owned = False
-        self._want_targets = False
-        self.remote_requests = {}
-        self.local_requests = {}
-        self.local_request_counter = 0
-        self.targets = ()
-        self.target_data = {}
+        self.xid : int = xid
+        self.owned : bool = False
+        self._want_targets : bool = False
+        self.remote_requests : dict = {}
+        self.local_requests : dict = {}
+        self.local_request_counter : int = 0
+        self.targets : tuple = ()
+        self.target_data : dict = {}
         self.reset_incr_data()
 
     def __repr__(self):
@@ -370,7 +372,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not requestor:
             log.warn("Warning: clipboard selection request without a window, dropped")
             return
-        wininfo = self.get_wininfo(requestor.get_xid())
+        wininfo = self.get_wininfo(requestor)
         prop = event.property
         target = str(event.target)
         log("clipboard request for %s from window %s, target=%s, prop=%s",
@@ -655,8 +657,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             with xsync:
                 dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom, True)
                 dtype = bytestostr(dtype)
-                MAX_DATA_SIZE = 4*1024*1024
-                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, None, MAX_DATA_SIZE, True)
+                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, buffer_size=MAX_DATA_SIZE, incr=True)
                 #all the code below deals with INCRemental transfers:
                 if dtype=="INCR" and not self.incr_data_size:
                     #start of an incremental transfer, extract the size
@@ -723,9 +724,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data = None
 
     def reset_incr_data(self):
-        self.incr_data_size = 0
-        self.incr_data_type = None
-        self.incr_data_chunks = None
-        self.incr_data_timer = None
+        self.incr_data_size : int = 0
+        self.incr_data_type : int = None
+        self.incr_data_chunks : int = None
+        self.incr_data_timer : int = None
 
 GObject.type_register(ClipboardProxy)
