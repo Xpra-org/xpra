@@ -28,8 +28,10 @@ class TestCommon(unittest.TestCase):
         iconname = "xpra"
         from xpra.platform.paths import get_icon_filename, get_icon_dir
         filename = get_icon_filename(iconname)
+        if not filename:
+            raise RuntimeError(f"no icon filename for {iconname!r}")
         if not common.parse_image_path(filename):
-            raise RuntimeError(f"failed to parse image path for {filename} for icon {iconname} and icon_dir={get_icon_dir()}")
+            raise RuntimeError(f"failed to parse image path for filename {filename!r}, icon {iconname!r} and icon_dir={get_icon_dir()!r}")
         f = tempfile.NamedTemporaryFile(prefix="test-invalid-file", delete=False)
         try:
             f.file.write(b"0000000000000001111111111111111111111")
