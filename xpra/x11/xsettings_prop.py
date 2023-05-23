@@ -59,18 +59,18 @@ def bytes_to_xsettings(d:bytes):
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
     if DEBUG_XSETTINGS:
-        log("get_settings(%s)", tuple(d))
+        log("bytes_to_xsettings(%s)", tuple(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack(b"=BBBBII", d[:12])
     cache = XSETTINGS_CACHE
-    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache=%s",
+    log("bytes_to_xsettings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache=%s",
         byte_order, get_local_byteorder(), serial, n_settings, cache)
     if cache and cache[0]==serial:
-        log("get_settings(..) returning value from cache")
+        log("bytes_to_xsettings(..) returning value from cache")
         return cache
     settings = []
     pos = 12
     while n_settings>len(settings):
-        log("get_settings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
+        log("bytes_to_xsettings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
         istart = pos
         #parse header:
         setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos+4])
@@ -83,7 +83,7 @@ def bytes_to_xsettings(d:bytes):
         last_change_serial = struct.unpack(b"=I", d[pos:pos+4])[0]
         pos += 4
         if DEBUG_XSETTINGS:
-            log("get_settings(..) found property %s of type %s, serial=%s",
+            log("bytes_to_xsettings(..) found property %s of type %s, serial=%s",
                 prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         def req(what="int", nbytes=4):
@@ -111,9 +111,9 @@ def bytes_to_xsettings(d:bytes):
             break
         setting = setting_type, prop_name, value, last_change_serial
         if DEBUG_XSETTINGS:
-            log("get_settings(..) %s -> %s", tuple(d[istart:pos]), setting)
+            log("bytes_to_xsettings(..) %s -> %s", tuple(d[istart:pos]), setting)
         settings.append(setting)
-    log("get_settings(..) settings=%s", settings)
+    log("bytes_to_xsettings(..) settings=%s", settings)
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 
@@ -121,13 +121,13 @@ def xsettings_to_bytes(d) -> bytes:
     if len(d)!=2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d
-    log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
+    log("xsettings_to_bytes(%s) serial=%s, %s settings", d, serial, len(settings))
     all_bin_settings = []
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
         prop_name = strtobytes(prop_name)
         try:
-            log("set_settings(..) processing property %s of type %s",
+            log("xsettings_to_bytes(..) processing property %s of type %s",
                 bytestostr(prop_name), XSettingsNames.get(setting_type, "INVALID!"))
             x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
             x += prop_name
@@ -149,10 +149,10 @@ def xsettings_to_bytes(d) -> bytes:
             else:
                 log.error("Error: invalid type %i for xsetting property '%s'", setting_type, bytestostr(prop_name))
                 continue
-            log("set_settings(..) %s -> %s", setting, tuple(x))
+            log("xsettings_to_bytes(..) %s -> %s", setting, tuple(x))
             all_bin_settings.append(x)
         except Exception as e:
-            log("set_settings(%s)", d, exc_info=True)
+            log("xsettings_to_bytes(%s)", d, exc_info=True)
             log.error("Error processing XSettings property %s:", bytestostr(prop_name))
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.estr(e)
@@ -160,7 +160,7 @@ def xsettings_to_bytes(d) -> bytes:
     v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
     v += b"".join(all_bin_settings)  #values
     v += b'\0'                       #null terminated
-    log("set_settings(%s)=%s", d, tuple(v))
+    log("xsettings_to_bytes(%s)=%s", d, tuple(v))
     return v
 
 
