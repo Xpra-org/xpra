@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ class XSettingsTest(unittest.TestCase):
 
     def test_xsettings(self):
         from xpra.x11.xsettings_prop import (
-            get_settings, set_settings,
+            xsettings_to_bytes, bytes_to_xsettings,
             get_local_byteorder,
             XSettingsType,
             )
@@ -28,10 +28,10 @@ class XSettingsTest(unittest.TestCase):
                 data = b""
                 l = len(data)
                 v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, l)+data+b"\0"
-                v1 = get_settings(v)
+                v1 = bytes_to_xsettings(v)
                 assert v
                 #get from cache:
-                v2 = get_settings(v)
+                v2 = bytes_to_xsettings(v)
                 assert v1==v2
 
                 #test all types, set then get:
@@ -42,10 +42,10 @@ class XSettingsTest(unittest.TestCase):
                     (XSettingsType.Color, "color1", (128, 128, 64, 32), 0),
                     )
                 serial = 2
-                data = set_settings((serial, settings))
+                data = xsettings_to_bytes((serial, settings))
                 assert data
                 #parse it back:
-                v = get_settings(data)
+                v = bytes_to_xsettings(data)
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
@@ -63,16 +63,16 @@ class XSettingsTest(unittest.TestCase):
                 ),
                 ):
                 serial = 3
-                data = set_settings((serial, settings))
+                data = bytes_to_xsettings((serial, settings))
                 assert data
-                v = get_settings(data)
+                v = bytes_to_xsettings(data)
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==0
             #parsing an invalid data type (9) should fail:
             hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
             data = binascii.unhexlify(hexdata)
-            v = get_settings(data)
+            v = bytes_to_xsettings(data)
             rserial, rsettings = v
             assert len(rsettings)==0
 
