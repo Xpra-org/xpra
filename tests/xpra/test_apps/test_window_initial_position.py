@@ -20,7 +20,7 @@ def main():
     window.move(x, y)
     from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
-    from xpra.x11.bindings.window_bindings import X11WindowBindings  # @UnresolvedImport
+    from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     hints = {"position" : (x, y)}
     X11WindowBindings().setSizeHints(window.get_window().get_xid(), hints)
     window.show_all()

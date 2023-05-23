@@ -39,7 +39,7 @@ class MoveWindow(Gtk.Window):
 		new_x, new_y, new_width, new_height = self.get_new_geometry()
 		from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 		init_gdk_display_source()
-		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+		from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = self.get_window().get_screen().get_root_window()
 		root_xid = root.get_xid()
