@@ -4,7 +4,7 @@ import sys
 
 
 def dump_xshape(xid):
-    from xpra.x11.bindings.window_bindings import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
+    from xpra.x11.bindings.window import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
     X11Window = X11WindowBindings()
     extents = X11Window.XShapeQueryExtents(xid)
     if not extents:

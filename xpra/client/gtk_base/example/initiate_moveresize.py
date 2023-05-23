@@ -32,8 +32,8 @@ def make_window():
         #print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
-        from xpra.x11.bindings.core_bindings import X11CoreBindings                    #@UnresolvedImport
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.core import X11CoreBindings                    #@UnresolvedImport
+        from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
         event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
         root_xid = get_root_window().get_xid()
         xwin = window.get_window().get_xid()

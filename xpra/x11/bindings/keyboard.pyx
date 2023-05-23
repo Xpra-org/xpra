@@ -234,7 +234,7 @@ cdef s(const char *v):
 # to the original C xmodmap code
 
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef X11KeyboardBindingsInstance singleton = None
 def X11KeyboardBindings():

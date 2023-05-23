@@ -16,7 +16,7 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk_x11.prop import prop_get
-from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings     #@UnresolvedImport
 from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
@@ -99,7 +99,7 @@ def window_matches(wspec, model_class):
                 pid = i(m[4:])
                 if pid:
                     try:
-                        from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport pylint: disable=import-outside-toplevel
+                        from xpra.x11.bindings.res import ResBindings #@UnresolvedImport pylint: disable=import-outside-toplevel
                     except ImportError:
                         XRes = None
                     else:

@@ -12,7 +12,7 @@ from xpra.x11.bindings.xlib cimport (
     XQueryExtension, XFree,
     XGetWindowProperty, XDefaultRootWindow,
     )
-from xpra.x11.bindings.randr_bindings cimport get_monitor_properties
+from xpra.x11.bindings.randr cimport get_monitor_properties
 
 DEF XNone = 0
 

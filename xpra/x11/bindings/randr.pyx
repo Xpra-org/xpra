@@ -285,7 +285,7 @@ cdef extern from "X11/extensions/Xrandr.h":
     void XRRFreeMonitors(XRRMonitorInfo *monitors)
 
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
 cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):

@@ -26,7 +26,7 @@ from xpra.x11.xkbhelper import (
     clean_keyboard_state, get_keycode_mappings,
     DEBUG_KEYSYMS,
     )
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("keyboard")

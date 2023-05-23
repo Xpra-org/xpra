@@ -75,7 +75,7 @@ def get_X_error(xerror):
     if not isinstance(xerror, int):
         return xerror
     try:
-        from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
+        from xpra.x11.bindings.window import constants     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
             for name,code in constants.items():  # @UndefinedVariable
@@ -84,7 +84,7 @@ def get_X_error(xerror):
             log("get_X_error(..) initialized error names: %s", xerror_to_name)
         if xerror in xerror_to_name:
             return xerror_to_name.get(xerror)
-        from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
+        from xpra.x11.bindings.core import X11CoreBindings     #@UnresolvedImport
         return X11CoreBindings().get_error_text(xerror)
     except Exception as e:
         log.error("get_X_error(%s) %s", xerror, e, exc_info=True)

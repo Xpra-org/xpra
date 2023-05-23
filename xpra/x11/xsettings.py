@@ -64,7 +64,7 @@ class XSettingsHelper:
 
     def xsettings_owner(self):
         with xlog:
-            from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+            from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
             X11Window = X11WindowBindings()
             owner_x = X11Window.XGetSelectionOwner(self._selection)
             log("XGetSelectionOwner(%s)=%#x", self._selection, owner_x)

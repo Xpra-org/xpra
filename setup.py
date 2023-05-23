@@ -1155,17 +1155,17 @@ def clean():
                    "xpra/x11/gtk3/gdk_display_source.c",
                    "xpra/x11/bindings/xwait.c",
                    "xpra/x11/bindings/wait_for_x_server.c",
-                   "xpra/x11/bindings/keyboard_bindings.c",
+                   "xpra/x11/bindings/keyboard.c",
                    "xpra/x11/bindings/display_source.c",
                    "xpra/x11/bindings/events.c",
-                   "xpra/x11/bindings/window_bindings.c",
-                   "xpra/x11/bindings/randr_bindings.c",
-                   "xpra/x11/bindings/res_bindings.c",
-                   "xpra/x11/bindings/core_bindings.c",
+                   "xpra/x11/bindings/window.c",
+                   "xpra/x11/bindings/randr.c",
+                   "xpra/x11/bindings/res.c",
+                   "xpra/x11/bindings/core.c",
                    "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/xwayland.c",
                    "xpra/x11/bindings/ximage.c",
-                   "xpra/x11/bindings/xi2_bindings.c",
+                   "xpra/x11/bindings/xi2.c",
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/platform/darwin/gdk3_bindings.c",
                    "xpra/platform/posix/sd_listen.c",
@@ -2084,15 +2084,15 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.xwait", "x11")
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")
-    ace("xpra.x11.bindings.core_bindings", "x11")
+    ace("xpra.x11.bindings.core", "x11")
     ace("xpra.x11.bindings.xwayland", "x11")
     ace("xpra.x11.bindings.posix_display_source", "x11")
-    ace("xpra.x11.bindings.randr_bindings", "x11,xrandr")
-    ace("xpra.x11.bindings.keyboard_bindings", "x11,xtst,xfixes,xkbfile")
-    ace("xpra.x11.bindings.window_bindings", "x11,xtst,xfixes,xcomposite,xdamage,xext")
+    ace("xpra.x11.bindings.randr", "x11,xrandr")
+    ace("xpra.x11.bindings.keyboard", "x11,xtst,xfixes,xkbfile")
+    ace("xpra.x11.bindings.window", "x11,xtst,xfixes,xcomposite,xdamage,xext")
     ace("xpra.x11.bindings.ximage", "x11,xext,xcomposite")
-    ace("xpra.x11.bindings.res_bindings", "x11,xres")
-    tace(xinput_ENABLED, "xpra.x11.bindings.xi2_bindings", "x11,xi")
+    ace("xpra.x11.bindings.res", "x11,xres")
+    tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop")

@@ -273,7 +273,7 @@ CLASS_INFO = {
     }
 
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef X11CoreBindingsInstance singleton = None
 def X11XI2Bindings():
@@ -601,7 +601,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         return props
 
     cdef get_device_property(self, int deviceid, Atom property, req_type=0):
-        #code mostly duplicated from window_bindings XGetWindowProperty:
+        #code mostly duplicated from window bindings XGetWindowProperty:
         cdef int buffer_size = 64 * 1024
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0

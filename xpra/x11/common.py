@@ -43,7 +43,7 @@ class X11Event:
 #which is still better than having dependencies on that GTK2 code
 def get_X11_window_property(xid, name, req_type):
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
+        from xpra.x11.bindings.window import X11WindowBindings, PropertyError #@UnresolvedImport
         try:
             prop = X11WindowBindings().XGetWindowProperty(xid, name, req_type)
             log("get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or ()))
@@ -57,7 +57,7 @@ def get_X11_window_property(xid, name, req_type):
 
 def get_X11_root_property(name, req_type):
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings
+        from xpra.x11.bindings.window import X11WindowBindings
         return get_X11_window_property(X11WindowBindings().get_root_xid(), name, req_type)
     except Exception as e:
         log("get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
@@ -183,7 +183,7 @@ def get_desktop_names():
 def get_vrefresh():
     v = -1
     try:
-        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
+        from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
         randr = RandRBindings()
         if randr.has_randr():
             v = randr.get_vrefresh()
@@ -197,7 +197,7 @@ def get_vrefresh():
 
 def send_client_message(window, message_type, *values):
     try:
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  # @UnresolvedImport
+        from xpra.x11.bindings.window import constants, X11WindowBindings  # @UnresolvedImport
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()
         if window:
@@ -221,7 +221,7 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
     if device_bell is None:
         #try to load it:
         try:
-            from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings       #@UnresolvedImport
             device_bell = X11KeyboardBindings().device_bell
         except ImportError:
             log("x11_bell()", exc_info=True)
@@ -232,7 +232,7 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
 
 
 def get_xsettings():
-    from xpra.x11.bindings.window_bindings import X11WindowBindings  # @UnresolvedImport
+    from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     X11Window = X11WindowBindings()
     selection = "_XSETTINGS_S0"
     owner = X11Window.XGetSelectionOwner(selection)
@@ -242,8 +242,8 @@ def get_xsettings():
     data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
     if not data:
         return None
-    from xpra.x11.xsettings_prop import get_settings
-    return get_settings(data)
+    from xpra.x11.xsettings_prop import bytes_to_xsettings
+    return bytes_to_xsettings(data)
 
 def xsettings_to_dict(v):
     d = {}
@@ -255,7 +255,7 @@ def xsettings_to_dict(v):
 
 
 def get_randr_dpi():
-    from xpra.x11.bindings.randr_bindings import RandRBindings  # @UnresolvedImport
+    from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     randr_bindings = RandRBindings()
     if randr_bindings and randr_bindings.has_randr():
         wmm, hmm = randr_bindings.get_screen_size_mm()

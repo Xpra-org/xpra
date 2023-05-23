@@ -24,8 +24,8 @@ from xpra.x11.gtk3.gdk_bindings import (
     add_fallback_receiver, remove_fallback_receiver,
     get_pywindow,
     )
-from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings
+from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window")

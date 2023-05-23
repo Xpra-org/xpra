@@ -12,7 +12,7 @@ from uinput import (
 
 from xpra.util import envint
 from xpra.os_util import bytestostr
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -52,7 +52,7 @@ class UInputDevice:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:
         with xlog:
-            from xpra.x11.bindings.xi2_bindings import X11XI2Bindings  #pylint: disable=no-name-in-module, import-outside-toplevel
+            from xpra.x11.bindings.xi2 import X11XI2Bindings  #pylint: disable=no-name-in-module, import-outside-toplevel
             xi2 = X11XI2Bindings()
             v = xi2.get_xi_version()
             log("XInput version %s", ".".join(str(x) for x in v))

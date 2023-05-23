@@ -326,7 +326,7 @@ class PropertyOverflow(PropertyError):
     pass
 
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 

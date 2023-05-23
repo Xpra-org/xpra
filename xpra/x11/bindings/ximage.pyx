@@ -11,8 +11,8 @@ from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImp
 from xpra.log import Logger
 
 
-from xpra.x11.bindings.core_bindings import call_context_check  # @UnresolvedImport
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID, XVisualInfo, VisualIDMask,

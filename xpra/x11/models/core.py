@@ -15,8 +15,8 @@ from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
-from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
+from xpra.x11.bindings.res import ResBindings #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper

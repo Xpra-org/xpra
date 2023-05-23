@@ -366,7 +366,7 @@ def set_initial_resolution(resolutions, dpi=0):
         log = get_vfb_logger()
         log("set_initial_resolution(%s)", resolutions)
         #pylint: disable=import-outside-toplevel
-        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
+        from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
         #try to set a reasonable display size:
         randr = RandRBindings()
         if not randr.has_randr():

@@ -26,9 +26,9 @@ from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, get_pywindow
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger

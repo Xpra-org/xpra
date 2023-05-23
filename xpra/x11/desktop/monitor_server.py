@@ -12,7 +12,7 @@ from xpra.x11.desktop.desktop_server_base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.mixins.window_server import WindowsMixin
 from xpra.x11.vfb_util import parse_resolution
-from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
+from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 

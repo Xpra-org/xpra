@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,10 +11,10 @@ import threading
 from time import monotonic
 import gi
 
-from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
-from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
+from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid, save_mode

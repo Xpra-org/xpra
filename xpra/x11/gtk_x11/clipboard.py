@@ -23,11 +23,11 @@ from xpra.clipboard.clipboard_core import (
     must_discard, must_discard_extra,
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
-from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
+from xpra.x11.bindings.window import ( #@UnresolvedImport
     constants, PropertyError,                   #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
-from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
+from xpra.x11.bindings.res import ResBindings #@UnresolvedImport
 from xpra.os_util import bytestostr, memoryview_to_bytes
 from xpra.util import csv, repr_ellipsized, ellipsizer, first_time
 from xpra.log import Logger

@@ -81,7 +81,7 @@ def make_window():
         from xpra.gtk_common.error import xlog
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         from xpra.x11.gtk3.gdk_bindings import init_x11_filter
-        from xpra.x11.bindings.window_bindings import X11WindowBindings  #pylint: disable=no-name-in-module
+        from xpra.x11.bindings.window import X11WindowBindings  #pylint: disable=no-name-in-module
         from xpra.os_util import is_Wayland
         if not is_Wayland():
             #x11 focus events:

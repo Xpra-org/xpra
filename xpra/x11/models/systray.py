@@ -6,7 +6,7 @@
 
 from gi.repository import GObject
 
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
 from xpra.x11.models.core import CoreX11WindowModel
 from xpra.log import Logger
 

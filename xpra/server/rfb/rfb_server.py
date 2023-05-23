@@ -33,7 +33,7 @@ class RFBServer:
         self.X11Keyboard = None
         if is_X11():
             try:
-                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
                 self.X11Keyboard = X11KeyboardBindings()
             except ImportError:
                 log("RFBServer", exc_info=True)

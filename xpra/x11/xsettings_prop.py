@@ -186,7 +186,7 @@ def main(): # pragma: no cover
         with xsync:
             from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
             init_posix_display_source()
-            from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+            from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
             window_bindings = X11WindowBindings()
             selection = "_XSETTINGS_S0"
             owner = window_bindings.XGetSelectionOwner(selection)

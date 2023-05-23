@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ import struct
 from io import BytesIO
 
 from xpra.os_util import hexstr
-from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
+from xpra.x11.bindings.window import constants     #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("x11", "window")

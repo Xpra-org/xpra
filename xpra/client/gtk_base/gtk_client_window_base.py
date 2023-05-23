@@ -65,8 +65,8 @@ if USE_X11_BINDINGS:
     try:
         from xpra.gtk_common.error import xlog, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
-        from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
+        from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
+        from xpra.x11.bindings.core import X11CoreBindings, set_context_check
         from xpra.x11.bindings.send_wm import send_wm_workspace
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)

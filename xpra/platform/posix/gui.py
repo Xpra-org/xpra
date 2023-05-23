@@ -41,21 +41,21 @@ def X11WindowBindings():
     xb = x11_bindings()
     if not xb:
         return None
-    from xpra.x11.bindings.window_bindings import X11WindowBindings  # @UnresolvedImport
+    from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     return X11WindowBindings()
 
 def X11RandRBindings():
     xb = x11_bindings()
     if not xb:
         return None
-    from xpra.x11.bindings.randr_bindings import RandRBindings  # @UnresolvedImport
+    from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     return RandRBindings()
 
 def X11XI2Bindings():
     xb = x11_bindings()
     if not xb:
         return None
-    from xpra.x11.bindings.xi2_bindings import X11XI2Bindings  # @UnresolvedImport
+    from xpra.x11.bindings.xi2 import X11XI2Bindings  # @UnresolvedImport
     return X11XI2Bindings()
 
 

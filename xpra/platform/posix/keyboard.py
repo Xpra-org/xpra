@@ -26,7 +26,7 @@ class Keyboard(KeyboardBase):
         if is_X11():
             try:
                 #pylint: disable=import-outside-toplevel
-                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings   #@UnresolvedImport
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
                 log("keyboard bindings", exc_info=True)

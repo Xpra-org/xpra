@@ -11,7 +11,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util import std, csv, envbool, typedict
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
 
 init_gdk_display_source()
