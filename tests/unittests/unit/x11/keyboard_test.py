@@ -34,7 +34,7 @@ class TestX11Keyboard(ServerTestUtil):
 
 
     def test_unicode(self):
-        from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings        #@UnresolvedImport
         keyboard_bindings = X11KeyboardBindings()
         for x in (
             "2030", "0005", "0010", "220F", "2039", "2211",
