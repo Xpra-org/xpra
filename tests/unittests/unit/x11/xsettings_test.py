@@ -63,7 +63,7 @@ class XSettingsTest(unittest.TestCase):
                 ),
                 ):
                 serial = 3
-                data = bytes_to_xsettings((serial, settings))
+                data = xsettings_to_bytes((serial, settings))
                 assert data
                 v = bytes_to_xsettings(data)
                 rserial, rsettings = v
