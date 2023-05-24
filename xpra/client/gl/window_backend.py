@@ -79,6 +79,7 @@ class FakeClient(AdHocStruct):
         self.server_pointer = False
         self.window_configure_pointer = True
         self.update_focus = noop
+        self.has_focus = noop
         self.handle_key_action = noop
         self.idle_add = no_idle_add
         self.timeout_add = no_timeout_add
