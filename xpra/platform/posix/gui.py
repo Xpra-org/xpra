@@ -11,7 +11,7 @@ from xpra.os_util import (
     bytestostr, get_saved_env,
     is_X11, is_Wayland, get_saved_env_var,
     )
-from xpra.util import envbool, envint, csv
+from xpra.util import envbool, envint, csv, first_time
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -76,10 +76,6 @@ def gl_check():
     return None
 
 
-def get_native_system_tray_classes():
-    return []
-
-
 def get_wm_name():
     return do_get_wm_name(get_saved_env())
 
@@ -109,14 +105,31 @@ def get_clipboard_native_class():
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
+def get_native_system_tray_classes():
+    c = []
+    if USE_NATIVE_TRAY:
+        ai = _try_load_appindicator()
+        if ai:
+            c.append(ai)
+    traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
+    return c
+
 def get_native_tray_classes():
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = []
     if USE_NATIVE_TRAY:
-        try:
-            from xpra.platform.posix.appindicator_tray import AppindicatorTray
-            c.append(AppindicatorTray)
-        except (ImportError, ValueError):
+        ai = _try_load_appindicator()
+        if ai:
+            c.append(ai)
+    traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
+    return c
+
+def _try_load_appindicator():
+    try:
+        from xpra.platform.posix.appindicator_tray import AppindicatorTray
+        return AppindicatorTray
+    except (ImportError, ValueError):
+        if first_time("no-appindicator"):
             traylog("cannot load appindicator tray", exc_info=True)
             traylog.warn("Warning: appindicator library not found")
             traylog.warn(" you may want to install libappindicator")
@@ -124,8 +137,6 @@ def get_native_tray_classes():
             if get_saved_env_var("XDG_CURRENT_DESKTOP", "").upper().find("GNOME")>=0:
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
-    traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
-    return c
 
 
 def get_native_notifier_classes():
