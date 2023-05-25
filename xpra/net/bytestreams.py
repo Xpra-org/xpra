@@ -11,6 +11,7 @@ import socket
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, csv
+from xpra.common import FULL_INFO
 from xpra.make_thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
@@ -387,9 +388,10 @@ class SocketConnection(Connection):
         try:
             d["remote"] = self.remote or ""
             d["protocol-type"] = self.protocol_type
-            si = self.get_socket_info()
-            if si:
-                d["socket"] = si
+            if FULL_INFO>0:
+                si = self.get_socket_info()
+                if si:
+                    d["socket"] = si
         except socket.error:
             log.error("Error accessing socket information", exc_info=True)
         return d
@@ -458,7 +460,7 @@ class SocketConnection(Connection):
                     opts["TCP_INFO"] = get_tcp_info(s)
                 except (OSError, ValueError) as e:
                     log(f"get_tcp_info({s})", exc_info=True)
-                    if not self.error_is_closed(e):
+                    if self.is_active() and not self.error_is_closed(e):
                         log.warn(f"Warning: failed to get tcp information")
                         log.warn(f" from {self.socktype} socket {self}")
             #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
