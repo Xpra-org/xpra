@@ -399,12 +399,13 @@ class InputServer(StubServerMixin):
         ss.user_event()
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
-        wid, button, pressed, pointer, modifiers, buttons = packet[1:7]
+        wid, button, pressed, pointer, modifiers = packet[1:6]
         device_id = 0
         props = {
             "modifiers" : modifiers,
-            "buttons" : buttons,
             }
+        if len(packet)>=7:
+            props["buttons"] = 6
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
     def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
