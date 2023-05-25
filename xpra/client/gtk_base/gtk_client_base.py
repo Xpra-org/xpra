@@ -21,7 +21,7 @@ from xpra.util import (
 from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
     hexstr, load_binary_file, osexpand,
-    WIN32, OSX, POSIX, is_Wayland,
+    WIN32, OSX, POSIX, is_Wayland, _is_Wayland,
     )
 from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
@@ -796,12 +796,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def _add_statusicon_tray(self, tray_list):
-        #add Gtk.StatusIcon tray:
-        try:
-            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
-            tray_list.append(GTKStatusIconTray)
-        except Exception as e:
-            log.warn("failed to load StatusIcon tray: %s" % e)
+        #add Gtk.StatusIcon tray, but not under wayland:
+        if not is_Wayland():
+            try:
+                from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+                tray_list.append(GTKStatusIconTray)
+            except Exception as e:
+                log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_list
 
     def get_tray_classes(self):
