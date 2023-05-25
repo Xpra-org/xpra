@@ -1565,10 +1565,10 @@ if WIN32:
         def add_exe(script, icon, base_name, base="Console"):
             executables.append(Executable(
                         script                  = script,
-                        initScript              = None,
+                        init_script             = None,
                         #targetDir               = "dist",
                         icon                    = f"fs/share/xpra/icons/{icon}",
-                        targetName              = f"{base_name}.exe",
+                        target_name             = f"{base_name}.exe",
                         base                    = base,
                         ))
 
