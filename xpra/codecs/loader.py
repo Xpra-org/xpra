@@ -413,7 +413,10 @@ def main(args):
                 names.append(name)
             list_codecs = names
         else:
-            load_codecs(sources=True)
+            try:
+                load_codecs(sources=True)
+            except KeyboardInterrupt:
+                return 1
             list_codecs = ALL_CODECS
             #not really a codec, but gets used by codecs, so include version info:
             add_codec_version("numpy", "numpy")
