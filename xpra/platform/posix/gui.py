@@ -106,25 +106,19 @@ def get_clipboard_native_class():
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
 def get_native_system_tray_classes():
-    c = []
-    if USE_NATIVE_TRAY:
-        ai = _try_load_appindicator()
-        if ai:
-            c.append(ai)
+    c = [_try_load_appindicator()]
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
 def get_native_tray_classes():
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
-    c = []
-    if USE_NATIVE_TRAY:
-        ai = _try_load_appindicator()
-        if ai:
-            c.append(ai)
+    c = [_try_load_appindicator()]
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
 def _try_load_appindicator() -> type:
+    if not USE_NATIVE_TRAY:
+        return None
     try:
         from xpra.platform.posix.appindicator_tray import AppindicatorTray
         return AppindicatorTray
