@@ -21,7 +21,7 @@ from xpra.util import (
 from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
     hexstr, load_binary_file, osexpand,
-    WIN32, OSX, POSIX, is_Wayland, _is_Wayland,
+    WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.common import FULL_INFO
 from xpra.simple_stats import std_unit
