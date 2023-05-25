@@ -29,10 +29,14 @@ class SystemTrayWindowModel(CoreX11WindowModel):
                 })
     __gsignals__ = CoreX11WindowModel.__common_signals__.copy()
     _property_names = CoreX11WindowModel._property_names + ["tray"]
+    #these aren't useful, and could actually cause us problems
+    _property_names.remove("opaque-region")
+    _property_names.remove("protocols")
     _MODELTYPE = "Tray"
 
-    def __init__(self, xid:int):
+    def __init__(self, xid:int, corral_xid:int):
         super().__init__(xid)
+        self.corral_xid : int = corral_xid
         self._updateprop("tray", True)
 
     def __repr__(self) -> str:
@@ -45,8 +49,9 @@ class SystemTrayWindowModel(CoreX11WindowModel):
     def move_resize(self, x : int, y : int, width : int, height : int) -> None:
         #Used by clients to tell us where the tray is located on screen
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
-        if not X11Window.MoveResizeWindow(self.xid, x, y, width, height):
+        if not X11Window.MoveResizeWindow(self.corral_xid, x, y, width, height):
             return
+        X11Window.MoveResizeWindow(self.xid, 0, 0, width, height)
         self._updateprop("geometry", (x, y, width, height))
         #force a refresh:
         event = TrayGeometryChanged()

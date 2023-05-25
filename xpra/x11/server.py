@@ -583,7 +583,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid):
-        if self.root_overlay and self.root_overlay==xid:
+        if self.root_overlay and self.root_overlay.get_xid()==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
         gdk_window = get_pywindow(xid)
@@ -614,11 +614,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            tray_window = get_tray_window(gdk_window)
-            if tray_window is not None:
+            tray_xid : int = get_tray_window(gdk_window)
+            if tray_xid:
                 assert self._tray
                 from xpra.x11.models.systray import SystemTrayWindowModel
-                window = SystemTrayWindowModel(xid)
+                window = SystemTrayWindowModel(tray_xid, xid)
                 wid = self._add_new_window_common(window)
                 setattr(gdk_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
@@ -1022,13 +1022,16 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     if self._has_focus==wid:
                         self._update_modifiers(proto, wid, modifiers)
             if window.is_tray():
-                assert self._tray
                 if not skip_geometry and not self.readonly:
-                    traylog("tray %s configured to: %s", window, (x, y, w, h))
-                    self._tray.move_resize(window, x, y, w, h)
+                    traylog(f"systray {window} configured to: %s", (x, y, w, h))
+                    with xlog:
+                        window.move_resize(x, y, w, h)
                     damage = True
             else:
-                assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
+                if window.is_OR() and not skip_geometry:
+                    log.warn("Warning: ignoring invalid configure geometry packet")
+                    log.warn(f" for OR window {wid}")
+                    return
                 self.last_client_configure_event = monotonic()
                 if is_ui_driver and len(packet)>=9:
                     changes = self._set_window_state(proto, wid, window, packet[8])

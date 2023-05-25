@@ -724,13 +724,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def finalize_window(self):
+        if not self.is_tray():
+            self.setup_following()
+
+    def setup_following(self):
         #find a parent window we should follow when it moves:
         follow = self._client.find_window(self._metadata, "transient-for") or self._client.find_window(self._metadata, "parent")
-        log("finalize_window() follow=%s", follow)
+        log("setup_following() follow=%s", follow)
         if not follow:
             return
         type_hint = self.get_type_hint()
-        log("finalize_window() type_hint=%s, FOLLOW_WINDOW_TYPES=%s", type_hint, FOLLOW_WINDOW_TYPES)
+        log("setup_following() type_hint=%s, FOLLOW_WINDOW_TYPES=%s", type_hint, FOLLOW_WINDOW_TYPES)
         if not self._override_redirect and type_hint not in FOLLOW_WINDOW_TYPES:
             return
         def follow_configure_event(window, event):
@@ -763,7 +767,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.cancel_follow_handler()
         follow.connect("unmap", follow_unmapped)
         self._follow_handler = follow.connect_after("configure-event", follow_configure_event)
-        log("finalize_window() following %s", follow)
+        log("setup_following() following %s", follow)
 
 
     def cancel_follow_handler(self):
