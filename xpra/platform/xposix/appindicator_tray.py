@@ -35,7 +35,7 @@ else:
     try:
         gi.require_version("AyatanaAppIndicator3", "0.1")  # @UndefinedVariable
        from gi.repository import AyatanaAppIndicator3 as AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
-    except ImportError:
+    except (ImportError, ValueError):
         gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
         from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
     PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
