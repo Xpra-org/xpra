@@ -517,13 +517,17 @@ def load_binary_file(filename) -> bytes:
         get_util_logger().warn(f" {e}")
         return None
 
-def get_proc_cmdline(pid):
+def get_proc_cmdline(pid:int) -> tuple:
     if pid and LINUX:
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
         if os.path.exists(proc_cmd_line):
-            return load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
-    return None
+            cmdline = load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
+            try:
+                return tuple(x.decode() for x in cmdline)
+            except Exception:
+                return tuple(bytestostr(x) for x in cmdline)
+    return ()
 
 def parse_encoded_bin_data(data):
     if not data:

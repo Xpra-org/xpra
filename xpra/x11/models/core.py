@@ -626,7 +626,7 @@ class CoreX11WindowModel(WindowModelStub):
             command = command.strip("\0")
         else:
             pid = self.get_property("pid")
-            command = b" ".join(get_proc_cmdline(pid) or ())
+            command = " ".join(get_proc_cmdline(pid))
         self._updateprop("command", command)
 
     def _handle_class_change(self) -> None:

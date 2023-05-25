@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import re
 import os.path
 
 from xpra.util import ellipsizer, envbool
-from xpra.os_util import getuid, OSX, POSIX, bytestostr, get_proc_cmdline
+from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
@@ -262,10 +262,7 @@ def guess_content_from_parent_pid(ppid):
     parent_command = get_proc_cmdline(ppid)
     if not parent_command:
         return None
-    try:
-        executable = os.path.basename(parent_command[0]).decode()
-    except UnicodeDecodeError:
-        executable = bytestostr(parent_command[0])
+    executable = os.path.basename(parent_command[0])
     pt = get_parent_to_type()
     return pt.get(executable)
 
