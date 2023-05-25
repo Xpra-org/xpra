@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import socket
 
 from SystemConfiguration import (
     SCNetworkInterfaceCopyAll,                      #@UnresolvedImport
@@ -96,16 +97,11 @@ def get_socket_tcp_info(sock):
 
 def get_tcp_info(sock):
     info = get_socket_tcp_info(sock)
-    try:
-        import socket
-        SO_NWRITE = 0x1024  #Get number of bytes currently in send socket buffer
-        #actually gives the sum of (unsent data + sent-but-not-ACK-ed data)
-        v = sock.getsockopt(socket.SOL_SOCKET, SO_NWRITE)
-        info["sndbuf_unacked"] = v
-    except OSError:
-        from xpra.log import Logger
-        Logger("network").error("failed to get SO_NWRITE on %s", sock, exc_info=True)
-    return {}
+    SO_NWRITE = 0x1024  #Get number of bytes currently in send socket buffer
+    #actually gives the sum of (unsent data + sent-but-not-ACK-ed data)
+    v = sock.getsockopt(socket.SOL_SOCKET, SO_NWRITE)
+    info["sndbuf_unacked"] = v
+    return info
 
 
 def main():

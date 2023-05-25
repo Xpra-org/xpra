@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -296,11 +296,7 @@ def get_send_buffer_info(sock):
 
 def get_tcp_info(sock):
     info = {}
-    try:
-        info.update(get_socket_tcp_info(sock))
-        info.update(get_send_buffer_info(sock))
-    except (OSError, ValueError) as e:
-        log("get_tcp_info(%s)", sock, exc_info=True)
-        log.error("Error querying tcp socket information: %s", e)
+    info.update(get_socket_tcp_info(sock))
+    info.update(get_send_buffer_info(sock))
     log("get_tcp_info(%s)=%s", sock, info)
     return info
