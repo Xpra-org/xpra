@@ -794,13 +794,15 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def _add_statusicon_tray(self, tray_list):
-        #add Gtk.StatusIcon tray:
-        try:
-            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
-            tray_list.append(GTKStatusIconTray)
-        except Exception as e:
-            log.warn("failed to load StatusIcon tray: %s" % e)
+        #add Gtk.StatusIcon tray, but not under wayland:
+        if not is_Wayland():
+            try:
+                from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+                tray_list.append(GTKStatusIconTray)
+            except Exception as e:
+                log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_list
+
 
     def get_tray_classes(self):
         from xpra.client.mixins.tray import TrayClient
