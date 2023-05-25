@@ -124,7 +124,7 @@ def get_native_tray_classes():
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def _try_load_appindicator():
+def _try_load_appindicator() -> type:
     try:
         from xpra.platform.posix.appindicator_tray import AppindicatorTray
         return AppindicatorTray
@@ -137,6 +137,7 @@ def _try_load_appindicator():
             if get_saved_env_var("XDG_CURRENT_DESKTOP", "").upper().find("GNOME")>=0:
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
+    return None
 
 
 def get_native_notifier_classes():
