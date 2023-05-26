@@ -6,21 +6,22 @@
 
 import sys
 import os
+from typing import Dict, List
 
 from xpra.util import csv
 from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
 # pylint: disable=import-outside-toplevel
-GST_FLOW_OK = 0     #Gst.FlowReturn.OK
+GST_FLOW_OK : int = 0     #Gst.FlowReturn.OK
 
-GST_FORMAT_BYTES = 2
-GST_FORMAT_TIME = 3
-GST_FORMAT_BUFFERS = 4
-BUFFER_FORMAT = GST_FORMAT_BUFFERS
+GST_FORMAT_BYTES : int = 2
+GST_FORMAT_TIME : int = 3
+GST_FORMAT_BUFFERS : int = 4
+BUFFER_FORMAT : int = GST_FORMAT_BUFFERS
 
-GST_APP_STREAM_TYPE_STREAM = 0
-STREAM_TYPE = GST_APP_STREAM_TYPE_STREAM
+GST_APP_STREAM_TYPE_STREAM : int = 0
+STREAM_TYPE : int = GST_APP_STREAM_TYPE_STREAM
 
 
 Gst = None
@@ -70,7 +71,7 @@ def import_gst():
     return Gst
 
 
-def get_default_appsink_attributes() -> dict:
+def get_default_appsink_attributes() -> Dict[str,object]:
     return {
         "name"          : "sink",
         "emit-signals"  : True,
@@ -81,7 +82,7 @@ def get_default_appsink_attributes() -> dict:
         "qos"           : False,
         }
 
-def get_default_appsrc_attributes() -> dict:
+def get_default_appsrc_attributes() -> Dict[str,object]:
     return {
         "name"          : "src",
         "emit-signals"  : False,
@@ -110,8 +111,8 @@ def normv(v:int) -> int:
     return int(v)
 
 
-all_plugin_names = []
-def get_all_plugin_names() -> list:
+all_plugin_names : list[str] = []
+def get_all_plugin_names() -> List[str]:
     global all_plugin_names
     if not all_plugin_names and Gst:
         registry = Gst.Registry.get()
@@ -158,9 +159,8 @@ def get_element_str(element:str, eopts=None) -> str:
 def format_element_options(options) -> str:
     return csv(f"{k}={v}" for k,v in options.items())
 
-def plugin_str(plugin, options) -> str:
-    if plugin is None:
-        return None
+def plugin_str(plugin, options:Dict) -> str:
+    assert plugin is not None
     s = str(plugin)
     def qstr(v):
         #only quote strings

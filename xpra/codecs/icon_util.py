@@ -10,8 +10,8 @@ Utility functions for loading icons from files
 
 import os
 import re
-
 from io import BytesIO
+from typing import Optional, Tuple
 
 from xpra.util import envint, envbool, first_time, ellipsizer
 from xpra.os_util import load_binary_file
@@ -47,7 +47,7 @@ def load_Rsvg():
     return _Rsvg
 
 
-def load_icon_from_file(filename : str, max_size=MAX_ICON_SIZE) -> tuple:
+def load_icon_from_file(filename : str, max_size:int=MAX_ICON_SIZE) -> Optional[Tuple]:
     if os.path.isdir(filename):
         log("load_icon_from_file(%s, %i) path is a directory!", filename, max_size)
         return None
@@ -84,7 +84,7 @@ def load_icon_from_file(filename : str, max_size=MAX_ICON_SIZE) -> tuple:
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
-def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> bytes:
+def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> Optional[bytes]:
     if not SVG_TO_PNG:
         return None
     Rsvg = load_Rsvg()

@@ -12,6 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
+from typing import Callable
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -945,20 +946,20 @@ class WindowSource(WindowIconSource):
             max_rgb_threshold = 1024
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         #for deciding between small regions and full screen updates:
-        self.max_small_regions : int = 40
-        self.max_bytes_percent : int = 60
-        self.small_packet_cost : int = 1024
+        self.max_small_regions = 40
+        self.max_bytes_percent = 60
+        self.small_packet_cost = 1024
         if self._mmap and self._mmap_size>0:
             #with mmap, we can move lots of data around easily
             #so favour large screen updates over small packets
-            self.max_small_regions : int = 10
-            self.max_bytes_percent : int = 25
-            self.small_packet_cost : int = 4096
+            self.max_small_regions = 10
+            self.max_bytes_percent = 25
+            self.small_packet_cost = 4096
         elif self.content_type=="desktop":
             #in desktop mode, many areas will be updating
             #so favour large screen updates
-            self.max_small_regions : int = 20
-            self.max_bytes_percent : int = 40
+            self.max_small_regions = 20
+            self.max_bytes_percent = 40
         self.assign_encoding_getter()
         log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i",
                         force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
@@ -970,7 +971,7 @@ class WindowSource(WindowIconSource):
     def assign_encoding_getter(self) -> None:
         self.get_best_encoding = self.get_best_encoding_impl()
 
-    def get_best_encoding_impl(self) -> callable:
+    def get_best_encoding_impl(self) -> Callable:
         if HARDCODED_ENCODING:
             return self.hardcoded_encoding
         if self._encoding_hint and self._encoding_hint in self._encoders:
@@ -1019,7 +1020,7 @@ class WindowSource(WindowIconSource):
                 return self.encoding_is_rgb32
         return self.get_best_encoding_impl_default()
 
-    def get_best_encoding_impl_default(self) -> callable:
+    def get_best_encoding_impl_default(self) -> Callable:
         #stick to what is specified or use rgb for small regions:
         if self.encoding=="auto":
             return self.get_auto_encoding
@@ -1750,7 +1751,7 @@ class WindowSource(WindowIconSource):
         self.full_quality_refresh(options)
         return False
 
-    def _log_late_acks(self, log_fn : callable) -> None:
+    def _log_late_acks(self, log_fn : Callable) -> None:
         dap = dict(self.statistics.damage_ack_pending)
         if dap:
             now = monotonic()
@@ -2490,7 +2491,7 @@ class WindowSource(WindowIconSource):
         self.record_congestion_event(source, late_pct, send_speed)
 
 
-    def get_fail_cb(self, packet : tuple) -> callable:
+    def get_fail_cb(self, packet : tuple) -> Callable:
         def resend():
             log("paint packet failure, resending")
             x, y, width, height = packet[2:6]

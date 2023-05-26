@@ -9,11 +9,11 @@ REINIT_WINDOWS = True
 # and so we cannot daemonize
 CAN_DAEMONIZE = False
 
-CLIPBOARDS=["CLIPBOARD"]
+CLIPBOARDS = ("CLIPBOARD", )
 CLIPBOARD_WANT_TARGETS = True
 CLIPBOARD_GREEDY = True
 
-OPEN_COMMAND = ["open"]
+OPEN_COMMAND = ("open", )
 
 #DEFAULT_SSH_COMMAND = "ssh"
 

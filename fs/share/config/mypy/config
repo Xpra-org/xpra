@@ -1,0 +1,168 @@
+[mypy]
+warn_unused_configs = True
+
+[mypy-gi.*]
+ignore_missing_imports = True
+
+[mypy-cv2.*]
+ignore_missing_imports = True
+
+[mypy-psutil.*]
+ignore_missing_imports = True
+
+[mypy-certifi.*]
+ignore_missing_imports = True
+
+[mypy-uinput.*]
+ignore_missing_imports = True
+
+[mypy-pyinotify.*]
+ignore_missing_imports = True
+
+[mypy-OpenGL.*]
+ignore_missing_imports = True
+
+[mypy-OpenGL_accelerate.*]
+ignore_missing_imports = True
+
+[mypy-pynvml.*]
+ignore_missing_imports = True
+
+[mypy-pycuda.*]
+ignore_missing_imports = True
+
+[mypy-paramiko.*]
+ignore_missing_imports = True
+
+[mypy-yaml.*]
+ignore_missing_imports = True
+
+[mypy-rencode.*]
+ignore_missing_imports = True
+
+[mypy-avahi.*]
+ignore_missing_imports = True
+
+[mypy-aioquic.*]
+ignore_missing_imports = True
+
+[mypy-socks.*]
+ignore_missing_imports = True
+
+[mypy-upnpy.*]
+ignore_missing_imports = True
+
+[mypy-netifaces.*]
+ignore_missing_imports = True
+
+[mypy-setproctitle.*]
+ignore_missing_imports = True
+
+[mypy-cups.*]
+ignore_missing_imports = True
+
+[mypy-xdg.*]
+ignore_missing_imports = True
+
+[mypy-xpra.gtk_common.gdk_bindings.*]
+ignore_missing_imports = True
+
+[mypy-xpra.x11.gtk3.gdk_bindings.*]
+ignore_missing_imports = True
+
+[mypy-xpra.x11.bindings.*]
+ignore_missing_imports = True
+
+[mypy-xpra.codecs.*]
+ignore_missing_imports = True
+
+[mypy-xpra.net.qrcode.qrencode]
+ignore_missing_imports = True
+
+[mypy-PIL.*]
+ignore_missing_imports = True
+
+[mypy-dbus.*]
+ignore_missing_imports = True
+
+[mypy-xpra.buffers.cyxor.*]
+ignore_missing_imports = True
+
+[mypy-xpra.server.cystats]
+ignore_missing_imports = True
+
+[mypy-xpra.platform.posix.sd_listen]
+ignore_missing_imports = True
+
+[mypy-xpra.platform.posix.proc_procps]
+ignore_missing_imports = True
+
+[mypy-xpra.platform.posix.proc_libproc]
+ignore_missing_imports = True
+
+[mypy-xpra.net.lz4.lz4]
+ignore_missing_imports = True
+
+[mypy-xpra.net.brotli.decompressor]
+ignore_missing_imports = True
+
+[mypy-xpra.net.brotli.compressor]
+ignore_missing_imports = True
+
+[mypy-xpra.net.rencodeplus.*]
+ignore_missing_imports = True
+
+[mypy-xpra.net.bencode.cython_bencode]
+ignore_missing_imports = True 
+
+[mypy-xpra.net.websockets.mask]
+ignore_missing_imports = True
+
+[mypy-xpra.server.pam]
+ignore_missing_imports = True
+
+[mypy-xpra.rectangle]
+ignore_missing_imports = True
+
+[mypy-xpra.server.window.motion]
+ignore_missing_imports = True
+
+[mypy-xpra.net.vsock.vsock]
+ignore_missing_imports = True
+
+[mypy-xpra.client.gtk3.cairo_workaround]
+ignore_missing_imports = True
+
+[mypy-xpra.x11.gtk3.gdk_display_source]
+ignore_missing_imports = True
+
+[mypy-xpra.platform.win32.*]
+ignore_missing_imports = True
+
+[mypy-comtypes.*]
+ignore_missing_imports = True
+
+[mypy-ctypes.windll]
+ignore_missing_imports = True
+
+[mypy-ctypes.WinDLL]
+ignore_missing_imports = True
+
+[mypy-ctypes.WINFUNCTYPE]
+ignore_missing_imports = True
+
+[mypy-ctypes.GetLastError]
+ignore_missing_imports = True
+
+[mypy-xpra.platform.darwin.*]
+ignore_missing_imports = True
+
+[mypy-objc.*]
+ignore_missing_imports = True
+
+[mypy-Quartz.*]
+ignore_missing_imports = True
+
+[mypy-AppKit.*]
+ignore_missing_imports = True
+

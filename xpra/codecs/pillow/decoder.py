@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,8 +8,9 @@ import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
+from typing import Callable, Tuple
 
-from xpra.util import csv
+from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes
 from xpra.codecs.codec_debug import may_save_image
 from xpra.log import Logger
@@ -21,25 +22,25 @@ Image.init()
 DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
 PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
-def is_png(data):
+def is_png(data) -> bool:
     return data.startswith(PNG_HEADER)
 RIFF_HEADER = b"RIFF"
 WEBP_HEADER = b"WEBP"
-def is_webp(data):
+def is_webp(data) -> bool:
     return data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
 JPEG_HEADER = struct.pack("BBB", 0xFF, 0xD8, 0xFF)
-def is_jpeg(data):
+def is_jpeg(data) -> bool:
     #the jpeg header is actually more complicated than this,
     #but in practice all the data we receive from the server
     #will have this type of header
     return data[:3]==JPEG_HEADER
-def is_svg(data):
+def is_svg(data) -> bool:
     return strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg"
 XPM_HEADER = b"/* XPM */"
-def is_xpm(data):
+def is_xpm(data) -> bool:
     return data[:9]==XPM_HEADER
 
-def is_tiff(data):
+def is_tiff(data) -> bool:
     if data[:2]==b"II":
         return data[2]==42 and data[3]==0
     if data[:2]==b"MM":
@@ -47,7 +48,7 @@ def is_tiff(data):
     return False
 
 
-HEADERS = {
+HEADERS : dict[Callable, str] = {
     is_png  : "png",
     is_webp : "webp",
     is_jpeg : "jpeg",
@@ -58,13 +59,13 @@ HEADERS = {
 
 def get_image_type(data) -> str:
     if not data:
-        return None
+        return ""
     if len(data)<32:
-        return None
+        return ""
     for fn, encoding in HEADERS.items():
         if fn(data):
             return encoding
-    return None
+    return ""
 
 
 def open_only(data, types=("png", "jpeg", "webp")):
@@ -75,7 +76,7 @@ def open_only(data, types=("png", "jpeg", "webp")):
     return Image.open(buf)
 
 
-def get_version():
+def get_version() -> str:
     return PIL.__version__
 
 def get_type() -> str:
@@ -92,7 +93,7 @@ def do_get_encodings():
     log("do_get_encodings()=%s", encodings)
     return encodings
 
-def get_encodings():
+def get_encodings() -> Tuple[str]:
     return ENCODINGS
 
 ENCODINGS = tuple(do_get_encodings())
@@ -103,7 +104,7 @@ def get_info() -> dict:
             "encodings"     : get_encodings(),
             }
 
-def decompress(coding, img_data, options):
+def decompress(coding:str, img_data:bytes, options:typedict):
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):
@@ -175,7 +176,7 @@ def decompress(coding, img_data, options):
     return rgb_format, raw_data, width, height, rowstride
 
 
-def selftest(_full=False):
+def selftest(_full=False) -> None:
     global ENCODINGS
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
     #test data generated using the encoder:

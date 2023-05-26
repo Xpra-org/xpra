@@ -7,6 +7,7 @@
 
 import sys
 import logging
+from typing import Any, Tuple
 
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
@@ -15,20 +16,20 @@ from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIS
 
 log = Logger("opengl")
 
-required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
+required_extensions : Tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
 
 
-GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", True)
-DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
+GL_ALPHA_SUPPORTED : bool = envbool("XPRA_ALPHA", True)
+DOUBLE_BUFFERED : bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
-CRASH = envbool("XPRA_OPENGL_FORCE_CRASH", False)
-TIMEOUT = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
+CRASH : bool = envbool("XPRA_OPENGL_FORCE_CRASH", False)
+TIMEOUT : int = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 
 
 #by default, we raise an ImportError as soon as we find something missing:
-def raise_error(msg):
+def raise_error(msg) -> None:
     raise ImportError(msg)
-def raise_fatal_error(msg):
+def raise_fatal_error(msg) -> None:
     raise OpenGLFatalError(msg)
 gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
@@ -45,7 +46,7 @@ def parse_pyopengl_version(vstr : str) -> tuple:
 _version_warning_shown = False
 
 
-def check_functions(force_enable, *functions):
+def check_functions(force_enable, *functions) -> None:
     missing = []
     available = []
     for x in functions:
@@ -84,8 +85,8 @@ def get_max_texture_size() -> int:
     return min(rect_texture_size, texture_size)
 
 
-def check_PyOpenGL_support(force_enable) -> dict:
-    props = {
+def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
+    props : dict[str,Any] = {
         "platform"  : sys.platform,
         }
     def unsafe():
@@ -294,11 +295,10 @@ def check_PyOpenGL_support(force_enable) -> dict:
             glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
             )
 
-        glEnablei = None
         try:
             from OpenGL.GL import glEnablei
         except ImportError:
-            pass
+            glEnablei = None
         if not bool(glEnablei):
             log.warn("OpenGL glEnablei is not available, disabling transparency")
             global GL_ALPHA_SUPPORTED
@@ -414,7 +414,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
         restore_logger(clogger)
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
@@ -450,8 +450,8 @@ def main():
         log.info("")
         if errors:
             log.info("OpenGL errors:")
-            for e in errors:
-                log.info("  %s", e)
+            for err in errors:
+                log.info("  %s", err)
         if props:
             log.info("")
             log.info("OpenGL properties:")

@@ -18,6 +18,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
 import traceback
+from typing import Callable
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
@@ -3049,11 +3050,12 @@ def run_desktop_greeter() -> int:
 
 def run_sessions_gui(options) -> int:
     mdns = options.mdns
-    try:
-        from xpra.net import mdns
-        assert mdns
-    except ImportError:
-        mdns = False
+    if mdns:
+        try:
+            from xpra.net import mdns as mdns_module
+            assert mdns_module
+        except ImportError:
+            mdns = False
     if mdns:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
@@ -3719,7 +3721,7 @@ def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(DotXpra.UNKNOWN,), matching
     return sessions
 
 
-def run_list(error_cb:callable, opts, extra_args, clean:bool=True) -> int:
+def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> int:
     no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")

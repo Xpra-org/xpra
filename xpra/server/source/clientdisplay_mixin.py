@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Tuple, Any, Optional, Dict, List
 
 from xpra.os_util import bytestostr
 from xpra.util import get_screen_info, first_time, typedict, net_utf8
@@ -18,28 +20,28 @@ class ClientDisplayMixin(StubSourceMixin):
     Store information and manage events related to the client's display
     """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.init_state()
 
-    def init_state(self):
-        self.vrefresh = -1
-        self.icc = {}
-        self.display_icc = {}
-        self.randr_notify = False
-        self.desktop_size = None
-        self.desktop_mode_size = None
-        self.desktop_size_unscaled = None
-        self.desktop_size_server = None
-        self.desktop_fullscreen = False
-        self.screen_sizes = ()
-        self.monitors = {}
-        self.screen_resize_bigger = True
-        self.desktops = 1
-        self.desktop_names = ()
-        self.show_desktop_allowed = False
-        self.opengl_props = {}
+    def init_state(self) -> None:
+        self.vrefresh : int = -1
+        self.icc : Dict = {}
+        self.display_icc : Dict = {}
+        self.randr_notify : bool = False
+        self.desktop_size : Optional[Tuple[int, int]] = None
+        self.desktop_mode_size : Optional[Tuple[int, int]] = None
+        self.desktop_size_unscaled : Optional[Tuple[int, int]] = None
+        self.desktop_size_server : Optional[Tuple[int, int]] = None
+        self.desktop_fullscreen : bool = False
+        self.screen_sizes : List[Tuple[int,int]] = []
+        self.monitors : Dict[int,Any] = {}
+        self.screen_resize_bigger : bool = True
+        self.desktops : int = 1
+        self.desktop_names : Tuple[str, ...] = ()
+        self.show_desktop_allowed : bool = False
+        self.opengl_props : Dict[str, Any] = {}
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "vertical-refresh"  : self.vrefresh,
             "desktop_size"  : self.desktop_size or "",
@@ -56,7 +58,7 @@ class ClientDisplayMixin(StubSourceMixin):
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
         return info
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         self.vrefresh = c.intget("vrefresh", -1)
         self.randr_notify = c.boolget("randr_notify")
         self.desktop_size = c.intpair("desktop_size")
@@ -78,7 +80,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.display_icc = c.dictget("display-icc", {})
         self.opengl_props = c.dictget("opengl", {})
 
-    def set_monitors(self, monitors:dict) -> None:
+    def set_monitors(self, monitors:Dict) -> None:
         self.monitors = {}
         if monitors:
             for i, mon_def in monitors.items():
@@ -116,7 +118,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_screen_sizes(self, screen_sizes) -> None:
         log("set_screen_sizes(%s)", screen_sizes)
-        self.screen_sizes = list(screen_sizes)
+        self.screen_sizes = tuple(screen_sizes)
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
         def dpi(size_pixels, size_mm):
@@ -154,7 +156,7 @@ class ClientDisplayMixin(StubSourceMixin):
                 self.screen_sizes[i] = tuple(screen)
         log("client validated screen sizes: %s", self.screen_sizes)
 
-    def set_desktops(self, desktops, desktop_names) -> None:
+    def set_desktops(self, desktops:int, desktop_names) -> None:
         self.desktops = desktops or 1
         self.desktop_names = tuple(net_utf8(d) for d in (desktop_names or ()))
 
@@ -174,7 +176,7 @@ class ClientDisplayMixin(StubSourceMixin):
             self.send_async("show-desktop", show)
 
 
-    def get_monitor_definitions(self) -> dict:
+    def get_monitor_definitions(self) -> Optional[Dict[int,Any]]:
         if self.monitors:
             return self.monitors
         #no? try to extract it from the legacy "screen_sizes" data:

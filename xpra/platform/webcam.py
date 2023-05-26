@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import List, Callable
+
 from xpra.platform import platform_import
 from xpra.log import Logger
 log = Logger("webcam")
@@ -24,7 +26,7 @@ def remove_video_device_change_callback(_callback):
     #not implemented here
     pass
 
-_video_device_change_callbacks = []
+_video_device_change_callbacks : List[Callable] = []
 def _fire_video_device_change(create=None, pathname=None):
     for x in _video_device_change_callbacks:
         try:

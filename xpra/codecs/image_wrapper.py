@@ -8,6 +8,7 @@ from enum import IntEnum
 from time import monotonic
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes
+from typing import Tuple
 
 def clone_plane(plane):
     if isinstance(plane, memoryview):
@@ -20,18 +21,19 @@ class PlanarFormat(IntEnum):
     PLANAR_2 = 2
     PLANAR_3 = 3
     PLANAR_4 = 4
+    INVALID = -1
 
 
 class ImageWrapper:
 
-    PACKED = PlanarFormat.PACKED
-    PLANAR_2 = PlanarFormat.PLANAR_2
-    PLANAR_3 = PlanarFormat.PLANAR_3
-    PLANAR_4 = PlanarFormat.PLANAR_4
-    PLANE_OPTIONS = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
+    PACKED : PlanarFormat = PlanarFormat.PACKED
+    PLANAR_2 : PlanarFormat = PlanarFormat.PLANAR_2
+    PLANAR_3 : PlanarFormat = PlanarFormat.PLANAR_3
+    PLANAR_4 : PlanarFormat = PlanarFormat.PLANAR_4
+    PLANE_OPTIONS : Tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
 
     def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
-                 bytesperpixel : int=4, planes : int=PACKED, thread_safe : bool=True, palette=None):
+                 bytesperpixel : int=4, planes : PlanarFormat=PACKED, thread_safe : bool=True, palette=None):
         self.x : int = x
         self.y : int  = y
         self.target_x : int  = x
@@ -43,7 +45,7 @@ class ImageWrapper:
         self.depth : int  = depth
         self.rowstride = rowstride
         self.bytesperpixel : int = bytesperpixel
-        self.planes : int = planes
+        self.planes : PlanarFormat = planes
         self.thread_safe : bool = thread_safe
         self.freed : bool = False
         self.timestamp : int = int(monotonic()*1000)
@@ -250,6 +252,6 @@ class ImageWrapper:
     def free(self) -> None:
         if not self.freed:
             self.freed = True
-            self.planes = None
-            self.pixels = None
-            self.pixel_format = None
+            self.planes = PlanarFormat.INVALID
+            self.pixels = ()
+            self.pixel_format = ""

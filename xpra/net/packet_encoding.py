@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,6 +9,7 @@
 
 from collections import namedtuple
 from threading import Lock
+from typing import Callable, Any, Tuple, Dict
 
 from xpra.log import Logger
 from xpra.net.protocol.header import (
@@ -18,16 +19,16 @@ from xpra.net.protocol.header import (
 from xpra.util import envbool
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ("rencode", "bencode", "yaml", "rencodeplus", "none")
+ALL_ENCODERS : Tuple[str, ...] = ("rencode", "bencode", "yaml", "rencodeplus", "none")
 #order for performance:
-PERFORMANCE_ORDER = ("rencodeplus", "rencode", "bencode", "yaml")
+PERFORMANCE_ORDER : Tuple[str, ...] = ("rencodeplus", "rencode", "bencode", "yaml")
 
 Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
 
-ENCODERS = {}
+ENCODERS : Dict[str,Encoding] = {}
 
 
-def init_rencode():
+def init_rencode() -> Encoding:
     import rencode  # @UnresolvedImport
     rencode_lock = Lock()
     rencode_dumps = rencode.dumps
@@ -36,14 +37,14 @@ def init_rencode():
             return rencode_dumps(v), FLAGS_RENCODE
     return Encoding("rencode", FLAGS_RENCODE, rencode.__version__, do_rencode, rencode.loads)
 
-def init_rencodeplus():
+def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)  # @UndefinedVariable
 
-def init_bencode():
+def init_bencode() -> Encoding:
     from xpra.net.bencode import bencode, bdecode, __version__
     def do_bencode(v):
         return bencode(v), FLAGS_BENCODE
@@ -54,14 +55,14 @@ def init_bencode():
         return packet
     return Encoding("bencode", FLAGS_BENCODE, __version__, do_bencode, do_bdecode)
 
-def init_yaml():
+def init_yaml() -> Encoding:
     #json messes with strings and unicode (makes it unusable for us)
     from yaml import dump, safe_load, __version__
     def yaml_dump(v):
         return dump(v).encode("latin1"), FLAGS_YAML
     return Encoding("yaml", FLAGS_YAML, __version__, yaml_dump, safe_load)
 
-def init_none():
+def init_none() -> Encoding:
     def encode(data):
         #just send data as a string for clients that don't understand xpra packet format:
         import codecs
@@ -73,7 +74,7 @@ def init_none():
     return Encoding("none", FLAGS_NOHEADER, 0, encode, None)
 
 
-def init_encoders(*names):
+def init_encoders(*names) -> None:
     for x in names:
         if x not in ALL_ENCODERS:
             logger = Logger("network", "protocol")
@@ -83,19 +84,20 @@ def init_encoders(*names):
             continue
         fn = globals().get(f"init_{x}")
         try:
+            assert callable(fn)
             e = fn()
             assert e
             ENCODERS[x] = e
-        except (ImportError, AttributeError):
+        except (ImportError, AttributeError, AssertionError):
             logger = Logger("network", "protocol")
             logger.debug("no %s", x, exc_info=True)
 
-def init_all():
+def init_all() -> None:
     init_encoders(*(list(ALL_ENCODERS)+["none"]))
 
 
-def get_packet_encoding_caps(full_info : int=1) -> dict:
-    caps = {}
+def get_packet_encoding_caps(full_info : int=1) -> Dict[str,Any]:
+    caps : Dict[str,Any] = {}
     for name in ALL_ENCODERS:
         d = caps.setdefault(name, {})
         e = ENCODERS.get(name)
@@ -106,11 +108,11 @@ def get_packet_encoding_caps(full_info : int=1) -> dict:
             d["version"] = e.version
     return caps
 
-def get_enabled_encoders(order=ALL_ENCODERS):
+def get_enabled_encoders(order: Tuple[str, ...]=ALL_ENCODERS) -> Tuple[str, ...]:
     return tuple(x for x in order if x in ENCODERS)
 
 
-def get_encoder(e):
+def get_encoder(e) -> Callable:
     if e not in ALL_ENCODERS:
         raise ValueError(f"invalid encoder name {e!r}")
     if e not in ENCODERS:
@@ -131,7 +133,7 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
-def pack_one_packet(packet):
+def pack_one_packet(packet:tuple):
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])

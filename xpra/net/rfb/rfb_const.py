@@ -3,12 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import struct
+from struct import Struct
 from enum import IntEnum
 
 #merge header and packet if packet is smaller than:
-PIXEL_FORMAT = b"BBBBHHHBBBBBB"
-CLIENT_INIT = b"!HH"+PIXEL_FORMAT+b"I"
+PIXEL_FORMAT : bytes = b"BBBBHHHBBBBBB"
+CLIENT_INIT : bytes = b"!HH"+PIXEL_FORMAT+b"I"
 
 
 class RFBClientMessage(IntEnum):
@@ -43,12 +43,12 @@ class RFBClientMessage(IntEnum):
     #VMWARE = 254
     QEMUClientMessage = 255
 
-CLIENT_PACKET_TYPE_STR = {}
-for e in RFBClientMessage:
-    CLIENT_PACKET_TYPE_STR[e.value] = e.name
+CLIENT_PACKET_TYPE_STR : dict[int, str] = {}
+for cm in RFBClientMessage:
+    CLIENT_PACKET_TYPE_STR[cm.value] = cm.name
 
 
-PACKET_STRUCT = {}
+PACKET_STRUCT : dict[int, Struct] = {}
 for msg, fmt in {
     RFBClientMessage.SetPixelFormat             : b"!BBBB"+PIXEL_FORMAT,
     RFBClientMessage.SetEncodings               : b"!BBH",
@@ -57,7 +57,7 @@ for msg, fmt in {
     RFBClientMessage.PointerEvent               : b"!BBHH",
     RFBClientMessage.ClientCutText              : b"!BBBBi",
     }.items():
-    PACKET_STRUCT[msg] = struct.Struct(fmt)
+    PACKET_STRUCT[msg] = Struct(fmt)
 
 
 class RFBServerMessage(IntEnum):
@@ -85,9 +85,9 @@ class RFBServerMessage(IntEnum):
     VMWARE2 = 254
     QEMUSERVERMESSAGE = 255
 
-SERVER_PACKET_TYPE_STR = {}
-for e in RFBServerMessage:
-    SERVER_PACKET_TYPE_STR[e.value] = e.name
+SERVER_PACKET_TYPE_STR : dict[int, str] = {}
+for sm in RFBServerMessage:
+    SERVER_PACKET_TYPE_STR[sm.value] = sm.name
 
 class RFBEncoding(IntEnum):
     RAW = 0
@@ -128,7 +128,7 @@ class RFBEncoding(IntEnum):
     #-412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
     #-763 to -768    JPEG Subsampling Level Pseudo-encoding
 
-ENCODING_STR = {}
+ENCODING_STR : dict[int, str] = {}
 for e in RFBEncoding:
     ENCODING_STR[e.value] = e.name
 
@@ -140,7 +140,7 @@ class RFBAuth(IntEnum):
     TIGHT = 16
     VeNCrypt = 19
 
-AUTH_STR = {
+AUTH_STR : dict[int,str] = {
     RFBAuth.INVALID     : "Invalid",
     RFBAuth.NONE        : "None",
     RFBAuth.VNC         : "VNC",
@@ -164,7 +164,7 @@ for i in range(30, 35):
     AUTH_STR[i] = "Apple"
 
 
-RFB_KEYNAMES = {
+RFB_KEYNAMES : dict[int, str] = {
     0xff08      : "BackSpace",
     0xff09      : "Tab",
     0xff0d      : "Return",
@@ -258,6 +258,6 @@ RFB_KEYNAMES = {
 for i in range(1, 13):
     RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i
 
-RFB_KEYS = {}
+RFB_KEYS : dict[str, int] = {}
 for keysym, name in RFB_KEYNAMES.items():
     RFB_KEYS[name.lower()] = keysym

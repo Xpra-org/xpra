@@ -9,16 +9,17 @@ import sys
 import logging
 import weakref
 import itertools
+from typing import Callable
 # This module is used by non-GUI programs and thus must not import gtk.
 
-LOG_PREFIX = ""
-LOG_FORMAT = "%(asctime)s %(message)s"
-DEBUG_MODULES = ()
+LOG_PREFIX : str = ""
+LOG_FORMAT : str = "%(asctime)s %(message)s"
+DEBUG_MODULES : tuple[str, ...] = ()
 if os.name!="posix" or os.getuid()!=0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
     DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
-NOPREFIX_FORMAT = "%(message)s"
+NOPREFIX_FORMAT : str = "%(message)s"
 
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -27,7 +28,7 @@ logging.root.setLevel(logging.INFO)
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
-all_loggers = {}
+all_loggers : dict[str, object] = {}
 def add_logger(categories, logger):
     categories = list(categories)
     categories.append("all")
@@ -46,10 +47,10 @@ def get_all_loggers():
     return a
 
 
-debug_enabled_categories = set()
-debug_disabled_categories = set()
+debug_enabled_categories : set[str] = set()
+debug_disabled_categories : set[str] = set()
 
-def get_debug_args():
+def get_debug_args() -> list[str]:
     args = []
     if debug_enabled_categories:
         args += list(debug_enabled_categories)
@@ -77,17 +78,17 @@ class FullDebugContext:
         debug_enabled_categories.add(self.debug_enabled_categories)
 
 
-def add_debug_category(*cat):
+def add_debug_category(*cat) -> None:
     remove_disabled_category(*cat)
     for c in cat:
         debug_enabled_categories.add(c)
 
-def remove_debug_category(*cat):
+def remove_debug_category(*cat) -> None:
     for c in cat:
         if c in debug_enabled_categories:
             debug_enabled_categories.remove(c)
 
-def is_debug_enabled(category : str):
+def is_debug_enabled(category : str) -> bool:
     if "all" in debug_enabled_categories:
         return True
     if category in debug_enabled_categories:
@@ -95,18 +96,18 @@ def is_debug_enabled(category : str):
     return isenvdebug(category) or isenvdebug("ALL")
 
 
-def add_disabled_category(*cat):
+def add_disabled_category(*cat) -> None:
     remove_debug_category(*cat)
     for c in cat:
         debug_disabled_categories.add(c)
 
-def remove_disabled_category(*cat):
+def remove_disabled_category(*cat) -> None:
     for c in cat:
         if c in debug_disabled_categories:
             debug_disabled_categories.remove(c)
 
 
-def get_loggers_for_categories(*cat):
+def get_loggers_for_categories(*cat) -> list:
     if not cat:
         return  []
     if "all" in cat:
@@ -118,7 +119,7 @@ def get_loggers_for_categories(*cat):
             matches.add(l)
     return list(matches)
 
-def enable_debug_for(*cat):
+def enable_debug_for(*cat) -> list:
     loggers = []
     for l in get_loggers_for_categories(*cat):
         if not l.is_debug_enabled():
@@ -126,7 +127,7 @@ def enable_debug_for(*cat):
             loggers.append(l)
     return loggers
 
-def disable_debug_for(*cat):
+def disable_debug_for(*cat) -> list:
     loggers = []
     for l in get_loggers_for_categories(*cat):
         if l.is_debug_enabled():
@@ -135,22 +136,22 @@ def disable_debug_for(*cat):
     return loggers
 
 
-default_level = logging.DEBUG
-def set_default_level(level):
+default_level : int = logging.DEBUG
+def set_default_level(level:int):
     global default_level
     default_level = level
 
 
-def standard_logging(log, level, msg, *args, **kwargs):
+def standard_logging(log, level:int, msg:str, *args, **kwargs) -> None:
     #this is just the regular logging:
     log(level, msg, *args, **kwargs)
 
 #this allows us to capture all logging and redirect it:
 #the default 'standard_logging' uses the logger,
 #but the client may inject its own handler here
-global_logging_handler = standard_logging
+global_logging_handler : Callable = standard_logging
 
-def set_global_logging_handler(h):
+def set_global_logging_handler(h:Callable) -> Callable:
     assert callable(h)
     global global_logging_handler
     saved = global_logging_handler
@@ -158,11 +159,11 @@ def set_global_logging_handler(h):
     return saved
 
 
-def setloghandler(lh):
+def setloghandler(lh) -> None:
     logging.root.handlers = []
     logging.root.addHandler(lh)
 
-def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
+def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
     if not hasattr(to, "fileno"):
         #on win32 sys.stdout can be a "Blackhole",
         #which does not have a fileno
@@ -181,14 +182,14 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
     csh.setFormatter(logging.Formatter(format_string))
     setloghandler(csh)
 
-def enable_format(format_string):
+def enable_format(format_string:str) -> None:
     try:
         logging.root.handlers[0].formatter = logging.Formatter(format_string)
     except (AttributeError, IndexError):
         pass
 
 
-STRUCT_KNOWN_FILTERS = {
+STRUCT_KNOWN_FILTERS : dict[str,dict[str,str]] = {
     "Client" : {
                 "client"        : "All client code",
                 "paint"         : "Client window paint code",
@@ -344,7 +345,7 @@ STRUCT_KNOWN_FILTERS = {
     }
 
 #flatten it:
-KNOWN_FILTERS = {}
+KNOWN_FILTERS : dict[str,str] = {}
 for d in STRUCT_KNOWN_FILTERS.values():
     for k,v in d.items():
         KNOWN_FILTERS[k] = v
@@ -354,7 +355,7 @@ def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
 
 
-def get_info():
+def get_info() -> dict:
     info = {
         "categories" : {
             "enabled"   : tuple(debug_enabled_categories),

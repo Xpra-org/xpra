@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Tuple, Optional, Any
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -24,17 +26,17 @@ class InputMixin(StubSourceMixin):
         #so we have to enable the mixin by default:
         return caps.boolget("keyboard", True) or caps.boolget("mouse", True)
 
-    def init_state(self):
-        self.pointer_relative = False
+    def init_state(self) -> None:
+        self.pointer_relative : bool = False
         self.keyboard_config = None
-        self.double_click_time  = -1
-        self.double_click_distance = -1, -1
+        self.double_click_time : int = -1
+        self.double_click_distance : Optional[Tuple[int, int]] = None
         # mouse echo:
-        self.mouse_show = False
-        self.mouse_last_position = None
-        self.mouse_last_relative_position = None
+        self.mouse_show : bool = False
+        self.mouse_last_position : Optional[Tuple[int,int]] = None
+        self.mouse_last_relative_position : Optional[Tuple[int,int]] = None
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.keyboard_config = None
 
     def parse_client_caps(self, c : typedict):
@@ -51,8 +53,8 @@ class InputMixin(StubSourceMixin):
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
-    def get_info(self) -> dict:
-        dc_info = {}
+    def get_info(self) -> dict[str,Any]:
+        dc_info : dict[str,Any] = {}
         dct = self.double_click_time
         if dct:
             dc_info["time"] = dct
@@ -67,7 +69,7 @@ class InputMixin(StubSourceMixin):
             info["keyboard"] = kc.get_info()
         return info
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> dict[str,Any]:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config
@@ -83,7 +85,7 @@ class InputMixin(StubSourceMixin):
             return
         return self.keyboard_config.set_layout(layout, variant, options)
 
-    def keys_changed(self):
+    def keys_changed(self) -> None:
         kc = self.keyboard_config
         if kc:
             kc.compute_modifier_map()
@@ -103,7 +105,7 @@ class InputMixin(StubSourceMixin):
         return kc
 
 
-    def is_modifier(self, keyname, keycode) -> bool:
+    def is_modifier(self, keyname:str, keycode:int) -> bool:
         if keyname in DEFAULT_MODIFIER_MEANINGS:
             return True
         #keyboard config should always exist if we are here?
@@ -113,7 +115,7 @@ class InputMixin(StubSourceMixin):
         return False
 
 
-    def set_keymap(self, current_keyboard_config, keys_pressed, force=False, translate_only=False):
+    def set_keymap(self, current_keyboard_config, keys_pressed, force:bool=False, translate_only:bool=False):
         kc = self.keyboard_config
         log("set_keymap%s keyboard_config=%s", (current_keyboard_config, keys_pressed, force, translate_only), kc)
         if kc and kc.enabled:
@@ -131,7 +133,7 @@ class InputMixin(StubSourceMixin):
                 self.keyboard_config = current_keyboard_config
 
 
-    def get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group) -> int:
+    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group:int) -> Tuple[int, int]:
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
@@ -139,7 +141,7 @@ class InputMixin(StubSourceMixin):
         return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
 
-    def update_mouse(self, wid, x, y, rx, ry):
+    def update_mouse(self, wid:int, x:int, y:int, rx:int, ry:int) -> None:
         log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i, show=%s",
             wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
         if not self.mouse_show:

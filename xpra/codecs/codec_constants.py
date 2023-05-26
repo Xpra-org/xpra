@@ -5,7 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
-import weakref
+from weakref import WeakSet
+from typing import Any, Tuple, Union, Dict, Set
+
 from xpra.util import envint
 
 
@@ -14,7 +16,7 @@ FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERRED_ENCODING_ORDER : tuple = (
+PREFERRED_ENCODING_ORDER : Tuple[str, ...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
@@ -24,13 +26,13 @@ PREFERRED_ENCODING_ORDER : tuple = (
     "grayscale",
     )
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER : tuple = (
+EDGE_ENCODING_ORDER : Tuple[str, ...] = (
     "rgb24", "rgb32",
     "png", "webp",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
     )
 
-HELP_ORDER : tuple = (
+HELP_ORDER : Tuple[str, ...] = (
     "auto",
     "grayscale",
     "h264", "h265", "av1", "vp8", "vp9", "mpeg4",
@@ -41,7 +43,7 @@ HELP_ORDER : tuple = (
 
 
 #value: how much smaller the output is
-LOSSY_PIXEL_FORMATS : dict = {
+LOSSY_PIXEL_FORMATS : Dict[str,Union[float, int]] = {
     "NV12"    : 2,
     "YUV420P" : 2,
     "YUV422P" : 1.5,
@@ -53,7 +55,7 @@ def get_plane_name(pixel_format : str="YUV420P", index : int=0) -> str:
         }.get(pixel_format, list(pixel_format))[index]
 
 
-PIXEL_SUBSAMPLING : dict = {
+PIXEL_SUBSAMPLING : Dict[str,Tuple] = {
     #NV12 is actually subsampled horizontally too - just like YUV420P
     #(but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
@@ -67,16 +69,16 @@ PIXEL_SUBSAMPLING : dict = {
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
-def get_subsampling_divs(pixel_format) -> tuple:
+def get_subsampling_divs(pixel_format:str) -> Tuple:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
         raise ValueError(f"invalid pixel format: {pixel_format!r}")
-    return PIXEL_SUBSAMPLING.get(pixel_format)
+    return PIXEL_SUBSAMPLING[pixel_format]
 
-def preforder(encodings) -> tuple:
-    encs = set(encodings)
-    return tuple(filter(lambda x : x in encs, PREFERRED_ENCODING_ORDER))
+def preforder(encodings) -> Tuple[str]:
+    encs : Set[str] = set(encodings)
+    return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 
 
 def get_profile(options, encoding:str="h264", csc_mode:str="YUV420P", default_profile:str="constrained-baseline") -> str:
@@ -102,7 +104,7 @@ def get_x264_preset(speed:int=50, fast_decode:bool=False) -> int:
     return 5 - max(0, min(4, speed // 20))
 
 
-RGB_FORMATS = (
+RGB_FORMATS : tuple[str, ...] = (
                "XRGB",
                "BGRX",
                "ARGB",
@@ -157,7 +159,7 @@ class _codec_spec:
             "max_instances",
             ]
         #not exported:
-        self.instances = weakref.WeakSet()
+        self.instances : WeakSet[Any] = WeakSet()
         self._all_fields = list(self._exported_fields)+["instances"]
 
 
@@ -189,7 +191,7 @@ class _codec_spec:
     def get_instance_count(self) -> int:
         return len(self.instances)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str,Any]:
         d = {}
         for k in self._exported_fields:
             d[k] = getattr(self, k)

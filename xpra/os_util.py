@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,6 +17,8 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
+from typing import Optional, Union, Any
+from threading import Thread
 
 # only minimal imports go at the top
 # so that this file can be included everywhere
@@ -45,7 +47,7 @@ def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads=()) -> dict:
+def get_frame_info(ignore_threads:tuple[Thread]=()) -> dict[str,Any]:
     info = {
         "count"        : threading.active_count() - len(ignore_threads),
         }
@@ -55,15 +57,15 @@ def get_frame_info(ignore_threads=()) -> dict:
             if x is None:
                 return ""
             return str(x)
-        thread_ident = {}
+        thread_ident : dict[int,Optional[str]] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
                 thread_ident[t.ident] = t.getName()
             else:
                 thread_ident[t.ident] = None
         thread_ident.update({
-                threading.current_thread().ident    : "info",
-                main_thread.ident                   : "main",
+                threading.current_thread().ident  : "info",
+                main_thread.ident                 : "main",
                 })
         frames = sys._current_frames()  #pylint: disable=protected-access
         stack = None
@@ -76,7 +78,7 @@ def get_frame_info(ignore_threads=()) -> dict:
             sanestack = []
             for e in stack:
                 sanestack.append(tuple(nn(x) for x in e))
-            info[i] = {
+            info[i] : dict[str,] = {
                 ""          : tident,
                 "stack"     : sanestack,
                 }
@@ -85,7 +87,7 @@ def get_frame_info(ignore_threads=()) -> dict:
         get_util_logger().error("failed to get frame info: %s", e)
     return info
 
-def get_info_env() -> dict:
+def get_info_env() -> dict[str,str]:
     filtered_env = os.environ.copy()
     if filtered_env.get('XPRA_PASSWORD'):
         filtered_env['XPRA_PASSWORD'] = "*****"
@@ -95,7 +97,7 @@ def get_info_env() -> dict:
 
 def get_sysconfig_info() -> dict:
     import sysconfig
-    sysinfo = {}
+    sysinfo : dict[str,] = {}
     log = get_util_logger()
     for attr in (
         "platform",
@@ -263,12 +265,13 @@ def get_machine_id() -> str:
     v = ""
     if POSIX:
         for filename in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
-            v = load_binary_file(filename)
-            if v is not None:
+            b = load_binary_file(filename)
+            if b is not None:
+                v = bytestostr(b)
                 break
     elif WIN32:
-        v = uuid.getnode()
-    return bytestostr(v).strip("\n\r")
+        v = str(uuid.getnode())
+    return v.strip("\n\r")
 
 def get_user_uuid() -> str:
     """
@@ -371,8 +374,8 @@ def get_distribution_version_id() -> str:
         pass
     return ""
 
-os_release_file_data = False
-def load_os_release_file() -> bytes:
+os_release_file_data : Union[bool,bytes,None]= False
+def load_os_release_file() -> Optional[bytes]:
     global os_release_file_data
     if os_release_file_data is False:
         try:
@@ -498,14 +501,14 @@ def do_get_generic_os_name() -> str:
     return sys.platform     # pragma: no cover
 
 
-def filedata_nocrlf(filename) -> str:
+def filedata_nocrlf(filename:str) -> bytes:
     v = load_binary_file(filename)
     if v is None:
         get_util_logger().error(f"failed to load {filename!r}")
         return None
     return v.strip(b"\n\r")
 
-def load_binary_file(filename) -> bytes:
+def load_binary_file(filename) -> Optional[bytes]:
     if not os.path.exists(filename):
         return None
     try:
@@ -517,7 +520,7 @@ def load_binary_file(filename) -> bytes:
         get_util_logger().warn(f" {e}")
         return None
 
-def get_proc_cmdline(pid:int) -> tuple:
+def get_proc_cmdline(pid:int) -> tuple[str]:
     if pid and LINUX:
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
@@ -529,7 +532,7 @@ def get_proc_cmdline(pid:int) -> tuple:
                 return tuple(bytestostr(x) for x in cmdline)
     return ()
 
-def parse_encoded_bin_data(data):
+def parse_encoded_bin_data(data:str) -> bytes:
     if not data:
         return None
     header = bytestostr(data).lower()[:10]
@@ -551,13 +554,13 @@ def parse_encoded_bin_data(data):
 
 
 #here so we can override it when needed
-def force_quit(status=1):
+def force_quit(status=1) -> None:
     os._exit(status)  #pylint: disable=protected-access
 
 
 def no_idle(fn, *args, **kwargs):
     fn(*args, **kwargs)
-def register_SIGUSR_signals(idle_add=no_idle):
+def register_SIGUSR_signals(idle_add=no_idle) -> None:
     if os.name!="posix":
         return
     from xpra.util import dump_all_frames, dump_gc_frames
@@ -573,7 +576,7 @@ def register_SIGUSR_signals(idle_add=no_idle):
     signal.signal(signal.SIGUSR2, sigusr2)
 
 
-def livefds() -> set:
+def livefds() -> set[int]:
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
@@ -653,9 +656,9 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
 
 
-def path_permission_info(filename : str, ftype=None):
+def path_permission_info(filename : str, ftype=None) -> tuple[str]:
     if not POSIX:
-        return []
+        return ()
     info = []
     try:
         stat_info = os.stat(filename)
@@ -673,7 +676,7 @@ def path_permission_info(filename : str, ftype=None):
         info.append(f"ownership {user}:{group}")
     except Exception as e:
         info.append(f"failed to query path information for {filename!r}: {e}")
-    return info
+    return tuple(info)
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
@@ -777,7 +780,7 @@ def disable_stdout_buffering():
     gc.garbage.append(sys.stdout)
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
-def setbinarymode(fd):
+def setbinarymode(fd:int):
     if WIN32:
         #turn on binary mode:
         try:
@@ -786,7 +789,7 @@ def setbinarymode(fd):
         except OSError:
             get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
-def find_lib_ldconfig(libname) -> str:
+def find_lib_ldconfig(libname:str) -> str:
     libname = re.escape(libname)
 
     arch_map = {"x86_64": "libc6,x86-64"}
@@ -811,7 +814,7 @@ def find_lib_ldconfig(libname) -> str:
         libpath = libpath.group(1)
     return libpath
 
-def find_lib(libname):
+def find_lib(libname:str):
     #it would be better to rely on dlopen to find the paths
     #but I cannot find a way of getting ctypes to tell us the path
     #it found the library in
@@ -830,7 +833,7 @@ def find_lib(libname):
     return None
 
 
-def pollwait(process, timeout=5):
+def pollwait(process, timeout=5) -> Optional[int]:
     start = monotonic()
     v = None
     while monotonic()-start<timeout:
@@ -841,7 +844,7 @@ def pollwait(process, timeout=5):
     return v
 
 
-def find_in_PATH(command):
+def find_in_PATH(command) -> Optional[str]:
     path = os.environ.get("PATH", None)
     if not path:
         return None
@@ -852,7 +855,7 @@ def find_in_PATH(command):
             return f
     return None
 
-def which(command):
+def which(command) -> Optional[str]:
     try:
         from shutil import which as find_executable
     except ImportError:
@@ -898,7 +901,7 @@ def get_ssh_port() -> int:
     return 22
 
 
-def setuidgid(uid, gid) -> None:
+def setuidgid(uid:int, gid:int) -> None:
     if not POSIX:
         return
     log = get_util_logger()
@@ -939,7 +942,7 @@ def setuidgid(uid, gid) -> None:
         log.error(f" continuing with uid={os.getuid()}")
     log(f"new uid={os.getuid()}, gid={os.getgid()}")
 
-def get_peercred(sock):
+def get_peercred(sock) -> Optional[tuple[int,int,int]]:
     if LINUX:
         SO_PEERCRED = 17
         log = get_util_logger()
@@ -958,7 +961,7 @@ def get_peercred(sock):
         #then pwd to get the gid?
     return None
 
-def is_socket(sockpath, check_uid=None) -> bool:
+def is_socket(sockpath:str, check_uid:Optional[int]=None) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:
@@ -973,7 +976,7 @@ def is_socket(sockpath, check_uid=None) -> bool:
         return False
     return True
 
-def is_writable(path : str, uid=getuid(), gid=getgid()) -> bool:
+def is_writable(path : str, uid:int=getuid(), gid:int=getgid()) -> bool:
     if uid==0:
         return True
     try:

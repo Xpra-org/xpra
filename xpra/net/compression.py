@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
+from typing import Any
 
 from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
@@ -103,8 +104,8 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full_info : int=1) -> dict:
-    caps = {}
+def get_compression_caps(full_info : int=1) -> dict[str,Any]:
+    caps : dict[str,Any] = {}
     for x in ALL_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:

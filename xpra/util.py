@@ -16,6 +16,7 @@ try:
     from enum import StrEnum
 except ImportError:
     StrEnum = Enum
+from typing import Tuple, Optional, Any, List, Set, Callable, Iterable
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -214,12 +215,12 @@ class AdHocStruct:
                 % (type(self).__name__, self.__dict__))
 
 
-def remove_dupes(seq) -> list:
-    seen = set()
-    seen_add = seen.add
+def remove_dupes(seq:Iterable[Any]) -> List[Any]:
+    seen : Set[Any] = set()
+    seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : dict, b : dict, path:str=None):
+def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:str=None) -> dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []
@@ -438,22 +439,22 @@ class typedict(dict):
     def uget(self, k, default=None):
         return self.conv_get(k, default, u)
 
-    def strget(self, k, default=None) -> str:
+    def strget(self, k, default:Optional[str]=None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k : str, default=None) -> bytes:
+    def bytesget(self, k : str, default:Optional[bytes]=None) -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k : str, default=0) -> int:
+    def intget(self, k : str, default:Optional[int]=0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k : str, default=False) -> bool:
+    def boolget(self, k : str, default:Optional[bool]=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default=None) -> dict:
+    def dictget(self, k : str, default:Optional[dict]=None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k : str, default_value=None) -> tuple:
+    def intpair(self, k : str, default_value:Optional[Tuple[int,int]]=None) -> Optional[Tuple[int, int]]:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -465,19 +466,19 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k : str, default_value=(), min_items=None, max_items=None) -> tuple:
+    def strtupleget(self, k : str, default_value=(), min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k : str, default_value=(), min_items=None, max_items=None) -> tuple:
+    def inttupleget(self, k : str, default_value=(), min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k : str, default_value=(), item_type=None, min_items=None, max_items=None) -> tuple:
+    def tupleget(self, k : str, default_value=(), item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         if isinstance(v, list):
             v = tuple(v)
         return v
 
-    def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None) -> list:
+    def _listget(self, k : str, default_value, item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> List[Any]:
         v = self.get(k)
         if v is None:
             return default_value
@@ -514,7 +515,7 @@ class typedict(dict):
         return aslist
 
 
-def parse_scaling_value(v):
+def parse_scaling_value(v) -> Optional[Tuple[int,int]]:
     if not v:
         return None
     if v.endswith("%"):
@@ -792,12 +793,12 @@ def notypedict(d:dict) -> dict:
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info:dict, sep:str=".") -> dict:
-    to = {}
+def flatten_dict(info:dict[str,Any], sep:str=".") -> dict:
+    to : dict[str, Any] = {}
     _flatten_dict(to, sep, None, info)
     return to
 
-def _flatten_dict(to, sep, path, d):
+def _flatten_dict(to:dict[str, Any], sep:str, path:str, d:dict[str,Any]):
     for k,v in d.items():
         if path:
             if k:

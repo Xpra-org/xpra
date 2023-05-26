@@ -127,7 +127,7 @@ class MMAP_Connection(StubSourceMixin):
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict:
-        caps = {}
+        caps : dict [str, object] = {}
         sep = "." if self.mmap_client_namespace else "_"
         def mmapattr(name, value):
             #easy: just send both for now

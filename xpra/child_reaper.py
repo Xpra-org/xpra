@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,6 +11,7 @@
 
 import os
 import signal
+from typing import Dict, Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -28,7 +29,7 @@ def getChildReaper():
     return singleton
 
 
-def reaper_cleanup():
+def reaper_cleanup() -> None:
     s = singleton
     if not s:
         return
@@ -48,7 +49,7 @@ class ProcInfo:
     def __repr__(self):
         return f"ProcInfo({self.pid} : {self.command})"
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "pid"       : self.pid,
             "name"      : self.name,

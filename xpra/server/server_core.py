@@ -17,6 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
+from typing import Callable
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -291,7 +292,7 @@ class ServerCore:
         self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
-    def validate(self) -> True:
+    def validate(self) -> bool:
         return True
 
     def server_init(self) -> None:
@@ -422,10 +423,10 @@ class ServerCore:
                     log.error("Error in initialization thread callback %s", cb)
                     log.estr(e)
 
-    def add_init_thread_callback(self, callback:callable) -> None:
+    def add_init_thread_callback(self, callback:Callable) -> None:
         self.init_thread_callbacks.append(callback)
 
-    def after_threaded_init(self, callback:callable) -> None:
+    def after_threaded_init(self, callback:Callable) -> None:
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
                 self.add_init_thread_callback(callback)
@@ -2322,14 +2323,14 @@ class ServerCore:
     def do_send_info(self, proto:SocketProtocol, info:dict) -> None:
         proto.send_now(("hello", notypedict(info)))
 
-    def get_all_info(self, callback:callable, proto:SocketProtocol=None, *args):
+    def get_all_info(self, callback:Callable, proto:SocketProtocol=None, *args):
         start = monotonic()
         ui_info : dict = self.get_ui_info(proto, *args)
         end = monotonic()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
 
-    def _get_info_in_thread(self, callback:callable, ui_info:dict, proto:SocketProtocol, args):
+    def _get_info_in_thread(self, callback:Callable, ui_info:dict, proto:SocketProtocol, args):
         log("get_info_in_thread%s", (callback, {}, proto, args))
         start = monotonic()
         #this runs in a non-UI thread

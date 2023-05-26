@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import re
 import sys
 import os
 import shlex
+from typing import Dict, Union, List, Callable
 
 from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
@@ -17,10 +18,10 @@ from xpra.os_util import (
     which,
     )
 
-def warn(msg):
+def warn(msg:str) -> None:
     sys.stderr.write(msg+"\n")
 
-def nodebug(*_args):
+def nodebug(*_args) -> None:
     #can be overridden
     pass
 debug = nodebug
@@ -35,15 +36,14 @@ class InitExit(Exception):
         super().__init__(msg)
 
 
-DEBUG_CONFIG_PROPERTIES = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
+DEBUG_CONFIG_PROPERTIES : List[str] = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
 
-DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
-DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
+DEFAULT_XPRA_CONF_FILENAME : str = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
+DEFAULT_NET_WM_NAME : str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
+DEFAULT_POSTSCRIPT_PRINTER : str = ""
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
-else: # pragma: no cover
-    DEFAULT_POSTSCRIPT_PRINTER = ""
 DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32: # pragma: no cover
     DEFAULT_PULSEAUDIO = False
@@ -245,7 +245,7 @@ def is_VirtualBox() -> str:
             import errno
             if e.args[0]==errno.EACCES:
                 return "VirtualBox is present (VBoxMiniRdrDN)"
-    return None
+    return ""
 
 
 def get_build_info():
@@ -315,7 +315,7 @@ def read_config(conf_file:str) -> dict:
         If the same key is specified more than once,
         the value for this key will be an array of strings.
     """
-    d = {}
+    d : Dict[str,Union[str,List[str]]] = {}
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file or does not exist", conf_file)
         return d
@@ -492,7 +492,7 @@ def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
                     debug(f"failed to create default config in {conf_file!r}: {e}")
 
 
-OPTIONS_VALIDATION = {}
+OPTIONS_VALIDATION : Dict[str, Callable] = {}
 
 OPTION_TYPES = {
                     #string options:
@@ -1135,12 +1135,12 @@ def get_defaults():
                     "start-child-on-connect"    : [],
                     "start-on-last-client-exit" : [],
                     "start-child-on-last-client-exit"   : [],
-                    "start-env"         : DEFAULT_ENV,
-                    "env"               : DEFAULT_START_ENV,
+                    "start-env"         : list(DEFAULT_ENV),
+                    "env"               : list(DEFAULT_START_ENV),
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:
-CLONES = {}
+CLONES : Dict[str, str] = {}
 
 #these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )

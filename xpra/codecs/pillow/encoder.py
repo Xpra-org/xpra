@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
+from typing import Tuple, List, Any
 
 from xpra.codecs.codec_debug import may_save_image
 from xpra.util import csv
@@ -34,15 +35,15 @@ except ImportError:
     from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS
 
 
-def get_version():
+def get_version() -> str:
     return PIL.__version__
 
 def get_type() -> str:
     return "pillow"
 
-def do_get_encodings():
+def do_get_encodings() -> Tuple[str, ...]:
     log("PIL.Image.SAVE=%s", Image.SAVE)
-    encodings = []
+    encodings : List[str] = []
     for encoding in ENCODE_FORMATS:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
@@ -51,12 +52,12 @@ def do_get_encodings():
     log("do_get_encodings()=%s", encodings)
     return tuple(encodings)
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return ENCODINGS
 
-ENCODINGS = tuple(do_get_encodings())
+ENCODINGS : Tuple[str, ...] = do_get_encodings()
 
-def get_info() -> dict:
+def get_info() -> dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),
@@ -260,16 +261,15 @@ def encode(coding : str, image, options=None):
     buf.close()
     return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     global ENCODINGS
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import hexstr
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
+    vrange : Tuple[int, ...] = (50, )
     if full:
         vrange = (0, 50, 100)
-    else:
-        vrange = (50, )
     for encoding in tuple(ENCODINGS):
         try:
             for q in vrange:
@@ -286,7 +286,7 @@ def selftest(full=False):
             l = log.warn
             l("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
             l(" %s", e, exc_info=True)
-            encs = list(ENCODINGS)
+            encs : List[str] = list(ENCODINGS)
             encs.remove(encoding)
             ENCODINGS = tuple(encs)
 

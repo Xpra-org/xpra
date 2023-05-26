@@ -739,7 +739,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def request_frame_extents(self, window):
-        from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
+        from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         from xpra.gtk_common.error import xsync
         root = self.get_root_window()
         with xsync:
@@ -775,7 +775,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 try:
                     wm_name = get_wm_name() #pylint: disable=assignment-from-none
                 except Exception:
-                    wm_name = None
+                    wm_name = ""
                 try:
                     if len(v)==8:
                         if first_time("invalid-frame-extents"):
@@ -790,7 +790,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 except Exception as e:
                     framelog.warn(f"Warning: invalid frame extents value {v}")
                     framelog.warn(f" {e}")
-                    framelog.warn(f" this is probably a bug in {wm_name!r}")
+                    if wm_name:
+                        framelog.warn(f" this is probably a bug in {wm_name!r}")
         framelog(f"get_window_frame_sizes()={wfs}")
         return wfs
 

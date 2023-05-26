@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Callable, List
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
@@ -22,18 +23,18 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     """
 
     #things that we expose:
-    _property_names         = []
+    _property_names : List[str]        = []
     #exposed and changing (should be watched for notify signals):
-    _dynamic_property_names = []
-    _internal_property_names = []
-    _MODELTYPE = "Stub"
+    _dynamic_property_names : List[str] = []
+    _internal_property_names : List[str] = []
+    _MODELTYPE : str = "Stub"
 
     def __init__(self):
         AutoPropGObjectMixin.__init__(self)
         GObject.GObject.__init__(self)
-        self._setup_done = False            #so we can ignore notify() events during setup
-        self._managed = False
-        self._managed_handlers = []
+        self._setup_done : bool = False            #so we can ignore notify() events during setup
+        self._managed : bool = False
+        self._managed_handlers : List[int] = []
 
 
     #########################################
@@ -87,7 +88,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         """ The properties that should not be exposed to the client """
         return self._internal_property_names
 
-    def get_logger(self, property_name) -> callable:
+    def get_logger(self, property_name) -> Callable:
         if property_name in PROPERTIES_DEBUG:
             return metalog.info
         return metalog.debug
@@ -135,11 +136,11 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     #temporary? / convenience access methods:
     def is_OR(self) -> bool:
         """ Is this an override-redirect window? """
-        return self.get("override-redirect", False)
+        return bool(self.get("override-redirect", False))
 
     def is_tray(self) -> bool:
         """ Is this a tray window? """
-        return self.get("tray", False)
+        return bool(self.get("tray", False))
 
     def is_shadow(self) -> bool:
         """ Is this a shadow instead of a real window? """
@@ -147,4 +148,4 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
 
     def has_alpha(self) -> bool:
         """ Does the pixel data have an alpha channel? """
-        return self.get("has-alpha", False)
+        return bool(self.get("has-alpha", False))

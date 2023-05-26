@@ -20,7 +20,7 @@ from xpra.log import (
 log = Logger("dbus", "server")
 
 
-Rectangle = namedtuple("Workarea", "x,y,width,height")
+Rectangle = namedtuple("Rectangle", "x,y,width,height")
 
 
 def n(*args):

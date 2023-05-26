@@ -8,11 +8,12 @@ import hashlib
 
 from dns import flags
 from dns.resolver import Resolver, NoAnswer, NoNameservers
+from typing import Callable
 from xpra.log import Logger
 
 log = Logger("ssh")
 
-_key_algorithms = {
+_key_algorithms : dict[str,str] = {
     'ssh-rsa'               : '1',
     'ssh-dss'               : '2',
     'ecdsa-sha2-nistp256'   : '3',
@@ -21,7 +22,7 @@ _key_algorithms = {
     'ssh-ed25519'           : '4',
 }
 
-_hash_funcs = {
+_hash_funcs : dict[str, Callable] = {
     '1' : hashlib.sha1,
     '2' : hashlib.sha256,
 }
@@ -29,14 +30,14 @@ if os.environ.get("XPRA_SSHFP_NOSHA1"):
     _hash_funcs.pop('1')
 
 
-def check_host_key(hostname, key):
+def check_host_key(hostname:str, key):
     try:
         return do_check_host_key(hostname, key.get_name(), key.asbytes())
     except Exception as e:
         log("check_host_key(%r, %r)", hostname, key, exc_info=True)
         return f"error checking sshfp record: {e}"
 
-def do_check_host_key(hostname, keytype, keydata) -> str:
+def do_check_host_key(hostname:str, keytype, keydata):
     resolver = Resolver()
     resolver.use_edns(0, flags.DO, 1280)  # @UndefinedVariable pylint: disable=no-member
     log("do_check_host_key(%s, %s, ..) resolver=%s", hostname, keytype, resolver)
@@ -76,7 +77,7 @@ def do_check_host_key(hostname, keytype, keydata) -> str:
     return "no matching SSHFP records found"
 
 
-def main(argv):
+def main(argv) -> int:
     if "-v" in argv:
         log.enable_debug()
         argv.remove("-v")
@@ -87,7 +88,9 @@ def main(argv):
     keyfile = argv[2]
     from paramiko import RSAKey  # pylint: disable=import-outside-toplevel
     key = RSAKey.from_private_key_file(keyfile)
-    return check_host_key(hostname, key)
+    if check_host_key(hostname, key) is True:
+        return 0
+    return 1
 
 
 if __name__ == "__main__":

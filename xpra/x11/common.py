@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Callable, Tuple, Optional, Any
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr
@@ -15,7 +16,7 @@ class Unmanageable(Exception):
     pass
 
 
-REPR_FUNCTIONS = {}
+REPR_FUNCTIONS : dict[type,Callable] = {}
 
 
 # Just to make it easier to pass around and have a helpful debug logging.
@@ -80,7 +81,7 @@ def get_wm_name() -> str:
         log("get_wm_name()", exc_info=True)
         log.error("Error accessing window manager information:")
         log.estr(e)
-    return None
+    return ""
 
 
 def get_icc_data() -> dict:
@@ -139,7 +140,7 @@ def get_number_of_desktops() -> int:
     log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_workarea():
+def get_workarea() -> Optional[Tuple[int,int,int,int]]:
     try:
         d = get_current_desktop()
         if d<0:
@@ -155,7 +156,7 @@ def get_workarea():
             log.warn(f"Warning: invalid `_NET_WORKAREA` value length: {workarea!r}")
         else:
             cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
-            v = struct.unpack(b"@LLLL", cur_workarea)
+            v : Tuple[int,int,int,int] = struct.unpack(b"@LLLL", cur_workarea)
             log("get_workarea() %s=%s", hexstr(cur_workarea), v)
             return v
     except Exception as e:
@@ -164,16 +165,16 @@ def get_workarea():
         log.estr(e)
     return None
 
-def get_desktop_names() -> tuple:
-    v = ("Main", )
+def get_desktop_names() -> Tuple[str, ...]:
+    v : Tuple[str, ...] = ("Main", )
     d = None
     try:
         d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
         if d:
-            v = d.split(b"\0")
-            if len(v)>1 and v[-1]==b"":
-                v = v[:-1]
-            return tuple(x.decode("utf8") for x in v)
+            d = d.split(b"\0")
+            if len(d)>1 and d[-1]==b"":
+                d = d[:-1]
+            return tuple(x.decode("utf8") for x in d)
     except Exception as e:
         log.error("Error querying `_NET_DESKTOP_NAMES`:")
         log.estr(e)
@@ -213,7 +214,7 @@ def send_client_message(window, message_type, *values) -> None:
 
 
 device_bell = None
-def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
+def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name) -> bool:
     global device_bell
     if device_bell is False:
         #failed already
@@ -245,8 +246,8 @@ def get_xsettings():
     from xpra.x11.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
-def xsettings_to_dict(v) -> dict:
-    d = {}
+def xsettings_to_dict(v) -> dict[str, Tuple[int, Any]]:
+    d : dict[str, Tuple[int, Any]] = {}
     if v:
         _, values = v
         for setting_type, prop_name, value, _ in values:
@@ -254,7 +255,7 @@ def xsettings_to_dict(v) -> dict:
     return d
 
 
-def get_randr_dpi():
+def get_randr_dpi() -> Tuple[int,int]:
     from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     randr_bindings = RandRBindings()
     if randr_bindings and randr_bindings.has_randr():
@@ -269,14 +270,14 @@ def get_randr_dpi():
 
 
 
-def get_xresources() -> dict:
+def get_xresources() -> Optional[dict[str,str]]:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")
         if value is None:
             return None
         #parse the resources into a dict:
-        values = {}
+        values : dict[str,str] = {}
         options = bytestostr(value).split("\n")
         for option in options:
             if not option:

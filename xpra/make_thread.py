@@ -14,13 +14,14 @@ This is used by the pycallgraph test wrapper.
 """
 
 from threading import Thread
+from typing import Callable
 
-def make_thread(target : callable, name : str, daemon : bool=False, args=()) -> Thread:
+def make_thread(target : Callable, name : str, daemon : bool=False, args=()) -> Thread:
     t = Thread(target=target, name=name, args=args)
     t.daemon = daemon
     return t
 
-def start_thread(target : callable, name : str, daemon : bool=False, args=()) -> Thread:
+def start_thread(target : Callable, name : str, daemon : bool=False, args=()) -> Thread:
     t = make_thread(target, name, daemon, args=args)
     t.start()
     return t

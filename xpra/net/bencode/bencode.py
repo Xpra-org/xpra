@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,12 +9,13 @@
 
 # Original version written by Petru Paler
 
-__version__ = (b"Python", 4, 0)
+__version__ = (b"Python", 5, 0)
 
 import codecs
+from typing import Union, Callable, List, Any
 
 #idiotic py3k unicode mess makes us reinvent the wheel again:
-def strindex(s, char, start):
+def strindex(s : bytes, char : str, start : int):
     i = start
     while s[i] != ord(char):
         i += 1
@@ -22,7 +23,7 @@ def strindex(s, char, start):
             return -1
     return i
 #the values end up being ints..
-def b(x):
+def b(x) -> bytes:
     if isinstance(x, bytes):
         return x
     return codecs.latin_1_encode(x)[0]
@@ -78,16 +79,16 @@ def decode_dict(x, f):
     return (r, f + 1)
 
 
-decode_func = {}
-decode_func['l'] = decode_list
-decode_func['d'] = decode_dict
-decode_func['i'] = decode_int
+decode_func : dict[Union[int, str],Callable]= {}
+def add_decode(c:str, fn:Callable):
+    decode_func[c] = fn
+    decode_func[ord(c)] = fn
+add_decode('l', decode_list)
+add_decode('d', decode_dict)
+add_decode('i', decode_int)
 for c in '0123456789':
-    decode_func[c] = decode_string
-decode_func['u'] = decode_unicode
-#now as byte values:
-for dk,dv in dict(decode_func).items():
-    decode_func[ord(dk)] = dv
+    add_decode(c, decode_string)
+add_decode('u', decode_unicode)
 
 
 def bdecode(x):
@@ -101,27 +102,27 @@ def bdecode(x):
         raise ValueError from e
     return r, l
 
-def encode_int(x, r):
+def encode_int(x, r) -> None:
     # Explicit cast, because bool.__str__ is annoying.
     r.extend(('i', str(int(x)), 'e'))
 
-def encode_memoryview(x, r):
+def encode_memoryview(x, r) -> None:
     encode_string(x.tobytes(), r)
 
-def encode_string(x, r):
+def encode_string(x, r) -> None:
     r.extend((str(len(x)), ':', x))
 
-def encode_unicode(x, r):
+def encode_unicode(x, r) -> None:
     x = x.encode("utf8")
     encode_string(x, r)
 
-def encode_list(x, r):
+def encode_list(x, r) -> None:
     r.append('l')
     for i in x:
         encode_func[type(i)](i, r)
     r.append('e')
 
-def encode_dict(x,r):
+def encode_dict(x,r) -> None:
     r.append('d')
     for k in x.keys():
         v = x[k]
@@ -130,7 +131,7 @@ def encode_dict(x,r):
     r.append('e')
 
 
-encode_func = {
+encode_func : dict[type, Callable] = {
     int     : encode_int,
     str     : encode_unicode,
     list    : encode_list,
@@ -141,7 +142,7 @@ encode_func = {
     memoryview : encode_memoryview,
     }
 
-def bencode(x):
-    r = []
+def bencode(x) -> bytes:
+    r : List[Any] = []
     encode_func[type(x)](x, r)
     return b''.join(b(v) for v in r)

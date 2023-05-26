@@ -184,7 +184,7 @@ cdef int encode(object v, r) except -1:
     else:
         raise ValueError("unsupported type: %s, value=%s" % (t, v))
 
-def bencode(x):
+def bencode(x) -> bytes:
     r = []
     try:
         assert encode(x, r)==0

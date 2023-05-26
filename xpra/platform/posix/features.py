@@ -10,12 +10,12 @@ from xpra.os_util import is_Wayland
 
 AUTOSTART = True
 
-DEFAULT_ENV = [
+DEFAULT_ENV = (
     "#silence some AT-SPI and atk-bridge warnings:",
     "NO_AT_BRIDGE=1",
-    ]
+    )
 
-DEFAULT_START_ENV = [
+DEFAULT_START_ENV = (
              "#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:",
              "UBUNTU_MENUPROXY=",
              "QT_X11_NO_NATIVE_MENUBAR=1",
@@ -34,22 +34,22 @@ DEFAULT_START_ENV = [
              "GTK_OVERLAY_SCROLLING=0",
              "#some versions of GTK3 honour this option, sadly not all:",
              "GTK_CSD=0",
-             ]
+             )
 
 DEFAULT_SSH_CMD = "ssh"
 
-CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
 if not is_Wayland():
-    CLIPBOARDS.append("SECONDARY")
+    CLIPBOARDS = ("CLIPBOARD", "PRIMARY", "SECONDARY")
     CLIPBOARD_GREEDY = False
 else:
+    CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
     CLIPBOARD_GREEDY = True
 CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 
-OPEN_COMMAND = ["/usr/bin/xdg-open"]
+OPEN_COMMAND = ("/usr/bin/xdg-open", )
 
-INPUT_DEVICES = ["auto", "xi", "uinput"]
+INPUT_DEVICES = ("auto", "xi", "uinput")
 
-SOURCE = ["/etc/profile"]
+SOURCE = ("/etc/profile", )
 
 COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

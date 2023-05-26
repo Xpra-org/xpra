@@ -1,19 +1,20 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import threading
+from typing import Tuple, Callable
 
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.log import Logger
 log = Logger("network")
 
 
-DEFAULT_PORT = 14500
+DEFAULT_PORT : int = 14500
 
-DEFAULT_PORTS = {
+DEFAULT_PORTS : dict[str,int] = {
     "ws"    : 80,
     "wss"   : 443,
     "ssl"   : DEFAULT_PORT, #could also default to 443?
@@ -27,15 +28,15 @@ DEFAULT_PORTS = {
 class ConnectionClosedException(Exception):
     pass
 
-MAX_PACKET_SIZE = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
-FLUSH_HEADER = envbool("XPRA_FLUSH_HEADER", True)
+MAX_PACKET_SIZE : int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
+FLUSH_HEADER : bool = envbool("XPRA_FLUSH_HEADER", True)
 
-SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES : tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 
-IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
+IP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+TCP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
 
-URL_MODES = {
+URL_MODES : dict[str,str] = {
     "xpra"      : "tcp",
     "xpras"     : "ssl",
     "xpra+tcp"  : "tcp",
@@ -55,7 +56,7 @@ URL_MODES = {
 
 
 #this is used for generating aliases:
-PACKET_TYPES = [
+PACKET_TYPES : list[str] = [
     #generic:
     "hello",
     "info", "info-response",
@@ -99,17 +100,17 @@ PACKET_TYPES = [
     "rpc-reply",
     ]
 
-def get_log_packets(exclude=False):
+def get_log_packets(exclude=False) -> Tuple[str, ...]:
     lp = os.environ.get("XPRA_LOG_PACKETS")
     if not lp:
-        return None
+        return ()
     pt = []
     for x in lp.split(","):
         if x.startswith("-")==exclude:
             pt.append(x[int(exclude):])
     return tuple(pt)
 
-def _may_log_packet(sending, packet_type, packet):
+def _may_log_packet(sending, packet_type, packet) -> None:
     if LOG_PACKET_TYPE:
         log.info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type, threading.current_thread())
     if LOG_PACKETS or NOLOG_PACKETS:
@@ -121,21 +122,20 @@ def _may_log_packet(sending, packet_type, packet):
                 s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
             log.info(s)
 
-LOG_PACKETS = None
-NOLOG_PACKETS = None
-LOG_PACKET_TYPE = False
-PACKET_LOG_MAX_SIZE = 500
+LOG_PACKETS : Tuple[str, ...] = ()
+NOLOG_PACKETS : Tuple[str, ...] = ()
+LOG_PACKET_TYPE : bool = False
+PACKET_LOG_MAX_SIZE : int = 500
 
-def noop(*_args):
+def noop(*_args) -> None:
     """ the default implementation is to do nothing """
-may_log_packet = noop
+may_log_packet : Callable = noop
 
-def init():
+def init() -> None:
     global LOG_PACKETS, NOLOG_PACKETS, LOG_PACKET_TYPE, PACKET_LOG_MAX_SIZE
     LOG_PACKETS = get_log_packets()
     NOLOG_PACKETS = get_log_packets(True)
     LOG_PACKET_TYPE = envbool("XPRA_LOG_PACKET_TYPE", False)
-
     PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
 
     global may_log_packet

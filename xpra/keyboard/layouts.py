@@ -14,12 +14,12 @@
 # This is used for converting the layout we detect using win32api into
 # something that can be used by X11 (a layout with optional variant)
 UNICODE=-1
-LATAM_VARIANTS = ["nodeadkeys", "deadtilde", "sundeadkeys"]
-ARA_VARIANTS = ["azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter"]
-ES_VARIANTS = ["nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac"]
-RS_VARIANTS = ["yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue"]
-FR_VARIANTS = ["nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo"]
-WIN32_LAYOUTS = {
+LATAM_VARIANTS : list[str] = ["nodeadkeys", "deadtilde", "sundeadkeys"]
+ARA_VARIANTS : list[str] = ["azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter"]
+ES_VARIANTS : list[str] = ["nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac"]
+RS_VARIANTS : list[str] = ["yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue"]
+FR_VARIANTS : list[str] = ["nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo"]
+WIN32_LAYOUTS : dict[int,tuple]= {
            1025: ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
            1026: ("BGR", "Bulgaria",       "Bulgarian",                1251,   "bg", ["phonetic", "bas_phonetic"]),
            1027: ("CAT", "Spain",          "Catalan",                  1252,   "ad", []),
@@ -167,7 +167,7 @@ WIN32_LAYOUTS = {
 #map win32 keyboard codes to x11 names:
 #based on
 #https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
-WIN32_KEYBOARDS = {
+WIN32_KEYBOARDS : dict[int, tuple] = {
     0x0000041c  : ("al", "Albania"),
     0x00000401  : ("ar", "Arabic (101)"),
     0x00010401  : ("ar", "Arabic (102)"),
@@ -375,12 +375,12 @@ WIN32_KEYBOARDS = {
 # This is generated from the table above so we can
 # let the user choose his own layout.
 # (country,language) : (layout,variant)
-X11_LAYOUTS = {}
+X11_LAYOUTS : dict[tuple,tuple] = {}
 for _, country, language, _, layout, variants in WIN32_LAYOUTS.values():
     key = (country,language)
     value = (layout, variants)
     X11_LAYOUTS[key] = value
-LAYOUT_VARIANTS = {}
+LAYOUT_VARIANTS : dict[str, list[str]] = {}
 for _, _, _, _, layout, variants in WIN32_LAYOUTS.values():
     l = LAYOUT_VARIANTS.get(layout)
     if not l:
@@ -390,7 +390,7 @@ for _, _, _, _, layout, variants in WIN32_LAYOUTS.values():
         if variant not in l:
             l.append(variant)
 
-def parse_xkbmap_query(xkbmap_query):
+def parse_xkbmap_query(xkbmap_query:str) -> dict:
     """ parses the output of "setxkbmap -query" into a dict """
     import re
     settings = {}
@@ -403,7 +403,7 @@ def parse_xkbmap_query(xkbmap_query):
                 settings[m.group(1)] = v
     return settings
 
-def xkbmap_query_tostring(query_dict):
+def xkbmap_query_tostring(query_dict:dict) -> str:
     """ converts an xkb query dict back into a string """
     s = ""
     for k in ("rules", "model", "layout", "variant", "options"):

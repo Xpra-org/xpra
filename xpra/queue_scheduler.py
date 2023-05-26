@@ -5,6 +5,7 @@
 
 from queue import Queue
 from threading import Timer, RLock
+from typing import Callable
 
 from xpra.util import AtomicInteger
 from xpra.log import Logger
@@ -30,7 +31,7 @@ class QueueScheduler:
             if timer:
                 timer.cancel()
 
-    def idle_add(self, fn : callable, *args, **kwargs) -> int:
+    def idle_add(self, fn : Callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
         self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
         #add an entry,
@@ -38,31 +39,31 @@ class QueueScheduler:
         self.timers[tid] = False
         return tid
 
-    def idle_repeat_call(self, tid : int, fn : callable, args, kwargs):
+    def idle_repeat_call(self, tid : int, fn : Callable, args, kwargs):
         if tid not in self.timers:
             return False    #cancelled
         return fn(*args, **kwargs)
 
-    def timeout_add(self, timeout : int, fn : callable, *args, **kwargs):
+    def timeout_add(self, timeout : int, fn : Callable, *args, **kwargs):
         tid = self.timer_id.increase()
         self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
         return tid
 
-    def do_timeout_add(self, tid : int, timeout : int, fn : callable, *args, **kwargs):
+    def do_timeout_add(self, tid : int, timeout : int, fn : Callable, *args, **kwargs):
         #emulate glib's timeout_add using Timers
         args = (tid, timeout, fn, args, kwargs)
         t = Timer(timeout/1000.0, self.queue_timeout_function, args)
         self.timers[tid] = t
         t.start()
 
-    def queue_timeout_function(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
+    def queue_timeout_function(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs):
         if tid not in self.timers:  # pragma: no cover
             return      #cancelled
         #add to run queue:
         mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
-    def timeout_repeat_call(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
+    def timeout_repeat_call(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs):
         #executes the function then re-schedules it (if it returns True)
         if tid not in self.timers:  # pragma: no cover
             return False    #cancelled

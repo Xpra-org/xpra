@@ -11,6 +11,7 @@ import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
+from typing import Callable, Tuple
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -115,19 +116,56 @@ class WindowVideoSource(WindowSource):
 
     def __init__(self, *args):
         #this will call init_vars():
-        self.supports_scrolling = False
+        self.supports_scrolling : bool = False
         self.video_subregion = None
         super().__init__(*args)
-        self.supports_eos = self.encoding_options.boolget("eos")
-        self.supports_scrolling = "scroll" in self.common_encodings or (
+        self.supports_eos : bool= self.encoding_options.boolget("eos")
+        self.supports_scrolling : bool = "scroll" in self.common_encodings or (
             #for older clients, we check an encoding option:
             "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
-        self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
-        self.scroll_preference = self.encoding_options.intget("scrolling.preference", 100)
-        self.supports_video_b_frames = self.encoding_options.strtupleget("video_b_frames", ())
+        self.scroll_min_percent : int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
+        self.scroll_preference : int = self.encoding_options.intget("scrolling.preference", 100)
+        self.supports_video_b_frames : bool = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_stream_file = None
+
+    def __repr__(self) -> str:
+        return f"WindowVideoSource({self.wid} : {self.window_dimensions})"
+
+    def init_vars(self) -> None:
+        super().init_vars()
+        #these constraints get updated with real values
+        #when we construct the video pipeline:
+        self.min_w : int = 8
+        self.min_h : int = 8
+        self.max_w : int = 16384
+        self.max_h : int = 16384
+        self.width_mask : int = 0xFFFF
+        self.height_mask : int = 0xFFFF
+        self.actual_scaling = (1, 1)
+
+        self.last_pipeline_params : tuple = ()
+        self.last_pipeline_scores : tuple = ()
+        self.last_pipeline_time : int = 0
+
+        self.video_encodings : tuple[str] = ()
+        self.common_video_encodings : tuple[str] = ()
+        self.non_video_encodings : tuple[str] = ()
+        self.video_fallback_encodings : dict = {}
+        self.edge_encoding : str = ""
+        self.start_video_frame : int = 0
+        self.video_encoder_timer : int = 0
+        self.b_frame_flush_timer : int = 0
+        self.b_frame_flush_data : tuple = ()
+        self.encode_from_queue_timer : int = 0
+        self.encode_from_queue_due = 0
+        self.scroll_data = None
+        self.last_scroll_time = 0
+
+        self._csc_encoder = None
+        self._video_encoder = None
+        self._last_pipeline_check = 0
 
     def init_encoders(self) -> None:
         super().init_encoders()
@@ -165,43 +203,6 @@ class WindowVideoSource(WindowSource):
         log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
-
-    def __repr__(self) -> str:
-        return f"WindowVideoSource({self.wid} : {self.window_dimensions})"
-
-    def init_vars(self) -> None:
-        super().init_vars()
-        #these constraints get updated with real values
-        #when we construct the video pipeline:
-        self.min_w : int = 8
-        self.min_h : int = 8
-        self.max_w : int = 16384
-        self.max_h : int = 16384
-        self.width_mask : int = 0xFFFF
-        self.height_mask : int = 0xFFFF
-        self.actual_scaling = (1, 1)
-
-        self.last_pipeline_params : tuple = ()
-        self.last_pipeline_scores : tuple = ()
-        self.last_pipeline_time : int = 0
-
-        self.video_encodings : tuple = ()
-        self.common_video_encodings : tuple = ()
-        self.non_video_encodings : tuple = ()
-        self.video_fallback_encodings : dict = {}
-        self.edge_encoding : str = ""
-        self.start_video_frame : int = 0
-        self.video_encoder_timer : int = 0
-        self.b_frame_flush_timer : int = 0
-        self.b_frame_flush_data : tuple = ()
-        self.encode_from_queue_timer : int = 0
-        self.encode_from_queue_due = 0
-        self.scroll_data = None
-        self.last_scroll_time = 0
-
-        self._csc_encoder = None
-        self._video_encoder = None
-        self._last_pipeline_check = 0
 
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)
@@ -399,7 +400,7 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
         super().set_new_encoding(encoding, strict)
 
-    def insert_encoder(self, encoder_name : str, encoding : str, encode_fn : callable) -> None:
+    def insert_encoder(self, encoder_name : str, encoding : str, encode_fn : Callable) -> None:
         super().insert_encoder(encoder_name, encoding, encode_fn)
         #we don't want to use nvjpeg as fallback,
         #because it requires a GPU context
@@ -458,7 +459,7 @@ class WindowVideoSource(WindowSource):
         log("do_set_client_properties(%s) full_csc_modes=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
-    def get_best_encoding_impl_default(self) -> callable:
+    def get_best_encoding_impl_default(self) -> Callable:
         log("get_best_encoding_impl_default() window_type=%s, encoding=%s", self.window_type, self.encoding)
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
             return super().get_best_encoding_impl_default()
@@ -1448,7 +1449,7 @@ class WindowVideoSource(WindowSource):
         crs = None
         if DOWNSCALE:
             crs = self.client_render_size
-        def get_min_required_scaling(default_value=(1, 1)):
+        def get_min_required_scaling(default_value=(1, 1)) -> Tuple[int, int]:
             mw = max_w
             mh = max_h
             if crs:
@@ -1870,7 +1871,7 @@ class WindowVideoSource(WindowSource):
         return opts
 
 
-    def get_fail_cb(self, packet) -> callable:
+    def get_fail_cb(self, packet) -> Callable:
         coding = packet[6]
         if coding in self.common_video_encodings:
             return None

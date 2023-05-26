@@ -16,15 +16,16 @@ import os
 import sys
 import struct
 from enum import IntEnum
+from typing import List, Tuple
 
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.os_util import strtobytes, bytestostr, hexstr
 
 
-log = Logger("x11", "xsettings")
+log : Logger = Logger("x11", "xsettings")
 
-BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
+BLACKLISTED_XSETTINGS : List[str] = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
                                        "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
 
@@ -51,7 +52,7 @@ XSettingsNames : dict = {
                 }
 
 
-XSETTINGS_CACHE : dict = {}
+XSETTINGS_CACHE : Tuple[int, bytes] = (0, b"")
 def bytes_to_xsettings(d:bytes):
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
@@ -67,7 +68,7 @@ def bytes_to_xsettings(d:bytes):
     if cache and cache[0]==serial:
         log("bytes_to_xsettings(..) returning value from cache")
         return cache
-    settings = []
+    settings : List[Tuple] = []
     pos = 12
     while n_settings>len(settings):
         log("bytes_to_xsettings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))

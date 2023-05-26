@@ -65,7 +65,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.make_notifier()
         log("init(..) session_name=%s", opts.session_name)
         if opts.session_name:
-            self.session_name = opts.session_name
+            self.session_name : str = opts.session_name
         else:
             self.guess_session_name()
 

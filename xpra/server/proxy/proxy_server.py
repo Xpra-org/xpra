@@ -10,6 +10,7 @@ import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
+from typing import List
 
 from xpra.util import (
     ConnectionMessage,
@@ -47,6 +48,7 @@ PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", WIN32)
 PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", 0.5)
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
+DEFAULT_ENV_WHITELIST : str = "LANG,HOSTNAME,PWD,TERM,SHELL,SHLVL,PATH,USER,HOME"
 if WIN32:
     #DEFAULT_ENV_WHITELIST = "ALLUSERSPROFILE,APPDATA,COMMONPROGRAMFILES,COMMONPROGRAMFILES(X86),"+
     #                        "COMMONPROGRAMW6432,COMPUTERNAME,COMSPEC,FP_NO_HOST_CHECK,LOCALAPPDATA,"+
@@ -57,9 +59,7 @@ if WIN32:
     #                        "USERDOMAIN,WORKGROUP,USERNAME,USERPROFILE,WINDIR,"+
     #                        "XPRA_REDIRECT_OUTPUT,XPRA_LOG_FILENAME,XPRA_ALL_DEBUG"
     DEFAULT_ENV_WHITELIST = "*"
-else:
-    DEFAULT_ENV_WHITELIST = "LANG,HOSTNAME,PWD,TERM,SHELL,SHLVL,PATH,USER,HOME"
-ENV_WHITELIST = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
+ENV_WHITELIST : List[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
 
 
 def get_socktype(proto):

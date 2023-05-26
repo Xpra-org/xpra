@@ -8,6 +8,7 @@ import sys
 import os
 import socket
 import platform
+from typing import Any, Dict, Tuple
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
@@ -17,8 +18,8 @@ from xpra.common import FULL_INFO
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
-CHECK_SSL = envbool("XPRA_VERSION_CHECK_SSL", True)
-SSL_CAFILE = None
+CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
+SSL_CAFILE : str = ""
 if WIN32:
     try:
         import certifi  #@UnresolvedImport
@@ -28,13 +29,13 @@ if WIN32:
 SSL_CAFILE = os.environ.get("XPRA_SSL_CAFILE", SSL_CAFILE)
 
 
-def log(msg, *args, **kwargs):
+def log(msg, *args, **kwargs) -> None:
     get_util_logger().debug(msg, *args, **kwargs)
-def warn(msg, *args, **kwargs):
+def warn(msg, *args, **kwargs) -> None:
     get_util_logger().warn(msg, *args, **kwargs)
 
 
-def vparts(vstr, n=1):
+def vparts(vstr:str, n=1) -> str:
     return ".".join(vstr.split(".")[:n])
 
 
@@ -116,9 +117,9 @@ def version_compat_check(remote_version):
     return None
 
 
-def get_host_info(full_info=1) -> dict:
+def get_host_info(full_info:int=1) -> Dict[str, Any]:
     #this function is for non UI thread info
-    info = {}
+    info : Dict[str, Any] = {}
     if full_info>1:
         info.update({
         "byteorder"             : sys.byteorder,
@@ -142,8 +143,8 @@ def get_host_info(full_info=1) -> dict:
                 })
     return info
 
-def get_version_info(full:int=1) -> dict:
-    info = {"version" : vparts(XPRA_VERSION, full+1)}
+def get_version_info(full:int=1) -> Dict[str, Any]:
+    info : Dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
     if full>0:
         try:
             # pylint: disable=import-outside-toplevel
@@ -162,8 +163,8 @@ def get_version_info(full:int=1) -> dict:
         info["build"] = get_build_info()
     return info
 
-def get_build_info(full:int=1) -> dict:
-    info = {}
+def get_build_info(full:int=1) -> Dict[str, Any]:
+    info : Dict[str, Any] = {}
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
         #rename these build info properties:
@@ -191,7 +192,7 @@ def get_build_info(full:int=1) -> dict:
     log(f"get_build_info({full})={info}")
     return info
 
-def parse_version(v):
+def parse_version(v) -> Tuple[Any, ...]:
     if isinstance(v, str):
         def maybeint(v):
             try:
@@ -199,9 +200,7 @@ def parse_version(v):
             except ValueError:
                 return v
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
-    if isinstance(v, list):
-        return tuple(v)
-    return v
+    return tuple(v)
 
 def vtrim(v, parts=FULL_INFO+1):
     if isinstance(v, (list, tuple)):
@@ -221,7 +220,7 @@ def dict_version_trim(d, parts=FULL_INFO+1):
     return dict(vfilt(k,v) for k,v in d.items())
 
 
-def do_get_platform_info() -> dict:
+def do_get_platform_info() -> Dict[str, Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import platform_name, platform_release
     pp = sys.modules.get("platform", platform)
@@ -241,7 +240,7 @@ def do_get_platform_info() -> dict:
                 if "model name" in line:
                     return re.sub(".*model name.*:", "", line,1).strip()
         return pp.processor()
-    info = {}
+    info : Dict[str, Any] = {}
     ld = get_linux_distribution()
     if ld:
         info["linux_distribution"] = ld

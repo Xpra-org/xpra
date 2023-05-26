@@ -131,8 +131,8 @@ class NamedPipeListener(Thread):
                 log("CreatePipeHandle()=%#x", pipe_handle)
                 if c_long(pipe_handle).value==INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
-                    e = GetLastError()
-                    log.error(" '%s' (%i)", FormatMessageSystem(e).rstrip("\n\r."), e)
+                    err : int = GetLastError()
+                    log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
                     return
             event = CreateEventA(None, True, False, None)
             overlapped = OVERLAPPED()
@@ -145,11 +145,11 @@ class NamedPipeListener(Thread):
             if self.exit_loop:
                 break
             if r==0:
-                e = GetLastError()
-                log("GetLastError()=%s (%i)", FormatMessageSystem(e).rstrip("\n\r"), e)
-                if e==ERROR_PIPE_CONNECTED:
+                err : int = GetLastError()
+                log("GetLastError()=%s (%i)", FormatMessageSystem(err).rstrip("\n\r"), err)
+                if err==ERROR_PIPE_CONNECTED:
                     pass
-                elif e==ERROR_IO_PENDING:
+                elif err==ERROR_IO_PENDING:
                     while not self.exit_loop:
                         r = WaitForSingleObject(event, INFINITE)
                         log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
@@ -164,7 +164,7 @@ class NamedPipeListener(Thread):
                         break
                 else:
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
-                    log.error(" error %s", e)
+                    log.error(" error %s", err)
                     CloseHandle(pipe_handle)
                     pipe_handle = None
                 if self.exit_loop:
