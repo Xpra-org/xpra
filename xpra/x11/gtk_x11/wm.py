@@ -180,7 +180,7 @@ class Wm(GObject.GObject):
         "xpra-xkb-event": one_arg_signal,
         }
 
-    def __init__(self, replace_other_wm, wm_name, display=None):
+    def __init__(self, replace_other_wm:bool, wm_name:str, display=None):
         super().__init__()
 
         if display is None:
@@ -264,18 +264,18 @@ class Wm(GObject.GObject):
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
 
-    def root_set(self, *args):
+    def root_set(self, *args) -> None:
         prop_set(X11Window.get_root_xid(), *args)
 
     def root_get(self, *args):
         return prop_get(X11Window.get_root_xid(), *args)
 
-    def set_workarea(self, x, y, width, height):
+    def set_workarea(self, x:int, y:int, width:int, height:int) -> None:
         v = [x, y, width, height]
         screenlog("_NET_WORKAREA=%s", v)
         self.root_set("_NET_WORKAREA", ["u32"], v)
 
-    def set_desktop_geometry(self, width, height):
+    def set_desktop_geometry(self, width:int, height:int) -> None:
         v = [width, height]
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
@@ -283,7 +283,7 @@ class Wm(GObject.GObject):
         for model in self._windows.values():
             model.update_desktop_geometry(width, height)
 
-    def set_size_constraints(self, minw=0, minh=0, maxw=MAX_WINDOW_SIZE, maxh=MAX_WINDOW_SIZE):
+    def set_size_constraints(self, minw:int=0, minh:int=0, maxw:int=MAX_WINDOW_SIZE, maxh:int=MAX_WINDOW_SIZE) -> None:
         log("set_size_constraints%s", (minw, minh, maxw, maxh))
         self.size_constraints = minw, minh, maxw, maxh
         #update all the windows:
@@ -314,7 +314,7 @@ class Wm(GObject.GObject):
 
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
-    def _manage_client(self, xid):
+    def _manage_client(self, xid:int):
         if xid in self._windows:
             #already managed
             return
@@ -343,7 +343,7 @@ class Wm(GObject.GObject):
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, model, _wm_exiting, xid):
+    def _handle_client_unmanaged(self, model, _wm_exiting, xid:int):
         if xid not in self._windows:
             log.error(f"Error: gdk window {xid} not found in {self._windows}")
             return
@@ -393,14 +393,14 @@ class Wm(GObject.GObject):
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
-    def _lost_wm_selection(self, selection):
+    def _lost_wm_selection(self, selection) -> None:
         log.info("Lost WM selection %s, exiting", selection)
         self.emit("quit")
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         self.cleanup()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         remove_fallback_receiver("xpra-client-message-event", self)
         remove_fallback_receiver("child-map-request-event", self)
         for win in tuple(self._windows.values()):
@@ -412,11 +412,11 @@ class Wm(GObject.GObject):
         destroy_world_window()
 
 
-    def do_child_map_request_event(self, event):
+    def do_child_map_request_event(self, event) -> None:
         log("Found a potential client")
         self._manage_client(event.window)
 
-    def do_child_configure_request_event(self, event):
+    def do_child_configure_request_event(self, event) -> None:
         # The point of this method is to handle configure requests on
         # withdrawn windows.  We simply allow them to move/resize any way they
         # want.  This is harmless because the window isn't visible anyway (and
@@ -454,7 +454,7 @@ class Wm(GObject.GObject):
                     xid, X11Window.getGeometry(xid)[:4], (x, y, w, h))
             X11Window.configureAndNotify(xid, x, y, w, h, event.value_mask)
 
-    def do_xpra_focus_in_event(self, event):
+    def do_xpra_focus_in_event(self, event) -> None:
         # The purpose of this function is to detect when the focus mode has
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
@@ -463,18 +463,18 @@ class Wm(GObject.GObject):
         if event.detail in (NotifyPointerRoot, NotifyDetailNone) and self._world_window:
             self._world_window.reset_x_focus()
 
-    def do_xpra_focus_out_event(self, event):
+    def do_xpra_focus_out_event(self, event) -> None:
         focuslog("wm.do_xpra_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
-    def set_desktop_list(self, desktops):
+    def set_desktop_list(self, desktops) -> None:
         log("set_desktop_list(%s)", desktops)
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
         self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
 
-    def set_current_desktop(self, index):
+    def set_current_desktop(self, index) -> None:
         self.root_set("_NET_CURRENT_DESKTOP", "u32", index)
 
-    def _setup_ewmh_window(self):
+    def _setup_ewmh_window(self) -> None:
         # Set up a 1x1 invisible unmapped window, with which to participate in
         # EWMH's _NET_SUPPORTING_WM_CHECK protocol.  The only important things
         # about this window are the _NET_SUPPORTING_WM_CHECK property, and
@@ -494,7 +494,7 @@ class Wm(GObject.GObject):
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
         self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
-    def get_net_wm_name(self):
+    def get_net_wm_name(self) -> str:
         try:
             return prop_get(self._ewmh_window.get_xid(), "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
         except Exception as e:

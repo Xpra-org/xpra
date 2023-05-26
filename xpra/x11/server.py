@@ -97,7 +97,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)
 
-    def server_init(self):
+    def server_init(self) -> None:
         X11ServerBase.server_init(self)
         screenlog("server_init() clobber=%s, randr=%s, initial_resolutions=%s",
                   self.clobber, self.randr, self.initial_resolutions)
@@ -107,7 +107,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             with xlog:
                 set_initial_resolution(self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS, self.dpi or self.default_dpi)
 
-    def validate(self):
+    def validate(self) -> bool:
         if not X11Window.displayHasXComposite():
             log.error("Xpra 'start' subcommand runs as a compositing manager")
             log.error(" it cannot use a display which lacks the XComposite extension!")
@@ -116,12 +116,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
         from xpra.x11.gtk_x11.wm_check import wm_check
         return wm_check(self.clobber & CLOBBER_UPGRADE)
 
-    def setup(self):
+    def setup(self) -> None:
         X11ServerBase.setup(self)
         if self.system_tray:
             self.add_system_tray()
 
-    def x11_init(self):
+    def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
 
         self._focus_history = deque(maxlen=100)
@@ -139,7 +139,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.last_client_configure_event = 0
         self.snc_timer = 0
 
-    def init_root_overlay(self):
+    def init_root_overlay(self) -> None:
         xid = get_default_root_window().get_xid()
         try:
             with xsync:
@@ -154,14 +154,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
             log.estr(e)
             self.release_root_overlay()
 
-    def release_root_overlay(self):
+    def release_root_overlay(self) -> None:
         ro = self.root_overlay
         if ro:
             self.root_overlay = None
             with xswallow:
                 X11Window.XCompositeReleaseOverlayWindow(ro)
 
-    def init_wm(self):
+    def init_wm(self) -> None:
         ### Create the WM object
         from xpra.x11.gtk_x11.wm import Wm
         x11_errors = []
@@ -196,7 +196,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._wm.connect("show-desktop", self._show_desktop)
 
 
-    def do_cleanup(self):
+    def do_cleanup(self) -> None:
         if self._tray:
             self._tray.cleanup()
             self._tray = None
@@ -213,12 +213,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.X11_ungrab()
         X11ServerBase.do_cleanup(self)
 
-    def clean_x11_properties(self):
+    def clean_x11_properties(self) -> None:
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER")
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         #last client is gone:
         X11ServerBase.last_client_exited(self)
         if self._has_grab:
@@ -226,7 +226,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.X11_ungrab()
 
 
-    def update_size_constraints(self, minw, minh, maxw, maxh):
+    def update_size_constraints(self, minw, minh, maxw, maxh) -> None:
         wm = self._wm
         if wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
@@ -237,21 +237,21 @@ class XpraServer(GObject.GObject, X11ServerBase):
             wm.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         X11ServerBase.init_packet_handlers(self)
         self.add_packet_handler("window-signal", self._process_window_signal)
 
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "X11 seamless"
 
 
-    def server_event(self, *args):
+    def server_event(self, *args) -> None:
         super().server_event(*args)
         self.emit("server-event", args)
 
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> dict:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities["pointer.grabs"] = True
@@ -273,7 +273,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     ##########################################################################
     # info:
     #
-    def do_get_info(self, proto, server_sources):
+    def do_get_info(self, proto, server_sources) -> dict:
         info = super().do_get_info(proto, server_sources)
         info["exit-with-windows"] = self._exit_with_windows
         info.setdefault("state", {}).update({
@@ -282,7 +282,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                                              })
         return info
 
-    def get_ui_info(self, proto, wids=None, *args):
+    def get_ui_info(self, proto, wids=None, *args) -> dict:
         info = super().get_ui_info(proto, wids, *args)
         #_NET_WM_NAME:
         wm = self._wm
@@ -290,7 +290,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
         return info
 
-    def get_window_info(self, window):
+    def get_window_info(self, window) -> dict:
         info = super().get_window_info(window)
         info.update({
                      "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
@@ -310,7 +310,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     ##########################################################################
     # Manage the virtual screen:
     #
-    def set_screen_size(self, desired_w, desired_h, bigger=True):
+    def set_screen_size(self, desired_w:int, desired_h:int, bigger=True):
         #clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
             if window.is_tray() or window.is_OR():
@@ -333,14 +333,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return super().set_screen_size(desired_w, desired_h, bigger)
 
 
-    def set_screen_geometry_attributes(self, w, h):
+    def set_screen_geometry_attributes(self, w:int, h:int):
         #only run the default code if there are no clients,
         #when we have clients, this should have been done already
         #in the code that synchronizes the screen resolution
         if not self._server_sources:
             super().set_screen_geometry_attributes(w, h)
 
-    def calculate_desktops(self):
+    def calculate_desktops(self) -> None:
         wm = self._wm
         if not wm:
             return
@@ -361,17 +361,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
             names.append(name)
         wm.set_desktop_list(names)
 
-    def set_workarea(self, workarea):
+    def set_workarea(self, workarea) -> None:
         wm = self._wm
         if wm:
             wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
-    def set_desktop_geometry(self, width, height):
+    def set_desktop_geometry(self, width:int, height:int) -> None:
         wm = self._wm
         if wm:
             wm.set_desktop_geometry(width, height)
 
-    def set_dpi(self, xdpi, ydpi):
+    def set_dpi(self, xdpi:int, ydpi:int) -> None:
         #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         #(and will not be honoured by anything else..)
         if DUMMY_DPI:
@@ -382,7 +382,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
 
-    def add_system_tray(self):
+    def add_system_tray(self) -> None:
         # Tray handler:
         try:
             with xsync:
@@ -395,7 +395,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     # Manage windows:
     #
 
-    def load_existing_windows(self):
+    def load_existing_windows(self) -> None:
         if not self._wm:
             return
 
@@ -426,7 +426,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return self._id_to_window.get(wid)
 
 
-    def parse_hello_ui_window_settings(self, ss, _caps):
+    def parse_hello_ui_window_settings(self, ss, _caps) -> None:
         #FIXME: with multiple users, don't set any frame size?
         frame = None
         if ss in self.window_sources():
@@ -438,7 +438,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self._wm.set_default_frame_extents(frame)
 
 
-    def send_initial_windows(self, ss, sharing=False):
+    def send_initial_windows(self, ss, sharing=False) -> None:
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
@@ -481,12 +481,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.last_raised = None
         self._add_new_window(window)
 
-    def do_xpra_child_map_event(self, event):
+    def do_xpra_child_map_event(self, event) -> None:
         windowlog("do_xpra_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)
 
-    def _add_new_window_common(self, window):
+    def _add_new_window_common(self, window) -> int:
         windowlog("adding window %s", window)
         wid = super()._add_new_window_common(window)
         window.managed_connect("client-contents-changed", self._contents_changed)
@@ -509,7 +509,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return wid
 
 
-    def _x11_property_changed(self, window, event):
+    def _x11_property_changed(self, window, event) -> None:
         #name, dtype, dformat, value = event
         metadata = {"x11-property" : event}
         wid = self._window_to_id[window]
@@ -519,7 +519,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 ss.send("window-metadata", wid, metadata)
 
 
-    def _add_new_window(self, window):
+    def _add_new_window(self, window) -> None:
         wid = self._add_new_window_common(window)
         geometry = window.get_property("geometry")
         log("Discovered new ordinary window: %s (geometry=%s)", window, geometry)
@@ -540,7 +540,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 self.schedule_configure_damage(wid, 0)
 
 
-    def _window_resized_signaled(self, window, *args):
+    def _window_resized_signaled(self, window, *args) -> None:
         x, y, nw, nh = window.get_property("geometry")[:4]
         geom = window.get_property("client-geometry")
         geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s",
@@ -562,7 +562,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         delay = max(100, min(250, 250 + 1000 * (lcce-monotonic())))
         self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
-    def size_notify_clients(self, window, lcce=-1):
+    def size_notify_clients(self, window, lcce=-1) -> None:
         geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s",
                 window, lcce, self.last_client_configure_event)
         self.snc_timer = 0
@@ -582,7 +582,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #if the window is smaller than before, or at least only send the new edges rather than the whole window
             ss.damage(wid, window, 0, 0, nw, nh)
 
-    def _add_new_or_window(self, xid):
+    def _add_new_or_window(self, xid:int) -> None:
         if self.root_overlay and self.root_overlay.get_xid()==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
@@ -644,7 +644,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
-    def _or_window_geometry_changed(self, window, _pspec=None):
+    def _or_window_geometry_changed(self, window, _pspec=None) -> None:
         geom = window.get_property("geometry")
         x, y, w, h = geom
         if w>=32768 or h>=32768:
@@ -656,7 +656,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.or_window_geometry(wid, window, x, y, w, h)
 
 
-    def add_control_commands(self):
+    def add_control_commands(self) -> None:
         if not server_features.control:
             return
         super().add_control_commands()
@@ -668,17 +668,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
         cmd.do_run = control_cb
         self.control_commands[cmd.name] = cmd
 
-    def show_all_windows(self):
+    def show_all_windows(self) -> None:
         for w in self._id_to_window.values():
             w.show()
 
-    def _show_desktop(self, wm, show):
+    def _show_desktop(self, wm, show) -> None:
         log("show_desktop(%s, %s)", wm, show)
         for ss in self.window_sources():
             ss.show_desktop(show)
 
 
-    def _focus(self, server_source, wid, modifiers):
+    def _focus(self, server_source, wid:int, modifiers) -> None:
         focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
         if self.last_raised!=wid:
             self.last_raised = None
@@ -730,22 +730,22 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return self._has_focus
 
 
-    def _send_new_window_packet(self, window):
+    def _send_new_window_packet(self, window) -> None:
         self._do_send_new_window_packet("new-window", window, window.get_property("geometry"))
 
-    def _send_new_or_window_packet(self, window):
+    def _send_new_or_window_packet(self, window) -> None:
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
         self.refresh_window(window)
 
-    def _send_new_tray_window_packet(self, wid, window):
+    def _send_new_tray_window_packet(self, wid, window) -> None:
         ww, wh = window.get_dimensions()
         for ss in self.window_sources():
             ss.new_tray(wid, window, ww, wh)
         self.refresh_window(window)
 
 
-    def _lost_window(self, window, wm_exiting=False):
+    def _lost_window(self, window, wm_exiting=False) -> None:
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
         if self._exit_with_windows and len(self._id_to_window)==0:
@@ -754,12 +754,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
         elif not wm_exiting:
             self.repaint_root_overlay()
 
-    def _contents_changed(self, window, event):
+    def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
             self.refresh_window_area(window, event.x, event.y, event.width, event.height, options={"damage" : True})
 
 
-    def _window_grab(self, window, event):
+    def _window_grab(self, window, event) -> None:
         grab_id = self._window_to_id.get(window, -1)
         grablog("window_grab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
                 window, event, self._has_grab, self._has_focus, grab_id)
@@ -769,7 +769,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.pointer_grab(self._has_grab)
 
-    def _window_ungrab(self, window, event):
+    def _window_ungrab(self, window, event) -> None:
         grab_id = self._window_to_id.get(window, -1)
         grablog("window_ungrab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
                 window, event, self._has_grab, self._has_focus, grab_id)
@@ -780,7 +780,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.pointer_ungrab(grab_id)
 
 
-    def _initiate_moveresize(self, window, event):
+    def _initiate_moveresize(self, window, event) -> None:
         log("initiate_moveresize(%s, %s)", window, event)
         assert len(event.data)==5
         #x_root, y_root, direction, button, source_indication = event.data
@@ -798,7 +798,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         wsources[0].initiate_moveresize(wid, window, *event.data)
 
 
-    def _restack_window(self, window, detail, sibling):
+    def _restack_window(self, window, detail, sibling) -> None:
         wid = self._window_to_id[window]
         focuslog("restack window(%s) wid=%s, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised!=wid:
@@ -810,11 +810,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.restack_window(wid, window, detail, sibling)
 
 
-    def _set_window_state(self, proto, wid, window, new_window_state):
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> tuple:
         if proto not in self._server_sources:
-            return []
+            return ()
         if not new_window_state:
-            return []
+            return ()
         nws = typedict(new_window_state)
         metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes = {}
@@ -863,7 +863,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return pos[:2]
 
 
-    def client_configure_window(self, win, geometry, resize_counter=0):
+    def client_configure_window(self, win, geometry, resize_counter:int=0):
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
         old_geom = win.get_property("client-geometry")
         update_geometry = geometry!=old_geom
@@ -881,7 +881,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             win._update_client_geometry()
 
 
-    def _process_map_window(self, proto, packet):
+    def _process_map_window(self, proto, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -912,7 +912,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _process_unmap_window(self, proto, packet):
+    def _process_unmap_window(self, proto, packet) -> None:
         wid = packet[1]
         window = self._lookup_window(wid)
         if not window:
@@ -940,7 +940,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             window.hide()
             self.repaint_root_overlay()
 
-    def clamp_window(self, x, y, w, h):
+    def clamp_window(self, x:int, y:int, w:int, h:int):
         if not CLAMP_WINDOW_TO_ROOT:
             return False, (x, y, w, h)
         rw, rh = self.get_root_window_size()
@@ -960,7 +960,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             mod = True
         return mod, (x, y, w, h)
 
-    def client_clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
+    def client_clamp_window(self, proto, wid:int, window, x:int, y:int, w:int, h:int, resize_counter:int=0):
         if not CLAMP_WINDOW_TO_ROOT:
             return x, y, w, h
         mod, geom = self.clamp_window(x, y, w, h)
@@ -973,7 +973,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet):
+    def _process_configure_window(self, proto, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -1070,7 +1070,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if damage:
             self.schedule_configure_damage(wid)
 
-    def schedule_configure_damage(self, wid, delay=CONFIGURE_DAMAGE_RATE):
+    def schedule_configure_damage(self, wid:int, delay=CONFIGURE_DAMAGE_RATE):
         #rate-limit the damage events
         timer = self.configure_damage_timers.get(wid)
         if timer:
@@ -1082,7 +1082,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 self.refresh_window(window)
         self.configure_damage_timers[wid] = self.timeout_add(delay, damage)
 
-    def cancel_configure_damage(self, wid):
+    def cancel_configure_damage(self, wid:int):
         timer = self.configure_damage_timers.pop(wid, None)
         if timer:
             self.source_remove(timer)
@@ -1094,7 +1094,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.source_remove(timer)
 
 
-    def _set_client_properties(self, proto, wid, window, new_client_properties):
+    def _set_client_properties(self, proto, wid:int, window, new_client_properties):
         """
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property
@@ -1113,7 +1113,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
-    def _move_pointer(self, device_id, wid, pos, props=None):
+    def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
         if wid>0 and (self.last_raised!=wid or ALWAYS_RAISE_WINDOW):
             window = self._lookup_window(wid)
             if not window:
@@ -1126,7 +1126,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         super()._move_pointer(device_id, wid, pos, props)
 
 
-    def _process_close_window(self, proto, packet):
+    def _process_close_window(self, proto, packet) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]
@@ -1139,7 +1139,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.repaint_root_overlay()
 
 
-    def _process_window_signal(self, proto, packet):
+    def _process_window_signal(self, proto, packet) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]
@@ -1166,7 +1166,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             log.estr(e)
 
 
-    def refresh_window_area(self, window, x, y, width, height, options=None):
+    def refresh_window_area(self, window, x:int, y:int, width:int, height:int, options=None) -> None:
         super().refresh_window_area(window, x, y, width, height, options)
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
@@ -1179,7 +1179,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     # so the server-side root window gets updated if this feature is enabled
     #
 
-    def update_root_overlay(self, window, x, y, image):
+    def update_root_overlay(self, window, x:int, y:int, image) -> None:
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         wx, wy = window.get_property("geometry")[:2]
@@ -1225,7 +1225,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         cr.paint()
         image.free()
 
-    def repaint_root_overlay(self):
+    def repaint_root_overlay(self) -> None:
         if not self.root_overlay:
             return
         log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims",
@@ -1234,13 +1234,13 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         self.repaint_root_overlay_timer = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
 
-    def cancel_repaint_root_overlay(self):
+    def cancel_repaint_root_overlay(self) -> None:
         rrot = self.repaint_root_overlay_timer
         if rrot:
             self.repaint_root_overlay_timer = None
             self.source_remove(rrot)
 
-    def do_repaint_root_overlay(self):
+    def do_repaint_root_overlay(self) -> bool:
         self.repaint_root_overlay_timer = None
         root_width, root_height = self.get_root_window_size()
         display = Gdk.Display.get_default()

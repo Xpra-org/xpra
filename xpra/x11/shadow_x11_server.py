@@ -482,7 +482,7 @@ def snapshot(filename) -> int:
     return 0
 
 
-def main(*args):
+def main(*args) -> int:
     assert len(args)>0
     if args[0].endswith(".png"):
         return snapshot(args[0])

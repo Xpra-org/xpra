@@ -44,16 +44,16 @@ class WindowDamageHandler:
             raise ValueError(f"xid must be an int, not a {type(xid)}")
         self.xid : int = xid
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
-        self._use_xshm = use_xshm
+        self._use_xshm : bool = use_xshm
         self._damage_handle = None
         self._xshm_handle = None
-        self._contents_handle = None
-        self._border_width = 0
+        self._contents_handle  = None
+        self._border_width : int = 0
 
     def __repr__(self):
         return f"WindowDamageHandler({self.xid:x})"
 
-    def setup(self):
+    def setup(self) -> None:
         self.invalidate_pixmap()
         geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
@@ -62,22 +62,22 @@ class WindowDamageHandler:
         self.create_damage_handle()
         add_event_receiver(self.xid, self, self.MAX_RECEIVERS)
 
-    def create_damage_handle(self):
+    def create_damage_handle(self) -> None:
         if self.xid:
-            self._damage_handle = X11Window.XDamageCreate(self.xid)
+            self._damage_handle : int = X11Window.XDamageCreate(self.xid)
             log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
-    def destroy(self):
+    def destroy(self) -> None:
         if not self.xid:
             log.error(f"Error: damage window handler for {self.xid:x} already cleaned up!")
         self.do_destroy()
 
-    def do_destroy(self):
+    def do_destroy(self) -> None:
         remove_event_receiver(self.xid, self)
         self.xid = 0
         self.destroy_damage_handle()
 
-    def destroy_damage_handle(self):
+    def destroy_damage_handle(self) -> None:
         log("close_damage_handle()")
         self.invalidate_pixmap()
         dh = self._damage_handle
@@ -93,7 +93,7 @@ class WindowDamageHandler:
         #note: this should be redundant, but it's cheap and safer
         self.invalidate_pixmap()
 
-    def acknowledge_changes(self):
+    def acknowledge_changes(self) -> None:
         sh = self._xshm_handle
         dh = self._damage_handle
         log("acknowledge_changes() xshm handle=%s, damage handle=%s", sh, dh)
@@ -105,7 +105,7 @@ class WindowDamageHandler:
                 X11Window.XDamageSubtract(dh)
             self.invalidate_pixmap()
 
-    def invalidate_pixmap(self):
+    def invalidate_pixmap(self) -> None:
         ch = self._contents_handle
         log("invalidating named pixmap, contents handle=%s", ch)
         if ch:
@@ -113,7 +113,7 @@ class WindowDamageHandler:
             with xlog:
                 ch.cleanup()
 
-    def has_xshm(self):
+    def has_xshm(self) -> bool:
         return self._use_xshm and WindowDamageHandler.XShmEnabled and XImage.has_XShm()
 
     def get_xshm_handle(self):
@@ -149,7 +149,7 @@ class WindowDamageHandler:
                 WindowDamageHandler.XShmEnabled = False
         return self._xshm_handle
 
-    def _set_pixmap(self):
+    def _set_pixmap(self) -> None:
         self._contents_handle = XImage.get_xwindow_pixmap_wrapper(self.xid)
 
     def get_contents_handle(self):
@@ -163,7 +163,7 @@ class WindowDamageHandler:
         return self._contents_handle
 
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x:int, y:int, width:int, height:int):
         handle = self.get_contents_handle()
         if handle is None:
             log("get_image(..) pixmap is None for window %#x", self.xid)
@@ -200,15 +200,15 @@ class WindowDamageHandler:
             return None
 
 
-    def do_xpra_damage_event(self, _event):
+    def do_xpra_damage_event(self, _event) -> None:
         raise NotImplementedError()
 
-    def do_xpra_reparent_event(self, _event):
+    def do_xpra_reparent_event(self, _event) -> None:
         self.invalidate_pixmap()
 
-    def xpra_unmap_event(self, _event):
+    def xpra_unmap_event(self, _event) -> None:
         self.invalidate_pixmap()
 
-    def do_xpra_configure_event(self, event):
+    def do_xpra_configure_event(self, event) -> None:
         self._border_width = event.border_width
         self.invalidate_pixmap()

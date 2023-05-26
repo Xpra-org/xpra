@@ -34,10 +34,10 @@ from xpra.gtk_common.gtk3.gdk_bindings import get_display_for
 
 
 from xpra.x11.common import REPR_FUNCTIONS
-def get_window_xid(window):
+def get_window_xid(window) -> str:
     return hex(window.get_xid())
 REPR_FUNCTIONS[GdkX11.X11Window] = get_window_xid
-def get_display_name(display):
+def get_display_name(display) -> str:
     return display.get_name()
 REPR_FUNCTIONS[Gdk.Display] = get_display_name
 
@@ -45,7 +45,7 @@ REPR_FUNCTIONS[Gdk.Display] = get_display_name
 cdef extern from "gdk_x11_macros.h":
     int is_x11_display(void *)
 
-def is_X11_Display(display=None):
+def is_X11_Display(display=None) -> bool:
     cdef GdkDisplay *gdk_display
     if display is None:
         manager = Gdk.DisplayManager.get()
@@ -243,7 +243,7 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 
 event_receivers_map : dict = dict()
 
-def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
+def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
@@ -258,7 +258,7 @@ def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3):
         traceback.print_stack()
     receivers.add(receiver)
 
-def remove_event_receiver(xid:int, receiver:callable):
+def remove_event_receiver(xid:int, receiver:callable) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
@@ -279,9 +279,9 @@ def cleanup_all_event_receivers() -> None:
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events : list = []
 
-def get_error_text(code):
+def get_error_text(code) -> str:
     if type(code)!=int:
-        return code
+        return str(code)
     display = Gdk.get_default_root_window().get_display()
     cdef Display *xdisplay = get_xdisplay_for(display)
     cdef char[128] buffer
@@ -290,30 +290,30 @@ def get_error_text(code):
 
 
 #and change this debugging on the fly, programmatically:
-def add_debug_route_event(event_type):
+def add_debug_route_event(event_type) -> None:
     debug_route_events.append(event_type)
-def remove_debug_route_event(event_type):
+def remove_debug_route_event(event_type) -> None:
     debug_route_events.remove(event_type)
 
 
-catchall_receivers = {}
-def add_catchall_receiver(signal, handler):
+catchall_receivers : dict = {}
+def add_catchall_receiver(signal, handler) -> None:
     catchall_receivers.setdefault(signal, []).append(handler)
     log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
-def remove_catchall_receiver(signal, handler):
+def remove_catchall_receiver(signal, handler) -> None:
     receivers = catchall_receivers.get(signal)
     if receivers:
         receivers.remove(handler)
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 
-fallback_receivers = {}
-def add_fallback_receiver(signal, handler):
+fallback_receivers : dict = {}
+def add_fallback_receiver(signal, handler) -> None:
     fallback_receivers.setdefault(signal, []).append(handler)
     log("add_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
-def remove_fallback_receiver(signal, handler):
+def remove_fallback_receiver(signal, handler) -> None:
     receivers = fallback_receivers.get(signal)
     if receivers:
         receivers.remove(handler)
@@ -429,7 +429,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
 
 
 _INIT_X11_FILTER_DONE = 0
-def init_x11_filter():
+def init_x11_filter() -> bool:
     log("init_x11_filter()")
     """ returns True if we did initialize it, False if it was already initialized """
     global _INIT_X11_FILTER_DONE
@@ -442,7 +442,7 @@ def init_x11_filter():
     _INIT_X11_FILTER_DONE += 1
     return _INIT_X11_FILTER_DONE==1
 
-def cleanup_x11_filter():
+def cleanup_x11_filter() -> bool:
     log("cleanup_x11_filter()")
     global _INIT_X11_FILTER_DONE
     _INIT_X11_FILTER_DONE -= 1

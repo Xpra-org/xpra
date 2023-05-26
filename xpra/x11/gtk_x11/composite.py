@@ -33,7 +33,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         })
 
     # This may raise XError.
-    def __init__(self, xid):
+    def __init__(self, xid:int):
         WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
         self._listening_to = None
@@ -41,30 +41,30 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
     def __repr__(self):
         return f"CompositeHelper({self.xid:x})"
 
-    def setup(self):
+    def setup(self) -> None:
         X11Window.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
-    def do_destroy(self):
+    def do_destroy(self) -> None:
         with xlog:
             X11Window.XCompositeUnredirectWindow(self.xid)
             WindowDamageHandler.do_destroy(self)
 
-    def invalidate_pixmap(self):
+    def invalidate_pixmap(self) -> None:
         lt = self._listening_to
         if lt:
             self._listening_to = None
             self._cleanup_listening(lt)
         WindowDamageHandler.invalidate_pixmap(self)
 
-    def _cleanup_listening(self, listening):
+    def _cleanup_listening(self, listening) -> None:
         if listening:
             for w in listening:
                 # Don't want to stop listening to our xid!:
                 if w!=self.xid:
                     remove_event_receiver(w, self)
 
-    def _set_pixmap(self):
+    def _set_pixmap(self) -> None:
         # The tricky part here is that the pixmap returned by
         # NameWindowPixmap gets invalidated every time the window's
         # viewable state changes.  ("viewable" here is the X term that
@@ -122,7 +122,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             self._listening_to = listening
 
 
-    def do_xpra_damage_event(self, event):
+    def do_xpra_damage_event(self, event) -> None:
         event.x += self._border_width
         event.y += self._border_width
         self.emit("contents-changed", event)

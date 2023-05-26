@@ -102,7 +102,7 @@ def display_name_check(display_name):
             warn(" just to avoid any confusion and this warning message.")
 
 
-def print_DE_warnings():
+def print_DE_warnings() -> None:
     de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
     if not de:
         return
@@ -114,7 +114,7 @@ def print_DE_warnings():
     log.warn(" or disable xpra's notifications option")
 
 
-def sanitize_env():
+def sanitize_env() -> None:
     #we don't want client apps to think these mean anything:
     #(if set, they belong to the desktop the server was started from)
     #TODO: simply whitelisting the env would be safer/better
@@ -136,7 +136,7 @@ def sanitize_env():
              "CKCON_X11_DISPLAY_DEVICE",
              )
 
-def configure_imsettings_env(input_method):
+def configure_imsettings_env(input_method) -> str:
     im = (input_method or "").lower()
     if im=="auto":
         ibus_daemon = which("ibus-daemon")
@@ -162,7 +162,7 @@ def configure_imsettings_env(input_method):
         warn(" if it is correct, you may want to file a bug to get it recognized")
     return im
 
-def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers):
+def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers) -> dict:
     #for more information, see imsettings:
     #https://code.google.com/p/imsettings/source/browse/trunk/README
     if disabled is True:
@@ -183,7 +183,7 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, ims
     os.environ.update(v)
     return v
 
-def create_runtime_dir(xrd, uid, gid):
+def create_runtime_dir(xrd, uid, gid) -> str:
     if not POSIX or OSX or getuid()!=0 or (uid==0 and gid==0):
         return
     #workarounds:
@@ -214,7 +214,7 @@ def create_runtime_dir(xrd, uid, gid):
     return xrd
 
 
-def guess_xpra_display(socket_dir, socket_dirs):
+def guess_xpra_display(socket_dir, socket_dirs) -> str:
     dotxpra = DotXpra(socket_dir, socket_dirs)
     results = dotxpra.sockets()
     live = [display for state, display in results if state==DotXpra.LIVE]
@@ -225,7 +225,7 @@ def guess_xpra_display(socket_dir, socket_dirs):
     return live[0]
 
 
-def show_encoding_help(opts):
+def show_encoding_help(opts) -> int:
     #avoid errors and warnings:
     opts.pidfile = None
     opts.encoding = ""
@@ -260,7 +260,7 @@ def show_encoding_help(opts):
     return 0
 
 
-def set_server_features(opts):
+def set_server_features(opts) -> None:
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
     #turn off some server mixins:
@@ -324,7 +324,7 @@ def make_expand_server():
     return ExpandServer()
 
 
-def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
+def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> int:
     #check that we can access the X11 display:
     from xpra.log import Logger
     log = Logger("screen", "x11")
@@ -345,7 +345,7 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     log(f"GDK can access the display {display_name!r}")
     return 0
 
-def write_displayfd(display_name, fd):
+def write_displayfd(display_name : str, fd : int) -> None:
     if OSX or not POSIX or fd<=0:
         return
     from xpra.log import Logger
@@ -363,7 +363,7 @@ def write_displayfd(display_name, fd):
         log.estr(e)
 
 
-def get_session_dir(mode, sessions_dir, display_name, uid):
+def get_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int) -> str:
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
@@ -381,7 +381,7 @@ def get_session_dir(mode, sessions_dir, display_name, uid):
                     return os.path.join(d, (display_name or "").lstrip(":"))
     return session_dir
 
-def make_session_dir(mode, sessions_dir, display_name, uid=0, gid=0):
+def make_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int=0, gid:int=0) -> str:
     session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
     if not os.path.exists(session_dir):
         try:
@@ -395,16 +395,16 @@ def make_session_dir(mode, sessions_dir, display_name, uid=0, gid=0):
             os.lchown(session_dir, uid, gid)
     return session_dir
 
-def session_file_path(filename):
+def session_file_path(filename:str) -> str:
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if session_dir is None:
         raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
 
-def load_session_file(filename):
+def load_session_file(filename:str) -> str:
     return load_binary_file(session_file_path(filename))
 
-def save_session_file(filename, contents, uid=None, gid=None):
+def save_session_file(filename:str, contents, uid:int=None, gid:int=None):
     if not os.environ.get("XPRA_SESSION_DIR"):
         return None
     if not isinstance(contents, bytes):
@@ -427,7 +427,7 @@ def save_session_file(filename, contents, uid=None, gid=None):
     return path
 
 
-def rm_session_dir(warn=True):
+def rm_session_dir(warn:bool=True) -> None:
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
         return
@@ -457,7 +457,7 @@ def rm_session_dir(warn=True):
         log.error(f"Error: failed to remove session directory {session_dir!r}")
         log.estr(e)
 
-def clean_session_files(*filenames):
+def clean_session_files(*filenames) -> None:
     if not CLEAN_SESSION_FILES:
         return
     for filename in filenames:
@@ -469,7 +469,7 @@ def clean_session_files(*filenames):
             clean_session_path(path)
     rm_session_dir(False)
 
-def clean_session_path(path):
+def clean_session_path(path) -> None:
     from xpra.log import Logger
     log = Logger("server")
     log(f"clean_session_path({path})")
@@ -484,12 +484,12 @@ def clean_session_path(path):
             log.error(f"Error removing session path {path}")
             log.estr(e)
 
-SERVER_SAVE_SKIP_OPTIONS = (
+SERVER_SAVE_SKIP_OPTIONS : tuple = (
     "systemd-run",
     "daemon",
     )
 
-SERVER_LOAD_SKIP_OPTIONS = (
+SERVER_LOAD_SKIP_OPTIONS : tuple = (
     "systemd-run",
     "daemon",
     "start",
@@ -503,7 +503,7 @@ SERVER_LOAD_SKIP_OPTIONS = (
     )
 
 
-def get_options_file_contents(opts, mode="seamless"):
+def get_options_file_contents(opts, mode:str="seamless") -> str:
     from xpra.scripts.parsing import fixup_defaults
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
@@ -533,11 +533,11 @@ def get_options_file_contents(opts, mode="seamless"):
     diff_contents.append("")
     return "\n".join(diff_contents)
 
-def load_options():
+def load_options() -> dict:
     config_file = session_file_path("config")
     return read_config(config_file)
 
-def apply_config(opts, mode, cmdline):
+def apply_config(opts, mode:str, cmdline:str) -> str:
     #if we had saved the start / start-desktop config, reload it:
     options = load_options()
     if not options:
@@ -573,7 +573,7 @@ def apply_config(opts, mode, cmdline):
     return mode
 
 
-def reload_dbus_attributes(display_name):
+def reload_dbus_attributes(display_name:str):
     from xpra.log import Logger
     dbuslog = Logger("dbus")
     try:
@@ -613,7 +613,7 @@ def reload_dbus_attributes(display_name):
     return dbus_pid, dbus_env
 
 
-def is_splash_enabled(mode, daemon, splash, display):
+def is_splash_enabled(mode:str, daemon:bool, splash:bool, display:str):
     if daemon:
         #daemon mode would have problems with the pipes
         return False
@@ -636,7 +636,7 @@ def is_splash_enabled(mode, daemon, splash, display):
         return True
     return False
 
-MODE_TO_NAME = {
+MODE_TO_NAME : dict = {
     "seamless"          : "Seamless",
     "desktop"           : "Desktop",
     "monitor"           : "Monitor",
@@ -650,7 +650,7 @@ MODE_TO_NAME = {
     "proxy"             : "Proxy",
     }
 
-def request_exit(uri):
+def request_exit(uri:str) -> bool:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command()+["exit", uri]
     env = os.environ.copy()
@@ -670,7 +670,7 @@ def request_exit(uri):
         return False
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
-def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
+def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str, display_name:str, defaults):
     assert mode in (
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
@@ -720,8 +720,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         progress(100, f"error: {e}")
         raise
 
-def _do_run_server(script_file, cmdline,
-                   error_cb, opts, extra_args, mode, display_name, defaults,
+def _do_run_server(script_file:str, cmdline,
+                   error_cb, opts, extra_args, mode:str, display_name:str, defaults,
                    splash_process, progress):
     desktop_display = nox()
     try:

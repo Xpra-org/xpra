@@ -21,8 +21,8 @@ REPR_FUNCTIONS = {}
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name:str):
+        self.name:str = name
 
     def __repr__(self):
         d = {}
@@ -41,7 +41,7 @@ class X11Event:
 
 #we duplicate some of the code found in gtk_x11.prop ...
 #which is still better than having dependencies on that GTK2 code
-def get_X11_window_property(xid, name, req_type):
+def get_X11_window_property(xid:int, name:str, req_type:str):
     try:
         from xpra.x11.bindings.window import X11WindowBindings, PropertyError #@UnresolvedImport
         try:
@@ -55,7 +55,7 @@ def get_X11_window_property(xid, name, req_type):
         log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
     return None
 
-def get_X11_root_property(name, req_type):
+def get_X11_root_property(name:str, req_type:str):
     try:
         from xpra.x11.bindings.window import X11WindowBindings
         return get_X11_window_property(X11WindowBindings().get_root_xid(), name, req_type)
@@ -66,7 +66,7 @@ def get_X11_root_property(name, req_type):
     return None
 
 
-def get_wm_name():
+def get_wm_name() -> str:
     try:
         wm_check = get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
         if wm_check:
@@ -83,7 +83,7 @@ def get_wm_name():
     return None
 
 
-def get_icc_data():
+def get_icc_data() -> dict:
     icc = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
@@ -110,7 +110,7 @@ def get_icc_data():
     return icc
 
 
-def get_current_desktop():
+def get_current_desktop() -> int:
     v = -1
     d = None
     try:
@@ -124,7 +124,7 @@ def get_current_desktop():
     log("get_current_desktop() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_number_of_desktops():
+def get_number_of_desktops() -> int:
     v = 0
     d = None
     try:
@@ -164,7 +164,7 @@ def get_workarea():
         log.estr(e)
     return None
 
-def get_desktop_names():
+def get_desktop_names() -> tuple:
     v = ("Main", )
     d = None
     try:
@@ -180,7 +180,7 @@ def get_desktop_names():
     log("get_desktop_names() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_vrefresh():
+def get_vrefresh() -> int:
     v = -1
     try:
         from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
@@ -195,7 +195,7 @@ def get_vrefresh():
     return v
 
 
-def send_client_message(window, message_type, *values):
+def send_client_message(window, message_type, *values) -> None:
     try:
         from xpra.x11.bindings.window import constants, X11WindowBindings  # @UnresolvedImport
         X11Window = X11WindowBindings()
@@ -245,7 +245,7 @@ def get_xsettings():
     from xpra.x11.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
-def xsettings_to_dict(v):
+def xsettings_to_dict(v) -> dict:
     d = {}
     if v:
         _, values = v
@@ -269,7 +269,7 @@ def get_randr_dpi():
 
 
 
-def get_xresources():
+def get_xresources() -> dict:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")
@@ -291,7 +291,7 @@ def get_xresources():
         log(f"_get_xresources error: {e!r}")
     return None
 
-def get_cursor_size():
+def get_cursor_size() -> int:
     d = get_xresources() or {}
     try:
         return int(d.get("Xcursor.size", 0))

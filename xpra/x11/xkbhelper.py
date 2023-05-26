@@ -47,7 +47,7 @@ OPTIONAL_KEYS = [
     ]
 
 
-def clean_keyboard_state():
+def clean_keyboard_state() -> None:
     with xlog:
         X11Keyboard.ungrab_all_keys()
     with xlog:
@@ -58,7 +58,7 @@ def clean_keyboard_state():
 ################################################################################
 # keyboard layouts
 
-def do_set_keymap(layout, variant, options, query_struct):
+def do_set_keymap(layout:str, variant:str, options, query_struct) -> None:
     """
         layout is the generic layout name (used on non posix platforms)
             defaults to `us`
@@ -100,7 +100,7 @@ def do_set_keymap(layout, variant, options, query_struct):
     log.info("setting keyboard layout to '%s'", std(layout))
     safe_setxkbmap("evdev", "pc105", layout, variant, options)
 
-def safe_setxkbmap(rules, model, layout, variant, options):
+def safe_setxkbmap(rules, model:str, layout:str, variant:str, options):
     #(we execute the options separately in case that fails..)
     try:
         X11Keyboard.setxkbmap(rules, model, layout, variant, options)

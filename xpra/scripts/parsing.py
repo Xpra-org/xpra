@@ -37,7 +37,7 @@ MODE_ALIAS = {
     "start-shadow-screen" : "shadow-screen",
     }
 
-def enabled_str(v, true_str="yes", false_str="no") -> str:
+def enabled_str(v, true_str:str="yes", false_str:str="no") -> str:
     if v:
         return true_str
     return false_str
@@ -60,7 +60,7 @@ def audio_option(v):
     return bool_or(vl, "disabled", "on", "off", "disabled")
 
 
-def _stderr_write(msg):
+def _stderr_write(msg:str) -> bool:
     #use this function to print warnings
     #we must write to stderr to prevent
     #the output from interfering when running as proxy over ssh
@@ -72,17 +72,17 @@ def _stderr_write(msg):
     except OSError:
         return False
 
-def info(msg):
+def info(msg:str):
     if not _stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
-def warn(msg):
+def warn(msg:str):
     if not _stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
 
-def error(msg):
+def error(msg:str):
     if not _stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
@@ -160,7 +160,7 @@ def parse_env(env) -> dict:
     return d
 
 
-def parse_URL(url):
+def parse_URL(url:str):
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = up.netloc
@@ -195,7 +195,7 @@ def _sep_pos(display_name):
     return min(scpos, slpos)
 
 
-def auto_proxy(scheme, host):
+def auto_proxy(scheme, host:str) -> dict:
     try:
         from xpra.net.libproxy import ProxyFactory
     except ImportError as e:
@@ -220,7 +220,7 @@ def auto_proxy(scheme, host):
         options["proxy-password"] = url.password
     return options
 
-def parse_remote_display(s):
+def parse_remote_display(s:str) -> dict:
     if not s:
         return {}
     qpos = s.find("?")
@@ -279,7 +279,7 @@ def parse_remote_display(s):
                 desc[k] = v
     return desc
 
-def parse_username_and_password(s):
+def parse_username_and_password(s:str) -> dict:
     ppos = s.find(":")
     if ppos>=0:
         password = s[ppos+1:]
@@ -295,7 +295,7 @@ def parse_username_and_password(s):
         desc["password"] = password
     return desc
 
-def load_password_file(password_file):
+def load_password_file(password_file:str) -> str:
     if not password_file:
         return None
     if not os.path.exists(password_file):
@@ -310,7 +310,7 @@ def load_password_file(password_file):
     return None
 
 
-def normalize_display_name(display_name):
+def normalize_display_name(display_name:str) -> str:
     if not display_name:
         raise ValueError("no display name specified")
     if display_name.startswith("/") and POSIX:
@@ -374,7 +374,7 @@ def normalize_display_name(display_name):
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by_name=False):
+def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name=False):
     display_name = normalize_display_name(display_name)
     #last chance to find it by name:
     if display_name.find(":")<0 and display_name.find("wayland-")<0:
@@ -576,7 +576,7 @@ def parse_display_name(error_cb, opts, display_name, cmdline=(), find_session_by
     error_cb(f"unknown format for display name: {display_name!r}")
 
 
-def get_ssl_options(desc, opts, cmdline):
+def get_ssl_options(desc, opts, cmdline) -> dict:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
     from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
@@ -598,7 +598,7 @@ def get_ssl_options(desc, opts, cmdline):
         ssl_options["server-verify-mode"] = "none"
     return ssl_options
 
-def parse_ssh_option(ssh_setting):
+def parse_ssh_option(ssh_setting:str) -> list:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
@@ -620,7 +620,7 @@ def parse_ssh_option(ssh_setting):
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def get_ssh_display_attributes(args, ssh_option="auto"):
+def get_ssh_display_attributes(args, ssh_option="auto") -> dict:
     #ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
@@ -649,7 +649,7 @@ def get_ssh_display_attributes(args, ssh_option="auto"):
     return desc
 
 
-def get_ssh_args(desc, ssh=("paramiko",), prefix=""):
+def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list:
     ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
@@ -682,7 +682,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix=""):
             args += ["-i", key_path]
     return args
 
-def get_ssh_proxy_args(desc, ssh):
+def get_ssh_proxy_args(desc, ssh) -> list:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
     is_paramiko = ssh[0]=="paramiko"
     args = []
@@ -700,7 +700,7 @@ def get_ssh_proxy_args(desc, ssh):
     return args
 
 
-def supports_x11_server():
+def supports_x11_server() -> bool:
     if OSX or WIN32:
         return False
     try:
@@ -710,11 +710,11 @@ def supports_x11_server():
         return False
 
 
-def get_subcommands():
+def get_subcommands() -> tuple:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
-def get_usage():
+def get_usage() -> list:
     RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
     command_options = [
         "",
@@ -1802,18 +1802,18 @@ When unspecified, all the available codecs are allowed and the first one is used
         options.tcp_encryption = f"AES-{DEFAULT_MODE}"
     return options, args
 
-def validated_encodings(encodings):
+def validated_encodings(encodings) -> tuple:
     try:
         from xpra.codecs.codec_constants import preforder
     except ImportError:
-        return []
+        return ()
     encodings = [x.lower() for x in encodings]+list(encodings)
     validated = preforder(encodings)
     if not validated:
         raise InitException("no valid encodings specified")
     return validated
 
-def validate_encryption(opts):
+def validate_encryption(opts) -> None:
     do_validate_encryption(opts.auth, opts.tcp_auth,
                            opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
@@ -1860,7 +1860,7 @@ def do_validate_encryption(auth, tcp_auth,
     #        raise InitException("tcp-encryption %s should not use the same file"
     #                            +" as the password authentication file" % tcp_encryption)
 
-def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs):
+def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list:
     from xpra.audio.wrapper import query_audio
     props = query_audio()
     if not props:
@@ -1884,7 +1884,7 @@ def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs):
                           +" "+csv(invalid_mc))
     return codec_help
 
-def parse_vsock_cid(cid_str):
+def parse_vsock_cid(cid_str:str) -> int:
     from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY  #@UnresolvedImport pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
         return CID_ANY
@@ -1896,5 +1896,5 @@ def parse_vsock_cid(cid_str):
             raise InitException(f"invalid vsock cid {cid_str!r}") from None
         return cid
 
-def is_local(host) -> bool:
+def is_local(host:str) -> bool:
     return host.lower() in ("localhost", "127.0.0.1", "::1")

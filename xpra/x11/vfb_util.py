@@ -33,7 +33,7 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple:
     if not s:
         return None
     s = s.upper()       #ie: 4K60
@@ -57,7 +57,7 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     res = list(res)
     res.append(int(hz))
     return tuple(res)
-def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple:
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):
@@ -82,19 +82,19 @@ XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
 
 vfb_logger = None
-def get_vfb_logger():
+def get_vfb_logger() -> Logger:
     global vfb_logger
     if not vfb_logger:
         vfb_logger = Logger("server", "x11", "screen")
     return vfb_logger
 
-def osclose(fd):
+def osclose(fd) -> None:
     try:
         os.close(fd)
     except OSError:
         pass
 
-def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
+def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid:int, gid:int) -> None:
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     if not device_uuid:
@@ -124,7 +124,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
         conf_files.append(f)
 
 #create individual device files:
-def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid):
+def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid:int, gid:int):
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
     identifier = f"xpra-virtual-{dev_type}"
@@ -147,7 +147,7 @@ EndSection
     return conf_file
 
 
-def get_xauthority_path(display_name, username, uid, gid):
+def get_xauthority_path(display_name, username, uid:int, gid:int) -> str:
     assert POSIX
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid)
@@ -172,7 +172,7 @@ def get_xauthority_path(display_name, username, uid, gid):
         filename = ".Xauthority"
     return os.path.join(pathexpand(d), filename)
 
-def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid=None):
+def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, uid:int, gid:int, username:str, uinput_uuid=None):
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:
@@ -348,7 +348,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
     return xvfb, display_name
 
 
-def kill_xvfb(xvfb_pid):
+def kill_xvfb(xvfb_pid:int) -> None:
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
     try:
@@ -361,7 +361,7 @@ def kill_xvfb(xvfb_pid):
         os.unlink(xauthority)
 
 
-def set_initial_resolution(resolutions, dpi=0):
+def set_initial_resolution(resolutions, dpi:int=0) -> None:
     try:
         log = get_vfb_logger()
         log("set_initial_resolution(%s)", resolutions)
@@ -425,7 +425,7 @@ def set_initial_resolution(resolutions, dpi=0):
         log.estr(e)
 
 
-def xauth_add(filename, display_name, xauth_data, uid, gid):
+def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) -> None:
     xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         def preexec():
@@ -457,7 +457,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
         log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
         log.estr(e)
 
-def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0, command=None):
+def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -> bool:
     if xvfb is None:
         #we don't have a process to check
         return True
@@ -474,7 +474,7 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0, command=None):
     log.error("")
     return False
 
-def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=True, timeout=VFB_WAIT):
+def verify_display_ready(xvfb, display_name:str, shadowing_check:bool=True, log_errors:bool=True, timeout=VFB_WAIT) -> bool:
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport pylint: disable=import-outside-toplevel
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:

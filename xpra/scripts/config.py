@@ -309,7 +309,7 @@ def save_config(conf_file, config, keys, extras_types=None):
             f.write(f"{key}={v}{os.linesep}")
         debug(f"save_config: saved {saved} to {conf_file!r}")
 
-def read_config(conf_file):
+def read_config(conf_file:str) -> dict:
     """
         Parses a config file into a dict of strings.
         If the same key is specified more than once,

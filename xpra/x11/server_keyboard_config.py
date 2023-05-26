@@ -135,7 +135,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return info
 
 
-    def parse_options(self, props):
+    def parse_options(self, props) -> int:
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
         super().parse_options(props)
@@ -167,7 +167,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
-    def parse_layout(self, props):
+    def parse_layout(self, props) -> None:
         """ used by both process_hello and process_keymap """
         #clients version 4.4 and later use a 'keymap' substructure:
         keymap_dict = typedict(props.dictget("keymap") or {})
@@ -178,7 +178,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.options = l("options")
 
 
-    def get_hash(self):
+    def get_hash(self) -> str:
         """
             This hash will be different whenever the keyboard configuration changes.
         """
@@ -194,7 +194,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 hashadd(self.query_struct.get(k))
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
 
-    def compute_modifiers(self):
+    def compute_modifiers(self) -> None:
         if self.raw:
             with xsync:
                 mod_mappings = X11Keyboard.get_modifier_mappings()
@@ -229,7 +229,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
 
 
-    def compute_modifier_keynames(self):
+    def compute_modifier_keynames(self) -> None:
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         display = Gdk.Display.get_default()
@@ -254,7 +254,7 @@ class KeyboardConfig(KeyboardConfigBase):
                                 l.append(keycode)
         log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
-    def compute_client_modifier_keycodes(self):
+    def compute_client_modifier_keycodes(self) -> None:
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         try:
             server_mappings = X11Keyboard.get_modifier_mappings()
@@ -293,13 +293,13 @@ class KeyboardConfig(KeyboardConfigBase):
         except Exception as e:
             log.error("Error: compute_client_modifier_keycodes: %s" % e, exc_info=True)
 
-    def compute_modifier_map(self):
+    def compute_modifier_map(self) -> None:
         with xlog:
             self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
         log("modifier_map(%s)=%s", self.mod_meanings, self.modifier_map)
 
 
-    def is_modifier(self, keycode):
+    def is_modifier(self, keycode:int) -> bool:
         for mod, keys in self.keycodes_for_modifier_keynames.items():
             if keycode in keys:
                 log("is_modifier(%s) found modifier: %s", keycode, mod)
@@ -308,7 +308,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return False
 
 
-    def set_layout(self, layout, variant, options):
+    def set_layout(self, layout:str, variant:str, options) -> bool:
         log("set_layout(%s, %s, %s)", layout, variant, options)
         if layout=="en":
             log.warn("Warning: invalid keyboard layout name '%s', using 'us' instead", layout)
@@ -321,7 +321,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return False
 
 
-    def set_keymap(self, translate_only=False):
+    def set_keymap(self, translate_only:bool=False) -> None:
         if not self.enabled:
             return
         log("set_keymap(%s) layout=%r, variant=%r, options=%r, query-struct=%r",
@@ -381,7 +381,7 @@ class KeyboardConfig(KeyboardConfigBase):
             self.update_keycode_mappings()
 
 
-    def add_gtk_keynames(self):
+    def add_gtk_keynames(self) -> None:
         #add the keynames we find via gtk
         #since we may rely on finding those keynames from the client
         #(used with non native keymaps)
@@ -392,7 +392,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 if keyname in DEBUG_KEYSYMS:
                     log.info("add_gtk_keynames: %s=%s", keyname, keycode)
 
-    def set_default_keymap(self):
+    def set_default_keymap(self) -> None:
         """ assign a default keymap based on the current X11 server keymap
             sets up the translation tables so we can lookup keys without
             setting a client keymap.
@@ -439,11 +439,11 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: modifier_map=%s", self.modifier_map)
             self.update_keycode_mappings()
 
-    def update_keycode_mappings(self):
+    def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
 
 
-    def kmlog(self, keyname, msg, *args):
+    def kmlog(self, keyname, msg, *args) -> None:
         """ logs at info level is we are debugging this keyname """
         if keyname in DEBUG_KEYSYMS:
             l = log.info
@@ -451,7 +451,7 @@ class KeyboardConfig(KeyboardConfigBase):
             l = log
         l(msg, *args)
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+    def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group:int):
         if not self.enabled:
             self.kmlog(keyname, "ignoring keycode since keyboard is turned off")
             return -1, group
@@ -465,7 +465,7 @@ class KeyboardConfig(KeyboardConfigBase):
             return keycode, group
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-    def find_matching_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+    def find_matching_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group):
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -570,7 +570,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         return entry.keycode, entry.group
         return keycode, rgroup
 
-    def get_current_mask(self):
+    def get_current_mask(self) -> list:
         current_mask = get_default_root_window().get_pointer()[-1]
         return mask_to_names(current_mask, self.modifier_map)
 

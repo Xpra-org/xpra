@@ -240,24 +240,24 @@ def NetWMIcons(data):
     return icons
 
 
-def _to_latin1(v):
+def _to_latin1(v:str) -> bytes:
     return v.encode("latin1")
 
-def _from_latin1(v):
+def _from_latin1(v:bytes) -> str:
     return v.decode("latin1")
 
-def _to_utf8(v):
+def _to_utf8(v:str) -> bytes:
     return v.encode("UTF-8")
 
-def _from_utf8(v):
+def _from_utf8(v:bytes) -> str:
     return v.decode("UTF-8")
 
 
-def _from_long(v):
-    return struct.unpack(b"@L", v)[0]
-
-def _to_long(v):
+def _to_long(v:int) -> bytes:
     return struct.pack(b"@L", v)
+
+def _from_long(v:bytes) -> int:
+    return struct.unpack(b"@L", v)[0]
 
 
 PROP_TYPES = {

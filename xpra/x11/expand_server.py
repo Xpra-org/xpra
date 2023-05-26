@@ -23,7 +23,7 @@ class EVDIModel(RootWindowModel):
     def __repr__(self):
         return f"EVDIModel({self.capture} : {self.geometry})"
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x, y, width, height) -> ImageWrapper:
         dev = self.capture.evdi_device
         log.warn(f"get_image({x}, {y}, {width}, {height}) using {self.capture}, device={dev}")
         #import traceback
@@ -69,7 +69,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         #self.cancel_refresh_timer()
         #self.cancel_poll_pointer()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         #we have to continue to call the device refresh,
         #otherwise the UI hangs completely!
         dev = self.evdi_device
@@ -79,13 +79,13 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         #return dev is None
         return True
 
-    def evdi_io_event(self, channel, condition):
+    def evdi_io_event(self, channel, condition) -> bool:
         log.warn(f"io_event({channel}, {condition})")
         self.evdi_device.handle_events()
         #self.evdi_device.refresh()
         return True
 
-    def evdi_setup(self):
+    def evdi_setup(self) -> None:
         #import time
         #time.sleep(2)
         log("evdi_setup()")
@@ -98,7 +98,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         dev.enable_cursor_events()
         log("evdi_setup() done")
 
-    def start_evdi_watch(self):
+    def start_evdi_watch(self) -> bool:
         self.evdi_setup()
         #self.evdi_device.handle_all_events()
         self.fd_source = self.evdi_device.get_event_fd()
@@ -109,20 +109,20 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         self.fd_watch = GLib.io_add_watch(self.evdi_channel, GLib.PRIORITY_LOW, GLib.IO_IN, self.evdi_io_event)
         return False
 
-    def do_run(self):
+    def do_run(self) -> None:
         self.start_refresh_timer()
         #self.timeout_add(1*1000, self.start_evdi_watch)
         self.start_evdi_watch()
-        return super().do_run()
+        super().do_run()
 
 
-    def evdi_damage(self, width, height, buf, rects):
+    def evdi_damage(self, width, height, buf, rects) -> None:
         log("evdi_damage(%s)", (width, height, buf, rects))
         self.last_damage = width, height, buf, rects
         self.refresh_windows()
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         fdw = self.fd_watch
         if fdw:
             self.fd_watch = None
@@ -137,28 +137,28 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
             ed.cleanup()
         super().cleanup()
 
-    def sanity_checks(self, _proto, c):
+    def sanity_checks(self, _proto, c) -> bool:
         return True
 
-    def start_poll_pointer(self):
+    def start_poll_pointer(self) -> None:
         """ not needed """
 
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "X11 expand"
 
 
-    def set_refresh_delay(self, v):
+    def set_refresh_delay(self, v:int) -> None:
         assert 0<v<10000
         self.refresh_delay = v
 
     def setup_capture(self):
         return None
 
-    def get_root_window_model_class(self):
+    def get_root_window_model_class(self) -> type:
         return EVDIModel
 
-    def verify_capture(self, ss):
+    def verify_capture(self, ss) -> None:
         pass
 
 

@@ -8,7 +8,7 @@ from xpra.version_util import get_version_info, get_platform_info, get_host_info
 from xpra.util import print_nested_dict
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     with program_context("Version-Info", "Version Info"):
         print("Build:")

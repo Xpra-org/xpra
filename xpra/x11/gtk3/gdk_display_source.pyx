@@ -39,7 +39,7 @@ if GdkX11 is None:
     raise RuntimeError("could not load GdkX11 3.0")
 
 display = None
-def init_gdk_display_source():
+def init_gdk_display_source() -> None:
     global display
     import os
     backend = os.environ.get("GDK_BACKEND", "")
@@ -61,7 +61,7 @@ def init_gdk_display_source():
     set_display(x11_display)
     set_display_name(gdk_display_get_name(gdk_display))
 
-def close_gdk_display_source():
+def close_gdk_display_source() -> None:
     #this triggers the garbage collection of the Display object:
     global display
     display = None

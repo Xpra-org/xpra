@@ -62,12 +62,12 @@ class XTestPointerDevice:
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, x, y, props=None):
+    def move_pointer(self, x:int, y:int, props=None):
         mouselog("xtest_fake_motion%s", (x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(-1, x, y)
 
-    def click(self, button, pressed, props):
+    def click(self, button:int, pressed:bool, props):
         mouselog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
@@ -359,7 +359,7 @@ class X11ServerCore(GTKServerBase):
                     capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
-    def send_initial_cursors(self, ss, sharing=False) -> None:
+    def send_initial_cursors(self, ss, sharing:bool=False) -> None:
         dci = self.default_cursor_image
         ce = getattr(ss, "cursor_encodings", ())
         enabled = getattr(self, "cursors", False)
@@ -608,12 +608,12 @@ class X11ServerCore(GTKServerBase):
             return root_w, root_h
         return self.set_screen_size(w, h, bigger)
 
-    def get_best_screen_size(self, desired_w, desired_h, bigger=True):
+    def get_best_screen_size(self, desired_w:int, desired_h:int, bigger:bool=True):
         r = self.do_get_best_screen_size(desired_w, desired_h, bigger)
         screenlog("get_best_screen_size%s=%s", (desired_w, desired_h, bigger), r)
         return r
 
-    def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
+    def do_get_best_screen_size(self, desired_w:int, desired_h:int, bigger:bool=True):
         if not self.randr:
             return desired_w, desired_h
         screen_sizes = self.get_all_screen_sizes()
@@ -663,7 +663,7 @@ class X11ServerCore(GTKServerBase):
         w, h = new_size
         return w, h
 
-    def set_screen_size(self, desired_w, desired_h, bigger=True):
+    def set_screen_size(self, desired_w:int, desired_h:int, bigger:bool=True):
         screenlog("set_screen_size%s", (desired_w, desired_h, bigger))
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
@@ -814,7 +814,7 @@ class X11ServerCore(GTKServerBase):
         return root_w, root_h
 
 
-    def mirror_client_monitor_layout(self):
+    def mirror_client_monitor_layout(self) -> dict:
         with xsync:
             assert RandR.is_dummy16(), "cannot match monitor layout without RandR 1.6"
         #if we have a single UI client,
@@ -1001,7 +1001,7 @@ class X11ServerCore(GTKServerBase):
         return device
 
 
-    def _get_pointer_abs_coordinates(self, wid, pos):
+    def _get_pointer_abs_coordinates(self, wid:int, pos):
         #simple absolute coordinates
         x, y = pos[:2]
         from xpra.server.mixins.window_server import WindowServer
@@ -1016,12 +1016,12 @@ class X11ServerCore(GTKServerBase):
                 mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
-    def _move_pointer(self, device_id, wid, pos, props=None):
+    def _move_pointer(self, device_id:int, wid:int, pos, props=None):
         #(this is called within an xswallow context)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         self.device_move_pointer(device_id, wid, (x, y), props)
 
-    def device_move_pointer(self, device_id, wid, pos, props):
+    def device_move_pointer(self, device_id:int, wid:int, pos, props):
         device = self.get_pointer_device(device_id)
         x, y = pos
         mouselog("move_pointer(%s, %s, %s) device=%s, position=%s",
@@ -1032,7 +1032,7 @@ class X11ServerCore(GTKServerBase):
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             mouselog.estr(e)
 
-    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
+    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props):
         mouselog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
         if self.readonly:
             return False
@@ -1042,7 +1042,7 @@ class X11ServerCore(GTKServerBase):
                 self._move_pointer(device_id, wid, pointer, props)
         return True
 
-    def _update_modifiers(self, proto, wid, modifiers):
+    def _update_modifiers(self, proto, wid:int, modifiers):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -1053,14 +1053,14 @@ class X11ServerCore(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props) -> None:
+    def do_process_button_action(self, proto, device_id:int, wid:int, button:int, pressed:bool, pointer, props:dict) -> None:
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         props = {}
         if self._process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id, wid, pointer, button, pressed, props) -> None:
+    def button_action(self, device_id:int, wid:int, pointer, button:int, pressed:bool, props:dict) -> None:
         device = self.get_pointer_device(device_id)
         assert device, "pointer device %s not found" % device_id
         if button in (4, 5) and wid:
@@ -1073,7 +1073,7 @@ class X11ServerCore(GTKServerBase):
             mouselog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
             mouselog.error("Error: failed (un)press mouse button %s", button)
 
-    def record_wheel_event(self, wid, button) -> None:
+    def record_wheel_event(self, wid:int, button:int) -> None:
         mouselog("recording scroll event for button %i", button)
         for ss in self.window_sources():
             ss.record_scroll_event(wid)

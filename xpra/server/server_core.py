@@ -247,7 +247,7 @@ class ServerCore:
         raise NotImplementedError()
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.session_name = bytestostr(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
@@ -285,21 +285,21 @@ class ServerCore:
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
 
 
-    def init_ssl(self, opts):
+    def init_ssl(self, opts) -> None:
         self.ssl_mode = opts.ssl
         from xpra.net.socket_util import get_ssl_attributes
         self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
-    def validate(self):
+    def validate(self) -> True:
         return True
 
-    def server_init(self):
+    def server_init(self) -> None:
         if self.mdns:
             add_work_item(self.mdns_publish)
         self.start_listen_sockets()
 
-    def setup(self):
+    def setup(self) -> None:
         self.init_packet_handlers()
         self.init_aliases()
         self.init_dbus_server()
@@ -311,13 +311,13 @@ class ServerCore:
 
     ######################################################################
     # run / stop:
-    def signal_quit(self, signum, _frame=None):
+    def signal_quit(self, signum, _frame=None) -> None:
         self.closing()
         self.install_signal_handlers(deadly_signal)
         self.idle_add(self.clean_quit)
         self.idle_add(sys.exit, 128+signum)
 
-    def clean_quit(self, upgrading=False):
+    def clean_quit(self, upgrading=False) -> None:
         log("clean_quit(%s)", upgrading)
         if self._upgrading is None:
             self._upgrading = upgrading
@@ -326,11 +326,11 @@ class ServerCore:
         self.cleanup()
         self.quit_worker()
 
-    def force_quit(self):
+    def force_quit(self) -> None:
         log("force_quit()")
         force_quit()
 
-    def quit_worker(self):
+    def quit_worker(self) -> None:
         w = get_worker()
         log("clean_quit: worker=%s", w)
         if not w:
@@ -363,7 +363,7 @@ class ServerCore:
         self.timeout_add(250, quit_timer)
         log("clean_quit(..) quit timer scheduled, worker=%s", w)
 
-    def quit(self, upgrading=False):
+    def quit(self, upgrading=False) -> None:
         log("quit(%s)", upgrading)
         if self._upgrading is None:
             self._upgrading = upgrading
@@ -382,13 +382,13 @@ class ServerCore:
             self._closing = True
             self.log_closing_message()
 
-    def log_closing_message(self):
+    def log_closing_message(self) -> None:
         log.info("xpra %s server is %s", self.get_server_mode(), ["terminating", "exiting"][bool(self._upgrading)])
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         raise NotImplementedError()
 
-    def install_signal_handlers(self, callback):
+    def install_signal_handlers(self, callback) -> None:
         def os_signal(signum, _frame=None):
             callback(signum)
         signal.signal(signal.SIGINT, os_signal)
@@ -396,11 +396,11 @@ class ServerCore:
         register_SIGUSR_signals(self.idle_add)
 
 
-    def threaded_init(self):
+    def threaded_init(self) -> None:
         self.do_threaded_init()
         self.call_init_thread_callbacks()
 
-    def do_threaded_init(self):
+    def do_threaded_init(self) -> None:
         log("do_threaded_init() servercore start")
         #platform specific init:
         threaded_server_init()
@@ -410,7 +410,7 @@ class ServerCore:
             self.menu_provider.setup()
         log("threaded_init() servercore end")
 
-    def call_init_thread_callbacks(self):
+    def call_init_thread_callbacks(self) -> None:
         #run the init callbacks:
         with self.init_thread_lock:
             log("call_init_thread_callbacks() init_thread_callbacks=%s", self.init_thread_callbacks)
@@ -422,17 +422,17 @@ class ServerCore:
                     log.error("Error in initialization thread callback %s", cb)
                     log.estr(e)
 
-    def add_init_thread_callback(self, callback):
+    def add_init_thread_callback(self, callback:callable) -> None:
         self.init_thread_callbacks.append(callback)
 
-    def after_threaded_init(self, callback):
+    def after_threaded_init(self, callback:callable) -> None:
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
                 self.add_init_thread_callback(callback)
             else:
                 callback()
 
-    def wait_for_threaded_init(self):
+    def wait_for_threaded_init(self) -> None:
         if not self.init_thread:
             #looks like we didn't make it as far as calling setup()
             log("wait_for_threaded_init() no init thread")
@@ -445,7 +445,7 @@ class ServerCore:
                 log.warn("Warning: initialization thread is still active")
 
 
-    def run(self):
+    def run(self) -> int:
         self.install_signal_handlers(self.signal_quit)
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)
@@ -455,14 +455,14 @@ class ServerCore:
         log("run()")
         return 0
 
-    def server_is_ready(self):
+    def server_is_ready(self) -> None:
         log.info("xpra is ready.")
         noerr(sys.stdout.flush)
 
-    def do_run(self):
+    def do_run(self) -> None:
         raise NotImplementedError()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.stop_splash_process()
         self.cancel_touch_timer()
         self.mdns_cleanup()
@@ -473,11 +473,11 @@ class ServerCore:
         self.cleanup_menu_provider()
         netlog("cleanup() done for server core")
 
-    def do_cleanup(self):
+    def do_cleanup(self) -> None:
         #allow just a bit of time for the protocol packet flush
         sleep(0.1)
 
-    def late_cleanup(self):
+    def late_cleanup(self) -> None:
         if not self._upgrading:
             self.stop_dbus_server()
         self.cleanup_all_protocols(force=True)
@@ -487,14 +487,14 @@ class ServerCore:
             rm_pidfile(self.pidfile, self.pidinode)
             self.pidinode = 0
 
-    def clean_session_files(self):
+    def clean_session_files(self) -> None:
         self.do_clean_session_files(*self.session_files)
 
-    def do_clean_session_files(self, *filenames):
+    def do_clean_session_files(self, *filenames) -> None:
         log("do_clean_session_files%s", filenames)
         clean_session_files(*filenames)
 
-    def stop_splash_process(self):
+    def stop_splash_process(self) -> None:
         sp = self.splash_process
         if sp:
             self.splash_process = None
@@ -504,13 +504,13 @@ class ServerCore:
                 log("stop_splash_process()", exc_info=True)
 
 
-    def cleanup_menu_provider(self):
+    def cleanup_menu_provider(self) -> None:
         mp = self.menu_provider
         if mp:
             self.menu_provider = None
             mp.cleanup()
 
-    def cleanup_sockets(self):
+    def cleanup_sockets(self) -> None:
         netlog("cleanup_sockets() %s", self.socket_cleanup)
         #stop listening for IO events:
         for sc in self.socket_cleanup:
@@ -528,13 +528,13 @@ class ServerCore:
 
     ######################################################################
     # dbus:
-    def init_dbus(self, dbus_pid : int, dbus_env : dict):
+    def init_dbus(self, dbus_pid : int, dbus_env : dict) -> None:
         if not POSIX:
             return
         self.dbus_pid = dbus_pid
         self.dbus_env = dbus_env
 
-    def stop_dbus_server(self):
+    def stop_dbus_server(self) -> None:
         dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
         if not self.dbus_pid:
             return
@@ -549,7 +549,7 @@ class ServerCore:
             dbuslog.warn(f"Warning: error trying to stop dbus with pid {self.dbus_pid}:")
             dbuslog.warn(" %s", e)
 
-    def init_dbus_server(self):
+    def init_dbus_server(self) -> None:
         if not POSIX:
             return
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
@@ -566,7 +566,7 @@ class ServerCore:
             log.estr(e)
             self.dbus_server = None
 
-    def cleanup_dbus_server(self):
+    def cleanup_dbus_server(self) -> None:
         ds = self.dbus_server
         netlog(f"cleanup_dbus_server() dbus_server={ds}")
         if ds:
@@ -924,7 +924,7 @@ class ServerCore:
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 
-    def get_mdns_socktypes(self, socktype) -> tuple:
+    def get_mdns_socktypes(self, socktype:str) -> tuple:
         #for a given socket type,
         #what socket types we should expose via mdns
         if socktype in ("vsock", "named-pipe"):

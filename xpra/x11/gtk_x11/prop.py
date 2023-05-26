@@ -25,7 +25,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 
 
-def _get_atom(d):
+def _get_atom(d) -> str:
     unpacked = struct.unpack(b"@L", d)[0]
     if unpacked==0:
         log.warn("Warning: invalid zero atom value")
@@ -45,7 +45,7 @@ def _get_xatom(str_or_int):
         return X11WindowBindings().get_xatom(str_or_int)
 
 
-PYTHON_TYPES = {
+PYTHON_TYPES : dict = {
     "UTF8_STRING"   : "utf8",
     "STRING"        : "latin1",
     "ATOM"          : "atom",
@@ -54,11 +54,11 @@ PYTHON_TYPES = {
     "VISUALID"      : "visual",
     "WINDOW"        : "window",
     }
-def get_python_type(scalar_type):
+def get_python_type(scalar_type:str) -> str:
     #ie: get_python_type("STRING") = "latin1"
-    return PYTHON_TYPES.get(scalar_type)
+    return PYTHON_TYPES.get(scalar_type, scalar_type)
 
-def _to_atom(a):
+def _to_atom(a) -> bytes:
     return struct.pack(b"@L", _get_xatom(a))
 
 #add the GTK / GDK types to the conversion function list:
@@ -67,11 +67,11 @@ PROP_TYPES.update({
     })
 
 
-def prop_set(xid:int, key:str, etype, value):
+def prop_set(xid:int, key:str, etype, value) -> None:
     dtype, dformat, data = prop_encode(etype, value)
     raw_prop_set(xid, key, dtype, dformat, data)
 
-def raw_prop_set(xid:int, key:str, dtype, dformat, data):
+def raw_prop_set(xid:int, key:str, dtype, dformat, data) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:

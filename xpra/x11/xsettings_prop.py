@@ -31,7 +31,7 @@ BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
 #undocumented XSETTINGS endianness values:
 LITTLE_ENDIAN = 0
 BIG_ENDIAN    = 1
-def get_local_byteorder():
+def get_local_byteorder() -> int:
     if sys.byteorder=="little":
         return LITTLE_ENDIAN
     return BIG_ENDIAN   # pragma: no cover
@@ -44,14 +44,14 @@ class XSettingsType(IntEnum):
     String = 1
     Color = 2
 
-XSettingsNames = {
+XSettingsNames : dict = {
                 XSettingsType.Integer    : "Integer",
                 XSettingsType.String     : "String",
                 XSettingsType.Color      : "Color",
                 }
 
 
-XSETTINGS_CACHE = {}
+XSETTINGS_CACHE : dict = {}
 def bytes_to_xsettings(d:bytes):
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
@@ -164,7 +164,7 @@ def xsettings_to_bytes(d) -> bytes:
     return v
 
 
-def main(): # pragma: no cover
+def main() -> int: # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX

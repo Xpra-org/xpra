@@ -177,7 +177,7 @@ class SystemTray(GObject.GObject):
             self.cleanup()
             raise
 
-    def get_pywindow(self, xid):
+    def get_pywindow(self, xid:int):
         display = self.tray_window.get_display()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
@@ -208,7 +208,7 @@ class SystemTray(GObject.GObject):
         else:
             log.info("do_xpra_client_message_event(%s)", event)
 
-    def undock(self, window):
+    def undock(self, window) -> None:
         log("undock(%s)", window)
         rxid = X11Window.get_root_xid()
         xid = window.get_xid()

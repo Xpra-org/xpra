@@ -30,14 +30,14 @@ X11Keyboard = X11KeyboardBindings()
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
-def root_prop_set(prop_name, prop_type, value):
+def root_prop_set(prop_name:str, prop_type:str, value) -> None:
     # pylint: disable=import-outside-toplevel
     prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 
-def root_prop_del(prop_name):
+def root_prop_del(prop_name:str):
     prop_del(X11Keyboard.get_root_xid(), prop_name)
 
-def _get_antialias_hintstyle(antialias):
+def _get_antialias_hintstyle(antialias:typedict) -> str:
     hintstyle = antialias.strget("hintstyle", "").lower()
     if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
         #X11 clients can give us what we need directly:
@@ -86,22 +86,22 @@ class X11ServerBase(X11ServerCore):
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
 
-    def save_pid(self):
+    def save_pid(self) -> None:
         root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
 
-    def clean_x11_properties(self):
+    def clean_x11_properties(self) -> None:
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER_PID")
 
 
-    def init_display_pid(self, pid:int):
+    def init_display_pid(self, pid:int) -> None:
         if not pid:
             log.info("xvfb pid not found")
         else:
             log.info(f"xvfb pid={pid}")
         self.display_pid = pid
 
-    def kill_display(self):
+    def kill_display(self) -> None:
         if self.display_pid:
             if self._upgrading==EXITING_CODE:
                 log.info("exiting: not cleaning up Xvfb")
@@ -119,7 +119,7 @@ class X11ServerBase(X11ServerCore):
                     )
 
 
-    def late_cleanup(self):
+    def late_cleanup(self) -> None:
         super().late_cleanup()
         self.kill_display()
 
@@ -165,11 +165,11 @@ class X11ServerBase(X11ServerCore):
                     log.estr(e)
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         self.reset_settings()
         super().last_client_exited()
 
-    def init_virtual_devices(self, devices:dict):
+    def init_virtual_devices(self, devices:dict) -> None:
         # pylint: disable=import-outside-toplevel
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
@@ -197,7 +197,7 @@ class X11ServerBase(X11ServerCore):
         except Exception as e:
             mouselog("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
-    def verify_uinput_pointer_device(self):
+    def verify_uinput_pointer_device(self) -> None:
         xtest = XTestPointerDevice()
         ox, oy = 100, 100
         with xlog:

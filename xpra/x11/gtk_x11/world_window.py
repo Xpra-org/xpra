@@ -132,7 +132,7 @@ class WorldWindow(Gtk.Window):
             xid = w.get_xid()
         return "WorldWindow(%#x)" % xid
 
-    def _resize(self, *_args):
+    def _resize(self, *_args) -> None:
         s = self.get_screen()
         x = s.get_width()
         y = s.get_height()
@@ -156,7 +156,7 @@ class WorldWindow(Gtk.Window):
     #      -- it is possible that we should not in fact have the X focus at
     #         this time, though, so then give it to whoever should
     #   -- and finally ignore all subsequent focus-in-events
-    def do_map(self):
+    def do_map(self) -> None:
         Gtk.Window.do_map(self)
         # We are being mapped, so we can focus ourselves.
         # Check for the property, just in case this is the second time we are
@@ -169,27 +169,27 @@ class WorldWindow(Gtk.Window):
             # *will* get the focus, and thus a real FocusIn event.
             send_wm_take_focus(self.get_window().get_xid(), CurrentTime)
 
-    def add(self, widget):
+    def add(self, widget) -> None:
         w = widget.get_window()
         log("add(%s) realized=%s, widget window=%s", widget, self.get_realized(), w)
         #the DesktopManager does not have a window..
         if w:
             super().add(widget)
 
-    def do_focus_in_event(self, event):
+    def do_focus_in_event(self, event) -> None:
         htf = self.get_property("has-toplevel-focus")
         focuslog("world window got focus: %s, has-toplevel-focus=%s", event, htf)
         if not htf:
             Gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
 
-    def do_focus_out_event(self, event):
+    def do_focus_out_event(self, event) -> bool:
         focuslog("world window lost focus: %s", event)
         # Do nothing -- harder:
         self.stop_emission_by_name("focus-out-event")
         return False
 
-    def _take_focus(self):
+    def _take_focus(self) -> None:
         focuslog("Take Focus -> world window")
         assert self.get_realized()
         # Weird hack: we are a GDK window, and the only way to properly get
@@ -200,7 +200,7 @@ class WorldWindow(Gtk.Window):
         w = self.get_window()
         send_wm_take_focus(w.get_xid(), CurrentTime)
 
-    def reset_x_focus(self):
+    def reset_x_focus(self) -> None:
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
         def do_reset_x_focus():
             self._take_focus()
@@ -208,7 +208,7 @@ class WorldWindow(Gtk.Window):
         with xlog:
             do_reset_x_focus()
 
-    def _after_set_focus(self, *_args):
+    def _after_set_focus(self, *_args) -> None:
         focuslog("after_set_focus")
         # GTK focus has changed.  See comment in __init__ for why this isn't a
         # default handler.

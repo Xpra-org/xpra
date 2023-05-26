@@ -78,7 +78,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.display_icc = c.dictget("display-icc", {})
         self.opengl_props = c.dictget("opengl", {})
 
-    def set_monitors(self, monitors):
+    def set_monitors(self, monitors:dict) -> None:
         self.monitors = {}
         if monitors:
             for i, mon_def in monitors.items():
@@ -114,7 +114,7 @@ class ClientDisplayMixin(StubSourceMixin):
                     vdef["name"] = name
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
-    def set_screen_sizes(self, screen_sizes):
+    def set_screen_sizes(self, screen_sizes) -> None:
         log("set_screen_sizes(%s)", screen_sizes)
         self.screen_sizes = list(screen_sizes)
         #validate dpi / screen size in mm
@@ -154,11 +154,11 @@ class ClientDisplayMixin(StubSourceMixin):
                 self.screen_sizes[i] = tuple(screen)
         log("client validated screen sizes: %s", self.screen_sizes)
 
-    def set_desktops(self, desktops, desktop_names):
+    def set_desktops(self, desktops, desktop_names) -> None:
         self.desktops = desktops or 1
         self.desktop_names = tuple(net_utf8(d) for d in (desktop_names or ()))
 
-    def updated_desktop_size(self, root_w, root_h, max_w, max_h):
+    def updated_desktop_size(self, root_w:int, root_h:int, max_w:int, max_h:int) -> bool:
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s",
             (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
         if not self.hello_sent:
@@ -169,12 +169,12 @@ class ClientDisplayMixin(StubSourceMixin):
             return True
         return False
 
-    def show_desktop(self, show):
+    def show_desktop(self, show) -> None:
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
 
 
-    def get_monitor_definitions(self):
+    def get_monitor_definitions(self) -> dict:
         if self.monitors:
             return self.monitors
         #no? try to extract it from the legacy "screen_sizes" data:
