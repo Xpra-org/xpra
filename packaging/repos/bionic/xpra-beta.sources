@@ -3,3 +3,4 @@ URIs: https://xpra.org/beta
 Suites: bionic
 Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
+Architectures: amd64 arm64
