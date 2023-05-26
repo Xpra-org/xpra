@@ -56,6 +56,14 @@ BUTTON_EVENTS = {
                  (4, False) : NOEVENT,
                  (5, True)  : (win32con.MOUSEEVENTF_WHEEL,      -win32con.WHEEL_DELTA),
                  (5, False) : NOEVENT,
+                 (6, True)  : (win32con.MOUSEEVENTF_HWHEEL,     win32con.WHEEL_DELTA),
+                 (6, False) : NOEVENT,
+                 (7, True)  : (win32con.MOUSEEVENTF_HWHEEL,     -win32con.WHEEL_DELTA),
+                 (7, False) : NOEVENT,
+                 (8, True)  : (win32con.MOUSEEVENTF_XDOWN,      win32con.XBUTTON1),
+                 (8, False) : (win32con.MOUSEEVENTF_XUP,        win32con.XBUTTON1),
+                 (9, True)  : (win32con.MOUSEEVENTF_XDOWN,      win32con.XBUTTON2),
+                 (9, False) : (win32con.MOUSEEVENTF_XUP,        win32con.XBUTTON2),
                  }
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
