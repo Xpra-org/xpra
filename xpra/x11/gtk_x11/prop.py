@@ -15,6 +15,7 @@ the conversions for plain python types is found in prop_conv.py
 """
 
 import struct
+from typing import Optional
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window import X11WindowBindings, PropertyError
@@ -25,7 +26,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 
 
-def _get_atom(d) -> str:
+def _get_atom(d) -> Optional[str]:
     unpacked = struct.unpack(b"@L", d)[0]
     if unpacked==0:
         log.warn("Warning: invalid zero atom value")

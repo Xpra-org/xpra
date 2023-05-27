@@ -14,6 +14,7 @@ import signal
 from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
+from typing import Tuple, Optional, List
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
@@ -33,7 +34,7 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple:
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Optional[Tuple[int,...]]:
     if not s:
         return None
     s = s.upper()       #ie: 4K60
@@ -94,7 +95,7 @@ def osclose(fd) -> None:
     except OSError:
         pass
 
-def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid:int, gid:int) -> None:
+def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int) -> None:
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     if not device_uuid:
@@ -107,7 +108,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid:int, gid:int) -> 
 
     #create conf dir if needed:
     d = xorg_conf_dir
-    dirs = []
+    dirs : List[str] = []
     while d and not os.path.exists(d):
         log("create_device_configs: dir does not exist: %s", d)
         dirs.insert(0, d)
@@ -115,7 +116,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid:int, gid:int) -> 
     for d in dirs:
         makedir(d)
 
-    conf_files = []
+    conf_files : List[str] = []
     for i, dev_type in (
         (0, "pointer"),
         (1, "touchpad"),
@@ -124,7 +125,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid:int, gid:int) -> 
         conf_files.append(f)
 
 #create individual device files:
-def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid:int, gid:int):
+def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:int):
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
     identifier = f"xpra-virtual-{dev_type}"
@@ -149,9 +150,9 @@ EndSection
 
 def get_xauthority_path(display_name, username, uid:int, gid:int) -> str:
     assert POSIX
-    def pathexpand(s):
+    def pathexpand(s) -> str:
         return osexpand(s, actual_username=username, uid=uid, gid=gid)
-    filename = os.environ.get("XAUTHORITY")
+    filename : str = os.environ.get("XAUTHORITY", "")
     if filename:
         filename = pathexpand(filename)
         if os.path.exists(filename):

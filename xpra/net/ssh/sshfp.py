@@ -5,6 +5,7 @@
 
 import os
 import hashlib
+from typing import Dict
 
 from dns import flags
 from dns.resolver import Resolver, NoAnswer, NoNameservers
@@ -13,7 +14,7 @@ from xpra.log import Logger
 
 log = Logger("ssh")
 
-_key_algorithms : dict[str,str] = {
+_key_algorithms : Dict[str,str] = {
     'ssh-rsa'               : '1',
     'ssh-dss'               : '2',
     'ecdsa-sha2-nistp256'   : '3',
@@ -22,7 +23,7 @@ _key_algorithms : dict[str,str] = {
     'ssh-ed25519'           : '4',
 }
 
-_hash_funcs : dict[str, Callable] = {
+_hash_funcs : Dict[str, Callable] = {
     '1' : hashlib.sha1,
     '2' : hashlib.sha256,
 }
@@ -39,7 +40,7 @@ def check_host_key(hostname:str, key):
 
 def do_check_host_key(hostname:str, keytype, keydata):
     resolver = Resolver()
-    resolver.use_edns(0, flags.DO, 1280)  # @UndefinedVariable pylint: disable=no-member
+    resolver.use_edns(0, flags.DO, 1280)  # type: ignore[attr-defined]
     log("do_check_host_key(%s, %s, ..) resolver=%s", hostname, keytype, resolver)
 
     key_alg = _key_algorithms.get(keytype)

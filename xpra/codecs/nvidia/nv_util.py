@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
 from threading import RLock
+from typing import Dict, Tuple
 
 from xpra.util import pver, print_nested_dict, envbool, csv
 from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
@@ -314,7 +315,7 @@ def parse_nvfbc_hex_key(s):
     return binascii.unhexlify(hexstr)
 
 
-license_keys = {}
+license_keys : Dict[str, Tuple] = {}
 def get_license_keys(version=0, basefilename="nvenc"):
     filename = f"{basefilename}%s.keys" % (version or "")
     keys = license_keys.get(filename)

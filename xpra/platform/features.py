@@ -37,7 +37,7 @@ DEFAULT_ENV : Tuple[str, ...] = ()
 
 #DEFAULT_SSH_COMMAND = "paramiko"
 DEFAULT_SSH_COMMAND : str = "ssh -x"
-DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS : Tuple[Tuple[str, str, str]] = (
+DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS : Tuple[Tuple[str, str, str], ...] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
     ("pactl", "set-default-source", "Xpra-Microphone.monitor"),
     )
@@ -57,7 +57,7 @@ IP_OPTIONS : Tuple[str, ...] = (
 TCP_OPTIONS : Tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 
-_features_list_ : Tuple[str] = (
+_features_list_ : Tuple[str, ...] = (
                    "AUTOSTART",
                    "CAN_DAEMONIZE",
                    "REINIT_WINDOWS",

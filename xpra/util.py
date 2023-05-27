@@ -15,8 +15,8 @@ try:
     #Python 3.11 and later:
     from enum import StrEnum
 except ImportError:
-    StrEnum = Enum
-from typing import Tuple, Optional, Any, List, Set, Callable, Iterable
+    StrEnum = Enum      # type: ignore
+from typing import Dict, Tuple, Optional, Any, List, Set, Callable, Iterable, Union
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -220,7 +220,7 @@ def remove_dupes(seq:Iterable[Any]) -> List[Any]:
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:str=None) -> dict[str,Any]:
+def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:List[Any]=None) -> Dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []
@@ -293,7 +293,7 @@ class AtomicInteger:
         try:
             return self.counter==int(other)
         except ValueError:
-            return -1
+            return False
 
     def __cmp__(self, other) -> int:
         try:
@@ -451,7 +451,7 @@ class typedict(dict):
     def boolget(self, k : str, default:Optional[bool]=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default:Optional[dict]=None) -> dict:
+    def dictget(self, k : str, default:Optional[dict]=None) -> Dict:
         return self.conv_get(k, default, checkdict)
 
     def intpair(self, k : str, default_value:Optional[Tuple[int,int]]=None) -> Optional[Tuple[int, int]]:
@@ -474,9 +474,7 @@ class typedict(dict):
 
     def tupleget(self, k : str, default_value=(), item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
-        if isinstance(v, list):
-            v = tuple(v)
-        return v
+        return tuple(v)
 
     def _listget(self, k : str, default_value, item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> List[Any]:
         v = self.get(k)
@@ -647,17 +645,15 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             continue
         log.info("    "+istr)
 
-def get_screen_info(screen_sizes) -> dict:
+def get_screen_info(screen_sizes) -> Dict[int, Dict[str, Any]]:
     #same format as above
     if not screen_sizes:
         return {}
-    info = {
-            "screens" : len(screen_sizes)
-            }
+    info : Dict[int, Dict[str, Any]] = {}
     for i, x in enumerate(screen_sizes):
         if not isinstance(x, (tuple, list)):
             continue
-        sinfo = info.setdefault("screen", {}).setdefault(i, {})
+        sinfo : Dict[str,Any] = info.setdefault(i, {})
         sinfo["display"] = x[0]
         if len(x)>=3:
             sinfo["size"] = x[1], x[2]
@@ -667,7 +663,7 @@ def get_screen_info(screen_sizes) -> dict:
             monitors = x[5]
             for j, monitor in enumerate(monitors):
                 if len(monitor)>=7:
-                    minfo = sinfo.setdefault("monitor", {}).setdefault(j, {})
+                    minfo : Dict[str,Any] = sinfo.setdefault("monitor", {}).setdefault(j, {})
                     for k,v in {
                                 "name"      : monitor[0],
                                 "geometry"  : monitor[1:5],
@@ -678,7 +674,7 @@ def get_screen_info(screen_sizes) -> dict:
             sinfo["workarea"] = x[6:10]
     return info
 
-def dump_all_frames(logger=None):
+def dump_all_frames(logger=None) -> None:
     try:
         frames = sys._current_frames()      #pylint: disable=protected-access
     except AttributeError:
@@ -686,14 +682,14 @@ def dump_all_frames(logger=None):
     else:
         dump_frames(frames.items(), logger)
 
-def dump_gc_frames(logger=None):
+def dump_gc_frames(logger=None) -> None:
     import gc
     import inspect
     gc.collect()
     frames = tuple((None, x) for x in gc.get_objects() if inspect.isframe(x))
     dump_frames(frames, logger)
 
-def dump_frames(frames, logger=None):
+def dump_frames(frames, logger=None) -> None:
     if not logger:
         logger = get_util_logger()
     logger("found %s frames:", len(frames))
@@ -731,11 +727,11 @@ def detect_leaks():
         return True
     return print_leaks
 
-def start_mem_watcher(ms):
+def start_mem_watcher(ms) -> None:
     from xpra.make_thread import start_thread
     start_thread(mem_watcher, name="mem-watcher", daemon=True, args=(ms,))
 
-def mem_watcher(ms, pid=os.getpid()):
+def mem_watcher(ms, pid:int=os.getpid()) -> None:
     import time
     import psutil
     process = psutil.Process(pid)
@@ -745,7 +741,7 @@ def mem_watcher(ms, pid=os.getpid()):
         get_util_logger().info("memory usage for %s: %s", pid, mem)
         time.sleep(ms/1000.0)
 
-def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
+def log_mem_info(prefix="memory usage: ", pid=os.getpid()) -> None:
     import psutil
     process = psutil.Process(pid)
     mem = process.memory_full_info()
@@ -782,23 +778,23 @@ def repr_ellipsized(obj, limit=100) -> str:
     return repr_ellipsized(repr(obj), limit)
 
 
-def rindex(alist, avalue) -> int:
+def rindex(alist:List, avalue) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-def notypedict(d:dict) -> dict:
+def notypedict(d:Dict) -> Dict:
     for k in list(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info:dict[str,Any], sep:str=".") -> dict:
+def flatten_dict(info:Dict[str,Any], sep:str=".") -> Dict:
     to : dict[str, Any] = {}
-    _flatten_dict(to, sep, None, info)
+    _flatten_dict(to, sep, "", info)
     return to
 
-def _flatten_dict(to:dict[str, Any], sep:str, path:str, d:dict[str,Any]):
+def _flatten_dict(to:Dict[str, Any], sep:str, path:str, d:Dict[str,Any]):
     for k,v in d.items():
         if path:
             if k:
@@ -812,21 +808,23 @@ def _flatten_dict(to:dict[str, Any], sep:str, path:str, d:dict[str,Any]):
         elif v is not None:
             to[npath] = v
 
-def parse_simple_dict(s:str="", sep:str=",") -> dict:
+def parse_simple_dict(s:str="", sep:str=",") -> Dict[str, Union[str,List[str]]]:
     #parse the options string and add the pairs:
-    d = {}
+    d : Dict[str, Union[str,List[str]]] = {}
     for el in s.split(sep):
         if not el:
             continue
         try:
             k, v = el.split("=", 1)
-            cur = d.get(k)
-            if cur:
+            def may_add() -> Union[str,List[str]]:
+                cur = d.get(k)
+                if cur is None:
+                    return v
                 if not isinstance(cur, list):
                     cur = [cur]
                 cur.append(v)
-                v = cur
-            d[k] = v
+                return cur
+            d[k] = may_add()
         except Exception as e:
             log = get_util_logger()
             log.warn("Warning: failed to parse dictionary option '%s':", s)
@@ -835,7 +833,7 @@ def parse_simple_dict(s:str="", sep:str=",") -> dict:
 
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
-def updict(todict, prefix, d, suffix="", flatten_dicts=False):
+def updict(todict:Dict, prefix:str, d:Dict, suffix:str="", flatten_dicts:bool=False) -> Dict:
     if not d:
         return todict
     for k,v in d.items():
@@ -870,7 +868,7 @@ def pver(v, numsep:str=".", strsep:str=", ") -> str:
                 return strsep.join(s(x) for x in v)
     return bytestostr(v)
 
-def sorted_nicely(l):
+def sorted_nicely(l:Iterable):
     """ Sort the given iterable in the way that humans expect."""
     def convert(text):
         if text.isdigit():
@@ -879,7 +877,7 @@ def sorted_nicely(l):
     alphanum_key = lambda key: [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
-def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None,
+def print_nested_dict(d:Dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Optional[Callable]=None,
                       version_keys=("version", "revision"), hex_keys=("data", )):
     #"smart" value formatting function:
     def sprint(arg):
@@ -918,14 +916,14 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
-def reverse_dict(d:dict) -> dict:
+def reverse_dict(d:Dict) -> Dict:
     reversed_d = {}
     for k,v in d.items():
         reversed_d[v] = k
     return reversed_d
 
 
-def std(s, extras="-,./: ") -> str:
+def std(s, extras:str="-,./: ") -> str:
     s = s or ""
     try:
         s = s.decode("latin1")
@@ -955,8 +953,8 @@ def alnum(s) -> str:
     return "".join(c(v) for v in filter(f, s))
 
 def nonl(x) -> str:
-    if x is None:
-        return None
+    if not x:
+        return ""
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
 def engs(v) -> str:

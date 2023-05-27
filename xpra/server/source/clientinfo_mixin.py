@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any
 
 from xpra.util import std, typedict, net_utf8
 from xpra.common import FULL_INFO
@@ -138,8 +140,8 @@ class ClientInfoMixin(StubSourceMixin):
         return cinfo
 
 
-    def get_info(self) -> dict:
-        info = {
+    def get_info(self) -> Dict[str,Any]:
+        info : Dict[str,Any] = {
                 "sharing"           : bool(self.sharing),
                 }
         if self.client_version:

@@ -200,7 +200,7 @@ def parse_version(v) -> Tuple[Any, ...]:
             except ValueError:
                 return v
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
-    return tuple(v)
+    return tuple(v or ())
 
 def vtrim(v, parts=FULL_INFO+1):
     if isinstance(v, (list, tuple)):

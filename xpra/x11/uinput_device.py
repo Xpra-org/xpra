@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict
 
 from uinput import (
     BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,   # @UnresolvedImport
@@ -11,7 +13,6 @@ from uinput import (
     )
 
 from xpra.util import envint
-from xpra.os_util import bytestostr
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
@@ -46,8 +47,8 @@ class UInputDevice:
     __slots__ = ("device", "device_path", "wheel_delta")
     def __init__(self, device, device_path):
         self.device = device
-        self.device_path = bytestostr(device_path)
-        self.wheel_delta = {}
+        self.device_path : str = device_path
+        self.wheel_delta : Dict = {}
         #the first event always goes MIA:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:

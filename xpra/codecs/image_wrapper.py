@@ -134,7 +134,7 @@ class ImageWrapper:
     def set_timestamp(self, timestamp : int):
         self.timestamp = timestamp
 
-    def set_planes(self, planes : int):
+    def set_planes(self, planes : PlanarFormat):
         self.planes = planes
 
     def set_rowstride(self, rowstride : int):

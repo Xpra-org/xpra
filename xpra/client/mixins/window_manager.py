@@ -15,6 +15,7 @@ import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
+from typing import Dict, List, Tuple, Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
@@ -48,34 +49,36 @@ cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 
-MOUSE_SHOW = envbool("XPRA_MOUSE_SHOW", True)
-SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
+MOUSE_SHOW : bool = envbool("XPRA_MOUSE_SHOW", True)
+SMOOTH_SCROLL : bool = envbool("XPRA_SMOOTH_SCROLL", True)
 
-PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
-PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
-PAINT_DELAY = envint("XPRA_PAINT_DELAY", -1)
+PAINT_FAULT_RATE : int = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
+PAINT_FAULT_TELL : bool = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
+PAINT_DELAY : int = envint("XPRA_PAINT_DELAY", -1)
 
-WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
-TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
+WM_CLASS_CLOSEEXIT : List[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
+TITLE_CLOSEEXIT : List[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
-OR_FORCE_GRAB_STR = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
-OR_FORCE_GRAB = {}
+OR_FORCE_GRAB_STR : str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
+OR_FORCE_GRAB : Dict[str,List[str]] = {}
 for s in OR_FORCE_GRAB_STR.split(","):
+    if not s:
+        continue
     parts = s.split(":")
     if len(parts)==1:
         OR_FORCE_GRAB.setdefault("*", []).append(s)
     else:
         OR_FORCE_GRAB.setdefault(parts[0], []).append(parts[1])
 
-SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
+SKIP_DUPLICATE_BUTTON_EVENTS : bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 
-DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
-ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
-ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
-SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
-SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
-SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX)
-SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
+DYNAMIC_TRAY_ICON : bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
+ICON_OVERLAY : int = envint("XPRA_ICON_OVERLAY", 50)
+ICON_SHRINKAGE : int = envint("XPRA_ICON_SHRINKAGE", 75)
+SAVE_WINDOW_ICONS : bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
+SAVE_CURSORS : bool = envbool("XPRA_SAVE_CURSORS", False)
+SIGNAL_WATCHER : bool = envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX)
+SIGNAL_WATCHER_COMMAND : str = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
 if SIGNAL_WATCHER:
     SIGNAL_WATCHER = False
     for prefix in ("/usr", get_resources_dir()):
@@ -86,14 +89,14 @@ if SIGNAL_WATCHER:
     if not SIGNAL_WATCHER:
         log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
 
-FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
-MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
-MOUSE_SCROLL_MULTIPLIER = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
+FAKE_SUSPEND_RESUME : int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
+MOUSE_SCROLL_SQRT_SCALE : bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
+MOUSE_SCROLL_MULTIPLIER : int = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
-PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
-SHOW_DELAY = envint("XPRA_SHOW_DELAY", -1)
+PRE_MAP : bool = envbool("XPRA_PRE_MAP_WINDOWS", True)
+SHOW_DELAY : int = envint("XPRA_SHOW_DELAY", -1)
 
-DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
+DRAW_TYPES : Dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
 
 class WindowClient(StubClientMixin):
@@ -104,68 +107,68 @@ class WindowClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self._window_to_id = {}
-        self._id_to_window = {}
+        self._window_to_id : Dict[Any,int] = {}
+        self._id_to_window : Dict[int,Any] = {}
 
-        self.auto_refresh_delay = -1
-        self.min_window_size = 0, 0
-        self.max_window_size = 0, 0
+        self.auto_refresh_delay : int = -1
+        self.min_window_size : Tuple[int, int] = 0, 0
+        self.max_window_size : Tuple[int, int] = 0, 0
 
         #draw thread:
         self._draw_queue = None
         self._draw_thread = None
-        self._draw_counter = 0
+        self._draw_counter : int = 0
 
         #statistics and server info:
-        self.pixel_counter = deque(maxlen=1000)
+        self.pixel_counter : deque = deque(maxlen=1000)
 
-        self.readonly = False
-        self.windows_enabled = True
-        self.pixel_depth = 0
+        self.readonly : bool = False
+        self.windows_enabled : bool = True
+        self.pixel_depth : int = 0
 
-        self.server_window_frame_extents = False
-        self.server_is_desktop = False
+        self.server_window_frame_extents : bool = False
+        self.server_is_desktop : bool = False
         self.server_window_states = []
         self.server_window_signals = ()
 
         self.server_input_devices = None
-        self.server_precise_wheel = False
-        self.server_pointer_relative = False
+        self.server_precise_wheel : bool = False
+        self.server_pointer_relative : bool = False
 
-        self.input_devices = "auto"
+        self.input_devices : str = "auto"
 
         self.overlay_image = None
 
-        self.server_cursors = False
-        self.client_supports_system_tray = False
-        self.client_supports_cursors = False
-        self.client_supports_bell = False
-        self.cursors_enabled = False
+        self.server_cursors : bool = False
+        self.client_supports_system_tray : bool = False
+        self.client_supports_cursors : bool = False
+        self.client_supports_bell : bool = False
+        self.cursors_enabled : bool = False
         self.default_cursor_data = None
-        self.server_bell = False
-        self.bell_enabled = False
+        self.server_bell : bool = False
+        self.bell_enabled : bool = False
 
         self.border = None
-        self.window_close_action = "forward"
-        self.modal_windows = True
+        self.window_close_action : str = "forward"
+        self.modal_windows : bool = True
 
         self._pid_to_signalwatcher = {}
         self._signalwatcher_to_wids = {}
 
-        self.wheel_smooth = SMOOTH_SCROLL
+        self.wheel_smooth : bool = SMOOTH_SCROLL
         self.wheel_map = {}
-        self.wheel_deltax = 0
-        self.wheel_deltay = 0
+        self.wheel_deltax : float = 0
+        self.wheel_deltay : float = 0
 
         #state:
-        self.lost_focus_timer = None
+        self.lost_focus_timer : int = 0
         self._focused = None
         self._window_with_grab = None
         self.pointer_grabbed = None
-        self._suspended_at = 0
+        self._suspended_at : float = 0
         self._button_state = {}
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         if opts.system_tray:
             try:
                 from xpra.client.gui import client_tray
@@ -266,7 +269,7 @@ class WindowClient(StubClientMixin):
         pass
 
 
-    def run(self):
+    def run(self) -> None:
         #we decode pixel data in this thread
         self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
@@ -274,7 +277,7 @@ class WindowClient(StubClientMixin):
             self.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("WindowClient.cleanup()")
         #tell the draw thread to exit:
         dq = self._draw_queue
@@ -293,7 +296,7 @@ class WindowClient(StubClientMixin):
         log("WindowClient.cleanup() done")
 
 
-    def set_modal_windows(self, modal_windows):
+    def set_modal_windows(self, modal_windows) -> None:
         self.modal_windows = modal_windows
         #re-set flag on all the windows:
         for w in self._id_to_window.values():
@@ -303,12 +306,12 @@ class WindowClient(StubClientMixin):
     def set_windows_cursor(self, client_windows, new_cursor):
         raise NotImplementedError()
 
-    def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+    def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name) -> None:
         raise NotImplementedError()
 
 
-    def get_info(self):
-        info = {
+    def get_info(self) -> Dict[str,Any]:
+        info : Dict[Any,Any] = {
             "count"         : len(self._window_to_id),
             "min-size"      : self.min_window_size,
             "max-size"      : self.max_window_size,
@@ -325,12 +328,13 @@ class WindowClient(StubClientMixin):
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
-        return {"windows" : info}
+        winfo : Dict[str,Any] = {"windows" : info}
+        return winfo
 
 
     ######################################################################
     # hello:
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         #FIXME: the messy bits without proper namespace:
         caps = {
             #generic server flags:
@@ -359,7 +363,7 @@ class WindowClient(StubClientMixin):
             })
         return caps
 
-    def get_window_caps(self) -> dict:
+    def get_window_caps(self) -> Dict[str,Any]:
         return {
             #implemented in the gtk client:
             "min-size"                  : self.min_window_size,
@@ -394,7 +398,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # pointer:
-    def _process_pointer_position(self, packet):
+    def _process_pointer_position(self, packet) -> None:
         wid, x, y = packet[1:4]
         if len(packet)>=6:
             rx, ry = packet[4:6]
@@ -416,9 +420,9 @@ class WindowClient(StubClientMixin):
                     value = None
                 show_pointer_overlay(value)
 
-    def send_wheel_delta(self, device_id, wid, button, distance, pointer=None, props=None):
+    def send_wheel_delta(self, device_id:int, wid:int, button:int, distance, pointer=None, props=None) -> float:
         modifiers = self.get_current_modifiers()
-        buttons = []
+        buttons : Tuple[int,...] = ()
         mouselog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
                  (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
@@ -431,29 +435,27 @@ class WindowClient(StubClientMixin):
                 mouselog("send_wheel_delta(..) %s", packet)
                 self.send_positional(packet)
             return 0
-        else:
-            #server cannot handle precise wheel,
-            #so we have to use discrete events,
-            #and send a click for each step:
-            scaled_distance = abs(distance*MOUSE_SCROLL_MULTIPLIER/100)
-            if MOUSE_SCROLL_SQRT_SCALE:
-                scaled_distance = math.sqrt(scaled_distance)
-            steps = round(scaled_distance)
-            for _ in range(steps):
-                for state in True, False:
-                    self.send_button(device_id, wid, button, state, pointer, modifiers, buttons, props)
-            #return remainder:
-            scaled_remainder = steps
-            if MOUSE_SCROLL_SQRT_SCALE:
-                scaled_remainder = steps**2
-            scaled_remainder = scaled_remainder*(100/float(MOUSE_SCROLL_MULTIPLIER))
-
-            remain_distance = float(scaled_remainder)
-            signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
-            return float(distance) - signed_remain_distance
+        #server cannot handle precise wheel,
+        #so we have to use discrete events,
+        #and send a click for each step:
+        scaled_distance = abs(distance*MOUSE_SCROLL_MULTIPLIER/100)
+        if MOUSE_SCROLL_SQRT_SCALE:
+            scaled_distance = math.sqrt(scaled_distance)
+        steps = round(scaled_distance)
+        for _ in range(steps):
+            for state in True, False:
+                self.send_button(device_id, wid, button, state, pointer, modifiers, buttons, props)
+        #return remainder:
+        scaled_remainder : float = steps
+        if MOUSE_SCROLL_SQRT_SCALE:
+            scaled_remainder = steps**2
+        scaled_remainder = scaled_remainder*(100/float(MOUSE_SCROLL_MULTIPLIER))
+        remain_distance = float(scaled_remainder)
+        signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
+        return float(distance) - signed_remain_distance
 
 
-    def wheel_event(self, device_id=-1, wid=0, deltax=0, deltay=0, pointer=(), props=None):
+    def wheel_event(self, device_id=-1, wid=0, deltax=0, deltay=0, pointer=(), props=None) -> None:
         #this is a different entry point for mouse wheel events,
         #which provides finer grained deltas (if supported by the server)
         #accumulate deltas:
@@ -468,7 +470,7 @@ class WindowClient(StubClientMixin):
         mouselog("wheel_event%s new deltas=%s,%s",
                  (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
-    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props):
+    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props) -> None:
         pressed_state = self._button_state.get(button, False)
         if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
@@ -509,19 +511,19 @@ class WindowClient(StubClientMixin):
         mouselog("button packet: %s", packet)
         self.send_positional(packet)
 
-    def scale_pointer(self, pointer):
+    def scale_pointer(self, pointer) -> Tuple[int,int]:
         #subclass may scale this:
         #return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
         return round(pointer[0]), round(pointer[1])
 
-    def send_input_devices(self, fmt, input_devices):
+    def send_input_devices(self, fmt, input_devices) -> None:
         assert self.server_input_devices
         self.send("input-devices", fmt, input_devices)
 
 
     ######################################################################
     # cursor:
-    def _process_cursor(self, packet):
+    def _process_cursor(self, packet) -> None:
         if not self.cursors_enabled:
             return
         if len(packet)==2:
@@ -558,18 +560,18 @@ class WindowClient(StubClientMixin):
         else:
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
-    def reset_cursor(self):
+    def reset_cursor(self) -> None:
         self.set_windows_cursor(self._id_to_window.values(), [])
 
 
-    def cook_metadata(self, _new_window, metadata):
+    def cook_metadata(self, _new_window, metadata) -> typedict:
         #subclasses can apply tweaks here:
         return typedict(metadata)
 
 
     ######################################################################
     # system tray
-    def _process_new_tray(self, packet):
+    def _process_new_tray(self, packet) -> None:
         assert self.client_supports_system_tray
         self._ui_event()
         wid, w, h = packet[1:4]
@@ -679,7 +681,7 @@ class WindowClient(StubClientMixin):
         return self.tray
 
 
-    def set_tray_icon(self):
+    def set_tray_icon(self) -> None:
         #find all the window icons,
         #and if they are all using the same one, then use it as tray icon
         #otherwise use the default icon
@@ -821,7 +823,7 @@ class WindowClient(StubClientMixin):
                 wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
         return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def make_new_window(self, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties):
+    def make_new_window(self, wid:int, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)  #pylint: disable=assignment-from-none
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
@@ -868,13 +870,13 @@ class WindowClient(StubClientMixin):
             self.show_window(wid, window, metadata, override_redirect)
         return window
 
-    def show_window(self, wid, window, metadata, override_redirect):
+    def show_window(self, wid:int, window, metadata, override_redirect) -> None:
         window.show_all()
         if override_redirect and self.should_force_grab(metadata):
             grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
             self.window_grab(wid, window)
 
-    def should_force_grab(self, metadata):
+    def should_force_grab(self, metadata) -> bool:
         if not OR_FORCE_GRAB:
             return False
         window_types = metadata.get("window-type", [])
@@ -893,7 +895,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # listen for process signals using a watcher process:
-    def assign_signal_watcher_pid(self, wid, pid):
+    def assign_signal_watcher_pid(self, wid:int, pid:int) -> int:
         if not SIGNAL_WATCHER or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
@@ -933,7 +935,7 @@ class WindowClient(StubClientMixin):
             return proc.pid
         return 0
 
-    def signal_watcher_event(self, fd, cb_condition, proc, pid, wid):
+    def signal_watcher_event(self, fd, cb_condition, proc, pid:int, wid:int) -> bool:
         log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
         if cb_condition==GLib.IO_HUP:
             proc.stdout_io_watch = None
@@ -1010,7 +1012,7 @@ class WindowClient(StubClientMixin):
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
 
-    def reinit_window(self, wid, window, new_size_fn=None):
+    def reinit_window(self, wid:int, window, new_size_fn=None):
         geomlog("reinit_window%s", (wid, window, new_size_fn))
         def fake_send(*args):
             log("fake_send%s", args)
@@ -1078,7 +1080,7 @@ class WindowClient(StubClientMixin):
                 decoder_lock.release()
 
 
-    def get_group_leader(self, _wid, _metadata, _override_redirect):
+    def get_group_leader(self, _wid:int, _metadata, _override_redirect):
         #subclasses that wish to implement the feature may override this method
         return None
 
@@ -1249,7 +1251,7 @@ class WindowClient(StubClientMixin):
                 window.set_modal(True)
 
 
-    def destroy_window(self, wid, window):
+    def destroy_window(self, wid:int, window):
         log("destroy_window(%s, %s)", wid, window)
         window.destroy()
         if self._window_with_grab==wid:
@@ -1330,14 +1332,14 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # focus:
-    def send_focus(self, wid):
+    def send_focus(self, wid:int):
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
-    def has_focus(self, wid):
+    def has_focus(self, wid:int):
         return self._focused and self._focused==wid
 
-    def update_focus(self, wid, gotit):
+    def update_focus(self, wid:int, gotit):
         focused = self._focused
         focuslog(f"update_focus({wid}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
         if gotit:
@@ -1367,7 +1369,7 @@ class WindowClient(StubClientMixin):
 
     def send_lost_focus(self):
         focuslog("send_lost_focus() focused=%s", self._focused)
-        self.lost_focus_timer = None
+        self.lost_focus_timer = 0
         #check that a new window has not gained focus since:
         if self._focused is None:
             self.send_focus(0)
@@ -1375,13 +1377,13 @@ class WindowClient(StubClientMixin):
     def cancel_lost_focus_timer(self):
         lft = self.lost_focus_timer
         if lft:
-            self.lost_focus_timer = None
+            self.lost_focus_timer = 0
             self.source_remove(lft)
 
 
     ######################################################################
     # grabs:
-    def window_grab(self, wid, _window):
+    def window_grab(self, wid:int, _window):
         grablog.warn("Warning: window grab not implemented in %s", self.client_type())
         self._window_with_grab = wid
 
@@ -1435,7 +1437,7 @@ class WindowClient(StubClientMixin):
             self.reinit_windows()
         self.reinit_window_icons()
 
-    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options=None, client_properties=None):
+    def control_refresh(self, wid:int, suspend_resume, refresh, quality=100, options=None, client_properties=None):
         packet = ["buffer-refresh", wid, 0, quality]
         options = options or {}
         client_properties = client_properties or {}
@@ -1484,7 +1486,7 @@ class WindowClient(StubClientMixin):
     def _process_eos(self, packet):
         self._draw_queue.put(packet)
 
-    def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time, message=""):
+    def send_damage_sequence(self, wid:int, packet_sequence, width, height, decode_time, message=""):
         packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
         self.send_now(*packet)

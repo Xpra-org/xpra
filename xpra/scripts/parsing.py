@@ -172,9 +172,10 @@ def parse_URL(url:str):
         f_params = {}
         for k,v in params.items():
             t = OPTION_TYPES.get(k)
-            if t is not None and t!=list:
-                v = v[0]
-            f_params[k] = v
+            if t is not None and t not in (list, tuple):
+                f_params[k] = v[0]
+            else:
+                f_params[k] = v
         options = validate_config(f_params)
     scheme = up.scheme
     if scheme.startswith("xpra+"):
@@ -297,17 +298,17 @@ def parse_username_and_password(s:str) -> dict:
 
 def load_password_file(password_file:str) -> str:
     if not password_file:
-        return None
+        return ""
     if not os.path.exists(password_file):
         warn(f"Error: password file {password_file!r} does not exist:\n")
-        return None
+        return ""
     try:
         with open(password_file, "r", encoding="utf8") as f:
             return f.read()
     except Exception as e:
         warn(f"Error: failed to read the password file {password_file!r}:\n")
         warn(f" {e}\n")
-    return None
+    return ""
 
 
 def normalize_display_name(display_name:str) -> str:
@@ -477,7 +478,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     if protocol=="vsock":
         add_credentials()
         add_query()
-        cid = parse_vsock_cid(parsed.hostname)
+        cid = parse_vsock_cid(parsed.hostname or "")
         from xpra.net.vsock.vsock import PORT_ANY  # pylint: disable=no-name-in-module
         port = parsed.port or PORT_ANY
         desc.update({
@@ -501,7 +502,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         add_host_port(22)
         add_path()
         add_query()
-        display = desc.get("display")
+        display = desc.get("display", "")
         if display:
             args = desc.setdefault("display_as_args", [display])
         else:

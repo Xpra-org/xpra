@@ -5,7 +5,7 @@
 
 import sys
 import time
-from typing import Callable
+from typing import Callable, List
 
 from xpra.util import typedict
 from xpra.net.compression import Compressed
@@ -13,7 +13,7 @@ from xpra.net.compression import Compressed
 
 class StubClientMixin:
 
-    __signals__ : dict[str, tuple] = {}
+    __signals__ : List[str] = []
     def __init__(self):
         self.exit_code = None
         self.start_time = int(time.time())

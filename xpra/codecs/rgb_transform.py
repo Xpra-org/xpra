@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Dict, Tuple
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import first_time, csv
@@ -22,20 +23,20 @@ log = Logger("encoding")
 
 
 #source format  : [(PIL input format, output format), ..]
-PIL_conv = {
-             "XRGB"   : [("XRGB", "RGB")],
+PIL_conv : Dict[str, Tuple[Tuple[str,str], ...]] = {
+             "XRGB"   : (("XRGB", "RGB"), ),
              #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
              #try with alpha first:
-             "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")],
+             "BGRA"   : (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
              }
 #as above but for clients which cannot handle alpha:
-PIL_conv_noalpha = {
-             "XRGB"   : [("XRGB", "RGB")],
+PIL_conv_noalpha : Dict[str, Tuple[Tuple[str,str], ...]] = {
+             "XRGB"   : (("XRGB", "RGB"), ),
              #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
              #try with alpha first:
-             "BGRA"   : [("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")],
+             "BGRA"   : (("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")),
              }
 
 
@@ -52,17 +53,18 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         assert argb_swap, "no argb codec"
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
+    modes : Tuple[Tuple[str,str], ...] = ()
     try:
         # pylint: disable=import-outside-toplevel
         from PIL import Image
     except ImportError:
-        modes = {}
+        log("PIL.Image not found!")
     else:
         if supports_transparency:
             modes = PIL_conv.get(pixel_format, ())
         else:
             modes = PIL_conv_noalpha.get(pixel_format, ())
-    target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
+    target_rgb : Tuple[Tuple[str,str], ...] = tuple((im,om) for (im,om) in modes if om in rgb_formats)
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         #try argb module:

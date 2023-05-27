@@ -8,6 +8,7 @@
 
 import socket
 import sys
+from typing import Dict, Tuple, Any
 
 from xpra.os_util import WIN32
 from xpra.version_util import parse_version
@@ -18,7 +19,7 @@ from xpra.log import Logger
 log = Logger("network", "util")
 
 
-netifaces_version = 0
+netifaces_version : Tuple[Any] = ()
 _netifaces = None
 def import_netifaces() -> object:
     global _netifaces, netifaces_version
@@ -74,7 +75,7 @@ def get_interface(address):
                     return iface
     return None
 
-def get_gateways() -> dict:
+def get_gateways() -> Dict:
     netifaces = import_netifaces()
     if not netifaces:
         return {}

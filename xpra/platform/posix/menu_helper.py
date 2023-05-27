@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ import os
 import sys
 import glob
 from time import monotonic
-from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
+from typing import Tuple, List, Dict, Any, Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
@@ -23,28 +23,28 @@ from xpra.log import Logger
 
 log = Logger("exec", "menu")
 
-LOAD_FROM_RESOURCES = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
-LOAD_FROM_PIXMAPS = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
-LOAD_FROM_THEME = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
-LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", False)
+LOAD_FROM_RESOURCES : bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
+LOAD_FROM_PIXMAPS : bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
+LOAD_FROM_THEME : bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
+LOAD_GLOB : bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 
-EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
-DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
-EXPORT_TERMINAL_APPLICATIONS = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
-EXPORT_SELF = envbool("XPRA_XDG_EXPORT_SELF", False)
-LOAD_APPLICATIONS = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
+EXPORT_ICONS : bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
+DEBUG_COMMANDS : List[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
+EXPORT_TERMINAL_APPLICATIONS : bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
+EXPORT_SELF : bool = envbool("XPRA_XDG_EXPORT_SELF", False)
+LOAD_APPLICATIONS : List[str] = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
 
 
-def isvalidtype(v):
+def isvalidtype(v) -> bool:
     if isinstance(v, (list, tuple, generator)):
         if not v:
             return True
         return all(isvalidtype(x) for x in v)
     return isinstance(v, (bytes, str, bool, int))
 
-def export(entry, properties):
+def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
     name = entry.getName()
-    props = {}
+    props : Dict[str,Any] = {}
     if any(x and name.lower().find(x.lower())>=0 for x in DEBUG_COMMANDS):
         l = log.info
     else:
@@ -71,7 +71,7 @@ def export(entry, properties):
     return props
 
 
-MAX_THEMES = 2
+MAX_THEMES : int = 2
 IconTheme = Config = themes = None
 IconLoadingContext = DummyContextManager
 if LOAD_FROM_THEME:
@@ -116,10 +116,10 @@ if LOAD_FROM_THEME:
             log(f"icon themes={themes}")
         init_themes()
 
-EXTENSIONS = ("png", "svg", "xpm")
+EXTENSIONS : Tuple[str, ...] = ("png", "svg", "xpm")
 
 
-def check_xdg():
+def check_xdg() -> bool:
     try:
         # pylint: disable=import-outside-toplevel
         from xdg.Menu import Menu, MenuEntry
@@ -132,7 +132,7 @@ def check_xdg():
         return False
 
 
-def clear_cache():
+def clear_cache() -> None:
     log(f"clear_cache() IconTheme={IconTheme}")
     if not IconTheme:
         return
@@ -142,7 +142,7 @@ def clear_cache():
     IconTheme.icon_cache = {}
 
 
-def load_entry_icon(props):
+def load_entry_icon(props:Dict):
     #load icon binary data
     names = []
     for x in ("Icon", "Name", "GenericName"):
@@ -216,7 +216,7 @@ def find_theme_icon(*names):
                 return fn
     return None
 
-def find_glob_icon(*names, category="categories"):
+def find_glob_icon(*names, category:str="categories"):
     if not LOAD_GLOB:
         return None
     icondirs = getattr(IconTheme, "icondirs", [])
@@ -244,15 +244,15 @@ def find_glob_icon(*names, category="categories"):
     return None
 
 
-def noicondata(d):
+def noicondata(d:Dict) -> Dict:
     return dict((k,v) for k,v in d.items() if k and v and k!="IconData")
 
 
-def load_xdg_entry(de):
+def load_xdg_entry(de) -> Dict[str,Any]:
     #not exposed:
     #"MimeType" is an re
     #"Version" is a float
-    props = export(de, (
+    props : Dict[str,Any] = export(de, (
         "Type", "VersionString", "Name", "GenericName", "NoDisplay",
         "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
         "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
@@ -285,12 +285,12 @@ def load_xdg_entry(de):
             props["IconType"] = ext
     return props
 
-def load_xdg_menu(submenu):
+def load_xdg_menu(submenu) -> Dict[str,Any]:
     #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
-    submenu_data = export(submenu, [
+    submenu_data : Dict[str,Any] = export(submenu, (
         "Name", "GenericName", "Comment",
         "Path", "Icon",
-        ])
+        ))
     icondata = submenu_data.get("IconData")
     if not icondata:
         #try harder:
@@ -467,8 +467,9 @@ def load_xdg_menu_data():
     return menu_data
 
 def load_applications(menu_data=None):
+    entries : Dict[str,Any] = {}
     if not LOAD_APPLICATIONS:
-        return {}
+        return entries
     def already_has_name(name):
         if not menu_data:
             return False
@@ -476,7 +477,6 @@ def load_applications(menu_data=None):
             if name in menu_category.get("Entries", {}):
                 return True
         return False
-    entries = {}
     from xdg.Menu import MenuEntry  # pylint: disable=import-outside-toplevel
     for d in LOAD_APPLICATIONS:
         if not os.path.exists(d):
@@ -499,13 +499,13 @@ def load_applications(menu_data=None):
     return entries
 
 
-def load_desktop_sessions():
+def load_desktop_sessions() -> Dict[str,Any]:
+    xsessions : Dict[str,Any] = {}
     if not check_xdg():
-        return {}
+        return xsessions
     xsessions_dir = f"{sys.prefix}/share/xsessions"
     if not os.path.exists(xsessions_dir) or not os.path.isdir(xsessions_dir):
-        return {}
-    xsessions = {}
+        return xsessions
     with IconLoadingContext():
         from xdg.DesktopEntry import DesktopEntry  # pylint: disable=import-outside-toplevel
         for f in os.listdir(xsessions_dir):
@@ -532,7 +532,7 @@ def load_desktop_sessions():
     return xsessions
 
 
-def get_icon_names_for_session(name):
+def get_icon_names_for_session(name:str) -> List[str]:
     ALIASES = {
         "deepin"    : ["deepin-launcher", "deepin-show-desktop"],
         "xfce"      : ["org.xfce.xfdesktop", ]

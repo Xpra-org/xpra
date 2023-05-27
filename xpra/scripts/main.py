@@ -629,7 +629,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         check_gtk_client()
         from xpra.scripts.pinentry_wrapper import input_pass
         password = input_pass((args+["password"])[0])
-        return len(password or "")>0
+        return len(password)>0
     elif mode=="_dialog":
         check_gtk_client()
         return run_dialog(args)

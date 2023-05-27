@@ -8,6 +8,7 @@ import os
 import sys
 import signal
 from subprocess import Popen, PIPE
+from typing import Callable
 
 from xpra.util import noerr, envbool
 from xpra.os_util import (
@@ -181,7 +182,7 @@ def force_focus():
     from xpra.platform.gui import force_focus as _force_focus
     _force_focus()
 
-def dialog_run(run_fn) -> int:
+def dialog_run(run_fn:Callable) -> str:
     import gi
     gi.require_version('Gtk', '3.0')  # @UndefinedVariable
     from gi.repository import GLib, Gtk  # @UnresolvedImport
@@ -262,11 +263,11 @@ def confirm(info=(), title="Confirm Key", prompt="Are you sure you want to conti
         v = sys.stdin.readline().rstrip(os.linesep)
     except KeyboardInterrupt:
         sys.exit(128+signal.SIGINT)
-    return v and v.lower() in ("y", "yes")
+    return bool(v) and v.lower() in ("y", "yes")
 
 def input_pass(prompt) -> str:
     if SKIP_UI:
-        return None
+        return ""
     if PINENTRY or use_gui_prompt():
         from xpra.platform.paths import get_icon_filename
         icon = get_icon_filename("authentication", "png") or ""

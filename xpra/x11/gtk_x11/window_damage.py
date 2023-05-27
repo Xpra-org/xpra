@@ -45,9 +45,9 @@ class WindowDamageHandler:
         self.xid : int = xid
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm : bool = use_xshm
-        self._damage_handle = None
-        self._xshm_handle = None
-        self._contents_handle  = None
+        self._damage_handle : int = 0
+        self._xshm_handle = None        #XShmWrapper instance
+        self._contents_handle  = None   #PixmapWrapper instance
         self._border_width : int = 0
 
     def __repr__(self):
@@ -64,7 +64,7 @@ class WindowDamageHandler:
 
     def create_damage_handle(self) -> None:
         if self.xid:
-            self._damage_handle : int = X11Window.XDamageCreate(self.xid)
+            self._damage_handle = X11Window.XDamageCreate(self.xid)
             log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self) -> None:
@@ -82,7 +82,7 @@ class WindowDamageHandler:
         self.invalidate_pixmap()
         dh = self._damage_handle
         if dh:
-            self._damage_handle = None
+            self._damage_handle = 0
             with xlog:
                 X11Window.XDamageDestroy(dh)
         sh = self._xshm_handle

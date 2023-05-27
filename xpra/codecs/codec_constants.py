@@ -69,14 +69,14 @@ PIXEL_SUBSAMPLING : Dict[str,Tuple] = {
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
-def get_subsampling_divs(pixel_format:str) -> Tuple:
+def get_subsampling_divs(pixel_format:str) -> Tuple[Tuple[int,int],...]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
         raise ValueError(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING[pixel_format]
 
-def preforder(encodings) -> Tuple[str]:
+def preforder(encodings) -> Tuple[str, ...]:
     encs : Set[str] = set(encodings)
     return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 

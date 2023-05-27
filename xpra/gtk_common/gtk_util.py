@@ -7,6 +7,7 @@
 import os.path
 import cairo
 import gi
+from typing import Dict, Tuple, Any, Optional, Callable
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
@@ -27,7 +28,7 @@ SHOW_ALL_VISUALS = False
 #try to get workarea from GTK:
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
-GTK_VERSION_INFO = {}
+GTK_VERSION_INFO : Dict[str,Tuple[Any, ...]]= {}
 def get_gtk_version_info() -> dict:
     #update props given:
     global GTK_VERSION_INFO
@@ -112,7 +113,7 @@ def new_GDKWindow(gdk_window_class,
     mask = Gdk.WindowAttributesType(attributes_mask)
     return gdk_window_class(parent, attributes, mask)
 
-def set_visual(window, alpha : bool=True) -> bool:
+def set_visual(window, alpha : bool=True) -> Optional[Gdk.Visual]:
     screen = window.get_screen()
     if alpha:
         visual = screen.get_rgba_visual()
@@ -121,10 +122,9 @@ def set_visual(window, alpha : bool=True) -> bool:
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
     #we can't do alpha on win32 with plain GTK,
     #(though we handle it in the opengl backend)
+    l : Callable = alphalog.warn
     if WIN32 or not first_time("no-rgba"):
-        l = alphalog
-    else:
-        l = alphalog.warn
+        l = alphalog.debug
     if alpha and visual is None or (not WIN32 and not screen.is_composited()):
         l("Warning: cannot handle window transparency")
         if visual is None:
@@ -144,7 +144,7 @@ def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride
     return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                            has_alpha, 8, w, h, rowstride)
 
-def color_parse(*args) -> Gdk.Color:
+def color_parse(*args) -> Optional[Gdk.Color]:
     v = Gdk.RGBA()
     ok = v.parse(*args)
     if ok:
@@ -154,16 +154,18 @@ def color_parse(*args) -> Gdk.Color:
         return v
     return None
 
-def get_default_root_window() -> Gdk.Window:
+def get_default_root_window() -> Optional[Gdk.Window]:
     screen = Gdk.Screen.get_default()
     if screen is None:
         return None
     return screen.get_root_window()
 
-def get_root_size(default=(1920, 1024)):
+def get_root_size(default:Tuple[int,int]=(1920, 1024)) -> Tuple[int,int]:
     if OSX:
         #the easy way:
         root = get_default_root_window()
+        if not root:
+            return default
         w, h = root.get_geometry()[2:4]
     else:
         #GTK3 on win32 triggers this warning:
@@ -188,7 +190,7 @@ def get_default_cursor() -> Gdk.Cursor:
     display = Gdk.Display.get_default()
     return Gdk.Cursor.new_from_name(display, "default")
 
-BUTTON_MASK = {
+BUTTON_MASK : Dict[int, int] = {
     Gdk.ModifierType.BUTTON1_MASK : 1,
     Gdk.ModifierType.BUTTON2_MASK : 2,
     Gdk.ModifierType.BUTTON3_MASK : 3,
@@ -232,15 +234,15 @@ BYTE_ORDER_NAMES = {
                 }
 
 
-def get_screens_info() -> dict:
+def get_screens_info() -> Dict[int,Dict]:
     display = Gdk.Display.get_default()
-    info = {}
+    info : Dict[int,Dict] = {}
     assert display.get_n_screens()==1, "GTK3: The number of screens is always 1"
     screen = display.get_screen(0)
     info[0] = get_screen_info(display, screen)
     return info
 
-def get_screen_sizes(xscale=1, yscale=1):
+def get_screen_sizes(xscale:float=1, yscale:float=1):
     from xpra.platform.gui import get_workarea, get_workareas
     def xs(v):
         return round(v/xscale)
@@ -347,7 +349,7 @@ def get_screen_sizes(xscale=1, yscale=1):
     screenlog(" screen: %s", screen0)
     return [screen0]
 
-def get_screen_info(display, screen) -> dict:
+def get_screen_info(display, screen) -> Dict[str,Any]:
     info = {}
     if not WIN32:
         try:
@@ -415,46 +417,44 @@ def get_screen_info(display, screen) -> dict:
         sinfo[x] = v
     return info
 
-def get_font_info(font_options):
+FONT_CONV : Dict[str,Dict[Any,Any]] = {
+    "antialias" : {
+        cairo.ANTIALIAS_DEFAULT     : "default",
+        cairo.ANTIALIAS_NONE        : "none",
+        cairo.ANTIALIAS_GRAY        : "gray",
+        cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
+        },
+    "hint_metrics" : {
+        cairo.HINT_METRICS_DEFAULT  : "default",
+        cairo.HINT_METRICS_OFF      : "off",
+        cairo.HINT_METRICS_ON       : "on",
+        },
+    "hint_style" : {
+        cairo.HINT_STYLE_DEFAULT    : "default",
+        cairo.HINT_STYLE_NONE       : "none",
+        cairo.HINT_STYLE_SLIGHT     : "slight",
+        cairo.HINT_STYLE_MEDIUM     : "medium",
+        cairo.HINT_STYLE_FULL       : "full",
+        },
+    "subpixel_order": {
+        cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
+        cairo.SUBPIXEL_ORDER_RGB        : "RGB",
+        cairo.SUBPIXEL_ORDER_BGR        : "BGR",
+        cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
+        cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
+        }
+    }
+
+def get_font_info(font_options) -> Dict[str,Any]:
     #pylint: disable=no-member
-    font_info = {}
-    for x,vdict in {
-        "antialias" : {
-            cairo.ANTIALIAS_DEFAULT     : "default",
-            cairo.ANTIALIAS_NONE        : "none",
-            cairo.ANTIALIAS_GRAY        : "gray",
-            cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
-            },
-        "hint_metrics" : {
-            cairo.HINT_METRICS_DEFAULT  : "default",
-            cairo.HINT_METRICS_OFF      : "off",
-            cairo.HINT_METRICS_ON       : "on",
-            },
-        "hint_style" : {
-            cairo.HINT_STYLE_DEFAULT    : "default",
-            cairo.HINT_STYLE_NONE       : "none",
-            cairo.HINT_STYLE_SLIGHT     : "slight",
-            cairo.HINT_STYLE_MEDIUM     : "medium",
-            cairo.HINT_STYLE_FULL       : "full",
-            },
-        "subpixel_order": {
-            cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
-            cairo.SUBPIXEL_ORDER_RGB        : "RGB",
-            cairo.SUBPIXEL_ORDER_BGR        : "BGR",
-            cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
-            cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
-            },
-        }.items():
+    font_info : Dict[str,Any] = {}
+    for x,vdict in FONT_CONV.items():
         fn = getattr(font_options, "get_"+x)
         val = fn()
         font_info[x] = vdict.get(val, val)
     return font_info
 
-def get_visual_info(v):
-    if not v:
-        return {}
-    vinfo = {}
-    for x, vdict in {
+VINFO_CONV : Dict[str,Dict[Any,str]] = {
         "bits_per_rgb"          : {},
         "byte_order"            : BYTE_ORDER_NAMES,
         "colormap_size"         : {},
@@ -463,7 +463,13 @@ def get_visual_info(v):
         "green_pixel_details"   : {},
         "blue_pixel_details"    : {},
         "visual_type"           : VISUAL_NAMES,
-        }.items():
+        }
+
+def get_visual_info(v) -> Dict[str,Any]:
+    if not v:
+        return {}
+    vinfo : Dict[str,Any] = {}
+    for x, vdict in VINFO_CONV.items():
         val = None
         try:
             #ugly workaround for "visual_type" -> "type" for GTK2...
@@ -479,8 +485,8 @@ def get_visual_info(v):
             vinfo[x] = vdict.get(val, val)
     return vinfo
 
-def get_screen_monitor_info(screen, i) -> dict:
-    info = {}
+def get_screen_monitor_info(screen, i) -> Dict[str,Any]:
+    info : Dict[str,Any] = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
         info[x] = getattr(geom, x)
@@ -496,9 +502,9 @@ def get_screen_monitor_info(screen, i) -> dict:
         workarea_info[x] = getattr(rectangle, x)
     return info
 
-def get_monitors_info(xscale=1, yscale=1):
+def get_monitors_info(xscale:float=1, yscale:float=1) -> Dict[int,Any]:
     display = Gdk.Display.get_default()
-    info = {}
+    info : Dict[int,Any] = {}
     n = display.get_n_monitors()
     for i in range(n):
         minfo = info.setdefault(i, {})
@@ -535,14 +541,14 @@ def get_monitors_info(xscale=1, yscale=1):
                 minfo[attr] = value
     return info
 
-def get_display_info(xscale=1, yscale=1) -> dict:
+def get_display_info(xscale=1, yscale=1) -> Dict[str,Any]:
     display = Gdk.Display.get_default()
     def xy(v):
         return round(xscale*v[0]), round(yscale*v[1])
     def avg(v):
         return round((xscale*v+yscale*v)/2)
     root_size = get_root_size()
-    info = {
+    info : Dict[str, Any] = {
             "root-size"             : xy(root_size),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
@@ -553,7 +559,9 @@ def get_display_info(xscale=1, yscale=1) -> dict:
             "pointer_is_grabbed"    : display.pointer_is_grabbed(),
             }
     if not WIN32:
-        info["root"] = get_default_root_window().get_geometry()
+        rw = get_default_root_window()
+        if rw:
+            info["root"] = rw.get_geometry()
     sinfo = info.setdefault("supports", {})
     for x in ("composite", "cursor_alpha", "cursor_color", "selection_notification", "clipboard_persistence", "shapes"):
         f = "supports_"+x
@@ -576,7 +584,7 @@ def get_display_info(xscale=1, yscale=1) -> dict:
     return info
 
 
-def scaled_image(pixbuf, icon_size=None) -> Gtk.Image:
+def scaled_image(pixbuf, icon_size=None) -> Optional[Gtk.Image]:
     if not pixbuf:
         return None
     if icon_size:
@@ -690,7 +698,7 @@ def add_window_accel(window, accel, callback) -> Gtk.AccelGroup:
     return accel_group
 
 
-def label(text="", tooltip=None, font=None) -> Gtk.Label:
+def label(text:str="", tooltip=None, font=None) -> Gtk.Label:
     l = Gtk.Label(label=text)
     if font:
         fontdesc = Pango.FontDescription(font)
@@ -741,7 +749,8 @@ class TableBuilder:
         self.add_row(row_label, value1, value2, **kwargs)
 
 
-def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN, callback=None, file_filter=None, multiple=True):
+def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
+                 callback=None, file_filter=None, multiple=True):
     log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
     chooser = Gtk.FileChooserDialog(title,
                                 parent=parent_window, action=action,
@@ -758,7 +767,8 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
         return None
     return filenames
 
-def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN, callback=None, file_filter=None):
+def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
+                callback=None, file_filter=None) -> Optional[str]:
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
     if not filenames or len(filenames)!=1:
         return None
@@ -768,8 +778,8 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
     return filename
 
 
-dsinit = False
-def init_display_source():
+dsinit : bool = False
+def init_display_source() -> None:
     """
     On X11, we want to be able to access the bindings
     so we need to get the X11 display from GDK.
@@ -788,7 +798,7 @@ def init_display_source():
             log.warn(" some features may be degraded or unavailable")
             log.warn(" ie: keyboard mapping, focus, etc")
 
-def ds_inited():
+def ds_inited() -> bool:
     return dsinit
 
 

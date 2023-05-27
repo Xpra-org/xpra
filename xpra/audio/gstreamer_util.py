@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
+from typing import Dict, Tuple, Any
 
 from xpra.gst_common import (
     has_plugins, get_all_plugin_names,
@@ -230,8 +231,8 @@ def get_encoder_default_options(encoder):
 
 
 CODECS = None
-ENCODERS = {}       #(encoder, payloader, stream-compressor)
-DECODERS = {}       #(decoder, depayloader, stream-compressor)
+ENCODERS : Dict[str, Tuple[Any,Any,Any]] = {}       #(encoder, payloader, stream-compressor)
+DECODERS : Dict[str, Tuple[Any,Any,Any]] = {}       #(decoder, depayloader, stream-compressor)
 
 def get_encoders():
     init_codecs()

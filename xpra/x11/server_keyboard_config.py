@@ -7,6 +7,8 @@
 # later version. See the file COPYING for details.
 
 import hashlib
+from typing import Dict
+
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
@@ -33,10 +35,10 @@ log = Logger("keyboard")
 
 X11Keyboard = X11KeyboardBindings()
 
-MAP_MISSING_MODIFIERS = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
-SHIFT_LOCK = envbool("XPRA_SHIFT_LOCK", False)
+MAP_MISSING_MODIFIERS : bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
+SHIFT_LOCK : bool = envbool("XPRA_SHIFT_LOCK", False)
 
-ALL_X11_MODIFIERS = {
+ALL_X11_MODIFIERS : Dict[str,int] = {
                     "shift"     : 0,
                     "lock"      : 1,
                     "control"   : 2,
@@ -50,7 +52,7 @@ ALL_X11_MODIFIERS = {
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
-        self.raw = False
+        self.raw : bool = False
         self.query_struct = None
         self.mod_meanings = {}
         self.mod_managed = []
@@ -77,7 +79,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict:
         info = super().get_info()
         #keycodes:
         if self.keycode_translation:
@@ -242,7 +244,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     keyval = Gdk.keyval_from_name(bytestostr(keyname))
                     if keyval==0:
                         log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
-                        return  []
+                        continue
                     entries = keymap.get_entries_for_keyval(keyval)
                     if entries:
                         keycodes = []

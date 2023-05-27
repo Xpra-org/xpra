@@ -1,8 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
+
+from typing import List
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr
@@ -29,7 +31,7 @@ class TrayClient(StubClientMixin):
         self.tray = None
         self.menu_helper = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         if not opts.tray:
             return
         self.tray_icon = opts.tray_icon
@@ -40,7 +42,7 @@ class TrayClient(StubClientMixin):
             #show shortly after the main loop starts running:
             self.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
 
-    def setup_xpra_tray(self, *args):
+    def setup_xpra_tray(self, *args) -> None:
         log("setup_xpra_tray%s", args)
         tray = self.create_xpra_tray(self.tray_icon or "xpra")
         self.tray = tray
@@ -58,7 +60,7 @@ class TrayClient(StubClientMixin):
                     tray.set_icon()
             self.timeout_add(1000, reset_icon)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         t = self.tray
         if t:
             self.tray = None
@@ -84,7 +86,7 @@ class TrayClient(StubClientMixin):
         if self.menu_helper:
             self.menu_helper.activate()
 
-    def create_xpra_tray(self, tray_icon_filename):
+    def create_xpra_tray(self, tray_icon_filename:str):
         tray = None
         #this is our own tray
         def xpra_tray_click(button, pressed, time=0):
@@ -119,8 +121,8 @@ class TrayClient(StubClientMixin):
         log("make_tray%s tray classes=%s", args, tc)
         return make_instance(tc, self, *args)
 
-    def get_tray_title(self) -> list:
-        t = []
+    def get_tray_title(self) -> str:
+        t : List[str] = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
         p = self._protocol

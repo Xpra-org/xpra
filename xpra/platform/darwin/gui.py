@@ -8,7 +8,8 @@ import os
 import math
 import ctypes
 import struct
-import weakref
+from weakref import WeakValueDictionary
+from typing import Any, Callable
 
 from gi.repository import GLib      #@UnresolvedImport
 import objc                         #@UnresolvedImport
@@ -64,12 +65,14 @@ ALPHA = {
          CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
    }
 #if there is an easier way of doing this, I couldn't find it:
+def nodbltime():
+    return -1
+GetDblTime : Callable = nodbltime
 try:
     Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
     GetDblTime = Carbon_ctypes.GetDblTime
 except Exception:
     log("GetDblTime not found", exc_info=True)
-    GetDblTime = None
 
 
 def do_init():
@@ -190,15 +193,18 @@ def _sizetotuple(s):
 def _recttotuple(r):
     return tuple(int(v) for v in (r.origin.x, r.origin.y, r.size.width, r.size.height))
 
-def get_double_click_time():
+def get_double_click_time() -> int:
     try:
         #what are ticks? just an Apple retarded way of measuring elapsed time.
         #They must have considered gigaparsecs divided by teapot too, which is just as useful.
         #(but still call it "Time" you see)
         MS_PER_TICK = 1000.0/60
-        return int(GetDblTime() * MS_PER_TICK)
+        v = GetDblTime()
+        if v>0:
+            return int(v * MS_PER_TICK)
     except Exception:
-        return -1
+        pass
+    return -1
 
 
 def get_window_min_size():
@@ -427,7 +433,7 @@ def get_info():
 
 
 #keep track of the window object for each view
-VIEW_TO_WINDOW = weakref.WeakValueDictionary()
+VIEW_TO_WINDOW : WeakValueDictionary[int,Any] = WeakValueDictionary()
 
 
 def get_CG_imagewrapper(rect=None):

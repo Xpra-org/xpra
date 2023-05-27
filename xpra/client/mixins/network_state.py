@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -8,6 +8,7 @@ import os
 import re
 from time import monotonic
 from collections import deque
+from typing import Dict, Any, Tuple
 
 from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
@@ -20,20 +21,20 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
-SSH_AGENT = envbool("XPRA_SSH_AGENT", True)
-FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
-PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
-MIN_PING_TIMEOUT = envint("XPRA_MIN_PING_TIMEOUT", 2)
-MAX_PING_TIMEOUT = envint("XPRA_MAX_PING_TIMEOUT", 10)
-SWALLOW_PINGS = envbool("XPRA_SWALLOW_PINGS", False)
+SSH_AGENT : bool = envbool("XPRA_SSH_AGENT", True)
+FAKE_BROKEN_CONNECTION : int = envint("XPRA_FAKE_BROKEN_CONNECTION")
+PING_TIMEOUT : int = envint("XPRA_PING_TIMEOUT", 60)
+MIN_PING_TIMEOUT : int = envint("XPRA_MIN_PING_TIMEOUT", 2)
+MAX_PING_TIMEOUT : int = envint("XPRA_MAX_PING_TIMEOUT", 10)
+SWALLOW_PINGS : bool = envbool("XPRA_SWALLOW_PINGS", False)
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
-LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+LOG_INFO_RESPONSE : str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
+AUTO_BANDWIDTH_PCT : int = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
-LOCAL_JITTER = envint("XPRA_LOCAL_JITTER", 0)
-WAN_JITTER = envint("XPRA_WAN_JITTER", 20)
-WIRELESS_JITTER = envint("XPRA_WIRELESS_JITTER", 1000)
+LOCAL_JITTER : int = envint("XPRA_LOCAL_JITTER", 0)
+WAN_JITTER : int = envint("XPRA_WAN_JITTER", 20)
+WIRELESS_JITTER : int = envint("XPRA_WIRELESS_JITTER", 1000)
 
 
 class NetworkState(StubClientMixin):
@@ -45,50 +46,50 @@ class NetworkState(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.server_start_time = -1
+        self.server_start_time : float = -1
         #legacy:
-        self.compression_level = 0
+        self.compression_level : int = 0
 
         #setting:
-        self.pings = False
+        self.pings : bool = False
 
         #bandwidth
-        self.bandwidth_limit = 0
-        self.bandwidth_detection = False
-        self.server_bandwidth_limit_change = False
-        self.server_bandwidth_limit = 0
-        self.server_session_name = None
+        self.bandwidth_limit : int = 0
+        self.bandwidth_detection : bool = False
+        self.server_bandwidth_limit_change : bool = False
+        self.server_bandwidth_limit : int = 0
+        self.server_session_name : str = ""
 
         #info requests
-        self.server_last_info = None
-        self.info_request_pending = False
+        self.server_last_info : Dict = None
+        self.info_request_pending : bool = False
 
         #network state:
-        self.server_packet_encoders = ()
-        self.server_ping_latency = deque(maxlen=1000)
+        self.server_packet_encoders : Tuple[str, ...] = ()
+        self.server_ping_latency : deque = deque(maxlen=1000)
         self.server_load = None
-        self.client_ping_latency = deque(maxlen=1000)
-        self._server_ok = True
+        self.client_ping_latency : deque = deque(maxlen=1000)
+        self._server_ok : bool = True
         self.last_ping_echoed_time = 0
-        self.ping_timer = None
-        self.ping_echo_timers = {}
+        self.ping_timer : int = 0
+        self.ping_echo_timers : Dict[int,int] = {}
         self.ping_echo_timeout_timer = None
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.bandwidth_detection = opts.bandwidth_detection
         bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_ping_timer()
         self.cancel_ping_echo_timers()
         self.cancel_ping_echo_timeout_timer()
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "network" : {
                 "bandwidth-limit"       : self.bandwidth_limit,
@@ -97,8 +98,8 @@ class NetworkState(StubClientMixin):
                 }
             }
 
-    def get_caps(self) -> dict:
-        caps = {
+    def get_caps(self) -> Dict[str,Any]:
+        caps : Dict[str, Any] = {
             "network-state" : True,
             "info-namespace" : True,            #v4 servers assume this is always supported
             }
@@ -197,20 +198,20 @@ class NetworkState(StubClientMixin):
         self.server_packet_encoders = tuple(x for x in ALL_ENCODERS if c.boolget(x, False))
         return True
 
-    def process_ui_capabilities(self, caps : typedict):
+    def process_ui_capabilities(self, caps : typedict) -> None:
         self.send_deflate_level()
         self.send_ping()
         if self.pings>0:
             self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
 
-    def cancel_ping_timer(self):
+    def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
         if pt:
-            self.ping_timer = None
+            self.ping_timer = 0
             self.source_remove(pt)
 
-    def cancel_ping_echo_timers(self):
-        pet = tuple(self.ping_echo_timers.values())
+    def cancel_ping_echo_timers(self) -> None:
+        pet : Tuple[int,...] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
             self.source_remove(t)
@@ -218,7 +219,7 @@ class NetworkState(StubClientMixin):
 
     ######################################################################
     # info:
-    def _process_info_response(self, packet):
+    def _process_info_response(self, packet) -> None:
         self.info_request_pending = False
         self.server_last_info = packet[1]
         log("info-response: %s", self.server_last_info)
@@ -230,7 +231,7 @@ class NetworkState(StubClientMixin):
                 if LOG_INFO_RESPONSE=="all" or any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
-    def send_info_request(self, *categories):
+    def send_info_request(self, *categories) -> None:
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = () #no longer used or supported by servers
@@ -264,26 +265,26 @@ class NetworkState(StubClientMixin):
             self.server_connection_state_change()
         return False
 
-    def cancel_ping_echo_timeout_timer(self):
+    def cancel_ping_echo_timeout_timer(self) -> None:
         pett = self.ping_echo_timeout_timer
         if pett:
             self.ping_echo_timeout_timer = None
             self.source_remove(pett)
 
-    def server_connection_state_change(self):
+    def server_connection_state_change(self) -> None:
         log("server_connection_state_change() ok=%s", self._server_ok)
 
-    def check_echo_timeout(self, ping_time):
+    def check_echo_timeout(self, ping_time) -> None:
         self.ping_echo_timeout_timer = None
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
             #no point trying to use disconnect_and_quit() to tell the server here..
             self.warn_and_quit(ExitCode.CONNECTION_LOST, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
-    def send_ping(self):
+    def send_ping(self) -> bool:
         p = self._protocol
         if not p or p.TYPE not in ("xpra", "websocket"):
-            self.ping_timer = None
+            self.ping_timer = 0
             return False
         now_ms = int(1000.0*monotonic())
         self.send("ping", now_ms)
@@ -299,7 +300,7 @@ class NetworkState(StubClientMixin):
         self.ping_echo_timers[now_ms] = t
         return True
 
-    def _process_ping_echo(self, packet):
+    def _process_ping_echo(self, packet) -> None:
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
@@ -310,7 +311,7 @@ class NetworkState(StubClientMixin):
             self.client_ping_latency.append((monotonic(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
-    def _process_ping(self, packet):
+    def _process_ping(self, packet) -> None:
         echotime = packet[1]
         l1,l2,l3 = 0,0,0
         sid = ""
@@ -333,18 +334,18 @@ class NetworkState(StubClientMixin):
 
     ######################################################################
     # network level packet compression:
-    def set_deflate_level(self, level):
+    def set_deflate_level(self, level:int) -> None:
         self.compression_level = level
         self.send_deflate_level()
 
-    def send_deflate_level(self):
+    def send_deflate_level(self) -> None:
         p = self._protocol
         if p and p.TYPE=="xpra":
             self._protocol.set_compression_level(self.compression_level)
             self.send("set_deflate", self.compression_level)
 
 
-    def send_bandwidth_limit(self):
+    def send_bandwidth_limit(self) -> None:
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
         assert self.server_bandwidth_limit_change, self.bandwidth_limit is not None
         self.send("bandwidth-limit", self.bandwidth_limit)
@@ -352,7 +353,7 @@ class NetworkState(StubClientMixin):
 
     ######################################################################
     # packets:
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("ping", self._process_ping, False)
         self.add_packet_handler("ping_echo", self._process_ping_echo, False)
         self.add_packet_handler("info-response", self._process_info_response, False)

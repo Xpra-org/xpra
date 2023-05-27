@@ -12,7 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
-from typing import Callable
+from typing import Callable, List
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -42,54 +42,54 @@ statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
 
-UI_THREAD_CHECK = envbool("XPRA_UI_THREAD_CHECK", True)
+UI_THREAD_CHECK : bool = envbool("XPRA_UI_THREAD_CHECK", True)
 
-TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
-LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", False)
+TRUE_LOSSLESS : bool = envbool("XPRA_TRUE_LOSSLESS", False)
+LOG_ENCODERS : bool = envbool("XPRA_LOG_ENCODERS", False)
 
-AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
-AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
-AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
+AUTO_REFRESH : bool = envbool("XPRA_AUTO_REFRESH", True)
+AUTO_REFRESH_QUALITY : int = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
+AUTO_REFRESH_SPEED : int = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
-INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
-INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
+INITIAL_QUALITY : int = envint("XPRA_INITIAL_QUALITY", 65)
+INITIAL_SPEED : int = envint("XPRA_INITIAL_SPEED", 40)
 
-LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
+LOCKED_BATCH_DELAY : int = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
-MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
-WEBP_EFFICIENCY_CUTOFF = envint("XPRA_WEBP_EFFICIENCY_CUTOFF", 512*1024)
+MAX_PIXELS_PREFER_RGB : int = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
+WEBP_EFFICIENCY_CUTOFF : int = envint("XPRA_WEBP_EFFICIENCY_CUTOFF", 512*1024)
 
-MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
-MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
-ACK_JITTER = envint("XPRA_ACK_JITTER", 100)
-ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 250)
-SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
-FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
+MIN_WINDOW_REGION_SIZE : int = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
+MAX_SOFT_EXPIRED : int = envint("XPRA_MAX_SOFT_EXPIRED", 5)
+ACK_JITTER : int = envint("XPRA_ACK_JITTER", 100)
+ACK_TOLERANCE : int = envint("XPRA_ACK_TOLERANCE", 250)
+SLOW_SEND_THRESHOLD : int = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
+FRAME_OVERHEAD : int = envint("XPRA_FRAME_OVERHEAD", 1)
 
-HAS_ALPHA = envbool("XPRA_ALPHA", True)
-BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
-FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
-STRICT_MODE = envbool("XPRA_ENCODING_STRICT_MODE", False)
-MAX_QUALITY = envint("XPRA_ENCODING_MAX_QUALITY", 100)
-MAX_SPEED = envint("XPRA_ENCODING_MAX_SPEED", 100)
+HAS_ALPHA : bool = envbool("XPRA_ALPHA", True)
+BROWSER_ALPHA_FIX : bool = envbool("XPRA_BROWSER_ALPHA_FIX", True)
+FORCE_BATCH : int = envint("XPRA_FORCE_BATCH", True)
+STRICT_MODE : bool = envbool("XPRA_ENCODING_STRICT_MODE", False)
+MAX_QUALITY : int = envint("XPRA_ENCODING_MAX_QUALITY", 100)
+MAX_SPEED : int = envint("XPRA_ENCODING_MAX_SPEED", 100)
 assert MAX_QUALITY>0 and MAX_SPEED>0
 
-MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
-DOWNSCALE = envbool("XPRA_DOWNSCALE", True)
-DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
-INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
-MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
-AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
-AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
-SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
-DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
+MERGE_REGIONS : bool = envbool("XPRA_MERGE_REGIONS", True)
+DOWNSCALE : bool = envbool("XPRA_DOWNSCALE", True)
+DOWNSCALE_THRESHOLD : int = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
+INTEGRITY_HASH : int = envint("XPRA_INTEGRITY_HASH", False)
+MAX_SYNC_BUFFER_SIZE : int = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
+AV_SYNC_RATE_CHANGE : int = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
+AV_SYNC_TIME_CHANGE : int = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
+SEND_TIMESTAMPS : bool = envbool("XPRA_SEND_TIMESTAMPS", False)
+DAMAGE_STATISTICS : bool = envbool("XPRA_DAMAGE_STATISTICS", False)
 
-SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
-FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
-HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
+SCROLL_ALL : bool = envbool("XPRA_SCROLL_ALL", True)
+FORCE_PILLOW : bool = envbool("XPRA_FORCE_PILLOW", False)
+HARDCODED_ENCODING : str = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 INFINITY = float("inf")
-def get_env_encodings(etype, valid_options=()):
+def get_env_encodings(etype:str, valid_options=()):
     v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
     encodings = valid_options
     if v:
@@ -98,7 +98,7 @@ def get_env_encodings(etype, valid_options=()):
     log("%s encodings: %s", etype, encodings)
     return encodings
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
-LOSSLESS_ENCODINGS = ["rgb", "png", "png/P", "png/L", "webp", "avif"]
+LOSSLESS_ENCODINGS : List[str] = ["rgb", "png", "png/P", "png/L", "webp", "avif"]
 if not TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS.append("jpeg")
     LOSSLESS_ENCODINGS.append("jpega")
@@ -109,9 +109,9 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
                                        "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
 
 
-COMPRESS_FMT_PREFIX = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
-COMPRESS_FMT_SUFFIX = ", sequence %5i, client_options=%-50s, options=%s"
-COMPRESS_FMT        = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
+COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
+COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
+COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
 
 
 if POSIX and not OSX:

@@ -32,7 +32,8 @@ class TestPillowHeader(unittest.TestCase):
                   binascii.unhexlify("fe0000000000000000000000000000000000000000000000000000"),
                   ):
             e = get_image_type(x)
-            assert e is None, "wrongly detected %s as %s" % (x, e)
+            if e:
+                raise RuntimeError(f"wrongly detected {x} as {e}")
 
 
 def main():

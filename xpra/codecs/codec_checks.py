@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #pylint: disable=line-too-long
 
 import binascii
+from typing import Dict, Tuple, Optional
 
 from xpra.util import csv, typedict, roundup
 from xpra.log import Logger
@@ -16,14 +17,14 @@ log = Logger("encoding")
 # encoders can allocate many times more memory to hold the frames..
 TEST_LIMIT_W, TEST_LIMIT_H = 8192, 8192
 
-def unhex(s):
+def unhex(s:str) -> bytes:
     return binascii.unhexlify(s.replace(" ", "").replace("\n", "").replace("\r", ""))
 
 
 DEFAULT_TEST_SIZE = 128, 128
 
 #this test data was generated using a 24x16 blank image as input
-TEST_COMPRESSED_DATA = {
+TEST_COMPRESSED_DATA : Dict[str,Dict[str,Dict[Tuple[int,int],Tuple[bytes,...]]]] = {
     "h264": {
         "YUV420P" : {
             (24, 16) : (
@@ -186,7 +187,7 @@ TEST_COMPRESSED_DATA = {
         },
 }
 
-TEST_PICTURES = {
+TEST_PICTURES : Dict[str,Dict[Tuple[int,int], Tuple[bytes, ...]]] = {
     "png" : {
         (32, 32) : (
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7af40000002849444154785eedd08100000000c3a0f9531fe4855061c0800103060c183060c0800103060cbc0f0c102000013337932a0000000049454e44ae426082"),
@@ -226,12 +227,12 @@ TEST_PICTURES = {
     }
 
 
-def makebuf(size, b=0x20):
+def makebuf(size, b=0x20) -> bytearray:
     d = (chr(b).encode("latin1"))*size
     return bytearray(d)
 
 
-def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
+def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
@@ -295,7 +296,7 @@ def make_test_image(pixel_format, w, h, plane_values=(0x20, 0x80, 0x80, 0x0)):
     raise ValueError(f"don't know how to create a {pixel_format} image")
 
 
-def testdecoder(decoder_module, full):
+def testdecoder(decoder_module, full:bool):
     dtype = decoder_module.get_type()
     codecs = list(decoder_module.get_encodings())
     for encoding in tuple(codecs):
@@ -310,18 +311,18 @@ def testdecoder(decoder_module, full):
         log.error(f"{dtype}: all the codecs have failed! {csv(decoder_module.get_encodings())}")
     return tuple(codecs)
 
-def testdecoding(decoder_module, encoding, full):
-    test_data_set = TEST_COMPRESSED_DATA.get(encoding)
+def testdecoding(decoder_module, encoding:str, full:bool):
+    test_data_set : Optional[Dict[str,Dict[Tuple[int,int],Tuple[bytes,...]]]] = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
-        test_data = {}
+        test_data : Dict[Tuple[int,int],Tuple[bytes,...]] = {}
         if test_data_set:
             test_data = test_data_set.get(cs, {})
         elif encoding in TEST_PICTURES:
             #maybe this is a picture format:
             test_data = TEST_PICTURES[encoding]
         #add a context init test, without any data to decode:
-        test_data.setdefault((256, 128), [])
+        test_data.setdefault((256, 128), ())
         for size, frames in test_data.items():
             w, h = size
             if w<min_w or h<min_h:
@@ -330,7 +331,7 @@ def testdecoding(decoder_module, encoding, full):
             try:
                 decoder = decoder_module.Decoder()
                 decoder.init_context(encoding, w, h, cs)
-            except Exception as e:
+            except Exception:
                 log.error(f"Error creating context {encoding} {w}x{h} {cs}")
                 raise
             try:
@@ -347,15 +348,15 @@ def testdecoding(decoder_module, encoding, full):
                             if image.get_height()!=h:
                                 raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
                             log(f" test passed for {w}x{h} {encoding} - {cs}")
-                        except Exception as e:
+                        except Exception:
                             log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
                             raise
                 if full:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data")
                     #test failures:
                     try:
-                        image = e.decompress_image(b"junk")
-                    except Exception:
+                        image = decoder.decompress_image(b"junk")
+                    except ValueError:
                         image = None
                     if image is not None:
                         raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
@@ -363,7 +364,7 @@ def testdecoding(decoder_module, encoding, full):
                 decoder.clean()
 
 
-def testencoder(encoder_module, full):
+def testencoder(encoder_module, full:bool):
     etype = encoder_module.get_type()
     codecs = list(encoder_module.get_encodings())
     for encoding in tuple(codecs):
@@ -379,7 +380,7 @@ def testencoder(encoder_module, full):
         log.error(f"{etype}: all the codecs have failed! ({csv(encoder_module.get_encodings())})")
     return tuple(codecs)
 
-def testencoding(encoder_module, encoding, full):
+def testencoding(encoder_module, encoding:str, full:bool):
     #test a bit bigger so we exercise more code:
     W, H = DEFAULT_TEST_SIZE
     do_testencoding(encoder_module, encoding, W, H, full)
@@ -392,7 +393,7 @@ def get_encoder_max_sizes(encoder_module):
         h = min(h, eh)
     return w, h
 
-def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def get_encoder_max_size(encoder_module, encoding:str, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     etype = encoder_module.get_type()
@@ -450,13 +451,13 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def do_testencoding(encoder_module, encoding, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             for spec in encoder_module.get_specs(encoding, cs_in):
                 test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
 
-def test_encoder_spec(encoder_class, encoding, cs_in, cs_out, W, H, full=False, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def test_encoder_spec(encoder_class, encoding:str, cs_in:str, cs_out:str, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     e = None
     try:
         e = encoder_class()
@@ -528,7 +529,7 @@ def testcsc(csc_module, full=False, test_cs_in=None, test_cs_out=None):
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
         do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
-def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     MAX_WIDTH, MAX_HEIGHT = 512, 512
@@ -551,7 +552,8 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def do_testcsc(csc_module, iw:int, ih:int, ow:int, oh:int,
+               full:bool=False, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     log("do_testcsc%s", (csc_module, iw, ih, ow, oh, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
     cstype = csc_module.get_type()
     cs_in_list = test_cs_in

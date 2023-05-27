@@ -38,7 +38,7 @@ def init_rencode() -> Encoding:
     return Encoding("rencode", FLAGS_RENCODE, rencode.__version__, do_rencode, rencode.loads)
 
 def init_rencodeplus() -> Encoding:
-    from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
+    from xpra.net.rencodeplus import rencodeplus    # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS

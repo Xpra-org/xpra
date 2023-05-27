@@ -31,8 +31,8 @@ try:
     LANCZOS = Resampling.LANCZOS
 except ImportError:
     #location for older versions:
-    from PIL.Image import ADAPTIVE, WEB
-    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS
+    from PIL.Image import ADAPTIVE, WEB # type: ignore
+    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS   # type: ignore
 
 
 def get_version() -> str:

@@ -1,17 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 class WindowBorder:
 
-    def __init__(self, shown=True, red=0.9, green=0.1, blue=0.1, alpha=0.6, size=4):
-        self.shown = shown
-        self.red = red
-        self.green = green
-        self.blue = blue
-        self.alpha = alpha
-        self.size = size
+    def __init__(self, shown:bool=True, red:float=0.9, green:float=0.1, blue:float=0.1, alpha:float=0.6, size:int=4):
+        self.shown : bool = shown
+        self.red : float = red
+        self.green : float = green
+        self.blue : float = blue
+        self.alpha : float = alpha
+        self.size : int = size
 
     def toggle(self):
         self.shown = not self.shown

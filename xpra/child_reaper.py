@@ -11,7 +11,7 @@
 
 import os
 import signal
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -21,31 +21,21 @@ from xpra.log import Logger
 log = Logger("server", "util", "exec")
 
 
-singleton = None
-def getChildReaper():
-    global singleton
-    if singleton is None:
-        singleton = ChildReaper()
-    return singleton
-
-
-def reaper_cleanup() -> None:
-    s = singleton
-    if not s:
-        return
-    singleton.cleanup()
-    #keep it around,
-    #so we don't try to reinitialize it from the wrong thread
-    #(signal requires the main thread)
-    #singleton = None
-
-
 class ProcInfo:
     __slots__ = (
         "pid", "name", "command", "ignore",
         "forget", "dead", "returncode",
          "callback", "process",
          )
+    pid : int
+    name : str
+    command : Any
+    ignore : bool
+    forget : bool
+    dead : bool
+    returncode : Optional[int]
+    callback : Optional[Callable]
+    process : Any
     def __repr__(self):
         return f"ProcInfo({self.pid} : {self.command})"
 
@@ -95,13 +85,13 @@ class ChildReaper:
                 return False # Only call once
             GLib.timeout_add(0, check_once)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.reap()
         self.poll()
         self._proc_info = []
         self._quit = None
 
-    def add_process(self, process, name : str, command, ignore=False, forget=False, callback=None):
+    def add_process(self, process, name : str, command, ignore=False, forget=False, callback=None) -> ProcInfo:
         pid = process.pid
         assert pid>0, "process has no pid!"
         procinfo = ProcInfo()
@@ -121,7 +111,7 @@ class ChildReaper:
             self.add_dead_process(procinfo)
         return procinfo
 
-    def poll(self):
+    def poll(self) -> bool:
         #poll each process that is not dead yet:
         log("poll() procinfo list: %s", self._proc_info)
         for procinfo in tuple(self._proc_info):
@@ -130,10 +120,10 @@ class ChildReaper:
                 self.add_dead_process(procinfo)
         return True
 
-    def set_quit_callback(self, cb):
+    def set_quit_callback(self, cb:Callable) -> None:
         self._quit = cb
 
-    def check(self):
+    def check(self) -> bool:
         #see if we are meant to exit-with-children
         #see if we still have procinfos alive (and not meant to be ignored)
         self.poll()
@@ -150,22 +140,22 @@ class ChildReaper:
             return False
         return True
 
-    def sigchld(self, signum, frame):
+    def sigchld(self, signum, frame) -> None:
         #we risk race conditions if doing anything in the signal handler,
         #better run in the main thread asap:
         GLib.idle_add(self._sigchld, signum, str(frame))
 
-    def _sigchld(self, signum, frame_str):
+    def _sigchld(self, signum, frame_str) -> None:
         log("sigchld(%s, %s)", signum, frame_str)
         self.reap()
 
-    def get_proc_info(self, pid : int):
+    def get_proc_info(self, pid : int) -> Optional[ProcInfo]:
         for proc_info in tuple(self._proc_info):
             if proc_info.pid==pid:
                 return proc_info
         return None
 
-    def add_dead_pid(self, pid : int):
+    def add_dead_pid(self, pid : int) -> None:
         #find the procinfo for this pid:
         matches = [procinfo for procinfo in self._proc_info if procinfo.pid==pid and not procinfo.dead]
         log("add_dead_pid(%s) matches=%s", pid, matches)
@@ -175,7 +165,7 @@ class ChildReaper:
         for procinfo in matches:
             self.add_dead_process(procinfo)
 
-    def add_dead_process(self, procinfo):
+    def add_dead_process(self, procinfo:ProcInfo) -> None:
         log("add_dead_process(%s)", procinfo)
         process = procinfo.process
         if procinfo.dead or not process:
@@ -207,7 +197,7 @@ class ChildReaper:
         log("updated procinfo=%s", procinfo)
         self.check()
 
-    def reap(self):
+    def reap(self) -> None:
         self.poll()
         while POSIX:
             log("reap() calling os.waitpid%s", (-1, "WNOHANG"))
@@ -220,9 +210,9 @@ class ChildReaper:
                 break
             self.add_dead_pid(pid)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[Any,Any]:
         iv = tuple(self._proc_info)
-        info = {
+        info : Dict[Any,Any] = {
                 "children"  : {
                                "total"      : len(iv),
                                "dead"       : len(tuple(True for x in iv if x.dead)),
@@ -230,7 +220,7 @@ class ChildReaper:
                                }
                 }
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
-        cinfo = {}
+        cinfo : Dict[int,Any] = info.setdefault("child", {})
         for i, procinfo in enumerate(pi):
             d = {}
             for k in ("name", "command", "ignore", "forget", "returncode", "dead", "pid"):
@@ -239,5 +229,20 @@ class ChildReaper:
                     continue
                 d[k] = v
             cinfo[i] = d
-        info["child"] = cinfo
         return info
+
+singleton : Optional[ChildReaper] = None
+def getChildReaper() -> ChildReaper:
+    global singleton
+    if singleton is None:
+        singleton = ChildReaper()
+    return singleton
+
+def reaper_cleanup() -> None:
+    s = singleton
+    if s is not None:
+        singleton.cleanup()
+    #keep it around,
+    #so we don't try to reinitialize it from the wrong thread
+    #(signal requires the main thread)
+    #singleton = None

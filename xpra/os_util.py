@@ -17,7 +17,7 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Optional, Union, Any
+from typing import Optional, Union, Tuple, Dict, Any
 from threading import Thread
 
 # only minimal imports go at the top
@@ -47,8 +47,8 @@ def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads:tuple[Thread]=()) -> dict[str,Any]:
-    info = {
+def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> Dict[Any,Any]:
+    info : Dict[Any,Any] = {
         "count"        : threading.active_count() - len(ignore_threads),
         }
     try:
@@ -57,7 +57,7 @@ def get_frame_info(ignore_threads:tuple[Thread]=()) -> dict[str,Any]:
             if x is None:
                 return ""
             return str(x)
-        thread_ident : dict[int,Optional[str]] = {}
+        thread_ident : dict[Optional[int],Optional[str]] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
                 thread_ident[t.ident] = t.getName()
@@ -78,7 +78,7 @@ def get_frame_info(ignore_threads:tuple[Thread]=()) -> dict[str,Any]:
             sanestack = []
             for e in stack:
                 sanestack.append(tuple(nn(x) for x in e))
-            info[i] : dict[str,] = {
+            info[i] = {
                 ""          : tident,
                 "stack"     : sanestack,
                 }
@@ -87,7 +87,7 @@ def get_frame_info(ignore_threads:tuple[Thread]=()) -> dict[str,Any]:
         get_util_logger().error("failed to get frame info: %s", e)
     return info
 
-def get_info_env() -> dict[str,str]:
+def get_info_env() -> Dict[str,str]:
     filtered_env = os.environ.copy()
     if filtered_env.get('XPRA_PASSWORD'):
         filtered_env['XPRA_PASSWORD'] = "*****"
@@ -95,9 +95,9 @@ def get_info_env() -> dict[str,str]:
         filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
     return filtered_env
 
-def get_sysconfig_info() -> dict:
+def get_sysconfig_info() -> Dict[str,Any]:
     import sysconfig
-    sysinfo : dict[str,] = {}
+    sysinfo : Dict[str,Any] = {}
     log = get_util_logger()
     for attr in (
         "platform",
@@ -374,14 +374,14 @@ def get_distribution_version_id() -> str:
         pass
     return ""
 
-os_release_file_data : Union[bool,bytes,None]= False
-def load_os_release_file() -> Optional[bytes]:
+os_release_file_data : Union[bool,bytes]= False
+def load_os_release_file() -> bytes:
     global os_release_file_data
     if os_release_file_data is False:
         try:
-            os_release_file_data = load_binary_file("/etc/os-release")
+            os_release_file_data = load_binary_file("/etc/os-release") or b""
         except OSError: # pragma: no cover
-            os_release_file_data = None
+            os_release_file_data = b""
     return os_release_file_data
 
 def is_Ubuntu() -> bool:
@@ -505,7 +505,7 @@ def filedata_nocrlf(filename:str) -> bytes:
     v = load_binary_file(filename)
     if v is None:
         get_util_logger().error(f"failed to load {filename!r}")
-        return None
+        return b""
     return v.strip(b"\n\r")
 
 def load_binary_file(filename) -> Optional[bytes]:
@@ -520,12 +520,12 @@ def load_binary_file(filename) -> Optional[bytes]:
         get_util_logger().warn(f" {e}")
         return None
 
-def get_proc_cmdline(pid:int) -> tuple[str]:
+def get_proc_cmdline(pid:int) -> Tuple[str, ...]:
     if pid and LINUX:
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
         if os.path.exists(proc_cmd_line):
-            cmdline = load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
+            cmdline = (load_binary_file(proc_cmd_line) or b"").rstrip(b"\0").split(b"\0")
             try:
                 return tuple(x.decode() for x in cmdline)
             except Exception:
@@ -534,7 +534,7 @@ def get_proc_cmdline(pid:int) -> tuple[str]:
 
 def parse_encoded_bin_data(data:str) -> bytes:
     if not data:
-        return None
+        return b""
     header = bytestostr(data).lower()[:10]
     if header.startswith("0x"):
         return binascii.unhexlify(data[2:])
@@ -550,7 +550,7 @@ def parse_encoded_bin_data(data:str) -> bytes:
             return base64.b64decode(data)
         except Exception:
             pass
-    return None
+    return b""
 
 
 #here so we can override it when needed
@@ -656,7 +656,7 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
 
 
-def path_permission_info(filename : str, ftype=None) -> tuple[str]:
+def path_permission_info(filename : str, ftype=None) -> Tuple[str, ...]:
     if not POSIX:
         return ()
     info = []
@@ -791,12 +791,9 @@ def setbinarymode(fd:int):
 
 def find_lib_ldconfig(libname:str) -> str:
     libname = re.escape(libname)
-
     arch_map = {"x86_64": "libc6,x86-64"}
     arch = arch_map.get(os.uname()[4], "libc6")
-
     pattern = r'^\s+lib%s\.[^\s]+ \(%s(?:,.*?)?\) => (.*lib%s[^\s]+)' % (libname, arch, libname)
-
     #try to find ldconfig first, which may not be on the $PATH
     #(it isn't on Debian..)
     ldconfig = "ldconfig"
@@ -808,11 +805,10 @@ def find_lib_ldconfig(libname:str) -> str:
     import subprocess
     p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     data = bytestostr(p.communicate()[0])
-
     libpath = re.search(pattern, data, re.MULTILINE)        #@UndefinedVariable
     if libpath:
-        libpath = libpath.group(1)
-    return libpath
+        return libpath.group(1)
+    return ""
 
 def find_lib(libname:str):
     #it would be better to rely on dlopen to find the paths
@@ -869,7 +865,7 @@ def which(command) -> Optional[str]:
         get_util_logger().debug(f"find_executable({command})", exc_info=True)
         return None
 
-def get_status_output(*args, **kwargs):
+def get_status_output(*args, **kwargs) -> Tuple[int,Any,Any]:
     kwargs.update({
         "stdout"    : PIPE,
         "stderr"    : PIPE,

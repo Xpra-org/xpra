@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import sys
 from ctypes import c_ubyte, c_char, c_uint32
 
 from xpra.util import roundup
@@ -220,6 +221,7 @@ def init_server_mmap(mmap_filename:str, mmap_size=0):
     try:
         import mmap
         if not WIN32:
+            assert sys.platform=="win32"
             actual_mmap_size = os.path.getsize(mmap_filename)
             if mmap_size and actual_mmap_size!=mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
@@ -229,6 +231,7 @@ def init_server_mmap(mmap_filename:str, mmap_size=0):
             if mmap_size==0:
                 log.error("Error: client did not supply the mmap area size")
                 log.error(" try updating your client version?")
+                return None, 0
             mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
             actual_mmap_size = mmap_size
         f.close()

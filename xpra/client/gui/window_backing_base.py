@@ -9,6 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
+from typing import Dict, Any, Tuple
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
@@ -110,27 +111,27 @@ class WindowBackingBase:
     Generic superclass for all Backing code,
     see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
     """
-    RGB_MODES = ()
+    RGB_MODES : Tuple[str, ...] = ()
 
     def __init__(self, wid : int, window_alpha : bool):
         load_csc_options()
         load_video_decoders()
-        self.wid = wid
-        self.size = 0, 0
-        self.render_size = 0, 0
+        self.wid : int = wid
+        self.size : Tuple[int,int] = 0, 0
+        self.render_size : Tuple[int,int] = 0, 0
         #padding between the window contents and where we actually draw the backing
         #(ie: if the window is bigger than the backing,
         # we may be rendering the backing in the center of the window)
-        self.offsets = 0, 0, 0, 0       #top,left,bottom,right
-        self.gravity = 0
+        self.offsets : Tuple[int,int,int,int] = 0, 0, 0, 0       #top,left,bottom,right
+        self.gravity : int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self._PIL_encodings = []
-        self.default_paint_box_line_width = PAINT_BOX or 1
-        self.paint_box_line_width = PAINT_BOX
+        self.default_paint_box_line_width : int = PAINT_BOX or 1
+        self.paint_box_line_width : int = PAINT_BOX
         self.pointer_overlay = None
         self.cursor_data = None
         self.default_cursor_data = None
@@ -146,16 +147,16 @@ class WindowBackingBase:
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.nvdec_decoder = get_codec("nvdec")
         self.cuda_context = None
-        self.draw_needs_refresh = True
-        self.repaint_all = REPAINT_ALL
+        self.draw_needs_refresh : bool = True
+        self.repaint_all : bool = REPAINT_ALL
         self.mmap = None
-        self.mmap_enabled = False
-        self.fps_events = deque(maxlen=120)
-        self.fps_buffer_size = 0, 0
-        self.fps_buffer_update_time = 0
-        self.fps_value = 0
-        self.fps_refresh_timer = 0
-        self.paint_stats = {}
+        self.mmap_enabled : bool = False
+        self.fps_events : deque = deque(maxlen=120)
+        self.fps_buffer_size : Tuple[int,int] = 0, 0
+        self.fps_buffer_update_time : int = 0
+        self.fps_value : int = 0
+        self.fps_refresh_timer : int = 0
+        self.paint_stats : Dict[str,int] = {}
 
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
@@ -163,14 +164,14 @@ class WindowBackingBase:
     def recpaint(self, encoding):
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
-    def get_rgb_formats(self):
+    def get_rgb_formats(self) -> Tuple[str]:
         if self._alpha_enabled:
             return self.RGB_MODES
         #remove modes with alpha:
-        return tuple(filter(lambda mode : mode.find("A")<0, self.RGB_MODES))
+        return tuple(x for x in self.RGB_MODES if x.find("A")<0)
 
 
-    def get_info(self):
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "rgb-formats"   : self.get_rgb_formats(),
             "transparency"  : self._alpha_enabled,
@@ -189,14 +190,14 @@ class WindowBackingBase:
             info["csc"] = csc.get_info()
         return info
 
-    def record_fps_event(self):
+    def record_fps_event(self) -> None:
         self.fps_events.append(monotonic())
         now = monotonic()
         elapsed = now-self.fps_buffer_update_time
         if elapsed>0.2:
             self.update_fps()
 
-    def update_fps(self):
+    def update_fps(self) -> None:
         self.fps_buffer_update_time = monotonic()
         self.fps_value = self.calculate_fps()
         if self.is_show_fps():
@@ -207,10 +208,10 @@ class WindowBackingBase:
             if pixels:
                 self.update_fps_buffer(width, height, pixels)
 
-    def update_fps_buffer(self, width, height, pixels):
+    def update_fps_buffer(self, width:int, height:int, pixels) -> None:
         raise NotImplementedError
 
-    def calculate_fps(self):
+    def calculate_fps(self) -> int:
         pe = list(self.fps_events)
         if not pe:
             return 0
@@ -225,7 +226,7 @@ class WindowBackingBase:
             count += 1
         return count
 
-    def is_show_fps(self):
+    def is_show_fps(self) -> bool:
         if not SHOW_FPS and self.paint_box_line_width<=0:
             return False
         #show fps if the value is non-zero:
@@ -239,7 +240,7 @@ class WindowBackingBase:
         N = 4
         return monotonic()-last_fps_event<N
 
-    def rgba_text(self, text, width=64, height=32, x=20, y=10, bg=(128, 128, 128, 32)):
+    def rgba_text(self, text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
         try:
             from PIL import Image, ImageDraw  #@UnresolvedImport pylint: disable=import-outside-toplevel
         except ImportError:
@@ -254,18 +255,18 @@ class WindowBackingBase:
         draw.text((x, y), text, "blue", font=font)
         return img.tobytes("raw", rgb_format)
 
-    def cancel_fps_refresh(self):
+    def cancel_fps_refresh(self) -> None:
         frt = self.fps_refresh_timer
         if frt:
             self.fps_refresh_timer = 0
             GLib.source_remove(frt)
 
 
-    def enable_mmap(self, mmap_area):
+    def enable_mmap(self, mmap_area) -> None:
         self.mmap = mmap_area
         self.mmap_enabled = True
 
-    def gravity_copy_coords(self, oldw, oldh, bw, bh):
+    def gravity_copy_coords(self, oldw:int, oldh:int, bw:int, bh:int):
         sx = sy = dx = dy = 0
         def center_y():
             if bh>=oldh:
@@ -397,13 +398,13 @@ class WindowBackingBase:
         return self.cuda_context
 
 
-    def free_cuda_context(self):
+    def free_cuda_context(self) -> None:
         cc = self.cuda_context
         if cc:
             self.cuda_context = None
             cc.free()
 
-    def close(self):
+    def close(self) -> None:
         self.free_cuda_context()
         self.cancel_fps_refresh()
         self._backing = None
@@ -414,7 +415,7 @@ class WindowBackingBase:
         #(it checks for self._backing None)
         self.close_decoder(False)
 
-    def close_decoder(self, blocking=False):
+    def close_decoder(self, blocking=False) -> None:
         videolog("close_decoder(%s)", blocking)
         dl = self._decoder_lock
         if dl is None or not dl.acquire(blocking):  # pylint: disable=consider-using-with
@@ -427,18 +428,18 @@ class WindowBackingBase:
         finally:
             dl.release()
 
-    def do_clean_video_decoder(self):
+    def do_clean_video_decoder(self) -> None:
         if self._video_decoder:
             self._video_decoder.clean()
             self._video_decoder = None
 
-    def do_clean_csc_decoder(self):
+    def do_clean_csc_decoder(self) -> None:
         if self._csc_decoder:
             self._csc_decoder.clean()
             self._csc_decoder = None
 
 
-    def get_encoding_properties(self):
+    def get_encoding_properties(self) -> Dict[str,Any]:
         return {
                  "encodings.rgb_formats"    : self.get_rgb_formats(),
                  "encoding.transparency"    : self._alpha_enabled,
@@ -447,7 +448,7 @@ class WindowBackingBase:
                  "encoding.render-size"     : self.render_size,
                  }
 
-    def _get_full_csc_modes(self, rgb_modes):
+    def _get_full_csc_modes(self, rgb_modes) -> Dict[str,Any]:
         #calculate the server CSC modes the server is allowed to use
         #based on the client CSC modes we can convert to in the backing class we use
         #and trim the transparency if we cannot handle it
@@ -465,17 +466,17 @@ class WindowBackingBase:
         return full_csc_modes
 
 
-    def set_cursor_data(self, cursor_data):
+    def set_cursor_data(self, cursor_data) -> None:
         self.cursor_data = cursor_data
 
 
-    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+    def paint_jpeg(self, img_data, x:int, y:int, width:int, height:int, options, callbacks) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
-    def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
+    def paint_jpega(self, img_data, x:int, y:int, width:int, height:int, options, callbacks) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nvdec_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+    def nvdec_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         if not self.nvdec_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvdec_decoder.get_encodings():
@@ -490,7 +491,7 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nvjpeg_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+    def nvjpeg_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         if not self.nvjpeg_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvjpeg_decoder.get_encodings():
@@ -505,12 +506,12 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nv_decode(self, encoding, img_data, x, y, width, height, options, callbacks):
+    def nv_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         #log(f"nv_decode {encoding}: nvjpeg={self.nvjpeg_decoder}, nvdec={self.nvdec_decoder}")
         return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options, callbacks) or \
             self.nvdec_decode(encoding, img_data, x, y, width, height, options, callbacks)
 
-    def do_paint_jpeg(self, encoding, img_data, x, y, width, height, options, callbacks):
+    def do_paint_jpeg(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, x, y, width, height, options, callbacks)
         if img is None:
@@ -533,7 +534,7 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                   x, y, w, h, width, height, rowstride, options, callbacks)
 
-    def paint_avif(self, img_data, x, y, width, height, options, callbacks):
+    def paint_avif(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         img = self.avif_decoder.decompress(img_data, options)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
@@ -543,20 +544,20 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
-    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
+    def paint_image(self, coding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def paint_spng(self, img_data, x, y, width, height, options, callbacks):
+    def paint_spng(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth*len(rgb_format)
         self.idle_add(self.do_paint_rgb, rgb_format, rgba,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
 
-    def paint_webp(self, img_data, x, y, width, height, options, callbacks):
+    def paint_webp(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
         if not self.webp_decoder or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
             self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
@@ -589,7 +590,7 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, data,
                                  x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
-    def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_rgb(self, rgb_format:str, raw_data, x:int, y:int, width:int, height:int, rowstride:int, options, callbacks):
         """ can be called from a non-UI thread """
         iwidth, iheight = options.intpair("scaled-size", (width, height))
         #was a compressor used?
@@ -604,7 +605,8 @@ class WindowBackingBase:
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data,
-                     x, y, width, height, render_width, render_height, rowstride, options, callbacks):
+                     x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int,
+                     options, callbacks):
         """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[24|32]
@@ -644,28 +646,28 @@ class WindowBackingBase:
                 message = f"paint rgb{bpp} error: {e}"
                 fire_paint_callbacks(callbacks, False, message)
 
-    def _do_paint_rgb16(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb16(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb24(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb30(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
         raise NotImplementedError
 
 
-    def eos(self):
+    def eos(self) -> None:
         dl = self._decoder_lock
         with dl:
             self.do_clean_csc_decoder()
             self.do_clean_video_decoder()
 
 
-    def make_csc(self, src_width, src_height, src_format,
-                       dst_width, dst_height, dst_format_options, speed=50):
+    def make_csc(self, src_width:int, src_height:int, src_format:str,
+                       dst_width:int, dst_height:int, dst_format_options, speed:int=50):
         in_options = CSC_OPTIONS.get(src_format, {})
         if not in_options:
             log.error(f"Error: no csc options for {src_format!r} input, only found:")
@@ -714,7 +716,7 @@ class WindowBackingBase:
                         (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
                          dst_width, dst_height, CSC_OPTIONS))
 
-    def validate_csc_size(self, spec, src_width, src_height, dst_width, dst_height):
+    def validate_csc_size(self, spec, src_width:int, src_height:int, dst_width:int, dst_height:int):
         if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
             return "scaling not supported"
         if src_width<spec.min_w:
@@ -804,7 +806,8 @@ class WindowBackingBase:
         if self._backing is None:
             self.close_decoder(True)
 
-    def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+    def do_video_paint(self, img, x:int, y:int, enc_width:int, enc_height:int, width:int, height:int,
+                       options, callbacks):
         target_rgb_formats = self.get_rgb_formats()
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
@@ -854,7 +857,7 @@ class WindowBackingBase:
                 rgb.free()
         self.idle_add(paint)
 
-    def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_mmap(self, img_data, x:int, y:int, width:int, height:int, rowstride:int, options, callbacks):
         """ must be called from UI thread
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
@@ -869,7 +872,7 @@ class WindowBackingBase:
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+    def draw_region(self, x:int, y:int, width:int, height:int, coding:str, img_data, rowstride:int, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
         self.recpaint(coding)
         try:
@@ -919,7 +922,7 @@ class WindowBackingBase:
             else:
                 raise
 
-    def do_draw_region(self, _x, _y, _width, _height, coding, _img_data, _rowstride, _options, callbacks):
+    def do_draw_region(self, _x:int, _y:int, _width:int, _height:int, coding:str, _img_data, _rowstride:int, _options, callbacks):
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)

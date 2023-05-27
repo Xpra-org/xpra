@@ -6,6 +6,7 @@
 
 import sys
 import os.path
+from typing import Tuple, List, Dict, Any
 
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, WIN32
@@ -29,21 +30,20 @@ log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s,
         SELFTEST, FULL_SELFTEST, CODEC_FAIL_IMPORT, CODEC_FAIL_SELFTEST)
 
 
+SKIP_LIST : Tuple[str,...] = ()
 if OSX:
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg", "x265")
-else:
-    SKIP_LIST = ()
-def filt(*values):
+def filt(*values) -> Tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
-CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
-ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_ffmpeg", "enc_gstreamer")
-DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
-DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2", "dec_openh264", "nvdec")
-SOURCES = filt("v4l2", "evdi", "drm", "nvfbc")
+CSC_CODECS : Tuple[str,...] = filt("csc_swscale", "csc_cython", "csc_libyuv")
+ENCODER_CODECS : Tuple[str,...] = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
+ENCODER_VIDEO_CODECS : Tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_ffmpeg", "enc_gstreamer")
+DECODER_CODECS : Tuple[str,...] = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
+DECODER_VIDEO_CODECS : Tuple[str,...] = filt("dec_vpx", "dec_avcodec2", "dec_openh264", "nvdec")
+SOURCES : Tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
 
-ALL_CODECS = filt(*set(
+ALL_CODECS : Tuple[str,...] = filt(*set(
     CSC_CODECS +
     ENCODER_CODECS +
     ENCODER_VIDEO_CODECS +
@@ -52,7 +52,7 @@ ALL_CODECS = filt(*set(
     SOURCES))
 
 
-codec_errors = {}
+codec_errors : Dict[str,str] = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, classnames):
     log(f"{name}:")
@@ -141,7 +141,7 @@ def codec_import_check(name, description, top_module, class_module, classnames):
             log.warn(" cannot load %s (%s)",
                      name, description, exc_info=True)
     return None
-codec_versions = {}
+codec_versions : Dict[str,Tuple[Any, ...]]= {}
 def add_codec_version(name, top_module, version="get_version()", alt_version="__version__"):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
@@ -283,7 +283,7 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     log("done loading codecs: %s", loaded)
     return loaded
 
-def show_codecs(show=None):
+def show_codecs(show:Tuple[str,...]=()):
     #print("codec_status=%s" % codecs)
     for name in sorted(show or ALL_CODECS):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
@@ -293,27 +293,27 @@ def show_codecs(show=None):
         log(f"* {name.ljust(20)} : {version}")
 
 
-def get_codec_error(name):
-    return codec_errors.get(name)
+def get_codec_error(name:str) -> str:
+    return codec_errors.get(name, "")
 
-def get_codec(name):
+def get_codec(name:str):
     if name not in CODEC_OPTIONS:
         log.warn(f"Warning: invalid codec name {name}")
     return codecs.get(name)
 
-def get_codec_version(name):
+def get_codec_version(name:str):
     return codec_versions.get(name)
 
-def has_codec(name) -> bool:
+def has_codec(name:str) -> bool:
     return name in codecs
 
 
-def get_rgb_compression_options():
+def get_rgb_compression_options() -> List[str]:
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
     compressors = [x for x in compressors if x!="brotli"]
-    RGB_COMP_OPTIONS  = ["Raw RGB"]
+    RGB_COMP_OPTIONS : List[str] = ["Raw RGB"]
     if compressors:
         RGB_COMP_OPTIONS  += ["/".join(compressors)]
     return RGB_COMP_OPTIONS
@@ -375,13 +375,13 @@ def encodings_help(encodings):
             h.append(encoding_help(e))
     return h
 
-def encoding_help(encoding):
+def encoding_help(encoding:str) -> str:
     ehelp = get_encoding_help(encoding) or ""
     return encoding.ljust(12) + ehelp
 
 
 
-def main(args):
+def main(args) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
@@ -411,7 +411,7 @@ def main(args):
                         log.warn(f"{x} matches: "+csv(loose_matches))
                 load_codec(name)
                 names.append(name)
-            list_codecs = names
+            list_codecs = tuple(names)
         else:
             try:
                 load_codecs(sources=True)

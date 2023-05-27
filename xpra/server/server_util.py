@@ -8,6 +8,7 @@ import json
 import shlex
 import os.path
 from subprocess import Popen, PIPE
+from typing import Dict, Optional, Any, Tuple, List
 
 from xpra.util import envbool
 from xpra.os_util import (
@@ -22,11 +23,11 @@ from xpra.platform.dotxpra import norm_makepath
 from xpra.platform.paths import get_python_exec_command
 from xpra.scripts.config import InitException, FALSE_OPTIONS
 
-UINPUT_UUID_LEN = 12
+UINPUT_UUID_LEN : int = 12
 
 # pylint: disable=import-outside-toplevel
 
-def source_env(source=()) -> dict:
+def source_env(source=()) -> Dict[str, str]:
     log = get_util_logger()
     log("source_env(%s)", source)
     env = {}
@@ -34,18 +35,17 @@ def source_env(source=()) -> dict:
         if not f or f.lower() in FALSE_OPTIONS:
             continue
         try:
-            e = env_from_sourcing(f)
+            es = env_from_sourcing(f)
+            log("source_env %s=%s", f, es)
+            env.update(es)
         except Exception as e:
             log(f"env_from_sourcing({f})", exc_info=True)
             log.error(f"Error sourcing {f!r}: {e}")
-        else:
-            log("source_env %s=%s", f, e)
-            env.update(e)
     log("source_env(%s)=%s", source, env)
     return env
 
 
-def decode_dict(out) -> dict:
+def decode_dict(out:str) -> Dict[str, str]:
     env = {}
     for line in out.splitlines():
         parts = line.split("=", 1)
@@ -59,10 +59,10 @@ def decode_json(out):
 
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
-def env_from_sourcing(file_to_source_path, include_unexported_variables=False) -> dict:
+def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> Dict[str, str]:
     log = Logger("exec")
-    cmd = shlex.split(file_to_source_path)
-    filename = cmd[0]
+    cmd : List[str] = shlex.split(file_to_source_path)
+    filename : str = cmd[0]
     if not os.path.isabs(filename):
         filename = which(filename)
         if not filename:
@@ -95,7 +95,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False) -
         sh = which("bash") or "/bin/sh"
         cmd = [sh, "-c", f"{source} 1>&2 && {dump}"]
         decode = decode_json
-    out = err = ""
+    out = err = b""
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -104,27 +104,27 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False) -
             log.error(f"Error {proc.returncode} running source script {filename!r}")
     except OSError as e:
         log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
-        log(f" stdout={out} ({type(out)})")
-        log(f" stderr={err} ({type(err)})")
+        log(f" stdout={out!r} ({type(out)})")
+        log(f" stderr={err!r} ({type(err)})")
         log.error(f"Error {proc.returncode} running source script {file_to_source_path!r}")
         log.error(f" {e}")
         return {}
-    log(f"stdout({filename})={out}")
-    log(f"stderr({filename})={err}")
+    log(f"stdout({filename})={out!r}")
+    log(f"stderr({filename})={err!r}")
     def proc_str(b, fdname="stdout"):
         try:
             return (b or b"").decode()
         except UnicodeDecodeError:
             log.error(f"Error decoding {fdname} from {filename!r}", exc_info=True)
         return ""
-    env = {}
+    env : Dict[str,str] = {}
     env.update(decode(proc_str(out, "stdout")))
     env.update(decode_dict(proc_str(err, "stderr")))
     log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
     return env
 
 
-def sh_quotemeta(s):
+def sh_quotemeta(s:bytes)->bytes:
     return b"'" + s.replace(b"'", b"'\\''") + b"'"
 
 def xpra_env_shell_script(socket_dir, env) -> bytes:
@@ -208,7 +208,7 @@ fi
 """)
     return b"\n".join(script)
 
-def write_runner_shell_scripts(contents, overwrite=True):
+def write_runner_shell_scripts(contents:bytes, overwrite:bool=True):
     assert POSIX
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -251,7 +251,7 @@ def write_runner_shell_scripts(contents, overwrite=True):
             log.error(" %s\n", e)
 
 
-def open_log_file(logpath):
+def open_log_file(logpath:str):
     """ renames the existing log file if it exists,
         then opens it for writing.
     """
@@ -317,7 +317,7 @@ def redirect_std_to_log(logfd):
     return stdout, stderr
 
 
-def daemonize():
+def daemonize() -> None:
     os.chdir("/")
     if os.fork():
         os._exit(0)     #pylint: disable=protected-access
@@ -346,7 +346,7 @@ def write_pidfile(pidfile) -> int:
         log.error(f" {e}")
     return inode
 
-def rm_pidfile(pidfile : str, inode : int):
+def rm_pidfile(pidfile : str, inode : int) -> None:
     #verify this is the right file!
     log = get_util_logger()
     log("cleanuppidfile(%s, %s)", pidfile, inode)
@@ -364,7 +364,7 @@ def rm_pidfile(pidfile : str, inode : int):
         log("rm_pidfile(%s, %s)", pidfile, inode, exc_info=True)
 
 
-def get_uinput_device_path(device):
+def get_uinput_device_path(device) -> Optional[str]:
     log = get_util_logger()
     try:
         log("get_uinput_device_path(%s)", device)
@@ -390,7 +390,7 @@ def get_uinput_device_path(device):
                         k,v = line.split(b"=", 1)
                         log("%s=%s", k, v)
                         if k==b"DEVNAME":
-                            dev_path = b"/dev/%s" % v
+                            dev_path = (b"/dev/%s" % v).decode("latin1")
                             log(f"found device path: {dev_path}")
                             return dev_path
     except Exception as e:
@@ -427,7 +427,7 @@ def has_uinput() -> bool:
         return False
     return True
 
-def create_uinput_device(uuid, uid, events, name):
+def create_uinput_device(uuid, uid:int, events, name:str) -> Optional[Tuple[str, Any, str]]:
     log = get_util_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
@@ -454,7 +454,7 @@ def create_uinput_device(uuid, uid, events, name):
         return None
     return name, device, dev_path
 
-def create_uinput_pointer_device(uuid, uid):
+def create_uinput_pointer_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
@@ -472,7 +472,7 @@ def create_uinput_pointer_device(uuid, uid):
     name = f"Xpra Virtual Pointer {uuid}"
     return create_uinput_device(uuid, uid, events, name)
 
-def create_uinput_touchpad_device(uuid, uid):
+def create_uinput_touchpad_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import (
@@ -489,7 +489,7 @@ def create_uinput_touchpad_device(uuid, uid):
     return create_uinput_device(uuid, uid, events, name)
 
 
-def create_uinput_devices(uinput_uuid, uid):
+def create_uinput_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
     log = get_util_logger()
     try:
         import uinput  # @UnresolvedImport
@@ -516,5 +516,5 @@ def create_uinput_devices(uinput_uuid, uid):
         "touchpad"  : i(touchpad),
         }
 
-def create_input_devices(uinput_uuid, uid):
+def create_input_devices(uinput_uuid, uid) -> Dict[str,Any]:
     return create_uinput_devices(uinput_uuid, uid)
