@@ -22,13 +22,13 @@ from xpra.log import Logger
 
 log = Logger("exec", "auth")
 
-SKIP_UI = envbool("XPRA_SKIP_UI", False)
-PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
+SKIP_UI : bool = envbool("XPRA_SKIP_UI", False)
+PINENTRY : bool = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 
 #pylint: disable=import-outside-toplevel
 
 
-def get_pinentry_command(setting="yes"):
+def get_pinentry_command(setting:str="yes"):
     log(f"get_pinentry_command({setting})")
     if setting.lower() in FALSE_OPTIONS:
         return None
@@ -48,7 +48,7 @@ def get_pinentry_command(setting="yes"):
         return find_pinentry_bin()
     return setting
 
-def popen_pinentry(pinentry_cmd):
+def popen_pinentry(pinentry_cmd:str):
     try:
         cmd = [pinentry_cmd]
         if log.is_debug_enabled():
@@ -66,7 +66,7 @@ def run_pinentry(extra_args):
         if not messages:
             return None
         return messages.pop(0)
-    def process_output(message, line):
+    def process_output(message:str, line:bytes):
         if line.startswith(b"ERR "):
             log.error(f"Error: pinentry responded to {message!r} with:")
             log.error(" %s", line.rstrip(b"\n\r").decode())
@@ -78,7 +78,7 @@ def run_pinentry(extra_args):
         raise InitExit(ExitCode.UNSUPPORTED, "cannot run pinentry")
     return do_run_pinentry(proc, get_input, process_output)
 
-def do_run_pinentry(proc, get_input, process_output):
+def do_run_pinentry(proc, get_input:Callable, process_output:Callable):
     message = "connection"
     while proc.poll() is None:
         try:
@@ -99,7 +99,7 @@ def do_run_pinentry(proc, get_input, process_output):
         proc.terminate()
     log(f"pinentry ended: {proc.poll()}")
 
-def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
+def pinentry_getpin(pinentry_proc, title:str, description:str, pin_cb:Callable, err_cb:Callable):
     from urllib.parse import quote
     messages = [
         f"SETPROMPT {quote(title)}",
@@ -110,7 +110,7 @@ def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
         if not messages:
             return None
         return messages.pop(0)
-    def process_output(message, output):
+    def process_output(message:str, output:bytes):
         #log(f"process_output({message}, {output})")
         if message=="GETPIN":
             if output.startswith(b"S "):
@@ -128,7 +128,7 @@ def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
     do_run_pinentry(pinentry_proc, get_input, process_output)
     return True
 
-def run_pinentry_getpin(pinentry_cmd, title, description):
+def run_pinentry_getpin(pinentry_cmd:str, title:str, description:str):
     proc = popen_pinentry(pinentry_cmd)
     if proc is None:
         return None
@@ -145,7 +145,7 @@ def run_pinentry_getpin(pinentry_cmd, title, description):
         return None
     return values[0]
 
-def run_pinentry_confirm(pinentry_cmd, title, prompt):
+def run_pinentry_confirm(pinentry_cmd:str, title:str, prompt:str):
     proc = popen_pinentry(pinentry_cmd)
     if proc is None:
         return None
@@ -178,11 +178,11 @@ def run_pinentry_confirm(pinentry_cmd, title, prompt):
 
 
 
-def force_focus():
+def force_focus() -> None:
     from xpra.platform.gui import force_focus as _force_focus
     _force_focus()
 
-def dialog_run(run_fn:Callable) -> str:
+def dialog_run(run_fn:Callable):
     import gi
     gi.require_version('Gtk', '3.0')  # @UndefinedVariable
     from gi.repository import GLib, Gtk  # @UnresolvedImport
@@ -218,7 +218,7 @@ def do_run_dialog(dialog):
     finally:
         dialog.destroy()
 
-def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
+def dialog_pass(title:str="Password Input", prompt:str="enter password", icon:str="") -> str:
     log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
     if PINENTRY:
         pinentry_cmd = get_pinentry_command()
@@ -230,7 +230,7 @@ def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str
         return do_run_dialog(dialog)
     return dialog_run(password_input_run)
 
-def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> int:
+def dialog_confirm(title:str, prompt:str, qinfo=(), icon:str="", buttons=(("OK", 1),)) -> int:
     def confirm_run():
         from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
         dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
@@ -238,7 +238,7 @@ def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> in
     return dialog_run(confirm_run)
 
 
-def confirm(info=(), title="Confirm Key", prompt="Are you sure you want to continue connecting?") -> bool:
+def confirm(info=(), title:str="Confirm Key", prompt:str="Are you sure you want to continue connecting?") -> bool:
     log("confirm%s SKIP_UI=%s, PINENTRY=%s", (info, title, prompt), SKIP_UI, PINENTRY)
     if SKIP_UI:
         return False
@@ -265,7 +265,7 @@ def confirm(info=(), title="Confirm Key", prompt="Are you sure you want to conti
         sys.exit(128+signal.SIGINT)
     return bool(v) and v.lower() in ("y", "yes")
 
-def input_pass(prompt) -> str:
+def input_pass(prompt:str) -> str:
     if SKIP_UI:
         return ""
     if PINENTRY or use_gui_prompt():

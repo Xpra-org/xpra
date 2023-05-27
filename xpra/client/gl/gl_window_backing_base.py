@@ -174,13 +174,13 @@ DATATYPE_TO_STR : Dict[IntConstant,str] = {
     }
 
 #debugging variables:
-GL_DEBUG_OUTPUT = None
-GL_DEBUG_OUTPUT_SYNCHRONOUS = None
-gl_debug_callback = None
-glInitStringMarkerGREMEDY = None
-glStringMarkerGREMEDY = None
-glInitFrameTerminatorGREMEDY = None
-glFrameTerminatorGREMEDY = None
+GL_DEBUG_OUTPUT : int = 0
+GL_DEBUG_OUTPUT_SYNCHRONOUS : int = 0
+gl_debug_callback : Optional[Callable] = None
+glInitStringMarkerGREMEDY : Optional[Callable] = None
+glStringMarkerGREMEDY : Optional[Callable] = None
+glInitFrameTerminatorGREMEDY : Optional[Callable] = None
+glFrameTerminatorGREMEDY : Optional[Callable] = None
 if OPENGL_DEBUG:
     try:
         # pylint: disable=ungrouped-imports

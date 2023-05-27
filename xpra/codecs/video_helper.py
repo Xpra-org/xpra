@@ -8,6 +8,7 @@
 import sys
 import traceback
 from threading import Lock
+from typing import Dict, Tuple, List, Any
 
 from xpra.scripts.config import csvstrl
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
@@ -18,7 +19,7 @@ log = Logger("codec", "video")
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
-CODEC_TO_MODULE = {
+CODEC_TO_MODULE : Dict[str,str] = {
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
@@ -40,7 +41,7 @@ CODEC_TO_MODULE = {
     "enc_gstreamer" : "gstreamer.encoder",
     }
 
-def has_codec_module(module_name:str):
+def has_codec_module(module_name:str) -> bool:
     top_module = f"xpra.codecs.{module_name}"
     try:
         __import__(top_module, {}, {}, [])
@@ -50,10 +51,10 @@ def has_codec_module(module_name:str):
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
-def autoprefix(prefix:str, name:str):
+def autoprefix(prefix:str, name:str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name).replace("-", "_")
 
-def try_import_modules(prefix:str, *codec_names):
+def try_import_modules(prefix:str, *codec_names) -> List[str]:
     names = []
     for codec_name in codec_names:
         codec_name = autoprefix(prefix, codec_name)
@@ -204,8 +205,8 @@ class VideoHelper:
         vds = deepish_clone_dict(self._video_decoder_specs)
         return VideoHelper(ves, ces, vds, True)
 
-    def get_info(self) -> dict:
-        d = {}
+    def get_info(self) -> Dict[str,Any]:
+        d : Dict[str,Any] = {}
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})
         cinfo = d.setdefault("csc", {})
@@ -236,7 +237,7 @@ class VideoHelper:
             cscm[x] = modstatus(get_csc_module_name(x), get_csc_modules(), self.csc_modules)
         return d
 
-    def init(self):
+    def init(self) -> None:
         log("VideoHelper.init()")
         with self._lock:
             self._init_from.append(traceback.format_stack())
@@ -250,13 +251,13 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_encodings(self) -> tuple:
+    def get_encodings(self) -> Tuple:
         return tuple(self._video_encoder_specs.keys())
 
-    def get_decodings(self) -> tuple:
+    def get_decodings(self) -> Tuple:
         return tuple(self._video_decoder_specs.keys())
 
-    def get_csc_inputs(self) -> tuple:
+    def get_csc_inputs(self) -> Tuple:
         return tuple(self._csc_encoder_specs.keys())
 
 

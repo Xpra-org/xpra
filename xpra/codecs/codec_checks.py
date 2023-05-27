@@ -7,7 +7,7 @@
 #pylint: disable=line-too-long
 
 import binascii
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Callable
 
 from xpra.util import csv, typedict, roundup
 from xpra.log import Logger
@@ -457,7 +457,7 @@ def do_testencoding(encoder_module, encoding, W:int, H:int, full:bool=False, lim
             for spec in encoder_module.get_specs(encoding, cs_in):
                 test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
 
-def test_encoder_spec(encoder_class, encoding:str, cs_in:str, cs_out:str, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
+def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:str, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     e = None
     try:
         e = encoder_class()

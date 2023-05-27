@@ -13,6 +13,7 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
+from typing import Any, Dict, Tuple
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict
@@ -160,7 +161,7 @@ def parse_env(env) -> dict:
     return d
 
 
-def parse_URL(url:str):
+def parse_URL(url:str) -> Tuple[str,Dict]:
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = up.netloc
@@ -169,7 +170,7 @@ def parse_URL(url:str):
     if qpos>0:
         params_str = url[qpos+1:]
         params = parse_qs(params_str, keep_blank_values=True)
-        f_params = {}
+        f_params : Dict[str,Any] = {}
         for k,v in params.items():
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):

@@ -62,15 +62,18 @@ def decode_json(out):
 def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> Dict[str, str]:
     log = Logger("exec")
     cmd : List[str] = shlex.split(file_to_source_path)
-    filename : str = cmd[0]
-    if not os.path.isabs(filename):
-        filename = which(filename)
-        if not filename:
-            log.error("Error: cannot find command '%s' to execute", cmd[0])
-            log.error(" for sourcing '%s'", file_to_source_path)
-            return {}
-        if not os.path.isabs(filename):
-            filename = os.path.abspath(filename)
+    def abscmd(s:str):
+        if os.path.isabs(s):
+            return s
+        c = which(s)
+        if not c:
+            log.error(f"Error: cannot find command {s!r} to execute")
+            log.error(f" for sourcing {file_to_source_path!r}")
+            return s
+        if os.path.isabs(c):
+            return c
+        return os.path.abspath(c)
+    filename = abscmd(cmd[0])
     cmd[0] = filename
     #figure out if this is a script to source,
     #or if we're meant to execute it directly
@@ -124,7 +127,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
     return env
 
 
-def sh_quotemeta(s:bytes)->bytes:
+def sh_quotemeta(s:bytes) -> bytes:
     return b"'" + s.replace(b"'", b"'\\''") + b"'"
 
 def xpra_env_shell_script(socket_dir, env) -> bytes:

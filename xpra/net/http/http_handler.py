@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ import posixpath
 import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
+from typing import Dict, Tuple, Any
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
@@ -49,10 +50,10 @@ def parse_url(handler):
             args[v[0]] = v[1]
     return args
 
-http_headers_cache = {}
-http_headers_time = {}
+http_headers_cache : Dict[str,str] = {}
+http_headers_time : Dict[str,float] = {}
 def may_reload_headers(http_headers_dirs):
-    mtimes = {}
+    mtimes : Dict[str,float] = {}
     global http_headers_cache
     if http_headers_cache:
         #do we need to refresh the cache?
@@ -64,7 +65,7 @@ def may_reload_headers(http_headers_dirs):
         if not mtimes:
             return http_headers_cache.copy()
         log("headers directories have changed: %s", mtimes)
-    headers = {}
+    headers : Dict[str,str] = {}
     for d in http_headers_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
@@ -74,7 +75,7 @@ def may_reload_headers(http_headers_dirs):
             if not os.path.isfile(header_file):
                 continue
             log("may_reload_headers() loading from '%s'", header_file)
-            h = {}
+            h : Dict[str,str] = {}
             with open(header_file, "r", encoding="latin1") as hf:
                 for line in hf:
                     sline = line.strip().rstrip("\r\n").strip()
@@ -94,7 +95,7 @@ def may_reload_headers(http_headers_dirs):
     return headers.copy()
 
 
-def translate_path(path, web_root="/usr/share/xpra/www"):
+def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
     #code duplicated from superclass since we can't easily inject the web_root..
     s = path
     # abandon query parameters
@@ -135,9 +136,9 @@ def translate_path(path, web_root="/usr/share/xpra/www"):
     log("translate_path(%s)=%s", s, path)
     return path
 
-def load_path(headers, path):
+def load_path(headers:Dict[str,str], path:str) -> Tuple[int,Dict[str,Any],bytes]:
     ext = os.path.splitext(path)[1]
-    extra_headers = {}
+    extra_headers : Dict[str,Any] = {}
     with open(path, "rb") as f:
         # Always read in binary mode. Opening files in text mode may cause
         # newline translations, making the actual size of the content
@@ -220,8 +221,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     wbufsize = None     #we flush explicitly when needed
     server_version = "Xpra-HTTP-Server"
-    http_headers_cache = {}
-    http_headers_time = {}
 
     def __init__(self, sock, addr,
                  web_root="/usr/share/xpra/www/",

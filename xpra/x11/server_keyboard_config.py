@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import hashlib
-from typing import Dict
+from typing import Dict, Tuple, List, Any
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -79,7 +79,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         #keycodes:
         if self.keycode_translation:
@@ -407,7 +407,7 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
             #prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname = {}
+            default_for_keyname : Dict[str,Tuple[int,int]] = {}
             for keycode, keynames in keycode_to_keynames.items():
                 for i, keyname in enumerate(keynames):
                     self.keycode_translation[(keyname, i)] = keycode
@@ -467,7 +467,8 @@ class KeyboardConfig(KeyboardConfigBase):
             return keycode, group
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-    def find_matching_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group):
+    def find_matching_keycode(self, client_keycode:int, keyname:str,
+                              pressed:bool, modifiers, keyval, keystr:str, group) -> Tuple[int,int]:
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -572,11 +573,14 @@ class KeyboardConfig(KeyboardConfigBase):
                         return entry.keycode, entry.group
         return keycode, rgroup
 
-    def get_current_mask(self) -> list:
-        current_mask = get_default_root_window().get_pointer()[-1]
+    def get_current_mask(self) -> List:
+        root = get_default_root_window()
+        if not root:
+            return []
+        current_mask = root.get_pointer()[-1]
         return mask_to_names(current_mask, self.modifier_map)
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
         """
             Given a list of modifiers that should be set, try to press the right keys
             to make the server's modifier list match it.

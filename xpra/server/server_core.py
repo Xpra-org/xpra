@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable
+from typing import Callable, List
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -203,7 +203,7 @@ class ServerCore:
         self.exec_cwd = os.getcwd()
         self.pidfile = None
         self.pidinode : int = 0
-        self.session_files = [
+        self.session_files : List[str] = [
             "cmdline", "server.env", "config", "server.log*",
             #notifications may use a TMP dir:
             "tmp/*", "tmp",

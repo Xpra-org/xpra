@@ -1355,7 +1355,7 @@ class WindowVideoSource(WindowSource):
             #discount encodings further down the list of preferred encodings:
             #(ie: prefer h264 to vp9)
             try:
-                encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-PREFERRED_ENCODING_ORDER.index(encoding)
+                encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-list(PREFERRED_ENCODING_ORDER).index(encoding)
             except ValueError:
                 encoding_score_delta = 0
             encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)

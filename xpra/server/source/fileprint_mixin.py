@@ -34,7 +34,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def cleanup(self):
         self.remove_printers()
 
-    def parse_client_caps(self, c : dict):
+    def parse_client_caps(self, c : typedict):
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 

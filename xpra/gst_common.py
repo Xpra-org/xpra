@@ -6,7 +6,7 @@
 
 import sys
 import os
-from typing import Dict, List
+from typing import Dict, List, Any
 
 from xpra.util import csv
 from xpra.log import Logger
@@ -71,7 +71,7 @@ def import_gst():
     return Gst
 
 
-def get_default_appsink_attributes() -> Dict[str,object]:
+def get_default_appsink_attributes() -> Dict[str,Any]:
     return {
         "name"          : "sink",
         "emit-signals"  : True,
@@ -82,7 +82,7 @@ def get_default_appsink_attributes() -> Dict[str,object]:
         "qos"           : False,
         }
 
-def get_default_appsrc_attributes() -> Dict[str,object]:
+def get_default_appsrc_attributes() -> Dict[str,Any]:
     return {
         "name"          : "src",
         "emit-signals"  : False,

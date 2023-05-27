@@ -886,7 +886,7 @@ def is_systemd_pid1() -> bool:
     if not POSIX:
         return False
     d = load_binary_file("/proc/1/cmdline")
-    return d and d.find(b"/systemd")>=0
+    return bool(d) and d.find(b"/systemd")>=0
 
 
 def get_ssh_port() -> int:

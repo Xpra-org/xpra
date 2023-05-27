@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Any, Optional, Dict, Iterable, Callable
+from typing import List, Tuple, Any, Optional, Dict, Iterable, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import get_screen_info, first_time, typedict, net_utf8
@@ -33,7 +33,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled : Optional[Tuple[int, int]] = None
         self.desktop_size_server : Optional[Tuple[int, int]] = None
         self.desktop_fullscreen : bool = False
-        self.screen_sizes : Tuple = ()
+        self.screen_sizes : List = ()
         self.monitors : Dict[int,Any] = {}
         self.screen_resize_bigger : bool = True
         self.desktops : int = 1
@@ -120,7 +120,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_screen_sizes(self, screen_sizes : Iterable) -> None:
         log("set_screen_sizes(%s)", screen_sizes)
-        self.screen_sizes = tuple(screen_sizes)
+        self.screen_sizes = list(screen_sizes)
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
         def dpi(size_pixels, size_mm) -> int:

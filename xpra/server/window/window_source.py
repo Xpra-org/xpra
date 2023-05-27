@@ -12,7 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
-from typing import Callable, List
+from typing import Callable, Dict, List, Tuple, Iterable, ContextManager
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -86,12 +86,12 @@ DAMAGE_STATISTICS : bool = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 SCROLL_ALL : bool = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW : bool = envbool("XPRA_FORCE_PILLOW", False)
-HARDCODED_ENCODING : str = os.environ.get("XPRA_HARDCODED_ENCODING")
+HARDCODED_ENCODING : str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
 INFINITY = float("inf")
-def get_env_encodings(etype:str, valid_options=()):
+def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> Tuple[str,...]:
     v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
-    encodings = valid_options
+    encodings = tuple(valid_options)
     if v:
         options = v.split(",")
         encodings = tuple(x for x in options if x in valid_options)
@@ -114,20 +114,19 @@ COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
 COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
 
 
+ui_context : ContextManager = DummyContextManager()
 if POSIX and not OSX:
     from xpra.gtk_common.error import xlog
     ui_context = xlog
-else:
-    ui_context = DummyContextManager()
 
 
 class DelayedRegions:
-    def __init__(self, damage_time, regions, encoding, options):
-        self.expired = False
-        self.damage_time = damage_time
+    def __init__(self, damage_time:float, regions:List[rectangle], encoding:str, options:Dict):
+        self.expired : bool = False
+        self.damage_time : float = damage_time
         self.regions = regions
-        self.encoding = encoding
-        self.options = options or {}
+        self.encoding : str = encoding
+        self.options : dict = options or {}
 
     def __repr__(self):
         return "DelayedRegion(time=%i, expired=%s, encoding=%s, regions=%s, options=%s)" % (
@@ -161,24 +160,21 @@ class WindowSource(WindowIconSource):
 
     (also by 'send_window_icon' and clipboard packets)
     """
-
-    _encoding_warnings = set()
-
     def __init__(self,
-                    idle_add, timeout_add, source_remove,
-                    ww, wh,
-                    record_congestion_event, queue_size, call_in_encode_thread, queue_packet,
+                    idle_add:Callable, timeout_add:Callable, source_remove:Callable,
+                    ww:int, wh:int,
+                    record_congestion_event:Callable, queue_size:Callable, call_in_encode_thread:Callable, queue_packet:Callable,
                     statistics,
-                    wid, window, batch_config, auto_refresh_delay,
+                    wid:int, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
                     video_helper,
                     cuda_device_context,
                     server_core_encodings, server_encodings,
-                    encoding, encodings, core_encodings, window_icon_encodings,
+                    encoding:str, encodings, core_encodings, window_icon_encodings,
                     encoding_options, icons_encoding_options,
                     rgb_formats,
                     default_encoding_options,
-                    mmap, mmap_size, bandwidth_limit, jitter):
+                    mmap, mmap_size:int, bandwidth_limit:int, jitter:int):
         super().__init__(window_icon_encodings, icons_encoding_options)
         self.idle_add = idle_add
         self.timeout_add = timeout_add
@@ -206,9 +202,9 @@ class WindowSource(WindowIconSource):
         self.av_sync_delay_base = av_sync_delay         #the total av-sync delay we are trying to achieve (including video encoder delay)
         self.av_sync_frame_delay : int = 0                    #how long frames spend in the video encoder
         self.av_sync_timer : int = 0
-        self.encode_queue = []
+        self.encode_queue : List[Tuple] = []
         self.encode_queue_max_size : int = 10
-        self.last_scroll_event = 0
+        self.last_scroll_event : float = 0
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -218,15 +214,15 @@ class WindowSource(WindowIconSource):
         self.picture_encodings = ()                     #non-video only
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.rgb_lz4 = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
+        self.rgb_lz4 : bool = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.client_render_size = encoding_options.get("render-size")
-        self.client_bit_depth = encoding_options.intget("bit-depth", 24)
-        self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
-        self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.client_refresh_encodings = encoding_options.strtupleget("auto_refresh_encodings")
-        self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
-        self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
-        self.send_window_size = encoding_options.boolget("send-window-size", False)
+        self.client_bit_depth : int = encoding_options.intget("bit-depth", 24)
+        self.supports_transparency : bool = HAS_ALPHA and encoding_options.boolget("transparency")
+        self.full_frames_only : bool = self.is_tray or encoding_options.boolget("full_frames_only")
+        self.client_refresh_encodings : Tuple[str, ...] = encoding_options.strtupleget("auto_refresh_encodings")
+        self.max_soft_expired : int = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
+        self.send_timetamps : bool = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
+        self.send_window_size : bool = encoding_options.boolget("send-window-size", False)
         self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
         self.batch_config = batch_config
         #auto-refresh:
@@ -285,10 +281,10 @@ class WindowSource(WindowIconSource):
 
         # general encoding tunables (mostly used by video encoders):
         #keep track of the target encoding_quality: (event time, info, encoding speed):
-        self._encoding_quality = deque(maxlen=100)
+        self._encoding_quality : deque = deque(maxlen=100)
         self._encoding_quality_info = {}
         #keep track of the target encoding_speed: (event time, info, encoding speed):
-        self._encoding_speed = deque(maxlen=100)
+        self._encoding_speed : deque = deque(maxlen=100)
         self._encoding_speed_info = {}
         # they may have fixed values:
         self._fixed_quality = default_encoding_options.get("quality", -1)
@@ -297,7 +293,7 @@ class WindowSource(WindowIconSource):
         self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
         self._fixed_max_speed = capr(default_encoding_options.get("max-speed", MAX_SPEED))
-        self._encoding_hint = None
+        self._encoding_hint : str = ""
         self._quality_hint = self.window.get("quality", -1)
         dyn_props = window.get_dynamic_property_names()
         if "quality" in dyn_props:
@@ -362,22 +358,22 @@ class WindowSource(WindowIconSource):
             raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")
 
 
-    def insert_encoder(self, encoder_name, encoding, encode_fn) -> None:
+    def insert_encoder(self, encoder_name:str, encoding:str, encode_fn:Callable) -> None:
         log(f"insert_encoder({encoder_name}, {encoding}, {encode_fn})")
         self._all_encoders.setdefault(encoding, []).insert(0, encode_fn)
         self._encoders[encoding] = encode_fn
 
-    def append_encoder(self, encoding, encode_fn) -> None:
+    def append_encoder(self, encoding:str, encode_fn:Callable) -> None:
         log("append_encoder(%s, %s)", encoding, encode_fn)
         self._all_encoders.setdefault(encoding, []).append(encode_fn)
         if encoding not in self._encoders:
             self._encoders[encoding] = encode_fn
 
     def init_encoders(self) -> None:
-        self._all_encoders = {}
-        self._encoders = {}
+        self._all_encoders : Dict[str,List[Callable]] = {}
+        self._encoders : Dict[str,Callable] = {}
         picture_encodings = set()
-        def add(encoder_name):
+        def add(encoder_name:str):
             encoder = get_codec(encoder_name)
             if not encoder:
                 return None
@@ -418,9 +414,9 @@ class WindowSource(WindowIconSource):
     def init_vars(self) -> None:
         self.server_core_encodings = ()
         self.server_encodings = ()
-        self.encoding = None
+        self.encoding = ""
         self.encodings = ()
-        self.encoding_last_used = None
+        self.encoding_last_used : str = ""
         self.auto_refresh_encodings = ()
         self.core_encodings = ()
         self.rgb_formats = ()
@@ -430,7 +426,7 @@ class WindowSource(WindowIconSource):
         self.rgb_lz4 = False
         self.supports_transparency = False
         self.full_frames_only = False
-        self.suspended = False
+        self.suspended : bool = False
         self.strict = STRICT_MODE
         self.decoder_speed = typedict()
         self.mmap_write = None
@@ -446,11 +442,11 @@ class WindowSource(WindowIconSource):
         self.refresh_event_time = 0
         self.refresh_target_time = 0
         self.refresh_timer : int = 0
-        self.refresh_regions = []
+        self.refresh_regions : List[rectangle] = []
         self.timeout_timer : int = 0
         self.expire_timer : int = 0
         self.soft_timer : int = 0
-        self.soft_expired = 0
+        self.soft_expired : int = 0
         self.max_soft_expired = MAX_SOFT_EXPIRED
         self.is_OR = False
         self.is_tray = False
@@ -467,9 +463,9 @@ class WindowSource(WindowIconSource):
         self.max_bytes_percent : int = 60
         self.small_packet_cost : int = 1024
         #
-        self._encoding_quality = []
+        self._encoding_quality = deque()
         self._encoding_quality_info = {}
-        self._encoding_speed = []
+        self._encoding_speed = deque()
         self._encoding_speed_info = {}
         #
         self._fixed_quality = -1
@@ -480,9 +476,9 @@ class WindowSource(WindowIconSource):
         self._fixed_max_speed = MAX_SPEED
         #
         self._damage_delayed = None
-        self._sequence = 1
+        self._sequence : int = 1
         self._damage_cancelled = INFINITY
-        self._damage_packet_sequence = 1
+        self._damage_packet_sequence : int = 1
 
     def cleanup(self) -> None:
         self.cancel_damage(INFINITY)
@@ -507,7 +503,7 @@ class WindowSource(WindowIconSource):
         self.window_signal_handlers = []
         self.window = None
         self.batch_config = None
-        self.get_best_encoding = None
+        self.get_best_encoding : Callable = self.encoding_is_rgb32
         self.statistics = None
         self.global_statistics = None
 
@@ -746,7 +742,7 @@ class WindowSource(WindowIconSource):
         if v and v not in self._encoders:
             log.warn("Warning: invalid encoding hint '%s'", v)
             log.warn(" this encoding is not supported")
-            v = None
+            v = ""
         self._encoding_hint = v
         self.assign_encoding_getter()
         log("encoding_changed(%s, %s) encoding-hint=%s, selection=%s",
@@ -898,7 +894,7 @@ class WindowSource(WindowIconSource):
         if (self.refresh_quality<100 or not TRUE_LOSSLESS) and self.image_depth>16:
             ropts.add("jpeg")
             ropts.add("jpega")
-        are = ()
+        are : Tuple[str] = ()
         if self.supports_transparency:
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:

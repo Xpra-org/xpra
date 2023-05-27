@@ -78,7 +78,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         r = super().run()
         if r==0:
             return self.get_password()
-        return None
+        return ""
 
     def quit(self, *args):
         log("quit%s", args)

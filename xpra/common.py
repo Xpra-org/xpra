@@ -4,10 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Tuple, Optional
+
 from xpra.util import envint, envbool, csv
 
 
-RESOLUTION_ALIASES = {
+RESOLUTION_ALIASES : Dict[str,Tuple[int,int]] = {
     "QVGA"  : (320, 240),
     "VGA"   : (640, 480),
     "SVGA"  : (800, 600),
@@ -40,37 +42,37 @@ def GravityStr(v):
     except ValueError:
         return str(v)
 
-CLOBBER_UPGRADE = 0x1
-CLOBBER_USE_DISPLAY = 0x2
+CLOBBER_UPGRADE : int = 0x1
+CLOBBER_USE_DISPLAY : int = 0x2
 
 #if you want to use a virtual screen bigger than this
 #you will need to change those values, but some broken toolkits
 #will then misbehave (they use signed shorts instead of signed ints..)
-MAX_WINDOW_SIZE = 2**15-2**13
+MAX_WINDOW_SIZE : int = 2**15-2**13
 
 
-GROUP = os.environ.get("XPRA_GROUP", "xpra")
+GROUP : str = os.environ.get("XPRA_GROUP", "xpra")
 
-FULL_INFO = envint("XPRA_FULL_INFO", 1)
+FULL_INFO : int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO>=0
-LOG_HELLO = envbool("XPRA_LOG_HELLO", False)
+LOG_HELLO : bool = envbool("XPRA_LOG_HELLO", False)
 
-SSH_AGENT_DISPATCH = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")
+SSH_AGENT_DISPATCH : bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")
 
-MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)
-MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
+MIN_COMPRESS_SIZE : int = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)
+MAX_DECOMPRESSED_SIZE : int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 
-MIN_DPI = envint("XPRA_MIN_DPI", 10)
-MAX_DPI = envint("XPRA_MIN_DPI", 500)
+MIN_DPI : int = envint("XPRA_MIN_DPI", 10)
+MAX_DPI : int = envint("XPRA_MIN_DPI", 500)
 
-SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
+SYNC_ICC : bool = envbool("XPRA_SYNC_ICC", True)
 
-DEFAULT_REFRESH_RATE = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
+DEFAULT_REFRESH_RATE : int = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
 
-SPLASH_EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 4)
+SPLASH_EXIT_DELAY : int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
-DEFAULT_XDG_DATA_DIRS = ":".join(
+DEFAULT_XDG_DATA_DIRS : str = ":".join(
         (
         "/usr/share",
         "/usr/local/share",
@@ -80,12 +82,12 @@ DEFAULT_XDG_DATA_DIRS = ":".join(
         )
     )
 
-def noop(*_args):
+def noop(*_args) -> None:
     """ do nothing """
 
-WINDOW_DECODE_SKIPPED = 0
-WINDOW_DECODE_ERROR = -1
-WINDOW_NOT_FOUND = -2
+WINDOW_DECODE_SKIPPED : int = 0
+WINDOW_DECODE_ERROR : int = -1
+WINDOW_NOT_FOUND : int = -2
 
 
 class KeyEvent:
@@ -96,12 +98,12 @@ class KeyEvent:
         return f"KeyEvent({strattrs})"
 
 
-def get_refresh_rate_for_value(refresh_rate_str, invalue):
+def get_refresh_rate_for_value(refresh_rate_str, invalue) -> int:
     def i(v):
         try:
             return int(v)
         except ValueError:
-            return None
+            return invalue
     if refresh_rate_str.lower() in ("none", "auto"):
         #just honour whatever the client supplied:
         return i(invalue)
@@ -122,7 +124,7 @@ def get_refresh_rate_for_value(refresh_rate_str, invalue):
     return i(invalue)
 
 
-def adjust_monitor_refresh_rate(refresh_rate_str, mdef):
+def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> Dict[int,Dict]:
     adjusted = {}
     for i, monitor in mdef.items():
         #make a copy, don't modify in place!

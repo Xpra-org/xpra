@@ -5,6 +5,7 @@
 
 import os
 from queue import Queue, Empty
+from typing import Tuple, Dict, Any, Callable
 
 from xpra.util import typedict, envint, parse_simple_dict
 from xpra.os_util import OSX
@@ -127,19 +128,19 @@ def get_default_encoder_options():
     return options
 
 
-def get_version():
+def get_version() -> Tuple[int, ...]:
     return (5, 0)
 
-def get_type():
+def get_type() -> str:
     return "gstreamer"
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     return {"version"   : get_version()}
 
-def init_module():
+def init_module() -> None:
     log("gstreamer.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("gstreamer.cleanup_module()")
 
 
@@ -166,7 +167,7 @@ def get_gst_rgb_format(rgb_format : str) -> str:
         }[rgb_format]
 
 
-def get_video_encoder_caps(encoder="x264enc"):
+def get_video_encoder_caps(encoder:str="x264enc"):
     if encoder=="av1enc":
         return {
             "alignment"     : "tu",
@@ -192,7 +193,7 @@ def get_video_encoder_options(encoder:str="x264", profile:str=None, options:type
     #should check for "bframes" flag in options?
     return eopts
 
-def get_gst_encoding(encoding):
+def get_gst_encoding(encoding:str) -> str:
     return {"hevc" : "h265"}.get(encoding, encoding)
 
 
@@ -201,21 +202,21 @@ class VideoPipeline(Pipeline):
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
-    def init_context(self, encoding, width, height, colorspace, options=None):
+    def init_context(self, encoding:str, width:int, height:int, colorspace:int, options=None):
         options = typedict(options or {})
-        self.encoding = encoding
-        self.width = width
-        self.height = height
-        self.colorspace = colorspace
-        self.frames = 0
+        self.encoding : str = encoding
+        self.width : int = width
+        self.height : int = height
+        self.colorspace : str = colorspace
+        self.frames : int = 0
         self.frame_queue = Queue()
-        self.pipeline_str = ""
+        self.pipeline_str : str = ""
         self.create_pipeline(options)
-        self.src    = self.pipeline.get_by_name("src")
+        self.src = self.pipeline.get_by_name("src")
         self.src.set_property("format", Gst.Format.TIME)
         #self.src.set_caps(Gst.Caps.from_string(CAPS))
-        self.sink   = self.pipeline.get_by_name("sink")
-        def sh(sig, handler):
+        self.sink = self.pipeline.get_by_name("sink")
+        def sh(sig:str, handler:Callable):
             self.element_connect(self.sink, sig, handler)
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
@@ -230,7 +231,7 @@ class VideoPipeline(Pipeline):
             return GST_FLOW_OK
         return super().on_message(bus, message)
 
-    def on_new_preroll(self, _appsink):
+    def on_new_preroll(self, _appsink) -> int:
         log("new-preroll")
         return GST_FLOW_OK
 
@@ -254,8 +255,8 @@ class VideoPipeline(Pipeline):
             return None
 
 
-    def get_info(self) -> dict:
-        info = get_info()
+    def get_info(self) -> Dict[str,Any]:
+        info : Dict[str,Any] = get_info()
         if self.colorspace is None:
             return info
         info.update({
@@ -292,7 +293,7 @@ class VideoPipeline(Pipeline):
     def get_type(self) -> str:
         return "gstreamer"
 
-    def clean(self):
+    def clean(self) -> None:
         super().cleanup()
         self.width = 0
         self.height = 0
@@ -302,5 +303,5 @@ class VideoPipeline(Pipeline):
         self.frames = 0
 
 
-    def do_emit_info(self):
+    def do_emit_info(self) -> None:
         self.emit_info_timer = 0

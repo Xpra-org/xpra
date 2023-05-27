@@ -7,6 +7,7 @@
 #pylint: disable=wrong-import-position
 
 from time import monotonic
+from typing import Tuple, Dict, Callable, Any
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
 Gst = import_gst()
@@ -25,7 +26,7 @@ class Pipeline(GObject.GObject):
 
     generation = AtomicInteger()
 
-    __generic_signals__ : dict = {
+    __generic_signals__ : Dict[str,Tuple] = {
         "state-changed"     : one_arg_signal,
         "error"             : one_arg_signal,
         "new-stream"        : one_arg_signal,
@@ -48,7 +49,7 @@ class Pipeline(GObject.GObject):
         self.emit_info_timer : int = 0
         self.file = None
 
-    def element_connect(self, element, sig, handler):
+    def element_connect(self, element, sig:str, handler:Callable):
         """ keeps track of signal ids so we can cleanup later """
         sid = element.connect(sig, handler)
         self.element_handlers.setdefault(element, []).append(sid)
@@ -62,7 +63,7 @@ class Pipeline(GObject.GObject):
             for sid in sids:
                 element.disconnect(sid)
 
-    def update_state(self, state):
+    def update_state(self, state:str):
         log("update_state(%s)", state)
         self.state = state
         self.info["state"] = state
@@ -78,12 +79,12 @@ class Pipeline(GObject.GObject):
     def idle_emit(self, sig, *args):
         self.idle_add(self.emit, sig, *args)
 
-    def emit_info(self):
+    def emit_info(self) -> None:
         if self.emit_info_timer:
             return
         self.emit_info_timer = self.timeout_add(200, self.do_emit_info)
 
-    def do_emit_info(self):
+    def do_emit_info(self) -> None:
         self.emit_info_timer = 0
         if self.pipeline:
             info = self.get_info()
@@ -91,17 +92,17 @@ class Pipeline(GObject.GObject):
             self.info = {}
             self.emit("info", info)
 
-    def cancel_emit_info_timer(self):
+    def cancel_emit_info_timer(self) -> None:
         eit = self.emit_info_timer
         if eit:
             self.emit_info_timer = 0
             self.source_remove(eit)
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict:
         return self.info.copy()
 
-    def setup_pipeline_and_bus(self, elements):
+    def setup_pipeline_and_bus(self, elements) -> bool:
         log("pipeline elements=%s", elements)
         self.pipeline_str = " ! ".join([x for x in elements if x is not None])
         log("pipeline=%s", self.pipeline_str)
@@ -146,7 +147,7 @@ class Pipeline(GObject.GObject):
         self.emit_info()
         return True
 
-    def stop(self):
+    def stop(self) -> None:
         p = self.pipeline
         self.pipeline = None
         if not p:
@@ -163,7 +164,7 @@ class Pipeline(GObject.GObject):
         p.set_state(Gst.State.NULL)
         log("Pipeline.stop() done")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("Pipeline.cleanup()")
         self.cancel_emit_info_timer()
         self.elements_disconnect()
@@ -184,24 +185,24 @@ class Pipeline(GObject.GObject):
         log("Pipeline.cleanup() done")
 
 
-    def gstloginfo(self, msg, *args):
+    def gstloginfo(self, msg, *args) -> None:
         if self.state!="stopped":
             log.info(msg, *args)
         else:
             log(msg, *args)
 
-    def gstlogwarn(self, msg, *args):
+    def gstlogwarn(self, msg, *args) -> None:
         if self.state!="stopped":
             log.warn(msg, *args)
         else:
             log(msg, *args)
 
 
-    def onstart(self):
+    def onstart(self) -> None:
         """ this is overriden in some subclasses """
 
 
-    def parse_tag_message(self, message):
+    def parse_tag_message(self, message) -> None:
         """ this is overriden in some subclasses """
 
 
@@ -292,7 +293,7 @@ class Pipeline(GObject.GObject):
         self.emit_info()
         return GST_FLOW_OK
 
-    def parse_element_message(self, message):
+    def parse_element_message(self, message) -> None:
         structure = message.get_structure()
         props = {
             "seqnum"    : int(message.seqnum),
@@ -302,11 +303,11 @@ class Pipeline(GObject.GObject):
             props[name] = structure.get_value(name)
         self.do_parse_element_message(message, message.src.get_name(), props)
 
-    def do_parse_element_message(self, message, name, props=None):
+    def do_parse_element_message(self, message, name, props=None) -> None:
         log("do_parse_element_message%s", (message, name, props))
 
 
-    def get_element_properties(self, element, *properties, ignore_missing=False) -> dict:
+    def get_element_properties(self, element, *properties, ignore_missing=False) -> Dict[str,Any]:
         info = {}
         for x in properties:
             try:

@@ -8,7 +8,7 @@
 
 import socket
 import sys
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Optional
 
 from xpra.os_util import WIN32
 from xpra.version_util import parse_version
@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("network", "util")
 
 
-netifaces_version : Tuple[Any] = ()
+netifaces_version : Tuple[Any, ...] = ()
 _netifaces = None
 def import_netifaces() -> object:
     global _netifaces, netifaces_version
@@ -53,7 +53,7 @@ def get_interfaces():
         return []
     return netifaces.interfaces()           #@UndefinedVariable pylint: disable=no-member
 
-def get_interfaces_addresses() -> dict:
+def get_interfaces_addresses() -> Dict:
     d = {}
     netifaces = import_netifaces()
     if netifaces:
@@ -159,7 +159,7 @@ def do_get_bind_ifacemask(iface):
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
-def get_iface(ip) -> str:
+def get_iface(ip) -> Optional[str]:
     log("get_iface(%s)", ip)
     if not ip:
         return None
@@ -362,13 +362,13 @@ def get_net_config() -> dict:
     return config
 
 
-def get_ssl_info(show_constants=False) -> dict:
+def get_ssl_info(show_constants=False) -> Dict[str,Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
     except ImportError as e:    # pragma: no cover
         log("no ssl: %s", e)
         return {}
-    info = {}
+    info : Dict[str,Any] = {}
     if show_constants:
         protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
         ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))

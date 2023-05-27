@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from time import monotonic
+from typing import Dict, Any, Optional
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
@@ -17,15 +18,15 @@ from xpra.log import Logger
 #how many historical records to keep
 #for the various statistics we collect:
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
-NRECS = 100
+NRECS : int = 100
 
-MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 1)
-MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 250)
+MIN_VREFRESH : int = envint("XPRA_MIN_VREFRESH", 1)
+MAX_VREFRESH : int = envint("XPRA_MAX_VREFRESH", 250)
 
 
 log = Logger("damage")
 
-def ival(key, default, minv=0, maxv=None) -> int:
+def ival(key, default:int, minv:Optional[int]=0, maxv:Optional[int]=None) -> int:
     try:
         v = os.environ.get(f"XPRA_BATCH_{key}")
         if v is None:
@@ -68,34 +69,34 @@ class DamageBatchConfig:
         )
 
     def __init__(self):
-        self.wid = 0
-        self.always = ALWAYS
-        self.max_events = MAX_EVENTS
-        self.max_pixels = MAX_PIXELS
-        self.time_unit = TIME_UNIT
-        self.min_delay = MIN_DELAY
-        self.max_delay = MAX_DELAY
-        self.timeout_delay = TIMEOUT_DELAY
-        self.expire_delay = EXPIRE_DELAY
-        self.start_delay = START_DELAY
-        self.delay = START_DELAY
-        self.delay_per_megapixel = -1
-        self.saved = START_DELAY
-        self.locked = False                             #to force a specific delay
-        self.last_event = 0
+        self.wid : int = 0
+        self.always : bool = ALWAYS
+        self.max_events : int = MAX_EVENTS
+        self.max_pixels : int = MAX_PIXELS
+        self.time_unit : int = TIME_UNIT
+        self.min_delay : int = MIN_DELAY
+        self.max_delay : int = MAX_DELAY
+        self.timeout_delay : int = TIMEOUT_DELAY
+        self.expire_delay : int = EXPIRE_DELAY
+        self.start_delay : int = START_DELAY
+        self.delay : int = START_DELAY
+        self.delay_per_megapixel : int = -1
+        self.saved : int = START_DELAY
+        self.locked : bool = False                             #to force a specific delay
+        self.last_event : int = 0
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
         self.last_delay = None
         self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)
         self.last_actual_delay = None
-        self.last_updated = 0
+        self.last_updated : int = 0
         #the metrics derived from statistics which we use for calculating the new batch delay:
         #(see batch delay calculator)
         self.factors = ()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.factors = ()
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "min-delay"         : self.min_delay,
             "max-delay"         : self.max_delay,
@@ -131,7 +132,7 @@ class DamageBatchConfig:
         return info
 
 
-    def match_vrefresh(self, vrefresh=60):
+    def match_vrefresh(self, vrefresh:int=60) -> None:
         if MIN_VREFRESH<=vrefresh<=MAX_VREFRESH:
             #looks like a valid vrefresh value, use it:
             ms_per_frame = max(5, 1000//vrefresh)

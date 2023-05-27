@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,7 +14,7 @@ import signal
 from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Dict
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
@@ -47,18 +47,20 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Opti
             if sep!="@":
                 res_part += sep
             break
-    res = RESOLUTION_ALIASES.get(res_part)
-    if not res:
+    if res_part in RESOLUTION_ALIASES:
+        res = RESOLUTION_ALIASES[res_part]
+    else:
         try:
-            res = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
+            parts = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
         except ValueError:
             raise ValueError(f"failed to parse resolution {res_part!r}") from None
-        if len(res)!=2:
-            raise ValueError("invalid resolution string {s!r}")
-    res = list(res)
-    res.append(int(hz))
-    return tuple(res)
-def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple:
+        if len(parts)!=2:
+            raise ValueError(f"invalid resolution string {res_part!r}")
+        res = parts[0], parts[1]
+    reshz = list(res)
+    reshz.append(int(hz))
+    return tuple(reshz)
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Optional[Tuple]:
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):
@@ -101,7 +103,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
     if not device_uuid:
         return
 
-    def makedir(dirname):
+    def makedir(dirname) -> None:
         log("makedir(%s)", dirname)
         os.mkdir(dirname)
         os.lchown(dirname, uid, gid)
@@ -125,7 +127,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
         conf_files.append(f)
 
 #create individual device files:
-def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:int):
+def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:int) -> str:
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
     identifier = f"xpra-virtual-{dev_type}"
@@ -189,7 +191,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
     if XVFB_EXTRA_ARGS:
         xvfb_str += " "+XVFB_EXTRA_ARGS
 
-    subs = {}
+    subs : Dict[str,str] = {}
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")

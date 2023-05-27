@@ -16,7 +16,7 @@ import os
 import sys
 import struct
 from enum import IntEnum
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from xpra.log import Logger
 from xpra.util import envbool
@@ -30,8 +30,8 @@ BLACKLISTED_XSETTINGS : List[str] = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
 
 
 #undocumented XSETTINGS endianness values:
-LITTLE_ENDIAN = 0
-BIG_ENDIAN    = 1
+LITTLE_ENDIAN : int = 0
+BIG_ENDIAN : int    = 1
 def get_local_byteorder() -> int:
     if sys.byteorder=="little":
         return LITTLE_ENDIAN
@@ -45,15 +45,15 @@ class XSettingsType(IntEnum):
     String = 1
     Color = 2
 
-XSettingsNames : dict = {
+XSettingsNames : Dict[int,str] = {
                 XSettingsType.Integer    : "Integer",
                 XSettingsType.String     : "String",
                 XSettingsType.Color      : "Color",
                 }
 
 
-XSETTINGS_CACHE : Tuple[int, bytes] = (0, b"")
-def bytes_to_xsettings(d:bytes):
+XSETTINGS_CACHE : Tuple[int, List[Tuple]] = (0, [])
+def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple]]:
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
@@ -91,34 +91,35 @@ def bytes_to_xsettings(d:bytes):
             remain = len(d)-pos
             if remain<nbytes:
                 raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
+        def add(value):
+            setting = setting_type, prop_name, value, last_change_serial
+            if DEBUG_XSETTINGS:
+                log("bytes_to_xsettings(..) %s -> %s", tuple(d[istart:pos]), setting)
+            settings.append(setting)
         if setting_type==XSettingsType.Integer:
             req("int", 4)
-            value = int(struct.unpack(b"=I", d[pos:pos+4])[0])
+            add(int(struct.unpack(b"=I", d[pos:pos+4])[0]))
             pos += 4
         elif setting_type==XSettingsType.String:
             req("string length", 4)
             value_len = struct.unpack(b"=I", d[pos:pos+4])[0]
             pos += 4
             req("string", value_len)
-            value = d[pos:pos+value_len]
+            add(d[pos:pos+value_len])
             pos += (value_len + 0x3) & ~0x3
         elif setting_type==XSettingsType.Color:
             req("color", 8)
             red, blue, green, alpha = struct.unpack(b"=HHHH", d[pos:pos+8])
-            value = (red, blue, green, alpha)
+            add((red, blue, green, alpha))
             pos += 8
         else:
             log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
             break
-        setting = setting_type, prop_name, value, last_change_serial
-        if DEBUG_XSETTINGS:
-            log("bytes_to_xsettings(..) %s -> %s", tuple(d[istart:pos]), setting)
-        settings.append(setting)
-    log("bytes_to_xsettings(..) settings=%s", settings)
+    log(f"bytes_to_xsettings(..) serial={serial} ,settings={settings}")
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 
-def xsettings_to_bytes(d) -> bytes:
+def xsettings_to_bytes(d : Tuple[int,List[Tuple]]) -> bytes:
     if len(d)!=2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d

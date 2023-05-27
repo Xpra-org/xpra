@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Type
 
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -28,7 +29,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
-SHADOWSERVER_BASE_CLASS = object
+SHADOWSERVER_BASE_CLASS : Type = object
 if server_features.rfb:
     from xpra.server.rfb.rfb_server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
@@ -37,7 +38,7 @@ if server_features.rfb:
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     #20 fps unless the client specifies more:
-    DEFAULT_REFRESH_RATE = 20
+    DEFAULT_REFRESH_RATE : int = 20
 
     def __init__(self, root_window, capture=None):
         super().__init__()
@@ -45,11 +46,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.root = root_window
         self.window_matches = None
         self.mapped = []
-        self.pulseaudio = False
-        self.sharing = True
-        self.refresh_delay = 1000//self.DEFAULT_REFRESH_RATE
-        self.refresh_timer = None
-        self.notifications = False
+        self.pulseaudio : bool = False
+        self.sharing : bool = True
+        self.refresh_delay : int = 1000//self.DEFAULT_REFRESH_RATE
+        self.refresh_timer : int = 0
+        self.notifications : bool = False
         self.notifier = None
         self.pointer_last_position = None
         self.pointer_poll_timer = None
@@ -283,7 +284,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         t = self.refresh_timer
         log("cancel_refresh_timer() timer=%s", t)
         if t:
-            self.refresh_timer = None
+            self.refresh_timer = 0
             self.source_remove(t)
 
     def refresh(self):

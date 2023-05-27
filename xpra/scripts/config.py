@@ -8,7 +8,7 @@ import re
 import sys
 import os
 import shlex
-from typing import Dict, Union, List, Callable
+from typing import Tuple, Dict, Union, List, Callable, Any, Optional
 
 from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
@@ -64,7 +64,7 @@ def has_audio_support():
     return _has_audio_support
 
 
-def get_xorg_bin():
+def get_xorg_bin() -> Optional[str]:
     xorg = os.environ.get("XPRA_XORG_BIN")
     if xorg:
         return xorg
@@ -98,9 +98,9 @@ def get_Xdummy_confdir():
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
-def get_Xdummy_command(xorg_cmd="Xorg",
-                       log_dir="${XPRA_SESSION_DIR}",
-                       xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"):
+def get_Xdummy_command(xorg_cmd:str="Xorg",
+                       log_dir:str="${XPRA_SESSION_DIR}",
+                       xorg_conf:str="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf") -> List[str]:
     return [
         #ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
@@ -117,7 +117,7 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         "-config", f'"{xorg_conf}"',
         ]
 
-def get_Xvfb_command(width=8192, height=4096, dpi=96):
+def get_Xvfb_command(width:int=8192, height:int=4096, dpi:int=96) -> List[str]:
     cmd = ["Xvfb",
            "+extension", "GLX",
            "+extension", "Composite",
@@ -131,8 +131,8 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96):
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
-def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
-                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn=warn):
+def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir=None,
+                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn):
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
@@ -163,8 +163,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         debug("Xdummy support unspecified, will try to detect")
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
-def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir=None,
-                          Xdummy_wrapper_ENABLED=None, warn_fn=warn):
+def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir=None,
+                          Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn):
     if not POSIX or OSX:
         return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
@@ -200,7 +200,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir=None,
     return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
 
 
-def wrap_cmd_str(cmd):
+def wrap_cmd_str(cmd) -> str:
     xvfb_str = ""
     cr = " \\\n    "
     while cmd:
@@ -248,7 +248,7 @@ def is_VirtualBox() -> str:
     return ""
 
 
-def get_build_info():
+def get_build_info() -> List[str]:
     info = []
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT #@UnresolvedImport
@@ -292,10 +292,10 @@ def get_build_info():
     return info
 
 
-def name_to_field(name):
+def name_to_field(name:str) -> str:
     return name.replace("-", "_")
 
-def save_config(conf_file, config, keys, extras_types=None):
+def save_config(conf_file:str, config, keys, extras_types=None):
     with open(conf_file, "w", encoding="utf8") as f:
         option_types = OPTION_TYPES.copy()
         if extras_types:
@@ -309,7 +309,7 @@ def save_config(conf_file, config, keys, extras_types=None):
             f.write(f"{key}={v}{os.linesep}")
         debug(f"save_config: saved {saved} to {conf_file!r}")
 
-def read_config(conf_file:str) -> dict:
+def read_config(conf_file:str) -> Dict:
     """
         Parses a config file into a dict of strings.
         If the same key is specified more than once,
@@ -371,10 +371,10 @@ def read_config(conf_file:str) -> dict:
             from xpra.log import Logger
             log = Logger("util")
             log.info(f"{name}={d[name]} (was {current_value}), from {conf_file!r}")
-    return  d
+    return d
 
 
-def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
     """
         Returns all the config file paths found in the config directory
         ie: ["/etc/xpra/conf.d/15_features.conf", ..., "/etc/xpra/xpra.conf"]
@@ -399,7 +399,7 @@ def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         d.append(conf_file)
     return d
 
-def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+def read_xpra_conf(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
     """
         Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
@@ -413,7 +413,7 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         d.update(cd)
     return d
 
-def read_xpra_defaults(username=None, uid=None, gid=None):
+def read_xpra_defaults(username:Optional[str]=None, uid=None, gid=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -429,7 +429,7 @@ def read_xpra_defaults(username=None, uid=None, gid=None):
     may_create_user_config()
     return defaults
 
-def get_xpra_defaults_dirs(username=None, uid=None, gid=None):
+def get_xpra_defaults_dirs(username:Optional[str]=None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
@@ -454,7 +454,7 @@ def get_xpra_defaults_dirs(username=None, uid=None, gid=None):
         defaults_dirs.append(ad)
     return defaults_dirs
 
-def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+def may_create_user_config(xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
     from xpra.platform.paths import get_user_conf_dirs
     #save a user config template:
     udirs = get_user_conf_dirs()
@@ -700,7 +700,7 @@ OPTION_TYPES = {
 
 #in the options list, available in session files,
 #but not on the command line:
-NON_COMMAND_LINE_OPTIONS = [
+NON_COMMAND_LINE_OPTIONS : List[str] = [
     "mode",
     "wm-name",
     "download-path",
@@ -711,18 +711,18 @@ NON_COMMAND_LINE_OPTIONS = [
     "add-printer-options",
     ]
 
-START_COMMAND_OPTIONS = [
+START_COMMAND_OPTIONS : List[str] = [
     "start", "start-child",
     "start-late", "start-child-late",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     ]
-BIND_OPTIONS = ["bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic"]
+BIND_OPTIONS : List[str] = ["bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic"]
 
 #keep track of the options added since v3,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V3 = [
+OPTIONS_ADDED_SINCE_V3 : List[str] = [
     "source", "source-start", "headerbar",
     "splash", "sessions-dir", "http-scripts", "reconnect", "client-socket-dirs",
     "start-late", "start-child-late",
@@ -731,11 +731,11 @@ OPTIONS_ADDED_SINCE_V3 = [
     "bind-quic",
     "audio",
     ]
-OPTIONS_COMPAT_NAMES = {
+OPTIONS_COMPAT_NAMES : Dict[str,str] = {
     "--compression_level=" : "-z"
     }
 
-CLIENT_OPTIONS = ["title", "username", "password", "session-name",
+CLIENT_OPTIONS : List[str] = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
                   "clipboard", "clipboard-direction", "clipboard-filter-file",
                   "remote-clipboard", "local-clipboard",
@@ -770,7 +770,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "key-shortcut",
                   "env"]
 
-CLIENT_ONLY_OPTIONS = ["username", "swap-keys", "dock-icon",
+CLIENT_ONLY_OPTIONS : List[str] = ["username", "swap-keys", "dock-icon",
                        "tray", "delay-tray", "tray-icon",
                        "attach",
                        "reconnect",
@@ -778,7 +778,7 @@ CLIENT_ONLY_OPTIONS = ["username", "swap-keys", "dock-icon",
 
 #options that clients can pass to the proxy
 #and which will be forwarded to the new proxy instance process:
-PROXY_START_OVERRIDABLE_OPTIONS = [
+PROXY_START_OVERRIDABLE_OPTIONS : List[str] = [
     "env", "start-env", "chdir",
     "dpi",
     "encoding", "encodings",
@@ -814,13 +814,13 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     "sessions-dir",
     ]
-tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
+tmp :str = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
     PROXY_START_OVERRIDABLE_OPTIONS = tmp.split(",")
 del tmp
 
 
-def get_default_key_shortcuts():
+def get_default_key_shortcuts() -> List[str]:
     return [shortcut for e,shortcut in (
                (True,   "Control+Menu:toggle_keyboard_grab"),
                (True,   "Shift+Menu:toggle_pointer_grab"),
@@ -854,7 +854,7 @@ def get_default_key_shortcuts():
                )
                  if e]
 
-def get_default_systemd_run():
+def get_default_systemd_run() -> str:
     if WIN32 or OSX:
         return "no"
     #systemd-run was previously broken in Fedora 26:
@@ -864,7 +864,7 @@ def get_default_systemd_run():
     #it should be safe to leave it on auto:
     return "auto"
 
-def get_default_pulseaudio_command():
+def get_default_pulseaudio_command() -> List[str]:
     if WIN32 or OSX:
         return []
     cmd = [
@@ -1146,11 +1146,12 @@ CLONES : Dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-TRUE_OPTIONS = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
-OFF_OPTIONS = ("off", )
-def parse_bool(k, v, auto=None):
+TRUE_OPTIONS : Tuple[str, ...] = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS : Tuple[str, ...] = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS : Tuple[str, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
+OFF_OPTIONS : Tuple[str, ...] = ("off", )
+
+def parse_bool(k:str, v, auto=None) -> Optional[bool]:
     if isinstance(v, str):
         v = v.lower().strip()
     if v in TRUE_OPTIONS:
@@ -1166,7 +1167,7 @@ def parse_bool(k, v, auto=None):
         warn(f"Warning: cannot parse value {v!r} for {k!r} as a boolean")
         return auto
 
-def print_bool(k, v, true_str='yes', false_str='no'):
+def print_bool(k, v, true_str='yes', false_str='no') -> str:
     if v is None:
         return "auto"
     if isinstance(v, bool):
@@ -1176,10 +1177,10 @@ def print_bool(k, v, true_str='yes', false_str='no'):
     warn(f"Warning: cannot print value {v!r} for {k!r} as a boolean")
     return ""
 
-def parse_bool_or_int(k, v):
+def parse_bool_or_int(k, v) -> Union[int,bool]:
     return parse_bool_or_number(int, k, v)
 
-def parse_bool_or_number(numtype, k, v, auto=0):
+def parse_bool_or_number(numtype, k, v, auto=0) -> Union[int,bool]:
     if isinstance(v, str):
         v = v.lower()
     if v in TRUE_OPTIONS:
@@ -1188,7 +1189,7 @@ def parse_bool_or_number(numtype, k, v, auto=0):
         return 0
     return parse_number(numtype, k, v, auto)
 
-def parse_number(numtype, k, v, auto=0):
+def parse_number(numtype, k, v, auto=0) -> Union[int,float]:
     if isinstance(v, str):
         v = v.lower()
     if v=="auto":
@@ -1199,12 +1200,12 @@ def parse_number(numtype, k, v, auto=0):
         warn(f"Warning: cannot parse value {v!r} for {k} as a type {numtype}: {e}")
         return auto
 
-def print_number(i, auto_value=0):
+def print_number(i, auto_value=0) -> str:
     if i==auto_value:
         return "auto"
     return str(i)
 
-def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
+def parse_with_unit(numtype, v, subunit="bps", min_value:int=250000):
     if isinstance(v, int):
         return v
     #special case for bandwidth-limit, which can be specified using units:
@@ -1235,10 +1236,10 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
         raise InitException(f"invalid value for {numtype} {v!r}: {e}") from None
 
 
-def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None):
+def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> Dict[str,Any]:
     return do_validate_config(d or {}, discard, extras_types or {}, extras_validation or {})
 
-def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dict):
+def do_validate_config(d:dict, discard, extras_types:Dict, extras_validation:Dict) -> Dict[str,Any]:
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
@@ -1249,7 +1250,7 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()
     option_types.update(extras_types)
-    nd = {}
+    nd : Dict[str,Any] = {}
     for k, v in d.items():
         if k in discard:
             warn(f"Warning: option {k!r} is not allowed in configuration files")
@@ -1296,20 +1297,30 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     return nd
 
 
+class XpraConfig:
+    def __repr__(self):
+        return f"XpraConfig({self.__dict__})"
+
+    def clone(self):
+        c = XpraConfig()
+        c.__dict__ = dict(self.__dict__)
+        return c
+
+
 def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validation=None,
-                         username="", uid=getuid(), gid=getgid()):
+                         username="", uid=getuid(), gid=getgid()) -> XpraConfig:
     return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {},
                                    username, uid, gid)
 
 def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict,
-                            username:str, uid:int, gid:int):
+                            username:str, uid:int, gid:int) -> XpraConfig:
     #populate config with default values:
     if not username and uid:
         username = get_username_for_uid(uid)
     defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
-def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, extras_validation=None):
+def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
     options = get_defaults().copy()
     if extras_defaults:
         options.update(extras_defaults)
@@ -1321,24 +1332,14 @@ def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, ex
             options[v] = options[k]
     return dict_to_config(options)
 
-def dict_to_config(options):
+def dict_to_config(options) -> XpraConfig:
     config = XpraConfig()
     for k,v in options.items():
         setattr(config, name_to_field(k), v)
     return config
 
 
-class XpraConfig:
-    def __repr__(self):
-        return f"XpraConfig({self.__dict__})"
-
-    def clone(self):
-        c = XpraConfig()
-        c.__dict__ = dict(self.__dict__)
-        return c
-
-
-def fixup_debug_option(value):
+def fixup_debug_option(value:str) -> str:
     """ backwards compatible parsing of the debug option, which used to be a boolean """
     if not value:
         return ""
@@ -1350,21 +1351,21 @@ def fixup_debug_option(value):
     #if we're here, the value should be a CSV list of categories
     return value
 
-def csvstr(value):
+def csvstr(value) -> str:
     if isinstance(value, (tuple, list)):
         return ",".join(str(x).strip() for x in value if x)
     if isinstance(value, str):
         return value.strip()
     raise ValueError(f"don't know how to convert {type(value)} to a csv list!")
 
-def csvstrl(value):
+def csvstrl(value) -> str:
     return csvstr(value).lower()
 
 def nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
 
-def fixup_socketdirs(options):
+def fixup_socketdirs(options) -> None:
     for option_name in ("socket_dirs", "client_socket_dirs"):
         value = getattr(options, option_name)
         if isinstance(value, str):
@@ -1374,7 +1375,7 @@ def fixup_socketdirs(options):
             value = [v for x in value for v in x.split(os.path.pathsep)]
         setattr(options, option_name, value)
 
-def fixup_pings(options):
+def fixup_pings(options) -> None:
     #pings used to be a boolean, True mapped to "5"
     if isinstance(options.pings, int):
         return
@@ -1389,7 +1390,7 @@ def fixup_pings(options):
     except ValueError:
         options.pings = 5
 
-def fixup_encodings(options):
+def fixup_encodings(options) -> None:
     from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
     estr = csvstr(options.encodings)
     RENAME = {
@@ -1437,7 +1438,7 @@ def fixup_encodings(options):
                 break
     options.encodings = encodings
 
-def fixup_compression(options):
+def fixup_compression(options) -> None:
     #packet compression:
     from xpra.net import compression
     cstr = csvstrl(options.compressors)
@@ -1452,7 +1453,7 @@ def fixup_compression(options):
             warn("Warning: invalid compressor(s) specified: " + csv(unknown))
     options.compressors = list(compressors)
 
-def fixup_packetencoding(options):
+def fixup_packetencoding(options) -> None:
     #packet encoding
     from xpra.net import packet_encoding
     pestr = csvstrl(options.packet_encoders)
@@ -1465,7 +1466,7 @@ def fixup_packetencoding(options):
             warn("Warning: invalid packet encoder(s) specified: " + csv(unknown))
     options.packet_encoders = packet_encoders
 
-def fixup_keyboard(options):
+def fixup_keyboard(options) -> None:
     #variants and layouts can be specified as CSV, convert them to lists:
     def p(v):
         try:
@@ -1480,7 +1481,7 @@ def fixup_keyboard(options):
     options.keyboard_variants = p(options.keyboard_variants)
     options.keyboard_raw = parse_bool("keyboard-raw", options.keyboard_raw)
 
-def fixup_clipboard(options):
+def fixup_clipboard(options) -> None:
     cd = options.clipboard_direction.lower().replace("-", "")
     if cd=="toserver":
         options.clipboard_direction = "to-server"
@@ -1495,7 +1496,7 @@ def fixup_clipboard(options):
         warn(" specify 'to-server', 'to-client' or 'both'")
         options.clipboard_direction = "disabled"
 
-def abs_paths(options):
+def abs_paths(options) -> None:
     ew = options.exec_wrapper
     if ew:
         ewp = shlex.split(ew)
@@ -1524,7 +1525,7 @@ def abs_paths(options):
             setattr(options, f, os.path.abspath(v))
 
 
-def fixup_options(options):
+def fixup_options(options) -> None:
     fixup_encodings(options)
     fixup_pings(options)
     fixup_compression(options)

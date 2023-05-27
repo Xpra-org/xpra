@@ -5,6 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
+from typing import List, Dict, Any
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import envbool, csv, roundup, first_time, typedict
@@ -53,6 +54,7 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
     assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
+    log.warn(f"get_output_colorspaces({encoding}, {input_colorspace})={out_colorspaces}")
     return out_colorspaces
 
 def ElementEncoderClass(element):
@@ -91,10 +93,10 @@ def get_specs(encoding, colorspace):
 def init_all_specs(*exclude):
     #by default, try to enable everything
     #the self-tests should disable what isn't available / doesn't work
-    specs = {}
-    colorspaces = {}
-    missing = []
-    def add(element, encoding, cs_in, css_out, *args):
+    specs : Dict[str,Dict[str,List]] = {}
+    colorspaces : Dict[str,Dict[str,List]] = {}
+    missing : List[str] = []
+    def add(element:str, encoding:str, cs_in:str, css_out, *args):
         if element in missing:
             return
         if encoding not in FORMATS:
@@ -172,7 +174,7 @@ class Encoder(VideoPipeline):
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
-        vcaps = {
+        vcaps : Dict[str,Any] = {
             "width" : self.width,
             "height" : self.height,
             "format" : gst_rgb_format,
@@ -283,8 +285,9 @@ def selftest(full=False):
         for cs_in, specs in cs_map.items():
             for spec in specs:
                 try:
-                    test_encoder_spec(spec.codec_class, encoding, cs_in, spec.output_colorspaces, W, H)
-                    log(f"{spec.gstreamer_element} {encoding} {cs_in} -> {spec.output_colorspaces} passed")
+                    for cs_out in spec.output_colorspaces:
+                        test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H)
+                        log(f"{spec.gstreamer_element} {encoding} {cs_in} -> {spec.output_colorspaces} passed")
                 except Exception as e:
                     log("test_encoder_spec", exc_info=True)
                     log.warn(f"Warning: gstreamer {spec.gstreamer_element!r} encoder failed")

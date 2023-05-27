@@ -8,6 +8,7 @@
 
 import os
 from time import monotonic
+from typing import Type, Dict, Callable
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -73,7 +74,7 @@ if server_features.commands:
     from xpra.server.mixins.child_command_server import ChildCommandServer
     SERVER_BASES.append(ChildCommandServer)
 SERVER_BASES = tuple(SERVER_BASES)
-ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
+ServerBaseClass : Type = type('ServerBaseClass', SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")
@@ -102,8 +103,8 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.__init__()")
         self.init_uuid()
 
-        self._authenticated_packet_handlers : dict = {}
-        self._authenticated_ui_packet_handlers : dict = {}
+        self._authenticated_packet_handlers : Dict[str,Callable] = {}
+        self._authenticated_ui_packet_handlers : Dict[str,Callable] = {}
 
         self.display_pid : int = 0
         self._server_sources : dict = {}
