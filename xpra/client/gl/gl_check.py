@@ -7,7 +7,7 @@
 
 import sys
 import logging
-from typing import Any, Tuple
+from typing import Any, Tuple, Dict
 
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
@@ -85,7 +85,7 @@ def get_max_texture_size() -> int:
     return min(rect_texture_size, texture_size)
 
 
-def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
+def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
     props : dict[str,Any] = {
         "platform"  : sys.platform,
         }

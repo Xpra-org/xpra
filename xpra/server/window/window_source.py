@@ -12,7 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
-from typing import Callable, Dict, List, Tuple, Iterable, ContextManager
+from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -508,7 +508,7 @@ class WindowSource(WindowIconSource):
         self.global_statistics = None
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         #should get prefixed with "client[M].window[N]." by caller
         """
             Add window specific stats

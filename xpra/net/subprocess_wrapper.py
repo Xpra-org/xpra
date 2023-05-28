@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 from queue import Queue
+from typing import Dict, Any
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool, csv
@@ -290,7 +291,7 @@ class subprocess_callee:
         INJECT_FAULT(proto)
 
 
-def exec_kwargs() -> dict:
+def exec_kwargs() -> Dict[str,Any]:
     kwargs = {}
     stderr = sys.stderr.fileno()
     if WIN32:
@@ -307,7 +308,7 @@ def exec_kwargs() -> dict:
     kwargs["stderr"] = stderr
     return kwargs
 
-def exec_env(blacklist=("LS_COLORS", )) -> dict:
+def exec_env(blacklist=("LS_COLORS", )) -> Dict[str,str]:
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"

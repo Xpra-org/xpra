@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 import sys
 from time import monotonic
 from collections import namedtuple
+from typing import Dict
 
 from xpra.gst_common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
@@ -299,7 +300,7 @@ class audio_subprocess_wrapper(subprocess_caller):
         return self.state
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict:
         return self.info
 
     def info_update(self, _wrapper, info):

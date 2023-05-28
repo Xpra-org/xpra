@@ -54,10 +54,10 @@ class ChildCommandServer(StubServerMixin):
         self.children_count : int = 0
         self.start_after_connect_done : bool = False
         self.start_new_commands : bool = False
-        self.source_env = {}
-        self.start_env = {}
-        self.exec_cwd = None
-        self.exec_wrapper = None
+        self.source_env : Dict[str, str] = {}
+        self.start_env : Dict[str, str] = {}
+        self.exec_cwd : str = os.getcwd()
+        self.exec_wrapper : List[str] = []
         self.terminate_children : bool = False
         self.children_started : List[ProcInfo] = []
         self.child_reaper = None
@@ -100,7 +100,7 @@ class ChildCommandServer(StubServerMixin):
         if opts.exec_wrapper:
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.child_reaper = getChildReaper()
-        self.source_env : Dict[str, str] = source_env(opts.source_start)
+        self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
         if self.start_new_commands:
             #may already have been initialized by servercore:
@@ -180,7 +180,7 @@ class ChildCommandServer(StubServerMixin):
 
 
     def get_info(self, _proto) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+        info = {
             "start"                     : self.start_commands,
             "start-late"                : self.start_late_commands,
             "start-child"               : self.start_child_commands,
@@ -203,7 +203,8 @@ class ChildCommandServer(StubServerMixin):
             })
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
-        return {"commands": info}
+        cinfo : Dict[str,Any] = {"commands": info}
+        return cinfo
 
 
     def last_client_exited(self) -> None:

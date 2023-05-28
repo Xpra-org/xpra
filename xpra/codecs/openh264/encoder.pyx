@@ -7,6 +7,7 @@
 
 import os
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -371,7 +372,7 @@ cdef class Encoder:
             f.close()
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

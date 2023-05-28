@@ -16,6 +16,7 @@ import glob
 import os.path
 import datetime
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
+from typing import Dict, Any
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -162,7 +163,7 @@ def configure_imsettings_env(input_method) -> str:
         warn(" if it is correct, you may want to file a bug to get it recognized")
     return im
 
-def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers) -> dict:
+def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers) -> Dict[str,str]:
     #for more information, see imsettings:
     #https://code.google.com/p/imsettings/source/browse/trunk/README
     if disabled is True:
@@ -533,7 +534,7 @@ def get_options_file_contents(opts, mode:str="seamless") -> str:
     diff_contents.append("")
     return "\n".join(diff_contents)
 
-def load_options() -> dict:
+def load_options() -> Dict[str,Any]:
     config_file = session_file_path("config")
     return read_config(config_file)
 

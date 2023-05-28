@@ -7,6 +7,8 @@
 
 import re
 from time import monotonic
+from typing import Dict, Any
+
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
 from xpra.util import envbool, envint, merge_dicts, AdHocStruct, NotificationID
@@ -430,13 +432,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> dict:
+    def get_info(self, proto, *_args) -> Dict[str,Any]:
         info = X11ServerCore.get_info(self, proto)
         merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True

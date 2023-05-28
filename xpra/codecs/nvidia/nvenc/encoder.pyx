@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import os
 import platform
 from collections import deque
 from time import monotonic
+from typing import Dict, Any
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
@@ -1442,7 +1443,7 @@ def get_version():
 def get_type() -> str:
     return "nvenc"
 
-def get_info() -> dict:
+def get_info() -> Dict[str,Any]:
     global last_context_failure, context_counter, context_gen_counter
     info = {
             "version"           : PRETTY_VERSION,
@@ -2093,7 +2094,7 @@ cdef class Encoder:
             raise RuntimeError("bitstream buffer pointer is null")
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()

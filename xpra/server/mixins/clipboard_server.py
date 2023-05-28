@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
+from typing import Dict, Any
 
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
@@ -30,7 +31,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_filter_file = None
         self._clipboard_helper = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
@@ -38,25 +39,25 @@ class ClipboardServer(StubServerMixin):
     def setup(self):
         self.init_clipboard()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ch = self._clipboard_helper
         if ch:
             self._clipboard_helper = None
             ch.cleanup()
 
-    def cleanup_protocol(self, protocol):
+    def cleanup_protocol(self, protocol) -> None:
         ch = self._clipboard_helper
         if ch and self._clipboard_client and self._clipboard_client.protocol==protocol:
             self._clipboard_client = None
             ch.client_reset()
 
 
-    def parse_hello(self, ss, _caps, send_ui):
+    def parse_hello(self, ss, _caps, send_ui) -> None:
         if send_ui and self.clipboard:
             self.parse_hello_ui_clipboard(ss)
 
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         if self._clipboard_helper is None:
             return {}
         ci = self._clipboard_helper.get_info()
@@ -66,7 +67,7 @@ class ClipboardServer(StubServerMixin):
         return {"clipboard" : ci}
 
 
-    def get_server_features(self, server_source=None) -> dict:
+    def get_server_features(self, server_source=None) -> Dict[str,Any]:
         clipboard = self._clipboard_helper is not None
         log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s",
             self._clipboard_helper, self._clipboard_client, server_source, clipboard)
@@ -91,7 +92,7 @@ class ClipboardServer(StubServerMixin):
             "clipboard-direction"   : self.clipboard_direction,
             }
 
-    def init_clipboard(self):
+    def init_clipboard(self) -> None:
         log("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
         self._clipboard_helper = None
@@ -139,7 +140,7 @@ class ClipboardServer(StubServerMixin):
             log.error("Error: failed to setup clipboard helper", exc_info=True)
             self.clipboard = False
 
-    def parse_hello_ui_clipboard(self, ss):
+    def parse_hello_ui_clipboard(self, ss) -> None:
         #take the clipboard if no-one else has it yet:
         if not getattr(ss, "clipboard_enabled", False):
             log("client does not support clipboard")
@@ -153,7 +154,7 @@ class ClipboardServer(StubServerMixin):
             return
         self.set_clipboard_source(ss)
 
-    def set_clipboard_source(self, ss):
+    def set_clipboard_source(self, ss) -> None:
         if not getattr(ss, "clipboard_enabled", False):
             #don't use this client as clipboard source!
             #(its clipboard is disabled)
@@ -179,17 +180,17 @@ class ClipboardServer(StubServerMixin):
             ch.enable_selections(None)
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         ch = self._clipboard_helper
         if ch:
             ch.client_reset()
 
 
-    def set_session_driver(self, source):
+    def set_session_driver(self, source) -> None:
         self.set_clipboard_source(source)
 
 
-    def _process_clipboard_packet(self, proto, packet):
+    def _process_clipboard_packet(self, proto, packet) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -210,7 +211,7 @@ class ClipboardServer(StubServerMixin):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         self.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_enabled_status(self, proto, packet):
+    def _process_clipboard_enabled_status(self, proto, packet) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -219,7 +220,7 @@ class ClipboardServer(StubServerMixin):
         if ss:
             self.set_clipboard_enabled_status(ss, clipboard_enabled)
 
-    def set_clipboard_enabled_status(self, ss, clipboard_enabled):
+    def set_clipboard_enabled_status(self, ss, clipboard_enabled:bool) -> None:
         ch = self._clipboard_helper
         if not ch:
             log.warn("Warning: client try to toggle clipboard-enabled status,")
@@ -239,18 +240,18 @@ class ClipboardServer(StubServerMixin):
         if not clipboard_enabled:
             ch.enable_selections(None)
 
-    def clipboard_progress(self, local_requests, _remote_requests):
+    def clipboard_progress(self, local_requests, _remote_requests) -> None:
         assert self.clipboard
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)
 
-    def send_clipboard_packet(self, *parts):
+    def send_clipboard_packet(self, *parts) -> None:
         assert self.clipboard
         if self._clipboard_client:
             self._clipboard_client.send_clipboard(parts)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.clipboard:
             self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_enabled_status)
             for x in (

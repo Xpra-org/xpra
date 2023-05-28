@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any
 
 from xpra.util import envbool, envint, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
@@ -23,15 +25,15 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         StubClientMixin.__init__(self)
         FileTransferHandler.__init__(self)
         self.printer_attributes = []
-        self.send_printers_timer = 0
+        self.send_printers_timer : int = 0
         self.exported_printers = None
-        self.remote_request_file = False
+        self.remote_request_file : bool = False
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         #printing and file transfer:
         FileTransferHandler.init_opts(self, opts)
 
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         for packet_type, handler in {
             "open-url"          : self._process_open_url,
             "send-file"         : self._process_send_file,
@@ -42,10 +44,10 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             }.items():
             self.add_packet_handler(packet_type, handler, False)
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         return self.get_file_transfer_features()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         #we must clean printing before FileTransferHandler, which turns the printing flag off!
         self.cleanup_printing()
         FileTransferHandler.cleanup(self)
@@ -56,7 +58,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.remote_request_file = c.boolget("request-file", False)
         return True
 
-    def parse_printing_capabilities(self, caps : typedict):
+    def parse_printing_capabilities(self, caps : typedict) -> None:
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
             server_printing = caps.boolget("printing")
@@ -67,7 +69,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 self.timeout_add(INIT_PRINTING_DELAY*1000, self.init_printing)
 
 
-    def init_printing(self):
+    def init_printing(self) -> None:
         try:
             from xpra.platform.printing import init_printing    # pylint: disable=import-outside-toplevel
             printlog("init_printing=%s", init_printing)
@@ -80,7 +82,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             self.send_printers()
         printlog("init_printing() enabled=%s", self.printing)
 
-    def cleanup_printing(self):
+    def cleanup_printing(self) -> None:
         printlog("cleanup_printing() printing=%s", self.printing)
         if not self.printing:
             return
@@ -96,7 +98,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog.warn("Warning: failed to cleanup printing subsystem:")
             printlog.warn(" %s", e)
 
-    def send_printers(self, *args):
+    def send_printers(self, *args) -> None:
         printlog("send_printers%s timer=%s", args, self.send_printers_timer)
         #dbus can fire dozens of times for a single printer change
         #so we wait a bit and fire via a timer to try to batch things together:
@@ -104,18 +106,18 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             return
         self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
 
-    def cancel_send_printers_timer(self):
+    def cancel_send_printers_timer(self) -> None:
         spt = self.send_printers_timer
         printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
         if spt:
-            self.send_printers_timer = None
+            self.send_printers_timer = 0
             self.source_remove(spt)
 
-    def do_send_printers(self):
-        self.send_printers_timer = None
+    def do_send_printers(self) -> None:
+        self.send_printers_timer = 0
         start_thread(self.send_printers_thread, "send-printers", True)
 
-    def send_printers_thread(self):
+    def send_printers_thread(self) -> None:
         from xpra.platform.printing import get_printers, get_mimetypes  # pylint: disable=import-outside-toplevel
         try:
             printers = get_printers()

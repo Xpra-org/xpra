@@ -10,6 +10,7 @@
 
 import sys
 from time import monotonic
+from typing import Dict, Any
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -138,7 +139,7 @@ class GTKServerBase(ServerBase):
         log("do_run() end of gtk.main()")
 
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()
@@ -153,7 +154,7 @@ class GTKServerBase(ServerBase):
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 
-    def get_ui_info(self, proto, *args) -> dict:
+    def get_ui_info(self, proto, *args) -> Dict[str,Any]:
         info = super().get_ui_info(proto, *args)
         display = Gdk.Display.get_default()
         if display:
@@ -196,7 +197,7 @@ class GTKServerBase(ServerBase):
             cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
             ss.send_cursor()
 
-    def get_ui_cursor_info(self) -> dict:
+    def get_ui_cursor_info(self) -> Dict[str,Any]:
         #(from UI thread)
         #now cursor size info:
         display = Gdk.Display.get_default()
@@ -213,7 +214,7 @@ class GTKServerBase(ServerBase):
             cinfo[f"{prop}_size"] = size
         return cinfo
 
-    def do_get_info(self, proto, *args) -> dict:
+    def do_get_info(self, proto, *args) -> Dict[str,Any]:
         start = monotonic()
         info = super().do_get_info(proto, *args)
         vi = dict_version_trim(get_gtk_version_info())

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
+from typing import Callable, Optional, Dict, Any
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -121,7 +122,7 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=None):
+def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=None) -> Optional[Callable]:
     log = get_network_logger()
     log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:
@@ -896,7 +897,7 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
-def get_ssl_attributes(opts, server_side=True, overrides=None) -> dict:
+def get_ssl_attributes(opts, server_side=True, overrides=None) -> Dict[str,Any]:
     args = {
         "server-side"   : server_side,
         }
@@ -909,7 +910,7 @@ def get_ssl_attributes(opts, server_side=True, overrides=None) -> dict:
         args[attr] = v
     return args
 
-def find_ssl_cert(filename="ssl-cert.pem"):
+def find_ssl_cert(filename:str="ssl-cert.pem"):
     from xpra.log import Logger
     ssllog = Logger("ssl")
     #try to locate the cert file from known locations
@@ -942,7 +943,7 @@ def ssl_wrap_socket(sock, **kwargs):
     ssllog("ssl_wrap_socket(%s, %s) context=%s, wrap_kwargs=%s", sock, kwargs, context, wrap_kwargs)
     return do_wrap_socket(sock, context, **wrap_kwargs)
 
-def log_ssl_info(ssl_sock):
+def log_ssl_info(ssl_sock) -> None:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     ssllog("server_hostname=%s", ssl_sock.server_hostname)
@@ -964,7 +965,7 @@ SSL_VERIFY_SELF_SIGNED = 18
 SSL_VERIFY_UNTRUSTED_ROOT = 19
 SSL_VERIFY_IP_MISMATCH = 64
 SSL_VERIFY_HOSTNAME_MISMATCH = 62
-SSL_VERIFY_CODES = {
+SSL_VERIFY_CODES : Dict[int,str] = {
     SSL_VERIFY_EXPIRED          : "expired",    #also revoked!
     SSL_VERIFY_WRONG_HOST       : "wrong host",
     SSL_VERIFY_SELF_SIGNED      : "self-signed",
@@ -1255,7 +1256,7 @@ def ssl_retry(e, ssl_ca_certs):
             return options
     return None
 
-def load_ssl_options(server_hostname, port):
+def load_ssl_options(server_hostname, port) -> Dict[str,Any]:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     f = find_ssl_config_file(server_hostname, port, "options")
@@ -1283,7 +1284,7 @@ def load_ssl_options(server_hostname, port):
     ssllog("load_ssl_options%s=%s (from %r)", (server_hostname, port), options, f)
     return options
 
-def save_ssl_options(server_hostname, port=443, options=b""):
+def save_ssl_options(server_hostname:str, port=443, options=b"") -> Optional[str]:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     boptions = b"\n".join(("%s=%s" % (k.replace("_", "-"), v)).encode("latin1") for k, v in options.items())
@@ -1293,7 +1294,7 @@ def save_ssl_options(server_hostname, port=443, options=b""):
     ssllog("save_ssl_options%s saved to %r", (server_hostname, port, options), f)
     return f
 
-def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
+def find_ssl_config_file(server_hostname:str, port=443, filename="cert.pem"):
     from xpra.log import Logger
     ssllog = Logger("ssl")
     from xpra.platform.paths import get_ssl_hosts_config_dirs
@@ -1308,7 +1309,7 @@ def find_ssl_config_file(server_hostname, port=443, filename="cert.pem"):
             return f
     return None
 
-def save_ssl_config_file(server_hostname, port=443, filename="cert.pem", fileinfo="certificate", filedata=b""):
+def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fileinfo="certificate", filedata=b""):
     from xpra.log import Logger
     ssllog = Logger("ssl")
     from xpra.platform.paths import get_ssl_hosts_config_dirs

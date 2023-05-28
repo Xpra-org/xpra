@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Any
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -24,25 +25,25 @@ class DBUS_RPC_Server(StubServerMixin):
         self.supports_dbus_proxy = False
         self.dbus_helper = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.supports_dbus_proxy = opts.dbus_proxy
 
-    def setup(self):
+    def setup(self) -> None:
         self.init_dbus_helper()
 
 
-    def get_server_features(self, _source=None):
+    def get_server_features(self, _source=None) -> Dict[str,Any]:
         return {
             "dbus_proxy"    : self.supports_dbus_proxy,
             "rpc-types"     : tuple(self.rpc_handlers.keys()),
             }
 
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         return {}
 
 
-    def init_dbus_helper(self):
+    def init_dbus_helper(self) -> None:
         if not self.supports_dbus_proxy:
             return
         try:
@@ -62,7 +63,7 @@ class DBUS_RPC_Server(StubServerMixin):
         from xpra.server.dbus.dbus_server import DBUS_Server  # pylint: disable=import-outside-toplevel
         return DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
-    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):
+    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra) -> None:
         assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
         def native(args):
             return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
@@ -75,7 +76,7 @@ class DBUS_RPC_Server(StubServerMixin):
         self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
 
 
-    def _process_rpc(self, proto, packet):
+    def _process_rpc(self, proto, packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -94,6 +95,6 @@ class DBUS_RPC_Server(StubServerMixin):
             ss.rpc_reply(rpc_type, rpcid, False, str(e))
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.supports_dbus_proxy:
             self.add_packet_handler("rpc", self._process_rpc)

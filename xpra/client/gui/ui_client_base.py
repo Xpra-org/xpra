@@ -1,12 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+from typing import Type, Dict, List, Any, Callable
 
 from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix
@@ -76,7 +77,7 @@ if mixin_features.tray:
     CLIENT_BASES.append(TrayClient)
 
 CLIENT_BASES = tuple(CLIENT_BASES)
-ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+ClientBaseClass : Type = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 keylog = Logger("client", "keyboard")
@@ -106,7 +107,7 @@ class UIXpraClient(ClientBaseClass):
         log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
-        self.mmap_enabled = False
+        self.mmap_enabled : bool = False
         #same for tray:
         self.tray = None
         for c in CLIENT_BASES:
@@ -122,53 +123,53 @@ class UIXpraClient(ClientBaseClass):
         if wm:
             log.info(f" window manager is {wm!r}")
 
-        self._ui_events = 0
-        self.title = ""
-        self.session_name = ""
+        self._ui_events : int = 0
+        self.title : str = ""
+        self.session_name : str = ""
 
-        self.server_platform = ""
-        self.server_session_name = None
+        self.server_platform : str = ""
+        self.server_session_name : str = ""
 
         #features:
-        self.opengl_enabled = False
-        self.opengl_props = {}
-        self.readonly = False
-        self.xsettings_enabled = False
-        self.server_start_new_commands = False
+        self.opengl_enabled : bool = False
+        self.opengl_props : Dict[str,Any] = {}
+        self.readonly : bool = False
+        self.xsettings_enabled : bool = False
+        self.server_start_new_commands : bool = False
         self.server_xdg_menu = None
-        self.start_new_commands = False
+        self.start_new_commands : bool = False
         self.request_start = []
         self.request_start_child = []
         self.headerbar = None
 
         #in WindowClient - should it be?
         #self.server_is_desktop = False
-        self.server_sharing = False
-        self.server_sharing_toggle = False
-        self.server_lock = False
-        self.server_lock_toggle = False
-        self.server_keyboard = True
-        self.server_pointer = True
+        self.server_sharing : bool = False
+        self.server_sharing_toggle : bool = False
+        self.server_lock : bool = False
+        self.server_lock_toggle : bool = False
+        self.server_keyboard : bool = True
+        self.server_pointer : bool = True
 
-        self.client_supports_opengl = False
-        self.client_supports_sharing = False
-        self.client_lock = False
+        self.client_supports_opengl : bool = False
+        self.client_supports_sharing : bool = False
+        self.client_lock : bool = False
 
         #helpers and associated flags:
         self.client_extras = None
-        self.keyboard_helper_class = KeyboardHelper
+        self.keyboard_helper_class : Type = KeyboardHelper
         self.keyboard_helper = None
-        self.keyboard_grabbed = False
-        self.keyboard_sync = False
-        self.kh_warning = False
+        self.keyboard_grabbed : bool = False
+        self.keyboard_sync : bool = False
+        self.kh_warning : bool = False
         self.menu_helper = None
 
         #state:
-        self._on_handshake = []
-        self._on_server_setting_changed = {}
+        self._on_handshake : List[Callable] = []
+        self._on_server_setting_changed : Dict[str,Callable] = {}
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         """ initialize variables from configuration """
         self.init_aliases()
         for c in CLIENT_BASES:
@@ -237,23 +238,23 @@ class UIXpraClient(ClientBaseClass):
             except Exception:
                 log("failed to calculate automatic delay", exc_info=True)
 
-    def get_vrefresh(self):
+    def get_vrefresh(self) -> int:
         #this method is overridden in the GTK client
         from xpra.platform.gui import get_vrefresh  #pylint: disable=import-outside-toplevel
         return get_vrefresh()
 
 
-    def run(self):
+    def run(self) -> None:
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:
             c.run(self)
 
 
-    def quit(self, exit_code=0):
+    def quit(self, exit_code:int=0) -> None:
         raise NotImplementedError()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             c.cleanup(self)
@@ -271,15 +272,15 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup() done")
 
 
-    def signal_cleanup(self):
+    def signal_cleanup(self) -> None:
         log("UIXpraClient.signal_cleanup()")
         XpraClientBase.signal_cleanup(self)
         reaper_cleanup()
         log("UIXpraClient.signal_cleanup() done")
 
 
-    def get_info(self):
-        info = {}
+    def get_info(self) -> Dict[str,Any]:
+        info : Dict[str,Any] = {}
         if FULL_INFO>0:
             info.update({
                 "pid"       : os.getpid(),
@@ -300,23 +301,23 @@ class UIXpraClient(ClientBaseClass):
         return info
 
 
-    def show_about(self, *_args):
+    def show_about(self, *_args) -> None:
         log.warn(f"show_about() is not implemented in {self!r}")
 
-    def show_session_info(self, *_args):
+    def show_session_info(self, *_args) -> None:
         log.warn(f"show_session_info() is not implemented in {self!r}")
 
-    def show_bug_report(self, *_args):
+    def show_bug_report(self, *_args) -> None:
         log.warn(f"show_bug_report() is not implemented in {self!r}")
 
 
-    def init_opengl(self, _enable_opengl):
+    def init_opengl(self, _enable_opengl) -> None:
         self.opengl_enabled = False
         self.client_supports_opengl = False
         self.opengl_props = {"info" : "not supported"}
 
 
-    def _ui_event(self):
+    def _ui_event(self) -> None:
         if self._ui_events==0:
             self.emit("first-ui-received")
         self._ui_events += 1
@@ -329,7 +330,7 @@ class UIXpraClient(ClientBaseClass):
         raise NotImplementedError()
 
 
-    def send_start_new_commands(self):
+    def send_start_new_commands(self) -> None:
         log(f"send_start_new_commands() request_start={self.request_start}, request_start_child={self.request_start_child}")
         import shlex
         for cmd in self.request_start:
@@ -339,7 +340,7 @@ class UIXpraClient(ClientBaseClass):
             cmd_parts = shlex.split(cmd)
             self.send_start_command(cmd_parts[0], cmd, False)
 
-    def send_start_command(self, name, command, ignore, sharing=True):
+    def send_start_command(self, name:str, command:List[str], ignore:bool, sharing:bool=True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
@@ -369,7 +370,7 @@ class UIXpraClient(ClientBaseClass):
             self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
         self.cleanup()
 
-    def server_disconnect(self, reason, *info):
+    def server_disconnect(self, reason:str, *info) -> None:
         body = "\n".join(info)
         self.may_notify(NotificationID.DISCONNECT, f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications

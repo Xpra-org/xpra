@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
 from xpra.util import typedict
 
 class StubSourceMixin:
@@ -45,13 +46,13 @@ class StubSourceMixin:
         Parse client attributes specified in the hello capabilities.
         """
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         """
         Return the capabilities provided by this mixin.
         """
         return {}
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities,

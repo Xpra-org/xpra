@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os
+from typing import Dict
 
 from xpra.util import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
@@ -50,7 +51,7 @@ def query_video_device(device):
         return {}
 
 
-def get_virtual_video_devices(capture_only=True) -> dict:
+def get_virtual_video_devices(capture_only=True) -> Dict[int, Dict]:
     log(f"get_virtual_video_devices({capture_only}) CHECK_VIRTUAL_CAPTURE={CHECK_VIRTUAL_CAPTURE}")
     if not check_virtual_dir(False):
         return {}

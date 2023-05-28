@@ -309,7 +309,7 @@ def save_config(conf_file:str, config, keys, extras_types=None):
             f.write(f"{key}={v}{os.linesep}")
         debug(f"save_config: saved {saved} to {conf_file!r}")
 
-def read_config(conf_file:str) -> Dict:
+def read_config(conf_file:str) -> Dict[str,Any]:
     """
         Parses a config file into a dict of strings.
         If the same key is specified more than once,
@@ -1180,7 +1180,7 @@ def print_bool(k, v, true_str='yes', false_str='no') -> str:
 def parse_bool_or_int(k, v) -> Union[int,bool]:
     return parse_bool_or_number(int, k, v)
 
-def parse_bool_or_number(numtype, k, v, auto=0) -> Union[int,bool]:
+def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> Union[int,bool]:
     if isinstance(v, str):
         v = v.lower()
     if v in TRUE_OPTIONS:
@@ -1445,7 +1445,7 @@ def fixup_compression(options) -> None:
     if cstr=="all":
         compressors = compression.PERFORMANCE_ORDER
     elif cstr=="none":
-        compressors = []
+        compressors = ()
     else:
         compressors = nodupes(cstr)
         unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)

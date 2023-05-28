@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,6 +8,7 @@
 import os
 from io import BytesIO
 from time import monotonic
+from typing import Dict, Any
 
 try:
     from PIL import Image
@@ -161,13 +162,13 @@ class WindowsMixin(StubSourceMixin):
             filterslog.error("Error parsing window-filters: %s", e)
 
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         return {}
 
 
     ######################################################################
     # info:
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "windows"       : self.send_windows,
             "cursors"       : self.send_cursors,
@@ -187,7 +188,7 @@ class WindowsMixin(StubSourceMixin):
         info.update(self.get_window_info())
         return info
 
-    def get_window_info(self) -> dict:
+    def get_window_info(self) -> Dict[str,Any]:
         """
             Adds encoding and window specific information
         """

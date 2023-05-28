@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from ctypes import (
     Structure, create_string_buffer, addressof, byref, c_ubyte,
     )
 from io import BytesIO
+from typing import Dict, Any, List, Tuple, Optional
 from PIL import Image
 
 from xpra.log import Logger
@@ -32,7 +33,7 @@ log = Logger("shadow", "win32")
 NULLREGION = 1      #The region is empty.
 SIMPLEREGION = 2    #The region is a single rectangle.
 COMPLEXREGION = 3   #The region is more than a single rectangle.
-REGION_CONSTS = {
+REGION_CONSTS : Dict[int,str] = {
                 NULLREGION      : "the region is empty",
                 SIMPLEREGION    : "the region is a single rectangle",
                 COMPLEXREGION   : "the region is more than a single rectangle",
@@ -49,7 +50,7 @@ class PALETTEENTRY(Structure):
 
 DWM_EC_DISABLECOMPOSITION = 0
 DWM_EC_ENABLECOMPOSITION = 1
-def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
+def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION) -> bool:
     try:
         windll.dwmapi.DwmEnableComposition(value)
         log("DwmEnableComposition(%s) succeeded", value)
@@ -59,7 +60,7 @@ def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
         log.estr(e)
         return False
 
-def get_desktop_bit_depth():
+def get_desktop_bit_depth() -> int:
     desktop_wnd = GetDesktopWindow()
     dc = GetWindowDC(desktop_wnd)
     assert dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
@@ -68,7 +69,7 @@ def get_desktop_bit_depth():
     ReleaseDC(desktop_wnd, dc)
     return bit_depth
 
-def get_palette(dc):
+def get_palette(dc) -> List:
     count = GetSystemPaletteEntries(dc, 0, 0, None)
     log("palette size: %s", count)
     palette = []
@@ -103,24 +104,24 @@ class GDICapture:
     def __repr__(self):
         return "GDICapture(%i-bits)" % self.bit_depth
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "type"  : "gdi",
             "depth" : self.bit_depth,
             }
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "GDI"
 
     def refresh(self) -> bool:
         return True
 
-    def clean(self):
+    def clean(self) -> None:
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
         self.clean_dc()
 
-    def clean_dc(self):
+    def clean_dc(self) -> None:
         dc = self.dc
         wnd = self.wnd
         if dc and wnd:
@@ -132,7 +133,7 @@ class GDICapture:
             self.memdc = None
             DeleteDC(memdc)
 
-    def get_capture_coords(self, x, y, width, height):
+    def get_capture_coords(self, x:int, y:int, width:int, height:int) -> Tuple[int,int,int,int]:
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
@@ -157,7 +158,7 @@ class GDICapture:
             height = dh
         return x, y, width, height
 
-    def get_image(self, x=0, y=0, width=0, height=0):
+    def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0) -> Optional[ImageWrapper]:
         start = time.time()
         x, y, width, height = self.get_capture_coords(x, y, width, height)
         if not self.dc:
@@ -231,7 +232,7 @@ class GDICapture:
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
         return v
 
-    def take_screenshot(self):
+    def take_screenshot(self) -> Tuple:
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         if not image:

@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
+
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
 from xpra.version_util import parse_version, dict_version_trim
@@ -133,7 +135,7 @@ class DisplayManager(StubServerMixin):
         return props
 
 
-    def get_caps(self, source) -> dict:
+    def get_caps(self, source)  -> Dict[str,Any]:
         caps = {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
@@ -145,7 +147,7 @@ class DisplayManager(StubServerMixin):
             caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         i = {
                 "randr" : self.randr,
                 "bell"  : self.bell,
@@ -174,13 +176,13 @@ class DisplayManager(StubServerMixin):
             }
 
 
-    def _process_set_cursors(self, proto, packet):
+    def _process_set_cursors(self, proto, packet) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_cursors = bool(packet[1])
 
-    def _process_set_bell(self, proto, packet):
+    def _process_set_bell(self, proto, packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
@@ -189,11 +191,11 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # display / screen / root window:
-    def set_screen_geometry_attributes(self, w, h):
+    def set_screen_geometry_attributes(self, w:int, h:int):
         #by default, use the screen as desktop area:
         self.set_desktop_geometry_attributes(w, h)
 
-    def set_desktop_geometry_attributes(self, w, h):
+    def set_desktop_geometry_attributes(self, w:int, h:int):
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)

@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Any
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -102,7 +103,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
             })
 
-    def do_modify_gsettings(self, defs:dict, value=False) -> dict:
+    def do_modify_gsettings(self, defs:Dict[str,Any], value=False) -> Dict[str,Any]:
         modified = {}
         schemas = Gio.Settings.list_schemas()
         for schema, attributes in defs.items():

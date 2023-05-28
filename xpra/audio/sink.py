@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
+from typing import Dict
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
@@ -342,7 +343,7 @@ class AudioSink(AudioPipeline):
         self.cleanup()
         return GST_FLOW_OK
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict:
         info = super().get_info()
         if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")

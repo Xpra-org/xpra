@@ -446,7 +446,7 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         cdef float pps
         if self.profile is None:
             return {}

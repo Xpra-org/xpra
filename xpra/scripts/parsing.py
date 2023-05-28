@@ -13,13 +13,14 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
+    XpraConfig,
     OPTION_TYPES, TRUE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
@@ -28,7 +29,7 @@ from xpra.scripts.config import (
     )
 
 
-MODE_ALIAS = {
+MODE_ALIAS : Dict[str,str] = {
     "start"             : "seamless",
     "start-seamless"    : "seamless",
     "start-desktop"     : "desktop",
@@ -98,7 +99,7 @@ class ModifiedOptionParser(optparse.OptionParser):
         raise InitExit(status, msg)
 
 
-def fixup_defaults(defaults):
+def fixup_defaults(defaults:XpraConfig):
     for k in ("debug", "encoding", "audio-source", "microphone-codec", "speaker-codec"):
         fn = k.replace("-", "_")
         v = getattr(defaults, fn)
@@ -112,14 +113,14 @@ def fixup_defaults(defaults):
             else:
                 v.remove("help")
 
-def do_replace_option(cmdline, oldoption, newoption):
+def do_replace_option(cmdline, oldoption:str, newoption:str):
     for i, x in enumerate(cmdline):
         if x==oldoption:
             cmdline[i] = newoption
         elif newoption.find("=")<0 and x.startswith(f"{oldoption}="):
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
-def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
+def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:Optional[str]=None):
     #find --no-XYZ or --XYZ
     #and replace it with --XYZ=yes|no
     if newoptionname is None:
@@ -144,8 +145,8 @@ def ignore_options(args, options):
                 args.remove(r)
 
 
-def parse_env(env) -> dict:
-    d = {}
+def parse_env(env) -> Dict[str, str]:
+    d : Dict[str, str] = {}
     for ev in env:
         try:
             if ev.startswith("#"):
@@ -197,7 +198,7 @@ def _sep_pos(display_name):
     return min(scpos, slpos)
 
 
-def auto_proxy(scheme, host:str) -> dict:
+def auto_proxy(scheme, host:str) -> Dict[str,Any]:
     try:
         from xpra.net.libproxy import ProxyFactory
     except ImportError as e:
@@ -222,7 +223,7 @@ def auto_proxy(scheme, host:str) -> dict:
         options["proxy-password"] = url.password
     return options
 
-def parse_remote_display(s:str) -> dict:
+def parse_remote_display(s:str) -> Dict[str,Any]:
     if not s:
         return {}
     qpos = s.find("?")
@@ -281,7 +282,7 @@ def parse_remote_display(s:str) -> dict:
                 desc[k] = v
     return desc
 
-def parse_username_and_password(s:str) -> dict:
+def parse_username_and_password(s:str) -> Dict[str,str]:
     ppos = s.find(":")
     if ppos>=0:
         password = s[ppos+1:]
@@ -578,7 +579,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     error_cb(f"unknown format for display name: {display_name!r}")
 
 
-def get_ssl_options(desc, opts, cmdline) -> dict:
+def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
     from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
@@ -622,7 +623,7 @@ def parse_ssh_option(ssh_setting:str) -> list:
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def get_ssh_display_attributes(args, ssh_option="auto") -> dict:
+def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     #ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
@@ -1804,7 +1805,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         options.tcp_encryption = f"AES-{DEFAULT_MODE}"
     return options, args
 
-def validated_encodings(encodings) -> tuple:
+def validated_encodings(encodings) -> Tuple[str]:
     try:
         from xpra.codecs.codec_constants import preforder
     except ImportError:

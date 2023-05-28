@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Any
 
 from xpra.util import envbool, typedict, net_utf8
 from xpra.os_util import get_machine_id
@@ -38,7 +39,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "printers"          : self.printers,
             "file-transfers"    : FileTransferHandler.get_info(self),

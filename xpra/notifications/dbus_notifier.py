@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict
 
 from xpra.util import ellipsizer, csv
 from xpra.os_util import bytestostr
@@ -108,10 +109,10 @@ class DBUS_Notifier(NotifierBase):
                 return k
         return None
 
-    def noparse_hints(self, h) -> dict:
+    def noparse_hints(self, h) -> Dict:
         return h
 
-    def parse_hints(self, h) -> dict:
+    def parse_hints(self, h) -> Dict:
         hints = {}
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
             v = h.get(x)

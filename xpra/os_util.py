@@ -325,7 +325,7 @@ def restore_script_env(env):
 
 
 _saved_env = os.environ.copy()
-def get_saved_env() -> dict:
+def get_saved_env() -> Dict[str,str]:
     return _saved_env.copy()
 
 def get_saved_env_var(var, default=None):

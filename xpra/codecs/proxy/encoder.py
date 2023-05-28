@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 from collections import deque
+from typing import Dict, Any, Tuple
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import typedict
@@ -14,22 +15,22 @@ from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 
-def get_version():
+def get_version() -> Tuple[int, ...]:
     return (0, 2)
 
-def get_type():
+def get_type() -> str:
     return "proxy"
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     return {"version"   : get_version()}
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return ("proxy", )
 
-def init_module():
+def init_module() -> None:
     log("enc_proxy.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("enc_proxy.cleanup_module()")
 
 
@@ -39,7 +40,7 @@ class Encoder:
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, encoding, width, height, src_format, options=None):
+    def init_context(self, encoding:str, width:int, height:int, src_format:str, options=None) -> None:
         options = typedict(options or {})
         self.encoding = encoding
         self.width = width
@@ -51,10 +52,10 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return True
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         if self.src_format is None:
             return info
@@ -84,25 +85,25 @@ class Encoder:
             return "proxy_encoder(uninitialized)"
         return f"proxy_encoder({self.src_format} - {self.width}x{self.height})"
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.src_format is None
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return self.encoding
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "proxy"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
-    def clean(self):
+    def clean(self) -> None:
         self.width = 0
         self.height = 0
         self.src_format = None
@@ -114,7 +115,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image:ImageWrapper, options=None) -> Tuple[bytes,dict]:
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         if image.get_planes()!=ImageWrapper.PACKED:
@@ -142,4 +143,4 @@ class Encoder:
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
         self.last_frame_times.append(monotonic())
         self.frames += 1
-        return  memoryview_to_bytes(pixels[:]), client_options
+        return memoryview_to_bytes(pixels[:]), client_options

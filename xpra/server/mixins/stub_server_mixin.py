@@ -5,7 +5,7 @@
 
 import os
 import shlex
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Dict
 
 from xpra.util import typedict
 from xpra.os_util import WIN32
@@ -67,13 +67,13 @@ class StubServerMixin:
         Prepare to handle connections from the given sockets.
         """
 
-    def get_caps(self, _source) -> dict[str,Any]:
+    def get_caps(self, _source) -> Dict[str,Any]:
         """
         Capabilities provided by this mixin.
         """
         return {}
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> Dict[str,Any]:
         """
         Features provided by this mixin.
         (the difference with capabilities is that those will only
@@ -87,7 +87,7 @@ class StubServerMixin:
         this method will be called.
         """
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> Dict[str,Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities and features,
@@ -95,7 +95,7 @@ class StubServerMixin:
         """
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str,Any]:
+    def get_ui_info(self, proto, client_uuids=None, *args) -> Dict[str,Any]:
         """
         Runtime information on this mixin,
         unlike get_info() this method will be called
@@ -130,7 +130,7 @@ class StubServerMixin:
         """
 
 
-    def get_child_env(self) -> dict[str,str]:
+    def get_child_env(self) -> Dict[str,str]:
         return os.environ.copy()
 
 
@@ -143,7 +143,7 @@ class StubServerMixin:
         return shlex.split(str(cmd))
 
 
-    def get_http_scripts(self) -> dict[str,Callable]:
+    def get_http_scripts(self) -> Dict[str,Callable]:
         return {}
 
 

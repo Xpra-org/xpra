@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -137,11 +137,11 @@ class AvahiPublisher:
             return "interface %i" % self.interface
         return "all interfaces"
 
-    def get_info(self) -> dict:
+    def host_str(self) -> str:
         return "%s %s:%s on %s" % (self.name, self.host, self.port, self.iface())
 
     def __repr__(self):
-        return "AvahiPublisher(%s)" % self.get_info()
+        return "AvahiPublisher(%s)" % self.host_str()
 
     def start(self):
         try:
@@ -195,7 +195,7 @@ class AvahiPublisher:
             #use try+except as older versions may not have those modules?
             message = e.get_dbus_message()
             dbus_error_name = e.get_dbus_name()
-            log.error("Error starting publisher %s", self.get_info())
+            log.error("Error starting publisher %s", self.host_str())
             if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
                 log.error(" another instance already claims this dbus name")
                 log.estr(e)

@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from random import randint
+from typing import Dict, Any
 
 from xpra.util import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -126,7 +127,7 @@ class MMAP_Connection(StubSourceMixin):
             from xpra.simple_stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         caps : dict [str, object] = {}
         sep = "." if self.mmap_client_namespace else "_"
         def mmapattr(name, value):
@@ -140,7 +141,7 @@ class MMAP_Connection(StubSourceMixin):
             mmapattr("token_bytes", self.mmap_client_token_bytes)
         return caps
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "mmap" : {
                 "supported"     : self.supports_mmap,

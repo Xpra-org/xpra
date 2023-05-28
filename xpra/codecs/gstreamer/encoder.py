@@ -221,7 +221,7 @@ class Encoder(VideoPipeline):
     def get_src_format(self):
         return self.colorspace
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         if self.dst_formats:
             info["dst_formats"] = self.dst_formats

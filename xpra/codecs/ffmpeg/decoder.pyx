@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@
 import errno
 import weakref
 from time import monotonic
+from typing import Any, Dict
 
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
@@ -830,7 +831,7 @@ cdef class Decoder:
             return "dec_avcodec.Decoder(*closed*)"
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "version"   : get_version(),
             "encoding"  : self.encoding,

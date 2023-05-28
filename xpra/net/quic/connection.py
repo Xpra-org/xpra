@@ -5,7 +5,7 @@
 
 import os
 from queue import Queue
-from typing import Callable, Union
+from typing import Callable, Union, Dict, Any
 
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
@@ -44,7 +44,7 @@ class XpraQuicConnection(Connection):
     def __repr__(self):
         return f"XpraQuicConnection<{self.stream_id}>"
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         qinfo = info.setdefault("quic", {})
         quic = getattr(self.connection, "_quic", None)

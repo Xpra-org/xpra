@@ -4,17 +4,18 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Optional, Type
 
 from xpra.util import envbool
 from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.platform.win32.win32_balloon import notify
 
-try:
-    from xpra.gtk_common.gtk_notifier import GTK_Notifier
-    GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
-except ImportError:
-    GTK_Notifier = None
-    GTK_NOTIFIER = False
+GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
+if GTK_NOTIFIER:
+    try:
+        from xpra.gtk_common.gtk_notifier import GTK_Notifier
+    except ImportError:
+        GTK_NOTIFIER = False
 
 
 def do_notify(*args):
@@ -30,13 +31,13 @@ class Win32_Notifier(NotifierBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.handles_actions = GTK_Notifier is not None
+        self.handles_actions = GTK_NOTIFIER
         self.gtk_notifier = None
         self.gtk_notifications = set()
         self.notification_handles = {}
 
     def get_gtk_notifier(self):
-        if self.gtk_notifier is None:
+        if self.gtk_notifier is None and GTK_NOTIFIER:
             try:
                 self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
             except Exception:

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any, Tuple, List
 
 # The data for this table can be found mostly here:
 # http://msdn.microsoft.com/en-us/library/aa912040.aspx
@@ -19,7 +21,7 @@ ARA_VARIANTS : list[str] = ["azerty", "azerty_digits", "digits", "qwerty", "qwer
 ES_VARIANTS : list[str] = ["nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac"]
 RS_VARIANTS : list[str] = ["yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue"]
 FR_VARIANTS : list[str] = ["nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo"]
-WIN32_LAYOUTS : dict[int,tuple]= {
+WIN32_LAYOUTS : Dict[int,Tuple[str, str, str, int, str, List[str]]]= {
            1025: ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
            1026: ("BGR", "Bulgaria",       "Bulgarian",                1251,   "bg", ["phonetic", "bas_phonetic"]),
            1027: ("CAT", "Spain",          "Catalan",                  1252,   "ad", []),
@@ -167,7 +169,7 @@ WIN32_LAYOUTS : dict[int,tuple]= {
 #map win32 keyboard codes to x11 names:
 #based on
 #https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
-WIN32_KEYBOARDS : dict[int, tuple] = {
+WIN32_KEYBOARDS : Dict[int, Tuple[str, str]] = {
     0x0000041c  : ("al", "Albania"),
     0x00000401  : ("ar", "Arabic (101)"),
     0x00010401  : ("ar", "Arabic (102)"),
@@ -375,7 +377,7 @@ WIN32_KEYBOARDS : dict[int, tuple] = {
 # This is generated from the table above so we can
 # let the user choose his own layout.
 # (country,language) : (layout,variant)
-X11_LAYOUTS : dict[tuple,tuple] = {}
+X11_LAYOUTS : Dict[Tuple,Tuple] = {}
 for _, country, language, _, layout, variants in WIN32_LAYOUTS.values():
     key = (country,language)
     value = (layout, variants)
@@ -390,7 +392,7 @@ for _, _, _, _, layout, variants in WIN32_LAYOUTS.values():
         if variant not in l:
             l.append(variant)
 
-def parse_xkbmap_query(xkbmap_query:str) -> dict:
+def parse_xkbmap_query(xkbmap_query:str) -> Dict[str,Any]:
     """ parses the output of "setxkbmap -query" into a dict """
     import re
     settings = {}

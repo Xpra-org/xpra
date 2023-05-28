@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Optional, Any
+from typing import Tuple, Optional, Dict, Any
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -53,7 +53,7 @@ class InputMixin(StubSourceMixin):
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         dc_info : dict[str,Any] = {}
         dct = self.double_click_time
         if dct:
@@ -69,7 +69,7 @@ class InputMixin(StubSourceMixin):
             info["keyboard"] = kc.get_info()
         return info
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> Dict[str,Any]:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config

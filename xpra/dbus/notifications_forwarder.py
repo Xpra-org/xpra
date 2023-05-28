@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import dbus.service
+from typing import Dict, Any
 
 from xpra.notifications.common import parse_image_data, parse_image_path
 from xpra.dbus.helper import dbus_to_native
@@ -40,7 +41,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         super().__init__(bus_name, BUS_PATH)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "active"        : tuple(self.active_notifications),
             "counter"       : self.counter,

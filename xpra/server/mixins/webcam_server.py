@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os.path
+from typing import Dict, Any
 
 from xpra.os_util import OSX, POSIX, bytestostr
 from xpra.util import engs
@@ -42,7 +43,7 @@ class WebcamServer(StubServerMixin):
         self.init_webcam()
 
 
-    def get_server_features(self, _source) -> dict:
+    def get_server_features(self, _source) -> Dict[str,Any]:
         return {
             "webcam"                       : self.webcam_enabled,
             "webcam.encodings"             : self.webcam_encodings,
@@ -50,7 +51,7 @@ class WebcamServer(StubServerMixin):
             }
 
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         info = {
                 ""                      : self.webcam_enabled,
                 }

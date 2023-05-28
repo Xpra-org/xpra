@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (c) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (c) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ import time
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 from ctypes.wintypes import DWORD
+from typing import Dict, Any
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection
@@ -185,7 +186,7 @@ class NamedPipeConnection(Connection):
     def __repr__(self):
         return self.target
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         d = super().get_info()
         d["type"] = "named-pipe"
         d["closed"] = self.pipe_handle is None

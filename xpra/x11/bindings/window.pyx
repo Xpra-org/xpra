@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
 from xpra.gtk_common.error import XError
 
 from xpra.x11.bindings.xlib cimport (
@@ -1181,7 +1182,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return pychildren
 
 
-    def getSizeHints(self, Window xwindow) -> dict:
+    def getSizeHints(self, Window xwindow) -> Dict[str,Any]:
         self.context_check("getSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
@@ -1252,7 +1253,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetWMNormalHints(self.display, xwindow, size_hints)
         XFree(size_hints)
 
-    def getWMHints(self, Window xwindow) -> dict:
+    def getWMHints(self, Window xwindow) -> Dict[str,Any]:
         self.context_check("getWMHints")
         cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
         if wm_hints==NULL:

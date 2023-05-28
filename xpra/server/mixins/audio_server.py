@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import os.path
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
+from typing import Dict, Any, Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
@@ -84,7 +85,7 @@ class AudioServer(StubServerMixin):
         self.cleanup_pulseaudio()
 
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         self.audio_init_done.wait(5)
         info = {}
         if self.pulseaudio is not False:
@@ -94,7 +95,7 @@ class AudioServer(StubServerMixin):
         return {}
 
 
-    def get_server_features(self, source) -> dict:
+    def get_server_features(self, source) -> Dict[str,Any]:
         d = {
             "av-sync" : {
                 ""          : self.av_sync,
@@ -105,7 +106,7 @@ class AudioServer(StubServerMixin):
         return d
 
 
-    def get_http_scripts(self) -> dict:
+    def get_http_scripts(self) -> Dict[str,Callable]:
         return {}
 
 
@@ -363,7 +364,7 @@ class AudioServer(StubServerMixin):
         audiolog("init_audio_options audio properties=%s", self.audio_properties)
 
 
-    def get_pulseaudio_info(self) -> dict:
+    def get_pulseaudio_info(self) -> Dict[str,Any]:
         info = {
             "command"               : self.pulseaudio_command,
             "configure-commands"    : self.pulseaudio_configure_commands,

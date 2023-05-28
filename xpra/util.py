@@ -789,7 +789,7 @@ def notypedict(d:Dict) -> Dict:
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info:Dict[str,Any], sep:str=".") -> Dict:
+def flatten_dict(info:Dict[str,Any], sep:str=".") -> Dict[str,Any]:
     to : dict[str, Any] = {}
     _flatten_dict(to, sep, "", info)
     return to

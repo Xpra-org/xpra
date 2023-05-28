@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
+
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_get
@@ -16,7 +18,7 @@ WM_S0 = "WM_S0"
 _NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
-def get_wm_info() -> dict:
+def get_wm_info() -> Dict[str,Any]:
     with xsync:
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()

@@ -255,6 +255,9 @@ class ClipboardProxyCore:
     def get_contents(self, target:str, got_contents:Callable) -> None:
         pass
 
+    def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
+        raise NotImplementedError()
+
 
     def filter_data(self, dtype:str="" , dformat:int=0, data=None, trusted:bool=False, output_dtype=None):
         log("filter_data(%s, %s, %i %s, %s, %s)",
@@ -480,7 +483,7 @@ class ClipboardProtocolHelperCore:
         if proxy is None:
             #this can happen if the server has fewer clipboards than the client,
             #ie: with win32 shadow servers
-            l = log
+            l : Callable = log.debug
             if name in ALL_CLIPBOARDS:
                 l = log.warn
             l("ignoring token for clipboard '%s' (no proxy)", name)

@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
-import os
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -157,7 +157,7 @@ cdef class Decoder:
         self.height = 0
         self.colorspace = ""
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

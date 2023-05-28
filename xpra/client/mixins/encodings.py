@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Any
 
 from xpra.codecs.codec_constants import preforder
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
@@ -150,7 +151,7 @@ class Encodings(StubClientMixin):
             }
 
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         caps = {
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
@@ -183,7 +184,7 @@ class Encodings(StubClientMixin):
             self.encoding = e
 
 
-    def get_batch_caps(self) -> dict:
+    def get_batch_caps(self) -> Dict[str,Any]:
         #batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -196,7 +197,7 @@ class Encodings(StubClientMixin):
         log("get_batch_caps()=%s", caps)
         return caps
 
-    def get_encodings_caps(self) -> dict:
+    def get_encodings_caps(self) -> Dict[str,Any]:
         if B_FRAMES:
             video_b_frames = ("h264", ) #only tested with dec_avcodec2
         else:

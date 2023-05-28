@@ -490,7 +490,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
 
-    def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
+    def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the remote end now owns the clipboard
         self.cancel_emit_token()
         if not self._enabled:

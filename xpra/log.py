@@ -9,7 +9,7 @@ import sys
 import logging
 import weakref
 import itertools
-from typing import Callable
+from typing import Callable, Dict, Any
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX : str = ""
@@ -355,7 +355,7 @@ def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
 
 
-def get_info() -> dict:
+def get_info() -> Dict[str,Any]:
     info = {
         "categories" : {
             "enabled"   : tuple(debug_enabled_categories),
@@ -431,7 +431,7 @@ class Logger:
         if self.debug_enabled:
             self.debug("debug enabled for %s / %s", caller, categories)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "categories"    : self.categories,
             "debug"         : self.debug_enabled,

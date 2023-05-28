@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
 from collections import namedtuple
+from typing import Dict, Any
 
 from xpra.os_util import (
     get_generic_os_name, do_get_generic_os_name,
@@ -67,7 +68,7 @@ class RootWindowModel:
     def __repr__(self):
         return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {}
         c = self.capture
         if c:

@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import socket
+from typing import Dict, Any
 
 from xpra.util import WORKSPACE_UNSET, get_util_logger
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict:
+def make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> Dict[str,Any]:
     try:
         return do_make_window_metadata(window, propname, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
@@ -27,7 +28,7 @@ def make_window_metadata(window, propname, get_window_id=None, skip_defaults=Fal
         return {}
 
 
-def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict:
+def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> Dict[str,Any]:
     if propname in SKIP_METADATA:
         return {}
     #note: some of the properties handled here aren't exported to the clients,

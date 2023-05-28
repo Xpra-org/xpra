@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Dict, Any
 from collections import deque
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -63,7 +64,7 @@ class ClipboardConnection(StubSourceMixin):
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "clipboard" : {
                 "enabled"               : self.clipboard_enabled,

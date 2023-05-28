@@ -29,7 +29,7 @@ SHOW_ALL_VISUALS = False
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
 GTK_VERSION_INFO : Dict[str,Tuple[Any, ...]]= {}
-def get_gtk_version_info() -> dict:
+def get_gtk_version_info() -> Dict[str,Any]:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):

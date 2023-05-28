@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Dict, Any
+
 from xpra.util import envint, typedict, ConnectionMessage, NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -45,7 +47,7 @@ class IdleMixin(StubSourceMixin):
         self.cancel_idle_grace_timeout()
         self.cancel_idle_timeout()
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
                 "idle_time"         : int(monotonic()-self.last_user_event),
                 "idle"              : self.idle,

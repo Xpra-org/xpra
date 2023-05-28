@@ -9,6 +9,7 @@
 import os
 import threading
 from time import monotonic
+from typing import Dict, Any
 import gi
 
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
@@ -264,7 +265,7 @@ class X11ServerCore(GTKServerBase):
         self.input_devices = "xtest"
 
 
-    def get_child_env(self) -> dict:
+    def get_child_env(self) -> Dict[str,str]:
         #adds fakeXinerama:
         env = super().get_child_env()
         if self.fake_xinerama and self.libfakeXinerama_so:
@@ -334,7 +335,7 @@ class X11ServerCore(GTKServerBase):
                 X11Keyboard.set_key_repeat_rate(500, 30)
                 keylog("keyboard repeat disabled")
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if "features" in source.wants:
@@ -372,7 +373,7 @@ class X11ServerCore(GTKServerBase):
             cursorlog.error("Error sending default cursor", exc_info=True)
 
 
-    def do_get_info(self, proto, server_sources) -> dict:
+    def do_get_info(self, proto, server_sources) -> Dict[str,Any]:
         start = monotonic()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
@@ -391,7 +392,7 @@ class X11ServerCore(GTKServerBase):
         log("X11ServerCore.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
-    def get_ui_info(self, proto, wids=None, *args) -> dict:
+    def get_ui_info(self, proto, wids=None, *args) -> Dict[str,Any]:
         log("do_get_info thread=%s", threading.current_thread())
         info = super().get_ui_info(proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
@@ -431,7 +432,7 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
-    def get_cursor_info(self) -> dict:
+    def get_cursor_info(self) -> Dict[str,Any]:
         #(NOT from UI thread)
         #copy to prevent race:
         cd = self.last_cursor_image
@@ -448,7 +449,7 @@ class X11ServerCore(GTKServerBase):
                 cinfo[x] = v
         return cinfo
 
-    def get_window_info(self, window) -> dict:
+    def get_window_info(self, window) -> Dict[str,Any]:
         info = super().get_window_info(window)
         info["XShm"] = window.uses_XShm()
         info["geometry"] = window.get_geometry()
@@ -814,7 +815,7 @@ class X11ServerCore(GTKServerBase):
         return root_w, root_h
 
 
-    def mirror_client_monitor_layout(self) -> dict:
+    def mirror_client_monitor_layout(self) -> Dict[int,Any]:
         with xsync:
             assert RandR.is_dummy16(), "cannot match monitor layout without RandR 1.6"
         #if we have a single UI client,

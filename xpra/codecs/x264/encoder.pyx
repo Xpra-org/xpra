@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@
 
 import os
 from time import monotonic
+from typing import Dict, Any, Tuple
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
@@ -335,7 +336,7 @@ I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444]
 I444_PROFILES = [PROFILE_HIGH444]
 RGB_PROFILES = [PROFILE_HIGH444]
 
-COLORSPACE_FORMATS = {
+COLORSPACE_FORMATS : Dict[str,Tuple] = {
     "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
     "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
@@ -347,7 +348,7 @@ if SUPPORT_24BPP:
         "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
         })
 
-COLORSPACES = {
+COLORSPACES : Dict[str,str] = {
     "YUV420P"   : "YUV420P",
     "YUV422P"   : "YUV422P",
     "YUV444P"   : "YUV444P",
@@ -363,20 +364,20 @@ if SUPPORT_24BPP:
         })
 
 
-def init_module():
+def init_module() -> None:
     log("enc_x264.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("enc_x264.cleanup_module()")
 
-def get_version():
+def get_version() -> Tuple[int]:
     return (X264_BUILD, )
 
-def get_type():
+def get_type() -> str:
     return "x264"
 
 generation = AtomicInteger()
-def get_info():
+def get_info() -> Dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
@@ -385,14 +386,14 @@ def get_info():
         "formats"   : tuple(COLORSPACES.keys()),
         }
 
-def get_encodings():
+def get_encodings() -> Tuple[str,...]:
     return ("h264", )
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding:str):
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
-def get_output_colorspaces(encoding, input_colorspace):
+def get_output_colorspaces(encoding:str, input_colorspace:str):
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
@@ -425,7 +426,7 @@ def get_specs(encoding, colorspace):
 
 
 #maps a log level to one of our logger functions:
-LOGGERS = {
+LOGGERS : Dict[int,Callable] = {
            X264_LOG_ERROR   : log.error,
            X264_LOG_WARNING : log.warn,
            X264_LOG_INFO    : log.info,
@@ -433,7 +434,7 @@ LOGGERS = {
            }
 
 #maps a log level string to the actual constant:
-LOG_LEVEL = {
+LOG_LEVEL : Dict[str,int] = {
              "ERROR"    : X264_LOG_ERROR,
              "WARNING"  : X264_LOG_WARNING,
              "WARN"     : X264_LOG_WARNING,
@@ -545,13 +546,13 @@ cdef class Encoder:
             self.blank_buffer = b"\0" * (self.width * self.height * 4)
         self.ready = 1
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return bool(self.ready)
 
-    def get_tune(self):
+    def get_tune(self) -> bytes:
         log("x264: get_tune() TUNE=%s, fast_decode=%s, content_type=%s", TUNE, self.fast_decode, self.content_type)
         if TUNE:
-            return TUNE
+            return TUNE.encode()
         tunes = []
         if self.content_type.find("video")>=0:
             tunes.append(b"film")
@@ -642,7 +643,7 @@ cdef class Encoder:
         param.i_log_level = LOG_LEVEL
 
 
-    def clean(self):
+    def clean(self) -> None:
         log("x264 close context %#x", <uintptr_t> self.context)
         cdef x264_t *context = self.context
         if context!=NULL:
@@ -670,7 +671,7 @@ cdef class Encoder:
             f.close()
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         cdef double pps
         if self.profile is None:
             return {}
@@ -779,25 +780,25 @@ cdef class Encoder:
             return "x264_encoder(uninitialized)"
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.context==NULL
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return "h264"
 
     def __dealloc__(self):
         self.clean()
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "x264"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
 
@@ -966,7 +967,7 @@ cdef class Encoder:
         return self.do_compress_image(NULL)
 
 
-    def set_encoding_speed(self, int pct):
+    def set_encoding_speed(self, int pct) -> None:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
         cdef x264_param_t param
@@ -983,7 +984,7 @@ cdef class Encoder:
         self.do_reconfig_tune(&param)
         self.preset = new_preset
 
-    def set_encoding_quality(self, int pct):
+    def set_encoding_quality(self, int pct) -> None:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         if self.quality==pct:
             return
@@ -995,7 +996,7 @@ cdef class Encoder:
         self.reconfig_tune()
 
 
-    def reconfig_tune(self):
+    def reconfig_tune(self) -> None:
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
         self.do_reconfig_tune(&param)

@@ -8,7 +8,7 @@ import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Dict, Any
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes
@@ -98,7 +98,7 @@ def get_encodings() -> Tuple[str]:
 
 ENCODINGS = tuple(do_get_encodings())
 
-def get_info() -> dict:
+def get_info() -> Dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),

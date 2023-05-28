@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
@@ -57,7 +58,7 @@ class XpraMonitorServer(DesktopServerBase):
     def get_server_mode(self) -> str:
         return "X11 monitor"
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -281,7 +282,7 @@ class XpraMonitorServer(DesktopServerBase):
                 })
             model.init(mdef)
 
-    def get_monitor_config(self) -> dict:
+    def get_monitor_config(self) -> Dict[int,Dict]:
         monitor_defs = {}
         for wid, model in self._id_to_window.items():
             monitor = model.get_definition()

@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from time import monotonic
+from typing import Dict, Any
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
 from libc.stdlib cimport free   #pylint: disable=syntax-error
@@ -496,7 +497,7 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Callable, Tuple, Optional, Any
+from typing import Callable, Tuple, Optional, Any, Dict
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr
@@ -84,7 +84,7 @@ def get_wm_name() -> str:
     return ""
 
 
-def get_icc_data() -> dict:
+def get_icc_data() -> Dict[str,Any]:
     icc = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
@@ -246,7 +246,7 @@ def get_xsettings():
     from xpra.x11.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
-def xsettings_to_dict(v) -> dict[str, Tuple[int, Any]]:
+def xsettings_to_dict(v) -> Dict[str, Tuple[int, Any]]:
     d : dict[str, Tuple[int, Any]] = {}
     if v:
         _, values = v

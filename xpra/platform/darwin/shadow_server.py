@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any, List
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -11,6 +13,7 @@ from xpra.os_util import memoryview_to_bytes
 from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
 from xpra.exit_codes import ExitCode
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
@@ -22,7 +25,7 @@ log = Logger("shadow", "osx")
 
 USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
 
-ALPHA = {
+ALPHA : Dict[int,str] = {
          CG.kCGImageAlphaNone                  : "AlphaNone",
          CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
          CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
@@ -35,7 +38,7 @@ ALPHA = {
 BTYPES = tuple((str, bytes, memoryview, bytearray))
 
 #ensure that picture_encode can deal with pixels as NSCFData:
-def patch_pixels_to_bytes():
+def patch_pixels_to_bytes() -> None:
     from CoreFoundation import CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
     def pixels_to_bytes(v):
         if isinstance(v, BTYPES):
@@ -51,20 +54,20 @@ class OSXRootCapture:
     def __repr__(self):
         return "OSXRootCapture"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "CoreGraphics"
 
-    def refresh(self):
+    def refresh(self) -> bool:
         return True
 
-    def clean(self):
+    def clean(self) -> None:
         """ nothing specific to do here on MacOS """
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x, y, width, height) -> ImageWrapper:
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "type" : "CoreGraphics",
             }
@@ -93,13 +96,13 @@ class ShadowServer(GTKShadowServerBase):
         self.refresh_registered = False
         super().__init__()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         super().init(opts)
         self.keycodes = {}
         #printing fails silently on OSX
         self.printing = False
 
-    def get_keyboard_config(self, _props=None):
+    def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
     def make_tray_widget(self):
@@ -108,10 +111,10 @@ class ShadowServer(GTKShadowServerBase):
                                  self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
 
-    def setup_capture(self):
+    def setup_capture(self) -> OSXRootCapture:
         return OSXRootCapture()
 
-    def screen_refresh_callback(self, count, rects, info):
+    def screen_refresh_callback(self, count, rects, info) -> None:
         log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
         self.refresh_count += 1
         rlist = []
@@ -124,7 +127,7 @@ class ShadowServer(GTKShadowServerBase):
         #return quickly, and process the list copy via idle add:
         self.idle_add(self.do_screen_refresh, rlist)
 
-    def do_screen_refresh(self, rlist):
+    def do_screen_refresh(self, rlist:List) -> None:
         #TODO: improve damage method to handle lists directly:
         from xpra.rectangle import rectangle     #@UnresolvedImport
         model_rects = {}
@@ -139,7 +142,7 @@ class ShadowServer(GTKShadowServerBase):
                     ry = mrect.y-rect.y
                     self.refresh_window_area(model, rx, ry, mrect.width, mrect.height, {"damage" : True})
 
-    def start_refresh(self, wid):
+    def start_refresh(self, wid:int) -> None:
         #don't use the timer, get damage notifications:
         if wid not in self.mapped:
             self.mapped.append(wid)
@@ -155,7 +158,7 @@ class ShadowServer(GTKShadowServerBase):
             log.warn(" using fallback timer method")
         super().start_refresh(wid)
 
-    def stop_refresh(self, wid):
+    def stop_refresh(self, wid:int) -> None:
         log("stop_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
         #may stop the timer fallback:
         super().stop_refresh(wid)
@@ -171,14 +174,14 @@ class ShadowServer(GTKShadowServerBase):
             self.refresh_registered = False
 
 
-    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
+    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
         if proto not in self._server_sources:
             return False
         assert wid in self._id_to_window
         CG.CGWarpMouseCursorPosition(pointer[:2])
         return True
 
-    def fake_key(self, keycode, press):
+    def fake_key(self, keycode:int, press:bool) -> None:
         e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
         log("fake_key(%s, %s)", keycode, press)
         #CGEventSetFlags(keyPress, modifierFlags)
@@ -187,14 +190,14 @@ class ShadowServer(GTKShadowServerBase):
         #this causes crashes, don't do it!
         #CG.CFRelease(e)
 
-    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+    def do_process_button_action(self, proto, device_id:int, wid:int, button:int, pressed:bool, pointer, props):
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         pointer = self._process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id, wid, pointer, button, pressed, props):
+    def button_action(self, device_id:int, wid:int, pointer, button:int, pressed:bool, props):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well
@@ -219,13 +222,13 @@ class ShadowServer(GTKShadowServerBase):
         r = CG.CGPostScrollWheelEvent(*event)
         log("CG.CGPostScrollWheelEvent%s=%s", event, r)
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/osx-shadow"
         return capabilities
 
-    def get_info(self, proto, *_args):
+    def get_info(self, proto, *_args) -> Dict[str,Any]:
         info = GTKServerBase.get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"

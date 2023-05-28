@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@
 
 import os
 from time import monotonic
+from typing import Dict, Tuple, Any
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -36,7 +37,7 @@ from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
-VPX_COLOR_SPACES = {
+VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_UNKNOWN  : "unknown",
     VPX_CS_BT_601   : "BT601",
     VPX_CS_BT_709   : "BT709",
@@ -47,13 +48,13 @@ VPX_COLOR_SPACES = {
     VPX_CS_SRGB     : "SRGB",
     }
 
-VPX_COLOR_RANGES = {
+VPX_COLOR_RANGES : Dict[int,str] = {
     VPX_CR_STUDIO_RANGE : "studio",
     VPX_CR_FULL_RANGE   : " full",
     }
 
 
-cpus = os.cpu_count()
+cdef unsigned int cpus = os.cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 
 cdef inline int roundup(int n, int m):
@@ -91,47 +92,50 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-CODECS = ("vp8", "vp9")
-COLORSPACES = {
+CODECS : Tuple[str, ...] = ("vp8", "vp9")
+COLORSPACES : Dict[str,Tuple[str,...]] = {
     "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV444P"),
     }
 
 
-def init_module():
+def init_module() -> None:
     log("vpx.decoder.init_module() info=%s", get_info())
     log("supported codecs: %s", CODECS)
     log("supported colorspaces: %s", COLORSPACES)
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("vpx.decoder.cleanup_module()")
 
-def get_abi_version():
+def get_abi_version() -> int:
     return VPX_DECODER_ABI_VERSION
 
-def get_version():
+def get_version() -> Tuple[int]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
+    vparts : List[int] = []
     try:
-        return tuple(int(v) for v in vstr.split("."))
+        for x in vstr.split("."):
+            vparts.append(int(x))
     except Exception:
-        return vstr
+        pass
+    return tuple(vparts)
 
-def get_type():
+def get_type() -> str:
     return "vpx"
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return CODECS
 
-def get_min_size(encoding):
+def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
     assert encoding in CODECS
     return COLORSPACES.get(encoding)
 
-def get_output_colorspace(encoding, csc):
+def get_output_colorspace(encoding:str, csc:str) -> str:
     #same as input
     assert encoding in CODECS
     colorspaces = COLORSPACES.get(encoding)
@@ -139,7 +143,7 @@ def get_output_colorspace(encoding, csc):
     return csc
 
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     global CODECS
     info = {
             "version"       : get_version(),
@@ -212,7 +216,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
                 "type"      : self.get_type(),
                 "width"     : self.get_width(),
@@ -223,22 +227,22 @@ cdef class Decoder:
                 "max_threads" : self.max_threads,
                 }
 
-    def get_colorspace(self):
+    def get_colorspace(self) -> str:
         return self.dst_format
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.context==NULL
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return self.encoding
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "vpx"
 
     def __dealloc__(self):
@@ -260,7 +264,7 @@ cdef class Decoder:
             f.close()
 
 
-    def decompress_image(self, data, options=None):
+    def decompress_image(self, data:bytes, options=None) -> ImageWrapper:
         cdef vpx_codec_iter_t citer = NULL
         cdef MemBuf output_buf
         cdef void *output
@@ -317,7 +321,7 @@ cdef class Decoder:
             self.encoding, self.frames, elapsed, VPX_COLOR_SPACES.get(img.cs, img.cs), VPX_COLOR_RANGES.get(img.range, img.range))
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
 
-    def codec_error_str(self):
+    def codec_error_str(self) -> str:
         return vpx_codec_error(self.context).decode("latin1")
 
 

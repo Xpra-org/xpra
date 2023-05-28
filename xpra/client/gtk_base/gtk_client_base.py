@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
+from typing import Dict, Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -844,7 +845,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self.mask_to_names(modifiers_mask)
 
 
-    def make_hello(self) -> dict:
+    def make_hello(self) -> Dict[str,Any]:
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["encoding.transparency"] = self.has_transparency()

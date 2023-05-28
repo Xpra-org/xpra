@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from time import monotonic
-from typing import Type, Dict, Callable
+from typing import Type, Dict, Callable, Any
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -197,11 +197,11 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # override http scripts to expose just the current session / display
-    def get_displays(self) -> dict:
+    def get_displays(self) -> Dict[str,Any]:
         from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
         return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"), ))
 
-    def get_xpra_sessions(self) -> dict:
+    def get_xpra_sessions(self) -> Dict[str,Any]:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
 
@@ -226,7 +226,7 @@ class ServerBase(ServerBaseClass):
         self.timeout_add(500, self.clean_quit)
 
 
-    def get_mdns_info(self) -> dict:
+    def get_mdns_info(self) -> Dict[str,Any]:
         mdns_info = ServerCore.get_mdns_info(self)
         if MDNS_CLIENT_COUNT:
             mdns_info["clients"] = len(self._server_sources)
@@ -517,7 +517,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # hello:
-    def get_server_features(self, server_source=None) -> dict:
+    def get_server_features(self, server_source=None) -> Dict[str,Any]:
         #these are flags that have been added over time with new versions
         #to expose new server features:
         f = {
@@ -528,7 +528,7 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(f, c.get_server_features(self, server_source))
         return f
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -638,7 +638,7 @@ class ServerBase(ServerBaseClass):
                      proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict:
+    def get_ui_info(self, proto, client_uuids=None, *args) -> Dict[str,Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -655,7 +655,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def get_info(self, proto=None, client_uuids=None) -> dict:
+    def get_info(self, proto=None, client_uuids=None) -> Dict[str,Any]:
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic()
         if client_uuids:
@@ -667,7 +667,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic()-start))
         return info
 
-    def get_packet_handlers_info(self) -> dict:
+    def get_packet_handlers_info(self) -> Dict[str,Any]:
         info = ServerCore.get_packet_handlers_info(self)
         info.update({
             "authenticated" : sorted(self._authenticated_packet_handlers.keys()),
@@ -676,7 +676,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def get_features_info(self) -> dict:
+    def get_features_info(self) -> Dict[str,Any]:
         i = {
              "sharing"          : self.sharing is not False,
              "idle_timeout"     : self.idle_timeout,
@@ -684,7 +684,7 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
-    def do_get_info(self, proto, server_sources=None) -> dict:
+    def do_get_info(self, proto, server_sources=None) -> Dict[str,Any]:
         log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic()
         info = {}
@@ -804,12 +804,12 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # http server and http audio stream:
-    def get_http_info(self) -> dict:
+    def get_http_info(self) -> Dict[str,Any]:
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
         return info
 
-    def get_http_scripts(self) -> dict:
+    def get_http_scripts(self) -> Dict[str,Any]:
         scripts = {}
         for c in SERVER_BASES:
             scripts.update(c.get_http_scripts(self))

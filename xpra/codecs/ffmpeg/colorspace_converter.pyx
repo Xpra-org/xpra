@@ -1,10 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Dict, Any
+
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
@@ -424,7 +426,7 @@ cdef class ColorspaceConverter:
                              brightness, contrast, saturation)==-1:
             log.warn("Warning: cannot enable fullrange")
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
                 "flags"     : get_swscale_flags_strs(self.flags),

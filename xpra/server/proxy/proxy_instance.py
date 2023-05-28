@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -7,6 +7,7 @@
 import socket
 from time import sleep, time, monotonic
 from queue import Queue
+from typing import Dict, Any
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
@@ -223,13 +224,13 @@ class ProxyInstance:
         return info
 
 
-    def get_connection_info(self) -> dict:
+    def get_connection_info(self) -> Dict[str,Any]:
         return {
             "client" : self.client_protocol.get_info(),
             "server" : self.server_protocol.get_info(),
             }
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {"connection" : self.get_connection_info()}
 
 

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 from threading import Lock
+from typing import Dict, Any, Optional
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -153,7 +154,7 @@ class MenuProvider:
                 self.clear_cache()
         start_thread(load, "load-menu-data", True)
 
-    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> Optional[Dict[str,Any]]:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return None
@@ -240,5 +241,5 @@ class MenuProvider:
         return de.get("IconType"), de.get("IconData")
 
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto) -> Dict[str,Any]:
         return self.get_menu_data(remove_icons=True)

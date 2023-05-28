@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any
 
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs import rgb_transform
@@ -20,7 +22,7 @@ def get_type() -> str:
 def get_encodings():
     return "rgb24", "rgb32"
 
-def get_info() -> dict:
+def get_info() -> Dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),

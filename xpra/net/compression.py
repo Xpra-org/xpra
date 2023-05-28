@@ -105,8 +105,8 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full_info : int=1) -> dict[str,Any]:
-    caps : dict[str,Any] = {}
+def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
+    caps : Dict[str,Any] = {}
     for x in ALL_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:

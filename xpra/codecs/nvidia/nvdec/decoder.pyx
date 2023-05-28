@@ -6,12 +6,13 @@
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t
 from libc.stdio cimport printf
-from xpra.util import AtomicInteger
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf #pylint: disable=syntax-error
+
 from weakref import WeakValueDictionary
+from typing import Dict, Any
 from threading import Event
 
-from xpra.util import csv
+from xpra.util import csv, AtomicInteger
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.cuda_errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
@@ -591,7 +592,7 @@ cdef class Decoder:
     def __repr__(self):
         return f"nvdec({self.encoding})"
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
                 "type"      : self.get_type(),
                 "width"     : self.width,

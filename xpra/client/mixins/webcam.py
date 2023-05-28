@@ -6,6 +6,7 @@
 
 from time import monotonic
 from threading import RLock
+from typing import Dict, Any
 
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
@@ -78,7 +79,7 @@ class WebcamForwarder(StubClientMixin):
         log("webcam forwarding: %s", self.webcam_forwarding)
 
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         if not self.webcam_forwarding:
             return {}
         return {"webcam" : True}

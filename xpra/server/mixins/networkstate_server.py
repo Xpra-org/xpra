@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os
 from time import sleep
+from typing import Dict, Any
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
@@ -41,21 +42,21 @@ class NetworkStateServer(StubServerMixin):
         self.cpu_info = None
         self.print_memleaks = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         bandwidthlog("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
         self.init_cpuinfo()
 
-    def setup(self):
+    def setup(self) -> None:
         self.init_leak_detection()
         if self.pings>0:
             self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         self.init_memcheck()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         pt = self.ping_timer
         if pt:
             self.ping_timer = None
@@ -64,7 +65,7 @@ class NetworkStateServer(StubServerMixin):
         if pm:
             pm()
 
-    def get_info(self, _source=None) -> dict:
+    def get_info(self, _source=None) -> Dict[str,Any]:
         info = {
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
@@ -77,7 +78,7 @@ class NetworkStateServer(StubServerMixin):
             info["cpuinfo"] = dict((k,v) for k,v in self.cpu_info.items() if k!="python_version")
         return info
 
-    def get_server_features(self, _source) -> dict:
+    def get_server_features(self, _source) -> Dict[str,Any]:
         return {
             "connection-data" : True,           #added in v2.3
             "network" : {
@@ -87,7 +88,7 @@ class NetworkStateServer(StubServerMixin):
             }
 
 
-    def init_leak_detection(self):
+    def init_leak_detection(self) -> None:
         if DETECT_MEMLEAKS:
             self.print_memleaks = detect_leaks()
             if bool(self.print_memleaks):
@@ -107,7 +108,7 @@ class NetworkStateServer(StubServerMixin):
                 return True
             self.timeout_add(10, print_fds)
 
-    def init_memcheck(self):
+    def init_memcheck(self) -> None:
         #verify we have enough memory:
         if POSIX and self.mem_bytes==0:
             try:
@@ -121,7 +122,7 @@ class NetworkStateServer(StubServerMixin):
             except Exception:
                 pass
 
-    def init_cpuinfo(self):
+    def init_cpuinfo(self) -> None:
         if not CPUINFO:
             return
         #this crashes if not run from the UI thread!
@@ -139,12 +140,12 @@ class NetworkStateServer(StubServerMixin):
                 log.info("%ix %s", count, brand)
 
 
-    def _process_connection_data(self, proto, packet):
+    def _process_connection_data(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.update_connection_data(packet[1])
 
-    def _process_bandwidth_limit(self, proto, packet):
+    def _process_bandwidth_limit(self, proto, packet) -> None:
         log("_process_bandwidth_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)
         if not ss:
@@ -179,12 +180,12 @@ class NetworkStateServer(StubServerMixin):
                 ss.ping()
         return True
 
-    def _process_ping_echo(self, proto, packet):
+    def _process_ping_echo(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.process_ping_echo(packet)
 
-    def _process_ping(self, proto, packet):
+    def _process_ping(self, proto, packet) -> None:
         time_to_echo = packet[1]
         sid = ""
         if len(packet)>=4:
@@ -194,7 +195,7 @@ class NetworkStateServer(StubServerMixin):
             ss.process_ping(time_to_echo, sid)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             "ping":                                 self._process_ping,
             "ping_echo":                            self._process_ping_echo,

@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import typedict
+from typing import Dict, Any
+
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -39,7 +41,7 @@ class NotificationMixin(StubSourceMixin):
             self.send_notifications_actions = c.boolget("notifications.actions")
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "notifications" : self.send_notifications,
             }

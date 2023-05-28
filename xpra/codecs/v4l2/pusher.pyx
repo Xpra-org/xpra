@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
-import time
 import os
+from typing import Dict, Any
 
 from xpra.log import Logger
 log = Logger("webcam")
@@ -383,7 +383,7 @@ cdef class Pusher:
             self.device = None
             d.close()
 
-    def get_info(self) -> dict:             #@DuplicatedSignature
+    def get_info(self) -> Dict[str,Any]:             #@DuplicatedSignature
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

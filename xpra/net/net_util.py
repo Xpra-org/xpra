@@ -347,7 +347,7 @@ def get_net_sys_config():
             addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, int)
     return net_sys_config
 
-def get_net_config() -> dict:
+def get_net_config() -> Dict[str,Any]:
     config = {}
     try:
         from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
@@ -402,7 +402,7 @@ def get_ssl_info(show_constants=False) -> Dict[str,Any]:
     return info
 
 
-def get_network_caps(full_info : int=1) -> dict:
+def get_network_caps(full_info : int=1) -> Dict[str,Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -422,7 +422,7 @@ def get_network_caps(full_info : int=1) -> dict:
     return caps
 
 
-def get_info() -> dict:
+def get_info() -> Dict[str,Any]:
     i = get_network_caps()
     netifaces = import_netifaces()
     if netifaces:

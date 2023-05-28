@@ -5,7 +5,7 @@
 
 import sys
 import time
-from typing import Callable, List
+from typing import Callable, List, Dict, Any
 
 from xpra.util import typedict
 from xpra.net.compression import Compressed
@@ -64,13 +64,13 @@ class StubClientMixin:
         Prepare to run using this connection to the server.
         """
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         """
         Return the capabilities provided by this mixin.
         """
         return {}
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         """
         Information contained in this mixin
         """

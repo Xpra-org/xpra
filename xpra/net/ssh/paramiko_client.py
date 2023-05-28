@@ -8,6 +8,7 @@ import os
 import re
 import socket
 from time import sleep, monotonic
+from typing import Dict, Any
 
 from xpra.scripts.main import (
     InitException, InitExit,
@@ -103,12 +104,12 @@ class SSHSocketConnection(SocketConnection):
             return None
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
-    def get_socket_info(self) -> dict:
+    def get_socket_info(self) -> Dict[str,Any]:
         if not self._raw_socket:
             return {}
         return self.do_get_socket_info(self._raw_socket)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         i = super().get_info()
         s = self._socket
         if s:
@@ -133,7 +134,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 return True
         return super().error_is_closed(e)
 
-    def get_socket_info(self) -> dict:
+    def get_socket_info(self) -> Dict[str,Any]:
         p = self.process
         if not p:
             return {}

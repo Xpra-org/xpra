@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any
 
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.util import envint, csv, typedict
@@ -68,7 +70,7 @@ class WebcamMixin(StubSourceMixin):
         self.stop_all_virtual_webcams()
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "webcam" : {
                 "encodings"         : self.webcam_encodings,

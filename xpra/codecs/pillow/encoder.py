@@ -7,7 +7,7 @@ import os
 from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
-from typing import Tuple, List, Any
+from typing import Dict, Tuple, List, Any
 
 from xpra.codecs.codec_debug import may_save_image
 from xpra.util import csv
@@ -57,7 +57,7 @@ def get_encodings() -> Tuple[str, ...]:
 
 ENCODINGS : Tuple[str, ...] = do_get_encodings()
 
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),

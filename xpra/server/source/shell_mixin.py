@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import io
+from typing import Dict, Any
 from contextlib import redirect_stdout, redirect_stderr
 
 from xpra.util import typedict
@@ -39,10 +40,10 @@ class ShellMixin(StubSourceMixin):
             self.shell_enabled = False
         log("init_from(%s, %s) shell_enabled(%s)=%s", protocol, server, options, self.shell_enabled)
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         return {"shell" : self.shell_enabled}
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {"shell" : self.shell_enabled}
 
     def shell_exec(self, code):

@@ -7,6 +7,7 @@
 import os
 import signal
 from socket import gethostname
+from typing import Dict, Any
 from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envbool, first_time
@@ -445,7 +446,7 @@ class CoreX11WindowModel(WindowModelStub):
     # XShape
     #########################################
 
-    def _read_xshape(self, x:int=0, y:int=0) -> dict:
+    def _read_xshape(self, x:int=0, y:int=0) -> Dict[str,Any]:
         if not X11Window.displayHasXShape() or not XSHAPE:
             return {}
         extents = X11Window.XShapeQueryExtents(self.xid)

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
+
+from typing import Dict, Any
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
@@ -13,12 +15,12 @@ class ShellServer(StubServerMixin):
     Mixin for adding shell support
     """
 
-    def get_info(self, _source=None) -> dict:
+    def get_info(self, _source=None) -> Dict[str,Any]:
         return {
             "shell" : True,
             }
 
-    def get_server_features(self, _source) -> dict:
+    def get_server_features(self, _source) -> Dict[str,Any]:
         return {
             "shell" : True,
             }

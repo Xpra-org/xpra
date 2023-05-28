@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os
 import sys
+from typing import Dict, Any
 
 from xpra.version_util import version_str
 from xpra.util import envint, envfloat, envbool, typedict, ConnectionMessage
@@ -45,7 +46,7 @@ class NetworkListener(StubClientMixin):
         self._close_timers = {}
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         def err(msg):
             raise InitException(msg)
         self.sockets = create_sockets(opts, err)
@@ -63,14 +64,14 @@ class NetworkListener(StubClientMixin):
             else:
                 self.sockets.update(local_sockets)
 
-    def run(self):
+    def run(self) -> None:
         self.start_listen_sockets()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cleanup_sockets()
 
 
-    def cleanup_sockets(self):
+    def cleanup_sockets(self) -> None:
         ct = dict(self._close_timers)
         self._close_timers = {}
         for proto, tid in ct.items():
@@ -95,7 +96,7 @@ class NetworkListener(StubClientMixin):
                 log.error("Error during socket cleanup", exc_info=True)
 
 
-    def start_listen_sockets(self):
+    def start_listen_sockets(self) -> None:
         for sock_def, options in self.sockets.items():
             socktype, sock, info, _ = sock_def
             log("start_listen_sockets() will add %s socket %s (%s)", socktype, sock, info)
@@ -103,14 +104,14 @@ class NetworkListener(StubClientMixin):
             self.socket_options[sock] = options
             self.idle_add(self.add_listen_socket, socktype, sock, options)
 
-    def add_listen_socket(self, socktype, sock, options):
+    def add_listen_socket(self, socktype:str, sock, options) -> None:
         info = self.socket_info.get(sock)
         log("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
         cleanup = add_listen_socket(socktype, sock, info, None, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
-    def _new_connection(self, socktype, listener, handle=0):
+    def _new_connection(self, socktype:str, listener, handle:int=0) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
@@ -126,7 +127,7 @@ class NetworkListener(StubClientMixin):
             log.error("Error handling new connection", exc_info=True)
         return self.exit_code is None
 
-    def handle_new_connection(self, socktype, listener, handle):
+    def handle_new_connection(self, socktype, listener, handle) -> None:
         assert socktype, "cannot find socket type for %s" % listener
         socket_options = self.socket_options.get(listener, {})
         if socktype=="named-pipe":
@@ -154,7 +155,7 @@ class NetworkListener(StubClientMixin):
         log_new_connection(conn, socket_info)
         self.make_protocol(socktype, conn, listener)
 
-    def make_protocol(self, socktype, conn, listener):
+    def make_protocol(self, socktype, conn, listener) -> SocketProtocol:
         socktype = socktype.lower()
         protocol = SocketProtocol(self, conn, self.process_network_packet)
         #protocol.large_packets.append(b"info-response")
@@ -164,7 +165,7 @@ class NetworkListener(StubClientMixin):
         protocol.start()
         #self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
 
-    def process_network_packet(self, proto, packet):
+    def process_network_packet(self, proto, packet) -> None:
         log("process_network_packet: %s", packet)
         packet_type = bytestostr(packet[0])
         def close():
@@ -242,7 +243,7 @@ class NetworkListener(StubClientMixin):
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid
 
-    def get_id_info(self) -> dict:
+    def get_id_info(self) -> Dict[str,Any]:
         #minimal information for identifying the session
         return {
             "session-type"  : "client",

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import math
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.util import envint, envbool
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
@@ -136,7 +137,7 @@ class VideoSubregion:
             self.refresh_timer = 0
             self.source_remove(rt)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         r = self.rectangle
         info = {
                 "supported" : self.supported,

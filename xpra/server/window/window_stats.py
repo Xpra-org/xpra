@@ -8,6 +8,7 @@
 
 from math import sqrt
 from time import monotonic
+from typing import Dict, Any
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -166,7 +167,7 @@ class WindowPerformanceStatistics:
         return factors
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {"damage"    : {"events"         : self.damage_events_count,
                                "packets_sent"   : self.packet_count,
                                "target-latency" : int(1000*self.target_latency),

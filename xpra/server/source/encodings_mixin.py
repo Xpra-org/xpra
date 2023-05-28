@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from math import sqrt
+from typing import Dict, Any
 from time import sleep, monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -106,7 +107,7 @@ class EncodingsMixin(StubSourceMixin):
         return tuple(window_sources.values())
 
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         caps = {}
         if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
@@ -471,7 +472,7 @@ class EncodingsMixin(StubSourceMixin):
             self.encoding = encoding
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = {
                 "auto_refresh"      : self.auto_refresh_delay,
                 "lz4"               : self.lz4,

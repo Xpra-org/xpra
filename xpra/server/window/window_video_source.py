@@ -11,7 +11,7 @@ import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Dict, Any
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -225,7 +225,7 @@ class WindowVideoSource(WindowSource):
         self.may_update_av_sync_delay()
 
 
-    def get_property_info(self) -> dict:
+    def get_property_info(self) -> Dict[str,Any]:
         i = super().get_property_info()
         if self.scaling_control is None:
             i["scaling.control"] = "auto"
@@ -234,7 +234,7 @@ class WindowVideoSource(WindowSource):
         i["scaling"] = self.scaling or (1, 1)
         return i
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         sr = self.video_subregion
         if sr:
@@ -279,7 +279,7 @@ class WindowVideoSource(WindowSource):
         info.setdefault("encoding", {}).update(einfo)
         return info
 
-    def get_pipeline_info(self) -> dict:
+    def get_pipeline_info(self) -> Dict[str,Any]:
         lp = self.last_pipeline_params
         if not lp:
             return {}
@@ -292,7 +292,7 @@ class WindowVideoSource(WindowSource):
 
     def get_pipeline_score_info(self, score, scaling,
                                 csc_scaling, csc_width : int, csc_height : int, csc_spec,
-                                enc_in_format, encoder_scaling, enc_width : int, enc_height : int, encoder_spec) -> dict:
+                                enc_in_format, encoder_scaling, enc_width : int, enc_height : int, encoder_spec) -> Dict[str,Any]:
         def specinfo(x):
             try:
                 return x.codec_type

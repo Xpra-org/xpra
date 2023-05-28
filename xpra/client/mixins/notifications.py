@@ -1,8 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
+
+from typing import Dict, Any
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
@@ -65,7 +67,7 @@ class NotificationClient(StubClientMixin):
         return True
 
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         enabled = self.client_supports_notifications
         actions = bool(self.client_supports_notifications and self.notifier and self.notifier.handles_actions)
         caps = updict({}, "notifications", {

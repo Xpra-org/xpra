@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,6 +14,7 @@ from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event
 from queue import Queue
+from typing import Dict, Any
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
@@ -235,7 +236,7 @@ class SocketProtocol:
     def set_receive_aliases(self, aliases):
         self.receive_aliases = aliases
 
-    def get_info(self, alias_info=True) -> dict:
+    def get_info(self, alias_info:bool=True) -> Dict[str,Any]:
         shm = self._source_has_more
         info = {
             "large_packets"         : self.large_packets,

@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+from typing import Dict, Any
+
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
@@ -103,7 +105,7 @@ class EncodingServer(StubServerMixin):
             "auto-video-encoding"   : True,     #from v4.0, clients assume this is available
             }
 
-    def get_info(self, _proto) -> dict:
+    def get_info(self, _proto)  -> Dict[str,Any]:
         info = {
             "encodings" : self.get_encoding_info(),
             "video"     : getVideoHelper().get_info(),
@@ -113,7 +115,7 @@ class EncodingServer(StubServerMixin):
                 info.setdefault("encoding", {}).setdefault(k, {})["version"] = vtrim(v)
         return info
 
-    def get_encoding_info(self) -> dict:
+    def get_encoding_info(self)  -> Dict[str,Any]:
         return  {
              ""                     : self.encodings,
              "core"                 : self.core_encodings,

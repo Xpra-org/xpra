@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 import math
 from collections import deque
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -230,7 +231,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 
 generation = AtomicInteger()
-def get_info():
+def get_info() -> Dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
     info = {
@@ -468,7 +469,7 @@ cdef class Encoder:
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable, Dict
+from typing import Callable, Dict, Any
 
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
@@ -28,7 +28,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
         self._packet_type_streams = {}
         self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         info.setdefault("quic", {})["scope"] = self.scope
         return info
@@ -56,7 +56,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             return
         super().http_event_received(event)
 
-    def send_accept(self, stream_id : int):
+    def send_accept(self, stream_id : int) -> None:
         self.send_headers(stream_id=stream_id, headers={
             ":status"   : 200,
             "server"    : SERVER_NAME,

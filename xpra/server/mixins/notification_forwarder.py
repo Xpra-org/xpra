@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os.path
+from typing import Any, Dict
 
 from xpra.os_util import OSX, POSIX
 from xpra.util import ellipsizer
@@ -25,24 +26,24 @@ class NotificationForwarder(StubServerMixin):
         self.notifications_forwarder = None
         self.notifications = False
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.notifications = opts.notifications
 
-    def setup(self):
+    def setup(self) -> None:
         self.init_notification_forwarder()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         nf = self.notifications_forwarder
         if nf:
             self.notifications_forwarder = None
             start_thread(nf.release, "notifier-release", daemon=True)
 
-    def get_info(self, _source=None) -> dict:
+    def get_info(self, _source=None)-> Dict[str,Any]:
         if not self.notifications_forwarder:
             return {}
         return {"notifications" : self.notifications_forwarder.get_info()}
 
-    def get_server_features(self, _source=None) -> dict:
+    def get_server_features(self, _source=None)-> Dict[str,Any]:
         return {
             "notifications"                : {
                 "close"     : self.notifications,
@@ -52,7 +53,7 @@ class NotificationForwarder(StubServerMixin):
             "notifications.actions"        : self.notifications,    #added in v2.3
             }
 
-    def parse_hello(self, ss, _caps, send_ui):
+    def parse_hello(self, ss, _caps, send_ui) -> None:
         log("parse_hello(%s, {...}, %s) notifications_forwarder=%s", ss, send_ui, self.notifications_forwarder)
         if send_ui and self.notifications_forwarder:
             client_notification_actions = dict(
@@ -63,7 +64,7 @@ class NotificationForwarder(StubServerMixin):
             self.notifications_forwarder.support_actions = any(v for v in client_notification_actions.values())
 
 
-    def init_notification_forwarder(self):
+    def init_notification_forwarder(self) -> None:
         log("init_notification_forwarder() enabled=%s", self.notifications)
         if self.notifications and POSIX and not OSX:
             try:
@@ -76,7 +77,7 @@ class NotificationForwarder(StubServerMixin):
                 log("init_notification_forwarder()", exc_info=True)
                 self.notify_setup_error(e)
 
-    def notify_setup_error(self, exception):
+    def notify_setup_error(self, exception) -> None:
         log.warn("Warning: cannot forward notifications,")
         if str(exception).endswith("is already claimed on the session bus"):
             log.warn(" the interface is already claimed")
@@ -88,7 +89,7 @@ class NotificationForwarder(StubServerMixin):
         log.warn(" use the 'notifications=no' option")
 
 
-    def notify_new_user(self, ss):
+    def notify_new_user(self, ss) -> None:
         #tell other users:
         log("notify_new_user(%s) sources=%s", ss, self._server_sources)
         if not self._server_sources:
@@ -111,7 +112,8 @@ class NotificationForwarder(StubServerMixin):
             log.estr(e)
 
 
-    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon,
+                        summary, body, actions, hints, expire_timeout) -> None:
         assert self.notifications_forwarder and self.notifications
         #make sure that we run in the main thread:
         self.idle_add(self.do_notify_callback, dbus_id, nid,
@@ -122,7 +124,7 @@ class NotificationForwarder(StubServerMixin):
     def do_notify_callback(self, dbus_id, nid,
                            app_name, replaces_nid, app_icon,
                            summary, body,
-                           actions, hints, expire_timeout):
+                           actions, hints, expire_timeout) -> None:
         try:
             icon = self.get_notification_icon(str(app_icon))
             if os.path.isabs(str(app_icon)):
@@ -138,23 +140,23 @@ class NotificationForwarder(StubServerMixin):
             log.error("Error processing notification:")
             log.estr(e)
 
-    def get_notification_icon(self, _icon_string):
+    def get_notification_icon(self, _icon_string:str):
         return []
 
-    def notify_close_callback(self, nid):
+    def notify_close_callback(self, nid:int) -> None:
         assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
 
 
-    def _process_set_notify(self, proto, packet):
+    def _process_set_notify(self, proto, packet) -> None:
         assert self.notifications, "cannot toggle notifications: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_notifications = bool(packet[1])
 
-    def _process_notification_close(self, proto, packet):
+    def _process_notification_close(self, proto, packet) -> None:
         assert self.notifications
         nid, reason, text = packet[1:4]
         ss = self.get_server_source(proto)
@@ -174,7 +176,7 @@ class NotificationForwarder(StubServerMixin):
                     assert int(reason)>=0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
 
-    def _process_notification_action(self, proto, packet):
+    def _process_notification_action(self, proto, packet) -> None:
         assert self.notifications
         nid, action_key = packet[1:3]
         ss = self.get_server_source(proto)
@@ -195,7 +197,7 @@ class NotificationForwarder(StubServerMixin):
             client_callback(nid, action_key)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.notifications:
             self.add_packet_handlers({
                 "notification-close"    : self._process_notification_close,

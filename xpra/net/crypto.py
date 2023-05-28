@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,6 +8,7 @@ import os
 import sys
 import secrets
 from struct import pack
+from typing import Dict, Any
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version
@@ -189,7 +190,7 @@ def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options) -> dict:
+def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_options) -> Dict[str,Any]:
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
@@ -221,7 +222,7 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     caps["cipher"] = cipher
     return caps
 
-def get_crypto_caps(full=True) -> dict:
+def get_crypto_caps(full=True) -> Dict[str,Any]:
     crypto_backend_init()
     caps = {
             "padding"       : {"options"    : PADDING_OPTIONS},

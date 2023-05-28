@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import struct
 from threading import Event
+from typing import Dict, Any
 
 from xpra.net.rfb.rfb_const import RFBEncoding
 from xpra.net.rfb.rfb_encode import (
@@ -42,7 +43,7 @@ class RFBSource:
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
         self.quality = 0
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {
             "protocol"  : "rfb",
             "uuid"      : self.uuid,

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
+from typing import Dict, Any
 
 from xpra.scripts.config import parse_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -28,7 +29,7 @@ class MMAP_Server(StubServerMixin):
             self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
 
 
-    def get_info(self, _proto=None) -> dict:
+    def get_info(self, _proto=None) -> Dict[str,Any]:
         return {
             "mmap" : {
                 "supported"     : self.supports_mmap,

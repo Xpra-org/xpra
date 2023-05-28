@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #!python
 #cython: boundscheck=False, wraparound=False
+
+from typing import Dict
 
 from xpra.log import Logger
 log = Logger("util", "auth")
@@ -197,7 +199,7 @@ cdef class pam_session:
             else:
                 log("pam_putenv: %s", name_value)
 
-    def get_envlist(self) -> dict:
+    def get_envlist(self) -> Dict[str,str]:
         assert self.pam_handle!=NULL
         cdef char **envlist = pam_getenvlist(self.pam_handle)
         log("pam_getenvlist: %#x", <uintptr_t> envlist)

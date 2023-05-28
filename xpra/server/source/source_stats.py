@@ -8,6 +8,7 @@
 
 from math import sqrt
 from time import monotonic
+from typing import Dict, Any
 from collections import deque
 
 from xpra.server.cystats import (                                           #@UnresolvedImport
@@ -210,7 +211,7 @@ class GlobalPerformanceStatistics:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
         return factors
 
-    def get_connection_info(self) -> dict:
+    def get_connection_info(self) -> Dict[str,Any]:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
         now = monotonic()
         info = {
@@ -232,7 +233,7 @@ class GlobalPerformanceStatistics:
         return info
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic()

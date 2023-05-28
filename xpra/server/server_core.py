@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List
+from typing import Callable, List, Dict, Any
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -953,7 +953,7 @@ class ServerCore:
             socktypes = ["ssh"]
         return tuple(socktypes)
 
-    def get_mdns_info(self) -> dict:
+    def get_mdns_info(self) -> Dict[str,Any]:
         mdns_info = {
             "display"  : self.display_name,
             "username" : get_username(),
@@ -1320,7 +1320,7 @@ class ServerCore:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
-    def get_ssl_socket_options(self, socket_options) -> dict:
+    def get_ssl_socket_options(self, socket_options) -> Dict[str,Any]:
         ssllog("get_ssl_socket_options(%s)", socket_options)
         kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
         for k,v in socket_options.items():
@@ -1629,10 +1629,10 @@ class ServerCore:
             wslog("error closing connection following error: %s", ce)
 
 
-    def get_http_scripts(self) -> dict:
+    def get_http_scripts(self) -> Dict[str,Any]:
         return self._http_scripts
 
-    def http_query_dict(self, path) -> dict:
+    def http_query_dict(self, path) -> Dict[str,Any]:
         return dict(parse_qsl(urlparse(path).query))
 
     def send_json_response(self, data):
@@ -1719,7 +1719,7 @@ class ServerCore:
         displays_info = self._filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return self.send_json_response(displays_info)
 
-    def get_displays(self) -> dict:
+    def get_displays(self) -> Dict[str,Any]:
         from xpra.scripts.main import get_displays_info #pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
@@ -1728,14 +1728,14 @@ class ServerCore:
         sessions_info = self._filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return self.send_json_response(sessions_info)
 
-    def get_xpra_sessions(self) -> dict:
+    def get_xpra_sessions(self) -> Dict[str,Any]:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
     def http_info_request(self, path):
         return self.send_json_response(self.get_http_info())
 
-    def get_http_info(self) -> dict:
+    def get_http_info(self) -> Dict[str,Any]:
         return {
             "mode"              : self.get_server_mode(),
             "type"              : "Python",
@@ -2092,7 +2092,7 @@ class ServerCore:
         self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
 
-    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> dict:
+    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Dict[str,Any]:
         def auth_failed(msg):
             self.auth_failed(proto, msg)
             return None
@@ -2257,7 +2257,7 @@ class ServerCore:
         self.clean_quit(False)
 
 
-    def make_hello(self, source=None) -> dict:
+    def make_hello(self, source=None) -> Dict[str,Any]:
         now = time()
         ncaps = get_network_caps(FULL_INFO)
         ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
@@ -2297,7 +2297,7 @@ class ServerCore:
         log("id info request from %s", proto._conn)
         proto.send_now(("hello", self.get_session_id_info()))
 
-    def get_session_id_info(self) -> dict:
+    def get_session_id_info(self) -> Dict[str,Any]:
         #minimal information for identifying the session
         id_info = {
             "session-type"  : self.session_type,
@@ -2347,10 +2347,10 @@ class ServerCore:
         #this function is for info which MUST be collected from the UI thread
         return {}
 
-    def get_thread_info(self, proto:SocketProtocol) -> dict:
+    def get_thread_info(self, proto:SocketProtocol) -> Dict[str,Any]:
         return get_thread_info(proto)
 
-    def get_minimal_server_info(self) -> dict:
+    def get_minimal_server_info(self) -> Dict[str,Any]:
         return {
             "mode"              : self.get_server_mode(),
             "session-type"      : self.session_type,
@@ -2358,7 +2358,7 @@ class ServerCore:
             "machine-id"        : get_machine_id(),
             }
 
-    def get_server_info(self) -> dict:
+    def get_server_info(self) -> Dict[str,Any]:
         #this function is for non UI thread info
         info = get_server_info()
         now = time()
@@ -2371,7 +2371,7 @@ class ServerCore:
             })
         return info
 
-    def get_server_load_info(self) -> dict:
+    def get_server_load_info(self) -> Dict[str,Any]:
         if POSIX:
             try:
                 return {"load" : tuple(int(x*1000) for x in os.getloadavg())}
@@ -2379,7 +2379,7 @@ class ServerCore:
                 log("cannot get load average", exc_info=True)
         return {}
 
-    def get_server_exec_info(self) -> dict:
+    def get_server_exec_info(self) -> Dict[str,Any]:
         info = {
             "argv"              : sys.argv,
             "path"              : sys.path,
@@ -2400,7 +2400,7 @@ class ServerCore:
             info["original-desktop-display"] = self.original_desktop_display
         return info
 
-    def get_info(self, proto, *_args) -> dict:
+    def get_info(self, proto, *_args) -> Dict[str,Any]:
         start = monotonic()
         #this function is for non UI thread info
         info = {}
@@ -2454,12 +2454,12 @@ class ServerCore:
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 
-    def get_packet_handlers_info(self) -> dict:
+    def get_packet_handlers_info(self) -> Dict[str,Any]:
         return {
             "default"   : sorted(self._default_packet_handlers.keys()),
             }
 
-    def get_socket_info(self) -> dict:
+    def get_socket_info(self) -> Dict[str,Any]:
         si = {}
         def add_listener(socktype, info):
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)

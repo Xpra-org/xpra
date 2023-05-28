@@ -184,15 +184,20 @@ glFrameTerminatorGREMEDY : Optional[Callable] = None
 if OPENGL_DEBUG:
     try:
         # pylint: disable=ungrouped-imports
+        from OpenGL.GL.KHR import debug as KHR_debug
+        GL_DEBUG_OUTPUT = int(KHR_debug.GL_DEBUG_OUTPUT)  # @UndefinedVariable
+        GL_DEBUG_OUTPUT_SYNCHRONOUS = int(KHR_debug.GL_DEBUG_OUTPUT_SYNCHRONOUS)
         from OpenGL.GL.KHR.debug import (
-            GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS,
             glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR,
             )
     except ImportError:
         log("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     try:
-        from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
-        from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
+        from OpenGL.GL.GREMEDY import string_marker, frame_terminator
+        glInitStringMarkerGREMEDY = string_marker.glInitStringMarkerGREMEDY
+        glStringMarkerGREMEDY = string_marker.glStringMarkerGREMEDY
+        glInitFrameTerminatorGREMEDY = frame_terminator.glInitFrameTerminatorGREMEDY
+        glFrameTerminatorGREMEDY = frame_terminator.glFrameTerminatorGREMEDY
         from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
         def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
             log.error("src %x type %x id %x severity %x length %d message %s, param=%s",

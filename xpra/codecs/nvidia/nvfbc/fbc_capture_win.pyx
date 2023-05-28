@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@
 import os
 import sys
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
@@ -540,7 +541,7 @@ def get_version():
 def get_type():
     return "nvfbc"
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     info = {
             "type"              : "nvfbc",
             "version"           : get_version(),
@@ -601,7 +602,7 @@ cdef class NvFBC_SysCapture:
         raiseNvFBC(res, "NvFBCToSysSetUp")
         self.setup = True
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -744,7 +745,7 @@ cdef class NvFBC_CUDACapture:
         raiseNvFBC(res, "NvFBCCudaSetup")
         self.setup = True
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

@@ -59,7 +59,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def __repr__(self):
         return  "GTKClipboardProxy(%s)" % self._selection
 
-    def got_token(self, targets, target_data=None, claim=True, synchronous_client=False):
+    def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
         self.cancel_emit_token()
         if not self._enabled:

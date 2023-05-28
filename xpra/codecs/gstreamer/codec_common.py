@@ -202,14 +202,14 @@ class VideoPipeline(Pipeline):
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
-    def init_context(self, encoding:str, width:int, height:int, colorspace:int, options=None):
+    def init_context(self, encoding:str, width:int, height:int, colorspace:str, options=None):
         options = typedict(options or {})
         self.encoding : str = encoding
         self.width : int = width
         self.height : int = height
         self.colorspace : str = colorspace
         self.frames : int = 0
-        self.frame_queue = Queue()
+        self.frame_queue : Queue[Any] = Queue()
         self.pipeline_str : str = ""
         self.create_pipeline(options)
         self.src = self.pipeline.get_by_name("src")
@@ -257,7 +257,7 @@ class VideoPipeline(Pipeline):
 
     def get_info(self) -> Dict[str,Any]:
         info : Dict[str,Any] = get_info()
-        if self.colorspace is None:
+        if not self.colorspace:
             return info
         info.update({
             "frames"    : self.frames,
@@ -270,15 +270,15 @@ class VideoPipeline(Pipeline):
         return info
 
     def __repr__(self):
-        if self.colorspace is None:
+        if not self.colorspace:
             return "gstreamer(uninitialized)"
         return f"gstreamer({self.colorspace} - {self.width}x{self.height})"
 
     def is_ready(self) -> bool:
-        return self.colorspace is not None
+        return bool(self.colorspace)
 
     def is_closed(self) -> bool:
-        return self.colorspace is None
+        return not bool(self.colorspace)
 
 
     def get_encoding(self) -> str:
@@ -297,9 +297,8 @@ class VideoPipeline(Pipeline):
         super().cleanup()
         self.width = 0
         self.height = 0
-        self.colorspace = None
+        self.colorspace = ""
         self.encoding = ""
-        self.dst_formats = []
         self.frames = 0
 
 

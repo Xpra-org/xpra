@@ -7,6 +7,7 @@
 import os
 import subprocess
 from shutil import which
+from typing import Dict, Any
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -119,7 +120,7 @@ class AudioMixin(StubSourceMixin):
                  self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
                  self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         if not self.wants_audio or not self.audio_properties:
             return {}
         audio_props = self.audio_properties.copy()
@@ -547,10 +548,10 @@ class AudioMixin(StubSourceMixin):
         return encoder_latency
 
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         return {"audio" : self.get_audio_info()}
 
-    def get_audio_info(self) -> dict:
+    def get_audio_info(self) -> Dict[str,Any]:
         def audio_info(supported, prop, codecs):
             i = {"codecs" : codecs}
             if not supported:

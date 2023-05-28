@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any
 
 from xpra.server import server_features
 from xpra.util import merge_dicts, typedict, print_nested_dict
@@ -120,7 +122,7 @@ def get_client_connection_class(caps):
             self.send("hello", capabilities)
             self.hello_sent = True
 
-        def get_info(self) -> dict:
+        def get_info(self) -> Dict[str,Any]:
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
