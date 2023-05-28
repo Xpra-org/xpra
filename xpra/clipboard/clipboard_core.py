@@ -184,20 +184,21 @@ class ClipboardProtocolHelperCore:
     def client_reset(self) -> None:
         pass
 
-    def set_direction(self, can_send:bool, can_receive:bool, max_send_size:Optional[int]=None, max_receive_size:Optional[int]=None):
+    def set_direction(self, can_send:bool, can_receive:bool,
+                      max_send_size:Optional[int]=None, max_receive_size:Optional[int]=None) -> None:
         self.can_send = can_send
         self.can_receive = can_receive
         self.set_limits(max_send_size, max_receive_size)
         for proxy in self._clipboard_proxies.values():
             proxy.set_direction(can_send, can_receive)
 
-    def set_limits(self, max_send_size:Optional[int], max_receive_size:Optional[int]):
+    def set_limits(self, max_send_size:Optional[int], max_receive_size:Optional[int]) -> None:
         if max_send_size is not None:
             self.max_clipboard_send_size = max_send_size
         if max_receive_size is not None:
             self.max_clipboard_receive_size = max_receive_size
 
-    def enable_selections(self, selections=None):
+    def enable_selections(self, selections=None) -> None:
         #when clients first connect or later through the "clipboard-enable-selections" packet,
         #they can tell us which clipboard selections they want enabled
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
@@ -205,15 +206,15 @@ class ClipboardProtocolHelperCore:
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selections and bytestostr(selection) in selections)
 
-    def set_greedy_client(self, greedy:bool):
+    def set_greedy_client(self, greedy:bool) -> None:
         for proxy in self._clipboard_proxies.values():
             proxy.set_greedy_client(greedy)
 
-    def set_want_targets_client(self, want_targets:bool):
+    def set_want_targets_client(self, want_targets:bool) -> None:
         log("set_want_targets_client(%s)", want_targets)
         self._want_targets = want_targets
 
-    def set_preferred_targets(self, preferred_targets):
+    def set_preferred_targets(self, preferred_targets) -> None:
         for proxy in self._clipboard_proxies.values():
             proxy.set_preferred_targets(preferred_targets)
 
@@ -465,7 +466,7 @@ class ClipboardProtocolHelperCore:
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
-    def _process_clipboard_contents(self, packet):
+    def _process_clipboard_contents(self, packet:Tuple):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:7]
         selection = bytestostr(selection)
         wire_encoding = bytestostr(wire_encoding)
@@ -477,12 +478,12 @@ class ClipboardProtocolHelperCore:
             log("clipboard wire -> raw: %s -> %s", (dtype, dformat, wire_encoding, r(wire_data)), r(raw_data))
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
-    def _process_clipboard_contents_none(self, packet):
+    def _process_clipboard_contents_none(self, packet:Tuple):
         log("process clipboard contents none")
         request_id = packet[1]
         self._clipboard_got_contents(request_id, None, None, None)
 
-    def _clipboard_got_contents(self, request_id, dtype, dformat, data):
+    def _clipboard_got_contents(self, request_id:int, dtype, dformat, data):
         raise NotImplementedError()
 
 
@@ -491,17 +492,17 @@ class ClipboardProtocolHelperCore:
             self.progress_cb(len(self._clipboard_outstanding_requests), None)
 
 
-    def _process_clipboard_pending_requests(self, packet) -> None:
+    def _process_clipboard_pending_requests(self, packet:Tuple) -> None:
         pending = packet[1]
         if self.progress_cb:
             self.progress_cb(None, pending)
 
-    def _process_clipboard_enable_selections(self, packet) -> None:
+    def _process_clipboard_enable_selections(self, packet:Tuple) -> None:
         selections = tuple(bytestostr(x) for x in packet[1])
         self.enable_selections(selections)
 
 
-    def process_clipboard_packet(self, packet) -> None:
+    def process_clipboard_packet(self, packet:Tuple) -> None:
         packet_type = bytestostr(packet[0])
         handler = self._packet_handlers.get(packet_type)
         if handler:
@@ -539,16 +540,16 @@ class ClipboardProxyCore:
         self._last_targets = ()
         self.preferred_targets = []
 
-    def set_direction(self, can_send : bool, can_receive : bool):
+    def set_direction(self, can_send : bool, can_receive : bool) -> None:
         self._can_send = can_send
         self._can_receive = can_receive
 
-    def set_want_targets(self, want_targets):
+    def set_want_targets(self, want_targets) -> None:
         self._want_targets = want_targets
 
 
-    def get_info(self) -> dict:
-        info = {
+    def get_info(self) -> Dict[str,Any]:
+        info : Dict[str,Any] = {
                 "have_token"            : self._have_token,
                 "enabled"               : self._enabled,
                 "greedy_client"         : self._greedy_client,
@@ -670,7 +671,7 @@ class ClipboardProxyCore:
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
-    def get_contents(self, target, got_contents):
+    def get_contents(self, target:str, got_contents:Callable) -> None:
         pass
 
 
