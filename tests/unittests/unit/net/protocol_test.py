@@ -10,8 +10,9 @@ import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import csv, envint, envbool
+from xpra.common import noop
 from xpra.net.protocol import socket_handler
-from xpra.net.protocol.check import verify_packet
+from xpra.net.protocol import check
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
@@ -113,15 +114,26 @@ class ProtocolTest(unittest.TestCase):
         return p
 
     def test_verify_packet(self):
+        verify_packet = check.verify_packet
+        def nok(packet):
+            assert verify_packet(packet) is False, f"packet {packet} should fail verification"
+        def ok(packet):
+            assert verify_packet(packet) is True, f"packet {packet} should not fail verification"
+        #packets are iterable, so this should fail:
         for x in (True, 1, "hello", {}, None):
-            assert verify_packet(x) is False
-        assert verify_packet(["foo", 1]) is True
-        assert verify_packet(["foo", [1,2,3], {1:2}]) is True
+            nok(x)
+        ok(("foo", 1))
+        ok(("foo", [1,2,3], {1:2}))
         with silence_error(socket_handler):
-            assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
-            assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
-            assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
-            assert verify_packet(["foo", [1,2,3], {1 : 2.2}]) is False
+            try:
+                saved_verify_error_fn = check.verify_error
+                check.verify_error = noop
+                nok(["no-floats test", 1.1])
+                nok(["no-None-values", [None], {1:2}])
+                nok(["no-generic-objects", [1,2,3], {object() : 2}])
+                nok(["no-nested-floats", [1,2,3], {1 : 2.2}])
+            finally:
+                check.verify_error = saved_verify_error_fn
 
     def test_invalid_data(self):
         self.do_test_invalid_data([b"\0"*1])
