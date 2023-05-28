@@ -83,7 +83,7 @@ class TestMain(unittest.TestCase):
         opts = AdHocStruct()
         opts.socket_dirs = [socket_dir]
         opts.socket_dir = socket_dir
-        assert find_session_by_name(opts, "not-a-valid-session") is None
+        assert not find_session_by_name(opts, "not-a-valid-session")
 
 
     def test_connect_to(self):
