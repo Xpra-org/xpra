@@ -221,13 +221,13 @@ def init_server_mmap(mmap_filename:str, mmap_size=0):
     try:
         import mmap
         if not WIN32:
-            assert sys.platform=="win32"
             actual_mmap_size = os.path.getsize(mmap_filename)
             if mmap_size and actual_mmap_size!=mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                          mmap_filename, mmap_size, actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
         else:
+            assert sys.platform=="win32"
             if mmap_size==0:
                 log.error("Error: client did not supply the mmap area size")
                 log.error(" try updating your client version?")
