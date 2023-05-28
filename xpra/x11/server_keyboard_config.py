@@ -571,7 +571,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 for entry in entries:
                     if entry.group==group:
                         return entry.keycode, entry.group
-        return keycode, rgroup
+        return keycode or 0, rgroup or 0
 
     def get_current_mask(self) -> List:
         root = get_default_root_window()

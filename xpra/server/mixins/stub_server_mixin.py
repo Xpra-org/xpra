@@ -5,7 +5,7 @@
 
 import os
 import shlex
-from typing import Callable, Any
+from typing import Callable, Any, List
 
 from xpra.util import typedict
 from xpra.os_util import WIN32
@@ -134,7 +134,7 @@ class StubServerMixin:
         return os.environ.copy()
 
 
-    def get_full_child_command(self, cmd, use_wrapper : bool=True) -> list:
+    def get_full_child_command(self, cmd, use_wrapper : bool=True) -> List[str]:
         #make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return list(cmd)

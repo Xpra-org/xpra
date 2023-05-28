@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from typing import Any
+from typing import Any, Tuple, Dict, Callable
 
 from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ("lz4", "zlib", "brotli", "none")
+ALL_COMPRESSORS : Tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
 #order for performance:
-PERFORMANCE_ORDER = ("none", "lz4", "zlib", "brotli")
+PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "zlib", "brotli")
 #require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION = ("lz4", "zlib", "brotli")
+PERFORMANCE_COMPRESSION : Tuple[str, ...] = ("lz4", "zlib", "brotli")
 
 Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])
 
-COMPRESSION = {}
+COMPRESSION : Dict[str,Compression] = {}
 
 
-def init_lz4():
+def init_lz4() -> Compression:
     #pylint: disable=import-outside-toplevel
     #pylint: disable=redefined-outer-name
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
@@ -36,7 +36,7 @@ def init_lz4():
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
 
-def init_brotli():
+def init_brotli() -> Compression:
     #pylint: disable=import-outside-toplevel
     #pylint: disable=redefined-outer-name
     from xpra.net.protocol.header import BROTLI_FLAG
@@ -55,7 +55,7 @@ def init_brotli():
         return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
-def init_zlib():
+def init_zlib() -> Compression:
     #pylint: disable=import-outside-toplevel
     import zlib
     from xpra.net.protocol.header import ZLIB_FLAG
@@ -69,9 +69,9 @@ def init_zlib():
         v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
         assert not d.unconsumed_tail, "not all data was decompressed"
         return v
-    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)  # @UndefinedVariable
+    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)  # @UndefinedVariable # type: ignore  # noqa
 
-def init_none():
+def init_none() -> Compression:
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
@@ -81,11 +81,12 @@ def init_none():
     return Compression("none", None, nocompress, nodecompress)
 
 
-def init_compressors(*names):
+def init_compressors(*names) -> None:
     for x in names:
+        assert x not in ("compressors", "all"), "attempted to recurse!"
         if not envbool("XPRA_"+x.upper(), True):
             continue
-        fn = globals().get(f"init_{x}")
+        fn : Callable = globals().get(f"init_{x}")
         try:
             c = fn()
             assert c
@@ -96,7 +97,7 @@ def init_compressors(*names):
             logger = Logger("network", "protocol")
             logger(f"no {x}", exc_info=True)
 
-def init_all():
+def init_all() -> None:
     init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
 
 
@@ -116,14 +117,14 @@ def get_compression_caps(full_info : int=1) -> dict[str,Any]:
         ccaps[""] = True
     return caps
 
-def get_enabled_compressors(order=ALL_COMPRESSORS):
+def get_enabled_compressors(order=ALL_COMPRESSORS) -> Tuple[str,...]:
     return tuple(x for x in order if x in COMPRESSION)
 
-def get_compressor(name):
+def get_compressor(name) -> Compression:
     c = COMPRESSION.get(name)
-    if c is None:
-        raise ValueError(f"{name!r} compression is not supported")
-    return c.compress
+    if c is not None:
+        return c.compress
+    raise ValueError(f"{name!r} compression is not supported")
 
 
 class Compressed:
@@ -169,7 +170,7 @@ class Compressible(LargeStructure):
         raise NotImplementedError(f"compress() function is not defined on {self} ({type(self)})")
 
 
-def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
+def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Compressed:
     size = len(data)
     def no():
         return Compressed(f"raw {datatype}", data, can_inline=can_inline)
@@ -208,7 +209,7 @@ def get_compression_type(level) -> str:
     return "zlib"
 
 
-def decompress(data, level):
+def decompress(data:bytes, level:int):
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"
@@ -218,7 +219,7 @@ def decompress(data, level):
         algo = "zlib"
     return decompress_by_name(data, algo)
 
-def decompress_by_name(data, algo):
+def decompress_by_name(data:bytes, algo:str):
     c = COMPRESSION.get(algo)
     if c is None:
         raise InvalidCompressionException(f"{algo} is not available")

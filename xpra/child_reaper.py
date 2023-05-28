@@ -241,7 +241,7 @@ def getChildReaper() -> ChildReaper:
 def reaper_cleanup() -> None:
     s = singleton
     if s is not None:
-        singleton.cleanup()
+        s.cleanup()
     #keep it around,
     #so we don't try to reinitialize it from the wrong thread
     #(signal requires the main thread)

@@ -47,7 +47,7 @@ class Capture(Pipeline):
         self.height : int = height
         self.frames : int = 0
         self.framerate : int  = 10
-        self.image = Queue(maxsize=1)
+        self.image : Queue[ImageWrapper] = Queue(maxsize=1)
         self.create_pipeline(element)
         assert width>0 and height>0
 
@@ -152,7 +152,7 @@ class CaptureAndEncode(Capture):
             "speed" : 100,
             "quality" : 100,
             })
-        self.profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else None)
+        self.profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
         eopts = get_video_encoder_options(encoder, self.profile, options)
         vcaps = get_video_encoder_caps(encoder)
         self.extra_client_info = vcaps.copy()

@@ -346,7 +346,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.emit("send-clipboard-request", self._selection, req_target)
         waiting.append((requestor, target, prop, event.time))
 
-    def set_selection_response(self, requestor, target, prop, dtype, dformat, data, time=0) -> None:
+    def set_selection_response(self, requestor:int, target:str, prop:str, dtype:str, dformat:int, data, time:int=0) -> None:
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
             requestor, target, prop, dtype, dformat, ellipsizer(data), time)
         #answer the selection request:
@@ -370,7 +370,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             log.warn(f" property {prop!r}")
             log.warn(f" {e}")
 
-    def got_contents(self, target, dtype=None, dformat=None, data=None) -> None:
+    def got_contents(self, target:str, dtype:str="", dformat:int=0, data=None) -> None:
         #if this is the special target 'TARGETS', cache the result:
         if target=="TARGETS" and dtype=="ATOM" and dformat==32:
             self.targets = xatoms_to_strings(data)

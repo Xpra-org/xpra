@@ -312,7 +312,7 @@ def get_rgb_compression_options() -> List[str]:
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
-    compressors = [x for x in compressors if x!="brotli"]
+    compressors = tuple(x for x in compressors if x!="brotli")
     RGB_COMP_OPTIONS : List[str] = ["Raw RGB"]
     if compressors:
         RGB_COMP_OPTIONS  += ["/".join(compressors)]

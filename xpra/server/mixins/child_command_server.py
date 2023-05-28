@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,9 +10,10 @@ import signal
 import os.path
 from time import monotonic
 from subprocess import Popen
+from typing import Dict, List, Callable, Any, Optional, Tuple
 
 from xpra.platform.features import COMMAND_SIGNALS
-from xpra.child_reaper import getChildReaper, reaper_cleanup
+from xpra.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
 from xpra.os_util import (
     bytestostr,
     restore_script_env,
@@ -40,7 +41,7 @@ class ChildCommandServer(StubServerMixin):
     """
 
     def __init__(self):
-        self.child_display = None
+        self.child_display : str = ""
         self.start_commands = []
         self.start_child_commands = []
         self.start_after_connect = []
@@ -49,29 +50,29 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_on_connect = []
         self.start_on_last_client_exit = []
         self.start_child_on_last_client_exit = []
-        self.exit_with_children = False
-        self.children_count = 0
-        self.start_after_connect_done = False
-        self.start_new_commands = False
+        self.exit_with_children : bool = False
+        self.children_count : int = 0
+        self.start_after_connect_done : bool = False
+        self.start_new_commands : bool = False
         self.source_env = {}
         self.start_env = {}
         self.exec_cwd = None
         self.exec_wrapper = None
-        self.terminate_children = False
-        self.children_started = []
+        self.terminate_children : bool = False
+        self.children_started : List[ProcInfo] = []
         self.child_reaper = None
-        self.reaper_exit = self.reaper_exit_check
+        self.reaper_exit : Callable = self.reaper_exit_check
         #does not belong here...
         if not hasattr(self, "_upgrading"):
             self._upgrading = None
         if not hasattr(self, "session_name"):
-            self.session_name = ""
+            self.session_name : str = ""
         self.menu_provider = None
         #wait for main loop to run
         #and ensure that we don't run `late_start()` more than once,
         #even if __init__ is called multiple times:
         if not getattr(self, "late_start_requested", False):
-            self.late_start_requested = True
+            self.late_start_requested : bool = True
             self.idle_add(self.late_start)
 
     def late_start(self):
@@ -82,7 +83,7 @@ class ChildCommandServer(StubServerMixin):
         start_thread(do_late_start, "command-late-start", daemon=True)
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
         self.start_new_commands = opts.start_new_commands
@@ -99,21 +100,21 @@ class ChildCommandServer(StubServerMixin):
         if opts.exec_wrapper:
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.child_reaper = getChildReaper()
-        self.source_env = source_env(opts.source_start)
+        self.source_env : Dict[str, str] = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
         if self.start_new_commands:
             #may already have been initialized by servercore:
             self.menu_provider = self.menu_provider or get_menu_provider()
             self.menu_provider.on_reload.append(self.send_updated_menu)
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         self.exec_start_commands()
         def set_reaper_callback():
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if self.terminate_children and self._upgrading!=EXITING_CODE:
             self.terminate_children_processes()
         def ignore():
@@ -124,7 +125,7 @@ class ChildCommandServer(StubServerMixin):
         reaper_cleanup()
 
 
-    def get_server_features(self, _source) -> dict:
+    def get_server_features(self, _source) -> Dict[str,Any]:
         return {
             "start-new-commands"        : self.start_new_commands,
             "exit-with-children"        : self.exit_with_children,
@@ -141,8 +142,8 @@ class ChildCommandServer(StubServerMixin):
         return self.menu_provider.get_menu_data()
 
 
-    def get_caps(self, source) -> dict:
-        caps = {}
+    def get_caps(self, source) -> Dict[str,Any]:
+        caps : Dict[str,Any] = {}
         if not source:
             return caps
         #don't assume we have a real ClientConnection object:
@@ -155,7 +156,7 @@ class ChildCommandServer(StubServerMixin):
         return caps
 
 
-    def send_initial_data(self, ss, caps, send_ui, share_count):
+    def send_initial_data(self, ss, caps:dict, send_ui:bool, share_count:int) -> None:
         if not getattr(ss, "xdg_menu", False):
             return
         if ss.xdg_menu_update:
@@ -163,14 +164,14 @@ class ChildCommandServer(StubServerMixin):
             #so do it in a throw-away thread:
             start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
 
-    def send_xdg_menu_data(self, ss):
+    def send_xdg_menu_data(self, ss) -> None:
         if ss.is_closed():
             return
         xdg_menu = self._get_xdg_menu_data() or {}
         log(f"{len(xdg_menu)} entries sent in initial data")
         ss.send_setting_change("xdg-menu", xdg_menu)
 
-    def send_updated_menu(self, xdg_menu):
+    def send_updated_menu(self, xdg_menu) -> None:
         log("send_updated_menu(%s)", ellipsizer(xdg_menu))
         for source in tuple(self._server_sources.values()):
             #some sources don't have this attribute (ie: RFBSource does not):
@@ -178,8 +179,8 @@ class ChildCommandServer(StubServerMixin):
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
 
-    def get_info(self, _proto) -> dict:
-        info = {
+    def get_info(self, _proto) -> Dict[str,Any]:
+        info : Dict[str,Any] = {
             "start"                     : self.start_commands,
             "start-late"                : self.start_late_commands,
             "start-child"               : self.start_child_commands,
@@ -205,11 +206,11 @@ class ChildCommandServer(StubServerMixin):
         return {"commands": info}
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
 
-    def get_child_env(self):
+    def get_child_env(self) -> Dict[str,str]:
         #subclasses may add more items (ie: fakexinerama)
         env = restore_script_env(super().get_child_env())
         env.update(self.source_env)
@@ -218,32 +219,32 @@ class ChildCommandServer(StubServerMixin):
             env["DISPLAY"] = self.child_display
         return env
 
-    def get_full_child_command(self, cmd, use_wrapper=True) -> list:
+    def get_full_child_command(self, cmd, use_wrapper=True) -> List[str]:
         #make sure we have it as a list:
         cmd = super().get_full_child_command(cmd, use_wrapper)
         if not use_wrapper or not self.exec_wrapper:
             return cmd
         return self.exec_wrapper + cmd
 
-    def exec_start_late_commands(self):
+    def exec_start_late_commands(self) -> None:
         log("exec_start_late_commands() start-late=%s, start_child=%s",
                   self.start_late_commands, self.start_child_late_commands)
         self._exec_commands(self.start_late_commands, self.start_child_late_commands)
 
-    def exec_start_commands(self):
+    def exec_start_commands(self) -> None:
         log("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
         self._exec_commands(self.start_commands, self.start_child_commands)
 
-    def exec_after_connect_commands(self):
+    def exec_after_connect_commands(self) -> None:
         log("exec_after_connect_commands() start=%s, start_child=%s",
             self.start_after_connect, self.start_child_after_connect)
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
-    def exec_on_connect_commands(self):
+    def exec_on_connect_commands(self) -> None:
         log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
 
-    def _exec_commands(self, start_list, start_child_list):
+    def _exec_commands(self, start_list, start_child_list) -> None:
         started = []
         if start_list:
             for x in start_list:
@@ -261,7 +262,8 @@ class ChildCommandServer(StubServerMixin):
         if not self.session_name:
             self.idle_add(self.guess_session_name, procs)
 
-    def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
+    def start_command(self, name:str, child_cmd, ignore:bool=False, callback:Optional[Callable]=None,
+                      use_wrapper:bool=True, shell:bool=False, **kwargs):
         env = self.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
@@ -290,19 +292,19 @@ class ChildCommandServer(StubServerMixin):
             return None
 
 
-    def add_process(self, process, name, command, ignore=False, callback=None):
+    def add_process(self, process, name:str, command, ignore:bool=False, callback:Optional[Callable]=None) -> ProcInfo:
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     def is_child_alive(self, proc) -> bool:
         return proc is not None and proc.poll() is None
 
-    def reaper_exit_check(self):
+    def reaper_exit_check(self) -> None:
         log(f"reaper_exit_check() exit_with_children={self.exit_with_children}")
         if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
 
-    def terminate_children_processes(self):
+    def terminate_children_processes(self) -> None:
         cl = tuple(self.children_started)
         self.children_started = []
         log(f"terminate_children_processes() children={cl}")
@@ -333,7 +335,7 @@ class ChildCommandServer(StubServerMixin):
             log(f"still not terminated: {wait_for}")
         log("done waiting for child commands")
 
-    def guess_session_name(self, procs=None):
+    def guess_session_name(self, procs=None) -> None:
         if not procs:
             return
         from xpra.scripts.server import IBUS_DAEMON_COMMAND  # pylint: disable=import-outside-toplevel
@@ -366,7 +368,7 @@ class ChildCommandServer(StubServerMixin):
                 self.mdns_update()
 
 
-    def _process_start_command(self, proto, packet):
+    def _process_start_command(self, proto, packet:Tuple):
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
@@ -387,7 +389,7 @@ class ChildCommandServer(StubServerMixin):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_command_signal(self, _proto, packet):
+    def _process_command_signal(self, _proto, packet:Tuple) -> None:
         pid = packet[1]
         signame = bytestostr(packet[2])
         if signame not in COMMAND_SIGNALS:
@@ -412,7 +414,7 @@ class ChildCommandServer(StubServerMixin):
             log.estr(e)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         log("init_packet_handlers() COMMANDS_SIGNALS=%s, start new commands=%s",
             COMMAND_SIGNALS, self.start_new_commands)
         if COMMAND_SIGNALS:

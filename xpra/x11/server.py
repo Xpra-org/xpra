@@ -231,10 +231,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
         elif server_features.windows:
-            #update the default so Wm will use it
+            #update the static default so the Wm instance will use it
             #when we do instantiate it:
-            from xpra.x11.gtk_x11 import wm
-            wm.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
+            from xpra.x11.gtk_x11 import wm as wm_module
+            wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
     def init_packet_handlers(self) -> None:

@@ -10,6 +10,9 @@ ignore_missing_imports = True
 [mypy-psutil.*]
 ignore_missing_imports = True
 
+[mypy-cpuinfo.*]
+ignore_missing_imports = True
+
 [mypy-certifi.*]
 ignore_missing_imports = True
 
@@ -43,6 +46,9 @@ ignore_missing_imports = True
 [mypy-avahi.*]
 ignore_missing_imports = True
 
+[mypy-_ssl.*]
+ignore_missing_imports = True
+
 [mypy-aioquic.*]
 ignore_missing_imports = True
 
@@ -64,7 +70,7 @@ ignore_missing_imports = True
 [mypy-xdg.*]
 ignore_missing_imports = True
 
-[mypy-xpra.gtk_common.gdk_bindings.*]
+[mypy-xpra.gtk_common.gtk3.gdk_bindings.*]
 ignore_missing_imports = True
 
 [mypy-xpra.x11.gtk3.gdk_bindings.*]
@@ -83,6 +89,9 @@ ignore_missing_imports = True
 ignore_missing_imports = True
 
 [mypy-dbus.*]
+ignore_missing_imports = True
+
+[mypy-xpra.buffers.membuf.*]
 ignore_missing_imports = True
 
 [mypy-xpra.buffers.cyxor.*]
@@ -142,22 +151,20 @@ ignore_missing_imports = True
 [mypy-comtypes.*]
 ignore_missing_imports = True
 
-[mypy-ctypes.windll]
+[mypy-ctypes.*]
 ignore_missing_imports = True
-
-[mypy-ctypes.WinDLL]
-ignore_missing_imports = True
-
-[mypy-ctypes.WINFUNCTYPE]
-ignore_missing_imports = True
-
-[mypy-ctypes.GetLastError]
-ignore_missing_imports = True
+disable_error_code = attr-defined
 
 [mypy-xpra.platform.darwin.*]
 ignore_missing_imports = True
 
 [mypy-objc.*]
+ignore_missing_imports = True
+
+[mypy-PyObjCTools.*]
+ignore_missing_imports = True
+
+[mypy-Foundation.*]
 ignore_missing_imports = True
 
 [mypy-Quartz.*]

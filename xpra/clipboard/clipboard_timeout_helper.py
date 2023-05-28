@@ -1,11 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Tuple
+
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore
+from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore, ClipboardProxyCore
 from xpra.util import repr_ellipsized, ellipsizer, envint, engs
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
@@ -27,26 +29,26 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-        self._clipboard_outstanding_requests = {}
+        self._clipboard_outstanding_requests : Dict[int, Tuple] = {}
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         #reply to outstanding requests with "no data":
         for request_id in tuple(self._clipboard_outstanding_requests.keys()):
             self._clipboard_got_contents(request_id)
         self._clipboard_outstanding_requests = {}
         super().cleanup()
 
-    def make_proxy(self, selection):
+    def make_proxy(self, selection:str):
         raise NotImplementedError()
 
-    def _get_proxy(self, selection):
+    def _get_proxy(self, selection:str) -> ClipboardProxyCore:
         proxy = self._clipboard_proxies.get(selection)
         if not proxy:
             log.warn("Warning: no clipboard proxy for '%s'", selection)
             return None
         return proxy
 
-    def set_want_targets_client(self, want_targets):
+    def set_want_targets_client(self, want_targets:bool) -> None:
         super().set_want_targets_client(want_targets)
         #pass it on to the ClipboardProxy instances:
         for proxy in self._clipboard_proxies.values():
@@ -56,7 +58,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     ############################################################################
     # network methods for communicating with the remote clipboard:
     ############################################################################
-    def _send_clipboard_token_handler(self, proxy, packet_data=()):
+    def _send_clipboard_token_handler(self, proxy : ClipboardProxyCore, packet_data=()):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)
@@ -78,7 +80,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)
 
-    def _send_clipboard_request_handler(self, proxy, selection, target):
+    def _send_clipboard_request_handler(self, proxy:ClipboardProxyCore, selection:str, target:str):
         log("send_clipboard_request_handler%s", (proxy, selection, target))
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
@@ -89,7 +91,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         self.progress()
         self.send("clipboard-request", request_id, remote, target)
 
-    def timeout_request(self, request_id):
+    def timeout_request(self, request_id:int) -> None:
         try:
             selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
         except KeyError:
@@ -103,7 +105,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         if proxy:
             proxy.got_contents(target)
 
-    def _clipboard_got_contents(self, request_id, dtype=None, dformat=None, data=None):
+    def _clipboard_got_contents(self, request_id:int, dtype:str="", dformat:int=0, data=None) -> None:
         try:
             timer, selection, target = self._clipboard_outstanding_requests.pop(request_id)
         except KeyError:
@@ -121,7 +123,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         if proxy:
             proxy.got_contents(target, dtype, dformat, data)
 
-    def client_reset(self):
+    def client_reset(self) -> None:
         super().client_reset()
         #timeout all pending requests
         cor = self._clipboard_outstanding_requests

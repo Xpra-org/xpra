@@ -176,7 +176,7 @@ class Pipeline(GObject.GObject):
             return
         b.remove_signal_watch()
         self.pipeline = None
-        self.state = None
+        self.state = "destroyed"
         self.info = {}
         f = self.file
         if f:

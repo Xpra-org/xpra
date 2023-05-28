@@ -82,7 +82,7 @@ def get_xorg_bin() -> Optional[str]:
         if os.path.exists(p):
             return p
     #look for it in $PATH:
-    for x in os.environ.get("PATH").split(os.pathsep): # pragma: no cover
+    for x in os.environ.get("PATH", "").split(os.pathsep): # pragma: no cover
         xorg = os.path.join(x, "Xorg")
         if os.path.isfile(xorg):
             return xorg
@@ -374,12 +374,12 @@ def read_config(conf_file:str) -> Dict:
     return d
 
 
-def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
+def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME) -> List[str]:
     """
         Returns all the config file paths found in the config directory
         ie: ["/etc/xpra/conf.d/15_features.conf", ..., "/etc/xpra/xpra.conf"]
     """
-    d = []
+    d : List[str] = []
     cdir = os.path.expanduser(conf_dir)
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug(f"invalid config directory: {cdir!r}")
@@ -1146,9 +1146,9 @@ CLONES : Dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-TRUE_OPTIONS : Tuple[str, ...] = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS : Tuple[str, ...] = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS : Tuple[str, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
+TRUE_OPTIONS : Tuple[Any, ...] = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS : Tuple[Any, ...] = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS : Tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS : Tuple[str, ...] = ("off", )
 
 def parse_bool(k:str, v, auto=None) -> Optional[bool]:
@@ -1442,10 +1442,10 @@ def fixup_compression(options) -> None:
     #packet compression:
     from xpra.net import compression
     cstr = csvstrl(options.compressors)
-    if cstr=="none":
-        compressors = []
-    elif cstr=="all":
+    if cstr=="all":
         compressors = compression.PERFORMANCE_ORDER
+    elif cstr=="none":
+        compressors = []
     else:
         compressors = nodupes(cstr)
         unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)

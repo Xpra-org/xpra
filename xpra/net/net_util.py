@@ -8,7 +8,7 @@
 
 import socket
 import sys
-from typing import Dict, Tuple, Any, Optional
+from typing import Dict, Tuple, Any, Optional, Callable
 
 from xpra.os_util import WIN32
 from xpra.version_util import parse_version
@@ -362,6 +362,11 @@ def get_net_config() -> dict:
     return config
 
 
+SSL_CONV : Dict[str, Tuple[str,Callable]] = {
+    ""           : ("version-str", str),
+    "_INFO"      : ("version", parse_version),
+    "_NUMBER"    : ("version-number", int),
+    }
 def get_ssl_info(show_constants=False) -> Dict[str,Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
@@ -388,15 +393,12 @@ def get_ssl_info(show_constants=False) -> Dict[str,Any]:
         v = getattr(ssl, k, None)
         if v is not None:
             info[name] = v
-    for k, idef in {
-                    ""           : ("version-str", str),
-                    "_INFO"      : ("version", parse_version),
-                    "_NUMBER"    : ("version-number", int),
-                    }.items():
+    for k, idef in SSL_CONV.items():
         v = getattr(ssl, f"OPENSSL_VERSION{k}", None)
         if v is not None:
             name, conv = idef
-            info.setdefault("openssl", {})[name] = conv(v)
+            sslinfo = info.setdefault("openssl", {})
+            sslinfo[name] = conv(v)
     return info
 
 

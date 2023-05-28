@@ -137,6 +137,8 @@ class SystemTray(GObject.GObject):
     def setup_tray_window(self) -> None:
         display = Gdk.Display.get_default()
         root = get_default_root_window()
+        if root is None:
+            raise RuntimeError("no root window!")
         screen = root.get_screen()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         log(f"setup tray: current selection owner={owner:x}")
