@@ -849,12 +849,8 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     if not MDNSPublishers or not get_interface_index:
         MDNS_WARNING = True
         log.warn("Warning: failed to load the mdns publishers")
-        for e in exceptions:
-            try:
-                einfo = str(e)
-            except Exception:
-                einfo = str(type(e))
-            log.warn(" %s", einfo)
+        for exc in exceptions:
+            log.warn(" %s", str(exc) or type(exc))
         log.warn(" install 'python-avahi', 'python-zeroconf'")
         log.warn(" or use the 'mdns=no' option")
         return ()
@@ -1277,8 +1273,9 @@ def load_ssl_options(server_hostname, port) -> Dict[str,Any]:
                         continue
                     #some options use boolean values, convert them back:
                     if k in ("check-hostname", ):
-                        v = v.lower() in TRUE_OPTIONS
-                    options[k] = v
+                        options[k] = v.lower() in TRUE_OPTIONS
+                    else:
+                        options[k] = v
         except OSError as  e:
             ssllog.warn("Warning: failed to read %r: %s", f, e)
     ssllog("load_ssl_options%s=%s (from %r)", (server_hostname, port), options, f)

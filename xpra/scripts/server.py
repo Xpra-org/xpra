@@ -16,7 +16,7 @@ import glob
 import os.path
 import datetime
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -402,7 +402,7 @@ def session_file_path(filename:str) -> str:
         raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
 
-def load_session_file(filename:str) -> str:
+def load_session_file(filename:str) -> Optional[bytes]:
     return load_binary_file(session_file_path(filename))
 
 def save_session_file(filename:str, contents, uid:int=None, gid:int=None):

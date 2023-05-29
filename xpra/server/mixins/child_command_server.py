@@ -10,7 +10,8 @@ import signal
 import os.path
 from time import monotonic
 from subprocess import Popen
-from typing import Dict, List, Callable, Any, Optional, Tuple
+from typing import Dict, List, Callable, Any, Optional, Tuple, Union
+from gi.repository import GLib
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
@@ -73,7 +74,7 @@ class ChildCommandServer(StubServerMixin):
         #even if __init__ is called multiple times:
         if not getattr(self, "late_start_requested", False):
             self.late_start_requested : bool = True
-            self.idle_add(self.late_start)
+            GLib.idle_add(self.late_start)
 
     def late_start(self):
         def do_late_start():
@@ -112,7 +113,7 @@ class ChildCommandServer(StubServerMixin):
         def set_reaper_callback():
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
-        self.idle_add(set_reaper_callback)
+        GLib.idle_add(set_reaper_callback)
 
     def cleanup(self) -> None:
         if self.terminate_children and self._upgrading!=EXITING_CODE:
@@ -180,7 +181,7 @@ class ChildCommandServer(StubServerMixin):
 
 
     def get_info(self, _proto) -> Dict[str,Any]:
-        info = {
+        info : Dict[Any,Any] = {
             "start"                     : self.start_commands,
             "start-late"                : self.start_late_commands,
             "start-child"               : self.start_child_commands,
@@ -261,7 +262,7 @@ class ChildCommandServer(StubServerMixin):
                         started.append(proc)
         procs = tuple(x for x in started if x is not None)
         if not self.session_name:
-            self.idle_add(self.guess_session_name, procs)
+            GLib.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name:str, child_cmd, ignore:bool=False, callback:Optional[Callable]=None,
                       use_wrapper:bool=True, shell:bool=False, **kwargs):
@@ -303,7 +304,7 @@ class ChildCommandServer(StubServerMixin):
         log(f"reaper_exit_check() exit_with_children={self.exit_with_children}")
         if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            self.idle_add(self.clean_quit)
+            GLib.idle_add(self.clean_quit)
 
     def terminate_children_processes(self) -> None:
         cl = tuple(self.children_started)
@@ -376,8 +377,9 @@ class ChildCommandServer(StubServerMixin):
             log.warn(" but the feature is currently disabled")
             return
         name, command, ignore = packet[1:4]
+        cmd : Union[str,Tuple]
         if isinstance(command, (list, tuple)):
-            cmd = command
+            cmd = Tuple(command)
         else:
             cmd = u(command)
         proc = self.start_command(u(name), cmd, ignore)

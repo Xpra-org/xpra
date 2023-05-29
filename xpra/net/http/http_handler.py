@@ -105,7 +105,7 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
     trailing_slash = path.rstrip().endswith('/')
     path = posixpath.normpath(unquote(path))
     words = path.split('/')
-    words = filter(None, words)
+    words = list(filter(None, words))
     path = web_root
     xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
     www_dir_options = [web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
@@ -155,7 +155,7 @@ def load_path(headers:Dict[str,str], path:str) -> Tuple[int,Dict[str,Any],bytes]
         log("guess_type(%s)=%s", path, content_type)
         if content_type:
             extra_headers["Content-type"] = content_type
-        accept = headers.get('accept-encoding', '').split(",")
+        accept = tuple(headers.get('accept-encoding', '').split(","))
         accept = tuple(x.split(";")[0].strip() for x in accept)
         content = None
         log("accept-encoding=%s", csv(accept))
@@ -219,7 +219,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     (subclassed in WebSocketRequestHandler to add WebSocket support)
     """
 
-    wbufsize = None     #we flush explicitly when needed
+    wbufsize = 0    #we flush explicitly when needed
     server_version = "Xpra-HTTP-Server"
 
     def __init__(self, sock, addr,

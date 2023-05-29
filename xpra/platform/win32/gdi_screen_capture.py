@@ -10,7 +10,7 @@ from ctypes import (
     Structure, create_string_buffer, addressof, byref, c_ubyte,
     )
 from io import BytesIO
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional, ByteString
 from PIL import Image
 
 from xpra.log import Logger
@@ -207,16 +207,17 @@ class GDICapture:
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
         rowstride = roundup(width*self.bit_depth//8, 2)
         buf_size = rowstride*height
-        pixels = create_string_buffer(b"", buf_size)
-        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, addressof(pixels))
-        r = GetBitmapBits(bitmap, buf_size, byref(pixels))
+        buf = create_string_buffer(b"", buf_size)
+        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, addressof(buf))
+        r = GetBitmapBits(bitmap, buf_size, byref(buf))
         if not r:
             log.error("Error: failed to copy screen bitmap data")
             self.clean_dc()
             return None
+        pixels : Any = buf
         if r!=buf_size:
             log.warn("Warning: truncating pixel buffer, got %i bytes but expected %i", r, buf_size)
-            pixels = pixels[:r]
+            pixels = buf[:r]
         log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
         DeleteObject(bitmap)
         assert pixels, "no pixels returned from GetBitmapBits"
@@ -232,7 +233,7 @@ class GDICapture:
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
         return v
 
-    def take_screenshot(self) -> Tuple:
+    def take_screenshot(self) -> Optional[Tuple[int,int,str,int,bytes]]:
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         if not image:

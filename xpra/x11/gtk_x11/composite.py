@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from gi.repository import GObject, Gdk
+from typing import List
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -36,7 +37,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
     def __init__(self, xid:int):
         WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
-        self._listening_to = None
+        self._listening_to : List[int] = []
 
     def __repr__(self):
         return f"CompositeHelper({self.xid:x})"
@@ -53,11 +54,11 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
     def invalidate_pixmap(self) -> None:
         lt = self._listening_to
         if lt:
-            self._listening_to = None
+            self._listening_to = []
             self._cleanup_listening(lt)
         WindowDamageHandler.invalidate_pixmap(self)
 
-    def _cleanup_listening(self, listening) -> None:
+    def _cleanup_listening(self, listening:List[int]) -> None:
         if listening:
             for w in listening:
                 # Don't want to stop listening to our xid!:
@@ -79,7 +80,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         #   3) repeat 1 & 2 up to the root
         #   4) call NameWindowPixmap
         # we are safe.  (I think.)
-        listening = []
+        listening : List[int] = []
         e = None
         try:
             world = get_world_window()

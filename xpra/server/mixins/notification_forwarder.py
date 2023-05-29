@@ -7,6 +7,7 @@
 
 import os.path
 from typing import Any, Dict
+from gi.repository import GLib
 
 from xpra.os_util import OSX, POSIX
 from xpra.util import ellipsizer
@@ -116,7 +117,7 @@ class NotificationForwarder(StubServerMixin):
                         summary, body, actions, hints, expire_timeout) -> None:
         assert self.notifications_forwarder and self.notifications
         #make sure that we run in the main thread:
-        self.idle_add(self.do_notify_callback, dbus_id, nid,
+        GLib.idle_add(self.do_notify_callback, dbus_id, nid,
                       app_name, replaces_nid, app_icon,
                       summary, body,
                       actions, hints, expire_timeout)

@@ -273,8 +273,8 @@ class WindowClient(StubClientMixin):
         #we decode pixel data in this thread
         self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
-            self.timeout_add(FAKE_SUSPEND_RESUME*1000, self.suspend)
-            self.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
+            GLib.timeout_add(FAKE_SUSPEND_RESUME*1000, self.suspend)
+            GLib.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
 
 
     def cleanup(self) -> None:
@@ -865,7 +865,7 @@ class WindowClient(StubClientMixin):
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         if SHOW_DELAY>=0:
-            self.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
+            GLib.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
         else:
             self.show_window(wid, window, metadata, override_redirect)
         return window
@@ -913,15 +913,15 @@ class WindowClient(StubClientMixin):
                 proc = None
             if proc and proc.poll() is None:
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
-                proc.stdout_io_watch = None
+                proc.stdout_io_watch = 0
                 def watcher_terminated(*args):
                     #watcher process terminated, remove io watch:
                     #this may be redundant since we also return False from signal_watcher_event
                     log("watcher_terminated%s", args)
                     source = proc.stdout_io_watch
                     if source:
-                        proc.stdout_io_watch = None
-                        self.source_remove(source)
+                        proc.stdout_io_watch = 0
+                        GLib.source_remove(source)
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
                                              command="xpra_signal_listener", ignore=True, forget=True,
                                              callback=watcher_terminated)
@@ -1280,8 +1280,8 @@ class WindowClient(StubClientMixin):
         if proc.poll() is None:
             stdout_io_watch = proc.stdout_io_watch
             if stdout_io_watch:
-                proc.stdout_io_watch = None
-                self.source_remove(stdout_io_watch)
+                proc.stdout_io_watch = 0
+                GLib.source_remove(stdout_io_watch)
             stdout = proc.stdout
             if stdout:
                 noerr(stdout.close)
@@ -1363,7 +1363,7 @@ class WindowClient(StubClientMixin):
             if focused and not self.lost_focus_timer:
                 #send the lost-focus via a timer and re-check it
                 #(this allows a new window to gain focus without having to do a reset_focus)
-                self.lost_focus_timer = self.timeout_add(20, self.send_lost_focus)
+                self.lost_focus_timer = GLib.timeout_add(20, self.send_lost_focus)
                 self._focused = None
         return focused!=self._focused
 
@@ -1378,7 +1378,7 @@ class WindowClient(StubClientMixin):
         lft = self.lost_focus_timer
         if lft:
             self.lost_focus_timer = 0
-            self.source_remove(lft)
+            GLib.source_remove(lft)
 
 
     ######################################################################
@@ -1479,7 +1479,7 @@ class WindowClient(StubClientMixin):
     # painting windows:
     def _process_draw(self, packet):
         if PAINT_DELAY>=0:
-            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+            GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 

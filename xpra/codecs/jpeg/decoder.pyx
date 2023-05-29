@@ -5,6 +5,7 @@
 
 #cython: wraparound=False
 from time import monotonic
+from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
@@ -113,10 +114,10 @@ TJPF_STR = {
 TJPF_VAL = reverse_dict(TJPF_STR)
 
 
-def get_version():
+def get_version() -> Tuple[int,int]:
     return (1, 0)
 
-def get_encodings():
+def get_encodings() -> Tuple[str,...]:
     return ("jpeg", "jpega")
 
 
@@ -129,7 +130,7 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def decompress_to_yuv(data, unsigned char nplanes=3):
+def decompress_to_yuv(data, unsigned char nplanes=3) -> ImageWrapper:
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise RuntimeError("failed to instantiate a JPEG decompressor")
@@ -223,7 +224,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
     return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
+def decompress_to_rgb(rgb_format:str, data:bytes, unsigned long alpha_offset=0) -> ImageWrapper:
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
 

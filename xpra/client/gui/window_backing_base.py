@@ -153,7 +153,7 @@ class WindowBackingBase:
         self.mmap_enabled : bool = False
         self.fps_events : deque = deque(maxlen=120)
         self.fps_buffer_size : Tuple[int,int] = 0, 0
-        self.fps_buffer_update_time : int = 0
+        self.fps_buffer_update_time : float = 0
         self.fps_value : int = 0
         self.fps_refresh_timer : int = 0
         self.paint_stats : Dict[str,int] = {}
@@ -164,7 +164,7 @@ class WindowBackingBase:
     def recpaint(self, encoding):
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
-    def get_rgb_formats(self) -> Tuple[str]:
+    def get_rgb_formats(self) -> Tuple[str,...]:
         if self._alpha_enabled:
             return self.RGB_MODES
         #remove modes with alpha:
@@ -415,7 +415,7 @@ class WindowBackingBase:
         #(it checks for self._backing None)
         self.close_decoder(False)
 
-    def close_decoder(self, blocking=False) -> None:
+    def close_decoder(self, blocking=False) -> bool:
         videolog("close_decoder(%s)", blocking)
         dl = self._decoder_lock
         if dl is None or not dl.acquire(blocking):  # pylint: disable=consider-using-with
@@ -521,6 +521,7 @@ class WindowBackingBase:
                 rgb_format = "BGRA"
             else:
                 raise ValueError(f"invalid encoding {encoding!r}")
+            assert self.jpeg_decoder is not None
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()

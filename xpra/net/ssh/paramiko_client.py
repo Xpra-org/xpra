@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import os
 import re
 import socket
 from time import sleep, monotonic
-from typing import Dict, Any
+from typing import Dict, List, Tuple, Any
 
 from xpra.scripts.main import (
     InitException, InitExit,
@@ -83,7 +83,7 @@ class SSHSocketConnection(SocketConnection):
     def get_raw_socket(self):
         return self._raw_socket
 
-    def start_stderr_reader(self):
+    def start_stderr_reader(self) -> None:
         start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
 
     def _stderr_reader(self):
@@ -99,9 +99,9 @@ class SSHSocketConnection(SocketConnection):
             if s:
                 log.info(" SSH: %r", s)
 
-    def peek(self, n):
+    def peek(self, n) -> bytes:
         if not self._raw_socket:
-            return None
+            return b""
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
     def get_socket_info(self) -> Dict[str,Any]:
@@ -147,7 +147,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 }
             }
 
-    def close(self):
+    def close(self) -> None:
         try:
             super().close()
         except Exception:
@@ -156,9 +156,9 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host):
+def safe_lookup(config_obj, host:str) -> Dict[Any,Any]:
     try:
-        return config_obj.lookup(host)
+        return config_obj.lookup(host) or {}
     except ImportError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.warn(f"Warning: unable to load SSH host config for {host!r}:")
@@ -196,7 +196,7 @@ def connect_to(display_desc):
             keyfiles.insert(0, keyfile)
         return keyfiles
 
-    def fail(msg):
+    def fail(msg:str) -> None:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
@@ -361,9 +361,9 @@ def connect_to(display_desc):
         return conn
 
 
-AUTH_MODES = ("none", "agent", "key", "password")
+AUTH_MODES : Tuple[str, ...] = ("none", "agent", "key", "password")
 
-def get_auth_modes(paramiko_config, host_config, password):
+def get_auth_modes(paramiko_config, host_config, password) -> List[str]:
     def configvalue(key):
         #if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
@@ -394,7 +394,7 @@ class iauthhandler:
     def __init__(self, password):
         self.authcount = 0
         self.password = password
-    def handle_request(self, title, instructions, prompt_list):
+    def handle_request(self, title:str, instructions, prompt_list) -> List:
         log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
         p = []
         for pent in prompt_list:
@@ -408,7 +408,7 @@ class iauthhandler:
         return p
 
 
-def do_connect(chan, host, username, password,
+def do_connect(chan, host:str, username:str, password:str,
                             host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException
     from paramiko.transport import Transport
@@ -423,7 +423,7 @@ def do_connect(chan, host, username, password,
     return do_connect_to(transport, host, username, password,
                                       host_config, keyfiles, paramiko_config, auth_modes)
 
-def do_connect_to(transport, host, username, password,
+def do_connect_to(transport, host:str, username:str, password:str,
                                host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
@@ -436,9 +436,9 @@ def do_connect_to(transport, host, username, password,
             return paramiko_config.get(key)
         #fallback to the value from the host config:
         return (host_config or {}).get(key)
-    def configbool(key, default_value=True):
+    def configbool(key, default_value=True) -> bool:
         return parse_bool(key, configvalue(key), default_value)
-    def configint(key, default_value=0):
+    def configint(key, default_value=0) -> int:
         v = configvalue(key)
         if v is None:
             return default_value
@@ -465,7 +465,7 @@ def do_connect_to(transport, host, username, password,
 
         log("host keys=%s", host_keys)
         keys = safe_lookup(host_keys, host)
-        known_host_key = (keys or {}).get(host_key.get_name())
+        known_host_key = keys.get(host_key.get_name())
         def keyname():
             return host_key.get_name().replace("ssh-", "")
         if known_host_key and host_key==known_host_key:
@@ -571,9 +571,9 @@ keymd5(host_key),
         log("ssh host key verification skipped")
 
 
-    auth_errors = {}
+    auth_errors : Dict[str,List[str]] = {}
 
-    def auth_agent():
+    def auth_agent() -> None:
         agent = Agent()
         agent_keys = agent.get_keys()
         log("agent keys: %s", agent_keys)
@@ -595,7 +595,7 @@ keymd5(host_key),
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
-    def auth_publickey():
+    def auth_publickey() -> None:
         log(f"trying public key authentication using {keyfiles}")
         for keyfile_path in keyfiles:
             if not os.path.exists(keyfile_path):
@@ -668,7 +668,7 @@ keymd5(host_key),
             else:
                 log.error(f"Error: cannot load private key {keyfile_path!r}")
 
-    def auth_none():
+    def auth_none() -> None:
         log("trying none authentication")
         try:
             transport.auth_none(username)
@@ -676,7 +676,7 @@ keymd5(host_key),
             auth_errors.setdefault("none", []).append(str(e))
             log("auth_none()", exc_info=True)
 
-    def auth_password():
+    def auth_password() -> None:
         log("trying password authentication")
         try:
             transport.auth_password(username, password)
@@ -693,7 +693,7 @@ keymd5(host_key),
             if log.is_debug_enabled() and LOG_FAILED_CREDENTIALS:
                 log.info(f" invalid username {username!r} or password {password!r}")
 
-    def auth_interactive():
+    def auth_interactive() -> None:
         log("trying interactive authentication")
         try:
             myiauthhandler = iauthhandler(password)
@@ -759,7 +759,7 @@ class SSHAuthenticationError(InitExit):
         super().__init__(ExitCode.CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
-def run_test_command(transport, cmd):
+def run_test_command(transport, cmd:str) -> Tuple[bytes,bytes,int]:
     from paramiko import SSHException
     log(f"run_test_command(transport, {cmd})")
     try:
@@ -779,7 +779,7 @@ def run_test_command(transport, cmd):
         sleep(0.01)
     code = chan.recv_exit_status()
     log(f"exec_command({cmd!r})={code}")
-    def chan_read(read_fn):
+    def chan_read(read_fn) -> bytes:
         try:
             return read_fn()
         except socket.error:
@@ -805,7 +805,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
     log(f"will try to run xpra from: {remote_xpra}")
     def rtc(cmd):
         return run_test_command(transport, cmd)
-    def detectosname():
+    def detectosname() -> str:
         #first, try a syntax that should work with any ssh server:
         r = rtc("echo %OS%")
         if r[2]==0 and r[0]:
@@ -845,7 +845,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         if osname.startswith("Windows") or osname in ("msys", "cygwin"):
             #on MS Windows,
             #always prefer the application path found in the registry:
-            def winpath(p):
+            def winpath(p) -> str:
                 if osname=="msys":
                     return p.replace("\\", "\\\\")
                 if osname=="cygwin":

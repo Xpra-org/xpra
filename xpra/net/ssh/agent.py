@@ -1,18 +1,19 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Iterable, Optional
 
 from xpra.os_util import is_socket
 
 
-def ssh_dir_path():
+def ssh_dir_path() -> str:
     session_dir = os.environ["XPRA_SESSION_DIR"]
     return os.path.join(session_dir, "ssh")
 
-def setup_ssh_auth_sock():
+def setup_ssh_auth_sock() -> str:
     #the 'ssh' dir contains agent socket symlinks to the real agent socket
     #and we can just update the "agent" symlink
     #which is the one that applications are told to use
@@ -34,13 +35,13 @@ def setup_ssh_auth_sock():
     set_ssh_agent()
     return agent_sockpath
 
-def get_ssh_agent_path(filename):
+def get_ssh_agent_path(filename:str) -> str:
     ssh_dir = ssh_dir_path()
     if "/" in filename or ".." in filename:
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
 
-def set_ssh_agent(filename=None):
+def set_ssh_agent(filename:str=None) -> None:
     ssh_dir = ssh_dir_path()
     if filename and os.path.isabs(filename):
         sockpath = filename
@@ -62,7 +63,7 @@ def set_ssh_agent(filename=None):
         log.estr(e)
 
 
-def setup_proxy_ssh_socket(cmdline, auth_sock=os.environ.get("SSH_AUTH_SOCK")):
+def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str=os.environ.get("SSH_AUTH_SOCK", "")) -> Optional[str]:
     from xpra.log import Logger
     sshlog = Logger("ssh")
     sshlog(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")

@@ -577,6 +577,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         return desc
 
     error_cb(f"unknown format for display name: {display_name!r}")
+    assert False
 
 
 def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
@@ -1805,7 +1806,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         options.tcp_encryption = f"AES-{DEFAULT_MODE}"
     return options, args
 
-def validated_encodings(encodings) -> Tuple[str]:
+def validated_encodings(encodings) -> Tuple[str, ...]:
     try:
         from xpra.codecs.codec_constants import preforder
     except ImportError:

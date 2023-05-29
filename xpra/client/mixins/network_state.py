@@ -9,6 +9,7 @@ import re
 from time import monotonic
 from collections import deque
 from typing import Dict, Any, Tuple
+from gi.repository import GLib
 
 from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
@@ -202,19 +203,19 @@ class NetworkState(StubClientMixin):
         self.send_deflate_level()
         self.send_ping()
         if self.pings>0:
-            self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
+            self.ping_timer = GLib.timeout_add(1000*self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
         if pt:
             self.ping_timer = 0
-            self.source_remove(pt)
+            GLib.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
         pet : Tuple[int,...] = tuple(self.ping_echo_timers.values())
-        self.ping_echo_timers = {}
+        self.ping_echo_timers : Dict[float,int] = {}
         for t in pet:
-            self.source_remove(t)
+            GLib.source_remove(t)
 
 
     ######################################################################
@@ -255,7 +256,7 @@ class NetworkState(StubClientMixin):
             self._server_ok = self.last_ping_echoed_time>=ping_sent_time
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
-                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT*1000,
+                self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT*1000,
                                                                 self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
@@ -268,14 +269,14 @@ class NetworkState(StubClientMixin):
     def cancel_ping_echo_timeout_timer(self) -> None:
         pett = self.ping_echo_timeout_timer
         if pett:
-            self.ping_echo_timeout_timer = None
-            self.source_remove(pett)
+            self.ping_echo_timeout_timer = 0
+            GLib.source_remove(pett)
 
     def server_connection_state_change(self) -> None:
         log("server_connection_state_change() ok=%s", self._server_ok)
 
     def check_echo_timeout(self, ping_time) -> None:
-        self.ping_echo_timeout_timer = None
+        self.ping_echo_timeout_timer = 0
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
             #no point trying to use disconnect_and_quit() to tell the server here..
@@ -296,7 +297,7 @@ class NetworkState(StubClientMixin):
             wait = max(MIN_PING_TIMEOUT, min(MAX_PING_TIMEOUT, 1.0+avg*2.0))
             log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs",
                 now_ms, 1000.0*avg, wait)
-        t = self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+        t = GLib.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         self.ping_echo_timers[now_ms] = t
         return True
 

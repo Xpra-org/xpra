@@ -109,38 +109,42 @@ PREFS = None
 def get_prefs() -> Dict[str,Any]:
     global PREFS
     if PREFS is None:
-        PREFS = {}
-        dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
-        log(f"get_prefs() will try to load cuda.conf from: {dirs}")
-        for d in dirs:
-            conf_file = os.path.join(os.path.expanduser(d), "cuda.conf")
-            if not os.path.exists(conf_file):
-                log(f"get_prefs() {conf_file!r} does not exist!")
-                continue
-            if not os.path.isfile(conf_file):
-                log(f"get_prefs() {conf_file!r} is not a file!")
-                continue
-            try:
-                c_prefs : Dict[str,Any] = {}
-                with open(conf_file, "rb") as f:
-                    for line in f:
-                        sline = line.strip().rstrip(b'\r\n').strip().decode("latin1")
-                        props = sline.split("=", 1)
-                        if len(props)!=2:
-                            continue
-                        name = props[0].strip()
-                        value = props[1].strip()
-                        if name in ("enabled-devices", "disabled-devices"):
-                            for v in value.split(","):
-                                c_prefs.setdefault(name, []).append(v.strip())
-                        elif name in ("device-id", "device-name", "load-balancing"):
-                            c_prefs[name] = value
-            except Exception as e:
-                log.error(f"Error: cannot read cuda configuration file {conf_file!r}")
-                log.estr(e)
-            log(f"get_prefs() {conf_file!r} : {c_prefs}")
-            PREFS.update(c_prefs)
-    return PREFS
+        PREFS = do_get_prefs()
+    return PREFS or {}
+
+def do_get_prefs() -> Dict[str,Any]:
+    prefs : Dict[str,Any] = {}
+    dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
+    log(f"get_prefs() will try to load cuda.conf from: {dirs}")
+    for d in dirs:
+        conf_file = os.path.join(os.path.expanduser(d), "cuda.conf")
+        if not os.path.exists(conf_file):
+            log(f"get_prefs() {conf_file!r} does not exist!")
+            continue
+        if not os.path.isfile(conf_file):
+            log(f"get_prefs() {conf_file!r} is not a file!")
+            continue
+        try:
+            c_prefs : Dict[str,Any] = {}
+            with open(conf_file, "rb") as f:
+                for line in f:
+                    sline = line.strip().rstrip(b'\r\n').strip().decode("latin1")
+                    props = sline.split("=", 1)
+                    if len(props)!=2:
+                        continue
+                    name = props[0].strip()
+                    value = props[1].strip()
+                    if name in ("enabled-devices", "disabled-devices"):
+                        for v in value.split(","):
+                            c_prefs.setdefault(name, []).append(v.strip())
+                    elif name in ("device-id", "device-name", "load-balancing"):
+                        c_prefs[name] = value
+        except Exception as e:
+            log.error(f"Error: cannot read cuda configuration file {conf_file!r}")
+            log.estr(e)
+        log(f"get_prefs() {conf_file!r} : {c_prefs}")
+        prefs.update(c_prefs)
+    return prefs
 
 def get_pref(name:str):
     assert name in ("device-id", "device-name", "enabled-devices", "disabled-devices", "load-balancing")
@@ -401,7 +405,7 @@ def select_best_free_memory(min_compute:int=0):
                     context.pop()
                     context.detach()
         if selected_device_id>=0 and selected_device:
-            l = log
+            l = log.debug
             if len(devices)>1:
                 l = log.info
             l("selected device %s: %s", selected_device_id, device_info(selected_device))

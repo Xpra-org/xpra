@@ -5,6 +5,7 @@
 #pylint: disable-msg=E1101
 
 from typing import List
+from gi.repository import GLib
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr
@@ -40,7 +41,7 @@ class TrayClient(StubClientMixin):
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
             #show shortly after the main loop starts running:
-            self.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+            GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
 
     def setup_xpra_tray(self, *args) -> None:
         log("setup_xpra_tray%s", args)
@@ -58,7 +59,7 @@ class TrayClient(StubClientMixin):
                 #(ie: the dynamic window icon code may have set a new one)
                 if icon_timestamp==tray.icon_timestamp:
                     tray.set_icon()
-            self.timeout_add(1000, reset_icon)
+            GLib.timeout_add(1000, reset_icon)
 
     def cleanup(self) -> None:
         t = self.tray

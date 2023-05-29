@@ -5,6 +5,7 @@
 
 import os
 import struct
+from typing import List, ByteString, Callable
 
 from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
@@ -28,13 +29,13 @@ class WebSocketProtocol(SocketProtocol):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ws_data = b""
-        self.ws_payload = []
-        self.ws_payload_opcode = 0
-        self.ws_mask = MASK
+        self.ws_data : ByteString = b""
+        self.ws_payload : List[ByteString] = []
+        self.ws_payload_opcode : int = 0
+        self.ws_mask : bool = MASK
         self._process_read = self.parse_ws_frame
-        self.make_chunk_header = self.make_xpra_header
-        self.make_frame_header = self.make_wsframe_header
+        self.make_chunk_header : Callable = self.make_xpra_header
+        self.make_frame_header : Callable = self.make_wsframe_header
 
     def __repr__(self):
         return f"WebSocket({self._conn})"
@@ -47,12 +48,12 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_data = b""
         self.ws_payload = []
 
-    def send_ws_close(self, code=1000, reason="closing"):
+    def send_ws_close(self, code:int=1000, reason:str="closing"):
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
 
-    def make_wsframe_header(self, packet_type, items):
+    def make_wsframe_header(self, packet_type, items) -> ByteString:
         payload_len = sum(len(item) for item in items)
         log("make_wsframe_header(%s, %i items) %i bytes, ms_mask=%s",
             packet_type, len(items), payload_len, self.ws_mask)
@@ -65,7 +66,7 @@ class WebSocketProtocol(SocketProtocol):
             return header+mask
         return header
 
-    def parse_ws_frame(self, buf):
+    def parse_ws_frame(self, buf:ByteString):
         if not buf:
             self._read_queue_put(buf)
             return
@@ -127,17 +128,17 @@ class WebSocketProtocol(SocketProtocol):
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
-    def _process_ws_ping(self, payload):
+    def _process_ws_ping(self, payload:ByteString) -> None:
         log("_process_ws_ping(%r)", payload)
         item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item, )
         with self._write_lock:
             self.raw_write("ws-ping", items)
 
-    def _process_ws_pong(self, payload):
+    def _process_ws_pong(self, payload:ByteString) -> None:
         log("_process_ws_pong(%r)", payload)
 
-    def _process_ws_close(self, payload):
+    def _process_ws_close(self, payload:ByteString) -> None:
         log("_process_ws_close(%r)", payload)
         if len(payload)<2:
             self._connection_lost("unknown reason")

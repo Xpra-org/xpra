@@ -1,11 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-
+from typing import Dict, Iterable, Tuple, List, Optional
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase
@@ -36,16 +36,13 @@ class Keyboard(KeyboardBase):
                     log.error(" %s", str(e) or type(e))
                     log.error(" keyboard mapping may be incomplete")
 
-    def init_vars(self):
+    def init_vars(self) -> None:
         super().init_vars()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
         self.__dbus_helper = DBusHelper()
-        self.__input_sources = {}
-        self._dbus_gnome_shell_eval_ism(
-            ".inputSources",
-            self._store_input_sources,
-        )
+        self.__input_sources : Dict[str,int] = {}
+        self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
 
     def _store_input_sources(self, input_sources):
         log("_store_input_sources(%s)", input_sources)
@@ -81,15 +78,13 @@ class Keyboard(KeyboardBase):
             err_cb,
         )
 
-    def set_platform_layout(self, layout):
+    def set_platform_layout(self, layout:str) -> None:
         index = self.__input_sources.get(layout)
         log("set_platform_layout(%s): index=%s", layout, index)
         if index is None:
             log(f"asked layout ({layout}) has no corresponding registered input source")
             return
-        self._dbus_gnome_shell_eval_ism(
-            f".inputSources[{index}].activate()",
-        )
+        self._dbus_gnome_shell_eval_ism(f".inputSources[{index}].activate()")
 
     def __repr__(self):
         return "posix.Keyboard"
@@ -125,7 +120,7 @@ class Keyboard(KeyboardBase):
             log.error("failed to use native get_modifier_mappings", exc_info=True)
         return {}, [], []
 
-    def get_x11_keymap(self):
+    def get_x11_keymap(self) -> Dict[int,Iterable[str]]:
         if not self.keyboard_bindings:
             return  {}
         try:
@@ -135,7 +130,7 @@ class Keyboard(KeyboardBase):
             log.error("Error: failed to use raw x11 keymap", exc_info=True)
         return  {}
 
-    def get_locale_status(self):
+    def get_locale_status(self) -> Dict[str,str]:
         #parse the output into a dictionary:
         # $ localectl status
         # System Locale: LANG=en_GB.UTF-8
@@ -170,11 +165,11 @@ class Keyboard(KeyboardBase):
         return query_struct
 
 
-    def get_xkb_rules_names_property(self):
+    def get_xkb_rules_names_property(self) -> Tuple[str,...]:
         #parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
-            return ""
-        xkb_rules_names = ""
+            return ()
+        xkb_rules_names : List[str] = []
         # pylint: disable=import-outside-toplevel
         from xpra.gtk_common.error import xlog
         from xpra.x11.common import get_X11_root_property
@@ -186,10 +181,10 @@ class Keyboard(KeyboardBase):
                 xkb_rules_names = bytestostr(prop).split("\0")
             #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
-        return xkb_rules_names
+        return tuple(xkb_rules_names)
 
 
-    def get_all_x11_layouts(self):
+    def get_all_x11_layouts(self) -> Dict[str,str]:
         repository = "/usr/share/X11/xkb/rules/base.xml"
         if os.path.exists(repository):
             try:
@@ -260,21 +255,20 @@ class Keyboard(KeyboardBase):
         return s(layout), [s(x) for x in layouts], variant, None, options
 
 
-    def get_keyboard_repeat(self):
-        v = None
+    def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:
         if self.keyboard_bindings:
             try:
                 v = self.keyboard_bindings.get_key_repeat_rate()
                 if v:
                     assert len(v)==2
+                    log("get_keyboard_repeat()=%s", v)
+                    return v[0], v[1]
             except Exception as e:
                 log.error("Error: failed to get keyboard repeat rate:")
                 log.estr(e)
-                v = None
-        log("get_keyboard_repeat()=%s", v)
-        return v
+        return None
 
-    def update_modifier_map(self, display, mod_meanings):
+    def update_modifier_map(self, display, mod_meanings) -> None:
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.x11.gtk_x11.keys import grok_modifier_map

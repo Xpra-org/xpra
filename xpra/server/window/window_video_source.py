@@ -1542,8 +1542,8 @@ class WindowVideoSource(WindowSource):
                 #high speed means more scaling:
                 target = target * 60**2 // (s+20)**2
                 sscaling = {}
-                mrs = get_min_required_scaling()
-                min_ratio = mrs[0]/mrs[1]
+                mrs_num, mrs_den = get_min_required_scaling()
+                min_ratio = mrs_num/mrs_den
                 denom_mult = 1
                 if crs:
                     #if the client will be downscaling to paint the window

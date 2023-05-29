@@ -8,6 +8,7 @@
 import os
 from time import sleep
 from typing import Dict, Any
+from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
@@ -37,9 +38,9 @@ class NetworkStateServer(StubServerMixin):
 
     def __init__(self):
         self.pings = False
-        self.ping_timer = None
+        self.ping_timer : int = 0
         self.mem_bytes = 0
-        self.cpu_info = None
+        self.cpu_info : Dict = {}
         self.print_memleaks = None
 
     def init(self, opts) -> None:
@@ -51,7 +52,7 @@ class NetworkStateServer(StubServerMixin):
     def setup(self) -> None:
         self.init_leak_detection()
         if self.pings>0:
-            self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
+            self.ping_timer = GLib.timeout_add(1000*self.pings, self.send_ping)
 
     def threaded_setup(self) -> None:
         self.init_memcheck()
@@ -59,8 +60,8 @@ class NetworkStateServer(StubServerMixin):
     def cleanup(self) -> None:
         pt = self.ping_timer
         if pt:
-            self.ping_timer = None
-            self.source_remove(pt)
+            self.ping_timer = 0
+            GLib.source_remove(pt)
         pm = self.print_memleaks
         if pm:
             pm()
@@ -106,7 +107,7 @@ class NetworkStateServer(StubServerMixin):
                 self.fds = fds
                 log.info("print_fds() new fds=%s (total=%s)", newfds, len(fds))
                 return True
-            self.timeout_add(10, print_fds)
+            GLib.timeout_add(10, print_fds)
 
     def init_memcheck(self) -> None:
         #verify we have enough memory:

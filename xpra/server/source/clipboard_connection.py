@@ -8,6 +8,7 @@
 from time import monotonic
 from typing import Dict, Any
 from collections import deque
+from gi.repository import GLib
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
@@ -31,7 +32,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications = False
         self.clipboard_notifications_current = 0
         self.clipboard_notifications_pending = 0
-        self.clipboard_progress_timer = None
+        self.clipboard_progress_timer : int = 0
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
@@ -85,8 +86,8 @@ class ClipboardConnection(StubSourceMixin):
     def cancel_clipboard_progress_timer(self):
         cpt = self.clipboard_progress_timer
         if cpt:
-            self.clipboard_progress_timer = None
-            self.source_remove(cpt)
+            self.clipboard_progress_timer = 0
+            GLib.source_remove(cpt)
 
     def send_clipboard_progress(self, count : int):
         if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
@@ -101,7 +102,7 @@ class ClipboardConnection(StubSourceMixin):
                 log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
                 self.send_more("clipboard-pending-requests", self.clipboard_notifications_current)
         delay = (count==0)*100
-        self.clipboard_progress_timer = self.timeout_add(delay, may_send_progress_update)
+        self.clipboard_progress_timer = GLib.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or not self.hello_sent:

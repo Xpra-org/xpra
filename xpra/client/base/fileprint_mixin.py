@@ -177,7 +177,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog("send_printers_thread() exported printers=%s", csv(str(x) for x in exported_printers))
             self.exported_printers = exported_printers
             self.send("printers", self.exported_printers)
-        except Exception:
+        except Exception as e:
             printlog("do_send_printers()", exc_info=True)
             printlog.error("Error sending the list of printers")
             printlog.estr(e)

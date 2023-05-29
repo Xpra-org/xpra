@@ -215,8 +215,8 @@ def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_
         "padding.options"       : PADDING_OPTIONS,
         }
     #v5 onwards with namespace:
-    caps = {"encryption" : attrs}
-    #for older versions:
+    caps : Dict[str,Any] = {"encryption" : attrs}
+    #add unprefixed copy for older versions:
     for k,v in attrs.items():
         caps[f"cipher.{k}"] = v
     caps["cipher"] = cipher

@@ -47,7 +47,7 @@ class Encoder:
         self.height = height
         self.src_format = src_format
         self.dst_formats = options.strtupleget("dst-formats")
-        self.last_frame_times = deque(maxlen=200)
+        self.last_frame_times : deque[float] = deque(maxlen=200)
         self.frames = 0
         self.time = 0
         self.first_frame_timestamp = 0
@@ -106,11 +106,11 @@ class Encoder:
     def clean(self) -> None:
         self.width = 0
         self.height = 0
-        self.src_format = None
+        self.src_format = ""
         self.encoding = ""
         self.src_format = ""
         self.dst_formats = []
-        self.last_frame_times = []
+        self.last_frame_times = deque()
         self.frames = 0
         self.time = 0
         self.first_frame_timestamp = 0

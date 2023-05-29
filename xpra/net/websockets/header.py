@@ -1,17 +1,18 @@
 # This file is part of Xpra.
 # This file is based on websockify/websocket.py from the websockify project
-# Copyright 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright 2019-2023 Antoine Martin <antoine@xpra.org>
 # Copyright 2011 Joel Martin
 # Copyright 2016 Pierre Ossman
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct
+from typing import Tuple, ByteString, Optional
 
 from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
 
 
-def close_packet(code : int = 1000, reason : str = ""):
+def close_packet(code : int = 1000, reason : str = "") -> bytes:
     data = struct.pack("!H", code)
     if reason:
         #should validate that encoded data length is less than 125, meh
@@ -20,7 +21,7 @@ def close_packet(code : int = 1000, reason : str = ""):
     return header + data
 
 
-def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):
+def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True) -> bytes:
     """ Encode a HyBi style WebSocket frame """
     if (opcode & 0x0f)!=opcode:
         raise ValueError(f"invalid opcode {opcode:x}")
@@ -33,7 +34,7 @@ def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):
     return struct.pack('>BBQ', b1, 127 | mask_bit, payload_len)
 
 
-def decode_hybi(buf):
+def decode_hybi(buf:ByteString) -> Optional[Tuple[int,ByteString,int,int]]:
     """ Decode HyBi style WebSocket packets """
     blen = len(buf)
     hlen = 2

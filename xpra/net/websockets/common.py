@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ from time import monotonic
 from hashlib import sha1
 from base64 import b64encode
 from urllib.parse import quote
+from typing import Dict, Callable, Any
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
@@ -28,7 +29,7 @@ OPCODE_CLOSE = 8
 OPCODE_PING = 9
 OPCODE_PONG = 10
 
-OPCODES = {
+OPCODES : Dict[int,str] = {
     OPCODE_CONTINUE     : "CONTINUE",
     OPCODE_TEXT         : "TEXT",
     OPCODE_BINARY       : "BINARY",
@@ -38,12 +39,12 @@ OPCODES = {
     }
 
 
-def make_websocket_accept_hash(key):
+def make_websocket_accept_hash(key:str) -> bytes:
     GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
-def get_headers(host, port):
+def get_headers(host:str, port:int):
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
@@ -62,7 +63,7 @@ def get_headers(host, port):
     return headers
 
 
-def client_upgrade(read, write, host, port, path=""):
+def client_upgrade(read:Callable, write:Callable, host:str, port:int, path="") -> None:
     key = b64encode(uuid.uuid4().bytes)
     request = get_client_upgrade_request(host, port, path, key)
     write_request(write, request)
@@ -70,7 +71,7 @@ def client_upgrade(read, write, host, port, path=""):
     verify_response_headers(headers, key)
     log("client_upgrade: done")
 
-def get_client_upgrade_request(host, port, path, key):
+def get_client_upgrade_request(host:str, port:int, path:str, key:bytes):
     url_path = quote(path)
     request = f"GET /{url_path} HTTP/1.1"
     log(f"client websocket upgrade request: {request!r}")
@@ -83,7 +84,7 @@ def get_client_upgrade_request(host, port, path, key):
     lines.append(b"")
     return b"\r\n".join(lines)
 
-def write_request(write, http_request):
+def write_request(write:Callable, http_request):
     now = monotonic()
     while http_request:
         elapsed = monotonic()-now
@@ -92,7 +93,7 @@ def write_request(write, http_request):
         w = write(http_request)
         http_request = http_request[w:]
 
-def read_server_upgrade(read):
+def read_server_upgrade(read:Callable):
     now = monotonic()
     response = b""
     def hasheader(k):
@@ -101,7 +102,7 @@ def read_server_upgrade(read):
         response += read(READ_CHUNK_SIZE)
     return parse_response_header(response)
 
-def parse_response_header(response):
+def parse_response_header(response:bytes):
     #parse response:
     head = response.split(b"\r\n\r\n", 1)[0]
     lines = head.split(b"\r\n")
@@ -112,7 +113,7 @@ def parse_response_header(response):
             headers[parts[0].lower()] = parts[1]
     return headers
 
-def verify_response_headers(headers, key):
+def verify_response_headers(headers:Dict[str,Any], key):
     log(f"verify_response_headers({headers!r}, {key!r})")
     if not headers:
         raise ValueError("no http headers found in response")
