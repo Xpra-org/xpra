@@ -9,8 +9,7 @@
 import os
 import threading
 from time import monotonic
-from typing import Dict, Any
-import gi
+from typing import Dict, List,Tuple, Any
 
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
 from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
@@ -33,9 +32,6 @@ from xpra.server import server_features
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
-
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gdk  # pylint: disable=wrong-import-position, wrong-import-order @UnresolvedImport
 
 set_context_check(verify_sync)
 RandR = RandRBindings()
@@ -63,17 +59,17 @@ class XTestPointerDevice:
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, x:int, y:int, props=None):
+    def move_pointer(self, x:int, y:int, props=None) -> None:
         mouselog("xtest_fake_motion%s", (x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(-1, x, y)
 
-    def click(self, button:int, pressed:bool, props):
+    def click(self, button:int, pressed:bool, props) -> None:
         mouselog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def has_precise_wheel(self):
+    def has_precise_wheel(self) -> bool:
         return False
 
 
@@ -89,11 +85,11 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map : dict = {}
-        self.keys_pressed : dict = {}
-        self.libfakeXinerama_so = None
+        self.keys_pressed : Dict[int,Any] = {}
+        self.libfakeXinerama_so : str = ""
         self.initial_resolution = None
         self.x11_filter = False
-        self.randr_sizes_added : list = []
+        self.randr_sizes_added : List[Tuple[int,int]] = []
         super().__init__()
         log("XShape=%s", X11Window.displayHasXShape())
 
@@ -152,7 +148,7 @@ class X11ServerCore(GTKServerBase):
 
     def init_fake_xinerama(self) -> None:
         if self.fake_xinerama in FALSE_OPTIONS:
-            self.libfakeXinerama_so = None
+            self.libfakeXinerama_so = ""
         elif os.path.isabs(self.fake_xinerama):
             self.libfakeXinerama_so = self.fake_xinerama
         else:
@@ -228,7 +224,7 @@ class X11ServerCore(GTKServerBase):
         X11Core.intern_atoms(atom_names)
 
 
-    def set_keyboard_layout_group(self, grp) -> None:
+    def set_keyboard_layout_group(self, grp:int) -> None:
         kc = self.keyboard_config
         if not kc:
             keylog(f"set_keyboard_layout_group({grp}) ignored, no config")
@@ -516,11 +512,6 @@ class X11ServerCore(GTKServerBase):
         #(there should not be any - but we want to be certain)
         clean_keyboard_state()
 
-
-    def get_cursor_sizes(self) -> tuple:
-        display = Gdk.Display.get_default()
-        return display.get_default_cursor_size(), display.get_maximal_cursor_size()
-
     def get_cursor_image(self):
         #must be called from the UI thread!
         with xlog:
@@ -543,7 +534,7 @@ class X11ServerCore(GTKServerBase):
         return (cursor_image, cursor_sizes)
 
 
-    def get_all_screen_sizes(self) -> tuple:
+    def get_all_screen_sizes(self) -> Tuple:
         #workaround for #2910: the resolutions we add are not seen by XRRSizes!
         # so we keep track of the ones we have added ourselves:
         sizes = list(RandR.get_xrr_screen_sizes())
@@ -552,7 +543,7 @@ class X11ServerCore(GTKServerBase):
                 sizes.append((w, h))
         return tuple(sizes)
 
-    def get_max_screen_size(self) -> tuple:
+    def get_max_screen_size(self) -> Tuple[int,int]:
         max_w, max_h = self.root_window.get_geometry()[2:4]
         if self.randr:
             sizes = self.get_all_screen_sizes()
@@ -837,14 +828,14 @@ class X11ServerCore(GTKServerBase):
         return mdef
 
 
-    def notify_dpi_warning(self, body) -> None:
+    def notify_dpi_warning(self, body:str) -> None:
         sources = tuple(self._server_sources.values())
         if len(sources)==1:
             ss = sources[0]
             if first_time("DPI-warning-%s" % ss.uuid):
                 sources[0].may_notify(NotificationID.DPI, "DPI Issue", body, icon_name="font")
 
-    def set_dpi(self, xdpi, ydpi) -> None:
+    def set_dpi(self, xdpi:int, ydpi:int) -> None:
         """ overridden in the seamless server """
 
 
@@ -1002,7 +993,7 @@ class X11ServerCore(GTKServerBase):
         return device
 
 
-    def _get_pointer_abs_coordinates(self, wid:int, pos):
+    def _get_pointer_abs_coordinates(self, wid:int, pos) -> Tuple[int,int]:
         #simple absolute coordinates
         x, y = pos[:2]
         from xpra.server.mixins.window_server import WindowServer
@@ -1017,7 +1008,7 @@ class X11ServerCore(GTKServerBase):
                 mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
-    def _move_pointer(self, device_id:int, wid:int, pos, props=None):
+    def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
         #(this is called within an xswallow context)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         self.device_move_pointer(device_id, wid, (x, y), props)
@@ -1033,7 +1024,7 @@ class X11ServerCore(GTKServerBase):
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             mouselog.estr(e)
 
-    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props):
+    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
         mouselog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
         if self.readonly:
             return False
@@ -1043,7 +1034,7 @@ class X11ServerCore(GTKServerBase):
                 self._move_pointer(device_id, wid, pointer, props)
         return True
 
-    def _update_modifiers(self, proto, wid:int, modifiers):
+    def _update_modifiers(self, proto, wid:int, modifiers) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -1054,7 +1045,8 @@ class X11ServerCore(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, device_id:int, wid:int, button:int, pressed:bool, pointer, props:dict) -> None:
+    def do_process_button_action(self, proto, device_id:int, wid:int, button:int, pressed:bool,
+                                 pointer, props:dict) -> None:
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         props = {}
@@ -1079,11 +1071,11 @@ class X11ServerCore(GTKServerBase):
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 
-    def make_screenshot_packet_from_regions(self, regions) -> tuple:
+    def make_screenshot_packet_from_regions(self, regions) -> Tuple[str,int,int,str,int,bytes]:
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")
-            return ("screenshot", 0, 0, "png", -1, "")
+            return ("screenshot", 0, 0, "png", 0, b"")
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
         minx = min(x for (_,x,_,_) in regions)
         miny = min(y for (_,_,y,_) in regions)

@@ -189,6 +189,11 @@ class GTKServerBase(ServerBase):
             ss.send_cursor()
 
 
+    def get_cursor_sizes(self) -> Tuple:
+        display = Gdk.Display.get_default()
+        return display.get_default_cursor_size(), display.get_maximal_cursor_size()
+
+
     def send_initial_cursors(self, ss, _sharing=False) -> None:
         #cursors: get sizes and send:
         display = Gdk.Display.get_default()
