@@ -379,7 +379,7 @@ class ChildCommandServer(StubServerMixin):
         name, command, ignore = packet[1:4]
         cmd : Union[str,Tuple]
         if isinstance(command, (list, tuple)):
-            cmd = Tuple(command)
+            cmd = tuple(command)
         else:
             cmd = u(command)
         proc = self.start_command(u(name), cmd, ignore)
