@@ -25,7 +25,7 @@ class AudioMixinTest(ServerMixinTest):
 
     def test_audio(self):
         from xpra.server.mixins import audio_server
-        from xpra.server.source.audio_mixin import AudioMixin
+        from xpra.server.source.audio import AudioMixin
         from xpra.audio import gstreamer_util
         opts = AdHocStruct()
         opts.audio_source = ""

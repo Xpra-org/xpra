@@ -16,7 +16,7 @@ class InputMixinTest(ServerMixinTest):
     def test_input(self):
         with DisplayContext():
             from xpra.server.mixins.input_server import InputServer
-            from xpra.server.source.input_mixin import InputMixin
+            from xpra.server.source.input import InputMixin
             opts = AdHocStruct()
             self._test_mixin_class(InputServer, opts, {}, InputMixin)
 

@@ -19,7 +19,7 @@ class NetworkStateMixinTest(ServerMixinTest):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
             from xpra.server.mixins import networkstate_server
-            from xpra.server.source.networkstate_mixin import NetworkStateMixin
+            from xpra.server.source.networkstate import NetworkStateMixin
             assert NetworkStateMixin.is_needed(typedict())
             opts = AdHocStruct()
             opts.pings = 1

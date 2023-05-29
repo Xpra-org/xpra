@@ -20,7 +20,7 @@ class ClipboardMixinTest(ServerMixinTest):
                 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
                 init_gdk_display_source()
             from xpra.server.mixins.clipboard_server import ClipboardServer
-            from xpra.server.source.clipboard_connection import ClipboardConnection
+            from xpra.server.source.clipboard import ClipboardConnection
             opts = AdHocStruct()
             opts.clipboard = "yes"
             opts.clipboard_direction = "both"

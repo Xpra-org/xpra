@@ -16,50 +16,50 @@ log = Logger("server")
 
 def get_client_connection_class(caps):
     # pylint: disable=import-outside-toplevel
-    from xpra.server.source.clientinfo_mixin import ClientInfoMixin
+    from xpra.server.source.clientinfo import ClientInfoMixin
     CC = [ClientInfoMixin]
     if server_features.notifications:
-        from xpra.server.source.notification_mixin import NotificationMixin
+        from xpra.server.source.notification import NotificationMixin
         CC.append(NotificationMixin)
     if server_features.clipboard:
-        from xpra.server.source.clipboard_connection import ClipboardConnection
+        from xpra.server.source.clipboard import ClipboardConnection
         CC.append(ClipboardConnection)
     if server_features.audio:
-        from xpra.server.source.audio_mixin import AudioMixin
+        from xpra.server.source.audio import AudioMixin
         CC.append(AudioMixin)
     if server_features.webcam:
-        from xpra.server.source.webcam_mixin import WebcamMixin
+        from xpra.server.source.webcam import WebcamMixin
         CC.append(WebcamMixin)
     if server_features.fileprint:
-        from xpra.server.source.fileprint_mixin import FilePrintMixin
+        from xpra.server.source.fileprint import FilePrintMixin
         CC.append(FilePrintMixin)
     if server_features.mmap:
-        from xpra.server.source.mmap_connection import MMAP_Connection
+        from xpra.server.source.mmap import MMAP_Connection
         CC.append(MMAP_Connection)
     if server_features.input_devices:
-        from xpra.server.source.input_mixin import InputMixin
+        from xpra.server.source.input import InputMixin
         CC.append(InputMixin)
     if server_features.dbus:
-        from xpra.server.source.dbus_mixin import DBUS_Mixin
+        from xpra.server.source.dbus import DBUS_Mixin
         CC.append(DBUS_Mixin)
     if server_features.network_state:
-        from xpra.server.source.networkstate_mixin import NetworkStateMixin
+        from xpra.server.source.networkstate import NetworkStateMixin
         CC.append(NetworkStateMixin)
     if server_features.shell:
         from xpra.server.source.shell_mixin import ShellMixin
         CC.append(ShellMixin)
     if server_features.display:
-        from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
+        from xpra.server.source.display import ClientDisplayMixin
         CC.append(ClientDisplayMixin)
     if server_features.windows:
-        from xpra.server.source.windows_mixin import WindowsMixin
+        from xpra.server.source.windows import WindowsMixin
         CC.append(WindowsMixin)
         #must be after windows mixin so it can assume "self.send_windows" is set
         if server_features.encoding:
-            from xpra.server.source.encodings_mixin import EncodingsMixin
+            from xpra.server.source.encodings import EncodingsMixin
             CC.append(EncodingsMixin)
         if server_features.audio and server_features.av_sync:
-            from xpra.server.source.avsync_mixin import AVSyncMixin
+            from xpra.server.source.avsync import AVSyncMixin
             CC.append(AVSyncMixin)
     from xpra.server.source.idle_mixin import IdleMixin
     CC.append(IdleMixin)

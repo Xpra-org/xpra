@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.server.source.windows_mixin import WindowsMixin
+from xpra.server.source.windows import WindowsMixin
 from xpra.log import Logger
 
 log = Logger("window")

@@ -19,7 +19,7 @@ class DisplayMixinTest(ServerMixinTest):
 
     def do_test_display(self):
         from xpra.server.mixins.display_manager import DisplayManager
-        from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
+        from xpra.server.source.display import ClientDisplayMixin
         opts = AdHocStruct()
         opts.bell = True
         opts.cursors = True

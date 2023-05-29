@@ -18,7 +18,7 @@ class WebcamMixinTest(ServerMixinTest):
     def test_webcam(self):
         from xpra.server.mixins import webcam_server
         from xpra.server.mixins.webcam_server import WebcamServer
-        from xpra.server.source.webcam_mixin import WebcamMixin, log as sourcelog
+        from xpra.server.source.webcam import WebcamMixin, log as sourcelog
         opts = AdHocStruct()
         opts.webcam = "yes"
         with silence_info(webcam_server):

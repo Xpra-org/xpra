@@ -136,7 +136,7 @@ class ClientConnection(StubSourceMixin):
         #fugly workaround,
         #MRO is depth first and would hit the default implementation
         #instead of the mixin unless we force it:
-        notification_mixin = sys.modules.get("xpra.server.source.notification_mixin")
+        notification_mixin = sys.modules.get("xpra.server.source.notification")
         if notification_mixin and isinstance(self, notification_mixin.NotificationMixin):
             notification_mixin.NotificationMixin.may_notify(self, *args, **kwargs)
 

@@ -14,7 +14,7 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_encoding(self):
         from xpra.server.mixins.encoding_server import EncodingServer
-        from xpra.server.source.encodings_mixin import EncodingsMixin
+        from xpra.server.source.encodings import EncodingsMixin
         opts = AdHocStruct()
         opts.encoding = ""
         opts.encodings = ["rgb", "png"]

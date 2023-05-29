@@ -561,7 +561,7 @@ class ServerBase(ServerBaseClass):
 
     def send_hello(self, server_source, root_size, server_cipher:Dict) -> None:
         capabilities = self.make_hello(server_source)
-        from xpra.server.source.encodings_mixin import EncodingsMixin
+        from xpra.server.source.encodings import EncodingsMixin
         if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
             try:
                 # pylint: disable=import-outside-toplevel
@@ -604,7 +604,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # utility method:
     def window_sources(self) -> Tuple:
-        from xpra.server.source.windows_mixin import WindowsMixin  #pylint: disable=import-outside-toplevel
+        from xpra.server.source.windows import WindowsMixin  #pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
 
 
