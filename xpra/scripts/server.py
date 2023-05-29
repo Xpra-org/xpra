@@ -251,7 +251,7 @@ def show_encoding_help(opts) -> int:
     from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, HELP_ORDER
     if "help" in opts.encodings:
         sb.allowed_encodings = PREFERRED_ENCODING_ORDER
-    from xpra.server.mixins.encoding_server import EncodingServer
+    from xpra.server.mixins.encoding import EncodingServer
     assert isinstance(sb, EncodingServer)
     EncodingServer.threaded_setup(sb)
     EncodingServer.setup(sb)

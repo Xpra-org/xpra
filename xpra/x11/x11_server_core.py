@@ -996,7 +996,7 @@ class X11ServerCore(GTKServerBase):
     def _get_pointer_abs_coordinates(self, wid:int, pos) -> Tuple[int,int]:
         #simple absolute coordinates
         x, y = pos[:2]
-        from xpra.server.mixins.window_server import WindowServer
+        from xpra.server.mixins.window import WindowServer
         if len(pos)>=4 and isinstance(self, WindowServer):
             #relative coordinates
             model = self._id_to_window.get(wid)

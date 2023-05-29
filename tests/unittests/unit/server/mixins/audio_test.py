@@ -24,7 +24,7 @@ class AudioMixinTest(ServerMixinTest):
         compression.init_all()
 
     def test_audio(self):
-        from xpra.server.mixins import audio_server
+        from xpra.server.mixins import audio
         from xpra.server.source.audio import AudioMixin
         from xpra.audio import gstreamer_util
         opts = AdHocStruct()
@@ -38,8 +38,8 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
         opts.av_sync = True
-        with silence_info(audio_server, "audiolog"):
-            self._test_mixin_class(audio_server.AudioServer, opts, {
+        with silence_info(audio, "audiolog"):
+            self._test_mixin_class(audio.AudioServer, opts, {
                 "audio" : {
                     "receive" : True,
                     "decoders" : gstreamer_util.CODEC_ORDER,

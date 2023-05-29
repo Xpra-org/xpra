@@ -18,7 +18,7 @@ class NetworkStateMixinTest(ServerMixinTest):
     def test_networkstate(self):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
-            from xpra.server.mixins import networkstate_server
+            from xpra.server.mixins import networkstate
             from xpra.server.source.networkstate import NetworkStateMixin
             assert NetworkStateMixin.is_needed(typedict())
             opts = AdHocStruct()
@@ -26,8 +26,8 @@ class NetworkStateMixinTest(ServerMixinTest):
             opts.bandwidth_limit = "1Gbps"
             #the limit for all clients:
             capped_at = 1*1000*1000*1000    #=="1Gbps"
-            with silence_info(networkstate_server):
-                self._test_mixin_class(networkstate_server.NetworkStateServer, opts, {}, NetworkStateMixin)
+            with silence_info(networkstate):
+                self._test_mixin_class(networkstate.NetworkStateServer, opts, {}, NetworkStateMixin)
             self.assertEqual(capped_at, self.mixin.get_info().get("bandwidth-limit"))
             self.handle_packet(("ping", 10))
             self.handle_packet(("ping", -1000))
@@ -47,14 +47,14 @@ class NetworkStateMixinTest(ServerMixinTest):
                     pass
                 else:
                     raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
-            with silence_info(networkstate_server, "bandwidthlog"):
+            with silence_info(networkstate, "bandwidthlog"):
                 self.handle_packet(("bandwidth-limit", 10*1024*1024))
             def get_limit():
                 return self.source.get_info().get("bandwidth-limit", {}).get("setting", 0)
             self.assertEqual(10*1024*1024, get_limit())
-            with silence_info(networkstate_server, "bandwidthlog"):
-                self.handle_packet(("bandwidth-limit", networkstate_server.MAX_BANDWIDTH_LIMIT+1))
-            self.assertEqual(min(capped_at, networkstate_server.MAX_BANDWIDTH_LIMIT), get_limit())
+            with silence_info(networkstate, "bandwidthlog"):
+                self.handle_packet(("bandwidth-limit", networkstate.MAX_BANDWIDTH_LIMIT+1))
+            self.assertEqual(min(capped_at, networkstate.MAX_BANDWIDTH_LIMIT), get_limit())
             #test source:
             timeouts = []
             def timeout(*args):

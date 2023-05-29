@@ -26,7 +26,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.do_test_command_server()
 
     def do_test_command_server(self):
-        from xpra.server.mixins import child_command_server
+        from xpra.server.mixins import child_command
         opts = AdHocStruct()
         opts.exit_with_children = True
         opts.terminate_children = True
@@ -52,8 +52,8 @@ class ChildCommandMixinTest(ServerMixinTest):
             from gi.repository import GLib  # @UnresolvedImport
             def idle_add(ccs, *args):
                 return GLib.idle_add(*args)
-            child_command_server.ChildCommandServer.idle_add = idle_add
-            ccs = child_command_server.ChildCommandServer()
+            child_command.ChildCommandServer.idle_add = idle_add
+            ccs = child_command.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs
         self._test_mixin_class(_ChildCommandServer, opts)
@@ -64,7 +64,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         tmpfile = os.path.join(tempfile.gettempdir(), "xpra-test-start-command-%s" % os.getpid())
         assert not os.path.exists(tmpfile)
         command = (b"touch", tmpfile.encode("utf8"))
-        with silence_info(child_command_server):
+        with silence_info(child_command):
             self.handle_packet(("start-command", b"test", command, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
@@ -77,7 +77,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert os.path.exists(tmpfile)
         os.unlink(tmpfile)
         #test signals:
-        with silence_info(child_command_server):
+        with silence_info(child_command):
             self.handle_packet(("start-command", b"sleep", b"sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
@@ -90,7 +90,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert proc_info.get("name")=="sleep"
         assert proc_info.get("dead") is False
         #send it a SIGINT:
-        with silence_info(child_command_server):
+        with silence_info(child_command):
             self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
         self.mixin.child_reaper.poll()

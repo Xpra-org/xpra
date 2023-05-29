@@ -13,7 +13,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 class ServerMixinsTest(ServerMixinTest):
 
     def test_remotelogging(self):
-        from xpra.server.mixins.logging_server import LoggingServer
+        from xpra.server.mixins.logging import LoggingServer
         messages = []
         def newlogfn(*args):
             messages.append(args)

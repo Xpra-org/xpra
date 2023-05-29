@@ -26,52 +26,52 @@ from xpra.log import Logger
 
 SERVER_BASES = [ServerCore]
 if server_features.control:
-    from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
+    from xpra.server.mixins.controlcommands import ServerBaseControlCommands
     SERVER_BASES.append(ServerBaseControlCommands)
 if server_features.notifications:
-    from xpra.server.mixins.notification_forwarder import NotificationForwarder
+    from xpra.server.mixins.notification import NotificationForwarder
     SERVER_BASES.append(NotificationForwarder)
 if server_features.webcam:
     from xpra.server.mixins.webcam_server import WebcamServer
     SERVER_BASES.append(WebcamServer)
 if server_features.clipboard:
-    from xpra.server.mixins.clipboard_server import ClipboardServer
+    from xpra.server.mixins.clipboard import ClipboardServer
     SERVER_BASES.append(ClipboardServer)
 if server_features.audio:
-    from xpra.server.mixins.audio_server import AudioServer
+    from xpra.server.mixins.audio import AudioServer
     SERVER_BASES.append(AudioServer)
 if server_features.fileprint:
-    from xpra.server.mixins.fileprint_server import FilePrintServer
+    from xpra.server.mixins.fileprint import FilePrintServer
     SERVER_BASES.append(FilePrintServer)
 if server_features.mmap:
-    from xpra.server.mixins.mmap_server import MMAP_Server
+    from xpra.server.mixins.mmap import MMAP_Server
     SERVER_BASES.append(MMAP_Server)
 if server_features.input_devices:
-    from xpra.server.mixins.input_server import InputServer
+    from xpra.server.mixins.input import InputServer
     SERVER_BASES.append(InputServer)
 if server_features.dbus:
-    from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
+    from xpra.server.mixins.dbusrpc import DBUS_RPC_Server
     SERVER_BASES.append(DBUS_RPC_Server)
 if server_features.encoding:
-    from xpra.server.mixins.encoding_server import EncodingServer
+    from xpra.server.mixins.encoding import EncodingServer
     SERVER_BASES.append(EncodingServer)
 if server_features.logging:
-    from xpra.server.mixins.logging_server import LoggingServer
+    from xpra.server.mixins.logging import LoggingServer
     SERVER_BASES.append(LoggingServer)
 if server_features.network_state:
-    from xpra.server.mixins.networkstate_server import NetworkStateServer
+    from xpra.server.mixins.networkstate import NetworkStateServer
     SERVER_BASES.append(NetworkStateServer)
 if server_features.shell:
-    from xpra.server.mixins.shell_server import ShellServer
+    from xpra.server.mixins.shell import ShellServer
     SERVER_BASES.append(ShellServer)
 if server_features.display:
-    from xpra.server.mixins.display_manager import DisplayManager
+    from xpra.server.mixins.display import DisplayManager
     SERVER_BASES.append(DisplayManager)
 if server_features.windows:
-    from xpra.server.mixins.window_server import WindowServer
+    from xpra.server.mixins.window import WindowServer
     SERVER_BASES.append(WindowServer)
 if server_features.commands:
-    from xpra.server.mixins.child_command_server import ChildCommandServer
+    from xpra.server.mixins.child_command import ChildCommandServer
     SERVER_BASES.append(ChildCommandServer)
 SERVER_BASES = tuple(SERVER_BASES)
 ServerBaseClass : Type = type('ServerBaseClass', SERVER_BASES, {})

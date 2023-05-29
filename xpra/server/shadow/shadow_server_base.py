@@ -156,7 +156,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return 0, 0
 
     def _keys_changed(self):
-        from xpra.server.mixins.input_server import InputServer
+        from xpra.server.mixins.input import InputServer
         if isinstance(self, InputServer):
             InputServer._keys_changed(self)
             from xpra.platform.keyboard import Keyboard

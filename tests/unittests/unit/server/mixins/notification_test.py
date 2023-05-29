@@ -31,11 +31,11 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                 if dbus_env:
                     os.environb.update(dbus_env)
 
-                from xpra.server.mixins import notification_forwarder
+                from xpra.server.mixins import notification
                 opts = AdHocStruct()
                 opts.notifications = "yes"
-                with silence_info(notification_forwarder):
-                    self._test_mixin_class(notification_forwarder.NotificationForwarder, opts)
+                with silence_info(notification):
+                    self._test_mixin_class(notification.NotificationForwarder, opts)
                 self.verify_packet_error(("notification-close", 1, "test", "hello"))
                 self.verify_packet_error(("notification-action", 1))
                 self.handle_packet(("set-notify", False))

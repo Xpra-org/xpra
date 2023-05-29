@@ -23,7 +23,7 @@ class FilePrintMixinTest(ServerMixinTest):
             ]
 
     def test_fileprint(self):
-        from xpra.server.mixins import fileprint_server
+        from xpra.server.mixins import fileprint
         opts = AdHocStruct()
         opts.file_transfer = "yes"
         opts.file_size_limit = 10
@@ -36,8 +36,8 @@ class FilePrintMixinTest(ServerMixinTest):
         opts.add_printer_options = ""
         opts.postscript_printer = ""
         opts.pdf_printer = ""
-        with silence_info(fileprint_server, "printlog"):
-            self._test_mixin_class(fileprint_server.FilePrintServer, opts)
+        with silence_info(fileprint, "printlog"):
+            self._test_mixin_class(fileprint.FilePrintServer, opts)
 
 def main():
     unittest.main()

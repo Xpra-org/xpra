@@ -13,7 +13,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 class EncodingMixinTest(ServerMixinTest):
 
     def test_encoding(self):
-        from xpra.server.mixins.encoding_server import EncodingServer
+        from xpra.server.mixins.encoding import EncodingServer
         from xpra.server.source.encodings import EncodingsMixin
         opts = AdHocStruct()
         opts.encoding = ""
