@@ -110,7 +110,7 @@ class UInputDevice:
             return
         saved = self.wheel_delta.get(ubutton, 0)
         delta = saved+val
-        ival = int(delta)
+        ival = round(delta)
         log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i",
             button, distance, BUTTON_STR.get(ubutton), saved, val, delta, ival)
         if ival!=0:
