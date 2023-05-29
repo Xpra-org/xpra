@@ -107,8 +107,8 @@ class ServerBase(ServerBaseClass):
         self._authenticated_ui_packet_handlers : Dict[str,Callable] = {}
 
         self.display_pid : int = 0
-        self._server_sources : dict = {}
-        self.client_properties : dict = {}
+        self._server_sources : Dict = {}
+        self.client_properties : Dict[int,Dict] = {}
         self.ui_driver = None
         self.sharing : bool = None
         self.lock : bool = None
@@ -290,7 +290,7 @@ class ServerBase(ServerBaseClass):
             accepted = False
         return accepted, share_count, disconnected
 
-    def hello_oked(self, proto, c:typedict, auth_caps:dict) -> None:
+    def hello_oked(self, proto, c:typedict, auth_caps:Dict) -> None:
         if self._server_sources.get(proto):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
@@ -559,7 +559,7 @@ class ServerBase(ServerBaseClass):
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
-    def send_hello(self, server_source, root_size, server_cipher:dict) -> None:
+    def send_hello(self, server_source, root_size, server_cipher:Dict) -> None:
         capabilities = self.make_hello(server_source)
         from xpra.server.source.encodings_mixin import EncodingsMixin
         if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
@@ -735,7 +735,7 @@ class ServerBase(ServerBaseClass):
         pass
 
 
-    def _set_client_properties(self, proto, wid:int, window, new_client_properties:dict) -> None:
+    def _set_client_properties(self, proto, wid:int, window, new_client_properties:Dict) -> None:
         """
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)

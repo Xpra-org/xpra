@@ -64,7 +64,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         for c in DESKTOPSERVER_BASES:
             if c!=X11ServerBase:
                 c.__init__(self)  # pylint: disable=non-parent-init-called
-        self.gsettings_modified : dict = {}
+        self.gsettings_modified : Dict[str,Any] = {}
         self.root_prop_watcher = None
 
     def init(self, opts) -> None:

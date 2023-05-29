@@ -5,7 +5,7 @@
 
 from queue import Queue
 from threading import Timer, RLock
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
 
 from xpra.util import AtomicInteger
 from xpra.log import Logger
@@ -21,7 +21,7 @@ class QueueScheduler:
         self.main_queue = Queue()
         self.exit = False
         self.timer_id = AtomicInteger()
-        self.timers : Dict[int,Timer] = {}
+        self.timers : Dict[int,Union[Timer,None]] = {}
         self.timer_lock = RLock()
 
     def source_remove(self, tid : int):
@@ -35,8 +35,8 @@ class QueueScheduler:
         tid = self.timer_id.increase()
         self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
         #add an entry,
-        #but use the value False to stop us from trying to call cancel()
-        self.timers[tid] = False
+        #but use the value None to stop us from trying to call cancel()
+        self.timers[tid] = None
         return tid
 
     def idle_repeat_call(self, tid : int, fn : Callable, args, kwargs):

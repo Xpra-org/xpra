@@ -8,7 +8,7 @@ import os
 from weakref import WeakSet
 from typing import Any, Tuple, Union, Dict, Set
 
-from xpra.util import envint
+from xpra.util import envint, typedict
 
 
 FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
@@ -81,7 +81,7 @@ def preforder(encodings) -> Tuple[str, ...]:
     return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 
 
-def get_profile(options, encoding:str="h264", csc_mode:str="YUV420P", default_profile:str="constrained-baseline") -> str:
+def get_profile(options:typedict, encoding:str="h264", csc_mode:str="YUV420P", default_profile:str="constrained-baseline") -> str:
     return (
         options.strget(f"{encoding}.{csc_mode}.profile") or
         options.strget(f"{encoding}.profile") or
@@ -214,7 +214,7 @@ class _codec_spec:
 
 class video_spec(_codec_spec):
 
-    def __init__(self, encoding : str, input_colorspace : str, output_colorspaces : tuple, has_lossless_mode : bool,
+    def __init__(self, encoding : str, input_colorspace : str, output_colorspaces : Tuple, has_lossless_mode : bool,
                  codec_class, codec_type : str, min_w:int=2, min_h:int=2, **kwargs):
         self.encoding : str = encoding                        #ie: "h264"
         self.input_colorspace : str = input_colorspace

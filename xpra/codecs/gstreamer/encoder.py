@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import envbool, csv, roundup, first_time, typedict
@@ -41,15 +41,15 @@ PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRG
 
 assert get_type #all codecs must define this function
 COLORSPACES = {}
-def get_encodings():
+def get_encodings() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding:str) -> Tuple[str]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     return tuple(colorspaces.keys())
 
-def get_output_colorspaces(encoding, input_colorspace):
+def get_output_colorspaces(encoding:str, input_colorspace:str) -> Tuple[str]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
@@ -57,13 +57,13 @@ def get_output_colorspaces(encoding, input_colorspace):
     log.warn(f"get_output_colorspaces({encoding}, {input_colorspace})={out_colorspaces}")
     return out_colorspaces
 
-def ElementEncoderClass(element):
+def ElementEncoderClass(element:str):
     class ElementEncoder(Encoder):
         pass
-    ElementEncoder.encoder_element = element
+    ElementEncoder.encoder_element : str = element
     return ElementEncoder
 
-def make_spec(element, encoding, cs_in, css_out, cpu_cost=50, gpu_cost=50):
+def make_spec(element:str, encoding:str, cs_in:str, css_out:str, cpu_cost:int=50, gpu_cost:int=50):
     #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     #each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
@@ -90,7 +90,7 @@ def get_specs(encoding, colorspace):
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
     return colorspaces.get(colorspace)
 
-def init_all_specs(*exclude):
+def init_all_specs(*exclude) -> None:
     #by default, try to enable everything
     #the self-tests should disable what isn't available / doesn't work
     specs : Dict[str,Dict[str,List]] = {}
@@ -208,7 +208,7 @@ class Encoder(VideoPipeline):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
-    def get_profile(self, options : dict):
+    def get_profile(self, options : typedict) -> str:
         default_profile = {
             #"x264enc"   : "constrained-baseline",
             #"vaapih264enc" : "constrained-baseline",
@@ -218,7 +218,7 @@ class Encoder(VideoPipeline):
             }.get(self.encoder_element)
         return get_profile(options, self.encoding, self.colorspace, default_profile)
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.colorspace
 
     def get_info(self) -> Dict[str,Any]:
@@ -227,7 +227,7 @@ class Encoder(VideoPipeline):
             info["dst_formats"] = self.dst_formats
         return info
 
-    def clean(self):
+    def clean(self) -> None:
         self.cleanup()
 
 
@@ -255,7 +255,7 @@ class Encoder(VideoPipeline):
             log(f"added data to frame queue, client_info={client_info}")
         return GST_FLOW_OK
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image:ImageWrapper, options=None):
         if image.get_planes()==ImageWrapper.PACKED:
             data = image.get_pixels()
             rowstride = image.get_rowstride()

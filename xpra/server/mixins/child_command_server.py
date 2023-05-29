@@ -20,7 +20,7 @@ from xpra.os_util import (
     restore_script_env,
     OSX, WIN32, POSIX,
     )
-from xpra.util import envint, csv, ellipsizer, u
+from xpra.util import envint, csv, ellipsizer, u, typedict
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
@@ -157,7 +157,7 @@ class ChildCommandServer(StubServerMixin):
         return caps
 
 
-    def send_initial_data(self, ss, caps:dict, send_ui:bool, share_count:int) -> None:
+    def send_initial_data(self, ss, caps:typedict, send_ui:bool, share_count:int) -> None:
         if not getattr(ss, "xdg_menu", False):
             return
         if ss.xdg_menu_update:

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, List, Tuple, Any
 
 from xpra.log import Logger
 
@@ -13,10 +14,10 @@ log = Logger("keyboard")
 #this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
 # the value is the keyname override
-KEY_TRANSLATIONS : dict[tuple, str] = {}
+KEY_TRANSLATIONS : Dict[tuple, str] = {}
 
 
-def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
+def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[int,str,int,int,int]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -28,7 +29,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
-def do_get_gtk_keymap(display, ignore_keys):
+def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[int,str,int,int,int]:
     if not display:
         return ()
     import gi
@@ -37,7 +38,7 @@ def do_get_gtk_keymap(display, ignore_keys):
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
-    keycodes=[]
+    keycodes : List[Tuple[int,str,int,int,int]] = []
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
         if not entries: # pragma: no cover
@@ -59,7 +60,7 @@ def do_get_gtk_keymap(display, ignore_keys):
                 added.append(kdef)
         log("keycode %3i: %s", i, added)
     log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)
-    return keycodes
+    return tuple(keycodes)
 
 
 def main(): # pragma: no cover

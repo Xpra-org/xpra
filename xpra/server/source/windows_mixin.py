@@ -422,7 +422,7 @@ class WindowsMixin(StubSourceMixin):
             metadata.update(self._make_metadata(window, propname, skip_defaults=True))
         self.send_async("new-tray", wid, w, h, metadata)
 
-    def new_window(self, packet_type:str, wid:int, window, x:int, y:int, w:int, h:int, client_properties:dict) -> None:
+    def new_window(self, packet_type:str, wid:int, window, x:int, y:int, w:int, h:int, client_properties:Dict) -> None:
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
@@ -550,7 +550,7 @@ class WindowsMixin(StubSourceMixin):
                     setattr(ws.batch_config, x, batch_props.intget(x))
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
-    def set_client_properties(self, wid:int, window, new_client_properties:dict) -> None:
+    def set_client_properties(self, wid:int, window, new_client_properties:Dict) -> None:
         assert self.send_windows
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)

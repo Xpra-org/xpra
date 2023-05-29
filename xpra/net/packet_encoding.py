@@ -133,7 +133,7 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
-def pack_one_packet(packet:tuple):
+def pack_one_packet(packet:Tuple):
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])

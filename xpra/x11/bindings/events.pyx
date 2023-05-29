@@ -7,6 +7,7 @@
 import os
 import traceback
 from time import monotonic
+from typing import Dict, Tuple, Callable
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.gtk_common.error import XError, xsync
@@ -292,19 +293,19 @@ cdef init_x11_events(Display *display):
     set_debug_events()
 
 
-x_event_signals : dict = {}
+x_event_signals : Dict[int,Tuple] = {}
 def add_x_event_signal(event, mapping):
     x_event_signals[event] = mapping
 
-def add_x_event_signals(event_signals):
+def add_x_event_signals(event_signals:Dict[int,Tuple]):
     x_event_signals.update(event_signals)
 
-def get_x_event_signals(event):
+def get_x_event_signals(event) -> Tuple:
     return x_event_signals.get(event)
 
 
-x_event_type_names : dict = {}
-names_to_event_type : dict = {}
+x_event_type_names : Dict[int,str] = {}
+names_to_event_type : Dict[str,int] = {}
 def add_x_event_type_name(event, name):
     x_event_type_names[event] = name
     names_to_event_type[name] = event
@@ -353,8 +354,8 @@ def set_debug_events():
         log.warn(" event codes: %s", csv(debug_route_events))
 
 
-x_event_parsers : dict = {}
-def add_x_event_parser(extension_opcode : int, parser : callable):
+x_event_parsers : Dict[int,Callable] = {}
+def add_x_event_parser(extension_opcode : int, parser : Callable):
     x_event_parsers[extension_opcode] = parser
 
 

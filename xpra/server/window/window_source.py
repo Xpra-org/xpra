@@ -121,12 +121,12 @@ if POSIX and not OSX:
 
 
 class DelayedRegions:
-    def __init__(self, damage_time:float, regions:List[rectangle], encoding:str, options:Dict):
+    def __init__(self, damage_time:float, regions:List[rectangle], encoding:str, options:Optional[Dict]):
         self.expired : bool = False
         self.damage_time : float = damage_time
         self.regions = regions
         self.encoding : str = encoding
-        self.options : dict = options or {}
+        self.options : Dict = options or {}
 
     def __repr__(self):
         return "DelayedRegion(time=%i, expired=%s, encoding=%s, regions=%s, options=%s)" % (
@@ -2166,7 +2166,7 @@ class WindowSource(WindowIconSource):
         self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 
-    def schedule_auto_refresh(self, packet : tuple, options) -> None:
+    def schedule_auto_refresh(self, packet : Tuple, options) -> None:
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
@@ -2487,7 +2487,7 @@ class WindowSource(WindowIconSource):
         self.record_congestion_event(source, late_pct, send_speed)
 
 
-    def get_fail_cb(self, packet : tuple) -> Callable:
+    def get_fail_cb(self, packet : Tuple) -> Callable:
         def resend():
             log("paint packet failure, resending")
             x, y, width, height = packet[2:6]

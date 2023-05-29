@@ -86,7 +86,7 @@ def get_max_texture_size() -> int:
 
 
 def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
-    props : dict[str,Any] = {
+    props : Dict[str,Any] = {
         "platform"  : sys.platform,
         }
     def unsafe():

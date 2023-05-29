@@ -12,7 +12,7 @@
 __version__ = (b"Python", 5, 0)
 
 import codecs
-from typing import Union, Callable, List, Any
+from typing import Union, Callable, Dict, List, Any
 
 #idiotic py3k unicode mess makes us reinvent the wheel again:
 def strindex(s : bytes, char : str, start : int):
@@ -79,7 +79,7 @@ def decode_dict(x, f):
     return (r, f + 1)
 
 
-decode_func : dict[Union[int, str],Callable]= {}
+decode_func : Dict[Union[int, str],Callable]= {}
 def add_decode(c:str, fn:Callable):
     decode_func[c] = fn
     decode_func[ord(c)] = fn
@@ -131,7 +131,7 @@ def encode_dict(x,r) -> None:
     r.append('e')
 
 
-encode_func : dict[type, Callable] = {
+encode_func : Dict[type, Callable] = {
     int     : encode_int,
     str     : encode_unicode,
     list    : encode_list,

@@ -7,7 +7,7 @@
 import os
 import signal
 from socket import gethostname
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envbool, first_time
@@ -511,7 +511,7 @@ class CoreX11WindowModel(WindowModelStub):
         with xswallow:
             self.prop_set("_NET_FRAME_EXTENTS", ["u32"], v)
 
-    _py_property_handlers : dict = {
+    _py_property_handlers : Dict[str,Callable] = {
         "allowed-actions"    : _sync_allowed_actions,
         "frame"              : _sync_frame,
         }
@@ -648,7 +648,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("opaque-region", tuple(rectangles))
 
     #these handlers must not generate X11 errors (must use XSync)
-    _x11_property_handlers : dict = {
+    _x11_property_handlers : Dict[str,Callable] = {
         "_NET_WM_PID"       : _handle_pid_change,
         "WM_CLIENT_MACHINE" : _handle_client_machine_change,
         "WM_NAME"           : _handle_wm_name_change,

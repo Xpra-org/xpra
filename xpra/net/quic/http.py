@@ -43,13 +43,13 @@ class HttpRequestHandler:
         self.transmit = transmit
 
 
-    def send_http3_response(self, code, headers : dict = None, body : bytes = b""):
+    def send_http3_response(self, code, headers : Dict = None, body : bytes = b""):
         self.send_response_header(code, headers)
         if body:
             self.send_response_body(body)
         self.transmit()
 
-    def send_response_header(self, status : int = 200, headers : dict = None) -> None:
+    def send_response_header(self, status : int = 200, headers : Dict = None) -> None:
         headers = [
                 (b":status", str(status).encode()),
                 (b"server", SERVER_NAME.encode()),

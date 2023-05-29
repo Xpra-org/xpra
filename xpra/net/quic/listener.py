@@ -205,7 +205,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         log.error(f"Error: listening on {sock}", exc_info=True)
         raise
 
-def listen_quic(sock, xpra_server, socket_options : dict):
+def listen_quic(sock, xpra_server, socket_options : Dict):
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert")

@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Dict, Any
+from typing import Callable, List, Tuple, Dict, Any
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -173,19 +173,19 @@ class ServerCore:
         self._closing : bool = False
         self._upgrading = None
         #networking bits:
-        self._socket_info : dict = {}
+        self._socket_info : Dict = {}
         self._potential_protocols : List = []
         self._rfb_upgrade : int = 0
-        self._ssl_attributes : dict = {}
+        self._ssl_attributes : Dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
         self.ssl_mode : str = None
         self._html : bool = False
         self._http_scripts : Dict[str,Callable] = {}
         self._www_dir : str = None
         self._http_headers_dirs : List[str] = ()
-        self._aliases : dict = {}
-        self.socket_info : dict = {}
-        self.socket_options : dict = {}
+        self._aliases : Dict = {}
+        self.socket_info : Dict = {}
+        self.socket_options : Dict = {}
         self.socket_cleanup : List = []
         self.socket_verify_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
@@ -529,7 +529,7 @@ class ServerCore:
 
     ######################################################################
     # dbus:
-    def init_dbus(self, dbus_pid : int, dbus_env : dict) -> None:
+    def init_dbus(self, dbus_pid : int, dbus_env : Dict[str,str]) -> None:
         if not POSIX:
             return
         self.dbus_pid = dbus_pid
@@ -1476,7 +1476,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:dict, peek_data=b""):
+    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:Dict, peek_data=b""):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -1561,7 +1561,7 @@ class ServerCore:
 
     ######################################################################
     # http / websockets:
-    def start_http_socket(self, socktype:str, conn, socket_options:dict, is_ssl:bool=False, peek_data:str=""):
+    def start_http_socket(self, socktype:str, conn, socket_options:Dict, is_ssl:bool=False, peek_data:str=""):
         frominfo = pretty_socket(conn.remote)
         line1 = peek_data.split(b"\n")[0]
         http_proto = "http"+["","s"][int(is_ssl)]
@@ -1966,7 +1966,7 @@ class ServerCore:
                 i += 1
         return tuple(authenticators)
 
-    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:dict, digest, salt_digest, prompt="password") -> None:
+    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:Dict, digest, salt_digest, prompt="password") -> None:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
@@ -2081,7 +2081,7 @@ class ServerCore:
         c = typedict(capabilities)
         self.auth_verified(proto, c, auth_caps)
 
-    def auth_verified(self, proto:SocketProtocol, caps:typedict, auth_caps:dict) -> None:
+    def auth_verified(self, proto:SocketProtocol, caps:typedict, auth_caps:Dict) -> None:
         command_req = tuple(net_utf8(x) for x in caps.tupleget("command_request"))
         if command_req:
             #call from UI thread:
@@ -2168,7 +2168,7 @@ class ServerCore:
             return auth_failed("missing encryption tokens from client")
         return {}
 
-    def get_encryption_key(self, authenticators:tuple=(), keyfile:str=None) -> bytes:
+    def get_encryption_key(self, authenticators:Tuple=(), keyfile:str=None) -> bytes:
         #if we have a keyfile specified, use that:
         authlog(f"get_encryption_key({authenticators}, {keyfile})")
         if keyfile:
@@ -2189,7 +2189,7 @@ class ServerCore:
                     return v
         return None
 
-    def call_hello_oked(self, proto:SocketProtocol, c:typedict, auth_caps:dict) -> None:
+    def call_hello_oked(self, proto:SocketProtocol, c:typedict, auth_caps:Dict) -> None:
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
                 raise RuntimeError("Simulating a server error")
@@ -2205,7 +2205,7 @@ class ServerCore:
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
-    def hello_oked(self, proto:SocketProtocol, c:typedict, _auth_caps:dict) -> bool:
+    def hello_oked(self, proto:SocketProtocol, c:typedict, _auth_caps:Dict) -> bool:
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
@@ -2320,17 +2320,17 @@ class ServerCore:
             self.do_send_info(proto, info)
         self.get_all_info(cb, proto)
 
-    def do_send_info(self, proto:SocketProtocol, info:dict) -> None:
+    def do_send_info(self, proto:SocketProtocol, info:Dict[str,Any]) -> None:
         proto.send_now(("hello", notypedict(info)))
 
     def get_all_info(self, callback:Callable, proto:SocketProtocol=None, *args):
         start = monotonic()
-        ui_info : dict = self.get_ui_info(proto, *args)
+        ui_info : Dict[str,Any] = self.get_ui_info(proto, *args)
         end = monotonic()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
 
-    def _get_info_in_thread(self, callback:Callable, ui_info:dict, proto:SocketProtocol, args):
+    def _get_info_in_thread(self, callback:Callable, ui_info:Dict[str,Any], proto:SocketProtocol, args):
         log("get_info_in_thread%s", (callback, {}, proto, args))
         start = monotonic()
         #this runs in a non-UI thread
@@ -2343,7 +2343,7 @@ class ServerCore:
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)
 
-    def get_ui_info(self, _proto:SocketProtocol, *_args) -> dict:
+    def get_ui_info(self, _proto:SocketProtocol, *_args) -> Dict[str,Any]:
         #this function is for info which MUST be collected from the UI thread
         return {}
 

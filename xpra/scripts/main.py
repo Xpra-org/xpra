@@ -779,7 +779,7 @@ def find_session_by_name(opts, session_name:str) -> str:
     return f"socket://{socket_path}" 
 
 
-def display_desc_to_uri(display_desc:dict) -> str:
+def display_desc_to_uri(display_desc:Dict[str,Any]) -> str:
     dtype = display_desc.get("type")
     if not dtype:
         raise InitException("missing display type")
@@ -809,7 +809,7 @@ def display_desc_to_uri(display_desc:dict) -> str:
     uri += "/" + display_desc_to_display_path(display_desc)
     return uri
 
-def display_desc_to_display_path(display_desc:dict) -> str:
+def display_desc_to_display_path(display_desc:Dict[str,Any]) -> str:
     uri = ""
     display = display_desc.get("display")
     if display:
@@ -1225,7 +1225,7 @@ def run_send_file(extra_args) -> int:
         return ExitCode.FAILURE
     return 0
 
-def get_sockpath(display_desc:dict, error_cb, timeout=CONNECT_TIMEOUT) -> str:
+def get_sockpath(display_desc:Dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) -> str:
     #if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
     if not sockpath:
@@ -1338,7 +1338,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> in
     return r
 
 
-def connect_to_server(app, display_desc:dict, opts) -> None:
+def connect_to_server(app, display_desc:Dict[str,Any], opts) -> None:
     #on win32, we must run the main loop
     #before we can call connect()
     #because connect() may run a subprocess,

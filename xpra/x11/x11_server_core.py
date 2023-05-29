@@ -517,7 +517,7 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             return X11Keyboard.get_cursor_image()
 
-    def get_cursor_data(self, skip_default=True) -> tuple:
+    def get_cursor_data(self, skip_default=True) -> Tuple:
         #must be called from the UI thread!
         cursor_image = self.get_cursor_image()
         if cursor_image is None:

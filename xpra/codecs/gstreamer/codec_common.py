@@ -198,7 +198,7 @@ def get_gst_encoding(encoding:str) -> str:
 
 
 class VideoPipeline(Pipeline):
-    __generic_signals__ : dict = Pipeline.__generic_signals__.copy()
+    __generic_signals__ : Dict[str,Tuple] = Pipeline.__generic_signals__.copy()
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """

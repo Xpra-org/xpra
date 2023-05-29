@@ -4,7 +4,9 @@
 # later version. See the file COPYING for details.
 
 from time import time
+from typing import Dict
 from email.utils import formatdate
+
 from xpra.util import envint
 from xpra.os_util import strtobytes
 
@@ -17,7 +19,7 @@ def http_date():
     """ GMT date in a format suitable for http headers """
     return formatdate(time(), usegmt=True)
 
-def binary_headers(headers : dict):
+def binary_headers(headers : Dict):
     """ aioquic expects the headers as a list of binary pairs """
     return [(strtobytes(k), strtobytes(v)) for k,v in headers.items()]
 

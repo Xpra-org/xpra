@@ -16,7 +16,7 @@ import glob
 import os.path
 import datetime
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
-from typing import Dict, Any, Optional
+from typing import Dict, Tuple, Any, Optional
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -485,12 +485,12 @@ def clean_session_path(path) -> None:
             log.error(f"Error removing session path {path}")
             log.estr(e)
 
-SERVER_SAVE_SKIP_OPTIONS : tuple = (
+SERVER_SAVE_SKIP_OPTIONS : Tuple[str,...] = (
     "systemd-run",
     "daemon",
     )
 
-SERVER_LOAD_SKIP_OPTIONS : tuple = (
+SERVER_LOAD_SKIP_OPTIONS : Tuple[str,...] = (
     "systemd-run",
     "daemon",
     "start",
@@ -637,7 +637,7 @@ def is_splash_enabled(mode:str, daemon:bool, splash:bool, display:str):
         return True
     return False
 
-MODE_TO_NAME : dict = {
+MODE_TO_NAME : Dict[str,str] = {
     "seamless"          : "Seamless",
     "desktop"           : "Desktop",
     "monitor"           : "Monitor",

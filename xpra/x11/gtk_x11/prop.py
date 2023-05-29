@@ -15,7 +15,7 @@ the conversions for plain python types is found in prop_conv.py
 """
 
 import struct
-from typing import Optional
+from typing import Optional, Dict
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window import X11WindowBindings, PropertyError
@@ -46,7 +46,7 @@ def _get_xatom(str_or_int):
         return X11WindowBindings().get_xatom(str_or_int)
 
 
-PYTHON_TYPES : dict = {
+PYTHON_TYPES : Dict[str,str] = {
     "UTF8_STRING"   : "utf8",
     "STRING"        : "latin1",
     "ATOM"          : "atom",

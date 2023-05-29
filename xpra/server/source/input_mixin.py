@@ -54,7 +54,7 @@ class InputMixin(StubSourceMixin):
 
 
     def get_info(self) -> Dict[str,Any]:
-        dc_info : dict[str,Any] = {}
+        dc_info : Dict[str,Any] = {}
         dct = self.double_click_time
         if dct:
             dc_info["time"] = dct

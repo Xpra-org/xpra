@@ -145,19 +145,19 @@ class WindowVideoSource(WindowSource):
         self.height_mask : int = 0xFFFF
         self.actual_scaling = (1, 1)
 
-        self.last_pipeline_params : tuple = ()
-        self.last_pipeline_scores : tuple = ()
+        self.last_pipeline_params : Tuple = ()
+        self.last_pipeline_scores : Tuple = ()
         self.last_pipeline_time : int = 0
 
-        self.video_encodings : tuple[str] = ()
-        self.common_video_encodings : tuple[str] = ()
-        self.non_video_encodings : tuple[str] = ()
-        self.video_fallback_encodings : dict = {}
+        self.video_encodings : Tuple[str] = ()
+        self.common_video_encodings : Tuple[str] = ()
+        self.non_video_encodings : Tuple[str] = ()
+        self.video_fallback_encodings : Dict = {}
         self.edge_encoding : str = ""
         self.start_video_frame : int = 0
         self.video_encoder_timer : int = 0
         self.b_frame_flush_timer : int = 0
-        self.b_frame_flush_data : tuple = ()
+        self.b_frame_flush_data : Tuple = ()
         self.encode_from_queue_timer : int = 0
         self.encode_from_queue_due = 0
         self.scroll_data = None
@@ -571,7 +571,7 @@ class WindowVideoSource(WindowSource):
                 return nonvideo(info="not enough pixels")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww : int, wh : int, options : dict,
+    def get_best_nonvideo_encoding(self, ww : int, wh : int, options : Dict,
                                    current_encoding=None, encoding_options=()) -> str:
         if self.encoding=="grayscale":
             return self.encoding_is_grayscale(ww, wh, options, current_encoding or self.encoding)
@@ -612,7 +612,7 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
 
-    def full_quality_refresh(self, damage_options : dict) -> None:
+    def full_quality_refresh(self, damage_options : Dict) -> None:
         vs = self.video_subregion
         if vs and vs.rectangle:
             if vs.detection:
@@ -1299,7 +1299,7 @@ class WindowVideoSource(WindowSource):
         #everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings : tuple, width : int, height : int, src_format : str) -> tuple:
+    def get_video_pipeline_options(self, encodings : Tuple[str,...], width : int, height : int, src_format : str) -> tuple:
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
@@ -1659,7 +1659,7 @@ class WindowVideoSource(WindowSource):
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
 
-    def do_check_pipeline(self, encodings : tuple, width : int, height : int, src_format : str):
+    def do_check_pipeline(self, encodings : Tuple[str,...], width : int, height : int, src_format : str):
         """
             Checks that the current pipeline is still valid
             for the given input.
@@ -1725,7 +1725,7 @@ class WindowVideoSource(WindowSource):
         return True
 
 
-    def setup_pipeline(self, scores : tuple, width : int, height : int, src_format : str):
+    def setup_pipeline(self, scores : Tuple, width : int, height : int, src_format : str):
         """
             Given a list of pipeline options ordered by their score
             and an input format (width, height and source pixel format),
@@ -2183,13 +2183,13 @@ class WindowVideoSource(WindowSource):
         encode_fn = self.video_fallback_encodings[encoding][0]
         return encode_fn(encoding, image, options)
 
-    def video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
+    def video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> tuple:
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
+    def do_video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> tuple:
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,

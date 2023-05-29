@@ -291,7 +291,7 @@ class XpraMonitorServer(DesktopServerBase):
             monitor_defs[i] = monitor
         return monitor_defs
 
-    def apply_monitor_config(self, monitor_defs : dict) -> None:
+    def apply_monitor_config(self, monitor_defs : Dict) -> None:
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 

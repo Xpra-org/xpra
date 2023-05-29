@@ -16,7 +16,7 @@ class Unmanageable(Exception):
     pass
 
 
-REPR_FUNCTIONS : dict[type,Callable] = {}
+REPR_FUNCTIONS : Dict[type,Callable] = {}
 
 
 # Just to make it easier to pass around and have a helpful debug logging.
@@ -247,7 +247,7 @@ def get_xsettings():
     return bytes_to_xsettings(data)
 
 def xsettings_to_dict(v) -> Dict[str, Tuple[int, Any]]:
-    d : dict[str, Tuple[int, Any]] = {}
+    d : Dict[str, Tuple[int, Any]] = {}
     if v:
         _, values = v
         for setting_type, prop_name, value, _ in values:
@@ -270,14 +270,14 @@ def get_randr_dpi() -> Tuple[int,int]:
 
 
 
-def get_xresources() -> Optional[dict[str,str]]:
+def get_xresources() -> Optional[Dict[str,str]]:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")
         if value is None:
             return None
         #parse the resources into a dict:
-        values : dict[str,str] = {}
+        values : Dict[str,str] = {}
         options = bytestostr(value).split("\n")
         for option in options:
             if not option:

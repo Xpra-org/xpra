@@ -380,7 +380,7 @@ WIN32_KEYBOARDS : Dict[int, Tuple[str, str]] = {
 X11_LAYOUTS : Dict[Tuple[str,str],Tuple[str,Tuple[str, ...]]] = {}
 for ccode, country, language, codepage, layout, variants in WIN32_LAYOUTS.values():
     X11_LAYOUTS[(country, language)] = (layout, variants)
-LAYOUT_VARIANTS : dict[str, List[str]] = {}
+LAYOUT_VARIANTS : Dict[str, List[str]] = {}
 for win32layout in WIN32_LAYOUTS.values():
     layout, variants = win32layout[-2:]
     l = LAYOUT_VARIANTS.setdefault(layout, [])

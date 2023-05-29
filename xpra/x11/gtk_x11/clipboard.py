@@ -115,8 +115,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.remote_requests : Dict[str, List[Tuple]] = {}
         self.local_requests : Dict[str,Dict[int,Tuple[int,Callable]]] = {}
         self.local_request_counter : int = 0
-        self.targets : tuple = ()
-        self.target_data : dict = {}
+        self.targets : Tuple[str,...] = ()
+        self.target_data : Dict[str,Tuple] = {}
         self.reset_incr_data()
 
     def reset_incr_data(self) -> None:

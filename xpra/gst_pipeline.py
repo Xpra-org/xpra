@@ -7,7 +7,7 @@
 #pylint: disable=wrong-import-position
 
 from time import monotonic
-from typing import Tuple, Dict, Callable, Any
+from typing import List, Tuple, Dict, Callable, Any
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
 Gst = import_gst()
@@ -36,25 +36,25 @@ class Pipeline(GObject.GObject):
     def __init__(self):
         super().__init__()
         self.bus = None
-        self.bitrate = -1
+        self.bitrate : int = -1
         self.pipeline = None
         self.pipeline_str = ""
-        self.element_handlers = {}
-        self.start_time = 0
+        self.element_handlers : Dict[Any,List[int]] = {}
+        self.start_time : float = 0
         self.state : str = "stopped"
-        self.info : dict = {}
+        self.info : Dict[str,Any] = {}
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
         self.emit_info_timer : int = 0
         self.file = None
 
-    def element_connect(self, element, sig:str, handler:Callable):
+    def element_connect(self, element, sig:str, handler:Callable) -> None:
         """ keeps track of signal ids so we can cleanup later """
         sid = element.connect(sig, handler)
         self.element_handlers.setdefault(element, []).append(sid)
 
-    def elements_disconnect(self):
+    def elements_disconnect(self) -> None:
         handlers = self.element_handlers
         if not handlers:
             return
@@ -63,12 +63,12 @@ class Pipeline(GObject.GObject):
             for sid in sids:
                 element.disconnect(sid)
 
-    def update_state(self, state:str):
+    def update_state(self, state:str) -> None:
         log("update_state(%s)", state)
         self.state = state
         self.info["state"] = state
 
-    def save_to_file(self, *buffers):
+    def save_to_file(self, *buffers) -> None:
         f = self.file
         if f and buffers:
             for x in buffers:
@@ -76,7 +76,7 @@ class Pipeline(GObject.GObject):
             self.file.flush()
 
 
-    def idle_emit(self, sig, *args):
+    def idle_emit(self, sig, *args) -> None:
         self.idle_add(self.emit, sig, *args)
 
     def emit_info(self) -> None:
@@ -99,7 +99,7 @@ class Pipeline(GObject.GObject):
             self.source_remove(eit)
 
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> Dict[str,Any]:
         return self.info.copy()
 
     def setup_pipeline_and_bus(self, elements) -> bool:

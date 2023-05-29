@@ -8,7 +8,7 @@ import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-from typing import Callable, Tuple, Dict, Any
+from typing import Callable, Tuple, Dict, Any, List
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes
@@ -48,7 +48,7 @@ def is_tiff(data) -> bool:
     return False
 
 
-HEADERS : dict[Callable, str] = {
+HEADERS : Dict[Callable, str] = {
     is_png  : "png",
     is_webp : "webp",
     is_jpeg : "jpeg",
@@ -68,7 +68,7 @@ def get_image_type(data) -> str:
     return ""
 
 
-def open_only(data, types=("png", "jpeg", "webp")):
+def open_only(data, types=("png", "jpeg", "webp")) -> Image:
     itype = get_image_type(data) or "unknown"
     if itype not in types:
         raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: "+hexstr(data[:64]))
@@ -82,7 +82,7 @@ def get_version() -> str:
 def get_type() -> str:
     return "pillow"
 
-def do_get_encodings():
+def do_get_encodings() -> List[str]:
     log("PIL.Image.OPEN=%s", Image.OPEN)
     encodings = []
     for encoding in DECODE_FORMATS:

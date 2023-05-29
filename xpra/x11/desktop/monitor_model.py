@@ -36,11 +36,11 @@ class MonitorDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"MonitorDesktopModel({self.name} : {self.monitor_geometry})"
 
-    def __init__(self, monitor:dict):
+    def __init__(self, monitor:Dict[str,Any]):
         super().__init__()
         self.init(monitor)
 
-    def init(self, monitor:dict) -> None:
+    def init(self, monitor:Dict[str,Any]) -> None:
         self.name = monitor.get("name", "")
         self.resize_delta = 0, 0
         x = monitor.get("x", 0)

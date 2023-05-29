@@ -25,9 +25,12 @@ from threading import Thread
 # without too many side-effects
 # pylint: disable=import-outside-toplevel
 
-SIGNAMES : dict = {}
+SIGNAMES : Dict[int,str] = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
-    SIGNAMES[getattr(signal, signame)] = signame
+    try:
+        SIGNAMES[int(getattr(signal, signame))] = signame
+    except ValueError:
+        pass
 
 
 WIN32 : bool = sys.platform.startswith("win")
@@ -47,7 +50,7 @@ def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> Dict[Any,Any]:
+def get_frame_info(ignore_threads:Tuple[Thread,...]=()) -> Dict[Any,Any]:
     info : Dict[Any,Any] = {
         "count"        : threading.active_count() - len(ignore_threads),
         }
@@ -57,7 +60,7 @@ def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> Dict[Any,Any]:
             if x is None:
                 return ""
             return str(x)
-        thread_ident : dict[Optional[int],Optional[str]] = {}
+        thread_ident : Dict[Optional[int],Optional[str]] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
                 thread_ident[t.ident] = t.getName()
@@ -334,7 +337,7 @@ def get_saved_env_var(var, default=None):
 def is_Wayland() -> bool:
     return _is_Wayland(_saved_env)
 
-def _is_Wayland(env : dict) -> bool:
+def _is_Wayland(env : Dict) -> bool:
     backend = env.get("GDK_BACKEND", "")
     if backend=="wayland":
         return True

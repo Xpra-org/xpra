@@ -29,7 +29,7 @@ def get_info() -> Dict[str,Any]:
             }
 
 
-def encode(coding : str, image, options : dict):
+def encode(coding : str, image, options : Dict):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)

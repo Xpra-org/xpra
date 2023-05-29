@@ -1239,7 +1239,7 @@ def parse_with_unit(numtype, v, subunit="bps", min_value:int=250000):
 def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> Dict[str,Any]:
     return do_validate_config(d or {}, discard, extras_types or {}, extras_validation or {})
 
-def do_validate_config(d:dict, discard, extras_types:Dict, extras_validation:Dict) -> Dict[str,Any]:
+def do_validate_config(d:Dict, discard, extras_types:Dict, extras_validation:Dict) -> Dict[str,Any]:
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
@@ -1312,7 +1312,7 @@ def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validat
     return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {},
                                    username, uid, gid)
 
-def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict,
+def do_make_defaults_struct(extras_defaults:dict, extras_types:Dict, extras_validation:dict,
                             username:str, uid:int, gid:int) -> XpraConfig:
     #populate config with default values:
     if not username and uid:
@@ -1320,7 +1320,7 @@ def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_vali
     defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
-def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
+def dict_to_validated_config(d:Dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
     options = get_defaults().copy()
     if extras_defaults:
         options.update(extras_defaults)

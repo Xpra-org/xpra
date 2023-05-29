@@ -5,6 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
+from typing import Dict, Tuple, List
 
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
@@ -17,7 +18,7 @@ from xpra.codecs.gstreamer.codec_common import (
     init_module, cleanup_module,
     )
 from xpra.os_util import WIN32
-from xpra.util import roundup
+from xpra.util import roundup, typedict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 
@@ -50,7 +51,7 @@ def get_default_mappings():
     return m
 
 
-def get_codecs_options():
+def get_codecs_options() -> Dict[str,List[str]]:
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS")
     if not dm:
         return get_default_mappings()
@@ -65,8 +66,8 @@ def get_codecs_options():
             codec_options[enc] = elements_str.split(",")
     return codec_options
 
-def find_codecs(options):
-    codecs = {}
+def find_codecs(options) -> Dict[str,str]:
+    codecs : Dict[str,str] = {}
     for encoding, elements in options.items():
         for element in elements:
             if has_plugins(element):
@@ -81,16 +82,16 @@ CODECS = find_codecs(get_codecs_options())
 def get_encodings() -> tuple:
     return tuple(CODECS.keys())
 
-def get_min_size(encoding):
+def get_min_size(encoding:str):
     return 48, 16
 
-def get_input_colorspaces(encoding) -> tuple:
+def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
     if encoding not in CODECS:
         raise ValueError(f"unsupported encoding {encoding}")
     return ("YUV420P", )
     #return ("YUV420P", "BGRX", )
 
-def get_output_colorspace(encoding, input_colorspace) -> str:
+def get_output_colorspace(encoding:str, input_colorspace:str) -> str:
     encoder = CODECS.get(encoding)
     if not encoder:
         raise ValueError(f"unsupported encoding {encoding}")
@@ -101,11 +102,11 @@ def get_output_colorspace(encoding, input_colorspace) -> str:
 
 
 class Decoder(VideoPipeline):
-    __gsignals__ : dict = VideoPipeline.__generic_signals__.copy()
+    __gsignals__ : Dict[str,Tuple] = VideoPipeline.__generic_signals__.copy()
     """
     Dispatch video decoding to a gstreamer pipeline
     """
-    def create_pipeline(self, options):
+    def create_pipeline(self, options:typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
@@ -145,7 +146,7 @@ class Decoder(VideoPipeline):
     def get_colorspace(self) -> str:
         return self.colorspace
 
-    def on_new_sample(self, _bus):
+    def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         size = buf.get_size()
@@ -178,7 +179,7 @@ class Decoder(VideoPipeline):
         return GST_FLOW_OK
 
 
-    def decompress_image(self, data, options=None):
+    def decompress_image(self, data:bytes, options=None):
         log(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")

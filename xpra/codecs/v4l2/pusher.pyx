@@ -7,7 +7,7 @@
 #cython: wraparound=False
 
 import os
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.log import Logger
 log = Logger("webcam")
@@ -236,7 +236,7 @@ print_nested_dict({
     }, print_fn=log.debug)
 
 
-def query_video_device(device="/dev/video0"):
+def query_video_device(device="/dev/video0") -> Dict[str,Any]:
     cdef v4l2_capability vid_caps
     try:
         log("v4l2 using device %s", device)
@@ -269,14 +269,14 @@ def get_version():
 def get_type():
     return "v4l2"
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
         }
 
-def get_input_colorspaces():
-    return  ["YUV420P"]     #,"YUV422P"
+def get_input_colorspaces() -> Tuple:
+    return ("YUV420P", )     #,"YUV422P"
 
 
 cdef class Pusher:
@@ -291,7 +291,7 @@ cdef class Pusher:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, int rowstride, src_format, device):    #@DuplicatedSignature
+    def init_context(self, int width, int height, int rowstride, src_format, device) -> None:    #@DuplicatedSignature
         assert src_format in get_input_colorspaces(), "invalid source format '%s', must be one of %s" % (src_format, get_input_colorspaces())
         self.width = width
         self.height = height
@@ -347,7 +347,7 @@ cdef class Pusher:
         #assert self.src_format in get_input_colorspaces(), "invalid pixel format used: %s" % self.src_format
 
 
-    def get_equiv_format(self, fmt):
+    def get_equiv_format(self, fmt:str) -> str:
         return {"YU12" : "YUV420P", "YV12" : "YVU420P", "GREY" : "YUV420P"}.get(fmt, fmt)
 
     cdef parse_pixel_format(self, v4l2_format *vid_format):
@@ -371,7 +371,7 @@ cdef class Pusher:
         #log("vid_format.fmt.pix.xfer_func    = %s (%i)", XFER_FUNC_STR.get(vid_format.fmt.pix.xfer_func, vid_format.fmt.pix.xfer_func), vid_format.fmt.pix.xfer_func)
 
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self) -> None:                        #@DuplicatedSignature
         self.width = 0
         self.height = 0
         self.rowstride = 0
@@ -399,26 +399,26 @@ cdef class Pusher:
             return "v4l2.Pusher(uninitialized)"
         return "v4l2.Pusher(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return not bool(self.src_format)
 
     def __dealloc__(self):
         self.clean()
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):                     #@DuplicatedSignature
-        return  "v4l2"
+    def get_type(self) -> str:
+        return "v4l2"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
 
-    def push_image(self, image):
+    def push_image(self, image:ImageWrapper) -> None:
         cdef int i
         divs = get_subsampling_divs(self.src_format)    #ie: YUV420P ->  (1, 1), (2, 2), (2, 2)
 

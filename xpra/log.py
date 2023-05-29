@@ -9,12 +9,12 @@ import sys
 import logging
 import weakref
 import itertools
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, List, Tuple, Any, Set
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX : str = ""
 LOG_FORMAT : str = "%(asctime)s %(message)s"
-DEBUG_MODULES : tuple[str, ...] = ()
+DEBUG_MODULES : Tuple[str, ...] = ()
 if os.name!="posix" or os.getuid()!=0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
@@ -24,28 +24,6 @@ NOPREFIX_FORMAT : str = "%(message)s"
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
-
-#so we can keep a reference to all the loggers in use
-#we may have multiple loggers for the same key, so use a dict
-#but we don't want to prevent garbage collection so use a list of weakrefs
-all_loggers : dict[str, object] = {}
-def add_logger(categories, logger):
-    categories = list(categories)
-    categories.append("all")
-    l = weakref.ref(logger)
-    for cat in categories:
-        all_loggers.setdefault(cat, set()).add(l)
-
-def get_all_loggers():
-    a = set()
-    for loggers in all_loggers.values():
-        for logger in list(loggers):
-            #weakref:
-            instance = logger()
-            if instance:
-                a.add(instance)
-    return a
-
 
 debug_enabled_categories : set[str] = set()
 debug_disabled_categories : set[str] = set()
@@ -107,35 +85,6 @@ def remove_disabled_category(*cat) -> None:
             debug_disabled_categories.remove(c)
 
 
-def get_loggers_for_categories(*cat) -> list:
-    if not cat:
-        return  []
-    if "all" in cat:
-        return get_all_loggers()
-    cset = set(cat)
-    matches = set()
-    for l in get_all_loggers():
-        if set(l.categories).issuperset(cset):
-            matches.add(l)
-    return list(matches)
-
-def enable_debug_for(*cat) -> list:
-    loggers = []
-    for l in get_loggers_for_categories(*cat):
-        if not l.is_debug_enabled():
-            l.enable_debug()
-            loggers.append(l)
-    return loggers
-
-def disable_debug_for(*cat) -> list:
-    loggers = []
-    for l in get_loggers_for_categories(*cat):
-        if l.is_debug_enabled():
-            l.disable_debug()
-            loggers.append(l)
-    return loggers
-
-
 default_level : int = logging.DEBUG
 def set_default_level(level:int):
     global default_level
@@ -189,7 +138,7 @@ def enable_format(format_string:str) -> None:
         pass
 
 
-STRUCT_KNOWN_FILTERS : dict[str,dict[str,str]] = {
+STRUCT_KNOWN_FILTERS : Dict[str,Dict[str,str]] = {
     "Client" : {
                 "client"        : "All client code",
                 "paint"         : "Client window paint code",
@@ -345,7 +294,7 @@ STRUCT_KNOWN_FILTERS : dict[str,dict[str,str]] = {
     }
 
 #flatten it:
-KNOWN_FILTERS : dict[str,str] = {}
+KNOWN_FILTERS : Dict[str,str] = {}
 for d in STRUCT_KNOWN_FILTERS.values():
     for k,v in d.items():
         KNOWN_FILTERS[k] = v
@@ -484,6 +433,57 @@ class Logger:
 
     def handle(self, record) -> None:
         self.log(record.levelno, record.msg, *record.args, exc_info=record.exc_info)
+
+
+#so we can keep a reference to all the loggers in use
+#we may have multiple loggers for the same key, so use a dict
+#but we don't want to prevent garbage collection so use a list of weakrefs
+all_loggers : Dict[str, Set[weakref.ReferenceType[Logger]]] = {}
+def add_logger(categories, logger:Logger):
+    categories = list(categories)
+    categories.append("all")
+    l = weakref.ref(logger)
+    for cat in categories:
+        all_loggers.setdefault(cat, set()).add(l)
+
+def get_all_loggers() -> Set[Logger]:
+    a = set()
+    for loggers_set in all_loggers.values():
+        for logger in tuple(loggers_set):
+            #weakref:
+            instance = logger()
+            if instance:
+                a.add(instance)
+    return a
+
+def get_loggers_for_categories(*cat) -> List[Logger]:
+    if not cat:
+        return  []
+    if "all" in cat:
+        return list(get_all_loggers())
+    cset = set(cat)
+    matches = set()
+    for l in get_all_loggers():
+        if set(l.categories).issuperset(cset):
+            matches.add(l)
+    return list(matches)
+
+def enable_debug_for(*cat) -> List[Logger]:
+    loggers : List[Logger] = []
+    for l in get_loggers_for_categories(*cat):
+        if not l.is_debug_enabled():
+            l.enable_debug()
+            loggers.append(l)
+    return loggers
+
+def disable_debug_for(*cat) -> List[Logger]:
+    loggers : List[Logger] = []
+    for l in get_loggers_for_categories(*cat):
+        if l.is_debug_enabled():
+            l.disable_debug()
+            loggers.append(l)
+    return loggers
+
 
 
 class CaptureHandler(logging.Handler):

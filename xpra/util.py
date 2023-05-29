@@ -220,7 +220,7 @@ def remove_dupes(seq:Iterable[Any]) -> List[Any]:
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:List[Any]=None) -> Dict[str,Any]:
+def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:List[Any]=None) -> Dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []
@@ -790,7 +790,7 @@ def notypedict(d:Dict) -> Dict:
     return dict(d)
 
 def flatten_dict(info:Dict[str,Any], sep:str=".") -> Dict[str,Any]:
-    to : dict[str, Any] = {}
+    to : Dict[str, Any] = {}
     _flatten_dict(to, sep, "", info)
     return to
 

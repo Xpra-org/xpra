@@ -7,7 +7,7 @@
 #!python
 #cython: boundscheck=False, wraparound=False
 
-from typing import Dict
+from typing import Dict, Any
 
 from xpra.log import Logger
 log = Logger("util", "auth")
@@ -188,7 +188,7 @@ cdef class pam_session:
             return False
         return True
 
-    def set_env(self, env : dict):
+    def set_env(self, env : Dict[str,Any]):
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -216,7 +216,7 @@ cdef class pam_session:
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items : dict):
+    def set_items(self, items : Dict[str,Any]):
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r

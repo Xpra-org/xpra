@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from struct import Struct
 from enum import IntEnum
+from typing import Dict
 
 #merge header and packet if packet is smaller than:
 PIXEL_FORMAT : bytes = b"BBBBHHHBBBBBB"
@@ -43,12 +44,12 @@ class RFBClientMessage(IntEnum):
     #VMWARE = 254
     QEMUClientMessage = 255
 
-CLIENT_PACKET_TYPE_STR : dict[int, str] = {}
+CLIENT_PACKET_TYPE_STR : Dict[int, str] = {}
 for cm in RFBClientMessage:
     CLIENT_PACKET_TYPE_STR[cm.value] = cm.name
 
 
-PACKET_STRUCT : dict[int, Struct] = {}
+PACKET_STRUCT : Dict[int, Struct] = {}
 for msg, fmt in {
     RFBClientMessage.SetPixelFormat             : b"!BBBB"+PIXEL_FORMAT,
     RFBClientMessage.SetEncodings               : b"!BBH",
@@ -85,7 +86,7 @@ class RFBServerMessage(IntEnum):
     VMWARE2 = 254
     QEMUSERVERMESSAGE = 255
 
-SERVER_PACKET_TYPE_STR : dict[int, str] = {}
+SERVER_PACKET_TYPE_STR : Dict[int, str] = {}
 for sm in RFBServerMessage:
     SERVER_PACKET_TYPE_STR[sm.value] = sm.name
 
@@ -128,7 +129,7 @@ class RFBEncoding(IntEnum):
     #-412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
     #-763 to -768    JPEG Subsampling Level Pseudo-encoding
 
-ENCODING_STR : dict[int, str] = {}
+ENCODING_STR : Dict[int, str] = {}
 for e in RFBEncoding:
     ENCODING_STR[e.value] = e.name
 
@@ -140,7 +141,7 @@ class RFBAuth(IntEnum):
     TIGHT = 16
     VeNCrypt = 19
 
-AUTH_STR : dict[int,str] = {
+AUTH_STR : Dict[int,str] = {
     RFBAuth.INVALID     : "Invalid",
     RFBAuth.NONE        : "None",
     RFBAuth.VNC         : "VNC",
@@ -164,7 +165,7 @@ for i in range(30, 35):
     AUTH_STR[i] = "Apple"
 
 
-RFB_KEYNAMES : dict[int, str] = {
+RFB_KEYNAMES : Dict[int, str] = {
     0xff08      : "BackSpace",
     0xff09      : "Tab",
     0xff0d      : "Return",
@@ -258,6 +259,6 @@ RFB_KEYNAMES : dict[int, str] = {
 for i in range(1, 13):
     RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i
 
-RFB_KEYS : dict[str, int] = {}
+RFB_KEYS : Dict[str, int] = {}
 for keysym, name in RFB_KEYNAMES.items():
     RFB_KEYS[name.lower()] = keysym

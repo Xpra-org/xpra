@@ -5,7 +5,7 @@
 
 import os
 import threading
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Dict
 
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.log import Logger
@@ -14,7 +14,7 @@ log = Logger("network")
 
 DEFAULT_PORT : int = 14500
 
-DEFAULT_PORTS : dict[str,int] = {
+DEFAULT_PORTS : Dict[str,int] = {
     "ws"    : 80,
     "wss"   : 443,
     "ssl"   : DEFAULT_PORT, #could also default to 443?
@@ -31,12 +31,12 @@ class ConnectionClosedException(Exception):
 MAX_PACKET_SIZE : int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER : bool = envbool("XPRA_FLUSH_HEADER", True)
 
-SOCKET_TYPES : tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES : Tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 
-IP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
+IP_SOCKTYPES : Tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+TCP_SOCKTYPES : Tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
 
-URL_MODES : dict[str,str] = {
+URL_MODES : Dict[str,str] = {
     "xpra"      : "tcp",
     "xpras"     : "ssl",
     "xpra+tcp"  : "tcp",
