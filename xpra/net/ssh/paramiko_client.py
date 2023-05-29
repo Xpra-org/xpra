@@ -165,6 +165,10 @@ def safe_lookup(config_obj, host:str) -> Dict[Any,Any]:
         log.warn(f" {e}")
         if isinstance(e, ModuleNotFoundError):
             log.warn(" (looks like a 'paramiko' distribution packaging issue)")
+    except KeyError as e:
+        log("%s.lookup(%s)", config_obj, host, exc_info=True)
+        log.info(f"paramiko ssh config lookup error for host {host!r}:")
+        log.info(" %s: %s", type(e), e)
     return {}
 
 
