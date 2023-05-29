@@ -61,7 +61,7 @@ class Keyboard(KeyboardBase):
         def ok_cb(success, res):
             try:
                 if not dbus_to_native(success):
-                    log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, msg)
+                    log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, success)
                     return
                 if callback is not None:
                     callback(json.loads(dbus_to_native(res)))
