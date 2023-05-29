@@ -53,7 +53,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.notifications : bool = False
         self.notifier = None
         self.pointer_last_position = None
-        self.pointer_poll_timer = None
+        self.pointer_poll_timer = 0
         self.last_cursor_data = None
         batch_config.ALWAYS = True             #always batch
 
@@ -309,7 +309,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         ppt = self.pointer_poll_timer
         log("cancel_poll_pointer() pointer_poll_timer=%s", ppt)
         if ppt:
-            self.pointer_poll_timer = None
+            self.pointer_poll_timer = 0
             self.source_remove(ppt)
 
     def poll_pointer(self):

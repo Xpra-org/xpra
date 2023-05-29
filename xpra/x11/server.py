@@ -73,7 +73,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def __init__(self, clobber):
         self.clobber = clobber
         self.root_overlay = None
-        self.repaint_root_overlay_timer = None
+        self.repaint_root_overlay_timer = 0
         self.configure_damage_timers = {}
         self._tray = None
         self._has_grab = 0
@@ -1238,11 +1238,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def cancel_repaint_root_overlay(self) -> None:
         rrot = self.repaint_root_overlay_timer
         if rrot:
-            self.repaint_root_overlay_timer = None
+            self.repaint_root_overlay_timer = 0
             self.source_remove(rrot)
 
     def do_repaint_root_overlay(self) -> bool:
-        self.repaint_root_overlay_timer = None
+        self.repaint_root_overlay_timer = 0
         root_width, root_height = self.get_root_window_size()
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)

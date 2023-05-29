@@ -126,7 +126,7 @@ class ClientException(Exception):
     pass
 
 
-def get_server_info():
+def get_server_info() -> Dict[str,Any]:
     #this function is for non UI thread info
     info = {
             "platform"  : get_platform_info(),
@@ -134,7 +134,7 @@ def get_server_info():
             }
     return info
 
-def get_thread_info(proto=None):
+def get_thread_info(proto=None)-> Dict[Any,Any]:
     #threads:
     if proto:
         info_threads = proto.get_threads()
@@ -143,7 +143,7 @@ def get_thread_info(proto=None):
     return get_frame_info(info_threads)
 
 
-def proto_crypto_caps(proto):
+def proto_crypto_caps(proto)-> Dict[str,Any]:
     if not proto:
         return {}
     if FULL_INFO>1 or proto.encryption:
@@ -174,28 +174,28 @@ class ServerCore:
         self._upgrading = None
         #networking bits:
         self._socket_info : dict = {}
-        self._potential_protocols : list = []
+        self._potential_protocols : List = []
         self._rfb_upgrade : int = 0
         self._ssl_attributes : dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
         self.ssl_mode : str = None
         self._html : bool = False
-        self._http_scripts : dict = {}
+        self._http_scripts : Dict[str,Callable] = {}
         self._www_dir : str = None
-        self._http_headers_dirs : dict = ()
+        self._http_headers_dirs : List[str] = ()
         self._aliases : dict = {}
         self.socket_info : dict = {}
         self.socket_options : dict = {}
-        self.socket_cleanup : list = []
-        self.socket_verify_timer : WeakKeyDictionary = WeakKeyDictionary()
-        self.socket_rfb_upgrade_timer : WeakKeyDictionary = WeakKeyDictionary()
+        self.socket_cleanup : List = []
+        self.socket_verify_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
+        self.socket_rfb_upgrade_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self._max_connections : int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout : int = SERVER_SOCKET_TIMEOUT
         self._ws_timeout : int = 5
         self._socket_dir : str = None
-        self._socket_dirs : list = []
+        self._socket_dirs : List = []
         self.dbus_pid : int = 0
-        self.dbus_env : dict = {}
+        self.dbus_env : Dict[str,str] = {}
         self.dbus_control : bool = False
         self.dbus_server = None
         self.unix_socket_paths = []
@@ -224,7 +224,7 @@ class ServerCore:
         self.compression_level = 1
         self.exit_with_client = False
         self.server_idle_timeout = 0
-        self.server_idle_timer = None
+        self.server_idle_timer = 0
         self.bandwidth_limit = 0
 
         self.init_thread = None
@@ -734,7 +734,7 @@ class ServerCore:
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
         if opts.http_scripts.lower() not in FALSE_OPTIONS:
-            script_options = {
+            script_options : Dict[str,Callable] = {
                 "/Status"           : self.http_status_request,
                 "/Info"             : self.http_info_request,
                 "/Sessions"         : self.http_sessions_request,
@@ -2248,7 +2248,7 @@ class ServerCore:
             return
         if self.server_idle_timer:
             self.source_remove(self.server_idle_timer)
-            self.server_idle_timer = None
+            self.server_idle_timer = 0
         if reschedule:
             self.server_idle_timer = self.timeout_add(self.server_idle_timeout*1000, self.server_idle_timedout)
 

@@ -40,8 +40,8 @@ class IdleMixin(StubSourceMixin):
         #grace duration is at least 10 seconds:
         self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
         self.idle = False
-        self.idle_timer = None
-        self.idle_grace_timer = None
+        self.idle_timer = 0
+        self.idle_grace_timer = 0
 
     def cleanup(self):
         self.cancel_idle_grace_timeout()
@@ -75,7 +75,7 @@ class IdleMixin(StubSourceMixin):
     def cancel_idle_timeout(self):
         it = self.idle_timer
         if it:
-            self.idle_timer = None
+            self.idle_timer = 0
             self.source_remove(it)
 
     def schedule_idle_timeout(self):
@@ -86,7 +86,7 @@ class IdleMixin(StubSourceMixin):
     def cancel_idle_grace_timeout(self):
         igt = self.idle_grace_timer
         if igt:
-            self.idle_grace_timer = None
+            self.idle_grace_timer = 0
             self.source_remove(igt)
 
     def schedule_idle_grace_timeout(self):
@@ -97,7 +97,7 @@ class IdleMixin(StubSourceMixin):
             log("schedule_idle_grace_timeout() timer=%s due in %i seconds", self.idle_grace_timer, grace)
 
     def idle_grace_timedout(self):
-        self.idle_grace_timer = None
+        self.idle_grace_timer = 0
         log("idle_grace_timedout()")
         if not self.send_notifications:
             #not much we can do!
@@ -127,7 +127,7 @@ class IdleMixin(StubSourceMixin):
             self.user_event()
 
     def idle_timedout(self):
-        self.idle_timer = None
+        self.idle_timer = 0
         p = self.protocol
         log("idle_timedout() protocol=%s", p)
         if p:

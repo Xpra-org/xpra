@@ -45,7 +45,7 @@ class UI_thread_watcher:
         self.UI_blocked = False
         self.announced_blocked = False
         self.last_UI_thread_time = 0
-        self.ui_wakeup_timer = None
+        self.ui_wakeup_timer = 0
         self.exit = Event()
 
     def start(self):
@@ -102,7 +102,7 @@ class UI_thread_watcher:
             elapsed = monotonic()-scheduled_at
         else:
             elapsed = 0
-        self.ui_wakeup_timer = None
+        self.ui_wakeup_timer = 0
         log("UI_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000*elapsed)
         self.last_UI_thread_time = monotonic()
         #UI thread was blocked?
@@ -155,7 +155,7 @@ class UI_thread_watcher:
         log("poll_UI_loop() ended")
         uiwt = self.ui_wakeup_timer
         if uiwt:
-            self.ui_wakeup_timer = None
+            self.ui_wakeup_timer = 0
             self.source_remove(uiwt)
 
 

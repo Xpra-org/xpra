@@ -12,7 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
-from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any
+from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any, Optional
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -610,7 +610,7 @@ class WindowSource(WindowIconSource):
                 fps = len(lde) // elapsed
         return fps
 
-    def get_quality_speed_info(self) -> dict:
+    def get_quality_speed_info(self) -> Dict[str,Any]:
         info = {}
         def add_list_info(prefix, v, vinfo):
             if not v:
@@ -626,7 +626,7 @@ class WindowSource(WindowIconSource):
         add_list_info("speed", self._encoding_speed, self._encoding_speed_info)
         return info
 
-    def get_property_info(self) -> dict:
+    def get_property_info(self) -> Dict[str,Any]:
         return {
                 "fullscreen"            : self.fullscreen or False,
                 #speed / quality properties (not necessarily the same as the video encoder settings..):
@@ -806,14 +806,14 @@ class WindowSource(WindowIconSource):
                 self.full_csc_modes[bytestostr(enc)] = tuple(bytestostr(v) for v in csc_formats)
 
 
-    def set_auto_refresh_delay(self, d) -> None:
+    def set_auto_refresh_delay(self, d:int) -> None:
         self.auto_refresh_delay = d
         self.update_refresh_attributes()
 
-    def set_av_sync(self, av_sync) -> None:
+    def set_av_sync(self, av_sync:int) -> None:
         self.av_sync = av_sync
 
-    def set_av_sync_delay(self, new_delay) -> None:
+    def set_av_sync_delay(self, new_delay:int) -> None:
         self.av_sync_delay_base = new_delay
 
     def may_update_av_sync_delay(self) -> None:
@@ -824,7 +824,7 @@ class WindowSource(WindowIconSource):
                   self.av_sync_delay_target, self.av_sync_delay_base, self.av_sync_frame_delay)
         self.schedule_av_sync_update()
 
-    def schedule_av_sync_update(self, delay=0) -> None:
+    def schedule_av_sync_update(self, delay:int=0) -> None:
         avsynclog("schedule_av_sync_update(%i) wid=%i, delay=%i, target=%i, timer=%s",
                   delay, self.wid, self.av_sync_delay, self.av_sync_delay_target, self.av_sync_timer)
         if self.av_sync_timer:
@@ -852,7 +852,7 @@ class WindowSource(WindowIconSource):
             self.schedule_av_sync_update(AV_SYNC_TIME_CHANGE)
 
 
-    def set_new_encoding(self, encoding, strict) -> None:
+    def set_new_encoding(self, encoding:str, strict:bool) -> None:
         if strict is not None or STRICT_MODE:
             self.strict = strict or STRICT_MODE
         if self.encoding==encoding:
@@ -861,7 +861,7 @@ class WindowSource(WindowIconSource):
         self.update_encoding_selection(encoding)
 
 
-    def update_encoding_selection(self, encoding=None, exclude=(), init=False) -> None:
+    def update_encoding_selection(self, encoding=None, exclude=(), init:bool=False) -> None:
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
         if self._mmap_size>0 and self.encoding!="grayscale":
@@ -907,7 +907,7 @@ class WindowSource(WindowIconSource):
         self.update_encoding_options()
         self.update_refresh_attributes()
 
-    def update_encoding_options(self, force_reload=False) -> None:
+    def update_encoding_options(self, force_reload:bool=False) -> None:
         cv = self.global_statistics.congestion_value
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
@@ -1054,7 +1054,7 @@ class WindowSource(WindowIconSource):
             return "png/L"
         return e
 
-    def get_transparent_encoding(self, w, h, options, current_encoding) -> str:
+    def get_transparent_encoding(self, w:int, h:int, options, current_encoding:str) -> str:
         #small areas prefer rgb, also when high speed and high quality
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
@@ -1326,7 +1326,7 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window_dimensions
         self.global_statistics.speed.append((now, ww*wh, speed))
 
-    def set_min_speed(self, min_speed) -> None:
+    def set_min_speed(self, min_speed:int) -> None:
         min_speed = capr(min_speed)
         if self._fixed_min_speed!=min_speed:
             if min_speed>0:
@@ -1334,13 +1334,13 @@ class WindowSource(WindowIconSource):
             self._fixed_min_speed = min_speed
             self.reconfigure(True)
 
-    def set_max_speed(self, max_speed) -> None:
+    def set_max_speed(self, max_speed:int) -> None:
         max_speed = capr(max_speed)
         if self._fixed_max_speed!=max_speed:
             self._fixed_max_speed = max_speed
             self.reconfigure(True)
 
-    def set_speed(self, speed) -> None:
+    def set_speed(self, speed:int) -> None:
         speed = capr(speed)
         if self._fixed_speed!=speed:
             self._fixed_speed = speed
@@ -1401,7 +1401,7 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window_dimensions
         self.global_statistics.quality.append((now, ww*wh, quality))
 
-    def set_min_quality(self, min_quality) -> None:
+    def set_min_quality(self, min_quality:int) -> None:
         min_quality = capr(min_quality)
         if self._fixed_min_quality!=min_quality:
             if min_quality>0:
@@ -1410,14 +1410,14 @@ class WindowSource(WindowIconSource):
             self.update_quality()
             self.reconfigure(True)
 
-    def set_max_quality(self, max_quality) -> None:
+    def set_max_quality(self, max_quality:int) -> None:
         max_quality = capr(max_quality)
         if self._fixed_max_quality!=max_quality:
             self._fixed_max_quality = max_quality
             self.update_quality()
             self.reconfigure(True)
 
-    def set_quality(self, quality) -> None:
+    def set_quality(self, quality:int) -> None:
         quality = capr(quality)
         if self._fixed_quality!=quality:
             self._fixed_quality = quality
@@ -1476,7 +1476,7 @@ class WindowSource(WindowIconSource):
         self.refresh_quality = rq
         self.refresh_speed = rs
 
-    def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
+    def do_set_auto_refresh_delay(self, min_delay:int, delay:int) -> None:
         refreshlog("do_set_auto_refresh_delay%s", (min_delay, delay))
         self.min_auto_refresh_delay = int(min_delay)
         self.base_auto_refresh_delay = int(delay)
@@ -1654,7 +1654,7 @@ class WindowSource(WindowIconSource):
         """ mark the region as expired so damage_packet_acked can send it later,
             and try to send it now.
         """
-        self.expire_timer = None
+        self.expire_timer = 0
         delayed = self._damage_delayed
         if not delayed:
             damagelog("expire_delayed_region() already processed")
@@ -1877,7 +1877,7 @@ class WindowSource(WindowIconSource):
             dr = delayed_regions
             self.do_send_delayed_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
-    def assign_sq_options(self, options, speed_pct : int=100, quality_pct : int=100) -> dict:
+    def assign_sq_options(self, options, speed_pct : int=100, quality_pct : int=100) -> Dict[str,Any]:
         packets_backlog = None
         speed = options.get("speed", 0)
         if speed==0:
@@ -1925,7 +1925,7 @@ class WindowSource(WindowIconSource):
         return eoptions
 
     def do_send_delayed_regions(self, damage_time, regions, coding : str, options,
-                                exclude_region=None, get_best_encoding=None) -> None:
+                                exclude_region=None, get_best_encoding:Callable=None) -> None:
         ww,wh = self.window_dimensions
         options = self.assign_sq_options(options)
         get_best_encoding = get_best_encoding or self.get_best_encoding
@@ -2039,7 +2039,7 @@ class WindowSource(WindowIconSource):
             self.idle_add(do_free_image)
 
 
-    def get_damage_image(self, x, y, w, h) -> ImageWrapper:
+    def get_damage_image(self, x:int, y:int, w:int, h:int) -> ImageWrapper:
         self.ui_thread_check()
         def nodata(msg, *args):
             log("get_damage_image: "+msg, *args)
@@ -2125,7 +2125,7 @@ class WindowSource(WindowIconSource):
                 self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         return True
 
-    def scaled_size(self, image : ImageWrapper):
+    def scaled_size(self, image : ImageWrapper) -> Optional[Tuple[int,int]]:
         crs = self.client_render_size
         if not crs or not DOWNSCALE:
             return None
@@ -2176,7 +2176,7 @@ class WindowSource(WindowIconSource):
         client_options = packet[10]     #info about this packet from the encoder
         self.do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
-    def do_schedule_auto_refresh(self, encoding : str, data, region, client_options, options):
+    def do_schedule_auto_refresh(self, encoding : str, data, region, client_options, options) -> None:
         assert data
         if encoding.startswith("png"):
             actual_quality = 100
@@ -2386,7 +2386,7 @@ class WindowSource(WindowIconSource):
         damage = DelayedRegions(now, regions, encoding, new_options)
         self.send_delayed_regions(damage)
 
-    def get_refresh_options(self) -> dict:
+    def get_refresh_options(self) -> Dict[str,Any]:
         return {
                 "optimize"      : False,
                 "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
@@ -2394,7 +2394,7 @@ class WindowSource(WindowIconSource):
                 "speed"         : self.refresh_speed,
                 }
 
-    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0, options=None) -> None:
+    def queue_damage_packet(self, packet, damage_time:int=0, process_damage_time:int=0, options=None) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2439,7 +2439,7 @@ class WindowSource(WindowIconSource):
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
                           self.get_fail_cb(packet), client_options.get("flush", 0))
 
-    def networksend_congestion_event(self, source, late_pct, cur_send_speed=0):
+    def networksend_congestion_event(self, source, late_pct:int, cur_send_speed:int=0) -> None:
         gs = self.global_statistics
         if not gs:
             return
@@ -2506,7 +2506,7 @@ class WindowSource(WindowIconSource):
         return int(10*logp(bytecount/1024.0))
 
 
-    def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
+    def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message) -> None:
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
@@ -2586,7 +2586,7 @@ class WindowSource(WindowIconSource):
             log("ack with expired delayed region: %s", damage_delayed)
             self.idle_add(call_may_send_delayed)
 
-    def client_decode_error(self, error, message):
+    def client_decode_error(self, error, message) -> None:
         #don't print error code -1, which is just a generic code for error
         emsg = {-1 : ""}.get(error, error)
         def s(v):
@@ -2603,11 +2603,11 @@ class WindowSource(WindowIconSource):
             delay = min(1000, 250+self.global_statistics.decode_errors*100)
             self.decode_error_refresh_timer = self.timeout_add(delay, self.decode_error_refresh)
 
-    def decode_error_refresh(self):
+    def decode_error_refresh(self) -> None:
         self.decode_error_refresh_timer = 0
         self.full_quality_refresh({})
 
-    def cancel_decode_error_refresh_timer(self):
+    def cancel_decode_error_refresh_timer(self) -> None:
         dert : int = self.decode_error_refresh_timer
         if dert:
             self.decode_error_refresh_timer = 0
@@ -2620,7 +2620,7 @@ class WindowSource(WindowIconSource):
 
 
     def make_data_packet(self, damage_time, process_damage_time,
-                         image : ImageWrapper, coding : str, sequence : int, options, flush):
+                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> Tuple:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -2714,7 +2714,7 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x : int, y : int, outw : int, outh : int,
-                         coding : str, data, outstride : int, client_options, options) -> tuple:
+                         coding : str, data, outstride : int, client_options, options) -> Tuple:
         if not isinstance(coding, str):
             raise RuntimeError(f"invalid type for encoding: {coding} ({type(coding)})")
         for v in (x, y, outw, outh, outstride):
@@ -2738,7 +2738,7 @@ class WindowSource(WindowIconSource):
         return packet
 
 
-    def mmap_encode(self, coding : str, image : ImageWrapper, _options) -> tuple:
+    def mmap_encode(self, coding : str, image : ImageWrapper, _options) -> Tuple:
         assert coding=="mmap"
         assert self._mmap and self._mmap_size>0
         #prepare the pixels in a format accepted by the client:

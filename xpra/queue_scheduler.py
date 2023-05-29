@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from queue import Queue
 from threading import Timer, RLock
-from typing import Callable
+from typing import Callable, Dict
 
 from xpra.util import AtomicInteger
 from xpra.log import Logger
@@ -21,7 +21,7 @@ class QueueScheduler:
         self.main_queue = Queue()
         self.exit = False
         self.timer_id = AtomicInteger()
-        self.timers = {}
+        self.timers : Dict[int,Timer] = {}
         self.timer_lock = RLock()
 
     def source_remove(self, tid : int):

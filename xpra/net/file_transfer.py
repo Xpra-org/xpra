@@ -10,7 +10,7 @@ import hashlib
 import uuid
 from time import monotonic
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, Set
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
@@ -220,10 +220,10 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
         self.pending_send_data = {}
-        self.pending_send_data_timers = {}
+        self.pending_send_data_timers : Dict[str,int] = {}
         self.send_chunks_in_progress = {}
         self.receive_chunks_in_progress = {}
-        self.file_descriptors = set()
+        self.file_descriptors : Set[int] = set()
         if not getattr(self, "timeout_add", None):
             from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
             self.timeout_add = GLib.timeout_add

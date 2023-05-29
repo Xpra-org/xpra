@@ -8,7 +8,7 @@
 import os
 from io import BytesIO
 from time import monotonic
-from typing import Dict, Any
+from typing import Union, Dict, Tuple, Any, Callable, List
 
 try:
     from PIL import Image
@@ -54,9 +54,9 @@ class WindowsMixin(StubSourceMixin):
 
 
     def __init__(self):
-        self.get_focus = None
-        self.get_cursor_data_cb = None
-        self.get_window_id = None
+        self.get_focus : Callable = None
+        self.get_cursor_data_cb : Callable = None
+        self.get_window_id : Callable = None
         self.window_filters = []
         self.readonly = False
         #duplicated from encodings:
@@ -64,14 +64,14 @@ class WindowsMixin(StubSourceMixin):
         #duplicated from clientconnection:
         self.statistics = None
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.get_focus          = server.get_focus
         self.get_cursor_data_cb = server.get_cursor_data
         self.get_window_id      = server.get_window_id
         self.window_filters     = server.window_filters
         self.readonly           = server.readonly
 
-    def init_state(self):
+    def init_state(self) -> None:
         #WindowSource for each Window ID
         self.window_sources = {}
 
@@ -89,20 +89,20 @@ class WindowsMixin(StubSourceMixin):
         self.system_tray = False
         self.metadata_supported = ()
 
-        self.cursor_timer = None
+        self.cursor_timer = 0
         self.last_cursor_sent = None
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         for window_source in self.all_window_sources():
             window_source.cleanup()
         self.window_sources = {}
         self.cancel_cursor_timer()
 
-    def all_window_sources(self):
+    def all_window_sources(self) -> Tuple:
         return tuple(self.window_sources.values())
 
 
-    def suspend(self, ui, wd):
+    def suspend(self, ui:bool, wd:Dict[int,Any]) -> None:
         eventslog("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = True
@@ -111,7 +111,7 @@ class WindowsMixin(StubSourceMixin):
             if ws:
                 ws.suspend()
 
-    def resume(self, ui, wd):
+    def resume(self, ui, wd:Dict[int,Any]) -> None:
         eventslog("resume(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = False
@@ -122,7 +122,7 @@ class WindowsMixin(StubSourceMixin):
         self.send_cursor()
 
 
-    def go_idle(self):
+    def go_idle(self) -> None:
         #usually fires from the server's idle_grace_timeout_cb
         if self.idle:
             return
@@ -130,7 +130,7 @@ class WindowsMixin(StubSourceMixin):
         for window_source in self.all_window_sources():
             window_source.go_idle()
 
-    def no_idle(self):
+    def no_idle(self) -> None:
         #on user event, we stop being idle
         if not self.idle:
             return
@@ -139,7 +139,7 @@ class WindowsMixin(StubSourceMixin):
             window_source.no_idle()
 
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c:typedict) -> None:
         self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.send_cursors = self.send_windows and c.boolget("cursors")
@@ -178,7 +178,8 @@ class WindowsMixin(StubSourceMixin):
             "restack"       : self.window_restack,
             "pre-map"       : self.window_pre_map,
             }
-        wsize = info.setdefault("window-size", {})
+        wsize : Dict[str,Any] = {}
+        wsize = info.setdefault("window-size", wsize)
         wsize.update({
             "min"   : self.window_min_size,
             "max"   : self.window_max_size,
@@ -237,18 +238,18 @@ class WindowsMixin(StubSourceMixin):
 
     ######################################################################
     # grabs:
-    def pointer_grab(self, wid):
+    def pointer_grab(self, wid) -> None:
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-grab", wid)
 
-    def pointer_ungrab(self, wid):
+    def pointer_ungrab(self, wid) -> None:
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-ungrab", wid)
 
 
     ######################################################################
     # cursors:
-    def send_cursor(self):
+    def send_cursor(self) -> None:
         if not self.send_cursors or self.suspended or not self.hello_sent:
             return
         #if not pending already, schedule it:
@@ -256,7 +257,7 @@ class WindowsMixin(StubSourceMixin):
         if not self.cursor_timer and gbc:
             delay = max(10, int(gbc.delay/4))
             def do_send_cursor():
-                self.cursor_timer = None
+                self.cursor_timer = 0
                 cd = self.get_cursor_data_cb()
                 if not cd or not cd[0]:
                     self.send_empty_cursor()
@@ -266,13 +267,13 @@ class WindowsMixin(StubSourceMixin):
                 self.do_send_cursor(delay, cursor_data, cursor_sizes)
             self.cursor_timer = self.timeout_add(delay, do_send_cursor)
 
-    def cancel_cursor_timer(self):
+    def cancel_cursor_timer(self) -> None:
         ct = self.cursor_timer
         if ct:
-            self.cursor_timer = None
+            self.cursor_timer = 0
             self.source_remove(ct)
 
-    def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix=""):
+    def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix="") -> None:
         #copy to a new list we can modify (ie: compress):
         cursor_data = list(cursor_data)
         #skip first two fields (if present) as those are coordinates:
@@ -284,7 +285,7 @@ class WindowsMixin(StubSourceMixin):
         #compress pixels if needed:
         encoding = "raw"
         if pixels is not None:
-            cpixels = memoryview_to_bytes(pixels)
+            cpixels : Union[bytes,Compressed] = memoryview_to_bytes(pixels)
             if "png" in self.cursor_encodings and Image:
                 cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
@@ -312,13 +313,13 @@ class WindowsMixin(StubSourceMixin):
         args = [encoding_prefix+encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         self.send_more("cursor", *args)
 
-    def send_empty_cursor(self):
+    def send_empty_cursor(self) -> None:
         cursorlog("send_empty_cursor(..)")
         self.last_cursor_sent = None
         self.send_more("cursor", "")
 
 
-    def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+    def bell(self, wid:int, device, percent:int, pitch:int, duration:int, bell_class, bell_id:int, bell_name:str) -> None:
         if not self.send_bell or self.suspended or not self.hello_sent:
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
@@ -326,22 +327,22 @@ class WindowsMixin(StubSourceMixin):
 
     ######################################################################
     # window filters:
-    def reset_window_filters(self):
+    def reset_window_filters(self) -> None:
         self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
 
-    def get_all_window_filters(self):
+    def get_all_window_filters(self) -> List:
         return [f for uuid, f in self.window_filters if uuid==self.uuid]
 
-    def add_window_filter(self, object_name, property_name, operator, value):
+    def add_window_filter(self, object_name:str, property_name:str, operator:str, value:Any) -> None:
         window_filter = get_window_filter(object_name, property_name, operator, value)
         assert window_filter
         self.do_add_window_filter(window_filter)
 
-    def do_add_window_filter(self, window_filter):
+    def do_add_window_filter(self, window_filter) -> None:
         #(reminder: filters are shared between all sources)
         self.window_filters.append((self.uuid, window_filter))
 
-    def can_send_window(self, window):
+    def can_send_window(self, window) -> bool:
         if not self.hello_sent or not (self.send_windows or self.system_tray):
             return False
         #we could also allow filtering for system tray windows?
@@ -366,18 +367,19 @@ class WindowsMixin(StubSourceMixin):
 
     ######################################################################
     # windows:
-    def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
+    def initiate_moveresize(self, wid:int, window, x_root:int, y_root:int,
+                            direction:int, button:int, source_indication) -> None:
         if not self.can_send_window(window):
             return
         log("initiate_moveresize sending to %s", self)
         self.send("initiate-moveresize", wid, x_root, y_root, direction, button, source_indication)
 
-    def or_window_geometry(self, wid, window, x, y, w, h):
+    def or_window_geometry(self, wid:int, window, x:int, y:int, w:int, h:int):
         if not self.can_send_window(window):
             return
         self.send("configure-override-redirect", wid, x, y, w, h)
 
-    def window_metadata(self, wid, window, prop):
+    def window_metadata(self, wid:int, window, prop:str) -> None:
         if not self.can_send_window(window):
             return
         if prop=="icons":
@@ -394,7 +396,7 @@ class WindowsMixin(StubSourceMixin):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
-    def _make_metadata(self, window, propname, skip_defaults=False):
+    def _make_metadata(self, window, propname:str, skip_defaults=False) -> Dict[str,Any]:
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
@@ -411,7 +413,7 @@ class WindowsMixin(StubSourceMixin):
                 }
         return metadata
 
-    def new_tray(self, wid, window, w, h):
+    def new_tray(self, wid:int, window, w:int, h:int) -> None:
         assert window.is_tray()
         if not self.can_send_window(window):
             return
@@ -420,7 +422,7 @@ class WindowsMixin(StubSourceMixin):
             metadata.update(self._make_metadata(window, propname, skip_defaults=True))
         self.send_async("new-tray", wid, w, h, metadata)
 
-    def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
+    def new_window(self, packet_type:str, wid:int, window, x:int, y:int, w:int, h:int, client_properties:dict) -> None:
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
@@ -436,12 +438,12 @@ class WindowsMixin(StubSourceMixin):
                 metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             metadata.update(v)
         log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s",
-            ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
-        self.send_async(ptype, wid, x, y, w, h, metadata, client_properties or {})
+            packet_type, window, wid, x, y, w, h, client_properties, send_props, metadata)
+        self.send_async(packet_type, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
 
-    def send_window_icon(self, wid, window):
+    def send_window_icon(self, wid:int, window) -> None:
         if not self.can_send_window(window):
             return
         #we may need to make a new source at this point:
@@ -450,10 +452,10 @@ class WindowsMixin(StubSourceMixin):
             ws.send_window_icon()
 
 
-    def lost_window(self, wid, _window):
+    def lost_window(self, wid:int, _window) -> None:
         self.send("lost-window", wid)
 
-    def move_resize_window(self, wid, window, x, y, ww, wh, resize_counter=0):
+    def move_resize_window(self, wid:int, window, x:int, y:int, ww:int, wh:int, resize_counter:int=0) -> None:
         """
         The server detected that the application window has been moved and/or resized,
         we forward it if the client supports this type of event.
@@ -462,13 +464,13 @@ class WindowsMixin(StubSourceMixin):
             return
         self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
 
-    def resize_window(self, wid, window, ww, wh, resize_counter=0):
+    def resize_window(self, wid:int, window, ww:int, wh:int, resize_counter:int=0) -> None:
         if not self.can_send_window(window):
             return
         self.send("window-resized", wid, ww, wh, resize_counter)
 
 
-    def cancel_damage(self, wid):
+    def cancel_damage(self, wid:int) -> None:
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
@@ -478,27 +480,27 @@ class WindowsMixin(StubSourceMixin):
             ws.cancel_damage()
 
 
-    def record_scroll_event(self, wid):
+    def record_scroll_event(self, wid:int) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             ws.record_scroll_event()
 
 
-    def reinit_encoders(self):
+    def reinit_encoders(self) -> None:
         for ws in tuple(self.window_sources.values()):
             ws.init_encoders()
 
 
-    def map_window(self, wid, window, coords=None):
+    def map_window(self, wid, window, coords=None) -> None:
         ws = self.make_window_source(wid, window)
         ws.map(coords)
 
-    def unmap_window(self, wid, _window):
+    def unmap_window(self, wid, _window) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             ws.unmap()
 
-    def restack_window(self, wid, window, detail, sibling):
+    def restack_window(self, wid:int, window, detail:int, sibling:int) -> None:
         focuslog("restack_window%s", (wid, window, detail, sibling))
         if not self.can_send_window(window):
             return
@@ -513,12 +515,12 @@ class WindowsMixin(StubSourceMixin):
             sibling_wid = self.get_window_id(sibling)
         self.send_async("restack-window", wid, detail, sibling_wid)
 
-    def raise_window(self, wid, window):
+    def raise_window(self, wid:int, window) -> None:
         if not self.can_send_window(window):
             return
         self.send_async("raise-window", wid)
 
-    def remove_window(self, wid, window):
+    def remove_window(self, wid:int, window) -> None:
         """ The given window is gone, ensure we free all the related resources """
         if not self.can_send_window(window):
             return
@@ -528,14 +530,14 @@ class WindowsMixin(StubSourceMixin):
         self.calculate_window_pixels.pop(wid, None)
 
 
-    def refresh(self, wid, window, opts):
+    def refresh(self, wid:int, window, opts) -> None:
         if not self.can_send_window(window):
             return
         self.cancel_damage(wid)
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
-    def update_batch(self, wid, window, batch_props):
+    def update_batch(self, wid:int, window, batch_props) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             if "reset" in batch_props:
@@ -548,16 +550,16 @@ class WindowsMixin(StubSourceMixin):
                     setattr(ws.batch_config, x, batch_props.intget(x))
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
-    def set_client_properties(self, wid, window, new_client_properties):
+    def set_client_properties(self, wid:int, window, new_client_properties:dict) -> None:
         assert self.send_windows
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)
 
 
-    def get_window_source(self, wid):
+    def get_window_source(self, wid:int):
         return self.window_sources.get(wid)
 
-    def make_window_source(self, wid, window):
+    def make_window_source(self, wid:int, window):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
@@ -594,7 +596,7 @@ class WindowsMixin(StubSourceMixin):
         return ws
 
 
-    def damage(self, wid, window, x, y, w, h, options=None):
+    def damage(self, wid:int, window, x:int, y:int, w:int, h:int, options=None) -> None:
         """
             Main entry point from the window manager,
             we dispatch to the WindowSource for this window id
@@ -613,7 +615,7 @@ class WindowsMixin(StubSourceMixin):
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
 
-    def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time, message):
+    def client_ack_damage(self, damage_packet_sequence:int, wid:int, width:int, height:int, decode_time:int, message:str):
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (which is provided by the client)
@@ -633,7 +635,7 @@ class WindowsMixin(StubSourceMixin):
 #
 # Methods used by WindowSource:
 #
-    def record_congestion_event(self, source, late_pct=0, send_speed=0):
+    def record_congestion_event(self, source, late_pct:int=0, send_speed:int=0):
         if not self.bandwidth_detection:
             return
         gs = self.statistics
@@ -672,7 +674,7 @@ class WindowsMixin(StubSourceMixin):
                 self.may_notify(nid, summary, body, actions, hints,
                                 icon_name="connect", user_callback=self.congestion_notification_callback)
 
-    def congestion_notification_callback(self, nid, action_id):
+    def congestion_notification_callback(self, nid:int, action_id:int):
         bandwidthlog("congestion_notification_callback(%i, %s)", nid, action_id)
         if action_id=="lower-bandwidth":
             bandwidth_limit = 50*1024*1024

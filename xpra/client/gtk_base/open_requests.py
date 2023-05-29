@@ -48,7 +48,7 @@ class OpenRequestsWindow:
     def __init__(self, show_file_upload_cb=None, cancel_download=None):
         self.show_file_upload_cb = show_file_upload_cb
         self.cancel_download = cancel_download
-        self.populate_timer = None
+        self.populate_timer = 0
         self.table = None
         self.requests = []
         self.expire_labels = {}

@@ -490,7 +490,7 @@ class InfoTimerClient(MonitorXpraClient):
     def cancel_info_timer(self):
         it = self.info_timer
         if it:
-            self.info_timer = None
+            self.info_timer = 0
             self.source_remove(it)
 
     def info_timeout(self):

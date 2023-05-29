@@ -32,7 +32,7 @@ class ServerCommandsWindow:
     def __init__(self, client):
         assert client
         self.client = client
-        self.populate_timer = None
+        self.populate_timer = 0
         self.commands_info = {}
         self.table = None
         self.window = Gtk.Window()
@@ -162,9 +162,10 @@ class ServerCommandsWindow:
             self.populate_timer = GLib.timeout_add(1000, self.populate_table)
 
     def cancel_timer(self):
-        if self.populate_timer:
-            GLib.source_remove(self.populate_timer)
-            self.populate_timer = None
+        pt = self.populate_timer
+        if pt:
+            self.populate_timer = 0
+            GLib.source_remove(pt)
 
 
     def show(self):

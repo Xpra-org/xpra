@@ -43,7 +43,7 @@ class AudioPipeline(Pipeline):
         self.start_time = 0
         self.buffer_count = 0
         self.byte_count = 0
-        self.emit_info_timer = None
+        self.emit_info_timer = 0
         self.info = {
                      "codec"        : self.codec,
                      "state"        : self.state,

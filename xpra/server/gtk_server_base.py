@@ -10,7 +10,7 @@
 
 import sys
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Tuple, Any, Callable
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -76,7 +76,7 @@ class GTKServerBase(ServerBase):
             self.keymap_changing_timer = 0
             self.source_remove(kct)
 
-    def install_signal_handlers(self, callback) -> None:
+    def install_signal_handlers(self, callback:Callable) -> None:
         sstr = self.get_server_mode()+" server"
         register_os_signals(callback, sstr)
         from xpra.gtk_common.gobject_compat import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
@@ -223,16 +223,16 @@ class GTKServerBase(ServerBase):
         log("GTKServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
-    def get_root_window_size(self):
+    def get_root_window_size(self) -> Tuple[int,int]:
         return get_root_size(None)
 
-    def get_max_screen_size(self):
+    def get_max_screen_size(self) -> Tuple[int,int]:
         return get_root_size(None)
 
-    def configure_best_screen_size(self):
+    def configure_best_screen_size(self)-> Tuple[int,int]:
         return self.get_root_window_size()
 
-    def calculate_workarea(self, maxw, maxh):
+    def calculate_workarea(self, maxw:int, maxh:int) -> None:
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
         workarea = Gdk.Rectangle()
         workarea.width = maxw
@@ -272,7 +272,7 @@ class GTKServerBase(ServerBase):
     def set_workarea(self, workarea):
         """ overridden by seamless servers """
 
-    def set_desktop_geometry(self, width, height):
+    def set_desktop_geometry(self, width:int, height:int) -> None:
         """ overridden by X11 seamless and desktop servers """
 
 
@@ -285,16 +285,16 @@ class GTKServerBase(ServerBase):
         raise NotImplementedError
 
 
-    def _process_map_window(self, proto, packet):
+    def _process_map_window(self, proto, packet) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet):
+    def _process_unmap_window(self, proto, packet) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet):
+    def _process_close_window(self, proto, packet) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet):
+    def _process_configure_window(self, proto, packet) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
 

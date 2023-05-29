@@ -120,7 +120,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def refresh(self):
         log("refresh() mapped=%s, capture=%s", self.mapped, self.capture)
         if not self.mapped:
-            self.refresh_timer = None
+            self.refresh_timer = 0
             return False
         self.refresh_window_models()
         if self.capture:

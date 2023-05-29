@@ -54,7 +54,7 @@ class ScreenDesktopModel(DesktopModelBase):
 
 
     def do_resize(self):
-        self.resize_timer = None
+        self.resize_timer = 0
         rw, rh = self.resize_value
         try:
             with xsync:

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 from time import monotonic
+from typing import Dict, Any
 
 from xpra.util import envbool, envint, typedict, ConnectionMessage
 from xpra.os_util import POSIX
@@ -27,20 +28,20 @@ class NetworkStateMixin(StubSourceMixin):
         #so we have to enable the mixin by default:
         return caps.boolget("network-state", True)
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.last_ping_echoed_time = 0
-        self.check_ping_echo_timers = {}
-        self.ping_timer = None
+        self.check_ping_echo_timers : Dict[int,int] = {}
+        self.ping_timer = 0
         self.bandwidth_limit = 0
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
-    def get_caps(self) -> dict:
+    def get_caps(self) -> Dict[str,Any]:
         return {"ping-echo-sourceid" : True}
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str,Any]:
         lpe = 0
         if self.last_ping_echoed_time>0:
             lpe = int(monotonic()*1000-self.last_ping_echoed_time)
@@ -54,8 +55,8 @@ class NetworkStateMixin(StubSourceMixin):
 
     ######################################################################
     # pings:
-    def ping(self):
-        self.ping_timer = None
+    def ping(self) -> None:
+        self.ping_timer = 0
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
@@ -64,18 +65,18 @@ class NetworkStateMixin(StubSourceMixin):
         self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
 
-    def check_ping_echo_timeout(self, now_ms, timeout):
+    def check_ping_echo_timeout(self, now_ms:int, timeout:int):
         self.check_ping_echo_timers.pop(now_ms, None)
         if self.last_ping_echoed_time<now_ms and not self.is_closed():
             self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
 
-    def cancel_ping_echo_timers(self):
+    def cancel_ping_echo_timers(self) -> None:
         timers = self.check_ping_echo_timers.values()
         self.check_ping_echo_timers = {}
         for t in timers:
             self.source_remove(t)
 
-    def process_ping(self, time_to_echo, sid):
+    def process_ping(self, time_to_echo, sid) -> None:
         l1,l2,l3 = 0,0,0
         cl = -1
         if PING_DETAILS:
@@ -93,13 +94,13 @@ class NetworkStateMixin(StubSourceMixin):
         if not self.ping_timer:
             self.ping_timer = self.timeout_add(500, self.ping)
 
-    def cancel_ping_timer(self):
+    def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
         if pt:
-            self.ping_timer = None
+            self.ping_timer = 0
             self.source_remove(pt)
 
-    def process_ping_echo(self, packet):
+    def process_ping_echo(self, packet) -> None:
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
         timer = self.check_ping_echo_timers.pop(echoedtime, None)
         if timer:
@@ -115,7 +116,7 @@ class NetworkStateMixin(StubSourceMixin):
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
 
-    def update_connection_data(self, data):
+    def update_connection_data(self, data) -> None:
         log("update_connection_data(%s)", data)
         if not isinstance(data, dict):
             raise TypeError("connection-data must be a dictionary")

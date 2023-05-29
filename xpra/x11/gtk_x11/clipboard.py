@@ -123,7 +123,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data_size : int = 0
         self.incr_data_type : int = None
         self.incr_data_chunks : int = None
-        self.incr_data_timer : int = None
+        self.incr_data_timer : int = 0
 
     def __repr__(self):
         return f"X11ClipboardProxy({self._selection})"

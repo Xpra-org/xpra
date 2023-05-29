@@ -234,8 +234,8 @@ class Popup(Gtk.Window):
         self.w = self.get_preferred_width()[0]
         self.h = self.get_preferred_height()[0]
         self.move(self.get_x(self.w), self.get_y(self.h))
-        self.wait_timer = None
-        self.fade_out_timer = None
+        self.wait_timer = 0
+        self.fade_out_timer = 0
         self.fade_in_timer = GLib.timeout_add(100, self.fade_in)
         #populate the window:
         self.set_content(title, message, actions, image)
@@ -304,7 +304,7 @@ class Popup(Gtk.Window):
         opacity += 0.15
         if opacity >= 1:
             self.wait_timer = GLib.timeout_add(1000, self.wait)
-            self.fade_in_timer = None
+            self.fade_in_timer = 0
             return False
         self.set_opacity(opacity)
         return True
@@ -316,7 +316,7 @@ class Popup(Gtk.Window):
             self.counter.set_markup(str("<b>%s</b>" % max(0, self.timeout)))
         if self.timeout <= 0:
             self.fade_out_timer = GLib.timeout_add(100, self.fade_out)
-            self.wait_timer = None
+            self.wait_timer = 0
             return False
         return True
 
@@ -326,7 +326,7 @@ class Popup(Gtk.Window):
         if opacity <= 0:
             self.in_progress = False
             self.hide_notification()
-            self.fade_out_timer = None  #redundant
+            self.fade_out_timer = 0 #redundant
             self.popup_closed(self.nid, 1)
             return False
         self.set_opacity(opacity)

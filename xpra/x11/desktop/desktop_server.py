@@ -86,7 +86,7 @@ class XpraDesktopServer(DesktopServerBase):
             self.resize_timer = self.timeout_add(250, self.do_resize)
 
     def do_resize(self):
-        self.resize_timer = None
+        self.resize_timer = 0
         rw, rh = self.resize_value
         try:
             with xsync:

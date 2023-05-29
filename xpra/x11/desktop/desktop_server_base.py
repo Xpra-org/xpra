@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -18,7 +18,7 @@ from xpra.x11.gtk3.gdk_bindings import (
    )
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.x11_server_base import X11ServerBase, mouselog
+from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -26,6 +26,7 @@ X11Keyboard = X11KeyboardBindings()
 
 log = Logger("server")
 windowlog = Logger("server", "window")
+mouselog = Logger("server", "mouse")
 geomlog = Logger("server", "window", "geometry")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
@@ -51,7 +52,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
     """
-    __common_gsignals__ = {
+    __common_gsignals__ : Dict[str,Tuple] = {
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
         "xpra-motion-event"     : one_arg_signal,
@@ -88,7 +89,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 
-    def root_prop_changed(self, watcher, prop) -> None:
+    def root_prop_changed(self, watcher, prop:str) -> None:
         iconlog("root_prop_changed(%s, %s)", watcher, prop)
         for window in self._id_to_window.values():
             window.update_wm_name()
@@ -157,7 +158,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
 
-    def set_desktop_geometry_attributes(self, w, h):
+    def set_desktop_geometry_attributes(self, w:int, h:int):
         #geometry is not synced with the client's for desktop servers
         pass
 
@@ -221,7 +222,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         return changes
 
 
-    def get_window_position(self, _window):
+    def get_window_position(self, _window) -> Tuple[int,int]:
         #we export the whole desktop as a window:
         return 0, 0
 
@@ -325,7 +326,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def _process_desktop_size(self, proto, packet) -> None:
         pass
-    def calculate_workarea(self, w, h):
+    def calculate_workarea(self, w:int, h:int):
         pass
 
 
@@ -338,7 +339,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         log.warn("Warning: show_all_windows not implemented for desktop server")
 
 
-    def do_make_screenshot_packet(self) -> tuple:
+    def do_make_screenshot_packet(self) -> Tuple:
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0

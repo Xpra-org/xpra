@@ -37,8 +37,8 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_device = None
         self.webcam_device_no = -1
         self.webcam_last_ack = -1
-        self.webcam_ack_check_timer = None
-        self.webcam_send_timer = None
+        self.webcam_ack_check_timer = 0
+        self.webcam_send_timer = 0
         self.webcam_lock = RLock()
         self.server_webcam = False
         self.server_virtual_video_devices = 0
@@ -175,17 +175,17 @@ class WebcamForwarder(StubClientMixin):
     def cancel_webcam_send_timer(self):
         wst = self.webcam_send_timer
         if wst:
-            self.webcam_send_timer = None
+            self.webcam_send_timer = 0
             self.source_remove(wst)
 
     def cancel_webcam_check_ack_timer(self):
         wact = self.webcam_ack_check_timer
         if wact:
-            self.webcam_ack_check_timer = None
+            self.webcam_ack_check_timer = 0
             self.source_remove(wact)
 
     def webcam_check_acks(self, ack=0):
-        self.webcam_ack_check_timer = None
+        self.webcam_ack_check_timer = 0
         log("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
         if self.webcam_last_ack<ack:
             log.warn("Warning: no acknowledgements received from the server for frame %i, stopping webcam", ack)
@@ -216,7 +216,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_state_changed()
 
     def may_send_webcam_frame(self):
-        self.webcam_send_timer = None
+        self.webcam_send_timer = 0
         if self.webcam_device_no<0 or not self.webcam_device:
             return False
         not_acked = self.webcam_frame_no-1-self.webcam_last_ack

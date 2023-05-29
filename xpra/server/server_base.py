@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Type, Dict, Callable, Any
+from typing import Type, Dict, List, Tuple, Callable, Any
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -235,7 +235,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # handle new connections:
-    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False, uuid=None):
+    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False, uuid=None) -> Tuple[bool,int,int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
@@ -290,7 +290,7 @@ class ServerBase(ServerBaseClass):
             accepted = False
         return accepted, share_count, disconnected
 
-    def hello_oked(self, proto, c, auth_caps):
+    def hello_oked(self, proto, c:typedict, auth_caps:dict) -> None:
         if self._server_sources.get(proto):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
@@ -401,12 +401,12 @@ class ServerBase(ServerBaseClass):
         send_ui = ui_client and not request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def get_client_connection_class(self, caps) -> type:
+    def get_client_connection_class(self, caps) -> Type:
         # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
 
-    def accept_client_ssh_agent(self, uuid, ssh_auth_sock):
+    def accept_client_ssh_agent(self, uuid:str, ssh_auth_sock:str):
         sshlog = Logger("server", "ssh")
         if not uuid:
             sshlog("cannot setup ssh agent without client uuid")
@@ -476,17 +476,17 @@ class ServerBase(ServerBaseClass):
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
             reject("error accepting new connection")
 
-    def parse_hello(self, ss, c, send_ui) -> None:
+    def parse_hello(self, ss, c:typedict, send_ui:bool) -> None:
         for bc in SERVER_BASES:
             if bc!=ServerCore:
                 bc.parse_hello(self, ss, c, send_ui)
 
-    def add_new_client(self, ss, c, send_ui, share_count) -> None:
+    def add_new_client(self, ss, c:typedict, send_ui:bool, share_count:int) -> None:
         for bc in SERVER_BASES:
             if bc!=ServerCore:
                 bc.add_new_client(self, ss, c, send_ui, share_count)
 
-    def send_initial_data(self, ss, c, send_ui, share_count) -> None:
+    def send_initial_data(self, ss, c:typedict, send_ui:bool, share_count:int) -> None:
         for bc in SERVER_BASES:
             if bc!=ServerCore:
                 bc.send_initial_data(self, ss, c, send_ui, share_count)
@@ -499,7 +499,7 @@ class ServerBase(ServerBaseClass):
             self.exec_after_connect_commands()
         self.exec_on_connect_commands()
 
-    def sanity_checks(self, proto, c) -> bool:
+    def sanity_checks(self, proto, c:typedict) -> bool:
         server_uuid = c.strget("server_uuid")
         if server_uuid:
             if server_uuid==self.uuid:
@@ -559,7 +559,7 @@ class ServerBase(ServerBaseClass):
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
-    def send_hello(self, server_source, root_size, server_cipher) -> None:
+    def send_hello(self, server_source, root_size, server_cipher:dict) -> None:
         capabilities = self.make_hello(server_source)
         from xpra.server.source.encodings_mixin import EncodingsMixin
         if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
@@ -603,14 +603,14 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # utility method:
-    def window_sources(self):
+    def window_sources(self) -> Tuple:
         from xpra.server.source.windows_mixin import WindowsMixin  #pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
 
 
     ######################################################################
     # info:
-    def _process_info_request(self, proto, packet):
+    def _process_info_request(self, proto, packet) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)
@@ -628,7 +628,7 @@ class ServerBase(ServerBaseClass):
             ss.send_info_response(info)
         self.get_all_info(info_callback, proto, None)
 
-    def send_hello_info(self, proto):
+    def send_hello_info(self, proto) -> None:
         self.wait_for_threaded_init()
         start = monotonic()
         def cb(proto, info):
@@ -735,7 +735,7 @@ class ServerBase(ServerBaseClass):
         pass
 
 
-    def _set_client_properties(self, proto, wid, window, new_client_properties) -> None:
+    def _set_client_properties(self, proto, wid:int, window, new_client_properties:dict) -> None:
         """
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)
@@ -764,7 +764,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # settings toggle:
-    def setting_changed(self, setting, value) -> None:
+    def setting_changed(self, setting:str, value) -> None:
         #tell all the clients (that can) about the new value for this setting
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
@@ -903,11 +903,11 @@ class ServerBase(ServerBaseClass):
                 c.reset_focus(self)
 
 
-    def get_all_protocols(self) -> list:
+    def get_all_protocols(self) -> List:
         return list(self._potential_protocols) + list(self._server_sources.keys())
 
 
-    def is_timedout(self, protocol):
+    def is_timedout(self, protocol) -> bool:
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v

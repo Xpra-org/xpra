@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-import subprocess
+from subprocess import Popen
 from shutil import which
 from typing import Dict, Any
 
@@ -62,8 +62,8 @@ class AudioMixin(StubSourceMixin):
         self.audio_encoders = ()
         self.audio_receive = False
         self.audio_send = False
-        self.audio_fade_timer = None
-        self.new_stream_timers = {}
+        self.audio_fade_timer = 0
+        self.new_stream_timers : Dict[Popen,int] = {}
 
     def cleanup(self):
         log("%s.cleanup()", self)
@@ -297,7 +297,7 @@ class AudioMixin(StubSourceMixin):
             ]
         cmd_str = " ".join(cmd)
         try:
-            proc = subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+            proc = Popen(cmd)  # pylint: disable=consider-using-with
             log(f"Popen({cmd_str})={proc}")
             from xpra.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
             getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
@@ -473,7 +473,7 @@ class AudioMixin(StubSourceMixin):
     def cancel_audio_fade_timer(self):
         sft = self.audio_fade_timer
         if sft:
-            self.audio_fade_timer = None
+            self.audio_fade_timer = 0
             self.source_remove(sft)
 
     def audio_data(self, codec, data, metadata, packet_metadata=()):

@@ -360,7 +360,7 @@ def check_printers():
         printers_modified_callback()
     schedule_polling_timer()
 
-_polling_timer = None
+_polling_timer = 0
 def schedule_polling_timer():
     #fallback to polling:
     cancel_polling_timer()
@@ -376,7 +376,7 @@ def cancel_polling_timer():
     log("cancel_polling_timer() timer=%s", pt)
     if pt:
         try:
-            _polling_timer = None
+            _polling_timer = 0
             pt.cancel()
         except Exception:
             log("error cancelling polling timer %s", pt, exc_info=True)

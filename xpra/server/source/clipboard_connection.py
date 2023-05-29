@@ -96,7 +96,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications_pending = count
         #but send the latest value via a timer to tame toggle storms:
         def may_send_progress_update():
-            self.clipboard_progress_timer = None
+            self.clipboard_progress_timer = 0
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
                 log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)

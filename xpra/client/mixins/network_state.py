@@ -74,7 +74,7 @@ class NetworkState(StubClientMixin):
         self.last_ping_echoed_time = 0
         self.ping_timer : int = 0
         self.ping_echo_timers : Dict[int,int] = {}
-        self.ping_echo_timeout_timer = None
+        self.ping_echo_timeout_timer = 0
 
 
     def init(self, opts) -> None:
@@ -213,7 +213,7 @@ class NetworkState(StubClientMixin):
 
     def cancel_ping_echo_timers(self) -> None:
         pet : Tuple[int,...] = tuple(self.ping_echo_timers.values())
-        self.ping_echo_timers : Dict[float,int] = {}
+        self.ping_echo_timers = {}
         for t in pet:
             GLib.source_remove(t)
 

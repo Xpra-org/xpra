@@ -53,7 +53,7 @@ class DisplayClient(StubClientMixin):
         self.refresh_rate = 0
         self.desktop_fullscreen = False
         self.desktop_scaling = False
-        self.screen_size_change_timer = None
+        self.screen_size_change_timer = 0
 
         self.server_desktop_size = None
         self.server_actual_desktop_size = None
@@ -84,7 +84,7 @@ class DisplayClient(StubClientMixin):
     def cleanup(self):
         ssct = self.screen_size_change_timer
         if ssct:
-            self.screen_size_change_timer = None
+            self.screen_size_change_timer = 0
             self.source_remove(ssct)
 
 
@@ -467,7 +467,7 @@ class DisplayClient(StubClientMixin):
         self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
     def do_process_screen_size_change(self):
-        self.screen_size_change_timer = None
+        self.screen_size_change_timer = 0
         self.update_screen_size()
         log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s",
             MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
@@ -508,7 +508,7 @@ class DisplayClient(StubClientMixin):
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors)
 
     def update_screen_size(self) -> None:
-        self.screen_size_change_timer = None
+        self.screen_size_change_timer = 0
         screen_settings = self.get_screen_settings()
         log("update_screen_size()     new settings=%s", screen_settings)
         log("update_screen_size() current settings=%s", self._last_screen_settings)

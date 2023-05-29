@@ -40,7 +40,7 @@ class Authenticator(SysAuthenticator):
         self.command = shlex.split(kwargs.pop("command", "${auth_dialog} ${info} ${timeout}"))
         self.require_challenge = kwargs.pop("require-challenge", "no").lower() in TRUE_OPTIONS
         self.timeout = kwargs.pop("timeout", TIMEOUT)
-        self.timer = None
+        self.timer = 0
         self.proc = None
         self.timeout_event = False
         if not self.command:
@@ -109,14 +109,14 @@ class Authenticator(SysAuthenticator):
         t = self.timer
         log(f"exec auth.command_ended{args} timer={t}")
         if t:
-            self.timer = None
+            self.timer = 0
             GLib.source_remove(t)
 
     def command_timedout(self):
         proc = self.proc
         log(f"exec auth.command_timedout() proc={proc}")
         self.timeout_event = True
-        self.timer = None
+        self.timer = 0
         if proc:
             try:
                 proc.terminate()

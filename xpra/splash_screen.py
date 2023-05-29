@@ -83,9 +83,9 @@ class SplashScreen(Gtk.Window):
         self.progress_bar.set_size_request(320, 30)
         self.progress_bar.set_show_text(False)
         self.progress_bar.set_fraction(0)
-        self.progress_timer = None
-        self.fade_out_timer = None
-        self.exit_timer = None
+        self.progress_timer = 0
+        self.fade_out_timer = 0
+        self.exit_timer = 0
         vbox.add(self.progress_bar)
         self.timeout_timer = 0
         self.pulse_timer = 0
@@ -136,7 +136,7 @@ class SplashScreen(Gtk.Window):
 
     def timeout(self):
         log("timeout()")
-        self.timeout_timer = None
+        self.timeout_timer = 0
         self.exit_code = ExitCode.TIMEOUT
         self.show_progress_value(100)
         self.progress_bar.set_text("timeout")
@@ -212,7 +212,7 @@ class SplashScreen(Gtk.Window):
             self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000//100, self.fade_out)
             self.cancel_exit_timer()
             def exit_splash():
-                self.exit_timer = None
+                self.exit_timer = 0
                 self.exit()
             self.exit_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000, exit_splash)
         else:
@@ -224,25 +224,25 @@ class SplashScreen(Gtk.Window):
     def cancel_exit_timer(self):
         et = self.exit_timer
         if et:
-            self.exit_timer = None
+            self.exit_timer = 0
             GLib.source_remove(et)
 
     def cancel_fade_out_timer(self):
         fot = self.fade_out_timer
         if fot:
-            self.fade_out_timer = None
+            self.fade_out_timer = 0
             GLib.source_remove(fot)
 
     def cancel_progress_timer(self):
         pt = self.progress_timer
         if pt:
-            self.progress_timer = None
+            self.progress_timer = 0
             GLib.source_remove(pt)
 
     def cancel_pulse_timer(self):
         pt = self.pulse_timer
         if pt:
-            self.pulse_timer = None
+            self.pulse_timer = 0
             GLib.source_remove(pt)
 
     def increase_fraction(self, pct, inc=1, max_increase=10):
@@ -260,7 +260,7 @@ class SplashScreen(Gtk.Window):
         if actual>self.opacity:
             self.set_opacity(self.opacity/100.0)
         if actual<=0:
-            self.fade_out_timer = None
+            self.fade_out_timer = 0
         return actual>0
 
     def exit(self, *args):

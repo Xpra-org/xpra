@@ -80,8 +80,8 @@ class ProxyInstance:
         self.server_last_ping_echo = 0
         self.client_last_ping_latency = 0
         self.server_last_ping_latency = 0
-        self.client_ping_timer = None
-        self.server_ping_timer = None
+        self.client_ping_timer = 0
+        self.server_ping_timer = 0
         self.client_challenge_packet = None
         self.exit = False
         self.lost_windows = None
@@ -395,14 +395,14 @@ class ProxyInstance:
         spt = self.server_ping_timer
         log("cancel_server_ping_timer() server_ping_timer=%s", spt)
         if spt:
-            self.server_ping_timer = None
+            self.server_ping_timer = 0
             self.source_remove(spt)
 
     def cancel_client_ping_timer(self):
         cpt = self.client_ping_timer
         log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
         if cpt:
-            self.client_ping_timer = None
+            self.client_ping_timer = 0
             self.source_remove(cpt)
 
     def schedule_server_ping(self):

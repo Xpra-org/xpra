@@ -107,7 +107,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.exit_on_signal = False
         self.display_desc = {}
         self.progress_process = None
-        self.progress_timer = None
+        self.progress_timer = 0
         #connection attributes:
         self.hello_extra = {}
         self.compression_level = 0
@@ -188,14 +188,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #kill it if it's still running after 2 seconds
             self.cancel_progress_timer()
             def stop_progress():
-                self.progress_timer = None
+                self.progress_timer = 0
                 self.stop_progress_process()
             self.progress_timer = self.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress)
 
     def cancel_progress_timer(self):
         pt = self.progress_timer
         if pt:
-            self.progress_timer = None
+            self.progress_timer = 0
             self.source_remove(pt)
 
 

@@ -103,7 +103,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.border = None
         self.data_send_requests = {}
         #clipboard bits:
-        self.clipboard_notification_timer = None
+        self.clipboard_notification_timer = 0
         self.last_clipboard_notification = 0
         #opengl bits:
         self.client_supports_opengl = False
@@ -1499,7 +1499,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def cancel_clipboard_notification_timer(self):
         cnt = self.clipboard_notification_timer
         if cnt:
-            self.clipboard_notification_timer = None
+            self.clipboard_notification_timer = 0
             self.source_remove(cnt)
 
     def clipboard_notify(self, n):
@@ -1520,7 +1520,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             N = 1
             delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic())))
             def reset_tray_icon():
-                self.clipboard_notification_timer = None
+                self.clipboard_notification_timer = 0
                 tray = self.tray
                 if not tray:
                     return

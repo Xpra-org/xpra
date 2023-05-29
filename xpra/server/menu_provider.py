@@ -56,7 +56,7 @@ class MenuProvider:
     def __init__(self):
         self.watch_manager = None
         self.watch_notifier = None
-        self.xdg_menu_reload_timer = None
+        self.xdg_menu_reload_timer = 0
         self.on_reload = []
         self.menu_data = None
         self.desktop_sessions = None
@@ -188,7 +188,7 @@ class MenuProvider:
     def cancel_xdg_menu_reload(self):
         xmrt = self.xdg_menu_reload_timer
         if xmrt:
-            self.xdg_menu_reload_timer = None
+            self.xdg_menu_reload_timer = 0
             GLib.source_remove(xmrt)
 
     def schedule_xdg_menu_reload(self):
@@ -196,7 +196,7 @@ class MenuProvider:
         self.xdg_menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
 
     def xdg_menu_reload(self):
-        self.xdg_menu_reload_timer = None
+        self.xdg_menu_reload_timer = 0
         log("xdg_menu_reload()")
         self.load_menu_data(True)
         return False

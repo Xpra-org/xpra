@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+from typing import Optional, Tuple, Any
 from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.os_util import get_generic_os_name, load_binary_file
@@ -77,10 +78,10 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         WindowModelStub.__init__(self)
         self.update_wm_name()
         self.update_icon()
-        self.resize_timer = None
-        self.resize_value = None
+        self.resize_timer = 0
+        self.resize_value = (1, 1)
 
-    def setup(self):
+    def setup(self) -> None:
         WindowDamageHandler.setup(self)
         self._depth = X11Window.get_depth(self.xid)
         X11Window.addDefaultEvents(self.xid)
@@ -89,7 +90,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         #listen for property changes on the root window:
         add_event_receiver(self.xid, self)
 
-    def do_xpra_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event) -> None:
         eventlog(f"do_xpra_property_notify_event: {event.atom}")
         #update the wm-name (and therefore the window's "title")
         #whenever this property changes:
@@ -97,16 +98,15 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             if self.update_wm_name():
                 self.update_icon()
                 self.notify("title")
-        return True
 
-    def unmanage(self, exiting=False):
+    def unmanage(self, exiting=False) -> None:
         remove_event_receiver(self.xid, self)
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
         self.cancel_resize_timer()
         self._managed = False
 
-    def update_wm_name(self):
+    def update_wm_name(self) -> bool:
         try:
             with xsync:
                 wm_name = get_wm_name()     #pylint: disable=assignment-from-none
@@ -115,7 +115,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         iconlog("update_wm_name() wm-name=%s", wm_name)
         return self._updateprop("wm-name", wm_name)
 
-    def update_icon(self):
+    def update_icon(self) -> bool:
         icons = None
         try:
             wm_name = self.get_property("wm-name")
@@ -140,20 +140,20 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             iconlog("failed to return window icon", exc_info=True)
         self._updateprop("icons", icons)
 
-    def uses_XShm(self):
+    def uses_XShm(self) -> bool:
         return bool(self._xshm_handle)
 
-    def get_default_window_icon(self, _size):
+    def get_default_window_icon(self, _size) -> Optional[Tuple[int,int,str,bytes]]:
         icon_name = get_generic_os_name()+".png"
         icon = get_icon(icon_name)
         if not icon:
             return None
         return icon.get_width(), icon.get_height(), "RGBA", icon.get_pixels()
 
-    def get_title(self):
+    def get_title(self) -> str:
         return self.get_property("wm-name") or "xpra desktop"
 
-    def get_property(self, prop):
+    def get_property(self, prop:str) -> Any:
         if prop=="depth":
             return self._depth
         if prop=="title":
@@ -172,14 +172,14 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return False
         return GObject.GObject.get_property(self, prop)
 
-    def do_xpra_damage_event(self, event):
+    def do_xpra_damage_event(self, event) -> None:
         self.emit("client-contents-changed", event)
 
-    def do_xpra_motion_event(self, event):
+    def do_xpra_motion_event(self, event) -> None:
         self.emit("motion", event)
 
 
-    def resize(self, w, h):
+    def resize(self, w:int, h:int):
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -197,5 +197,5 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def cancel_resize_timer(self):
         rt = self.resize_timer
         if rt:
-            self.resize_timer = None
+            self.resize_timer = 0
             GLib.source_remove(rt)

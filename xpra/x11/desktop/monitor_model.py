@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
+from typing import Tuple, Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.error import xlog
@@ -35,11 +36,11 @@ class MonitorDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"MonitorDesktopModel({self.name} : {self.monitor_geometry})"
 
-    def __init__(self, monitor):
+    def __init__(self, monitor:dict):
         super().__init__()
         self.init(monitor)
 
-    def init(self, monitor):
+    def init(self, monitor:dict) -> None:
         self.name = monitor.get("name", "")
         self.resize_delta = 0, 0
         x = monitor.get("x", 0)
@@ -52,7 +53,7 @@ class MonitorDesktopModel(DesktopModelBase):
             "maximum-size"          : MAX_SIZE,
             })
 
-    def get_title(self):
+    def get_title(self) -> str:
         with xlog:
             title = get_wm_name()  # pylint: disable=assignment-from-none
         if self.name:
@@ -61,14 +62,14 @@ class MonitorDesktopModel(DesktopModelBase):
             title += f" on {self.name}"
         return title
 
-    def get_geometry(self):
+    def get_geometry(self) -> Tuple[int,int,int,int]:
         return self.monitor_geometry
 
-    def get_dimensions(self):
+    def get_dimensions(self) -> Tuple[int,int]:
         return self.monitor_geometry[2:4]
 
 
-    def get_definition(self):
+    def get_definition(self) -> Dict[str,Any]:
         x, y, width, height = self.monitor_geometry
         return {
             "geometry"  : self.monitor_geometry,
@@ -80,7 +81,7 @@ class MonitorDesktopModel(DesktopModelBase):
             }
 
 
-    def do_xpra_damage_event(self, event):
+    def do_xpra_damage_event(self, event) -> None:
         #ie: <X11:DamageNotify {'send_event': '0', 'serial': '0x4da', 'delivered_to': '0x56e', 'window': '0x56e',
         #                       'damage': '2097157', 'x': '313', 'y': '174', 'width': '6', 'height': '13'}>)
         damaged_area = rectangle(event.x, event.y, event.width, event.height)
@@ -102,8 +103,8 @@ class MonitorDesktopModel(DesktopModelBase):
         return image
 
 
-    def do_resize(self):
-        self.resize_timer = None
+    def do_resize(self) -> None:
+        self.resize_timer = 0
         x, y, saved_width, saved_height = self.monitor_geometry
         width, height = self.resize_value
         self.monitor_geometry = (x, y, width, height)
