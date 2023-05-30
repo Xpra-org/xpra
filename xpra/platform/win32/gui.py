@@ -181,7 +181,7 @@ def get_native_system_tray_classes(*_args):
     #so it cannot be used for application trays
     return get_native_tray_classes()
 
-def gl_check():
+def gl_check() -> str:
     #This is supposed to help py2exe
     #(must be done after we setup the sys.path in platform.win32.paths):
     try:
@@ -190,11 +190,11 @@ def gl_check():
         get_util_logger().warn("gl_check()", exc_info=True)
         get_util_logger().warn("Warning: OpenGL bindings are missing")
         get_util_logger().warn(" %s", e)
-        return False
+        return "OpenGL bindings are missing"
     from xpra.platform.win32 import is_wine
     if is_wine():
         return "disabled when running under wine"
-    return None
+    return ""
 
 
 def get_monitor_workarea_for_window(handle):
@@ -609,6 +609,7 @@ def add_window_hooks(window):
                 handle_wheel(HORIZONTAL, wParam, lParam)
                 return 0
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
+            win32hooks.add_window_event_handler(win32con.WM_MOUSEHWHEEL, mousehwheel)
 
 
 def remove_window_hooks(window):
