@@ -111,7 +111,7 @@ class SystemTray(GObject.GObject):
         #map xid to the gdk window:
         self.window_trays : Dict[int,Gdk.Window] = {}
         #map gdk windows to their corral window:
-        self.tray_windows : Dict[GdkX11.Window,GdkX11.Window] = {}
+        self.tray_windows : Dict[GdkX11.X11Window,GdkX11.X11Window] = {}
         self.setup_tray_window()
 
     def cleanup(self) -> None:
@@ -180,7 +180,7 @@ class SystemTray(GObject.GObject):
             self.cleanup()
             raise
 
-    def get_pywindow(self, xid:int) -> GdkX11.Window:
+    def get_pywindow(self, xid:int) -> GdkX11.X11Window:
         display = self.tray_window.get_display()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
