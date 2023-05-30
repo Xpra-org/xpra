@@ -184,7 +184,7 @@ def get_session_info(session):
             if buf.value:
                 try:
                     info[WTS_INFO_CLASS.get(q, q)] = buf.value.decode("latin1")
-                except:
+                except UnicodeDecodeError:
                     pass
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientDisplay, byref(buf), byref(size)):
         if size.value>=sizeof(WTS_CLIENT_DISPLAY):

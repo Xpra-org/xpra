@@ -415,18 +415,23 @@ class VideoSubregion:
             return max(0, min(1, 1.0-not_damaged_pixels/rect_pixels))
 
         scores = {None : 0}
-        def score_region(info, region, ignore_size=0, d_ratio=0):
+        def score_region(info, region, ignore_size=0, d_ratio=0) -> int:
             score = scores.get(region)
             if score is not None:
+                return score
+            def rec(score:int):
+                scores[region] = score
                 return score
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
             if region.width<MIN_W or region.height<MIN_H:
                 #too small, ignore it:
-                score = 0
+                sslog(f"region too small: {region.width}x{region.height}")
+                return rec(0)
             #and make sure this does not end up much bigger than needed:
-            elif ww*wh<(region.width*region.height):
-                score = 0
+            if ww*wh<(region.width*region.height):
+                sslog(f"region too small: {region.width}x{region.height}")
+                return rec(0)
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
             children_boost = 0
@@ -446,8 +451,7 @@ class VideoSubregion:
             sslog("testing %12s video region %34s: "
                   "%3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
                   info, region, ipct, opct, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
-            scores[region] = score
-            return score
+            return rec(score)
 
         def updateregion(rect):
             self.rectangle = rect

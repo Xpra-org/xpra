@@ -2322,7 +2322,7 @@ class WindowVideoSource(WindowSource):
             if image!=csc_image:
                 self.free_image_wrapper(csc_image)
             del csc_image
-        if ret is ():
+        if not ret:
             if not self.is_cancelled():
                 videolog.error("Error: %s video compression failed", encoding)
             return ()
