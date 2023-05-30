@@ -66,14 +66,13 @@ class WindowMenuHelper(MenuHelper):
             return "Unmaximize" if maximized else "Maximize"
         label = get_label(self.window.is_maximized())
         self.maximize_menuitem = self.menuitem(label, "maximize.png", None, maximize)
-        def set_sensitive_state():
-            self.maximize_menuitem.set_sensitive(self.window.can_maximize())
         def window_state_updated(widget, event):
             maximized_changed = event.changed_mask & Gdk.WindowState.MAXIMIZED
             log("state_changed%s maximized_changed=%s", (widget, event), maximized_changed)
             if maximized_changed:
                 label = get_label(event.new_window_state & Gdk.WindowState.MAXIMIZED)
                 self.maximize_menuitem.set_label(label)
+            self.maximize_menuitem.set_sensitive(self.window.can_maximize())
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
 
