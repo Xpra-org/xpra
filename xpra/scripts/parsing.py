@@ -122,8 +122,8 @@ def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
     yes = f"--{optionname}"
     if newoptionname is None:
         newoptionname = optionname
-    do_replace_option(cmdline, no, f"--{optionname}=no")
-    do_replace_option(cmdline, yes, f"--{optionname}=yes")
+    do_replace_option(cmdline, no, f"--{newoptionname}=no")
+    do_replace_option(cmdline, yes, f"--{newoptionname}=yes")
 
 def ignore_options(args, options):
     for x in options:
