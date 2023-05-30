@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
 
 MODIFIER_MAP = {
             "shift":    1 << 0,
@@ -23,7 +24,7 @@ DEFAULT_MODIFIER_NUISANCE_KEYNAMES = ["Num_Lock", "Caps_Lock", "Scroll_Lock"]
 DEFAULT_MODIFIER_NUISANCE = ["lock"]
 DEFAULT_ALL_MODIFIER_NAMES = DEFAULT_MODIFIER_NAMES+DEFAULT_MODIFIER_NUISANCE+["mod1", "mod2", "mod3", "mod4", "mod5"]
 
-DEFAULT_MODIFIER_MEANINGS = {
+DEFAULT_MODIFIER_MEANINGS : Dict[str,str] = {
         "Shift_L"   : "shift",
         "Shift_R"   : "shift",
         "Caps_Lock" : "lock",

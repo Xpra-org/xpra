@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Iterable, Tuple, List, Optional
+from typing import Dict, Iterable, Tuple, List, Optional, Any
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase
@@ -148,7 +148,7 @@ class Keyboard(KeyboardBase):
         log("locale(%s)=%s", out, locale)
         return locale
 
-    def get_keymap_spec(self):
+    def get_keymap_spec(self) -> Dict[str,Any]:
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if is_Wayland() or not self.keyboard_bindings:
             locale = self.get_locale_status()

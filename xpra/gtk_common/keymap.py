@@ -17,7 +17,7 @@ log = Logger("keyboard")
 KEY_TRANSLATIONS : Dict[tuple, str] = {}
 
 
-def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[int,str,int,int,int]:
+def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[int,str,int,int,int]]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -29,7 +29,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[int,st
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
-def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[int,str,int,int,int]:
+def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[Tuple[int,str,int,int,int]]:
     if not display:
         return ()
     import gi

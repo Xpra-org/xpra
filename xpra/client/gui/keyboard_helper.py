@@ -1,12 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import List, Callable, Dict, Tuple, Any
 
+from xpra.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util import csv, std, envbool, ellipsizer
 from xpra.os_util import bytestostr
@@ -24,7 +26,7 @@ def add_xkbmap_legacy_prefix(props):
 
 class KeyboardHelper:
 
-    def __init__(self, net_send, keyboard_sync=True,
+    def __init__(self, net_send:Callable, keyboard_sync=True,
                  shortcut_modifiers="auto", key_shortcuts=(),
                  raw=False, layout="", layouts=(),
                  variant="", variants=(), options=""):
@@ -54,17 +56,17 @@ class KeyboardHelper:
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
 
-    def set_platform_layout(self, layout):
+    def set_platform_layout(self, layout:str) -> None:
         if hasattr(self.keyboard, "set_platform_layout"):
             self.keyboard.set_platform_layout(layout)
 
-    def mask_to_names(self, mask):
+    def mask_to_names(self, mask) -> List[str]:
         return self.keyboard.mask_to_names(mask)
 
     def set_modifier_mappings(self, mappings):
         self.keyboard.set_modifier_mappings(mappings)
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         self.keycodes = []
         self.x11_keycodes = {}
         self.mod_meanings = {}
@@ -87,27 +89,27 @@ class KeyboardHelper:
         self.keyboard_sync = False
         self.key_shortcuts = {}
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.reset_state()
         def nosend(*_args):
             """ make sure we don't send keyboard updates during cleanup """
         self.send = nosend
 
-    def keymap_changed(self, *args):
+    def keymap_changed(self, *args) -> None:
         """ This method is overridden in the GTK Keyboard Helper """
 
 
-    def parse_shortcuts(self):
+    def parse_shortcuts(self) -> Dict[str,List]:
         #parse shortcuts:
         modifier_names = self.get_modifier_names()
         self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
         return self.key_shortcuts
 
-    def get_modifier_names(self):
+    def get_modifier_names(self) -> List[str]:
         return get_modifier_names(self.mod_meanings)
 
-    def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
+    def key_handled_as_shortcut(self, window, key_name:str, modifiers:List[str], depressed:bool):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
         log("key_handled_as_shortcut%s shortcuts_enabled=%s, shortcuts=%s",
@@ -129,7 +131,7 @@ class KeyboardHelper:
                 return True
         return False
 
-    def _check_shortcut(self, window, key_name, modifiers, depressed, shortcut):
+    def _check_shortcut(self, window, key_name:str, modifiers:List[str], depressed:bool, shortcut):
         req_mods, action, args = shortcut
         extra_modifiers = list(modifiers)
         for rm in req_mods:
@@ -183,7 +185,7 @@ class KeyboardHelper:
         return  True
 
 
-    def handle_key_action(self, window, wid, key_event):
+    def handle_key_action(self, window, wid:int, key_event:KeyEvent):
         """
             Intercept key shortcuts and gives the Keyboard class
             a chance to fire more than one send_key_action.
@@ -194,14 +196,14 @@ class KeyboardHelper:
         return False
 
 
-    def debug_key_event(self, wid, key_event):
+    def debug_key_event(self, wid:int, key_event:KeyEvent) -> None:
         if not DEBUG_KEY_EVENTS:
             return
-        def keyname(v):
+        def keyname(v:str) -> str:
             if v.endswith("_L") or v.endswith("_R"):
                 return v[:-2].lower()
             return v.lower()
-        def dbg(v):
+        def dbg(v) -> bool:
             return v and keyname(v) in DEBUG_KEY_EVENTS
         debug = ("all" in DEBUG_KEY_EVENTS) or dbg(key_event.keyname) or dbg(key_event.string)
         modifiers = key_event.modifiers
@@ -219,7 +221,7 @@ class KeyboardHelper:
         if debug:
             log.info("key event %s on window %i", key_event, wid)
 
-    def send_key_action(self, wid, key_event):
+    def send_key_action(self, wid:int, key_event:KeyEvent) -> None:
         log("send_key_action(%s, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
@@ -228,7 +230,7 @@ class KeyboardHelper:
         self.send(*packet)
 
 
-    def get_layout_spec(self):
+    def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
         """ add / honour overrides """
         layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
@@ -250,7 +252,7 @@ class KeyboardHelper:
         log("get_layout_spec()=%s", val)
         return val
 
-    def get_keymap_spec(self):
+    def get_keymap_spec(self) -> Dict[str,Any]:
         query_struct = self.keyboard.get_keymap_spec()
         if query_struct:
             if self.layout_option:

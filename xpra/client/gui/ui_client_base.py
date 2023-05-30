@@ -793,7 +793,7 @@ class UIXpraClient(ClientBaseClass):
         keylog(f"handle_key_action({window}, {key_event}) wid={wid}")
         return self.keyboard_helper.handle_key_action(window, wid, key_event)
 
-    def mask_to_names(self, mask):
+    def mask_to_names(self, mask) -> List[str]:
         if self.keyboard_helper is None:
             return []
         return self.keyboard_helper.mask_to_names(mask)
@@ -801,7 +801,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # windows overrides
-    def cook_metadata(self, _new_window, metadata):
+    def cook_metadata(self, _new_window, metadata:Dict):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:
@@ -815,7 +815,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # network and status:
-    def server_connection_state_change(self):
+    def server_connection_state_change(self) -> None:
         if not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
             def timer_redraw():
@@ -830,7 +830,7 @@ class UIXpraClient(ClientBaseClass):
             self.idle_add(self.redraw_spinners)
             self.timeout_add(250, timer_redraw)
 
-    def redraw_spinners(self):
+    def redraw_spinners(self) -> None:
         #draws spinner on top of the window, or not (plain repaint)
         #depending on whether the server is ok or not
         ok = self.server_ok()
@@ -842,7 +842,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # packets:
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
         for c in CLIENT_BASES:
             c.init_authenticated_packet_handlers(self)
@@ -856,6 +856,6 @@ class UIXpraClient(ClientBaseClass):
         self.add_packet_handler("server-event", self._process_server_event, False)
 
 
-    def process_packet(self, proto, packet):
+    def process_packet(self, proto, packet) -> None:
         self.check_server_echo(0)
         XpraClientBase.process_packet(self, proto, packet)
