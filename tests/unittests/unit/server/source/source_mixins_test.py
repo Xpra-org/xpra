@@ -233,18 +233,18 @@ class SourceMixinsTest(unittest.TestCase):
         self._test_mixin_class(ClientDisplayMixin)
 
     def test_shell(self):
-        from xpra.server.source import shell_mixin
+        from xpra.server.source import shell
         protocol = AdHocStruct()
         protocol._conn = AdHocStruct()
         protocol._conn.options = {"shell" : "yes"}
-        m = self._test_mixin_class(shell_mixin.ShellMixin, protocol=protocol)
+        m = self._test_mixin_class(shell.ShellMixin, protocol=protocol)
         def noop(*_args):
             pass
         m.send = noop
         out,err = m.shell_exec("print('hello')")
         assert out.rstrip("\n")=="hello", "expected 'hello' but got '%s'" % out.rstrip("\n")
         assert not err
-        with silence_error(shell_mixin):
+        with silence_error(shell):
             out,err = m.shell_exec("--not-a-statement--")
         assert not out
         assert err

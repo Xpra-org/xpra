@@ -46,7 +46,7 @@ def get_client_connection_class(caps):
         from xpra.server.source.networkstate import NetworkStateMixin
         CC.append(NetworkStateMixin)
     if server_features.shell:
-        from xpra.server.source.shell_mixin import ShellMixin
+        from xpra.server.source.shell import ShellMixin
         CC.append(ShellMixin)
     if server_features.display:
         from xpra.server.source.display import ClientDisplayMixin
