@@ -12,9 +12,9 @@ from xpra.notifications.notifier_base import NotifierBase
 
 class PyNotify_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid,
-                    app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int,
+                    app_name:str, replaces_nid:int, app_icon,
+                    summary:str, body:str, actions, hints, timeout:int, icon):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
@@ -23,24 +23,13 @@ class PyNotify_Notifier(NotifierBase):
         n = notify2.Notification(summary, body, icon_string)
         n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(timeout)
-        if actions and False:
-            while len(actions)>=2:
-                action_id, action_label = actions[:2]
-                self.add_action(n, action_id, action_label)
-                actions = actions[2:]
         n.show()
         if icon_string:
             def notification_closed(*_args):
                 self.clean_notification(nid)
             n.connect("closed", notification_closed)
 
-    def add_action(self, n, action_id, action_label):
-        #n.add_action("foo", "Foo!", foo_action)
-        def callback(*_args):
-            pass
-        n.add_action(action_id, action_label, callback)
-
-    def close_notify(self, nid):
+    def close_notify(self, nid:int):
         pass
 
 
