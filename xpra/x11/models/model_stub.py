@@ -76,15 +76,15 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     # Properties we choose to expose
     #########################################
 
-    def get_property_names(self) -> list:
+    def get_property_names(self) -> List[str]:
         """ The properties that should be exposed to clients """
         return self._property_names
 
-    def get_dynamic_property_names(self) -> list:
+    def get_dynamic_property_names(self) -> List[str]:
         """ The properties that may change over time """
         return self._dynamic_property_names
 
-    def get_internal_property_names(self) -> list:
+    def get_internal_property_names(self) -> List[str]:
         """ The properties that should not be exposed to the client """
         return self._internal_property_names
 

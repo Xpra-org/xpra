@@ -6,7 +6,7 @@
 
 import socket
 from collections import namedtuple
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 
 from xpra.os_util import (
     get_generic_os_name, do_get_generic_os_name,
@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_os_icons():
+def get_os_icons() -> Tuple[Tuple[int,int,str,bytes]]:
     try:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -50,9 +50,9 @@ class RootWindowModel:
     __slots__ = ("window", "title", "geometry", "capture",
                  "property_names", "dynamic_property_names", "internal_property_names",
                  "signal_listeners")
-    def __init__(self, root_window, capture=None, title="", geometry=None):
+    def __init__(self, root_window, capture=None, title:str="", geometry=None):
         self.window = root_window
-        self.title = title
+        self.title : str= title
         self.geometry = geometry
         self.capture = capture
         self.property_names = [
@@ -78,7 +78,7 @@ class RootWindowModel:
     def take_screenshot(self):
         return self.capture.take_screenshot()
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x:int, y:int, width:int, height:int):
         ox, oy = self.geometry[:2]
         image = self.capture.get_image(ox+x, oy+y, width, height)
         if image and (ox>0 or oy>0):
@@ -88,34 +88,34 @@ class RootWindowModel:
             image.set_target_y(y)
         return image
 
-    def unmanage(self, exiting=False):
+    def unmanage(self, exiting=False) -> None:
         pass
 
-    def suspend(self):
+    def suspend(self) -> None:
         pass
 
-    def is_managed(self):
+    def is_managed(self) -> bool:
         return True
 
-    def is_tray(self):
+    def is_tray(self) -> bool:
         return False
 
-    def is_OR(self):
+    def is_OR(self) -> bool:
         return False
 
-    def has_alpha(self):
+    def has_alpha(self) -> bool:
         return False
 
-    def uses_XShm(self):
+    def uses_XShm(self) -> bool:
         return False
 
-    def is_shadow(self):
+    def is_shadow(self) -> bool:
         return True
 
     def get_default_window_icon(self, _size):
         return None
 
-    def acknowledge_changes(self):
+    def acknowledge_changes(self) -> None:
         pass
 
     def get_dimensions(self):
@@ -126,16 +126,16 @@ class RootWindowModel:
         return self.geometry
 
 
-    def get_property_names(self):
+    def get_property_names(self) -> List[str]:
         return self.property_names
 
-    def get_dynamic_property_names(self):
+    def get_dynamic_property_names(self) -> List[str]:
         return self.dynamic_property_names
 
-    def get_internal_property_names(self):
+    def get_internal_property_names(self) -> List[str]:
         return self.internal_property_names
 
-    def get_property(self, prop):
+    def get_property(self, prop:str):
         #subclasses can define properties as attributes:
         attr_name = prop.replace("-", "_")
         if hasattr(self, attr_name):
@@ -178,14 +178,14 @@ class RootWindowModel:
             return "desktop"
         raise ValueError(f"invalid property {prop!r}")
 
-    def get(self, name, default_value=None):
+    def get(self, name:str, default_value=None):
         try:
             return self.get_property(name)
         except ValueError as e:
             log("get(%s, %s) %s on %s", name, default_value, e, self)
             return default_value
 
-    def notify(self, prop):
+    def notify(self, prop:str) -> None:
         if prop not in self.dynamic_property_names:
             log.warn(f"Warning: ignoring notify for {prop!r}")
             return
@@ -198,10 +198,10 @@ class RootWindowModel:
             except Exception:
                 log.error(f"Error on {prop!r} signal listener {listener}", exc_info=True)
 
-    def managed_connect(self, signal, *args):   # pragma: no cover
+    def managed_connect(self, signal:str, *args):   # pragma: no cover
         self.connect(signal, *args)
 
-    def connect(self, signal, *args):           # pragma: no cover
+    def connect(self, signal:str, *args):           # pragma: no cover
         prop = signal.split(":")[-1]        #notify::geometry
         if prop not in self.dynamic_property_names:
             log.warn(f"Warning: ignoring signal connect request: {args}")
