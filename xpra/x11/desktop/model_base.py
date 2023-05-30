@@ -62,7 +62,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
                        GObject.ParamFlags.READABLE),
         }
 
-    _property_names         = [
+    _property_names = [
         "client-machine", "window-type",
         "shadow", "size-hints", "class-instance",
         "focused", "title", "depth", "icons",
@@ -120,7 +120,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         try:
             wm_name = self.get_property("wm-name")
             if not wm_name:
-                return
+                return False
             icon_name = get_icon_filename(wm_name.lower()+".png")
             try:
                 from PIL import Image  # pylint: disable=import-outside-toplevel

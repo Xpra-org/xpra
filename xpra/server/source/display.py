@@ -33,7 +33,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled : Optional[Tuple[int, int]] = None
         self.desktop_size_server : Optional[Tuple[int, int]] = None
         self.desktop_fullscreen : bool = False
-        self.screen_sizes : List = ()
+        self.screen_sizes : List = []
         self.monitors : Dict[int,Any] = {}
         self.screen_resize_bigger : bool = True
         self.desktops : int = 1

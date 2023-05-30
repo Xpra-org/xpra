@@ -159,7 +159,7 @@ class VideoHelper:
                 log.error("from:")
                 for tb in ifrom:
                     log.error(" %s", tb.strip("\n\r"))
-            raise RuntimeError(f"too late to set modules, the helper is already initialized")
+            raise RuntimeError("too late to set modules, the helper is already initialized")
         self.video_encoders = filt("enc", "video encoders" , video_encoders,   get_video_encoders,  ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc", "csc modules"    , csc_modules,      get_csc_modules,     ALL_CSC_MODULE_OPTIONS)
         self.video_decoders = filt("dec", "video decoders" , video_decoders,   get_video_decoders,  ALL_VIDEO_DECODER_OPTIONS)

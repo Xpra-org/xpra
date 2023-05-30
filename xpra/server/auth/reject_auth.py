@@ -21,20 +21,20 @@ class Authenticator:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
-    def choose_salt_digest(self, digest_modes):
+    def choose_salt_digest(self, digest_modes) -> str:
         return choose_digest(digest_modes)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return -1
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return -1
 
     def get_passwords(self):
         return ()
 
-    def get_password(self):
-        return None
+    def get_password(self) -> str:
+        return ""
 
     def authenticate(self, caps : typedict) -> bool:  #pylint: disable=unused-argument
         return False

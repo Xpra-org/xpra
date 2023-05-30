@@ -1795,7 +1795,7 @@ def make_client(error_cb, opts):
                 else:
                     opts.opengl = f"probe-{probe}"
                 r = probe   #ie: "success"
-                if info:
+                if glinfo:
                     renderer = glinfo.get("renderer")
                     if renderer:
                         #ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
@@ -3989,7 +3989,8 @@ def run_showsetting(args) -> int:
     def show_settings():
         for setting in settings:
             value = config.get(setting)
-            log.info("%-20s: %-40s (%s)", setting, vstr(None, value), type(value))
+            otype = OPTION_TYPES.get(setting, str)
+            log.info("%-20s: %-40s (%s)", setting, vstr(otype, value), type(value))
 
     log.info("* default config:")
     show_settings()

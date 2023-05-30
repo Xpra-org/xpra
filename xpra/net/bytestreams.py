@@ -462,7 +462,7 @@ class SocketConnection(Connection):
                 except (OSError, ValueError) as e:
                     log(f"get_tcp_info({s})", exc_info=True)
                     if self.is_active() and not self.error_is_closed(e):
-                        log.warn(f"Warning: failed to get tcp information")
+                        log.warn("Warning: failed to get tcp information")
                         log.warn(f" from {self.socktype} socket {self}")
             #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
             # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,

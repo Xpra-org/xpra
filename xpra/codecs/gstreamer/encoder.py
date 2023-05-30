@@ -35,7 +35,7 @@ NVENC = envbool("XPRA_GSTREAMER_NVENC", False)
 NVD3D11 = envbool("XPRA_GSTREAMER_NVD3D11", WIN32)
 FORMATS = os.environ.get("XPRA_GSTREAMER_ENCODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
-assert get_version and init_module and cleanup_module
+log(f"encoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 

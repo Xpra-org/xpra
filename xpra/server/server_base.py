@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Type, Dict, List, Tuple, Callable, Any
+from typing import Type, Dict, List, Tuple, Callable, Any, Optional
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -110,8 +110,8 @@ class ServerBase(ServerBaseClass):
         self._server_sources : Dict = {}
         self.client_properties : Dict[int,Dict] = {}
         self.ui_driver = None
-        self.sharing : bool = None
-        self.lock : bool = None
+        self.sharing : Optional[bool] = None
+        self.lock : Optional[bool] = None
 
         self.idle_timeout : int = 0
         #duplicated from Server Source...
@@ -428,7 +428,7 @@ class ServerBase(ServerBaseClass):
                     os.unlink(sockpath)
                 except OSError as e:
                     sshlog(f"os.unlink({sockpath!r})", exc_info=True)
-                    sshlog.error(f"Error: removing the broken ssh agent symlink")
+                    sshlog.error("Error: removing the broken ssh agent symlink")
                     sshlog.estr(e)
             #perhaps this is a local client,
             #and we can find its agent socket and create the symlink now:

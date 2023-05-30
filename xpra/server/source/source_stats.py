@@ -154,7 +154,6 @@ class GlobalPerformanceStatistics:
         self.avg_congestion_send_speed = int(acss)
         #how often we get congestion events:
         #first chunk it into second intervals
-        min_time = now-10
         cst = tuple(x[0] for x in css)
         cps = []
         for t in range(10):

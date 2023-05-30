@@ -1885,8 +1885,7 @@ class WindowSource(WindowIconSource):
                 speed = self._fixed_speed
             else:
                 speed = self._current_speed
-                if packets_backlog is None:
-                    packets_backlog = self.get_packets_backlog()
+                packets_backlog = self.get_packets_backlog()
                 speed = (speed - packets_backlog*20) * speed_pct // 100
                 speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
@@ -2521,7 +2520,7 @@ class WindowSource(WindowIconSource):
         if decode_time>0:
             self.statistics.client_decode_time.append((monotonic(), width*height, decode_time))
         elif decode_time==WINDOW_DECODE_SKIPPED:
-            pass
+            log(f"client skipped decoding sequence {damage_packet_sequence} for window {self.wid}")
         elif decode_time==WINDOW_NOT_FOUND:
             log.warn("Warning: client cannot find window %i", self.wid)
         elif decode_time==WINDOW_DECODE_ERROR:
@@ -2665,8 +2664,8 @@ class WindowSource(WindowIconSource):
                 return nodata("cancelled")
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
         ret = encoder(coding, image, options)
-        if ret is None:
-            return nodata("encoder %s returned None for %s",
+        if not ret:
+            return nodata("no data from encoder %s for %s",
                           get_encoder_type(encoder), (coding, image, options))
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
@@ -2748,7 +2747,7 @@ class WindowSource(WindowIconSource):
                 warning_key = f"mmap_send({pf})"
                 if first_time(warning_key):
                     log.warn(f"Warning: cannot use mmap to send {pf}")
-                return None
+                return ()
             pf = image.get_pixel_format()
         #write to mmap area:
         data = image.get_pixels()
@@ -2759,7 +2758,7 @@ class WindowSource(WindowIconSource):
         #log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)
         if mmap_data is None:
-            return None
+            return ()
         self.global_statistics.mmap_bytes_sent += len(data)
         self.global_statistics.mmap_free_size = mmap_free_size
         #the data we send is the index within the mmap area:

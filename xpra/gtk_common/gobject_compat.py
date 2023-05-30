@@ -22,7 +22,7 @@ def register_os_signal(callback:Callable, commandtype:str="", signum=signal.SIGI
     from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
     signame = SIGNAMES.get(signum, str(signum))
     def write_signal() -> None:
-        if commandtype is None:
+        if not commandtype:
             return
         try:
             sys.stderr.write("\n")

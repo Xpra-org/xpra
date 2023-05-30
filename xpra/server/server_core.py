@@ -178,11 +178,11 @@ class ServerCore:
         self._rfb_upgrade : int = 0
         self._ssl_attributes : Dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
-        self.ssl_mode : str = None
+        self.ssl_mode : str = ""
         self._html : bool = False
         self._http_scripts : Dict[str,Callable] = {}
-        self._www_dir : str = None
-        self._http_headers_dirs : List[str] = ()
+        self._www_dir : str = ""
+        self._http_headers_dirs : List[str] = []
         self._aliases : Dict = {}
         self.socket_info : Dict = {}
         self.socket_options : Dict = {}
@@ -192,7 +192,7 @@ class ServerCore:
         self._max_connections : int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout : int = SERVER_SOCKET_TIMEOUT
         self._ws_timeout : int = 5
-        self._socket_dir : str = None
+        self._socket_dir : str = ""
         self._socket_dirs : List = []
         self.dbus_pid : int = 0
         self.dbus_env : Dict[str,str] = {}
@@ -704,7 +704,7 @@ class ServerCore:
         #make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
         if www_dir:
-            self._www_dir = www_dir
+            self._www_dir = str(www_dir)
         else:
             dirs = [
                 (get_resources_dir(), "html5"),
@@ -1465,7 +1465,7 @@ class ServerCore:
                 )
             if ENCRYPT_FIRST_PACKET:
                 authlog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
-                password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
+                password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
                 protocol.set_cipher_in(protocol.encryption,
                                        DEFAULT_IV, password,
                                        DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
@@ -1653,7 +1653,7 @@ class ServerCore:
             icon = [icon_data, icon_type]
             event = threading.Event()
             def convert():
-                icon[0] = svg_to_png(None, icon_data, 48, 48)
+                icon[0] = svg_to_png("", icon_data, 48, 48)
                 icon[1] = "png"
                 event.set()
             self.idle_add(convert)
@@ -1852,7 +1852,7 @@ class ServerCore:
     def _log_disconnect(self, _proto:SocketProtocol, *args) -> None:
         netlog.info(*args)
 
-    def _disconnect_proto_info(self, _proto) -> None:
+    def _disconnect_proto_info(self, _proto) -> str:
         #overridden in server_base in case there is more than one protocol
         return ""
 
@@ -2150,7 +2150,6 @@ class ServerCore:
                 return auth_failed("encryption key is missing")
             if padding not in ALL_PADDING_OPTIONS:
                 return auth_failed(f"unsupported padding {padding!r}")
-            ciphers = get_ciphers()
             key_hashes = get_key_hashes()
             if key_hash not in key_hashes:
                 return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
@@ -2187,7 +2186,7 @@ class ServerCore:
                 if v:
                     authlog(f"using password from authenticator {authenticator}")
                     return v
-        return None
+        return b""
 
     def call_hello_oked(self, proto:SocketProtocol, c:typedict, auth_caps:Dict) -> None:
         try:

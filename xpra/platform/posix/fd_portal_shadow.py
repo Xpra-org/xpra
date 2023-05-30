@@ -10,6 +10,7 @@ import random
 from time import monotonic
 from dbus.types import UInt32
 from dbus.types import Dictionary
+from typing import Optional, List
 
 from xpra.exit_codes import ExitCode
 from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
@@ -48,29 +49,29 @@ class PortalShadow(GTKShadowServerBase):
         self.session_path : str = ""
         self.session_handle : str = ""
         self.authenticating_client = None
-        self.capture : Capture = None
+        self.capture : Optional[Capture] = None
         self.portal_interface = get_portal_interface()
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
         #we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
 
 
-    def notify_new_user(self, ss):
+    def notify_new_user(self, ss) -> None:
         log("notify_new_user() start capture")
         super().notify_new_user(ss)
         if not self._window_to_id:
             self.authenticating_client = ss
             self.create_session()
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         super().last_client_exited()
         self.stop_capture()
         self.stop_session()
 
-    def client_auth_error(self, message):
+    def client_auth_error(self, message:str) -> None:
         self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
 
-    def disconnect_authenticating_client(self, reason : ConnectionMessage, message : str):
+    def disconnect_authenticating_client(self, reason : ConnectionMessage, message : str) -> None:
         ac = self.authenticating_client
         if ac:
             self.authenticating_client = None
@@ -78,39 +79,39 @@ class PortalShadow(GTKShadowServerBase):
             self.cleanup_source(ac)
 
 
-    def makeRootWindowModels(self):
+    def makeRootWindowModels(self) -> List:
         log("makeRootWindowModels()")
         return []
 
-    def makeDynamicWindowModels(self):
+    def makeDynamicWindowModels(self) -> List:
         log("makeDynamicWindowModels()")
         return []
 
-    def set_keymap(self, server_source, force=False):
+    def set_keymap(self, server_source, force=False) -> None:
         raise NotImplementedError()
 
 
-    def start_refresh(self, wid):
+    def start_refresh(self, wid:int) -> None:
         self.start_capture()
 
-    def start_capture(self):
+    def start_capture(self) -> None:
         pass
 
-    def setup_capture(self):
+    def setup_capture(self) -> None:
         pass
 
-    def stop_capture(self):
+    def stop_capture(self) -> None:
         c = self.capture
         if c:
             self.capture = None
             c.clean()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         GTKShadowServerBase.cleanup(self)
         self.portal_interface = None
 
 
-    def stop_session(self):
+    def stop_session(self) -> None:
         s = self.session
         if not s:
             return
@@ -122,7 +123,7 @@ class PortalShadow(GTKShadowServerBase):
         except Exception as e:
             log(f"ignoring error closing session {s}: {e}")
 
-    def create_session(self):
+    def create_session(self) -> None:
         global session_counter
         session_counter += 1
         token = f"u{session_counter}"
@@ -137,7 +138,7 @@ class PortalShadow(GTKShadowServerBase):
             options=options,
             )
 
-    def on_create_session_response(self, response, results):
+    def on_create_session_response(self, response, results) -> None:
         r = int(response)
         res = typedict(dbus_to_native(results))
         if r:
@@ -156,11 +157,11 @@ class PortalShadow(GTKShadowServerBase):
         self.session = get_session_interface(self.session_path)
         self.on_session_created()
 
-    def on_session_created(self):
+    def on_session_created(self) -> None:
         self.select_devices()
 
 
-    def select_devices(self):
+    def select_devices(self) -> None:
         log("select_devices()")
         options = {
             "types" : UInt32(AvailableDeviceTypes.KEYBOARD + AvailableDeviceTypes.POINTER),
@@ -171,7 +172,7 @@ class PortalShadow(GTKShadowServerBase):
             self.session_handle,
             options=options)
 
-    def on_select_devices_response(self, response, results):
+    def on_select_devices_response(self, response, results) -> None:
         r = int(response)
         res = dbus_to_native(results)
         if r:
@@ -183,7 +184,7 @@ class PortalShadow(GTKShadowServerBase):
         self.select_sources()
 
 
-    def select_sources(self):
+    def select_sources(self) -> None:
         options = {
             "multiple"  : self.multi_window,
             "types"     : UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
@@ -195,7 +196,7 @@ class PortalShadow(GTKShadowServerBase):
             self.session_handle,
             options=options)
 
-    def on_select_sources_response(self, response, results):
+    def on_select_sources_response(self, response, results) -> None:
         r = int(response)
         res = typedict(dbus_to_native(results))
         if r:
@@ -207,7 +208,7 @@ class PortalShadow(GTKShadowServerBase):
         self.portal_start()
 
 
-    def portal_start(self):
+    def portal_start(self) -> None:
         log("portal_start()")
         remotedesktop_dbus_call(
             self.portal_interface.Start,
@@ -215,7 +216,7 @@ class PortalShadow(GTKShadowServerBase):
             self.session_handle,
             "")
 
-    def on_start_response(self, response, results):
+    def on_start_response(self, response, results) -> None:
         r = int(response)
         res = typedict(dbus_to_native(results))
         log(f"start response: {res}")
@@ -240,7 +241,7 @@ class PortalShadow(GTKShadowServerBase):
             log.warn(" keyboard and pointer events cannot be forwarded")
 
 
-    def create_capture_pipeline(self, fd : int, node_id : int, w : int, h : int):
+    def create_capture_pipeline(self, fd : int, node_id : int, w : int, h : int) -> Capture:
         el = get_element_str("pipewiresrc", {
             "fd" : fd,
             "path" : str(node_id),
@@ -259,7 +260,7 @@ class PortalShadow(GTKShadowServerBase):
                     log.info(f"cannot use {encoding}: {e}")
         return Capture(el, pixel_format="BGRX", width=w, height=h)
 
-    def start_pipewire_capture(self, node_id, props):
+    def start_pipewire_capture(self, node_id, props) -> None:
         log(f"start_pipewire_capture({node_id}, {props})")
         if not isinstance(node_id, int):
             raise ValueError(f"node-id is a {type(node_id)}, must be an int")
@@ -291,7 +292,7 @@ class PortalShadow(GTKShadowServerBase):
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, coding, data, client_info):
+    def capture_new_image(self, capture, coding, data, client_info) -> None:
         wid = capture.node_id
         model = self._id_to_window.get(wid)
         log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")
@@ -325,7 +326,7 @@ class PortalShadow(GTKShadowServerBase):
             ws.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 
-    def capture_error(self, capture, message):
+    def capture_error(self, capture, message) -> None:
         wid = capture.node_id
         log(f"capture_error({capture}, {message}) wid={wid}")
         log.error("Error capturing screen:")
@@ -336,6 +337,6 @@ class PortalShadow(GTKShadowServerBase):
         for ss in tuple(self._server_sources.values()):
             ss.may_notify(NotificationID.FAILURE, "Session Capture Failed", str(message))
 
-    def capture_state_changed(self, capture, state):
+    def capture_state_changed(self, capture, state) -> None:
         wid = capture.node_id
         log(f"screencast capture state changed for model {wid}: {state!r}")

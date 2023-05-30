@@ -63,7 +63,7 @@ SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED",
 SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
 SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
-def parse_scaling_options_str(scaling_options_str) -> tuple:
+def parse_scaling_options_str(scaling_options_str) -> Tuple:
     if not scaling_options_str:
         return SCALING_OPTIONS
     #parse 1/10,1/5,1/4,1/3,1/2,2/3,1/1
@@ -1299,7 +1299,7 @@ class WindowVideoSource(WindowSource):
         #everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings : Tuple[str,...], width : int, height : int, src_format : str) -> tuple:
+    def get_video_pipeline_options(self, encodings : Tuple[str,...], width : int, height : int, src_format : str) -> Tuple:
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
@@ -1879,7 +1879,7 @@ class WindowVideoSource(WindowSource):
 
 
     def make_draw_packet(self, x : int, y : int, w : int, h : int,
-                         coding : str, data, outstride : int, client_options, options) -> tuple:
+                         coding : str, data, outstride : int, client_options, options) -> Tuple:
         #overridden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
@@ -2088,7 +2088,6 @@ class WindowVideoSource(WindowSource):
                 quality = min(100, quality + max(60, match_pct)//2)
                 options["quality"] = quality
             nsstart = monotonic()
-            client_options = options.copy()
             for sy, sh in non_scroll.items():
                 substart = monotonic()
                 sub = image.get_sub_image(0, sy, w, sh)
@@ -2169,7 +2168,7 @@ class WindowVideoSource(WindowSource):
         super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
 
-    def video_fallback(self, image : ImageWrapper, options, warn=False) -> tuple:
+    def video_fallback(self, image : ImageWrapper, options, warn=False) -> Tuple:
         if warn and first_time(f"non-video-{self.wid}"):
             videolog.warn("Warning: using non-video fallback encoding")
             videolog.warn(f" for {image} of window {self.wid}")
@@ -2179,17 +2178,17 @@ class WindowVideoSource(WindowSource):
         log("fallback encodings(%s, %s)=%s", self.non_video_encodings, self.video_fallback_encodings, fallback_encodings)
         encoding = self.do_get_auto_encoding(w, h, options, None, fallback_encodings)
         if not encoding:
-            return None
+            return ()
         encode_fn = self.video_fallback_encodings[encoding][0]
         return encode_fn(encoding, image, options)
 
-    def video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> tuple:
+    def video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> Tuple:
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> tuple:
+    def do_video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> Tuple:
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -2204,7 +2203,7 @@ class WindowVideoSource(WindowSource):
         stride = image.get_rowstride()
         if self.pixel_format!=src_format:
             if self.is_cancelled():
-                return None
+                return ()
             videolog.warn("Warning: image pixel format unexpectedly changed from %s to %s",
                           self.pixel_format, src_format)
             self.pixel_format = src_format
@@ -2238,7 +2237,7 @@ class WindowVideoSource(WindowSource):
 
         if self.may_use_scrolling(image, options):
             #scroll encoding has dealt with this image
-            return None
+            return ()
 
         if not self.common_video_encodings:
             #we have to send using a non-video encoding as that's all we have!
@@ -2253,10 +2252,10 @@ class WindowVideoSource(WindowSource):
 
         vh = self.video_helper
         if vh is None:
-            return None         #shortcut when closing down
+            return ()         #shortcut when closing down
         if not self.check_pipeline(encoding, w, h, src_format):
             if self.is_cancelled():
-                return None
+                return ()
             #just for diagnostics:
             supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
             encoder_specs = vh.get_encoder_specs(encoding)
@@ -2318,15 +2317,15 @@ class WindowVideoSource(WindowSource):
             if csce:
                 videolog.error(" csc %s:", csce.get_type())
                 print_nested_dict(csce.get_info(), prefix="   ", print_fn=videolog.error)
-            return None
+            return ()
         finally:
             if image!=csc_image:
                 self.free_image_wrapper(csc_image)
             del csc_image
-        if ret is None:
+        if ret is ():
             if not self.is_cancelled():
                 videolog.error("Error: %s video compression failed", encoding)
-            return None
+            return ()
         data, client_options = ret
         end = monotonic()
         if LOG_ENCODERS or compresslog.is_debug_enabled():
@@ -2373,7 +2372,7 @@ class WindowVideoSource(WindowSource):
                     #and skip painting this video frame when it does come out:
                     self.start_video_frame = delayed
                     return self.video_fallback(image, options)
-                return None
+                return ()
         else:
             #there are no delayed frames,
             #make sure we timeout the encoder if no new frames come through:
@@ -2384,7 +2383,7 @@ class WindowVideoSource(WindowSource):
                             (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         if not data:
             videolog.error("Error: %s video data is missing", encoding)
-            return None
+            return ()
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
 
     def cancel_video_encoder_flush(self) -> None:
@@ -2488,7 +2487,7 @@ class WindowVideoSource(WindowSource):
         self.video_context_clean()
 
 
-    def csc_image(self, image, width, height) -> tuple:
+    def csc_image(self, image, width, height) -> Tuple:
         """
             Takes a source image and converts it
             using the current csc_encoder.

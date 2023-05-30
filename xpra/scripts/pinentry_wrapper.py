@@ -84,7 +84,7 @@ def do_run_pinentry(proc, get_input:Callable, process_output:Callable):
         try:
             line = proc.stdout.readline()
             while process_output(message, line):
-                pass
+                "process_output should eventually return False or None"
             message = get_input()
             if message is None:
                 break

@@ -92,7 +92,7 @@ class SplashScreen(Gtk.Window):
         self.pulse_counter = 0
         self.current_label_text = None
         self.add(vbox)
-        install_signal_handlers(None, self.handle_signal)
+        install_signal_handlers("", self.handle_signal)
         SIGPIPE = getattr(signal, "SIGPIPE", None)
         if SIGPIPE: #ie: POSIX
             signal.signal(SIGPIPE, self.handle_signal)

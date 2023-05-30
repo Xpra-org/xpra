@@ -19,7 +19,7 @@ UNKNOWN = b""
 unknown = c_char_p(UNKNOWN)
 
 
-def check_host(peername, host):
+def check_host(peername:str, host:str) -> bool:
     libwrap = CDLL(LIBWRAP)
     assert libwrap
     hosts_ctl = libwrap.hosts_ctl

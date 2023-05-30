@@ -74,7 +74,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             self.password_input.grab_focus()
         GLib.idle_add(show)
 
-    def run(self):
+    def run(self) -> str:
         r = super().run()
         if r==0:
             return self.get_password()
@@ -95,7 +95,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
     def password_changed(self, *_args):
         self.password = self.password_input.get_text()
 
-    def get_password(self):
+    def get_password(self) -> str:
         return self.password
 
 

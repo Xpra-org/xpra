@@ -196,7 +196,7 @@ class RFBProtocol:
         try:
             log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
-                pass
+                "wait for an exit condition"
             log(f"io_thread_loop({name}, {callback}) loop ended, closed={self._closed}")
         except ConnectionClosedException:
             log(f"{self._conn} closed", exc_info=True)

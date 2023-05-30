@@ -542,7 +542,6 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
             main_key = set((keysym, index) for keysym, index in entries if index==0)
             if len(main_key)==1:
                 for p_keycode, p_entries in preserve_keycode_matches.items():
-                    p_keysyms = set(keysym for keysym,_ in p_entries)
                     if main_key.issubset(p_entries):
                         l("found main key superset for %s : %s", main_key, tuple(p_entries))
                         return do_assign(client_keycode, p_keycode, p_entries, override_server_keycode=True)

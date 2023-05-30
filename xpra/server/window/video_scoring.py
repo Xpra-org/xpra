@@ -124,7 +124,6 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
     #runtime codec adjustments:
     runtime_score = 100
     #score for "edge resistance" via setup cost:
-    ecsc_score = 100
 
     csc_width = 0
     csc_height = 0

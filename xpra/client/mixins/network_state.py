@@ -62,7 +62,7 @@ class NetworkState(StubClientMixin):
         self.server_session_name : str = ""
 
         #info requests
-        self.server_last_info : Dict = None
+        self.server_last_info : Dict = {}
         self.info_request_pending : bool = False
 
         #network state:

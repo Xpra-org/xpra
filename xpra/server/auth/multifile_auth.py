@@ -6,14 +6,17 @@
 #authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
+from typing import Dict, List, Tuple
+
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.os_util import strtobytes, bytestostr, hexstr
 from xpra.util import parse_simple_dict, typedict
 from xpra.net.digest import verify_digest
 
+AuthLine = Tuple[str,str,int,int,List[str],Dict[str,str],Dict[str,str]]
 
-def parse_auth_line(line):
+def parse_auth_line(line:bytes) -> AuthLine:
     ldata = line.split(b"|")
     if len(ldata)<2:
         raise ValueError(f"not enough fields: {len(ldata)}")
@@ -33,9 +36,9 @@ def parse_auth_line(line):
     env_options = {}
     session_options = {}
     if len(ldata)>=6:
-        env_options = parse_simple_dict(ldata[5], b";")
+        env_options = parse_simple_dict(bytestostr(ldata[5]), ";")
     if len(ldata)>=7:
-        session_options = parse_simple_dict(ldata[6], b";")
+        session_options = parse_simple_dict(bytestostr(ldata[6]), ";")
     return username, password, uid, gid, displays, env_options, session_options
 
 
@@ -46,7 +49,7 @@ class Authenticator(FileAuthenticatorBase):
         super().__init__(**kwargs)
         self.sessions = None
 
-    def parse_filedata(self, data):
+    def parse_filedata(self, data) -> Dict[str,AuthLine]:
         if not data:
             return {}
         auth_data = {}

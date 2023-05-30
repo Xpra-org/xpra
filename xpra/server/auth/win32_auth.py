@@ -31,7 +31,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         #fugly: keep hold of the password so the win32 proxy can use it
-        self.password = None
+        self.password = ""
 
     def get_uid(self):
         return 0
@@ -39,7 +39,7 @@ class Authenticator(SysAuthenticator):
     def get_gid(self):
         return 0
 
-    def get_password(self):
+    def get_password(self) -> str:
         return self.password
 
     def get_challenge(self, digests):

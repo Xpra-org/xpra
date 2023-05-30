@@ -29,7 +29,7 @@ class Authenticator(SysAuthenticator):
         self.check_peercred(connection, uids, gids, allow_owner)
         super().__init__(**kwargs)
 
-    def check_peercred(self, connection, uids="", gids="", allow_owner=False):
+    def check_peercred(self, connection, uids="", gids="", allow_owner:bool=False):
         allow_uids = allow_gids = None
         if uids or allow_owner:
             allow_uids = []
@@ -93,14 +93,14 @@ class Authenticator(SysAuthenticator):
             log.error("Error: cannot get peer uid")
             log.estr(e)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return self.uid
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return self.gid
 
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return False
 
     def authenticate(self, caps : typedict) -> bool:    #pylint: disable=arguments-differ

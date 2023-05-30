@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import re
 import sys
+from typing import Dict
 
 from xpra.server.auth.sys_auth_base import log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
-def url_path_to_dict(path):
+def url_path_to_dict(path:str) -> Dict[str,str]:
     pattern = (r'^'
                r'((?P<schema>.+?)://)?'
                r'((?P<user>.+?)(:(?P<password>.*?))?@)?'
@@ -23,10 +24,9 @@ def url_path_to_dict(path):
                )
     regex = re.compile(pattern)
     m = regex.match(path)
-    d = m.groupdict() if m is not None else None
-    return d
+    return m.groupdict() if m is not None else None
 
-def db_from_uri(uri):
+def db_from_uri(uri:str):
     d = url_path_to_dict(uri)
     log("settings for uri=%s : %s", uri, d)
     import mysql.connector as mysql  #@UnresolvedImport pylint: disable=import-outside-toplevel

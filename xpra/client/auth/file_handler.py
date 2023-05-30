@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,9 +24,9 @@ class Handler:
         return "file"
 
     def get_digest(self) -> str:
-        return None
+        return ""
 
-    def handle(self, challenge, digest, prompt) -> bool:  # pylint: disable=unused-argument
+    def handle(self, challenge, digest:str, prompt:str):  # pylint: disable=unused-argument
         log("handle(..) password_file=%s", self.password_file)
         if not self.password_file:
             return None

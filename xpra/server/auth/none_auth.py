@@ -19,8 +19,8 @@ class Authenticator(SysAuthenticator):
     def get_challenge(self, _digests):
         return None
 
-    def get_password(self):
-        return None
+    def get_password(self) -> str:
+        return ""
 
     def authenticate(self, caps : typedict) -> bool:
         return True

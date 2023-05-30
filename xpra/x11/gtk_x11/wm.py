@@ -247,10 +247,10 @@ class Wm(GObject.GObject):
             if xid==wxid:
                 continue
             if X11Window.is_override_redirect(xid):
-                log(f"skipping %s", window_info(xid))
+                log("skipping %s", window_info(xid))
                 continue
             if not X11Window.is_mapped(xid):
-                log(f"skipping %s", window_info(xid))
+                log("skipping %s", window_info(xid))
                 continue
             log(f"Wm managing pre-existing child window {xid:x}")
             self._manage_client(xid)
@@ -500,6 +500,6 @@ class Wm(GObject.GObject):
         except Exception as e:
             log.error("Error querying _NET_WM_NAME")
             log.estr(e)
-            return None
+            return ""
 
 GObject.type_register(Wm)

@@ -158,7 +158,7 @@ def guess_content_type_from_defs(window) -> str:
                     log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s",
                         window, prop_name, regex_str, content_type)
                     return content_type
-    return None
+    return ""
 
 ################################################################
 # `content-categories` mapping:

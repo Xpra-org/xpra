@@ -432,7 +432,7 @@ class InfoTimerClient(MonitorXpraClient):
 
     def run(self):
         from xpra.gtk_common.gobject_compat import register_os_signals
-        register_os_signals(self.signal_handler, None)
+        register_os_signals(self.signal_handler, "")
         v = super().run()
         self.log("run()=%s" % v)
         self.cleanup()

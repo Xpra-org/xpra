@@ -186,7 +186,7 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, ims
 
 def create_runtime_dir(xrd, uid, gid) -> str:
     if not POSIX or OSX or getuid()!=0 or (uid==0 and gid==0):
-        return
+        return ""
     #workarounds:
     #* some distros don't set a correct value,
     #* or they don't create the directory for us,
@@ -202,7 +202,7 @@ def create_runtime_dir(xrd, uid, gid) -> str:
         if os.path.exists(run_user):
             xrd = os.path.join(run_user, str(uid))
     if not xrd:
-        return None
+        return ""
     if not os.path.exists(xrd):
         os.mkdir(xrd, 0o700)
         if POSIX:

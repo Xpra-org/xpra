@@ -44,14 +44,14 @@ class Authenticator(SysAuthenticator):
             totp_uri = pyotp.totp.TOTP(self.secret).provisioning_uri(self.username, issuer_name=self.issuer_name)
             log("provisioning_uri=%s", totp_uri)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return self.uid
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return self.gid
 
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return True
 
     def get_challenge(self, digests):

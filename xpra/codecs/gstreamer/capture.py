@@ -28,7 +28,7 @@ Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
 
-assert get_version and get_type and init_module and cleanup_module
+log(f"capture: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 
 class Capture(Pipeline):

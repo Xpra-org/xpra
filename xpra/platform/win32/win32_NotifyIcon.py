@@ -232,7 +232,7 @@ class win32NotifyIcon:
         title = bytestostr(self.title[:MAX_TIP_SIZE-1])
         try:
             nid.szTip = title
-        except:
+        except (TypeError, ValueError):
             nid.szTip = title.encode()
         nid.dwState = 0
         nid.dwStateMask = 0
@@ -520,8 +520,6 @@ def main():
             except Exception as e:
                 print("could not find icon: %s" % (e,))
                 icon = None
-            else:
-                pass
             notify(hwnd, 0, "hello", "world", timeout=1000, icon=icon)
         elif cid == 1025:
             print("Goodbye")

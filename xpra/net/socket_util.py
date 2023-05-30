@@ -637,9 +637,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, session_dir,
                     if not os.path.exists(sockpath):
                         os.makedirs(sockpath)
                     sockpath = norm_makepath(sockpath, display_name)
-                elif os.path.isabs(sockpath):
-                    pass
-                else:
+                elif not os.path.isabs(sockpath):
                     sockpath = dotxpra.socket_path(sockpath)
                 sockpaths[sockpath] = options
             if not sockpaths:

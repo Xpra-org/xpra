@@ -367,7 +367,7 @@ class UIXpraClient(ClientBaseClass):
             self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             #show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
-            self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
+            self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, title, *info)
         self.cleanup()
 
     def server_disconnect(self, reason:str, *info) -> None:

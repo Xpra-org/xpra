@@ -259,7 +259,7 @@ def load_xdg_entry(de) -> Dict[str,Any]:
         "Categories", "StartupNotify", "StartupWMClass", "URL",
         ))
     if props.get("NoDisplay", False) or props.get("Hidden", False):
-        return None
+        return {}
     if de.getTryExec():
         try:
             command = de.findTryExec()
@@ -272,9 +272,9 @@ def load_xdg_entry(de) -> Dict[str,Any]:
         return None
     props["command"] = command
     if not EXPORT_SELF and command and command.find("xpra")>=0:
-        return None
+        return {}
     if not EXPORT_TERMINAL_APPLICATIONS and props.get("Terminal", False):
-        return None
+        return {}
     icondata = props.get("IconData")
     if not icondata:
         #try harder:

@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Optional
 from gi.repository import GObject, GLib  # @UnresolvedImport
 
 from xpra.scripts.config import InitExit
@@ -23,7 +24,7 @@ class EVDIModel(RootWindowModel):
     def __repr__(self):
         return f"EVDIModel({self.capture} : {self.geometry})"
 
-    def get_image(self, x, y, width, height) -> ImageWrapper:
+    def get_image(self, x, y, width, height) -> Optional[ImageWrapper]:
         dev = self.capture.evdi_device
         log.warn(f"get_image({x}, {y}, {width}, {height}) using {self.capture}, device={dev}")
         #import traceback
@@ -53,7 +54,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         self.fd_watch = None
         self.last_damage = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         ShadowX11Server.init(self, opts)
         # pylint: disable=import-outside-toplevel
         from xpra.codecs.evdi.load import load_evdi_module
@@ -64,7 +65,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
             raise InitExit(ExitCode.DEVICE_NOT_FOUND, "no evdi devices found")
 
 
-    def no_windows(self):
+    def no_windows(self) -> None:
         pass
         #self.cancel_refresh_timer()
         #self.cancel_poll_pointer()
@@ -162,7 +163,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         pass
 
 
-    def makeRootWindowModels(self):
+    def makeRootWindowModels(self) - Tuple[EVDIModel,...]:
         #TODO: remove root window
         root = get_default_root_window()
         geom = (0, 0, 800, 600) 

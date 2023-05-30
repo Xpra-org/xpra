@@ -488,7 +488,7 @@ class ProxyServer(ServerCore):
         log("server connection=%s", server_conn)
 
         cipher = cipher_mode = None
-        encryption_key = None
+        encryption_key = b""
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:

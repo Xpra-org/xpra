@@ -40,7 +40,7 @@ def do_verify_packet(tree, packet):
             if not do_verify_packet(new_tree(f"value for key={k!r}"), v):
                 r = False
     elif isinstance(packet, (int, bool, str, bytes, memoryview)):
-        pass
+        "OK - supported"
     else:
         err(f"unsupported type: {type(packet)}")
         r = False

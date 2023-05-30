@@ -486,30 +486,26 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log.info("cannot check SSHFP DNS records")
                     log.info(" %s", e)
             log("dnscheck=%s", dnscheck)
-            def adddnscheckinfo(q):
+            def adddnscheckinfo(q : List[str]):
                 if dnscheck is not True:
                     if dnscheck:
-                        q += [
-                            "SSHFP validation failed:",
-                            dnscheck
-                            ]
+                        q.append("SSHFP validation failed:")
+                        q.append(str(dnscheck))
                     else:
-                        q += [
-                            "SSHFP validation failed"
-                            ]
+                        q.append("SSHFP validation failed")
             if dnscheck is True:
                 #DNSSEC provided a matching record
                 log.info("found a valid SSHFP record for host %s", host)
             elif known_host_key:
                 log.warn("Warning: SSH server key mismatch")
-                qinfo = [
-"WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
-"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
-"Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
-"It is also possible that a host key has just been changed.",
-f"The fingerprint for the {keyname()} key sent by the remote host is",
-keymd5(host_key),
-]
+                qinfo : List[str] = [
+                    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+                    "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
+                    "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
+                    "It is also possible that a host key has just been changed.",
+                    f"The fingerprint for the {keyname()} key sent by the remote host is",
+                    keymd5(host_key),
+                    ]
                 adddnscheckinfo(qinfo)
                 if configbool("stricthostkeychecking", VERIFY_STRICT):
                     log.warn("Host key verification failed.")
@@ -562,7 +558,7 @@ keymd5(host_key),
                             log(f"creating known host file {host_keys_filename!r}")
                             with umask_context(0o133):
                                 with open(host_keys_filename, "ab+"):
-                                    pass
+                                    "file has been created"
                     host_keys.add(host, host_key.get_name(), host_key)
                     host_keys.save(host_keys_filename)
                 except OSError as e:

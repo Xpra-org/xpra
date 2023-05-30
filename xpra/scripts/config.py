@@ -1221,14 +1221,14 @@ def parse_with_unit(numtype, v, subunit="bps", min_value:int=250000):
         unit = r.group(2).lower()
         if unit.endswith(subunit):
             unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
-        if unit=="b":
-            pass
-        elif unit=="k":
+        if unit=="k":
             f *= 1000
         elif unit=="m":
             f *= 1000000
         elif unit=="g":
             f *= 1000000000
+        elif unit!="b":
+            raise ValueError(f"unknown unit {unit}")
         if min_value is not None:
             assert f>=min_value, "value is too low"
         return int(f)

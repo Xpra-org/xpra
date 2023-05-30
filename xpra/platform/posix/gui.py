@@ -6,6 +6,7 @@
 
 import os
 import sys
+from typing import List, Optional, Type
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
@@ -68,12 +69,12 @@ XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
-def gl_check():
+def gl_check() -> str:
     if not is_X11() and is_Wayland():
         return "disabled under wayland with GTK3 (buggy)"
     if is_X11() and not x11_bindings():
         return "X11 bindings are missing"
-    return None
+    return ""
 
 
 def get_wm_name():
@@ -105,18 +106,18 @@ def get_clipboard_native_class():
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
-def get_native_system_tray_classes():
+def get_native_system_tray_classes() -> List[Optional[Type]]:
     c = [_try_load_appindicator()]
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def get_native_tray_classes():
+def get_native_tray_classes() -> List[Optional[Type]]:
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = [_try_load_appindicator()]
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def _try_load_appindicator() -> type:
+def _try_load_appindicator() -> Optional[Type]:
     if not USE_NATIVE_TRAY:
         return None
     try:

@@ -7,7 +7,7 @@ import os
 import sys
 from time import monotonic
 from collections import namedtuple
-from typing import Dict
+from typing import Dict, List
 
 from xpra.gst_common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
@@ -220,7 +220,7 @@ def run_audio(mode, error_cb, options, args):
                 ss.stop()
 
 
-def _add_debug_args(command):
+def _add_debug_args(command:List[str]):
     from xpra.log import debug_enabled_categories
     debug = list(SUBPROCESS_DEBUG)
     for f in ("audio", "gstreamer"):
@@ -228,7 +228,8 @@ def _add_debug_args(command):
             debug.append(f)
     if debug:
         #forward debug flags:
-        command += ["-d", ",".join(debug)]
+        command.append("--debug")
+        command.append(",".join(debug))
 
 
 class audio_subprocess_wrapper(subprocess_caller):

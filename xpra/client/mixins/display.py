@@ -521,7 +521,6 @@ class DisplayClient(StubClientMixin):
         if "configure-display" in self.server_packet_types:
             #new packet format:
             root_w, root_h = screen_settings[:2]
-            sss = screen_settings[2]
             ndesktops, desktop_names = screen_settings[3:5]
             u_root_w, u_root_h = screen_settings[5:7]
             xdpi, ydpi = screen_settings[7:9]

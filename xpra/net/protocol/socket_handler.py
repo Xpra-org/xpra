@@ -222,7 +222,7 @@ class SocketProtocol:
     def __repr__(self):
         return f"Protocol({self._conn})"
 
-    def get_threads(self) -> Thread:
+    def get_threads(self) -> Tuple[Thread,...]:
         return tuple(x for x in (
             self._write_thread,
             self._read_thread,
@@ -607,7 +607,7 @@ class SocketProtocol:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:
             if self._closed:
-                return [], 0
+                return []
             log.error(f"Error: failed to encode packet: {packet}", exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
@@ -651,7 +651,7 @@ class SocketProtocol:
         try:
             log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
-                pass
+                "wait for an exit condition"
             log(f"io_thread_loop({name}, {callback}) loop ended, closed={self._closed}")
         except ConnectionClosedException as e:
             log(f"{self._conn} closed in {name} loop", exc_info=True)

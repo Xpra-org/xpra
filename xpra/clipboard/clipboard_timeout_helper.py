@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -41,7 +41,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     def make_proxy(self, selection:str):
         raise NotImplementedError()
 
-    def _get_proxy(self, selection:str) -> ClipboardProxyCore:
+    def _get_proxy(self, selection:str) -> Optional[ClipboardProxyCore]:
         proxy = self._clipboard_proxies.get(selection)
         if not proxy:
             log.warn("Warning: no clipboard proxy for '%s'", selection)

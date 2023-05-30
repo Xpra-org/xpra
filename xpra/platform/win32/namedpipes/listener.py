@@ -148,7 +148,7 @@ class NamedPipeListener(Thread):
                 err : int = GetLastError()
                 log("GetLastError()=%s (%i)", FormatMessageSystem(err).rstrip("\n\r"), err)
                 if err==ERROR_PIPE_CONNECTED:
-                    pass
+                    "non-zero, but OK!"
                 elif err==ERROR_IO_PENDING:
                     while not self.exit_loop:
                         r = WaitForSingleObject(event, INFINITE)

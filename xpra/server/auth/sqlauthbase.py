@@ -79,14 +79,14 @@ class DatabaseUtilBase:
                "session_options VARCHAR(8191))")
         self.exec_database_sql_script(None, sql)
 
-    def add_user(self, username, password, uid=getuid(), gid=getgid(),
+    def add_user(self, username:str, password:str, uid=getuid(), gid=getgid(),
                  displays="", env_options="", session_options=""):
         sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "+\
               "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,)*7)
         self.exec_database_sql_script(None, sql,
                                         (username, password, uid, gid, displays, env_options, session_options))
 
-    def remove_user(self, username, password=None):
+    def remove_user(self, username:str, password:str=""):
         sql = "DELETE FROM users WHERE username=%s" % self.param
         sqlargs = (username, )
         if password:
@@ -125,7 +125,7 @@ class DatabaseUtilBase:
         sql = "SELECT %s FROM users" % csv(fields)
         self.exec_database_sql_script(cursor_callback, sql)
 
-    def authenticate(self, username, password):
+    def authenticate(self, username:str, password:str):
         auth_class = self.get_authenticator_class()
         a = auth_class(username, self.uri)
         passwords = a.get_passwords()

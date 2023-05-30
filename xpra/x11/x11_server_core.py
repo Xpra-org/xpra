@@ -814,11 +814,11 @@ class X11ServerCore(GTKServerBase):
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         screenlog("%i sources=%s", len(sss), sss)
         if len(sss)!=1:
-            return None
+            return {}
         ss = sss[0]
         mdef = ss.get_monitor_definitions()
         if not mdef:
-            return None
+            return {}
         screenlog(f"monitor definition from client {ss}: {mdef}")
         from xpra.common import adjust_monitor_refresh_rate
         mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)

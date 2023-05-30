@@ -279,7 +279,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.texture_size : Tuple[int,int] = 0, 0
         self.gl_setup : bool = False
         self.debug_setup : bool = False
-        self.border : WindowBorder = None
+        self.border : WindowBorder = WindowBorder(shown=False)
         self.paint_screen : bool = False
         self.paint_spinner : bool = False
         self.offscreen_fbo = None
@@ -979,7 +979,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.fps_refresh_timer = GLib.timeout_add(1000, self.with_gl_context, refresh_screen)
 
 
-    def validate_cursor(self) -> None:
+    def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data
         cw = cursor_data[3]
         ch = cursor_data[4]

@@ -265,7 +265,7 @@ class SystemTray(GObject.GObject):
         set_tray_window(tray_window, xid)
         self.tray_windows[window] = tray_window
         self.window_trays[xid] = window
-        log(f"showing tray window, resizing and reparenting")
+        log("showing tray window, resizing and reparenting")
         tray_window.show()
         window.resize(w, h)
         X11Window.Withdraw(xid)

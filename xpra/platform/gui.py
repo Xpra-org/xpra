@@ -265,8 +265,8 @@ def pointer_ungrab(_window):
     return False
 
 
-def gl_check():
-    return None     #no problem
+def gl_check() -> str:
+    return ""     #no problem
 
 def get_wm_name():
     return None

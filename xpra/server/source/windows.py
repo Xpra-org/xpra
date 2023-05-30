@@ -674,7 +674,7 @@ class WindowsMixin(StubSourceMixin):
                 self.may_notify(nid, summary, body, actions, hints,
                                 icon_name="connect", user_callback=self.congestion_notification_callback)
 
-    def congestion_notification_callback(self, nid:int, action_id:int):
+    def congestion_notification_callback(self, nid:int, action_id:str):
         bandwidthlog("congestion_notification_callback(%i, %s)", nid, action_id)
         if action_id=="lower-bandwidth":
             bandwidth_limit = 50*1024*1024

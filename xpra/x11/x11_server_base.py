@@ -31,7 +31,7 @@ X11Keyboard = X11KeyboardBindings()
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
-def root_prop_set(prop_name:str, prop_type:str, value) -> None:
+def root_prop_set(prop_name:str, prop_type, value) -> None:
     # pylint: disable=import-outside-toplevel
     prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 
@@ -63,7 +63,7 @@ class X11ServerBase(X11ServerCore):
 
     def __init__(self):
         super().__init__()
-        self._default_xsettings : Tuple[int,List[Tuple]] = {}
+        self._default_xsettings : Tuple[int,List[Tuple]] = (0, [])
         self._settings : Dict[str,Any] = {}
         self.double_click_time : int = 0
         self.double_click_distance : int = 0

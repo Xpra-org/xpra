@@ -24,7 +24,7 @@ from xpra.log import Logger
 
 log = Logger("decoder", "gstreamer")
 
-assert get_version and get_type and init_module and cleanup_module
+log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 
 def get_default_mappings():

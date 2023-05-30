@@ -108,8 +108,8 @@ class SysAuthenticatorBase:
             return (p,)
         return ()
 
-    def get_password(self):
-        return None
+    def get_password(self) -> str:
+        return ""
 
     def check(self, _password) -> bool:
         return False
@@ -121,7 +121,7 @@ class SysAuthenticatorBase:
             log("authentication challenge passed for %s", self)
         return r
 
-    def validate_caps(self, caps : typedict):
+    def validate_caps(self, caps : typedict) -> bool:
         if self.passed:
             log("invalid state: challenge has already been passed")
             return False

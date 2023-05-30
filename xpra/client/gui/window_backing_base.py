@@ -319,10 +319,9 @@ class WindowBackingBase:
         elif g==Gravity.SouthEast:
             sx, dx = east_x()
             sy, dy = south_y()
-        elif g==Gravity.Static:
-            if first_time(f"Gravity.Static-{self.wid}"):
-                log.warn(f"Warning: window {self.wid} requested static gravity")
-                log.warn(" this is not implemented yet")
+        elif g==Gravity.Static and first_time(f"Gravity.Static-{self.wid}"):
+            log.warn(f"Warning: window {self.wid} requested static gravity")
+            log.warn(" this is not implemented yet")
         w = min(bw, oldw)
         h = min(bh, oldh)
         return sx, sy, dx, dy, w, h

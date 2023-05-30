@@ -17,6 +17,7 @@ from xpra.os_util import strtobytes
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
+from mypy.argmap import ArgTypeExpander
 
 log = Logger("notify", "win32")
 
@@ -148,11 +149,11 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     nid.guidItem = XPRA_GUID
     try:
         nid.szInfo = szInfo
-    except:
+    except (ValueError, TypeError):
         nid.szInfo = szInfo.decode()
     try:
         nid.szInfoTitle = szInfoTitle
-    except:
+    except (ValueError, TypeError):
         nid.szInfoTitle = szInfoTitle.decode()
     nid.uVersion = timeout
     nid.dwInfoFlags = NIIF_INFO

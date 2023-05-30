@@ -128,7 +128,7 @@ class QRCodeWindow(Gtk.Window):
             hbox.add(vbox)
         self.add(hbox)
         add_close_accel(self, self.exit)
-        install_signal_handlers(None, self.handle_signal)
+        install_signal_handlers("", self.handle_signal)
 
     def handle_signal(self, signum, frame=None):
         log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)

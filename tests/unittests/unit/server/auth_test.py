@@ -131,7 +131,7 @@ class TestAuth(unittest.TestCase):
         c, mac = a.get_challenge(get_digests())
         assert a.get_uid()==-1
         assert a.get_gid()==-1
-        assert a.get_password() is None
+        assert not a.get_password()
         assert c and mac
         assert not a.get_sessions()
         assert not a.get_passwords()

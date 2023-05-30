@@ -220,9 +220,6 @@ class SessionInfo(Gtk.Window):
               )
         csrow("Build date", make_datetime(cl_date, cl_time),
               make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time")))
-        gtk_version_info = get_gtk_version_info()
-        def client_vinfo(prop, fallback="unknown"):
-            return make_version_str(newdictlook(gtk_version_info, (prop, "version"), fallback))
         def server_vinfo(lib):
             rlv = getattr(self.client, "_remote_lib_versions", {})
             return make_version_str(rlv.get(lib, ""))

@@ -121,7 +121,7 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
         if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
             if self.client_clipboard_direction=="disabled":
-                pass
+                log("client clipboard is disabled")
             elif self.server_clipboard_direction=="disabled":
                 log.warn("Warning: server clipboard synchronization is currently disabled")
                 self.client_clipboard_direction = "disabled"

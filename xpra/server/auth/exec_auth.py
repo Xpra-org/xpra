@@ -18,7 +18,7 @@ from xpra.platform.features import EXECUTABLE_EXTENSION
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
 
-def get_default_auth_dialog():
+def get_default_auth_dialog() -> str:
     if os.name == "posix":
         auth_dialog = "/usr/libexec/xpra/auth_dialog"
     else:
@@ -62,7 +62,7 @@ class Authenticator(SysAuthenticator):
             return None
         return super().get_challenge(["xor"])
 
-    def validate_caps(self, caps : typedict):
+    def validate_caps(self, caps : typedict) -> bool:
         if not self.require_challenge:
             return True
         return super().validate_caps(caps)
@@ -105,14 +105,14 @@ class Authenticator(SysAuthenticator):
             return False
         return v==0
 
-    def command_ended(self, *args):
+    def command_ended(self, *args) -> None:
         t = self.timer
         log(f"exec auth.command_ended{args} timer={t}")
         if t:
             self.timer = 0
             GLib.source_remove(t)
 
-    def command_timedout(self):
+    def command_timedout(self) -> None:
         proc = self.proc
         log(f"exec auth.command_timedout() proc={proc}")
         self.timeout_event = True

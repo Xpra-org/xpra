@@ -121,8 +121,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def reset_incr_data(self) -> None:
         self.incr_data_size : int = 0
-        self.incr_data_type : int = None
-        self.incr_data_chunks : int = None
+        self.incr_data_type : str = ""
+        self.incr_data_chunks : List[bytes] = []
         self.incr_data_timer : int = 0
 
     def __repr__(self):
@@ -543,7 +543,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     assert dformat==32
                     self.incr_data_size = struct.unpack("@L", data)[0]
                     self.incr_data_chunks = []
-                    self.incr_data_type = None
+                    self.incr_data_type = ""
                     log("incremental clipboard data of size %s", self.incr_data_size)
                     self.reschedule_incr_data_timer()
                     return
