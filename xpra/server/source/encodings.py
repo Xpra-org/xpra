@@ -7,7 +7,7 @@
 
 import os
 from math import sqrt
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Set
 from time import sleep, monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -38,28 +38,28 @@ class EncodingsMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return bool(caps.strtupleget("encodings")) or caps.boolget("windows")
 
-    def init_state(self):
+    def init_state(self) -> None:
         #contains default values, some of which may be supplied by the client:
         self.default_batch_config = batch_config.DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
-        self.encoding = None                        #the default encoding for all windows
-        self.encodings = ()                         #all the encodings supported by the client
-        self.core_encodings = ()
+        self.encoding = ""                          #the default encoding for all windows
+        self.encodings : Tuple[str,...] = ()        #all the encodings supported by the client
+        self.core_encodings : Tuple[str,...] = ()
         self.encodings_packet = False               #supports delayed encodings initialization?
-        self.window_icon_encodings = []
-        self.rgb_formats = ("RGB",)
+        self.window_icon_encodings : Tuple[str,...] = ()
+        self.rgb_formats : Tuple[str,...] = ("RGB",)
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()
-        self.auto_refresh_delay = 0
+        self.auto_refresh_delay : int = 0
 
         self.zlib = True
         self.lz4 = use("lz4")
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
-        self.calculate_window_ids = set()
+        self.calculate_window_ids : Set[int] = set()
         self.calculate_timer = 0
         self.calculate_last_time = 0
 
@@ -70,7 +70,7 @@ class EncodingsMixin(StubSourceMixin):
         self.cuda_device_context = None
 
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.server_core_encodings  = server.core_encodings
         self.server_encodings       = server.encodings
         self.default_encoding       = server.default_encoding
@@ -80,11 +80,11 @@ class EncodingsMixin(StubSourceMixin):
         self.default_speed          = server.default_speed
         self.default_min_speed      = server.default_min_speed
 
-    def reinit_encodings(self, server):
+    def reinit_encodings(self, server) -> None:
         self.server_core_encodings  = server.core_encodings
         self.server_encodings       = server.encodings
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_recalculate_timer()
         if self.cuda_device_context:
             self.queue_encode((False, self.free_cuda_device_context))
@@ -95,13 +95,13 @@ class EncodingsMixin(StubSourceMixin):
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
 
-    def free_cuda_device_context(self):
+    def free_cuda_device_context(self) -> None:
         cdd = self.cuda_device_context
         if cdd:
             self.cuda_device_context = None
             cdd.free()
 
-    def all_window_sources(self):
+    def all_window_sources(self) -> Tuple:
         #we can't assume that the window mixin is loaded:
         window_sources = getattr(self, "window_sources", {})
         return tuple(window_sources.values())
@@ -118,7 +118,7 @@ class EncodingsMixin(StubSourceMixin):
         return caps
 
 
-    def recalculate_delays(self):
+    def recalculate_delays(self) -> None:
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
             this runs in the worker thread.
@@ -193,7 +193,7 @@ class EncodingsMixin(StubSourceMixin):
             log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f",
                 normalized_delay, delay, wdelay, avg_size, ratio)
 
-    def may_recalculate(self, wid, pixel_count):
+    def may_recalculate(self, wid:int, pixel_count:int) -> None:
         if wid in self.calculate_window_ids:
             return  #already scheduled
         v = self.calculate_window_pixels.get(wid, 0)+pixel_count
@@ -213,14 +213,14 @@ class EncodingsMixin(StubSourceMixin):
             delay = int(1000*(RECALCULATE_DELAY-delta))
             self.calculate_timer = self.timeout_add(delay, add_work_item, self.recalculate_delays)
 
-    def cancel_recalculate_timer(self):
+    def cancel_recalculate_timer(self) -> None:
         ct = self.calculate_timer
         if ct:
             self.calculate_timer = 0
             self.source_remove(ct)
 
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         #batch options:
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
@@ -287,7 +287,7 @@ class EncodingsMixin(StubSourceMixin):
         else:
             self.parse_encoding_caps(c)
 
-    def parse_encoding_caps(self, c):
+    def parse_encoding_caps(self, c:typedict) -> None:
         self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
@@ -375,23 +375,25 @@ class EncodingsMixin(StubSourceMixin):
                 cudalog.estr(e)
                 cudalog.error(" NVJPEG and NVENC will not be available")
 
-    def print_encoding_info(self):
+    def print_encoding_info(self) -> None:
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",
             self.core_encodings, self.server_core_encodings)
         others = tuple(x for x in self.core_encodings
                        if x in self.server_core_encodings and x!=self.encoding)
         if self.encoding=="auto":
             s = "automatic picture encoding enabled"
+        elif self.encoding=="stream":
+            s = "streaming mode enabled"
         else:
-            s = f"using {self.encoding} as primary encoding"
+            s = f"using {self.encoding!r} as primary encoding"
         if others:
-            log.info(" %s, also available:", s)
-            log.info("  %s", csv(others))
+            log.info(f" {s}, also available:")
+            log.info("  "+ csv(others))
         else:
-            log.warn(" %s", s)
+            log.warn(f" {s}")
             log.warn("  no other encodings are available!")
 
-    def parse_proxy_video(self):
+    def parse_proxy_video(self) -> None:
         self.wait_for_threaded_init()
         from xpra.codecs.proxy.encoder import Encoder  #pylint: disable=import-outside-toplevel
         proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
@@ -426,7 +428,7 @@ class EncodingsMixin(StubSourceMixin):
     # Functions used by the server to request something
     # (window events, stats, user requests, etc)
     #
-    def set_auto_refresh_delay(self, delay : int, window_ids):
+    def set_auto_refresh_delay(self, delay : int, window_ids) -> None:
         if window_ids is not None:
             wss = (self.window_sources.get(wid) for wid in window_ids)
         else:
@@ -435,20 +437,20 @@ class EncodingsMixin(StubSourceMixin):
             if ws is not None:
                 ws.set_auto_refresh_delay(delay)
 
-    def set_encoding(self, encoding : str, window_ids, strict=False):
+    def set_encoding(self, encoding : str, window_ids, strict=False) -> None:
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
         log("set_encoding(%s, %s, %s)", encoding, window_ids, strict)
-        if encoding and encoding!="auto":
+        if encoding and encoding not in ("auto", "stream"):
             #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
             if encoding=="rgb24":
                 encoding = "rgb"
             if encoding not in self.encodings:
-                log.warn("Warning: client specified '%s' encoding,", encoding)
+                log.warn(f"Warning: client specified {encoding!r} encoding,")
                 log.warn(" but it only supports: " + csv(self.encodings))
             if encoding not in self.server_encodings:
-                log.error("Error: encoding %s is not supported by this server", encoding)
+                log.error(f"Error: encoding {encoding!r} is not supported by this server")
                 log.error(" server encodings: " + csv(self.server_encodings))
                 encoding = None
         if not encoding:
@@ -497,27 +499,27 @@ class EncodingsMixin(StubSourceMixin):
         return info
 
 
-    def set_min_quality(self, min_quality : int):
+    def set_min_quality(self, min_quality : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_min_quality(min_quality)
 
-    def set_max_quality(self, max_quality : int):
+    def set_max_quality(self, max_quality : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_max_quality(max_quality)
 
-    def set_quality(self, quality : int):
+    def set_quality(self, quality : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_quality(quality)
 
-    def set_min_speed(self, min_speed : int):
+    def set_min_speed(self, min_speed : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_min_speed(min_speed)
 
-    def set_max_speed(self, max_speed : int):
+    def set_max_speed(self, max_speed : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_max_speed(max_speed)
 
-    def set_speed(self, speed : int):
+    def set_speed(self, speed : int) -> None:
         for ws in tuple(self.all_window_sources()):
             ws.set_speed(speed)
 

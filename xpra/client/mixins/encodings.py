@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
-from xpra.codecs.codec_constants import preforder
+from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
@@ -77,17 +77,17 @@ class Encodings(StubClientMixin):
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
-        self.server_encodings = []
-        self.server_core_encodings = []
-        self.server_encodings_with_speed = ()
-        self.server_encodings_with_quality = ()
-        self.server_encodings_with_lossless_mode = ()
+        self.server_encodings : Tuple[str,...] = ()
+        self.server_core_encodings : Tuple[str,...] = ()
+        self.server_encodings_with_speed : Tuple[str,...] = ()
+        self.server_encodings_with_quality : Tuple[str,...] = ()
+        self.server_encodings_with_lossless_mode : Tuple[str,...] = ()
 
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         if opts.video_scaling.lower() in ("auto", "on"):
@@ -118,23 +118,23 @@ class Encodings(StubClientMixin):
         vh.init()
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         try:
             getVideoHelper().cleanup()
         except Exception:   # pragma: no cover
             log.error("error on video cleanup", exc_info=True)
 
 
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("encodings", self._process_encodings, False)
 
 
-    def _process_encodings(self, packet):
+    def _process_encodings(self, packet) -> None:
         caps = typedict(packet[1])
         self._parse_server_capabilities(caps)
 
 
-    def get_info(self):
+    def get_info(self) -> Dict[str,Any]:
         return {
             "encodings" : {
                 "core"          : self.get_core_encodings(),
@@ -167,7 +167,7 @@ class Encodings(StubClientMixin):
         self._parse_server_capabilities(c)
         return True
 
-    def _parse_server_capabilities(self, c):
+    def _parse_server_capabilities(self, c) -> None:
         self.server_encodings = c.strtupleget("encodings", DEFAULT_ENCODINGS)
         self.server_core_encodings = c.strtupleget("encodings.core", self.server_encodings)
         #old servers only supported x264:
@@ -270,7 +270,7 @@ class Encodings(StubClientMixin):
         log("encoding capabilities: %s", caps)
         return caps
 
-    def get_encodings(self):
+    def get_encodings(self) -> Tuple[str,...]:
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
             That's because although we may support both, the encoding chosen is plain "rgb",
@@ -280,6 +280,8 @@ class Encodings(StubClientMixin):
         cenc = [{"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.get_core_encodings()]
         if "grayscale" not in cenc and "png/L" in cenc:
             cenc.append("grayscale")
+        if any(x in cenc for x in STREAM_ENCODINGS):
+            cenc.append("stream")
         return preforder(cenc)
 
     def get_cursor_encodings(self):

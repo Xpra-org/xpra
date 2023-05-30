@@ -651,6 +651,8 @@ class GTKTrayMenuBase(MenuHelper):
         #auto at the very top:
         client_encodings.insert(0, "auto")
         server_encodings.insert(0, "auto")
+        client_encodings.insert(1, "stream")
+        server_encodings.insert(1, "stream")
         return client_encodings, server_encodings
 
     def make_encodingssubmenu(self):

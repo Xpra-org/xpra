@@ -165,14 +165,14 @@ class WindowSource(WindowIconSource):
                     ww:int, wh:int,
                     record_congestion_event:Callable, queue_size:Callable, call_in_encode_thread:Callable, queue_packet:Callable,
                     statistics,
-                    wid:int, window, batch_config, auto_refresh_delay,
-                    av_sync, av_sync_delay,
+                    wid:int, window, batch_config, auto_refresh_delay:int,
+                    av_sync:bool, av_sync_delay:int,
                     video_helper,
                     cuda_device_context,
-                    server_core_encodings, server_encodings,
-                    encoding:str, encodings, core_encodings, window_icon_encodings,
-                    encoding_options, icons_encoding_options,
-                    rgb_formats,
+                    server_core_encodings:Tuple[str,...], server_encodings:Tuple[str,...],
+                    encoding:str, encodings:Tuple[str,...], core_encodings:Tuple[str,...], window_icon_encodings:Tuple[str,...],
+                    encoding_options:typedict, icons_encoding_options:typedict,
+                    rgb_formats:Tuple[str,...],
                     default_encoding_options,
                     mmap, mmap_size:int, bandwidth_limit:int, jitter:int):
         super().__init__(window_icon_encodings, icons_encoding_options)
@@ -277,22 +277,23 @@ class WindowSource(WindowIconSource):
         self.jitter = jitter
 
         self.pixel_format = None                            #ie: BGRX
-        self.image_depth = window.get_property("depth")
+        self.image_depth : int = window.get_property("depth")
 
         # general encoding tunables (mostly used by video encoders):
         #keep track of the target encoding_quality: (event time, info, encoding speed):
-        self._encoding_quality : deque = deque(maxlen=100)
-        self._encoding_quality_info = {}
+        self._encoding_quality : deque[Tuple[float,int]] = deque(maxlen=100)
+        self._encoding_quality_info : Dict[str,Any] = {}
         #keep track of the target encoding_speed: (event time, info, encoding speed):
-        self._encoding_speed : deque = deque(maxlen=100)
-        self._encoding_speed_info = {}
+        self._encoding_speed : deque[Tuple[float,int]] = deque(maxlen=100)
+        self._encoding_speed_info : Dict[str,Any] = {}
         # they may have fixed values:
-        self._fixed_quality = default_encoding_options.get("quality", -1)
-        self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
-        self._fixed_max_quality = capr(default_encoding_options.get("max-quality", MAX_QUALITY))
-        self._fixed_speed = default_encoding_options.get("speed", -1)
-        self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
-        self._fixed_max_speed = capr(default_encoding_options.get("max-speed", MAX_SPEED))
+        deo = typedict(default_encoding_options)
+        self._fixed_quality = deo.intget("quality", -1)
+        self._fixed_min_quality = capr(deo.intget("min-quality", 0))
+        self._fixed_max_quality = capr(deo.intget("max-quality", MAX_QUALITY))
+        self._fixed_speed = deo.intget("speed", -1)
+        self._fixed_min_speed = capr(deo.intget("min-speed", 0))
+        self._fixed_max_speed = capr(deo.intget("max-speed", MAX_SPEED))
         self._encoding_hint : str = ""
         self._quality_hint = self.window.get("quality", -1)
         dyn_props = window.get_dynamic_property_names()
@@ -337,10 +338,10 @@ class WindowSource(WindowIconSource):
             self._current_speed = capr(self._fixed_speed)
         else:
             self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
-        self._want_alpha = False
-        self._lossless_threshold_base = 85
-        self._lossless_threshold_pixel_boost = 20
-        self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
+        self._want_alpha : bool = False
+        self._lossless_threshold_base : int = 85
+        self._lossless_threshold_pixel_boost : int = 20
+        self._rgb_auto_threshold : int = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
         log("initial encoding for %s: %s", self.wid, self.encoding)
@@ -877,7 +878,7 @@ class WindowSource(WindowIconSource):
             raise ValueError("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
                 csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
-        if (encoding in self.common_encodings or encoding in ("auto", "grayscale")) and len(self.common_encodings)>1:
+        if (encoding in self.common_encodings or encoding in ("stream", "auto", "grayscale")) and len(self.common_encodings)>1:
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
@@ -986,7 +987,7 @@ class WindowSource(WindowIconSource):
                 return self.encoding_is_pngL
             assert "png/P" in self.common_encodings
             return self.encoding_is_pngP
-        if self.strict and self.encoding!="auto":
+        if self.strict and self.encoding not in ("auto", "stream"):
             #honour strict flag
             if self.encoding=="rgb":
                 #choose between rgb32 and rgb24 already
@@ -1018,7 +1019,7 @@ class WindowSource(WindowIconSource):
 
     def get_best_encoding_impl_default(self) -> Callable:
         #stick to what is specified or use rgb for small regions:
-        if self.encoding=="auto":
+        if self.encoding in ("auto", "stream"):
             return self.get_auto_encoding
         if self.encoding=="grayscale":
             return self.encoding_is_grayscale
@@ -1940,7 +1941,7 @@ class WindowSource(WindowIconSource):
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
-            if self.full_frames_only:
+            if self.full_frames_only or self.encoding=="stream":
                 send_full_window_update("full-frames-only set")
                 return
 

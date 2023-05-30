@@ -24,7 +24,14 @@ PREFERRED_ENCODING_ORDER : Tuple[str, ...] = (
     "h265", "av1",
     "scroll",
     "grayscale",
+    "stream",
     )
+STREAM_ENCODINGS : Tuple[str,...] = (
+    "h264", "vp9", "vp8", "mpeg4",
+    "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
+    "h265", "av1",
+    )
+
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER : Tuple[str, ...] = (
     "rgb24", "rgb32",
@@ -34,6 +41,7 @@ EDGE_ENCODING_ORDER : Tuple[str, ...] = (
 
 HELP_ORDER : Tuple[str, ...] = (
     "auto",
+    "stream",
     "grayscale",
     "h264", "h265", "av1", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp", "avif",

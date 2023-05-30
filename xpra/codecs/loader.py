@@ -54,7 +54,7 @@ ALL_CODECS : Tuple[str,...] = filt(*set(
 
 codec_errors : Dict[str,str] = {}
 codecs = {}
-def codec_import_check(name, description, top_module, class_module, classnames):
+def codec_import_check(name:str, description:str, top_module, class_module, classnames):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     if any(name.find(s)>=0 for s in SKIP_LIST):
@@ -142,7 +142,7 @@ def codec_import_check(name, description, top_module, class_module, classnames):
                      name, description, exc_info=True)
     return None
 codec_versions : Dict[str,Tuple[Any, ...]]= {}
-def add_codec_version(name, top_module, version="get_version()", alt_version="__version__"):
+def add_codec_version(name:str, top_module, version:str="get_version()", alt_version:str="__version__"):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
@@ -174,7 +174,7 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
         log.warn("", exc_info=True)
     return None
 
-def xpra_codec_import(name, description, top_module, class_module, classname):
+def xpra_codec_import(name:str, description:str, top_module, class_module, classname:str):
     xpra_top_module = f"xpra.codecs.{top_module}"
     xpra_class_module = f"{xpra_top_module}.{class_module}"
     if codec_import_check(name, description, xpra_top_module, xpra_class_module, classname):
@@ -185,7 +185,7 @@ def xpra_codec_import(name, description, top_module, class_module, classname):
 
 platformname = sys.platform.rstrip("0123456789")
 
-CODEC_OPTIONS = {
+CODEC_OPTIONS : Dict[str,Tuple[str,str,str,str]] = {
     #encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
@@ -226,7 +226,7 @@ CODEC_OPTIONS = {
     "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"fbc_capture_{platformname}", "NvFBC_SysCapture"),
     }
 
-NOLOAD = []
+NOLOAD : List[str] = []
 if OSX:
     #none of the nvidia codecs are available on MacOS,
     #so don't bother trying:
@@ -253,10 +253,9 @@ def load_codec(name):
     return get_codec(name)
 
 
-def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False):
+def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False) -> Tuple[str,...]:
     log("loading codecs")
-
-    loaded = []
+    loaded : List[str] = []
     def load(*names):
         for name in names:
             if has_codec(name):
@@ -281,9 +280,9 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     if sources:
         load(*SOURCES)
     log("done loading codecs: %s", loaded)
-    return loaded
+    return tuple(loaded)
 
-def show_codecs(show:Tuple[str,...]=()):
+def show_codecs(show:Tuple[str,...]=()) -> None:
     #print("codec_status=%s" % codecs)
     for name in sorted(show or ALL_CODECS):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
@@ -318,9 +317,10 @@ def get_rgb_compression_options() -> List[str]:
         RGB_COMP_OPTIONS  += ["/".join(compressors)]
     return RGB_COMP_OPTIONS
 
-def get_encoding_name(encoding):
-    ENCODINGS_TO_NAME = {
+def get_encoding_name(encoding:str) -> str:
+    ENCODINGS_TO_NAME : Dict[str,str] = {
           "auto"    : "automatic",
+          "stream"  : "video stream",
           "h264"    : "H.264",
           "h265"    : "H.265",
           "mpeg4"   : "MPEG4",
@@ -338,7 +338,7 @@ def get_encoding_name(encoding):
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)
 
-def get_encoding_help(encoding):
+def get_encoding_help(encoding:str) -> str:
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = [x for x in compression.get_enabled_compressors()
@@ -348,6 +348,7 @@ def get_encoding_help(encoding):
         compressors_str = ", may be compressed using "+(" or ".join(compressors))+" "
     return {
           "auto"    : "automatic mode (recommended)",
+          "stream"  : "video stream",
           "grayscale" : "same as 'auto' but in grayscale mode",
           "h264"    : "H.264 video codec",
           "h265"    : "H.265 (HEVC) video codec (not recommended)",
@@ -368,7 +369,7 @@ def get_encoding_help(encoding):
           }.get(encoding)
 
 
-def encodings_help(encodings):
+def encodings_help(encodings) -> List[str]:
     h = []
     for e in HELP_ORDER:
         if e in encodings:

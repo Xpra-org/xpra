@@ -192,6 +192,7 @@ class WindowVideoSource(WindowSource):
         #video_encode() is used for more than just video encoders:
         #(always enable it and let it fall through)
         add("auto", self.video_encode)
+        add("stream", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
@@ -461,6 +462,10 @@ class WindowVideoSource(WindowSource):
 
     def get_best_encoding_impl_default(self) -> Callable:
         log("get_best_encoding_impl_default() window_type=%s, encoding=%s", self.window_type, self.encoding)
+        if self.is_tray:
+            return super().get_best_encoding_impl_default()
+        if self.encoding=="stream":
+            return self.get_best_encoding_video
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
             return super().get_best_encoding_impl_default()
         if self.encoding!="grayscale" or has_codec("csc_libyuv"):
@@ -469,7 +474,7 @@ class WindowVideoSource(WindowSource):
         return super().get_best_encoding_impl_default()
 
 
-    def get_best_encoding_video(self, ww : int, wh : int, options, current_encoding : str) -> str:
+    def get_best_encoding_video(self, w : int, h : int, options, current_encoding : str) -> str:
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
@@ -479,7 +484,7 @@ class WindowVideoSource(WindowSource):
                 quality = options.get("quality", self._current_quality) + qdiff
                 options["quality"] = max(self._fixed_min_quality, min(self._fixed_max_quality, quality))
             videolog("nonvideo(%s, %s)", qdiff, info)
-            return WindowSource.get_auto_encoding(self, ww, wh, options)
+            return WindowSource.get_auto_encoding(self, w, h, options)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
         #    (pixel_count, ww, wh, speed, quality, current_encoding),
@@ -487,7 +492,7 @@ class WindowVideoSource(WindowSource):
         if not self.non_video_encodings:
             return current_encoding
         if not self.common_video_encodings and not self.supports_scrolling:
-            return nonvideo(info="no common video encodings")
+            return nonvideo(info="no common video encodings or scrolling")
         if self.is_tray:
             return nonvideo(100, "system tray")
         text_hint = self.content_type.find("text")>=0
@@ -495,8 +500,14 @@ class WindowVideoSource(WindowSource):
             return nonvideo(100, info="text content-type")
 
         #ensure the dimensions we use for decision making are the ones actually used:
-        cww = ww & self.width_mask
-        cwh = wh & self.height_mask
+        cww = w & self.width_mask
+        cwh = h & self.height_mask
+        if cww<64 or cwh<64:
+            return nonvideo(info="area is too small")
+
+        if self.encoding=="stream":
+            return current_encoding
+
         video_hint = int(self.content_type.find("video")>=0)
         if self.pixel_format:
             #if we have a hardware video encoder, use video more:
@@ -520,15 +531,12 @@ class WindowVideoSource(WindowSource):
         else:
             videomin = min(640*480, cww*cwh) // (1+video_hint*2)
         #log(f"ww={ww}, wh={wh}, rgbmax={rgbmax}, videohint={video_hint} videomin={videomin}, sr={sr}, pixel_count={pixel_count}")
-        pixel_count = ww*wh
-        if pixel_count<=rgbmax or cww<8 or cwh<8:
+        pixel_count = w*h
+        if pixel_count<=rgbmax:
             return nonvideo(info=f"low pixel count {pixel_count}")
 
         if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
             return nonvideo(info=f"{current_encoding} not a supported video encoding")
-
-        if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
-            return nonvideo(info="window is too small")
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             return nonvideo(info="size out of range for video encoder")
@@ -568,7 +576,7 @@ class WindowVideoSource(WindowSource):
             max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
             if pixel_count<=max_nvp:
                 #below threshold
-                return nonvideo(info="not enough pixels")
+                return nonvideo(info=f"not enough pixels: {pixel_count}<{max_nvp}")
         return current_encoding
 
     def get_best_nonvideo_encoding(self, ww : int, wh : int, options : Dict,
@@ -773,7 +781,7 @@ class WindowVideoSource(WindowSource):
             send_nonvideo(encoding=None)
             return
 
-        if coding not in ("auto", "grayscale") and coding not in self.video_encodings:
+        if coding not in ("auto", "stream", "grayscale") and coding not in self.video_encodings:
             sublog("not a video encoding: %s", coding)
             #keep current encoding selection function
             send_nonvideo(get_best_encoding=self.get_best_encoding)
@@ -923,7 +931,7 @@ class WindowVideoSource(WindowSource):
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
         av_delay = options.get("av-delay", 0)
-        video_mode = coding in self.common_video_encodings or (coding=="auto" and self.common_video_encodings)
+        video_mode = coding in self.common_video_encodings or (coding in ("auto", "stream") and self.common_video_encodings)
         must_freeze = av_delay>0 or (video_mode and not image.is_thread_safe())
         log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
             av_delay, must_freeze, (w, h), coding)
@@ -1099,6 +1107,9 @@ class WindowVideoSource(WindowSource):
         vs = self.video_subregion
         if not vs:
             return
+        if self.encoding=="stream":
+            vs.reset()
+            return
         if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
             self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
             (self.content_type.find("text")>=0 and TEXT_USE_VIDEO) or \
@@ -1202,7 +1213,7 @@ class WindowVideoSource(WindowSource):
             scorelog(*info)
             self.cleanup_codecs()
         #which video encodings to evaluate:
-        if self.encoding in ("auto", "grayscale"):
+        if self.encoding in ("auto", "stream", "grayscale"):
             if not self.common_video_encodings:
                 return checknovideo("no common video encodings")
             eval_encodings = self.common_video_encodings
@@ -1641,7 +1652,7 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        if encoding in ("auto", "grayscale"):
+        if encoding in ("auto", "stream", "grayscale"):
             encodings = self.common_video_encodings
         else:
             encodings = (encoding, )

@@ -5,13 +5,13 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
 from xpra.version_util import vtrim
-from xpra.codecs.codec_constants import preforder
+from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -34,17 +34,17 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = 0
         self.default_speed = -1
         self.default_min_speed = 0
-        self.allowed_encodings = None
-        self.core_encodings = ()
-        self.encodings = ()
-        self.lossless_encodings = ()
-        self.lossless_mode_encodings = ()
-        self.default_encoding = None
+        self.allowed_encodings : Tuple[str,...] = ()
+        self.core_encodings : Tuple[str,...] = ()
+        self.encodings : Tuple[str,...] = ()
+        self.lossless_encodings : Tuple[str,...] = ()
+        self.lossless_mode_encodings : Tuple[str,...] = ()
+        self.default_encoding : str = ""
         self.scaling_control = None
         self.video_encoders = ()
         self.csc_modules = ()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.encoding = opts.encoding
         self.allowed_encodings = opts.encodings
         self.default_quality = opts.quality
@@ -56,7 +56,7 @@ class EncodingServer(StubServerMixin):
         self.video_encoders = csvstrl(opts.video_encoders).split(",")
         self.csc_modules = csvstrl(opts.csc_modules).split(",")
 
-    def setup(self):
+    def setup(self) -> None:
         #essential codecs, load them early:
         load_codec("enc_rgb")
         load_codec("enc_pillow")
@@ -75,7 +75,7 @@ class EncodingServer(StubServerMixin):
         self.init_encodings()
         self.add_init_thread_callback(self.reinit_encodings)
 
-    def reinit_encodings(self):
+    def reinit_encodings(self) -> None:
         self.init_encodings()
         #any window mapped before the threaded init completed
         #may need to re-initialize its list of encodings:
@@ -84,7 +84,7 @@ class EncodingServer(StubServerMixin):
             if isinstance(ss, WindowsMixin):
                 ss.reinit_encodings(self)
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         if INIT_DELAY>0:
             from time import sleep
             sleep(INIT_DELAY)
@@ -96,11 +96,11 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().init()
         self.init_encodings()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         getVideoHelper().cleanup()
 
 
-    def get_server_features(self, _source=None):
+    def get_server_features(self, _source=None) -> Dict[str,Any]:
         return {
             "auto-video-encoding"   : True,     #from v4.0, clients assume this is available
             }
@@ -133,7 +133,7 @@ class EncodingServer(StubServerMixin):
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
 
-    def init_encodings(self):
+    def init_encodings(self) -> None:
         encs, core_encs = [], []
         log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
         def add_encoding(encoding):
@@ -199,28 +199,25 @@ class EncodingServer(StubServerMixin):
                         break
         #now update the variables:
         encs.append("grayscale")
-        self.encodings = encs
-        self.core_encodings = tuple(core_encs)
-        self.lossless_mode_encodings = tuple(lossless)
-        self.lossless_encodings = tuple(x for x in self.core_encodings
+        if any(x in encs for x in STREAM_ENCODINGS):
+            encs.append("stream")
+        self.encodings = preforder(encs)
+        self.core_encodings = preforder(core_encs)
+        self.lossless_mode_encodings = preforder(lossless)
+        self.lossless_encodings = preforder(x for x in self.core_encodings
                                    if (x.startswith("png") or x.startswith("rgb") or x=="webp"))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
-        pref = preforder(self.encodings)
-        if pref:
-            self.default_encoding = pref[0]
-        else:
-            self.default_encoding = None
+        self.default_encoding = self.encodings[0]
         #default encoding:
         if not self.encoding or str(self.encoding).lower() in ("auto", "none"):
-            self.default_encoding = None
+            self.default_encoding = ""
         elif self.encoding in self.encodings:
-            self.default_encoding = self.encoding
-        else:
             log.warn("ignored invalid default encoding option: %s", self.encoding)
+            self.default_encoding = self.encoding
 
 
-    def _process_encoding(self, proto, packet):
+    def _process_encoding(self, proto, packet) -> None:
         encoding = bytestostr(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:
@@ -242,7 +239,7 @@ class EncodingServer(StubServerMixin):
         ss.set_encoding(encoding, wids)
         self._refresh_windows(proto, wid_windows, {})
 
-    def _modify_sq(self, proto, packet):
+    def _modify_sq(self, proto, packet) -> None:
         """ modify speed or quality """
         ss = self.get_server_source(proto)
         if not ss:
@@ -258,14 +255,14 @@ class EncodingServer(StubServerMixin):
         fn(value)
         self.call_idle_refresh_all_windows(proto)
 
-    def call_idle_refresh_all_windows(self, proto):
+    def call_idle_refresh_all_windows(self, proto) -> None:
         #we can't assume that the window server mixin is loaded:
         refresh = getattr(self, "_idle_refresh_all_windows", None)
         if refresh:
             refresh(proto)  # pylint: disable=not-callable
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         self.add_packet_handler("encoding", self._process_encoding)
         for ptype in (
             "quality", "min-quality", "max-quality",
