@@ -381,7 +381,7 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
             x, y = 0, 0
             for i, res in enumerate(resolutions):
                 assert len(res)==3
-                if not (isinstance(v, int) for v in res):
+                if not all(isinstance(v, int) for v in res):
                     raise ValueError(f"resolution values must be ints, found: {res} ({csv(type(v) for v in res)})")
                 w, h, hz = res
                 mdpi = dpi
