@@ -735,7 +735,7 @@ class ClientExtras:
         self.delegate = AppDelegate.alloc()
         self.delegate.init()
         self.delegate.retain()
-        if self.client and False:
+        if self.client:
             self.delegate.callbacks.update({
                 "sleep" : self.client.suspend,
                 "wake" : self.client.resume,
