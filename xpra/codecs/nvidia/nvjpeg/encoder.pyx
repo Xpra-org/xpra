@@ -400,7 +400,7 @@ cdef class Encoder:
             self.frames += 1
             #r = cudaStreamSynchronize(stream)
             #if not r:
-            #    raise Exception("nvjpeg failed to synchronize cuda stream: %i" % r)
+            #    raise RuntimeError("nvjpeg failed to synchronize cuda stream: %i" % r)
             # get compressed stream size
             start = monotonic()
             r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, NULL, &length, self.stream)

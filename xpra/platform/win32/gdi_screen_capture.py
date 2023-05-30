@@ -223,7 +223,7 @@ class GDICapture:
         assert pixels, "no pixels returned from GetBitmapBits"
         rgb_format = RGB_FORMATS.get(self.bit_depth)
         if not rgb_format:
-            raise Exception("unsupported bit depth: %s" % self.bit_depth)
+            raise ValueError("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth//8
         v = ImageWrapper(0, 0, width, height, pixels, rgb_format,
                          self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)

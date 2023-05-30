@@ -37,7 +37,7 @@ from xpra.os_util import (
     )
 
 if sys.version_info<(3, 6):
-    raise Exception("xpra no longer supports Python versions older than 3.6")
+    raise RuntimeError("xpra no longer supports Python versions older than 3.6")
 if BITS!=64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
     for _ in range(5):
@@ -734,7 +734,7 @@ def remove_from_keywords(kw, key, value):
 def checkdirs(*dirs):
     for d in dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
-            raise Exception(f"cannot find a directory which is required for building: {d!r}")
+            raise RuntimeError(f"cannot find a directory which is required for building: {d!r}")
 
 def CC_is_clang():
     if CC.find("clang")>=0:

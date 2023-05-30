@@ -116,8 +116,8 @@ class ProxyServer(_ProxyServer):
                 except (OSError, AttributeError):
                     log("failed to read stdout / stderr of subprocess", exc_info=True)
                 if r!=0:
-                    raise Exception(f"shadow subprocess failed with exit code {r}")
-                raise Exception("shadow subprocess has already terminated")
+                    raise RuntimeError(f"shadow subprocess failed with exit code {r}")
+                raise RuntimeError("shadow subprocess has already terminated")
             if t>=4:
                 state = dotxpra.get_display_state(named_pipe)
                 log("get_display_state(%s)=%s", state)

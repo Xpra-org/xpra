@@ -128,16 +128,16 @@ class GDIPrinterContext:
 		self.handle = HANDLE()
 		name = LPCSTR(self.printer_name)
 		if not OpenPrinterA(name, pointer(self.handle), None):
-			raise Exception("failed to open printer %s" % self.printer_name)
+			raise ValueError(f"failed to open printer {self.printer_name!r}")
 		log("OpenPrinter: handle=%#x", self.handle.value)
 		size = DWORD(0)
 		GetPrinterA(self.handle, 1, None, 0, pointer(size))
 		if size.value==0:
-			raise Exception("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
+			raise RuntimeError("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_1 size=%#x", size.value)
 		self.info1 = msvcrt.malloc(size.value)
 		if not GetPrinterA(self.handle, 1, self.info1, size.value, pointer(size)):
-			raise Exception("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
+			raise RuntimeError("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
 		info = cast(self.info1, POINTER(PRINTER_INFO_1))
 		log(" flags=%#x" % info[0].Flags)
 		log(" name=%#s" % info[0].pName)
@@ -147,7 +147,7 @@ class GDIPrinterContext:
 		size = DWORD(0)
 		GetPrinterA(self.handle, 2, None, 0, pointer(size))
 		if size.value==0:
-			raise Exception("GetPrinterA PRINTER_INFO_2 failed for '%s'" % self.printer_name)
+			raise RuntimeError("GetPrinterA PRINTER_INFO_2 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_2 size=%#x", size.value)
 		self.info2 = msvcrt.malloc(size.value)
 		if GetPrinterA(self.handle, 2, self.info2, size.value, pointer(size)):
@@ -157,7 +157,7 @@ class GDIPrinterContext:
 		size = DWORD(0)
 		GetPrinterA(self.handle, 8, None, 0, pointer(size))
 		if size.value==0:
-			raise Exception("GetPrinter: PRINTER_INFO_8 failed for '%s'" % self.printer_name)
+			raise RuntimeError("GetPrinter: PRINTER_INFO_8 failed for '%s'" % self.printer_name)
 		self.info8 = msvcrt.malloc(size.value)
 		if GetPrinterA(self.handle, 8, self.info8, size.value, pointer(size)):
 			info = cast(self.info8, POINTER(PRINTER_INFO_8))
@@ -169,7 +169,7 @@ class GDIPrinterContext:
 		size = DWORD(0)
 		GetPrinterA(self.handle, 9, None, 0, pointer(size))
 		if size.value==0:
-			raise Exception("GetPrinter: PRINTER_INFO_9 failed for '%s'" % self.printer_name)
+			raise RuntimeError("GetPrinter: PRINTER_INFO_9 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_9 size=%#x" % size.value)
 		self.info9 = msvcrt.malloc(size.value)
 		if GetPrinterA(self.handle, 9, self.info9, size.value, pointer(size)):

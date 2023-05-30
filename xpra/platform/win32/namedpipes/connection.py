@@ -109,13 +109,13 @@ class NamedPipeConnection(Connection):
             r = WaitForSingleObject(self.read_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%s", WAIT_STR.get(r, r), read.value)
             if r and self.pipe_handle:
-                raise Exception("failed to read from named pipe handle %s" % self.pipe_handle)
+                raise RuntimeError("failed to read from named pipe handle %s" % self.pipe_handle)
         if self.pipe_handle:
             if not GetOverlappedResult(self.pipe_handle, byref(self.read_overlapped), byref(read), False):
                 e = GetLastError()
                 if e in CONNECTION_CLOSED_ERRORS:
                     raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
-                raise Exception("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
+                raise RuntimeError("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
         if read.value==0:
             data = None
         else:
@@ -145,11 +145,11 @@ class NamedPipeConnection(Connection):
                 #closed already!
                 return written.value
             if r:
-                raise Exception("failed to write buffer to named pipe handle %s" % self.pipe_handle)
+                raise RuntimeError("failed to write buffer to named pipe handle %s" % self.pipe_handle)
         if self.pipe_handle:
             if not GetOverlappedResult(self.pipe_handle, byref(self.write_overlapped), byref(written), False):
                 e = GetLastError()
-                raise Exception("overlapped write failed: %s" % IO_ERROR_STR.get(e, e))
+                raise RuntimeError("overlapped write failed: %s" % IO_ERROR_STR.get(e, e))
             log("pipe_write: %i bytes written", written.value)
             if self.pipe_handle:
                 FlushFileBuffers(self.pipe_handle)
@@ -198,7 +198,7 @@ def connect_to_namedpipe(pipe_name, timeout=10):
     start = time.time()
     while True:
         if time.time()-start>=timeout:
-            raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
+            raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE,
                                   0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
         log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
@@ -208,9 +208,9 @@ def connect_to_namedpipe(pipe_name, timeout=10):
         log("CreateFileA(..) error=%s", err)
         if err==ERROR_PIPE_BUSY:
             if WaitNamedPipeA(pipe_name, timeout*10000)==0:
-                raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
+                raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         else:
-            raise Exception("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
+            raise RuntimeError("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
     #we have a valid handle!
     dwMode = c_ulong(PIPE_READMODE_BYTE)
     r = SetNamedPipeHandleState(pipe_handle, byref(dwMode), None, None)

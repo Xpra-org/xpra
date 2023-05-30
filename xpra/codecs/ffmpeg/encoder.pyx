@@ -1028,7 +1028,7 @@ cdef AVBufferRef *init_vaapi_device() except NULL:
     cdef int err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
                                           device, opts, 0)
     if err<0:
-        raise Exception("vaapi device context not found")
+        raise RuntimeError("vaapi device context not found")
     log("init_vaapi_device()=%#x", <uintptr_t> hw_device_ctx)
     return hw_device_ctx
 
@@ -1221,7 +1221,7 @@ cdef class Encoder:
         elif src_format=="NV12":
             self.nplanes = 2
         else:
-            raise Exception("unknown source format '%s'" % src_format)
+            raise ValueError(f"unknown source format {src_format!r}")
         self.encoding = encoding
         self.muxer_format = None
         if encoding.find("+")>0:
@@ -1232,7 +1232,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.pix_fmt = FORMAT_TO_ENUM.get(src_format, AV_PIX_FMT_NONE)
         if self.pix_fmt==AV_PIX_FMT_NONE:
-            raise Exception("invalid pixel format: %s", src_format)
+            raise ValueError(f"invalid pixel format {src_format}")
         self.buffers = []
 
         codec = self.encoding.split("+")[0]
@@ -1253,14 +1253,14 @@ cdef class Encoder:
                 assert video_codec_id!=0, "invalid codec; %s" % self.encoding
                 self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
-            raise Exception("codec not found for '%s'!" % bytestostr(name))
+            raise ValueError(f"codec not found for {bytestostr(name)}")
         if not self.vaapi:
             #make sure that we don't end up using vaapi from here
             #if we didn't want to use it
             #(otherwise it will crash)
             video_codec_name = bytestostr(self.video_codec.name)
             if video_codec_name.endswith("vaapi"):
-                raise Exception("codec '%s' would use vaapi" % self.encoding)
+                raise RuntimeError("codec '%s' would use vaapi" % self.encoding)
         log("%s: \"%s\", codec flags: %s",
             bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name),
             flagscsv(CAPS, self.video_codec.capabilities))
@@ -1301,15 +1301,15 @@ cdef class Encoder:
         global GEN_TO_ENCODER
         cdef AVOutputFormat *oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
-            raise Exception("libavformat does not support %s" % self.muxer_format)
+            raise ValueError(f"libavformat does not support {self.muxer_format}")
         log("init_muxer(%i) AVOutputFormat(%s)=%#x, flags=%s",
             gen, self.muxer_format, <uintptr_t> oformat, flagscsv(AVFMT, oformat.flags))
         if oformat.flags & AVFMT_ALLOW_FLUSH==0:
-            raise Exception("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
+            raise RuntimeError("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
         r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, strtobytes(self.muxer_format), NULL)
         if r!=0:
             msg = av_error_str(r)
-            raise Exception("libavformat cannot allocate context: %s" % msg)
+            raise RuntimeError("libavformat cannot allocate context: %s" % msg)
         log("init_muxer(%i) avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s",
             gen, r, self.muxer_format, <uintptr_t> self.muxer_ctx,
             flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
@@ -1325,14 +1325,14 @@ cdef class Encoder:
             r = av_dict_set(&self.muxer_opts, b"movflags", movflags, 0)
             if r!=0:
                 msg = av_error_str(r)
-                raise Exception("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
+                raise RuntimeError("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
 
         self.buffer = <unsigned char*> av_malloc(DEFAULT_BUF_LEN)
         if self.buffer==NULL:
-            raise Exception("failed to allocate %iKB of memory" % (DEFAULT_BUF_LEN//1024))
+            raise RuntimeError("failed to allocate %iKB of memory" % (DEFAULT_BUF_LEN//1024))
         self.muxer_ctx.pb = avio_alloc_context(self.buffer, DEFAULT_BUF_LEN, 1, <void *> gen, NULL, write_packet, NULL)
         if self.muxer_ctx.pb==NULL:
-            raise Exception("libavformat failed to allocate io context")
+            raise RuntimeError("libavformat failed to allocate io context")
         log("init_muxer(%i) saving %s stream to bitstream buffer %#x",
             gen, self.encoding, <uintptr_t> self.buffer)
         self.muxer_ctx.flush_packets = 1
@@ -1354,13 +1354,13 @@ cdef class Encoder:
         av_dict_free(&self.muxer_opts)
         if r!=0:
             msg = av_error_str(r)
-            raise Exception("libavformat failed to write header: %s" % msg)
+            raise RuntimeError("libavformat failed to write header: %s" % msg)
 
     def init_encoder(self, int quality, int speed, options):
         log("init_encoder(%i, %i, %s)", quality, speed, options)
         self.video_ctx = avcodec_alloc_context3(self.video_codec)
         if self.video_ctx==NULL:
-            raise Exception("failed to allocate video codec context!")
+            raise RuntimeError("failed to allocate video codec context!")
         list_options(self.video_ctx, self.video_ctx.av_class)
         cdef int b_frames = 0
         self.video_ctx.global_quality = 20*self.vaapi
@@ -1422,13 +1422,13 @@ cdef class Encoder:
             if level>0:
                 r = av_dict_set_int(&opts, b"level", level, 0)
                 if r!=0:
-                    raise Exception("failed to set level=%i", level)
+                    raise RuntimeError("failed to set level=%i", level)
 
         if self.vaapi:
             self.video_ctx.pix_fmt = AV_PIX_FMT_VAAPI
             r = set_hwframe_ctx(self.video_ctx, self.hw_device_ctx, self.width, self.height)
             if r<0:
-                raise Exception("failed to set hwframe context")
+                raise RuntimeError("failed to set hwframe context")
             if self.encoding=="h264":
                 #reach highest quality (compression_level=0) for quality>=91:
                 self.video_ctx.compression_level = max(0, min(7, 7-quality/13))
@@ -1469,7 +1469,7 @@ cdef class Encoder:
         r = avcodec_open2(self.video_ctx, self.video_codec, &opts)
         av_dict_free(&opts)
         if r!=0:
-            raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+            raise RuntimeError("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
         log("init_encoder() avcodec_open2 success")
 
         cdef AVCodecParameters *codecpar
@@ -1482,17 +1482,17 @@ cdef class Encoder:
             codecpar.color_trc = AVCOL_TRC_BT709
             codecpar.color_space = AVCOL_SPC_BT709
             if r<0:
-                raise Exception("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
+                raise RuntimeError("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
 
         self.av_frame = av_frame_alloc()
         if self.av_frame==NULL:
-            raise Exception("could not allocate an AVFrame for encoding")
+            raise RuntimeError("could not allocate an AVFrame for encoding")
         self.frames = 0
 
     def init_audio(self):
         self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
         if self.audio_codec==NULL:
-            raise Exception("cannot find audio codec!")
+            raise RuntimeError("cannot find AAC audio codec!")
         log("init_audio() audio_codec=%#x", <uintptr_t> self.audio_codec)
         self.audio_stream = avformat_new_stream(self.muxer_ctx, NULL)
         self.audio_stream.id = 1
@@ -1513,12 +1513,12 @@ cdef class Encoder:
         #av_dict_free(&opts)
         r = avcodec_open2(self.audio_ctx, self.audio_codec, NULL)
         if r!=0:
-            raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+            raise RuntimeError("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
         if r!=0:
-            raise Exception("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
+            raise RuntimeError("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
         r = avcodec_parameters_from_context(self.audio_stream.codecpar, self.audio_ctx)
         if r<0:
-            raise Exception("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
+            raise RuntimeError("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
 
 
     def clean(self):
@@ -1679,7 +1679,7 @@ cdef class Encoder:
             for i in range(4):
                 if i<self.nplanes:
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                        raise ValueError("failed to read pixel data from %s" % type(pixels[i]))
                     #log("plane %s: %i bytes (%ix%i stride=%i)", ["Y", "U", "V"][i], buf_len, self.width, self.height, istrides[i])
                     self.av_frame.data[i] = <uint8_t *> py_buf[i].buf
                     self.av_frame.linesize[i] = istrides[i]
@@ -1731,7 +1731,7 @@ cdef class Encoder:
         release_buffers()
         if ret!=0:
             self.log_av_error(image, ret, options)
-            raise Exception("%i: %s" % (ret, av_error_str(ret)))
+            raise RuntimeError("%i: %s" % (ret, av_error_str(ret)))
 
         buf_len = 1024+self.width*self.height
         cdef AVPacket *avpkt = av_packet_alloc()
@@ -1755,14 +1755,14 @@ cdef class Encoder:
                     break
                 if ret<0:
                     self.log_av_error(image, ret, options)
-                    raise Exception(av_error_str(ret))
+                    raise RuntimeError(av_error_str(ret))
                 if ret>0:
                     self.log_av_error(image, ret, options, "no stream")
-                    raise Exception("no stream")
+                    raise RuntimeError("no stream")
                 log("avcodec_receive_packet returned %#x bytes of data, flags: %s", avpkt.size, flagscsv(PKT_FLAGS, avpkt.flags))
                 if avpkt.flags & AV_PKT_FLAG_CORRUPT:
                     self.log_error(image, "packet", options, "av packet is corrupt")
-                    raise Exception("av packet is corrupt")
+                    raise RuntimeError("av packet is corrupt")
 
                 if self.muxer_format:
                     #give the frame to the muxer:
@@ -1773,7 +1773,7 @@ cdef class Encoder:
                     if ret<0:
                         free(avpkt.data)
                         self.log_av_error(image, ret, options)
-                        raise Exception(av_error_str(ret))
+                        raise RuntimeError(av_error_str(ret))
                     #flush muxer:
                     while True:
                         r = av_write_frame(self.muxer_ctx, NULL)
@@ -1782,7 +1782,7 @@ cdef class Encoder:
                             break
                         if ret<0:
                             self.log_av_error(image, ret, options)
-                            raise Exception(av_error_str(ret))
+                            raise RuntimeError(av_error_str(ret))
                 else:
                     #process frame data without a muxer:
                     self.buffers.append(avpkt.data[:avpkt.size])

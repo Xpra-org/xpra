@@ -37,7 +37,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
     def __init__(self, *args, **kwargs):
         self.pasteboard = NSPasteboard.generalPasteboard()
         if self.pasteboard is None:
-            raise Exception("cannot load Pasteboard, maybe not running from a GUI session?")
+            raise RuntimeError("cannot load Pasteboard, maybe not running from a GUI session?")
         kwargs["clipboard.local"] = "CLIPBOARD"
         kwargs["clipboards.local"] = ["CLIPBOARD"]
         super().__init__(*args, **kwargs)

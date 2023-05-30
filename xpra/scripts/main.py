@@ -2545,11 +2545,11 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
             return proc, f"named-pipe://{display_name}", display_name
         log(f"get_display_state({display_name})={state} (waiting)")
         if proc.poll() not in (None, 0):
-            raise Exception(f"shadow subprocess command returned {proc.returncode}")
+            raise RuntimeError(f"shadow subprocess command returned {proc.returncode}")
         time.sleep(0.10)
         elapsed = monotonic()-start
     proc.terminate()
-    raise Exception(f"timeout: failed to identify the new shadow server {display_name!r}")
+    raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
 
 def start_server_subprocess(script_file, args, mode, opts,
                             username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
@@ -2901,7 +2901,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> int:
         if final_state is DotXpra.LIVE:
             print(f"Failed to shutdown xpra at {display}")
             return 1
-        raise Exception(f"invalid state: {final_state}")
+        raise RuntimeError(f"invalid state: {final_state}")
 
     def multimode(displays):
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")

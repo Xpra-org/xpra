@@ -219,7 +219,7 @@ class win32NotifyIcon:
         r = Shell_NotifyIcon(NIM_ADD, byref(ni))
         log("Shell_NotifyIcon ADD=%i", r)
         if not r:
-            raise Exception("Shell_NotifyIcon failed to ADD")
+            raise RuntimeError("Shell_NotifyIcon failed to ADD")
 
     def make_nid(self, flags):
         assert self.hwnd

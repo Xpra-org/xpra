@@ -49,7 +49,7 @@ class WGLWindowContext:
         log("wglMakeCurrent(%#x, %#x)", self.hdc, self.context)
         r = wglMakeCurrent(self.hdc, self.context)
         if not r:
-            raise Exception("wglMakeCurrent failed")
+            raise RuntimeError("wglMakeCurrent failed")
         self.ps = PAINTSTRUCT()
         self.paint_hdc = BeginPaint(self.hwnd, byref(self.ps))
         assert self.paint_hdc, "BeginPaint: no display device context"
@@ -183,9 +183,9 @@ class WGLContext:
         pf = ChoosePixelFormat(self.hdc, byref(pfd))
         log("ChoosePixelFormat for window %#x and %i bpc: %#x", hwnd, bpc, pf)
         if not SetPixelFormat(self.hdc, pf, byref(pfd)):
-            raise Exception("SetPixelFormat failed")
+            raise RuntimeError("SetPixelFormat failed")
         if not DescribePixelFormat(self.hdc, pf, sizeof(PIXELFORMATDESCRIPTOR), byref(pfd)):
-            raise Exception("DescribePixelFormat failed")
+            raise RuntimeError("DescribePixelFormat failed")
         self.pixel_format_props.update({
             "rgba"              : pfd.iPixelType==PFD_TYPE_RGBA,
             "depth"             : pfd.cColorBits,
@@ -218,7 +218,7 @@ class WGLContext:
         if c:
             self.context = 0
             if not wglDeleteContext(c):
-                raise Exception("wglDeleteContext failed for context %#x" % c)
+                raise RuntimeError("wglDeleteContext failed for context %#x" % c)
         self.hwnd = 0
 
     def __repr__(self):

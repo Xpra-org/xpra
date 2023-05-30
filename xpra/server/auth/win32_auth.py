@@ -44,7 +44,7 @@ class Authenticator(SysAuthenticator):
 
     def get_challenge(self, digests):
         if "xor" not in digests:
-            raise Exception("win32 authenticator requires the 'xor' digest")
+            raise RuntimeError("win32 authenticator requires the 'xor' digest")
         return super().get_challenge(["xor"])
 
     def check(self, password) -> bool:
