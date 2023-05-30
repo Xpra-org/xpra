@@ -41,8 +41,8 @@ class WebSocketProtocol(SocketProtocol):
         return f"WebSocket({self._conn})"
 
     def close(self, message=None):
-        if not self._closed:
-            pass
+        if self._closed:
+            return
         self.send_ws_close(reason=message)
         super().close(message)
         self.ws_data = b""
