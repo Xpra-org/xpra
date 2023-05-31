@@ -16,7 +16,7 @@ import os
 import sys
 import struct
 from enum import IntEnum
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 from xpra.log import Logger
 from xpra.util import envbool
@@ -53,7 +53,7 @@ XSettingsNames : Dict[int,str] = {
 
 
 XSETTINGS_CACHE : Tuple[int, List[Tuple]] = (0, [])
-def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple]]:
+def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple[int,str,Any,int]]]:
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
@@ -119,7 +119,7 @@ def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple]]:
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 
-def xsettings_to_bytes(d : Tuple[int,List[Tuple]]) -> bytes:
+def xsettings_to_bytes(d : Tuple[int,List[Tuple[int,str,Any,int]]]) -> bytes:
     if len(d)!=2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d
