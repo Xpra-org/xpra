@@ -62,7 +62,7 @@ class ImageWrapper:
     def __repr__(self) -> str:
         return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), self.planes)
 
-    def get_geometry(self) -> tuple:
+    def get_geometry(self) -> Tuple[int,int,int,int,int]:
         return self.x, self.y, self.width, self.height, self.depth
 
     def get_x(self) -> int:

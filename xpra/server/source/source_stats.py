@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from collections import deque
 
 from xpra.server.cystats import (                                           #@UnresolvedImport
@@ -40,7 +40,7 @@ class GlobalPerformanceStatistics:
     DEFAULT_LATENCY = 0.1
 
     def reset(self, maxlen=NRECS):
-        def d(maxlen=maxlen):
+        def d(maxlen=maxlen) -> deque:
             return deque(maxlen=maxlen)
         # mmap state:
         self.mmap_size = 0
@@ -114,7 +114,7 @@ class GlobalPerformanceStatistics:
         self.client_latency.append((wid, now, pixels, net_total_latency))
         self.frame_total_latency.append((wid, now, pixels, latency))
 
-    def get_damage_pixels(self, wid) -> tuple:
+    def get_damage_pixels(self, wid) -> Tuple[float,int]:
         """ returns the tuple of (event_time, pixelcount) for the given window id """
         return tuple((event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid)
 
@@ -168,9 +168,9 @@ class GlobalPerformanceStatistics:
             #(wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
-    def get_factors(self, pixel_count) -> list:
+    def get_factors(self, pixel_count:int) -> Tuple[str,str,float,float]:
         factors = []
-        def mayaddfac(metric, info, factor, weight):
+        def mayaddfac(metric:str, info:str, factor:float, weight:float):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
         if self.client_latency:
@@ -208,7 +208,7 @@ class GlobalPerformanceStatistics:
             mayaddfac("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2)
         if self.congestion_value>0:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
-        return factors
+        return tuple(factors)
 
     def get_connection_info(self) -> Dict[str,Any]:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))

@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Tuple, Dict, Any
+from typing import Callable, List, Tuple, Dict, Any, Type
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -174,7 +174,7 @@ class ServerCore:
         self._upgrading = None
         #networking bits:
         self._socket_info : Dict = {}
-        self._potential_protocols : List = []
+        self._potential_protocols : List[SocketProtocol] = []
         self._rfb_upgrade : int = 0
         self._ssl_attributes : Dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
@@ -774,7 +774,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type, auth_strs) -> tuple:
+    def get_auth_modules(self, socket_type, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict]]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()
@@ -925,7 +925,7 @@ class ServerCore:
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 
-    def get_mdns_socktypes(self, socktype:str) -> tuple:
+    def get_mdns_socktypes(self, socktype:str) -> Tuple[str,...]:
         #for a given socket type,
         #what socket types we should expose via mdns
         if socktype in ("vsock", "named-pipe"):
@@ -1055,7 +1055,7 @@ class ServerCore:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
-    def get_all_protocols(self) -> tuple:
+    def get_all_protocols(self) -> Tuple[SocketProtocol]:
         return tuple(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason=None, force=False) -> None:
@@ -1919,7 +1919,7 @@ class ServerCore:
         #in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype:str, remote, conn) -> tuple:
+    def make_authenticators(self, socktype:str, remote, conn) -> Tuple[Any]:
         authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")

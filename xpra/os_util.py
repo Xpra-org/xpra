@@ -17,7 +17,7 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Optional, Union, Tuple, Dict, Any, Set, List
 from threading import Thread
 
 # only minimal imports go at the top
@@ -197,7 +197,7 @@ def get_home_for_uid(uid) -> str:
             pass
     return ""
 
-def get_groups(username) -> list:
+def get_groups(username) -> List[str]:
     if POSIX:
         import grp      #@UnresolvedImport
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
@@ -579,7 +579,7 @@ def register_SIGUSR_signals(idle_add=no_idle) -> None:
     signal.signal(signal.SIGUSR2, sigusr2)
 
 
-def livefds() -> set[int]:
+def livefds() -> Set[int]:
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
@@ -941,7 +941,7 @@ def setuidgid(uid:int, gid:int) -> None:
         log.error(f" continuing with uid={os.getuid()}")
     log(f"new uid={os.getuid()}, gid={os.getgid()}")
 
-def get_peercred(sock) -> Optional[tuple[int,int,int]]:
+def get_peercred(sock) -> Optional[Tuple[int,int,int]]:
     if LINUX:
         SO_PEERCRED = 17
         log = get_util_logger()

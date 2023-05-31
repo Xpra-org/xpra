@@ -1861,7 +1861,7 @@ class WindowVideoSource(WindowSource):
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return True
 
-    def get_video_encoder_options(self, encoding, width, height) -> dict:
+    def get_video_encoder_options(self, encoding, width, height) -> Dict[str,Any]:
         #tweaks for "real" video:
         opts = {"cuda-device-context" : self.cuda_device_context}
         if not self._fixed_quality and not self._fixed_speed and self._fixed_min_quality<50:

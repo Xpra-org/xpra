@@ -25,10 +25,10 @@ NOPREFIX_FORMAT : str = "%(message)s"
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
 
-debug_enabled_categories : set[str] = set()
-debug_disabled_categories : set[str] = set()
+debug_enabled_categories : Set[str] = set()
+debug_disabled_categories : Set[str] = set()
 
-def get_debug_args() -> list[str]:
+def get_debug_args() -> List[str]:
     args = []
     if debug_enabled_categories:
         args += list(debug_enabled_categories)

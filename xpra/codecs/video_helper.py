@@ -261,13 +261,13 @@ class VideoHelper:
         return tuple(self._csc_encoder_specs.keys())
 
 
-    def get_encoder_specs(self, encoding) -> dict:
+    def get_encoder_specs(self, encoding) -> Dict:
         return self._video_encoder_specs.get(encoding, {})
 
-    def get_csc_specs(self, src_format) -> dict:
+    def get_csc_specs(self, src_format) -> Dict:
         return self._csc_encoder_specs.get(src_format, {})
 
-    def get_decoder_specs(self, encoding) -> dict:
+    def get_decoder_specs(self, encoding) -> Dict:
         return self._video_decoder_specs.get(encoding, {})
 
 

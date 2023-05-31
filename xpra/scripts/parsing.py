@@ -13,7 +13,7 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple, Optional
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict
@@ -602,7 +602,7 @@ def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
         ssl_options["server-verify-mode"] = "none"
     return ssl_options
 
-def parse_ssh_option(ssh_setting:str) -> list:
+def parse_ssh_option(ssh_setting:str) -> List[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
@@ -653,7 +653,7 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     return desc
 
 
-def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list:
+def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> List[str]:
     ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
@@ -686,7 +686,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list:
             args += ["-i", key_path]
     return args
 
-def get_ssh_proxy_args(desc, ssh) -> list:
+def get_ssh_proxy_args(desc, ssh) -> List[str]:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
     is_paramiko = ssh[0]=="paramiko"
     args = []
@@ -714,11 +714,11 @@ def supports_x11_server() -> bool:
         return False
 
 
-def get_subcommands() -> tuple:
+def get_subcommands() -> Tuple[str,...]:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
-def get_usage() -> list:
+def get_usage() -> List[str]:
     RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
     command_options = [
         "",
@@ -1864,7 +1864,7 @@ def do_validate_encryption(auth, tcp_auth,
     #        raise InitException("tcp-encryption %s should not use the same file"
     #                            +" as the password authentication file" % tcp_encryption)
 
-def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list:
+def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> List[str]:
     from xpra.audio.wrapper import query_audio
     props = query_audio()
     if not props:

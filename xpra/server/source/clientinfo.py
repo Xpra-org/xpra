@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 from xpra.util import std, typedict, net_utf8
 from xpra.common import FULL_INFO
@@ -21,10 +21,10 @@ class ClientInfoMixin(StubSourceMixin):
     Store information about the client.
     """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.init_state()
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.uuid = ""
         self.session_id = ""
         self.machine_id = ""
@@ -57,7 +57,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_version = None
         self.proxy_version = None
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         self.uuid = c.strget("uuid")
         self.session_id = c.strget("session-id")
         self.machine_id = c.strget("machine_id")
@@ -89,7 +89,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
         log(f"client uuid {self.uuid}")
 
-    def get_connect_info(self) -> list:
+    def get_connect_info(self) -> List[str]:
         #client platform / version info:
         pinfo = [std(self.client_type)]
         if FULL_INFO>0:

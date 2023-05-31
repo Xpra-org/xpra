@@ -79,7 +79,7 @@ def find_codecs(options) -> Dict[str,str]:
 CODECS = find_codecs(get_codecs_options())
 
 
-def get_encodings() -> tuple:
+def get_encodings() -> Tuple[str,...]:
     return tuple(CODECS.keys())
 
 def get_min_size(encoding:str):

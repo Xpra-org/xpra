@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -166,7 +166,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source) -> dict:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -207,7 +207,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> list:
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> List[str]:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))

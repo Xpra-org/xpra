@@ -507,7 +507,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _state_isset(self, state_name) -> bool:
         return state_name in self.get_property("state")
 
-    def _read_wm_state(self) -> list:
+    def _read_wm_state(self) -> List[str]:
         wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
         metalog("read _NET_WM_STATE=%s", wm_state)
         return wm_state or []

@@ -373,7 +373,7 @@ class ClientConnection(StubSourceMixin):
         info.update(self.get_features_info())
         return info
 
-    def get_features_info(self) -> dict:
+    def get_features_info(self) -> Dict[str,Any]:
         info = {
             "lock"  : bool(self.lock),
             "share" : bool(self.share),

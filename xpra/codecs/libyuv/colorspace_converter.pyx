@@ -6,7 +6,7 @@
 
 #cython: wraparound=False
 
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from time import monotonic
 
 from xpra.log import Logger
@@ -130,7 +130,7 @@ def cleanup_module():
 def get_type() -> str:
     return "libyuv"
 
-def get_version() -> tuple:
+def get_version() -> Tuple[int,int]:
     return (1, 0)
 
 #hardcoded for now:

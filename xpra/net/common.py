@@ -5,7 +5,7 @@
 
 import os
 import threading
-from typing import Tuple, Callable, Dict
+from typing import Tuple, Callable, List, Dict
 
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.log import Logger
@@ -56,7 +56,7 @@ URL_MODES : Dict[str,str] = {
 
 
 #this is used for generating aliases:
-PACKET_TYPES : list[str] = [
+PACKET_TYPES : List[str] = [
     #generic:
     "hello",
     "info", "info-response",

@@ -1628,7 +1628,7 @@ class WindowSource(WindowIconSource):
         due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due, target_delay)
 
-    def may_update_window_dimensions(self) -> tuple:
+    def may_update_window_dimensions(self) -> Tuple[int,int]:
         ww, wh = self.window.get_dimensions()
         if self.window_dimensions != (ww, wh):
             now = monotonic()

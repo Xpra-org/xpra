@@ -282,7 +282,7 @@ def configure_env(env_str) -> None:
         os.environ.update(env)
 
 
-def systemd_run_command(mode, systemd_run_args=None, user:bool=True) -> list:
+def systemd_run_command(mode, systemd_run_args=None, user:bool=True) -> List[str]:
     cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope"]
     if user:
         cmd.append("--user")
@@ -2657,14 +2657,14 @@ def start_server_subprocess(script_file, args, mode, opts,
                                                uid)
     return proc, socket_path, display
 
-def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()) -> list:
+def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()) -> List[str]:
     option_types = {}
     for x, ftype in OPTION_TYPES.items():
         if x not in CLIENT_ONLY_OPTIONS:
             option_types[x] = ftype
     return get_command_args(opts, uid, gid, option_types, compat, cmdline)
 
-def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES, compat=False, cmdline=()) -> list:
+def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES, compat=False, cmdline=()) -> List[str]:
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fdefaults = defaults.clone()
     fixup_options(fdefaults)

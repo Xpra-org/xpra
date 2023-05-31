@@ -112,7 +112,7 @@ def get_x264_preset(speed:int=50, fast_decode:bool=False) -> int:
     return 5 - max(0, min(4, speed // 20))
 
 
-RGB_FORMATS : tuple[str, ...] = (
+RGB_FORMATS : Tuple[str, ...] = (
                "XRGB",
                "BGRX",
                "ARGB",

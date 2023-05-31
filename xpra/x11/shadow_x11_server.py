@@ -7,9 +7,10 @@
 
 import re
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from xpra.x11.x11_server_core import X11ServerCore
+from xpra.net.compression import Compressed
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
 from xpra.util import envbool, envint, merge_dicts, AdHocStruct, NotificationID
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -395,7 +396,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.last_client_exited(self)
 
 
-    def do_get_cursor_data(self) -> tuple:
+    def do_get_cursor_data(self) -> Tuple[Any,Any]:
         return X11ServerCore.get_cursor_data(self)
 
 
@@ -445,12 +446,11 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         info.setdefault("server", {})["type"] = "Python/gtk3/x11-shadow"
         return info
 
-    def do_make_screenshot_packet(self) -> tuple:
+    def do_make_screenshot_packet(self) -> Tuple[str,int,int,str,int,Compressed]:
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         # pylint: disable=import-outside-toplevel
-        from xpra.net.compression import Compressed
         return ("screenshot", w, h, encoding, rowstride, Compressed(encoding, data))
 
 

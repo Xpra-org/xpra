@@ -11,7 +11,7 @@ import signal
 import math
 from time import monotonic, sleep
 from collections import deque
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Optional
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
@@ -87,7 +87,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._exit_with_windows = False
         self._xsettings_enabled = True
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb or 0)
         self.system_tray = opts.system_tray
@@ -334,7 +334,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return super().set_screen_size(desired_w, desired_h, bigger)
 
 
-    def set_screen_geometry_attributes(self, w:int, h:int):
+    def set_screen_geometry_attributes(self, w:int, h:int) -> None:
         #only run the default code if there are no clients,
         #when we have clients, this should have been done already
         #in the code that synchronizes the screen resolution
@@ -478,7 +478,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
 
-    def _new_window_signaled(self, _wm, window):
+    def _new_window_signaled(self, _wm, window) -> None:
         self.last_raised = None
         self._add_new_window(window)
 
@@ -811,14 +811,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.restack_window(wid, window, detail, sibling)
 
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> tuple:
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> Tuple[str]:
         if proto not in self._server_sources:
             return ()
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
         metadatalog("set_window_state%s", (wid, window, new_window_state))
-        changes = {}
+        changes : Dict[str, Any] = {}
         if "frame" in new_window_state:
             #the size of the window frame may have changed
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
@@ -852,7 +852,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return tuple(changes.keys())
 
 
-    def get_window_position(self, window):
+    def get_window_position(self, window) -> Optional[Tuple[int,int]]:
         #used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None
@@ -861,10 +861,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
             pos = window.get_property("geometry")
             if not pos:
                 return None
-        return pos[:2]
+        return tuple(pos[:2])
 
 
-    def client_configure_window(self, win, geometry, resize_counter:int=0):
+    def client_configure_window(self, win, geometry, resize_counter:int=0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
         old_geom = win.get_property("client-geometry")
         update_geometry = geometry!=old_geom
@@ -1071,7 +1071,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if damage:
             self.schedule_configure_damage(wid)
 
-    def schedule_configure_damage(self, wid:int, delay=CONFIGURE_DAMAGE_RATE):
+    def schedule_configure_damage(self, wid:int, delay=CONFIGURE_DAMAGE_RATE) -> None:
         #rate-limit the damage events
         timer = self.configure_damage_timers.get(wid)
         if timer:
@@ -1083,19 +1083,19 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 self.refresh_window(window)
         self.configure_damage_timers[wid] = self.timeout_add(delay, damage)
 
-    def cancel_configure_damage(self, wid:int):
+    def cancel_configure_damage(self, wid:int) -> None:
         timer = self.configure_damage_timers.pop(wid, None)
         if timer:
             self.source_remove(timer)
 
-    def cancel_all_configure_damage(self):
+    def cancel_all_configure_damage(self) -> None:
         timers = tuple(self.configure_damage_timers.values())
         self.configure_damage_timers = {}
         for timer in timers:
             self.source_remove(timer)
 
 
-    def _set_client_properties(self, proto, wid:int, window, new_client_properties):
+    def _set_client_properties(self, proto, wid:int, window, new_client_properties) -> None:
         """
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property

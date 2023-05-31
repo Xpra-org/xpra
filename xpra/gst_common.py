@@ -6,7 +6,7 @@
 
 import sys
 import os
-from typing import Dict, List, Any
+from typing import Dict, Tuple, List, Any
 
 from xpra.util import csv
 from xpra.log import Logger
@@ -25,7 +25,7 @@ STREAM_TYPE : int = GST_APP_STREAM_TYPE_STREAM
 
 
 Gst = None
-def get_gst_version() -> tuple:
+def get_gst_version() -> Tuple[int,...]:
     if not Gst:
         return ()
     return tuple(Gst.version())
@@ -111,7 +111,7 @@ def normv(v:int) -> int:
     return int(v)
 
 
-all_plugin_names : list[str] = []
+all_plugin_names : List[str] = []
 def get_all_plugin_names() -> List[str]:
     global all_plugin_names
     if not all_plugin_names and Gst:
