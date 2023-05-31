@@ -438,7 +438,7 @@ class Logger:
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
-all_loggers : Dict[str, Set[weakref.ReferenceType[Logger]]] = {}
+all_loggers : Dict[str, Set['weakref.ReferenceType[Logger]']] = {}
 def add_logger(categories, logger:Logger):
     categories = list(categories)
     categories.append("all")
