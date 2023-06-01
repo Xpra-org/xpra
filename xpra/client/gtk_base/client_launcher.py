@@ -207,7 +207,7 @@ class ApplicationWindow:
         self.window.set_title("Xpra Launcher")
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
-        add_close_accel(self.window, self.destroy)
+        add_close_accel(self.window, self.accel_close)
         icon = get_icon_pixbuf("connect.png")
         if icon:
             self.window.set_icon(icon)
