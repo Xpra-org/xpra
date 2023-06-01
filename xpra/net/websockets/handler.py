@@ -56,7 +56,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             raise ValueError("client does not support 'binary' protocol")
 
         key = self.headers.get("Sec-WebSocket-Key", "")
-        if key:
+        if not key:
             raise ValueError("Missing Sec-WebSocket-Key header")
         accept = make_websocket_accept_hash(key)
         log(f"websocket hash for key {key!r} = {accept!r}")
