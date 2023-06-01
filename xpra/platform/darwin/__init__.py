@@ -7,8 +7,6 @@ import os
 import sys
 
 def do_init():
-    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
-        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
@@ -16,6 +14,18 @@ def do_init():
         from AppKit import NSApp    #@UnresolvedImport
         #NSApplicationActivationPolicyAccessory = 1
         NSApp.setActivationPolicy_(1)
+
+def do_init_env():
+    from xpra.platform import init_env_common
+    init_env_common()
+    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
+        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
+    #GStreamer paths:
+    bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
+    if bundle_contents:
+        rsc_dir = os.path.join(bundle_contents, "Resources")
+        os.environ["GST_PLUGIN_PATH"]       = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
+        os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "bin", "gst-plugin-scanner-1.0")
 
 
 exit_cb = None

@@ -18,6 +18,7 @@ def init(prgname=None, appname=None):
     if prgname is not None or appname is not None:
         set_default_name(prgname, appname)
         set_name()
+    init_env()
     if not _init_done:
         _init_done = True
         do_init()
@@ -25,6 +26,46 @@ def init(prgname=None, appname=None):
 
 def do_init():  # pragma: no cover
     """ some platforms override this """
+
+
+def init_env():
+    do_init_env()
+
+def do_init_env():
+    init_env_common()
+
+def init_env_common():
+    #turn off gdk scaling to make sure we get the actual window geometry:
+    os.environ["GDK_SCALE"] = os.environ.get("GDK_SCALE", "1")
+    os.environ["GDK_DPI_SCALE"] = os.environ.get("GDK_DPI_SCALE", "1")
+    #client side decorations break window geometry,
+    #disable this "feature" unless explicitly enabled:
+    os.environ["GTK_CSD"] = os.environ.get("GTK_CSD", "0")
+    init_hashlib()
+
+def init_hashlib():
+    from xpra.util import envbool
+    if envbool("XPRA_NOMD5", False):
+        import hashlib
+        try:
+            hashlib.algorithms_available.remove("md5")  # type: ignore[attr-defined] #@UndefinedVariable
+        except KeyError:
+            pass
+        else:
+            def nomd5(*_anyargs):
+                raise ValueError("md5 support is disabled")
+            hashlib.md5 = nomd5                         # type: ignore
+    if envbool("XPRA_NOSHA1", False):
+        import hashlib  # @Reimport
+        try:
+            hashlib.algorithms_available.remove("sha1")  # type: ignore[attr-defined] #@UndefinedVariable
+        except KeyError:
+            pass
+        else:
+            def nosha1(*_anyargs):
+                raise ValueError("sha1 support is disabled")
+            hashlib.sha1 = nosha1                       # type: ignore
+
 
 def threaded_server_init():
     """ platform implementations may override this function """
@@ -149,7 +190,7 @@ def platform_import(where, pm, required, *imports):
             where[x] = getattr(platform_module, x)
 
 platform_import(globals(), None, False,
-                "do_init", "do_clean",
+                "do_init", "do_clean", "do_init_env",
                 "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",
                 "command_error", "command_info"

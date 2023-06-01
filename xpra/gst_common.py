@@ -35,27 +35,9 @@ def import_gst():
     global Gst
     if Gst is not None:
         return Gst
-
-    from xpra.os_util import WIN32, OSX
-    #hacks to locate gstreamer plugins on win32 and osx:
-    if WIN32:
-        frozen = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
-        log("gstreamer_util: frozen=%s", frozen)
-        if frozen:
-            from xpra.platform.paths import get_app_dir
-            gst_dir = os.path.join(get_app_dir(), "lib", "gstreamer-1.0")   #ie: C:\Program Files\Xpra\lib\gstreamer-1.0
-            os.environ["GST_PLUGIN_PATH"] = gst_dir
-    elif OSX:
-        bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
-        log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
-        if bundle_contents:
-            rsc_dir = os.path.join(bundle_contents, "Resources")
-            os.environ["GST_PLUGIN_PATH"]       = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
-            os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "bin", "gst-plugin-scanner-1.0")
     log("GStreamer 1.x environment: %s",
         dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
-
     try:
         log("import gi")
         import gi

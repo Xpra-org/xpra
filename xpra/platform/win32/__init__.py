@@ -42,38 +42,10 @@ WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)
 GetConsoleCP = kernel32.GetConsoleCP  # @UndefinedVariable
 
 #redirect output if we're not running from a console:
-frozen = getattr(sys, 'frozen', False)
-REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", frozen is True and GetConsoleCP()==0)
-if frozen:
-    #cx_freeze paths:
-    PATH = os.environ.get("PATH", "").split(os.pathsep)
-    edir = os.path.abspath(os.path.dirname(sys.executable))
-    libdir = os.path.join(edir, "lib")
-    for d in (libdir, edir):
-        if not os.path.exists(d) or not os.path.isdir(d):
-            continue
-        try:
-            sys.path.remove(d)
-        except ValueError:
-            pass
-        sys.path.insert(0, d)
-        try:
-            PATH.remove(d)
-        except ValueError:
-            pass
-        PATH.insert(0, d)
-    os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
-    os.environ["PATH"] = os.pathsep.join(PATH)
-    if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
-        for theme in ("Windows-10", "win32"):
-            tdir = os.path.join(edir, "share", "themes", theme)
-            if os.path.exists(tdir):
-                os.environ["GTK_THEME"] = theme
-                break
-
-if REDIRECT_OUTPUT:
-    FIX_UNICODE_OUT = False
-else:
+FIX_UNICODE_OUT = False
+FROZEN = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
+REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", FROZEN and GetConsoleCP()==0)
+if not REDIRECT_OUTPUT:
     #don't know why this breaks with Python 3 yet...
     FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", False)
 
@@ -352,8 +324,6 @@ def setup_console_event_listener(handler, enable):
         return False
 
 def do_init():
-    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
-        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
     if FIX_UNICODE_OUT:
         fix_unicode_out()
     if not REDIRECT_OUTPUT:
@@ -372,6 +342,48 @@ def do_init():
         sys.stdout = open(log_filename, "a", encoding="utf8")
         sys.stderr = sys.stdout
         os.environ["XPRA_LOG_FILENAME"] = log_filename
+
+
+def do_init_env():
+    from xpra.platform import init_env_common
+    init_env_common()
+    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
+        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
+    if os.environ.get("GDK_WIN32_DISABLE_HIDPI") is None:
+        os.environ["GDK_WIN32_DISABLE_HIDPI"] = "1"
+    if FROZEN:
+        #cx_freeze paths:
+        PATH = os.environ.get("PATH", "").split(os.pathsep)
+        edir = os.path.abspath(os.path.dirname(sys.executable))
+        libdir = os.path.join(edir, "lib")
+        for d in (libdir, edir):
+            if not os.path.exists(d) or not os.path.isdir(d):
+                continue
+            try:
+                sys.path.remove(d)
+            except ValueError:
+                pass
+            sys.path.insert(0, d)
+            try:
+                PATH.remove(d)
+            except ValueError:
+                pass
+            PATH.insert(0, d)
+        #CUDA:
+        if not os.environ.get("CUDA_PATH"):
+            os.environ["CUDA_PATH"] = edir
+        #Gtk and gi:
+        os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
+        os.environ["PATH"] = os.pathsep.join(PATH)
+        if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
+            for theme in ("Windows-10", "win32"):
+                tdir = os.path.join(edir, "share", "themes", theme)
+                if os.path.exists(tdir):
+                    os.environ["GTK_THEME"] = theme
+                    break
+        #GStreamer plugins:
+        gst_dir = os.path.join(libdir, "gstreamer-1.0")   #ie: C:\Program Files\Xpra\lib\gstreamer-1.0
+        os.environ["GST_PLUGIN_PATH"] = gst_dir
 
 
 MB_ICONEXCLAMATION  = 0x00000030

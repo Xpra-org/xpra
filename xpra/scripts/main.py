@@ -103,36 +103,6 @@ def main(script_file:str, cmdline) -> int:
     if len(cmdline)==1:
         cmdline.append("gui")
 
-    #turn off gdk scaling to make sure we get the actual window geometry:
-    os.environ["GDK_SCALE"] = os.environ.get("GDK_SCALE", "1")
-    os.environ["GDK_DPI_SCALE"] = os.environ.get("GDK_DPI_SCALE", "1")
-    if WIN32 and os.environ.get("GDK_WIN32_DISABLE_HIDPI") is None:
-        os.environ["GDK_WIN32_DISABLE_HIDPI"] = "1"
-    #client side decorations break window geometry,
-    #disable this "feature" unless explicitly enabled:
-    os.environ["GTK_CSD"] = os.environ.get("GTK_CSD", "0")
-
-    if envbool("XPRA_NOMD5", False):
-        import hashlib
-        try:
-            hashlib.algorithms_available.remove("md5")  # type: ignore[attr-defined] #@UndefinedVariable 
-        except KeyError:
-            pass
-        else:
-            def nomd5(*_anyargs):
-                raise ValueError("md5 support is disabled")
-            hashlib.md5 = nomd5                         # type: ignore
-    if envbool("XPRA_NOSHA1", False):
-        import hashlib  # @Reimport
-        try:
-            hashlib.algorithms_available.remove("sha1")  # type: ignore[attr-defined] #@UndefinedVariable 
-        except KeyError:
-            pass
-        else:
-            def nosha1(*_anyargs):
-                raise ValueError("sha1 support is disabled")
-            hashlib.sha1 = nosha1                       # type: ignore
-
     def debug_exc(msg:str="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
 
