@@ -169,7 +169,7 @@ def safe_lookup(config_obj, host):
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.warn(f"Warning: unable to load SSH host config for {host!r}:")
         log.warn(f" {e}")
-   except KeyError as e:
+    except KeyError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.info(f"paramiko ssh config lookup error for host {host!r}:")
         log.info(" %s: %s", type(e), e)
