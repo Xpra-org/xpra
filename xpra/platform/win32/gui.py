@@ -392,17 +392,11 @@ def fixup_window_style(self, *_args):
             style |= win32con.WS_SYSMENU
             style |= win32con.WS_MAXIMIZEBOX
             style |= win32con.WS_MINIMIZEBOX
-        #we can't enable this because GTK would then get confused
+        #we can't tweak WS_MAXIMIZEBOX and WS_SIZEBOX
+        #to hide the buttons
+        #because GTK would then get confused
         #and paint the window contents at the wrong offset
-        if False:
-            hints = metadata.get("size-constraints")
-            if hints:
-                minw, minh = hints.get("minimum-size", (0, 0))
-                maxw, maxh = hints.get("maximum-size", (0, 0))
-                if minw>0 and minw==maxw and minh>0 and minh==maxh:
-                    #not resizable
-                    style &= ~win32con.WS_MAXIMIZEBOX
-                    style &= ~win32con.WS_SIZEBOX
+        # hints = metadata.get("size-constraints")
         if style!=cur_style:
             log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s",
                 style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
