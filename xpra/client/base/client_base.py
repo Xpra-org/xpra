@@ -83,8 +83,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     * xpra.client.gtk3.client
     """
 
-    INSTALL_SIGNAL_HANDLERS = True
-
     def __init__(self):
         #this may be called more than once,
         #skip doing internal init again:
@@ -164,11 +162,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption = opts.encryption or opts.tcp_encryption
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
+        self.install_signal_handlers()
         #this is now done in UI client only,
         #most simple clients are just wasting time doing this
         #self.init_aliases()
-        if self.INSTALL_SIGNAL_HANDLERS:
-            self.install_signal_handlers()
 
 
     def show_progress(self, pct, text=""):
