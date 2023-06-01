@@ -180,7 +180,7 @@ tests/unittests/test-file*
 /xpra/x11/bindings/res.c
 /xpra/x11/bindings/wait_for_x_server.c
 /xpra/x11/bindings/xwait.c
-/xpra/x11/bindings/bindings.c
+/xpra/x11/bindings/window.c
 /xpra/x11/bindings/ximage.c
 /xpra/x11/bindings/xwayland.c
 /xpra/x11/bindings/posix_display_source.c
