@@ -37,11 +37,11 @@ def save_properties(props, filename):
     def u(v):
         try:
             v = v.decode()
-        except:
+        except Exception:
             v = str(v)
         try:
             return v.encode("utf-8")
-        except:
+        except UnicodeDecodeError:
             return v
     with open(filename, mode='wb') as f:
         def w(v):
@@ -203,10 +203,10 @@ def get_platform_name():
             o = Popen('systeminfo', stdout=PIPE).communicate()[0]
             try:
                 o = str(o, "latin-1")  # Python 3+
-            except:
+            except Exception:
                 pass
             return re.search(r"OS Name:\s*(.*)", o).group(1).strip()
-        except:
+        except OSError:
             pass
         return "Microsoft Windows"
     if sys.platform.find("bsd")>=0:
@@ -216,7 +216,7 @@ def get_platform_name():
         ld = get_linux_distribution()
         if ld:
             return "Linux %s" % (" ".join(ld))
-    except:
+    except Exception:
         pass
     return sys.platform
 
@@ -237,7 +237,7 @@ def record_build_info():
         try:
             import getpass
             set_prop(props, "BUILT_BY", getpass.getuser())
-        except:
+        except OSError:
             set_prop(props, "BUILT_BY", os.environ.get("USER"))
         set_prop(props, "BUILT_ON", socket.gethostname())
     set_prop(props, "BUILD_DATE", build_date.isoformat())
@@ -248,7 +248,7 @@ def record_build_info():
     set_prop(props, "BUILD_OS", get_platform_name())
     try:
         from Cython import __version__ as cython_version
-    except:
+    except ImportError:
         cython_version = "unknown"
     set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
     set_prop(props, "CYTHON_VERSION", cython_version)
