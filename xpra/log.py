@@ -340,7 +340,7 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-    __slots__ = ("categories", "level", "level_override", "logger", "debug_enabled", "__weakref__")
+    __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__")
     def __init__(self, *categories):
         self.categories = list(categories)
         try:
@@ -350,7 +350,7 @@ class Logger:
         if caller not in ("__main__", None, "importlib._bootstrap"):
             self.categories.insert(0, caller)
         self.level_override = 0
-        self.logger = logging.getLogger(".".join(self.categories))
+        self._logger = logging.getLogger(".".join(self.categories))
         self.setLevel(default_level)
         disabled = False
         enabled = False
@@ -384,7 +384,7 @@ class Logger:
         return {
             "categories"    : self.categories,
             "debug"         : self.debug_enabled,
-            "level"         : self.logger.getEffectiveLevel(),
+            "level"         : self._logger.getEffectiveLevel(),
             }
 
     def __repr__(self):
@@ -392,11 +392,11 @@ class Logger:
 
 
     def getEffectiveLevel(self) -> int:
-        return self.logger.getEffectiveLevel()
+        return self._logger.getEffectiveLevel()
 
     def setLevel(self, level : int) -> None:
         self.level = level
-        self.logger.setLevel(level)
+        self._logger.setLevel(level)
 
     def is_debug_enabled(self) -> bool:
         return self.debug_enabled
@@ -417,7 +417,7 @@ class Logger:
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
-        global_logging_handler(self.logger.log, self.level_override or level, msg, *args, **kwargs)
+        global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
 
     def __call__(self, msg : str, *args, **kwargs):
         self.debug(msg, *args, **kwargs)
