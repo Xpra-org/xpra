@@ -352,18 +352,20 @@ class UIXpraClient(ClientBaseClass):
     def server_disconnect_warning(self, reason, *info):
         if self.exit_code is None:
             body = "\n".join(info)
-            if ConnectionMessage.AUTHENTICATION_FAILED in info and not self.connection_established:
-                title = "Authentication failed"
-                self.exit_code = ExitCode.AUTHENTICATION_FAILED
-            if self.connection_established and self.completed_startup:
-                title = "Xpra Session Disconnected: %s" % reason
-                self.exit_code = ExitCode.CONNECTION_LOST
-            elif self.connection_established:
-                title = "Connection failed during startup: %s" % reason
-                self.exit_code = ExitCode.CONNECTION_FAILED
+            if not self.connection_established:
+                if ConnectionMessage.AUTHENTICATION_FAILED in info:
+                    title = "Authentication failed"
+                    self.exit_code = ExitCode.AUTHENTICATION_FAILED
+                else:
+                    title = "Connection failed: %s" % reason
+                    self.exit_code = ExitCode.CONNECTION_FAILED
             else:
-                title = "Connection failed: %s" % reason
-                self.exit_code = ExitCode.CONNECTION_FAILED
+                if self.completed_startup:
+                    title = "Xpra Session Disconnected: %s" % reason
+                    self.exit_code = ExitCode.CONNECTION_LOST
+                else:
+                    title = "Connection failed during startup: %s" % reason
+                    self.exit_code = ExitCode.CONNECTION_FAILED
             self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             #show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
