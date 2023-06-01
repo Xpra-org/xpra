@@ -406,8 +406,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             filelist.append(abspath)
         draglog("drag_got_data_cb: will try to upload: %s", csv(filelist))
         pending = set(filelist)
-        #when all the files have been loaded / failed,
-        #finish the drag and drop context so the source knows we're done with them:
         def file_done(filename):
             if not pending:
                 return
@@ -415,40 +413,46 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 pending.remove(filename)
             except KeyError:
                 pass
+            #when all the files have been loaded / failed,
+            #finish the drag and drop context so the source knows we're done with them:
             if not pending:
                 context.finish(True, False, time)
+        #we may want to only process a limited number of files "at the same time":
         for filename in filelist:
-            def got_file_info(gfile, result, arg=None):
-                draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
-                file_info = gfile.query_info_finish(result)
-                basename = gfile.get_basename()
-                ctype = file_info.get_content_type()
-                size = file_info.get_size()
-                draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
-                def got_file_data(gfile, result, user_data=None):
-                    _, data, entity = gfile.load_contents_finish(result)
-                    filesize = len(data)
-                    draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
-                    file_done(filename)
-                    openit = self._client.remote_open_files
-                    draglog.info("sending file %s (%i bytes)", basename, filesize)
-                    self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
-                cancellable = None
-                user_data = (filename, True)
-                gfile.load_contents_async(cancellable, got_file_data, user_data)
-            try:
-                gfile = Gio.File.new_for_path(filename)
-                #basename = gf.get_basename()
-                FILE_QUERY_INFO_NONE = 0
-                G_PRIORITY_DEFAULT = 0
-                cancellable = None
-                gfile.query_info_async("standard::*", FILE_QUERY_INFO_NONE, G_PRIORITY_DEFAULT, cancellable, got_file_info, None)
-            except Exception as e:
-                draglog("file upload for %s:", filename, exc_info=True)
-                draglog.error("Error: cannot upload '%s':", filename)
-                draglog.estr(e)
-                del e
-                file_done(filename)
+            self.drag_process_file(filename, file_done)
+
+    def drag_process_file(self, filename:str, file_done_cb:Callable):
+        def got_file_info(gfile, result, arg=None):
+            draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
+            file_info = gfile.query_info_finish(result)
+            basename = gfile.get_basename()
+            ctype = file_info.get_content_type()
+            size = file_info.get_size()
+            draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
+            def got_file_data(gfile, result, user_data=None):
+                _, data, entity = gfile.load_contents_finish(result)
+                filesize = len(data)
+                draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
+                file_done_cb(filename)
+                openit = self._client.remote_open_files
+                draglog.info("sending file %s (%i bytes)", basename, filesize)
+                self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
+            cancellable = None
+            user_data = (filename, True)
+            gfile.load_contents_async(cancellable, got_file_data, user_data)
+        try:
+            gfile = Gio.File.new_for_path(filename)
+            #basename = gf.get_basename()
+            FILE_QUERY_INFO_NONE = 0
+            G_PRIORITY_DEFAULT = 0
+            cancellable = None
+            gfile.query_info_async("standard::*", FILE_QUERY_INFO_NONE, G_PRIORITY_DEFAULT, cancellable, got_file_info, None)
+        except Exception as e:
+            draglog("file upload for %s:", filename, exc_info=True)
+            draglog.error("Error: cannot upload '%s':", filename)
+            draglog.estr(e)
+            del e
+            file_done_cb(filename)
 
     ######################################################################
     # focus:
