@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Dict, Any
+from collections import deque
+from typing import Dict, Any, Deque
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
@@ -14,10 +15,16 @@ class ShellServer(StubServerMixin):
     """
     Mixin for adding shell support
     """
+    def init(self, _opts):
+        self.counter = 0
+        self.commands : Deque[str] = deque(maxlen=10)
 
     def get_info(self, _source=None) -> Dict[str,Any]:
         return {
-            "shell" : True,
+            "shell" : {
+                "counter" : self.counter,
+                "last-commands" : list(self.commands),
+                },
             }
 
     def get_server_features(self, _source) -> Dict[str,Any]:
@@ -26,9 +33,11 @@ class ShellServer(StubServerMixin):
             }
 
     def _process_shell_exec(self, proto, packet):
-        code = packet[1]
+        code = str(packet[1])
         ss = self.get_server_source(proto)
         if ss:
+            self.counter += 1
+            self.commands.append(code)
             ss.shell_exec(code)
 
 
