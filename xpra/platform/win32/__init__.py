@@ -352,6 +352,8 @@ def setup_console_event_listener(handler, enable):
         return False
 
 def do_init():
+    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
+        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
     if FIX_UNICODE_OUT:
         fix_unicode_out()
     if not REDIRECT_OUTPUT:
