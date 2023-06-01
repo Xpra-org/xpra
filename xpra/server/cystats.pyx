@@ -102,7 +102,7 @@ def calculate_timesize_weighted_average_score(data) -> Tuple[int,int]:
         w = pw/(0.1+delta**2)*size
         rv += w*value
         rw += w
-    return int(tv / tw), int(rv / rw)
+    return round(tv / tw), round(rv / rw)
 
 def calculate_timesize_weighted_average(data, float unit=1.0) -> Tuple[float,float]:
     #the value is elapsed time,
