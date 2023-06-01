@@ -679,8 +679,8 @@ class WindowVideoSource(WindowSource):
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
         regionrefreshlog("refresh_subregion(%s) using %s and %s", regions, encoding, options)
-        super().do_send_delayed_regions(now, regions, encoding, options,
-                                        get_best_encoding=self.get_refresh_subregion_encoding)
+        self.do_send_regions(now, regions, encoding, options,
+                             get_best_encoding=self.get_refresh_subregion_encoding)
         return True
 
     def get_refresh_subregion_encoding(self, *_args) -> str:
@@ -756,7 +756,7 @@ class WindowVideoSource(WindowSource):
         return True
 
 
-    def do_send_delayed_regions(self, damage_time, regions, coding : str, options):
+    def send_regions(self, damage_time, regions, coding : str, options):
         """
             Overridden here so we can try to intercept the video_subregion if one exists.
         """
@@ -773,8 +773,8 @@ class WindowVideoSource(WindowSource):
                 #give a boost if we have a video region and this is not video:
                 quality_pct = 140
             novideo_options = self.assign_sq_options(options, quality_pct=quality_pct)
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, novideo_options,
-                                                 exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            self.do_send_regions(damage_time, regions, encoding, novideo_options,
+                                 exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -794,7 +794,7 @@ class WindowVideoSource(WindowSource):
 
         if not vr:
             sublog("no video region, we may use the video encoder for something else")
-            super().do_send_delayed_regions(damage_time, regions, coding, options)
+            self.do_send_regions(damage_time, regions, coding, options)
             return
         assert not self.full_frames_only
 
@@ -830,7 +830,7 @@ class WindowVideoSource(WindowSource):
                         actual_vr = same_c[0]
 
         if actual_vr is None:
-            sublog("do_send_delayed_regions: video region %s not found in: %s", vr, regions)
+            sublog("send_regions: video region %s not found in: %s", vr, regions)
         else:
             #found the video region:
             #sanity check in case the window got resized since:
@@ -852,9 +852,9 @@ class WindowVideoSource(WindowSource):
             for r in regions:
                 trimmed += r.subtract_rect(actual_vr)
             if not trimmed:
-                sublog("do_send_delayed_regions: nothing left after removing video region %s", actual_vr)
+                sublog("send_regions: nothing left after removing video region %s", actual_vr)
                 return
-            sublog("do_send_delayed_regions: subtracted %s from %s gives us %s", actual_vr, regions, trimmed)
+            sublog("send_regions: subtracted %s from %s gives us %s", actual_vr, regions, trimmed)
             regions = trimmed
 
         #merge existing damage delayed region if there is one:
@@ -876,13 +876,13 @@ class WindowVideoSource(WindowSource):
             delay = max(self.batch_config.delay*4, self.batch_config.expire_delay)
             delay = min(delay, self.video_subregion.non_max_wait-elapsed)
             delay = int(delay)
-        sublog("do_send_delayed_regions event_count=%s, actual_vr=%s, delay=%s",
+        sublog("send_regions event_count=%s, actual_vr=%s, delay=%s",
                event_count, actual_vr, delay)
         if delay<=25:
             send_nonvideo(regions=regions, encoding=None, exclude_region=actual_vr)
         else:
             self._damage_delayed = DelayedRegions(damage_time, regions, coding, options=options)
-            sublog("do_send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
+            sublog("send_regions: delaying non video regions %s some more by %ims", regions, delay)
             self.expire_timer = self.timeout_add(delay, self.expire_delayed_region)
 
     def must_encode_full_frame(self, encoding : str) -> bool:

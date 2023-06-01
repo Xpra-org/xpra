@@ -1876,56 +1876,15 @@ class WindowSource(WindowIconSource):
         self.batch_config.last_event = monotonic()
         if not self.is_cancelled():
             dr = delayed_regions
-            self.do_send_delayed_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
+            self.send_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
-    def assign_sq_options(self, options, speed_pct : int=100, quality_pct : int=100) -> Dict[str,Any]:
-        packets_backlog = None
-        speed = options.get("speed", 0)
-        if speed==0:
-            if self._fixed_speed>0:
-                speed = self._fixed_speed
-            else:
-                speed = self._current_speed
-                packets_backlog = self.get_packets_backlog()
-                speed = (speed - packets_backlog*20) * speed_pct // 100
-                speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
-        quality = options.get("quality", 0)
-        if quality==0:
-            if self._fixed_quality>0:
-                quality = self._fixed_quality
-            else:
-                quality = self._current_quality
-                if packets_backlog is None:
-                    packets_backlog = self.get_packets_backlog()
-                now = monotonic()
-                if not packets_backlog:
-                    #if we haven't sent any packets for a while,
-                    #chances are that we can raise the quality,
-                    #at least for the first packet:
-                    elapsed = now-self.statistics.last_packet_time
-                    quality += int(elapsed*25)
-                scaling_discount = 0
-                if "scaled-width" in options or "scaled-height" in options:
-                    scaling_discount = 20
-                quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
-                quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
-        eoptions = dict(options)
-        eoptions.update({
-            "quality"   : quality,
-            "speed"     : speed,
-            "rgb_formats"   : self.rgb_formats,
-            "lz4"       : self.rgb_lz4,
-            })
-        if self.encoding=="grayscale":
-            eoptions["grayscale"] = True
-        if not self.supports_transparency:
-            eoptions["alpha"] = False
-        if self.content_type:
-            eoptions["content-type"] = self.content_type
-        return eoptions
+    def send_regions(self, damage_time, regions, coding : str, options) -> None:
+        #window video source overrides this method
+        #in order to filter out the video region
+        self.do_send_regions(damage_time, regions, coding, options)
 
-    def do_send_delayed_regions(self, damage_time, regions, coding : str, options,
-                                exclude_region=None, get_best_encoding:Callable=None) -> None:
+    def do_send_regions(self, damage_time, regions, coding : str, options,
+                        exclude_region=None, get_best_encoding:Callable=None) -> None:
         ww,wh = self.window_dimensions
         options = self.assign_sq_options(options)
         get_best_encoding = get_best_encoding or self.get_best_encoding
@@ -2018,6 +1977,53 @@ class WindowSource(WindowIconSource):
                 log("failed on %i: %s", i, region)
             encodings.append(actual_encoding)
         log("send_delayed_regions: queued %i regions for encoding using %s", len(i_reg_enc), encodings)
+
+
+    def assign_sq_options(self, options, speed_pct : int=100, quality_pct : int=100) -> Dict[str,Any]:
+        packets_backlog = None
+        speed = options.get("speed", 0)
+        if speed==0:
+            if self._fixed_speed>0:
+                speed = self._fixed_speed
+            else:
+                speed = self._current_speed
+                packets_backlog = self.get_packets_backlog()
+                speed = (speed - packets_backlog*20) * speed_pct // 100
+                speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
+        quality = options.get("quality", 0)
+        if quality==0:
+            if self._fixed_quality>0:
+                quality = self._fixed_quality
+            else:
+                quality = self._current_quality
+                if packets_backlog is None:
+                    packets_backlog = self.get_packets_backlog()
+                now = monotonic()
+                if not packets_backlog:
+                    #if we haven't sent any packets for a while,
+                    #chances are that we can raise the quality,
+                    #at least for the first packet:
+                    elapsed = now-self.statistics.last_packet_time
+                    quality += int(elapsed*25)
+                scaling_discount = 0
+                if "scaled-width" in options or "scaled-height" in options:
+                    scaling_discount = 20
+                quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
+                quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
+        eoptions = dict(options)
+        eoptions.update({
+            "quality"   : quality,
+            "speed"     : speed,
+            "rgb_formats"   : self.rgb_formats,
+            "lz4"       : self.rgb_lz4,
+            })
+        if self.encoding=="grayscale":
+            eoptions["grayscale"] = True
+        if not self.supports_transparency:
+            eoptions["alpha"] = False
+        if self.content_type:
+            eoptions["content-type"] = self.content_type
+        return eoptions
 
 
     def must_encode_full_frame(self, _encoding : str) -> bool:
@@ -2344,8 +2350,8 @@ class WindowSource(WindowIconSource):
             refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
                        1000.0*(monotonic()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
-            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options,
-                                                 exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
+            self.send_delayed_regions_excluding(now, regions, self.auto_refresh_encodings[0], options,
+                                                exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 
     def get_refresh_encoding(self, w : int, h : int, options, coding : str) -> str:
