@@ -73,6 +73,6 @@ class Handler:
                     break
             if not key_handle_str:
                 log.warn("Warning: no U2F key handle found")
-                return None
+                return b""
         log("process_challenge_u2f key_handle=%s", key_handle_str)
         return binascii.unhexlify(key_handle_str)

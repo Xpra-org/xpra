@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Dict, Any
 import cairo
 from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
@@ -29,7 +30,7 @@ for attr in dir(cairo):
         FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
 
 
-def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time):
+def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time) -> None:
     if not cursor_data:
         return
     elapsed = max(0, monotonic()-start_time)
@@ -69,14 +70,14 @@ class CairoBackingBase(WindowBackingBase):
         self.render_size = 0, 0
         self.fps_image = None
 
-    def init(self, ww : int, wh : int, bw : int, bh : int):
+    def init(self, ww : int, wh : int, bw : int, bh : int) -> None:
         mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
         self.size = bw, bh
         self.render_size = ww, wh
         if mod:
             self.create_surface()
 
-    def get_info(self):
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         info.update({
             "type"  : "Cairo",
@@ -116,7 +117,7 @@ class CairoBackingBase(WindowBackingBase):
             backing.flush()
         return cr
 
-    def close(self):
+    def close(self) -> None:
         backing = self._backing
         if backing:
             backing.finish()
@@ -124,13 +125,13 @@ class CairoBackingBase(WindowBackingBase):
         super().close()
 
 
-    def cairo_paint_pixbuf(self, pixbuf, x : int, y : int, options):
+    def cairo_paint_pixbuf(self, pixbuf, x : int, y : int, options) -> None:
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
         self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
 
-    def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options):
+    def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options) -> None:
         iw, ih = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
             (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(), ))
@@ -139,7 +140,7 @@ class CairoBackingBase(WindowBackingBase):
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
     def cairo_paint_from_source(self, set_source_fn, source,
-                                x : int, y : int, iw : int, ih : int, width : int, height : int, options):
+                                x : int, y : int, iw : int, ih : int, width : int, height : int, options) -> None:
         """ must be called from UI thread """
         backing = self._backing
         log("cairo_paint_surface%s backing=%s, paint box line width=%i",
@@ -175,28 +176,30 @@ class CairoBackingBase(WindowBackingBase):
         if flush==0:
             self.record_fps_event()
 
-    def cairo_paint_box(self, gc, encoding, x, y, w, h):
+    def cairo_paint_box(self, gc, encoding:str, x:int, y:int, w:int, h:int) -> None:
         color = get_paint_box_color(encoding)
         gc.set_line_width(self.paint_box_line_width)
         gc.set_source_rgba(*color)
         gc.rectangle(x, y, w, h)
         gc.stroke()
 
-    def _do_paint_rgb16(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb16(self, img_data, x:int, y:int, width:int, height:int,
+                        render_width:int, render_height:int, rowstride:int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int,
-                        render_width : int, render_height : int, rowstride : int, options):
+    def _do_paint_rgb24(self, img_data, x:int, y:int, width:int, height:int,
+                        render_width:int, render_height:int, rowstride:int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB24, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+    def _do_paint_rgb30(self, img_data, x:int, y:int, width:int, height:int,
+                        render_width:int, render_height:int, rowstride:int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB30, True, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int,
-                        render_width : int, render_height : int, rowstride : int, options):
+    def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int,
+                        render_width:int, render_height:int, rowstride:int, options) -> bool:
         if self._alpha_enabled:
             cformat = FORMAT_ARGB32
         else:
@@ -204,21 +207,21 @@ class CairoBackingBase(WindowBackingBase):
         return self._do_paint_rgb(cformat, True, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb(self, *args):
+    def _do_paint_rgb(self, *args) -> bool:
         raise NotImplementedError()
 
 
-    def get_encoding_properties(self):
+    def get_encoding_properties(self) -> Dict[str,Any]:
         props = super().get_encoding_properties()
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
         return props
 
 
-    def paint_scroll(self, img_data, options, callbacks):
+    def paint_scroll(self, img_data, options, callbacks) -> None:
         self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
-    def do_paint_scroll(self, scrolls, callbacks):
+    def do_paint_scroll(self, scrolls, callbacks) -> None:
         old_backing = self._backing
         if not old_backing:
             fire_paint_callbacks(callbacks, False, message="no backing")
@@ -276,7 +279,7 @@ class CairoBackingBase(WindowBackingBase):
         return True
 
 
-    def cairo_draw(self, context):
+    def cairo_draw(self, context) -> None:
         backing = self._backing
         log("cairo_draw: backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
             backing, self.size, self.render_size, self.offsets, self.pointer_overlay)

@@ -51,7 +51,7 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
                       x : int, y : int, width : int, height : int, render_width : int, render_height : int,
-                      rowstride : int, options):
+                      rowstride : int, options) -> bool:
         """ must be called from UI thread """
         log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
@@ -89,6 +89,6 @@ class CairoBacking(CairoBackingBase):
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
         return True
 
-    def update_fps_buffer(self, width, height, pixels):
+    def update_fps_buffer(self, width, height, pixels) -> None:
         self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
         set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width*4)

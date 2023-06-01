@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,7 +15,7 @@ import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Type, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
@@ -595,7 +595,7 @@ class WindowClient(StubClientMixin):
         traylog("make_system_tray%s system tray classes=%s", args, tc)
         return make_instance(tc, self, *args)
 
-    def get_system_tray_classes(self):
+    def get_system_tray_classes(self) -> Tuple[Type,...]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:
@@ -962,18 +962,18 @@ class WindowClient(StubClientMixin):
         return True
 
 
-    def freeze(self):
+    def freeze(self) -> None:
         log("freeze()")
         for window in self._id_to_window.values():
             window.freeze()
 
-    def unfreeze(self):
+    def unfreeze(self) -> None:
         log("unfreeze()")
         for window in self._id_to_window.values():
             window.unfreeze()
 
 
-    def deiconify_windows(self):
+    def deiconify_windows(self) -> None:
         log("deiconify_windows()")
         for window in self._id_to_window.values():
             deiconify = getattr(window, "deiconify", None)
@@ -981,7 +981,7 @@ class WindowClient(StubClientMixin):
                 deiconify()
 
 
-    def resize_windows(self, new_size_fn):
+    def resize_windows(self, new_size_fn:Callable) -> None:
         for window in self._id_to_window.values():
             if window:
                 ww, wh = window._size
@@ -992,7 +992,7 @@ class WindowClient(StubClientMixin):
         self.send_refresh_all()
 
 
-    def reinit_window_icons(self):
+    def reinit_window_icons(self) -> None:
         #make sure the window icons are the ones we want:
         iconlog("reinit_window_icons()")
         for wid in tuple(self._id_to_window.keys()):
@@ -1002,7 +1002,7 @@ class WindowClient(StubClientMixin):
                 if reset_icon:
                     reset_icon()
 
-    def reinit_windows(self, new_size_fn=None):
+    def reinit_windows(self, new_size_fn=None) -> None:
         #now replace all the windows with new ones:
         for wid in tuple(self._id_to_window.keys()):
             window = self._id_to_window.get(wid)
@@ -1010,7 +1010,7 @@ class WindowClient(StubClientMixin):
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
 
-    def reinit_window(self, wid:int, window, new_size_fn=None):
+    def reinit_window(self, wid:int, window, new_size_fn=None) -> None:
         geomlog("reinit_window%s", (wid, window, new_size_fn))
         def fake_send(*args):
             log("fake_send%s", args)
@@ -1083,14 +1083,14 @@ class WindowClient(StubClientMixin):
         return None
 
 
-    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect):
+    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> Tuple[Type,...]:
         return (self.ClientWindowClass,)
 
 
-    def _process_new_window(self, packet):
+    def _process_new_window(self, packet) -> None:
         return self._process_new_common(packet, False)
 
-    def _process_new_override_redirect(self, packet):
+    def _process_new_override_redirect(self, packet) -> None:
         if self.modal_windows:
             #find any modal windows and remove the flag
             #so that the OR window can get the focus
@@ -1104,14 +1104,14 @@ class WindowClient(StubClientMixin):
         return self._process_new_common(packet, True)
 
 
-    def _process_initiate_moveresize(self, packet):
+    def _process_initiate_moveresize(self, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
             x_root, y_root, direction, button, source_indication = packet[2:7]
             window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
 
-    def _process_window_metadata(self, packet):
+    def _process_window_metadata(self, packet) -> None:
         wid, metadata = packet[1:3]
         metalog("metadata update for window %i: %s", wid, metadata)
         window = self._id_to_window.get(wid)
@@ -1119,7 +1119,7 @@ class WindowClient(StubClientMixin):
             metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
-    def _process_window_icon(self, packet):
+    def _process_window_icon(self, packet) -> None:
         wid, w, h, coding, data = packet[1:6]
         img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
@@ -1129,7 +1129,7 @@ class WindowClient(StubClientMixin):
             window.update_icon(img)
             self.set_tray_icon()
 
-    def _process_window_move_resize(self, packet):
+    def _process_window_move_resize(self, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         ax = self.sx(x)
         ay = self.sy(y)
@@ -1144,7 +1144,7 @@ class WindowClient(StubClientMixin):
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
-    def _process_window_resized(self, packet):
+    def _process_window_resized(self, packet) -> None:
         wid, w, h = packet[1:4]
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
@@ -1156,16 +1156,16 @@ class WindowClient(StubClientMixin):
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_raise_window(self, packet):
+    def _process_raise_window(self, packet) -> None:
         #implemented in gtk subclass
         pass
 
-    def _process_restack_window(self, packet):
+    def _process_restack_window(self, packet) -> None:
         #implemented in gtk subclass
         pass
 
 
-    def _process_configure_override_redirect(self, packet):
+    def _process_configure_override_redirect(self, packet) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         ax = self.sx(x)
@@ -1178,7 +1178,7 @@ class WindowClient(StubClientMixin):
             window.move_resize(ax, ay, aw, ah, -1)
 
 
-    def window_close_event(self, wid):
+    def window_close_event(self, wid:int) -> None:
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action=="forward":
             self.send("close-window", wid)
@@ -1197,7 +1197,7 @@ class WindowClient(StubClientMixin):
             if self.server_is_desktop:
                 log.info("window-close event on desktop or shadow window, disconnecting")
                 self.quit(0)
-                return True
+                return
             if window:
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
@@ -1221,10 +1221,9 @@ class WindowClient(StubClientMixin):
             self.send("close-window", wid)
         else:
             log.warn("unknown close-window action: %s", self.window_close_action)
-        return True
 
 
-    def _process_lost_window(self, packet):
+    def _process_lost_window(self, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
@@ -1235,7 +1234,7 @@ class WindowClient(StubClientMixin):
             self.destroy_window(wid, window)
         self.set_tray_icon()
 
-    def may_reenable_modal_windows(self, window):
+    def may_reenable_modal_windows(self, window) -> None:
         orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w!=window)
         if orwids:
             #there are other OR windows left, don't do anything
@@ -1249,7 +1248,7 @@ class WindowClient(StubClientMixin):
                 window.set_modal(True)
 
 
-    def destroy_window(self, wid:int, window):
+    def destroy_window(self, wid:int, window) -> None:
         log("destroy_window(%s, %s)", wid, window)
         window.destroy()
         if self._window_with_grab==wid:
@@ -1273,7 +1272,7 @@ class WindowClient(StubClientMixin):
                         if w==signalwatcher:
                             del self._pid_to_signalwatcher[pid]
 
-    def kill_signalwatcher(self, proc):
+    def kill_signalwatcher(self, proc) -> None:
         log("kill_signalwatcher(%s)", proc)
         if proc.poll() is None:
             stdout_io_watch = proc.stdout_io_watch
@@ -1300,7 +1299,7 @@ class WindowClient(StubClientMixin):
                 if e.errno!=errno.ESRCH:
                     log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
 
-    def destroy_all_windows(self):
+    def destroy_all_windows(self) -> None:
         for wid, window in self._id_to_window.items():
             try:
                 log("destroy_all_windows() destroying %s / %s", wid, window)
@@ -1320,7 +1319,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # bell
-    def _process_bell(self, packet):
+    def _process_bell(self, packet) -> None:
         if not self.bell_enabled:
             return
         (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
@@ -1330,14 +1329,14 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # focus:
-    def send_focus(self, wid:int):
+    def send_focus(self, wid:int) -> None:
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
-    def has_focus(self, wid:int):
+    def has_focus(self, wid:int) -> bool:
         return self._focused and self._focused==wid
 
-    def update_focus(self, wid:int, gotit):
+    def update_focus(self, wid:int, gotit:bool) -> bool:
         focused = self._focused
         focuslog(f"update_focus({wid}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
         if gotit:
@@ -1365,14 +1364,14 @@ class WindowClient(StubClientMixin):
                 self._focused = None
         return focused!=self._focused
 
-    def send_lost_focus(self):
+    def send_lost_focus(self) -> None:
         focuslog("send_lost_focus() focused=%s", self._focused)
         self.lost_focus_timer = 0
         #check that a new window has not gained focus since:
         if self._focused is None:
             self.send_focus(0)
 
-    def cancel_lost_focus_timer(self):
+    def cancel_lost_focus_timer(self) -> None:
         lft = self.lost_focus_timer
         if lft:
             self.lost_focus_timer = 0
@@ -1381,27 +1380,27 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # grabs:
-    def window_grab(self, wid:int, _window):
+    def window_grab(self, wid:int, _window) -> None:
         grablog.warn("Warning: window grab not implemented in %s", self.client_type())
         self._window_with_grab = wid
 
-    def window_ungrab(self):
+    def window_ungrab(self) -> None:
         grablog.warn("Warning: window ungrab not implemented in %s", self.client_type())
         self._window_with_grab = None
 
-    def do_force_ungrab(self, wid):
+    def do_force_ungrab(self, wid:int) -> None:
         grablog("do_force_ungrab(%s)", wid)
         #ungrab via dedicated server packet:
         self.send_force_ungrab(wid)
 
-    def _process_pointer_grab(self, packet):
+    def _process_pointer_grab(self, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         grablog("grabbing %s: %s", wid, window)
         if window:
             self.window_grab(wid, window)
 
-    def _process_pointer_ungrab(self, packet):
+    def _process_pointer_ungrab(self, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         grablog("ungrabbing %s: %s", wid, window)
@@ -1410,13 +1409,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # window refresh:
-    def suspend(self):
+    def suspend(self) -> None:
         log.info("system is suspending")
         self._suspended_at = time()
         #tell the server to slow down refresh for all the windows:
         self.control_refresh(-1, True, False)
 
-    def resume(self):
+    def resume(self) -> None:
         elapsed = 0
         if self._suspended_at>0:
             elapsed = max(0, time()-self._suspended_at)
@@ -1435,7 +1434,8 @@ class WindowClient(StubClientMixin):
             self.reinit_windows()
         self.reinit_window_icons()
 
-    def control_refresh(self, wid:int, suspend_resume, refresh, quality=100, options=None, client_properties=None):
+    def control_refresh(self, wid:int, suspend_resume, refresh, quality=100,
+                        options=None, client_properties=None)  -> None:
         packet = ["buffer-refresh", wid, 0, quality]
         options = options or {}
         client_properties = client_properties or {}
@@ -1456,7 +1456,7 @@ class WindowClient(StubClientMixin):
         packet.append(client_properties)
         self.send(*packet)
 
-    def send_refresh(self, wid):
+    def send_refresh(self, wid:int) -> None:
         packet = ["buffer-refresh", wid, 0, 100,
         #explicit refresh (should be assumed True anyway),
         #also force a reset of batch configs:
@@ -1468,23 +1468,23 @@ class WindowClient(StubClientMixin):
                  ]
         self.send(*packet)
 
-    def send_refresh_all(self):
+    def send_refresh_all(self) -> None:
         log("Automatic refresh for all windows ")
         self.send_refresh(-1)
 
 
     ######################################################################
     # painting windows:
-    def _process_draw(self, packet):
+    def _process_draw(self, packet) -> None:
         if PAINT_DELAY>=0:
             GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
-    def _process_eos(self, packet):
+    def _process_eos(self, packet) -> None:
         self._draw_queue.put(packet)
 
-    def send_damage_sequence(self, wid:int, packet_sequence, width, height, decode_time, message=""):
+    def send_damage_sequence(self, wid:int, packet_sequence, width, height, decode_time, message="") -> None:
         packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
         self.send_now(*packet)
@@ -1503,7 +1503,7 @@ class WindowClient(StubClientMixin):
         self._draw_thread = None
         log("draw thread ended")
 
-    def _do_draw(self, packet):
+    def _do_draw(self, packet) -> None:
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
@@ -1590,10 +1590,10 @@ class WindowClient(StubClientMixin):
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return round(v)
-    def srect(self, x, y, w, h):
+    def srect(self, x, y, w, h) -> Tuple[int,int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
-    def sp(self, x, y):
+    def sp(self, x, y) -> Tuple[int,int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
@@ -1603,15 +1603,15 @@ class WindowClient(StubClientMixin):
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return round(v)
-    def crect(self, x, y, w, h):
+    def crect(self, x, y, w, h)-> Tuple[int,int,int,int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-    def cp(self, x, y):
+    def cp(self, x, y) -> Tuple[int,int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
 
-    def redraw_spinners(self):
+    def redraw_spinners(self) -> None:
         #draws spinner on top of the window, or not (plain repaint)
         #depending on whether the server is ok or not
         ok = self.server_ok()
@@ -1622,7 +1622,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # packets:
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         for packet_type, handler in {
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,

@@ -57,16 +57,16 @@ def choose_digest(options) -> str:
         return "des"
     raise ValueError(f"no known digest options found in '{csv(options)}'")
 
-def gendigest(digest, password, salt):
+def gendigest(digest:str, password, salt) -> bytes:
     assert password and salt
-    salt = memoryview_to_bytes(salt)
-    password = strtobytes(password)
+    salt : bytes = memoryview_to_bytes(salt)
+    password : bytes = strtobytes(password)
     if digest=="des":
         from xpra.net.rfb.d3des import generate_response  #pylint: disable=import-outside-toplevel
         password = password.ljust(8, b"\x00")[:8]
         salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)
-        return hexstr(v)
+        return strtobytes(hexstr(v))
     if digest in ("xor", "kerberos", "gss", "keycloak"):
         #kerberos, gss and keycloak use xor because we need to use the actual token
         #at the other end
@@ -93,7 +93,7 @@ def verify_digest(digest, password, salt, challenge_response):
     return True
 
 
-def get_salt(l=64):
+def get_salt(l=64) -> bytes:
     #too short: we would not feed enough random data to HMAC
     if l<32:
         raise ValueError(f"salt is too short: only {l} bytes")

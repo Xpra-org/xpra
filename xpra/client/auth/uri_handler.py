@@ -13,7 +13,7 @@ class Handler:
         return "uri"
 
     def get_digest(self) -> str:
-        return None
+        return ""
 
     def handle(self, challenge, digest, prompt):  # pylint: disable=unused-argument
         return self.client.password

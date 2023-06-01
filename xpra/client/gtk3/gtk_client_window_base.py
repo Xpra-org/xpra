@@ -572,10 +572,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             detail = getattr(event, "detail", None)
             if detail==NotifyInferior:
                 focuslog("dropped NotifyInferior focus event")
-                return True
+                return
         self._focus_latest = False
         self.schedule_recheck_focus()
-        return True
 
     def do_xpra_focus_in_event(self, event) -> bool:
         focuslog("do_xpra_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
@@ -1513,7 +1512,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if seat:
                     seat.ungrab()
                     self._client.keyboard_grabbed = False
-        return True
 
     def keyboard_grab(self, *args) -> None:
         grablog("keyboard_grab%s", args)
@@ -2317,7 +2315,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._override_redirect:
             self.send("unmap-window", self.wid, False)
 
-    def do_delete_event(self, event) -> None:
+    def do_delete_event(self, event) -> bool:
         #Gtk.Window.do_delete_event(self, event)
         eventslog("do_delete_event(%s)", event)
         self._client.window_close_event(self.wid)
@@ -2357,7 +2355,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             data = list(data) + list(self.cp(rx, ry))
         return data
 
-    def _pointer_modifiers(self, event) -> List[str]:
+    def _pointer_modifiers(self, event) -> Tuple[Tuple[int,int,int,int],List[str],List[int]]:
         pointer_data = self.get_pointer_data(event)
         #FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)

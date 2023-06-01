@@ -6,6 +6,7 @@
 
 #cython: boundscheck=False, wraparound=False
 
+from typing import Tuple, Dict
 from time import monotonic
 
 cdef extern from "math.h":

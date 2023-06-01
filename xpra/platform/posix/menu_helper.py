@@ -269,7 +269,7 @@ def load_xdg_entry(de) -> Dict[str,Any]:
         command = de.getExec()
     if not command:
         #this command is not executable!
-        return None
+        return {}
     props["command"] = command
     if not EXPORT_SELF and command and command.find("xpra")>=0:
         return {}
