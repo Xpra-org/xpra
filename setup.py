@@ -31,6 +31,7 @@ except ImportError as e:
 import xpra
 from xpra.os_util import (
     get_status_output, load_binary_file, get_distribution_version_id,
+    getuid,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Fedora,
     is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
@@ -1050,12 +1051,12 @@ def build_xpra_conf(install_dir):
         )
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
-    if POSIX and os.getuid()>0:
+    if POSIX and getuid()>0:
         #remove any paths containing the uid,
         #osx uses /var/tmp/$UID-Xpra,
         #but this should not be included in the default config for all users!
         #(the buildbot's uid!)
-        socket_dirs = [x for x in socket_dirs if x.find(str(os.getuid()))<0]
+        socket_dirs = [x for x in socket_dirs if x.find(str(getuid()))<0]
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if POSIX and printing_ENABLED:
