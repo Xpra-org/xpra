@@ -38,7 +38,7 @@ class TestDecoders(unittest.TestCase):
                 #as those may cause errors
                 log = getattr(codec, "log", None)
                 if SUSPEND_CODEC_ERROR_LOGGING and log and not log.is_debug_enabled():
-                    log.logger.setLevel(logging.CRITICAL)
+                    log.setLevel(logging.CRITICAL)
                 init_module = getattr(codec, "init_module", None)
                 #print("%s.init_module=%s" % (codec, init_module))
                 if init_module:
@@ -58,7 +58,7 @@ class TestDecoders(unittest.TestCase):
                         print("ignoring TransientCodecException on %s : %s" % (codec, e))
             finally:
                 if log:
-                    log.logger.setLevel(logging.DEBUG)
+                    log.setLevel(logging.DEBUG)
         if missing:
             print("Warning: the following codecs are missing and have not been tested:")
             print(f" {csv(missing)}")

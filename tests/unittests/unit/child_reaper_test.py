@@ -30,7 +30,7 @@ class TestChildReaper(unittest.TestCase):
         #no-op:
         reaper_cleanup()
 
-        log.logger.setLevel(logging.ERROR)
+        log.setLevel(logging.ERROR)
         cr = getChildReaper()
         #one that exits before we add the process, one that takes longer:
         TEST_CHILDREN = (["echo"], ["sleep", "0.5"])

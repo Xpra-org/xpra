@@ -391,6 +391,9 @@ class Logger:
         return f"Logger{self.categories}"
 
 
+    def getEffectiveLevel(self) -> int:
+        return self.logger.getEffectiveLevel()
+
     def setLevel(self, level : int) -> None:
         self.level = level
         self.logger.setLevel(level)

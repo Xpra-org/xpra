@@ -240,8 +240,8 @@ def show_encoding_help(opts) -> int:
     set_default_level(logging.WARN)
     logging.root.setLevel(logging.WARN)
     for x in get_all_loggers():
-        if x.logger.getEffectiveLevel()==logging.INFO:
-            x.logger.setLevel(logging.WARN)
+        if x.getEffectiveLevel()==logging.INFO:
+            x.setLevel(logging.WARN)
     from xpra.server import server_features as sf
     sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.input_devices = False
     sf.mmap = sf.logging = sf.network_state = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
