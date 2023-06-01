@@ -96,7 +96,7 @@ class GlobalPerformanceStatistics:
 
     def record_latency(self, wid : int, damage_packet_sequence : int, decode_time : int,
                        start_send_at, end_send_at,
-                       pixels : int, bytecount : int, latency : int):
+                       pixels : int, bytecount : int, latency : int) -> None:
         now = monotonic()
         send_time = end_send_at-start_send_at   #how long we spend calling socket.send
         total = now-start_send_at               #from the moment we start sending until we process the ack here
@@ -168,9 +168,9 @@ class GlobalPerformanceStatistics:
             #(wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
-    def get_factors(self, pixel_count:int) -> List[Tuple[str,str,float,float]]:
+    def get_factors(self, pixel_count:int) -> List[Tuple[str,Dict,float,float]]:
         factors = []
-        def mayaddfac(metric:str, info:str, factor:float, weight:float):
+        def mayaddfac(metric:str, info:Dict, factor:float, weight:float):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
         if self.client_latency:
