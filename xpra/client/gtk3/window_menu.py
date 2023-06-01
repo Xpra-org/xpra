@@ -5,7 +5,7 @@
 
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
-from xpra.client.gtk_base.menu_helper import MenuHelper
+from xpra.client.gtk3.menu_helper import MenuHelper
 from xpra.log import Logger
 
 log = Logger("gtk", "window")
@@ -37,7 +37,7 @@ class WindowMenuHelper(MenuHelper):
 
     def make_infomenuitem(self):
         def show_info(*_args):
-            from xpra.client.gtk_base.window_info import WindowInfo
+            from xpra.client.gtk3.window_info import WindowInfo
             wi = WindowInfo(self.client, self.window)
             wi.show()
         gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)

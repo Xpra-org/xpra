@@ -10,7 +10,7 @@ from gi.repository import GLib, Gtk  # @UnresolvedImport
 from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
-from xpra.client.gtk_base.gtk_tray_menu_base import (
+from xpra.client.gtk3.gtk_tray_menu_base import (
     GTKTrayMenuBase,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,
@@ -228,7 +228,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             encodings_menu = self.make_menu()
             def set_encodings_menu(*_args):
                 client_encodings, server_encodings = self.get_encoding_options()
-                from xpra.client.gtk_base.menu_helper import populate_encodingsmenu
+                from xpra.client.gtk3.menu_helper import populate_encodingsmenu
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding,
                                        client_encodings, server_encodings)
             self.client.after_handshake(set_encodings_menu)

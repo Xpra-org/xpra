@@ -24,7 +24,7 @@ def main(argv=()):
         if "-v" in argv:
             enable_debug_for("util")
 
-        from xpra.client.gtk_base.bug_report import BugReport
+        from xpra.client.gtk3.bug_report import BugReport
         from xpra.gtk_common.gobject_compat import register_os_signals
         app = BugReport()
         app.close = app.quit

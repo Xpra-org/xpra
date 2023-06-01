@@ -225,14 +225,14 @@ def dialog_pass(title:str="Password Input", prompt:str="enter password", icon:st
         if pinentry_cmd:
             return run_pinentry_getpin(pinentry_cmd, title, prompt)
     def password_input_run():
-        from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
+        from xpra.client.gtk3.pass_dialog import PasswordInputDialogWindow
         dialog = PasswordInputDialogWindow(title, prompt, icon)
         return do_run_dialog(dialog)
     return dialog_run(password_input_run)
 
 def dialog_confirm(title:str, prompt:str, qinfo=(), icon:str="", buttons=(("OK", 1),)) -> int:
     def confirm_run():
-        from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
+        from xpra.client.gtk3.confirm_dialog import ConfirmDialogWindow
         dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
         return do_run_dialog(dialog)
     return dialog_run(confirm_run)

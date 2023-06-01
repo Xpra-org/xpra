@@ -69,7 +69,7 @@ class GUI(Gtk.Window):
         self.set_titlebar(hb)
         hb.add(self.button("About", "help-about", about))
         try:
-            from xpra.client.gtk_base.toolbox import ToolboxGUI
+            from xpra.client.gtk3.toolbox import ToolboxGUI
         except ImportError:
             pass
         else:

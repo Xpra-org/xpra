@@ -99,7 +99,7 @@ class FakeApplication:
         assert self.menu_helper
         menu = self.menu_helper.build()
         try:
-            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+            from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
         except ImportError:
             GTKStatusIconTray = None
         for x in get_native_tray_classes()+[GTKStatusIconTray]:

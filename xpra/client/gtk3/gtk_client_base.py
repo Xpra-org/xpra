@@ -13,7 +13,7 @@ from threading import Event
 from typing import Dict, Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
+from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
     updict, pver, flatten_dict, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
@@ -42,7 +42,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject_client_base import GObjectXpraClient
-from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.gtk3.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
@@ -477,7 +477,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log.warn(" the feature is not available on the server")
             return
         if self.server_commands is None:
-            from xpra.client.gtk_base.server_commands import getServerCommandsWindow
+            from xpra.client.gtk3.server_commands import getServerCommandsWindow
             self.server_commands = getServerCommandsWindow(self)
         self.server_commands.show()
 
@@ -488,7 +488,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         log(f"show_start_new_command{args} current start_new_command={self.start_new_command}, flag={self.server_start_new_commands}")
         if self.start_new_command is None:
-            from xpra.client.gtk_base.start_new_command import getStartNewCommand
+            from xpra.client.gtk3.start_new_command import getStartNewCommand
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
             self.start_new_command = getStartNewCommand(run_command_cb,
@@ -514,7 +514,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
 
     def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
-        from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
+        from xpra.client.gtk3.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
         def rec_answer(accept, newopenit=openit):
             from xpra.net.file_transfer import ACCEPT
@@ -533,7 +533,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             fad.destroy()
 
     def show_ask_data_dialog(self, *_args):
-        from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
+        from xpra.client.gtk3.open_requests import getOpenRequestsWindow
         self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
         self.file_ask_dialog.show()
 
@@ -690,7 +690,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         p = self._protocol
         conn = p._conn if p else None
-        from xpra.client.gtk_base.session_info import SessionInfo
+        from xpra.client.gtk3.session_info import SessionInfo
         self.session_info = SessionInfo(self, self.session_name, conn)
         self.session_info.set_args(*args)
         force_focus()
@@ -702,7 +702,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             force_focus()
             self.bug_report.show()
             return
-        from xpra.client.gtk_base.bug_report import BugReport
+        from xpra.client.gtk3.bug_report import BugReport
         self.bug_report = BugReport()
         def init_bug_report():
             #skip things we aren't using:
@@ -801,7 +801,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #add Gtk.StatusIcon tray, but not under wayland:
         if not is_Wayland():
             try:
-                from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+                from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
                 tray_list.append(GTKStatusIconTray)
             except Exception as e:
                 log.warn("failed to load StatusIcon tray: %s" % e)

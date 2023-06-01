@@ -9,7 +9,7 @@ import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.client.gtk_base.sessions_gui import SessionsGUI
+from xpra.client.gtk3.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util import envbool
 from xpra.log import Logger

@@ -406,7 +406,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         from xpra.platform.gui import get_native_system_tray_classes
         classes = get_native_system_tray_classes()
         try:
-            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+            from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)
         except ImportError:
             traylog("no GTKStatusIconTray", exc_info=True)

@@ -562,7 +562,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return run_desktop_greeter()
     if mode == "launcher":
         check_gtk_client()
-        from xpra.client.gtk_base.client_launcher import main as launcher_main
+        from xpra.client.gtk3.client_launcher import main as launcher_main
         return launcher_main(["xpra"]+args)
     if mode == "gui":
         check_gtk_client()
@@ -680,7 +680,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return version.main()
     if mode=="toolbox":
         check_gtk_client()
-        from xpra.client.gtk_base import toolbox
+        from xpra.client.gtk3 import toolbox
         return toolbox.main()
     if mode == "initenv":
         if not POSIX:
@@ -1138,11 +1138,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
 
 def run_dialog(extra_args) -> int:
-    from xpra.client.gtk_base.confirm_dialog import show_confirm_dialog
+    from xpra.client.gtk3.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
 
 def run_pass(extra_args) -> int:
-    from xpra.client.gtk_base.pass_dialog import show_pass_dialog
+    from xpra.client.gtk3.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
 
 def run_send_file(extra_args) -> int:
@@ -2298,7 +2298,7 @@ def run_example(args) -> int:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
     classname = args[0].replace("-", "_")
     try:
-        ic =  __import__(f"xpra.client.gtk_base.example.{classname}", {}, {}, "main")
+        ic =  __import__(f"xpra.client.gtk3.example.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
@@ -2966,7 +2966,7 @@ def run_top(error_cb, options, args, cmdline) -> int:
 def run_session_info(error_cb, options, args, cmdline) -> int:
     check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
-    from xpra.client.gtk_base.session_info import SessionInfoClient
+    from xpra.client.gtk3.session_info import SessionInfoClient
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
     return app.run()
@@ -3028,12 +3028,12 @@ def run_sessions_gui(options) -> int:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
         if listener:
-            from xpra.client.gtk_base import mdns_gui
+            from xpra.client.gtk3 import mdns_gui
             return mdns_gui.do_main(options)
         else:
             warn("Warning: no mDNS support")
             warn(" only local sessions will be shown")
-    from xpra.client.gtk_base import sessions_gui
+    from xpra.client.gtk3 import sessions_gui
     return sessions_gui.do_main(options)
 
 def run_mdns_gui(options) -> int:
@@ -3041,7 +3041,7 @@ def run_mdns_gui(options) -> int:
     listener = get_listener_class()
     if not listener:
         raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
-    from xpra.client.gtk_base import mdns_gui
+    from xpra.client.gtk3 import mdns_gui
     return mdns_gui.do_main(options)
 
 def run_list_mdns(error_cb, extra_args) -> int:

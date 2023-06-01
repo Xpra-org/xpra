@@ -220,7 +220,7 @@ class ApplicationWindow:
         self.bug_tool = None
         def bug(*_args):
             if self.bug_tool is None:
-                from xpra.client.gtk_base.bug_report import BugReport
+                from xpra.client.gtk3.bug_report import BugReport
                 self.bug_tool = BugReport()
                 self.bug_tool.init(show_about=False)
             self.bug_tool.show()
@@ -229,7 +229,7 @@ class ApplicationWindow:
             self.mdns_gui = None
             def mdns(*_args):
                 if self.mdns_gui is None:
-                    from xpra.client.gtk_base.mdns_gui import mdns_sessions
+                    from xpra.client.gtk3.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
                     def close_mdns():
                         self.mdns_gui.destroy()

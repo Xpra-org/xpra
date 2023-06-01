@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase
+from xpra.client.gtk3.gtk_tray_menu_base import GTKTrayMenuBase
 
 
 class GTK3TrayMenu(GTKTrayMenuBase):

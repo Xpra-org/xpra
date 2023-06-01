@@ -25,7 +25,7 @@ from xpra.scripts.config import (
     get_defaults, parse_bool,
     OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
     )
-from xpra.client.gtk_base.menu_helper import (
+from xpra.client.gtk3.menu_helper import (
     BANDWIDTH_MENU_OPTIONS,
     )
 from xpra.make_thread import start_thread

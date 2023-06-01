@@ -890,7 +890,7 @@ class ClientWindowBase(ClientWidgetBase):
         """
 
     def show_window_info(self, *args):
-        from xpra.client.gtk_base.window_info import WindowInfo
+        from xpra.client.gtk3.window_info import WindowInfo
         wi = WindowInfo(self._client, self)
         wi.show()
 

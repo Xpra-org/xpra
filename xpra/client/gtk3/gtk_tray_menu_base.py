@@ -15,7 +15,7 @@ from xpra.util import (
     )
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES
-from xpra.client.gtk_base.menu_helper import (
+from xpra.client.gtk3.menu_helper import (
     MenuHelper,
     BANDWIDTH_MENU_OPTIONS,
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,

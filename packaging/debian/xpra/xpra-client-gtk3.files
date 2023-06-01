@@ -1,7 +1,6 @@
 usr/bin/run_scaled
 usr/bin/xpra_launcher
 usr/lib/python3*/*/xpra/client/gui/
-usr/lib/python3*/*/xpra/client/gtk_base/
 usr/lib/python3*/*/xpra/client/gtk3/
 usr/lib/python3*/*/xpra/client/gl/
 usr/lib/python3*/*/xpra/client/mixins/

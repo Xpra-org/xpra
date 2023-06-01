@@ -237,7 +237,7 @@ def main(): # pragma: no cover
             1 : window1
             }
         def show_start_new_command(*_args):
-            from xpra.client.gtk_base.start_new_command import getStartNewCommand
+            from xpra.client.gtk3.start_new_command import getStartNewCommand
             getStartNewCommand(None).show()
         client.show_start_new_command = show_start_new_command
 

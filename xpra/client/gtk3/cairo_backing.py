@@ -9,7 +9,7 @@ from gi.repository import GLib              #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
 from xpra.util import envbool
-from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase, FORMATS
+from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")

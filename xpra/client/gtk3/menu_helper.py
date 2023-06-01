@@ -439,7 +439,7 @@ class MenuHelper:
 
     def make_updatecheckmenuitem(self):
         def show_update_window(*_args):
-            from xpra.client.gtk_base.update_status import getUpdateStatusWindow
+            from xpra.client.gtk3.update_status import getUpdateStatusWindow
             w = getUpdateStatusWindow()
             w.show()
             w.check()

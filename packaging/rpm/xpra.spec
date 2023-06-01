@@ -553,7 +553,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/xpra_launcher
 %{_bindir}/run_scaled*
 %{python3_sitearch}/xpra/client/gui/
-%{python3_sitearch}/xpra/client/gtk_base/
 %{python3_sitearch}/xpra/client/gtk3/
 %{python3_sitearch}/xpra/client/gl/
 %{python3_sitearch}/xpra/client/mixins/
