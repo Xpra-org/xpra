@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -109,7 +109,7 @@ class WindowPerformanceStatistics:
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self, bandwidth_limit=0) -> Tuple[Tuple[str,str,float,float]]:
+    def get_factors(self, bandwidth_limit=0) -> List[Tuple[str,str,float,float]]:
         factors = []
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:
@@ -164,7 +164,7 @@ class WindowPerformanceStatistics:
             #the certainty of this factor goes up:
             weight = max(0, target-1)*(5+logp(target))
             mayaddfac("bandwidth-limit", info, target, weight)
-        return tuple(factors)
+        return factors
 
 
     def get_info(self) -> Dict[str,Any]:

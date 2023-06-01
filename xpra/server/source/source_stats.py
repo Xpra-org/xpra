@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 from collections import deque
 
 from xpra.server.cystats import (                                           #@UnresolvedImport
@@ -168,7 +168,7 @@ class GlobalPerformanceStatistics:
             #(wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
-    def get_factors(self, pixel_count:int) -> Tuple[str,str,float,float]:
+    def get_factors(self, pixel_count:int) -> List[Tuple[str,str,float,float]]:
         factors = []
         def mayaddfac(metric:str, info:str, factor:float, weight:float):
             if weight>0.01:
@@ -208,7 +208,7 @@ class GlobalPerformanceStatistics:
             mayaddfac("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2)
         if self.congestion_value>0:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
-        return tuple(factors)
+        return factors
 
     def get_connection_info(self) -> Dict[str,Any]:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
