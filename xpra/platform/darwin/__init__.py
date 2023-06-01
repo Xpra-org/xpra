@@ -7,6 +7,8 @@ import os
 import sys
 
 def do_init():
+    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
+        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
