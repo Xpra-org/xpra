@@ -344,8 +344,8 @@ cdef extern from "X11/Xlib.h":
     int XConvertSelection(Display * display, Atom selection, Atom target, Atom property,
                           Window requestor, Time time)
 
-    ctypedef Bool (*XIf_predicate) (Display *display, XEvent *event, XPointer arg) nogil
-    int XIfEvent(Display *display, XEvent *event_return, XIf_predicate predicate, XPointer arg)
+    #ctypedef Bool (*XIf_predicate) (Display *display, XEvent *event, XPointer arg) nogil
+    int XIfEvent(Display *display, XEvent *event_return, void *predicate, XPointer arg)
 
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:

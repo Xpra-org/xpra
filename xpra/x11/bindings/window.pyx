@@ -12,7 +12,7 @@ from xpra.x11.bindings.xlib cimport (
     GrabModeAsync, XGrabPointer,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
-    XCreateWindow, XDestroyWindow, XIfEvent, XIf_predicate, PropertyNotify,
+    XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
     XSetWindowAttributes,
     XWindowAttributes, XWindowChanges,
     XDefaultRootWindow,
@@ -1312,7 +1312,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef xifevent_timestamp et
         et.window = xwindow
         et.atom = timestamp_prop
-        XIfEvent(self.display, &xevent, &timestamp_predicate, <XPointer> &et)
+        XIfEvent(self.display, &xevent, <void*> &timestamp_predicate, <XPointer> &et)
         return xevent.xproperty.time
 
 
