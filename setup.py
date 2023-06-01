@@ -847,10 +847,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             }
         for token in shlex.split(s):
             if token in ignored_tokens:
-                pass
-            elif token[:2] in ignored_flags:
-                pass
-            elif token[:2] in flag_map:
+                continue
+            if token[:2] in ignored_flags:
+                continue
+            if token[:2] in flag_map:
                 #this overrules 'add_to' - is this still needed?
                 if len(token)>2:
                     add_to_keywords(kw, flag_map[token[:2]], token[2:])

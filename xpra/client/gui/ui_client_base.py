@@ -601,6 +601,7 @@ class UIXpraClient(ClientBaseClass):
         if setting in (
             "clipboard-limits",
             ):
+            #FIXME: this should update the limits?
             pass
         elif setting in (
             "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
