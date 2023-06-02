@@ -63,7 +63,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, caps : typedict) -> bool:
+    def authenticate(self, _caps : typedict) -> bool:
         if not self.host or not check_host(self.peername, self.host):
             errinfo = "'%s'" % self.peername
             if self.peername!=self.host:
@@ -76,7 +76,7 @@ class Authenticator(SysAuthenticator):
         return "hosts"
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Host Check", "Host Check"):

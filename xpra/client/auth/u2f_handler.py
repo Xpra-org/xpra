@@ -6,8 +6,9 @@
 import os
 import logging
 import binascii
+from typing import Tuple
 
-from xpra.os_util import load_binary_file, osexpand
+from xpra.os_util import load_binary_file, strtobytes, osexpand
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("auth")
@@ -24,7 +25,7 @@ class Handler:
     def get_digest(self) -> str:
         return "u2f"
 
-    def handle(self, challenge, digest:str, prompt:str):  # pylint: disable=unused-argument
+    def handle(self, challenge, digest:str, prompt:str) -> Tuple[bytes,bytes]:  # pylint: disable=unused-argument
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
             return None
@@ -51,7 +52,7 @@ class Handler:
         sig = response.signature_data
         client_data = response.client_data
         log("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
-        return bytes(sig), client_data.origin
+        return bytes(sig), strtobytes(client_data.origin)
 
     def get_key_handle(self) -> bytes:
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")

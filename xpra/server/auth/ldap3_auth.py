@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
 
+from typing import Tuple
 from xpra.util import obsc, typedict
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
@@ -52,18 +53,16 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests):
-        if "xor" not in digests:
-            log.error("Error: ldap authentication requires the 'xor' digest")
-            return None
+    def get_challenge(self, digests) -> Tuple[bytes,str]:
+        self.req_xor(digests)
         return super().get_challenge(["xor"])
 
-    def check(self, password) -> bool:
-        log("check(%s)", obsc(password))
+    def check_password(self, password:str) -> bool:
+        log("check_password(%s)", obsc(password))
         try:
             from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM     #@UnresolvedImport
         except ImportError as e:
-            log("check(..)", exc_info=True)
+            log("check_password(..)", exc_info=True)
             log.warn("Warning: cannot use ldap3 authentication:")
             log.warn(" %s", e)
             return False
@@ -96,13 +95,13 @@ class Authenticator(SysAuthenticatorBase):
             log("ldap3 who_am_i()=%s", conn.extend.standard.who_am_i())
             return True
         except Exception as e:
-            log("ldap3 check(..)", exc_info=True)
+            log("ldap3 check_password(..)", exc_info=True)
             log.error("Error: ldap3 authentication failed:")
             log.estr(e)
             return False
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context

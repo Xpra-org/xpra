@@ -1,12 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 
 from xpra.net.digest import get_salt, choose_digest
-from xpra.os_util import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 from xpra.log import Logger
 
@@ -46,14 +45,14 @@ class FileAuthenticatorBase(SysAuthenticator):
 
     def get_password(self) -> str:
         file_data = self.load_password_file()
-        if file_data is None:
-            return None
-        return strtobytes(file_data)
+        if not file_data:
+            return ""
+        return file_data
 
-    def parse_filedata(self, data):
-        return data
+    def parse_filedata(self, data:str):
+        raise NotImplementedError()
 
-    def load_password_file(self) -> bytes:
+    def load_password_file(self):
         if not self.password_filename:
             return None
         full_path = os.path.abspath(self.password_filename)
@@ -66,7 +65,7 @@ class FileAuthenticatorBase(SysAuthenticator):
                 self.password_filetime = None
                 self.password_filedata = None
                 try:
-                    with open(self.password_filename, mode="rb") as f:
+                    with open(self.password_filename, mode="r") as f:
                         data = f.read()
                     log(f"loaded {len(data)} bytes from {self.password_filename!r}")
                     self.password_filedata = self.parse_filedata(data)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 import socket
 
 from xpra.util import envint, obsc, typedict
-from xpra.os_util import bytestostr
+from xpra.os_util import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
 
@@ -57,8 +57,8 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return super().get_challenge(["xor"])
 
-    def check(self, password) -> bool:
-        log("check(%s)", obsc(password))
+    def check_password(self, password:str) -> bool:
+        log("check_password(%s)", obsc(password))
         def emsg(e):
             try:
                 log.warn(" LDAP Error: %s", e.message["desc"])
@@ -99,14 +99,11 @@ class Authenticator(SysAuthenticatorBase):
             user = self.username_format.replace("%username", self.username).replace("%domain", domain)
             log("user=%s", user)
             try:
-                #password should be the result of a digest function,
-                #ie: xor will return bytes..
-                p = bytestostr(password)
-                password = p.encode(self.encoding)
-                log("ldap encoded password as %s", self.encoding)
+                pvalue = password.encode(self.encoding)
+                log(f"ldap encoded password as {self.encoding}")
             except Exception:
-                pass
-            conn.simple_bind_s(user, password)
+                pvalue = strtobytes(password)
+            conn.simple_bind_s(user, pvalue)
             log("simple_bind_s(%s, %s) done", user, obsc(password))
             return True
         except INVALID_CREDENTIALS:
@@ -123,7 +120,7 @@ class Authenticator(SysAuthenticatorBase):
             return False
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context

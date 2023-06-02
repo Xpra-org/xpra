@@ -1,13 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import base64
 import binascii
+from typing import Tuple
 
 from xpra.util import envbool, obsc
-from xpra.os_util import bytestostr
 from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.log import enable_color
@@ -54,7 +54,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests):
+    def get_challenge(self, digests) -> Tuple[bytes,str]:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
@@ -72,12 +72,12 @@ class Authenticator(SysAuthenticator):
             log("recheck: %s", totp.verify(now))
         return self.salt, self.digest
 
-    def check(self, password) -> bool:
-        log("otp.check(%s)", obsc(password))
+    def check_password(self, password:str) -> bool:
+        log("otp.check_password(%s)", obsc(password))
         import pyotp  # @UnresolvedImport
         totp = pyotp.TOTP(self.secret)
-        r = totp.verify(bytestostr(password), valid_window=self.valid_window)
-        log("otp.check(%s)=%s", obsc(password), r)
+        r = totp.verify(password, valid_window=self.valid_window)
+        log("otp.check_password(%s)=%s", obsc(password), r)
         if not r:
             raise ValueError("invalid OTP value")
         return True
@@ -86,7 +86,7 @@ class Authenticator(SysAuthenticator):
         return "otp"
 
 
-def main(argv):
+def main(argv) -> int:
     if len(argv)<2 or len(argv)>4:
         print("usage: %s SECRET [username] [issuer-name]" % (argv[0], ))
         return 1
@@ -109,6 +109,7 @@ def main(argv):
         log.info(" unable to show qr code: %s", e)
     else:
         show_qr(totp_uri)
+    return 0
 
 if __name__ == "__main__":
     import sys

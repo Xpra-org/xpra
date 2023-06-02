@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,7 +29,7 @@ class Authenticator(SysAuthenticator):
         self.check_peercred(connection, uids, gids, allow_owner)
         super().__init__(**kwargs)
 
-    def check_peercred(self, connection, uids="", gids="", allow_owner:bool=False):
+    def check_peercred(self, connection, uids="", gids="", allow_owner:bool=False) -> None:
         allow_uids = allow_gids = None
         if uids or allow_owner:
             allow_uids = []
@@ -103,7 +103,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, caps : typedict) -> bool:    #pylint: disable=arguments-differ
+    def authenticate(self, _caps : typedict) -> bool:    #pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

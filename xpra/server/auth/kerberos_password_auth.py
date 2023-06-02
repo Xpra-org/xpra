@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,7 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return super().get_challenge(["xor"])
 
-    def check(self, password) -> bool:
+    def check_password(self, password:str) -> bool:
         try:
             if WIN32:
                 import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
@@ -60,7 +60,7 @@ class Authenticator(SysAuthenticatorBase):
             return False
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Password-Auth", "Kerberos-Password-Authentication"):

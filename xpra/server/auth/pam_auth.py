@@ -5,6 +5,7 @@
 
 import os
 import sys
+from typing import Tuple
 
 from xpra.util import envbool
 from xpra.os_util import strtobytes, getuid
@@ -42,23 +43,21 @@ class Authenticator(SysAuthenticator):
         self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
         super().__init__(**kwargs)
 
-    def check(self, password) -> bool:
-        log("pam.check(..) pw=%s", self.pw)
+    def check_password(self, password:str) -> bool:
+        log("pam.check_password(..) pw=%s", self.pw)
         if self.pw is None:
             return False
         return check(self.username, password, self.service, self.check_account)
 
-    def get_challenge(self, digests):
-        if "xor" not in digests:
-            log.error("Error: pam authentication requires the 'xor' digest")
-            return None
+    def get_challenge(self, digests) -> Tuple[bytes,str]:
+        self.req_xor(digests)
         return super().get_challenge(["xor"])
 
     def __repr__(self):
         return "PAM"
 
 
-def main(args):
+def main(args) -> int:
     if len(args)!=3:
         print("invalid number of arguments")
         print("usage:")

@@ -34,14 +34,12 @@ class Authenticator(SysAuthenticatorBase):
 
     def get_challenge(self, digests):
         assert not self.challenge_sent
-        if "kerberos" not in digests:
-            log.error("Error: client does not support kerberos authentication")
-            return None
+        self.req_challenge(digests, "kerberos")
         self.salt = get_salt()
         self.challenge_sent = True
         return self.salt, "kerberos:%s" % self.service
 
-    def check(self, token) -> bool:
+    def check_password(self, token:str) -> bool:
         log("check(%r)", token)
         assert self.challenge_sent
         try:
@@ -74,7 +72,7 @@ class Authenticator(SysAuthenticatorBase):
             kerberos.authGSSServerClean(ctx)  # @UndefinedVariable
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Token-Auth", "Kerberos Token Authentication"):

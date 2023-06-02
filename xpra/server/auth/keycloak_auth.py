@@ -68,7 +68,7 @@ class Authenticator(SysAuthenticator):
         self.challenge_sent = True
         return self.salt, "keycloak"
 
-    def check(self, response_json) -> bool:
+    def check(self, response_json:bytes) -> bool:
         log(f"check({response_json!r})")
         assert self.challenge_sent
         if not response_json:
@@ -169,7 +169,7 @@ class Authenticator(SysAuthenticator):
             return False
 
 
-def main(args): # pragma: no cover
+def main(args) -> int: # pragma: no cover
     if len(args)!=2:
         print("invalid number of arguments")
         print("usage:")

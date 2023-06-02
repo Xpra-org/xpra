@@ -77,7 +77,7 @@ class Authenticator(SysAuthenticator):
             "prompt"        : std(self.prompt),
             }
         if self.require_challenge:
-            subs["password"] = bytestostr(self.unxor_password(caps))
+            subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
         log(f"authenticate(..) shellsub({self.command}={cmd}")
         #[self.command, info, str(self.timeout)]

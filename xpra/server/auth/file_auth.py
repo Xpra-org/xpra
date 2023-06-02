@@ -13,12 +13,12 @@ from xpra.util import obsc, typedict
 class Authenticator(FileAuthenticatorBase):
 
     def authenticate_hmac(self, caps : typedict) -> bool:
-        challenge_response = caps.strget("challenge_response")
+        challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log(f"file_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
-            return None
+            return False
         salt = self.get_response_salt(client_salt)
         password = self.get_password()
         log("authenticate_hmac() get_password()="+obsc(password))
@@ -32,11 +32,14 @@ class Authenticator(FileAuthenticatorBase):
             return False
         return True
 
+    def parse_filedata(self, data:str):
+        return data
+
     def get_password(self) -> str:
         password = super().get_password()
         if not password:
             return password
-        if password.find(b"\n")>=0 or password.find(b"\r")>=0:
+        if password.find("\n")>=0 or password.find("\r")>=0:
             log.warn("Warning: newline found in password data")
             log.warn(" this is usually a mistake")
         return password

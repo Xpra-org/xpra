@@ -6,17 +6,19 @@
 import os
 import hmac
 import hashlib
+from typing import List, Optional, Callable, ByteString
 
-from xpra.util import csv
+from xpra.util import csv, envint
 from xpra.log import Logger
 from xpra.os_util import strtobytes, memoryview_to_bytes, hexstr
 
 log = Logger("network", "crypto")
 
 BLACKLISTED_HASHES = ("sha1", "md5")
+DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
-def get_digests():
+def get_digests() -> List[str]:
     digests = ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
@@ -29,7 +31,7 @@ def get_digests():
         pass
     return digests
 
-def get_digest_module(digest : str):
+def get_digest_module(digest : str) -> Optional[Callable]:
     log(f"get_digest_module({digest})")
     if not digest or not digest.startswith("hmac"):
         return None
@@ -57,10 +59,10 @@ def choose_digest(options) -> str:
         return "des"
     raise ValueError(f"no known digest options found in '{csv(options)}'")
 
-def gendigest(digest:str, password, salt) -> bytes:
-    assert password and salt
-    salt : bytes = memoryview_to_bytes(salt)
-    password : bytes = strtobytes(password)
+def gendigest(digest:str, password_in, salt_in:ByteString) -> bytes:
+    assert password_in and salt_in
+    salt : bytes = memoryview_to_bytes(salt_in)
+    password : bytes = strtobytes(password_in)
     if digest=="des":
         from xpra.net.rfb.d3des import generate_response  #pylint: disable=import-outside-toplevel
         password = password.ljust(8, b"\x00")[:8]
@@ -77,13 +79,12 @@ def gendigest(digest:str, password, salt) -> bytes:
     digestmod = get_digest_module(digest)
     if not digestmod:
         log(f"invalid digest module {digest!r}")
-        return None
+        return b""
         #warn_server_and_exit(ExitCode.UNSUPPORTED,
         #    "server requested digest '%s' but it is not supported" % digest, "invalid digest")
-    v = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
-    return v
+    return strtobytes(hmac.HMAC(password, salt, digestmod=digestmod).hexdigest())
 
-def verify_digest(digest, password, salt, challenge_response):
+def verify_digest(digest:str, password:str, salt, challenge_response:bytes):
     if not password or not salt or not challenge_response:
         return False
     verify = gendigest(digest, password, salt)
@@ -93,7 +94,7 @@ def verify_digest(digest, password, salt, challenge_response):
     return True
 
 
-def get_salt(l=64) -> bytes:
+def get_salt(l:int=DEFAULT_SALT_LENGTH) -> bytes:
     #too short: we would not feed enough random data to HMAC
     if l<32:
         raise ValueError(f"salt is too short: only {l} bytes")

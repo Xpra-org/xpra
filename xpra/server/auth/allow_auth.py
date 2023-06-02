@@ -13,7 +13,7 @@ class Authenticator(SysAuthenticator):
         return "allow"
 
     def get_password(self) -> str:
-        return None
+        return ""
 
-    def authenticate(self, caps : typedict) -> bool:
+    def authenticate(self, _caps : typedict) -> bool:
         return True

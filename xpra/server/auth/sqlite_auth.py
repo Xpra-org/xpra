@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+from typing import Tuple, List, Dict, Type
 
 from xpra.util import parse_simple_dict
 from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid
@@ -41,7 +42,7 @@ class Authenticator(SQLAuthenticator):
         log("db_cursor(%s)=%s", sqlargs, cursor)
         return cursor
 
-    def parse_session_data(self, data):
+    def parse_session_data(self, data) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
         try:
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])
@@ -81,11 +82,11 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         db.commit()
         return cursor
 
-    def get_authenticator_class(self):
+    def get_authenticator_class(self) -> Type:
         return Authenticator
 
 
-def main(argv):
+def main(argv) -> int:
     return run_dbutil(SqliteDatabaseUtil, "filename", argv)
 
 if __name__ == "__main__":

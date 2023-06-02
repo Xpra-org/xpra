@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 
 
@@ -18,4 +19,4 @@ class Authenticator(SysAuthenticator):
         return "env"
 
     def get_password(self) -> str:
-        return os.environ.get(self.var_name)
+        return os.environ.get(self.var_name, "")

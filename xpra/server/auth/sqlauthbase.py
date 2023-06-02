@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Tuple, List, Dict, Type
 
 from xpra.util import csv, parse_simple_dict
 from xpra.os_util import getuid, getgid
@@ -13,8 +15,8 @@ class SQLAuthenticator(SysAuthenticator):
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
-        self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
-        self.sessions_query = kwargs.pop("sessions_query",
+        self.password_query : str = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
+        self.sessions_query : str = kwargs.pop("sessions_query",
                                          "SELECT uid, gid, displays, env_options, session_options "+
                                          "FROM users WHERE username=(%s) AND password=(%s)")
         super().__init__(**kwargs)
@@ -23,12 +25,12 @@ class SQLAuthenticator(SysAuthenticator):
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
 
-    def get_passwords(self):
+    def get_passwords(self) -> Tuple[str]:
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:
-            log.info("username '%s' not found in sqlauth database", self.username)
-            return None
+            log.info("username {self.username!r} was not found in SQL authentication database")
+            return ()
         return tuple(str(x[0]) for x in data)
 
     def get_sessions(self):
@@ -38,10 +40,10 @@ class SQLAuthenticator(SysAuthenticator):
             return None
         return self.parse_session_data(data)
 
-    def parse_session_data(self, data):
+    def parse_session_data(self, data) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
         try:
-            uid = data[0]
-            gid = data[1]
+            uid = int(data[0] or "0")
+            gid = int(data[1] or "0")
             displays = []
             env_options = {}
             session_options = {}
@@ -61,14 +63,14 @@ class SQLAuthenticator(SysAuthenticator):
 
 class DatabaseUtilBase:
 
-    def __init__(self, uri):
+    def __init__(self, uri:str):
         self.uri = uri
         self.param = "?"
 
     def exec_database_sql_script(self, cursor_cb, *sqlargs):
         raise NotImplementedError()
 
-    def create(self):
+    def create(self) -> None:
         sql = ("CREATE TABLE users ("
                "username VARCHAR(255) NOT NULL, "
                "password VARCHAR(255), "
@@ -79,14 +81,14 @@ class DatabaseUtilBase:
                "session_options VARCHAR(8191))")
         self.exec_database_sql_script(None, sql)
 
-    def add_user(self, username:str, password:str, uid=getuid(), gid=getgid(),
-                 displays="", env_options="", session_options=""):
+    def add_user(self, username:str, password:str, uid:int=getuid(), gid:int=getgid(),
+                 displays="", env_options="", session_options="") -> None:
         sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "+\
               "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,)*7)
         self.exec_database_sql_script(None, sql,
                                         (username, password, uid, gid, displays, env_options, session_options))
 
-    def remove_user(self, username:str, password:str=""):
+    def remove_user(self, username:str, password:str="") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
         sqlargs = (username, )
         if password:
@@ -94,7 +96,7 @@ class DatabaseUtilBase:
             sqlargs = (username, password)
         self.exec_database_sql_script(None, sql, sqlargs)
 
-    def list_users(self):
+    def list_users(self) -> None:
         fields = ("username", "password", "uid", "gid", "displays", "env_options", "session_options")
         def fmt(values, sizes):
             s = ""
@@ -125,7 +127,7 @@ class DatabaseUtilBase:
         sql = "SELECT %s FROM users" % csv(fields)
         self.exec_database_sql_script(cursor_callback, sql)
 
-    def authenticate(self, username:str, password:str):
+    def authenticate(self, username:str, password:str) -> None:
         auth_class = self.get_authenticator_class()
         a = auth_class(username, self.uri)
         passwords = a.get_passwords()
@@ -137,11 +139,11 @@ class DatabaseUtilBase:
         assert sessions, "no sessions found"
         log("sql authentication success, found sessions: %s", sessions)
 
-    def get_authenticator_class(self):
+    def get_authenticator_class(self) -> Type:
         raise NotImplementedError()
 
 
-def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=()):
+def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=()) -> int:
     def usage(msg="invalid number of arguments"):
         print(msg)
         print("usage:")

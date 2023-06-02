@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple
 from ctypes import (
     byref, addressof, POINTER,
     windll, FormatError, GetLastError,  # @UnresolvedImport
@@ -12,7 +13,6 @@ from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.util import envbool
-from xpra.os_util import bytestostr
 from xpra.platform.win32.common import CloseHandle
 
 LOG_CREDENTIALS = envbool("XPRA_LOG_CREDENTIALS", False)
@@ -33,35 +33,33 @@ class Authenticator(SysAuthenticator):
         #fugly: keep hold of the password so the win32 proxy can use it
         self.password = ""
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return 0
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return 0
 
     def get_password(self) -> str:
         return self.password
 
-    def get_challenge(self, digests):
-        if "xor" not in digests:
-            raise RuntimeError("win32 authenticator requires the 'xor' digest")
+    def get_challenge(self, digests) -> Tuple[bytes,str]:
+        self.req_xor(digests)
         return super().get_challenge(["xor"])
 
-    def check(self, password) -> bool:
+    def check(self, password:str) -> bool:
         token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
-        password_str = bytestostr(password)
         if LOG_CREDENTIALS:
             log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
-                self.username, domain, password_str, addressof(token))
-        status = LogonUser(self.username, domain, password_str,
+                self.username, domain, password, addressof(token))
+        status = LogonUser(self.username, domain, password,
                      LOGON32_LOGON_NETWORK_CLEARTEXT,
                      LOGON32_PROVIDER_DEFAULT,
                      byref(token))
         log("LogonUser(..)=%#x", status)
         if status:
             CloseHandle(token)
-            self.password = password_str
+            self.password = password
             return True
         log.error("Error: win32 authentication failed:")
         log.error(" %s", FormatError(GetLastError()))
@@ -71,7 +69,7 @@ class Authenticator(SysAuthenticator):
         return "win32"
 
 
-def main(argv):
+def main(argv) -> int:
     #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color

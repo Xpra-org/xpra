@@ -13,6 +13,7 @@ import tempfile
 import uuid
 import hmac
 from time import monotonic
+from typing import Tuple, Callable
 
 from xpra.os_util import (
     strtobytes, bytestostr,
@@ -20,10 +21,10 @@ from xpra.os_util import (
     get_hex_uuid,
     )
 from xpra.util import typedict
-from xpra.net.digest import get_digests, get_digest_module, gendigest
+from xpra.net.digest import get_digests, get_digest_module, gendigest, get_salt
 
 
-def temp_filename(prefix=""):
+def temp_filename(prefix="") -> str:
     return os.path.join(tempfile.gettempdir(), "file-auth-%s-test-%s" % (prefix, monotonic()))
 
 
@@ -31,25 +32,27 @@ class TempFileContext:
 
     def __init__(self, prefix="prefix"):
         self.prefix = prefix
+        self.filename = ""
+        self.file = None
 
     def __enter__(self):
         if WIN32:
             #NamedTemporaryFile doesn't work for reading on win32...
             self.filename = temp_filename(self.prefix)
-            self.file = open(self.filename, 'wb')
+            self.file = open(self.filename, 'w')
         else:
-            self.file = tempfile.NamedTemporaryFile(prefix=self.prefix)
+            self.file = tempfile.NamedTemporaryFile(mode="w", prefix=self.prefix)
             self.filename = self.file.name
         return self
 
     def __exit__(self, _exc_type, _exc_val, _exc_tb):
-        if WIN32:
+        if WIN32 and self.filename:
             os.unlink(self.filename)
 
 
 class TestAuth(unittest.TestCase):
 
-    def a(self, name):
+    def a(self, name:str):
         pmod = "xpra.server.auth"
         auth_module = __import__(pmod, globals(), locals(), ["%s_auth" % name], 0)
         mod = getattr(auth_module, "%s_auth" % name, None)
@@ -57,7 +60,7 @@ class TestAuth(unittest.TestCase):
         assert str(mod)
         return mod
 
-    def _init_auth(self, mod_name, **kwargs):
+    def _init_auth(self, mod_name:str, **kwargs):
         mod = self.a(mod_name)
         a = self.do_init_auth(mod, **kwargs)
         assert repr(a)
@@ -95,7 +98,7 @@ class TestAuth(unittest.TestCase):
             else:
                 assert challenge is None
 
-    def capsauth(self, a, challenge_response=None, client_salt=None):
+    def capsauth(self, a, challenge_response=None, client_salt=None) -> bool:
         caps = typedict()
         if challenge_response is not None:
             caps["challenge_response"] = challenge_response
@@ -192,7 +195,7 @@ class TestAuth(unittest.TestCase):
         self._test_hmac_auth("password", password, value=password)
 
 
-    def _test_file_auth(self, mod_name, genauthdata, display_count=0):
+    def _test_file_auth(self, mod_name:str, genauthdata:Callable, display_count:int=0):
         #no file, no go:
         a = self._init_auth(mod_name)
         assert a.requires_challenge()
@@ -216,23 +219,25 @@ class TestAuth(unittest.TestCase):
                     password, filedata = genauthdata(a)
                     #print("saving password file data='%s' to '%s'" % (filedata, filename))
                     if muck!=3:
-                        f.write(strtobytes(filedata))
+                        f.write(filedata)
                     if muck==1:
-                        f.write(b"\n")
+                        f.write("\n")
                     f.flush()
                     assert a.requires_challenge()
-                    salt, mac = a.get_challenge(get_digests())
-                    assert salt
-                    assert mac in get_digests()
-                    assert mac!="xor"
-                    password = strtobytes(password)
-                    client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)[:len(salt)]
+                    server_salt, digest = a.get_challenge(get_digests())
+                    assert get_digest_module(digest)
+                    assert server_salt
+                    assert digest in get_digests()
+                    assert digest!="xor"
+                    #this is what a client does,
+                    #see send_challenge_reply in client_base
+                    client_salt = get_salt(len(server_salt))
                     salt_digest = a.choose_salt_digest(get_digests())
-                    assert salt_digest
-                    auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
+                    assert salt_digest and isinstance(salt_digest, str)
+                    auth_salt = gendigest(salt_digest, client_salt, server_salt)
+                    assert isinstance(auth_salt, bytes)
                     if muck==0:
-                        digestmod = get_digest_module(mac)
-                        verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
+                        verify = gendigest(digest, password, auth_salt)
                         assert self.capsauth(a, verify, client_salt), "%s failed" % a.authenticate
                         if display_count>0:
                             sessions = a.get_sessions()
@@ -242,8 +247,8 @@ class TestAuth(unittest.TestCase):
                                 display_count, len(sessions), sessions)
                         assert not self.capsauth(a, verify, client_salt), "authenticated twice!"
                         passwords = a.get_passwords()
-                        assert len(passwords)==1, "expected just one password in file, got %i" % len(passwords)
-                        assert password in passwords
+                        assert len(passwords)==1, f"expected just one password in file, got {len(passwords)}"
+                        assert password in passwords, f"expected to find {password} in {passwords}"
                     else:
                         for verify in ("whatever", None, "bad"):
                             assert not self.capsauth(a, verify, client_salt)
@@ -273,7 +278,7 @@ class TestAuth(unittest.TestCase):
             a.load_password_file()
 
     def test_multifile(self):
-        def genfiledata(a):
+        def genfiledata(a) -> Tuple[str,str]:
             password = uuid.uuid4().hex
             lines = [
                 "#comment",
@@ -286,7 +291,7 @@ class TestAuth(unittest.TestCase):
                 ]
             return password, "\n".join(lines)
         self._test_file_auth("multifile", genfiledata, 1)
-        def nodata(_a):
+        def nodata(_a) -> Tuple[str,str]:
             return "abc", ""
         try:
             self._test_file_auth("multifile", nodata, 1)
@@ -433,6 +438,8 @@ class TestAuth(unittest.TestCase):
 def main():
     import logging
     from xpra.log import set_default_level
+    from xpra.log import enable_color
+    enable_color()
     if "-v" in sys.argv:
         set_default_level(logging.DEBUG)
     else:

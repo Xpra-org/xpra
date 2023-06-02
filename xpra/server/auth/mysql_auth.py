@@ -6,7 +6,7 @@
 
 import re
 import sys
-from typing import Dict
+from typing import Dict, Type
 
 from xpra.server.auth.sys_auth_base import log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
@@ -79,11 +79,11 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
         db.commit()
         return cursor
 
-    def get_authenticator_class(self):
+    def get_authenticator_class(self) -> Type:
         return Authenticator
 
 
-def main(argv):
+def main(argv) -> int:
     return run_dbutil(MySQLDatabaseUtil, "databaseURI", argv)
 
 if __name__ == "__main__":

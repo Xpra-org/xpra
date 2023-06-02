@@ -5,6 +5,7 @@
 
 import os
 from collections import deque
+from typing import Tuple, Deque, List, Dict
 
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
@@ -12,7 +13,7 @@ from xpra.platform.paths import get_socket_dirs
 from xpra.util import envint, obsc, typedict, std
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
-from xpra.os_util import hexstr, POSIX
+from xpra.os_util import hexstr, bytestostr, POSIX
 from xpra.log import Logger
 log = Logger("auth")
 
@@ -58,7 +59,7 @@ def parse_gid(v) -> int:
 
 
 class SysAuthenticatorBase:
-    USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
+    USED_SALT : Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
 
@@ -93,7 +94,14 @@ class SysAuthenticatorBase:
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests):
+    def req_xor(self, digests) -> Tuple[bytes,str]:
+        self.req_challenge(digests, "xor")
+
+    def req_challenge(self, digests, required="xor") -> None:
+        if required not in digests:
+            raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
+
+    def get_challenge(self, digests) -> Tuple[bytes,str]:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
@@ -102,16 +110,27 @@ class SysAuthenticatorBase:
         self.challenge_sent = True
         return self.salt, self.digest
 
-    def get_passwords(self):
+    def get_passwords(self) -> Tuple[str,...]:
+        """ this default implementation just returns a tuple
+            with the password from `get_password` if there is one """
         p = self.get_password()     #pylint: disable=assignment-from-none
-        if p is not None:
+        if p:
+            if not isinstance(p, str):
+                raise ValueError(f"password value is not a string: {type(p)}")
             return (p,)
         return ()
 
     def get_password(self) -> str:
         return ""
 
-    def check(self, _password) -> bool:
+    def check(self, value:str) -> bool:
+        try:
+            password = value.decode("utf8")
+        except UnicodeDecodeError:
+            password = bytestostr(password)
+        return self.check_password(password)
+
+    def check_password(self, _password:str) -> bool:
         return False
 
     def authenticate(self, caps : typedict) -> bool:
@@ -131,7 +150,7 @@ class SysAuthenticatorBase:
         if not self.challenge_sent:
             log("invalid state: challenge has not been sent yet!")
             return False
-        challenge_response = caps.strget("challenge_response")
+        challenge_response = caps.bytesget("challenge_response")
         #challenge has been sent already for this module
         if not challenge_response:
             log("invalid state: challenge already sent but no response found!")
@@ -147,7 +166,7 @@ class SysAuthenticatorBase:
         self.salt_digest = choose_digest(digest_modes)
         return self.salt_digest
 
-    def get_response_salt(self, client_salt=None):
+    def get_response_salt(self, client_salt=None) -> bytes:
         server_salt = self.salt
         #make sure it does not get re-used:
         self.salt = None
@@ -160,26 +179,26 @@ class SysAuthenticatorBase:
         SysAuthenticator.USED_SALT.append(salt)
         return salt
 
-    def unxor_password(self, caps):
-        challenge_response = caps.strget("challenge_response")
+    def unxor_response(self, caps:typedict) -> bytes:
+        challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
         salt = self.get_response_salt(client_salt)
-        password = gendigest("xor", challenge_response, salt)
-        log(f"authenticate_check challenge-response=%s, client-salt={client_salt!r} response salt={salt!r}",
+        value = gendigest("xor", challenge_response, salt)
+        log(f"unxor_response(..) challenge-response=%s, client-salt={client_salt!r}, response salt={salt!r}",
             obsc(repr(challenge_response)))
-        return password
+        return value
 
     def authenticate_check(self, caps : typedict) -> bool:
-        password = self.unxor_password(caps)
+        value : bytes = self.unxor_response(caps)
         #warning: enabling logging here would log the actual system password!
         #log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
         #verify login:
         try :
-            ret = self.check(password)
+            ret = self.check(value)
             log(f"authenticate_check(..)={ret}")
         except Exception as e:
             log("check(..)", exc_info=True)
@@ -189,7 +208,7 @@ class SysAuthenticatorBase:
         return ret
 
     def authenticate_hmac(self, caps : typedict) -> bool:
-        challenge_response = caps.strget("challenge_response")
+        challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
@@ -211,7 +230,7 @@ class SysAuthenticatorBase:
             log.warn(f" checked {len(passwords)} passwords")
         return False
 
-    def get_sessions(self):
+    def get_sessions(self) -> Tuple[int,int,List[str],Dict,Dict]:
         uid = self.get_uid()
         gid = self.get_gid()
         log(f"{self}.get_sessions() uid={uid}, gid={gid}")

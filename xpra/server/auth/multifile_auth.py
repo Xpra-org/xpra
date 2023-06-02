@@ -6,28 +6,28 @@
 #authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
-from xpra.os_util import strtobytes, bytestostr, hexstr
+from xpra.os_util import bytestostr, hexstr
 from xpra.util import parse_simple_dict, typedict
 from xpra.net.digest import verify_digest
 
 AuthLine = Tuple[str,str,int,int,List[str],Dict[str,str],Dict[str,str]]
 
-def parse_auth_line(line:bytes) -> AuthLine:
-    ldata = line.split(b"|")
+def parse_auth_line(line:str) -> AuthLine:
+    ldata = line.split("|")
     if len(ldata)<2:
-        raise ValueError(f"not enough fields: {len(ldata)}")
+        raise ValueError(f"not enough fields: {len(ldata)}, minimum is 2")
     log(f"found {len(ldata)} fields")
     #parse fields:
     username = ldata[0]
     password = ldata[1]
     if len(ldata)>=5:
-        uid = parse_uid(bytestostr(ldata[2]))
-        gid = parse_gid(bytestostr(ldata[3]))
-        displays = bytestostr(ldata[4]).split(",")
+        uid = parse_uid(ldata[2])
+        gid = parse_gid(ldata[3])
+        displays = ldata[4].split(",")
     else:
         #this will use the default value, usually "nobody":
         uid = parse_uid(None)
@@ -49,16 +49,16 @@ class Authenticator(FileAuthenticatorBase):
         super().__init__(**kwargs)
         self.sessions = None
 
-    def parse_filedata(self, data) -> Dict[str,AuthLine]:
+    def parse_filedata(self, data:str) -> Dict[str,AuthLine]:
         if not data:
             return {}
-        auth_data = {}
+        auth_data : Dict[str,AuthLine] = {}
         i = 0
         for line in data.splitlines():
             i += 1
             line = line.strip()
             log(f"line {i}: {line!r}")
-            if not line or line.startswith(b"#"):
+            if not line or line.startswith("#"):
                 continue
             try:
                 v = parse_auth_line(line)
@@ -71,28 +71,28 @@ class Authenticator(FileAuthenticatorBase):
             except Exception as e:
                 log("parsing error", exc_info=True)
                 log.error(f"Error parsing password file {self.password_filename!r} at line {i}:")
-                log.error(f" '{bytestostr(line)}'")
+                log.error(f" {line!r}")
                 log.estr(e)
                 continue
         log(f"parsed auth data from file {self.password_filename!r}: {auth_data}")
         return auth_data
 
-    def get_auth_info(self):
+    def get_auth_info(self) -> Optional[AuthLine]:
         self.load_password_file()
         if not self.password_filedata:
             return None
-        return self.password_filedata.get(strtobytes(self.username))
+        return self.password_filedata.get(self.username)
 
-    def get_password(self):
+    def get_password(self) -> str:
         entry = self.get_auth_info()
         log(f"get_password() found entry={entry}")
         if entry is None:
-            return None
+            return ""
         return entry[0]
 
     def authenticate_hmac(self, caps : typedict) -> bool:
-        challenge_response = caps.strget("challenge_response")
-        client_salt = caps.strget("challenge_client_salt")
+        challenge_response = caps.bytesget("challenge_response")
+        client_salt = caps.bytesget("challenge_client_salt")
         log(f"multifile_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")
         self.sessions = None
         if not self.salt:
@@ -114,7 +114,7 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = uid, gid, displays, env_options, session_options
         return True
 
-    def get_sessions(self):
+    def get_sessions(self) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
         return self.sessions
 
     def __repr__(self):
