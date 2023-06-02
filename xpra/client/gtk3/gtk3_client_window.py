@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple, Dict
 from gi.repository import Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
@@ -30,13 +31,13 @@ GTK3 version of the ClientWindow class
 """
 class GTK3ClientWindow(GTKClientWindowBase):
 
-    def init_window(self, metadata):
+    def init_window(self, metadata:typedict):
         super().init_window(metadata)
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):
             self.add_header_bar()
 
-    def _icon_size(self):
+    def _icon_size(self) -> int:
         tb = self.get_titlebar()
         try:
             h = tb.get_preferred_size()[-1]-8
@@ -44,7 +45,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             h = 24
         return min(128, max(h, 24))
 
-    def set_icon(self, pixbuf):
+    def set_icon(self, pixbuf:GdkPixbuf.Pixbuf) -> None:
         super().set_icon(pixbuf)
         hbi = self.header_bar_image
         if hbi and WINDOW_ICON:
@@ -52,7 +53,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             pixbuf = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
             hbi.set_from_pixbuf(pixbuf)
 
-    def can_use_header_bar(self, metadata):
+    def can_use_header_bar(self, metadata:typedict) -> bool:
         if self.is_OR() or not self.get_decorated():
             return False
         hbl = (self.headerbar or "").lower().strip()
@@ -76,7 +77,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             return True
         return False
 
-    def add_header_bar(self):
+    def add_header_bar(self) -> None:
         self.menu_helper = WindowMenuHelper(self._client, self)
         hb = Gtk.HeaderBar()
         hb.set_has_subtitle(False)
@@ -106,14 +107,14 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.set_titlebar(hb)
 
 
-    def show_xpra_menu(self, *_args):
+    def show_xpra_menu(self, *_args) -> None:
         mh = getattr(self._client, "menu_helper", None)
         if not mh:
             from xpra.client.gtk3.tray_menu import GTK3TrayMenu
             mh = GTK3TrayMenu(self._client)
         mh.popup(0, 0)
 
-    def show_window_menu(self, *_args):
+    def show_window_menu(self, *_args) -> None:
         self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 
@@ -136,7 +137,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
 
-    def get_drawing_area_geometry(self):
+    def get_drawing_area_geometry(self) -> Tuple[int,int,int,int]:
         gdkwindow = self.drawing_area.get_window()
         if gdkwindow:
             x, y = gdkwindow.get_origin()[1:]
@@ -145,7 +146,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         w, h = self.get_size()
         return (x, y, w, h)
 
-    def apply_geometry_hints(self, hints):
+    def apply_geometry_hints(self, hints:Dict) -> None:
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = Gdk.WindowHints
         name_to_hint = {
@@ -192,7 +193,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
-    def can_maximize(self):
+    def can_maximize(self) -> bool:
         hints = self.geometry_hints
         if not hints:
             return True
@@ -204,7 +205,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         dw, dh = geom[2], geom[3]
         return dw<maxw and dh<maxh
 
-    def draw_widget(self, widget, context):
+    def draw_widget(self, widget, context) -> bool:
         paintlog("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
             return False

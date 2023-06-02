@@ -887,7 +887,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         password = value
         #all server versions support a client salt,
         #they also tell us which digest to use:
-        server_salt = bytestostr(packet[1])
+        server_salt = strtobytes(packet[1])
         digest = bytestostr(packet[3])
         actual_digest = digest.split(":", 1)[0]
         if actual_digest=="des":
@@ -917,7 +917,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog(f"{actual_digest}({obsc(password)!r}, {salt!r})={obsc(challenge_response)!r}")
         self.do_send_challenge_reply(challenge_response, client_salt)
 
-    def do_send_challenge_reply(self, challenge_response, client_salt):
+    def do_send_challenge_reply(self, challenge_response:bytes, client_salt:bytes):
         self.password_sent = True
         if self._protocol.TYPE=="rfb":
             self._protocol.send_challenge_reply(challenge_response)

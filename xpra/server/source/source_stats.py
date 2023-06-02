@@ -114,7 +114,7 @@ class GlobalPerformanceStatistics:
         self.client_latency.append((wid, now, pixels, net_total_latency))
         self.frame_total_latency.append((wid, now, pixels, latency))
 
-    def get_damage_pixels(self, wid) -> Tuple[float,int]:
+    def get_damage_pixels(self, wid:int) -> Tuple[Tuple[float,int]]:
         """ returns the tuple of (event_time, pixelcount) for the given window id """
         return tuple((event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid)
 
@@ -205,7 +205,7 @@ class GlobalPerformanceStatistics:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-self.mmap_free_size/self.mmap_size
             #aim for ~33%
-            mayaddfac("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2)
+            mayaddfac("mmap-area", {"full-pct" : int(100*full)}, logp(3*full), (3*full)**2)
         if self.congestion_value>0:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
         return factors

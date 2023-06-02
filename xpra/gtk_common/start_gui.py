@@ -321,27 +321,28 @@ class StartSession(Gtk.Window):
                             #this is an xpra display, don't shadow it
                             continue
                         new_display_list.append(line.lstrip(" ").split(" ")[0])
-                def populate_display_combo():
-                    changed = self.display_list!=new_display_list
-                    self.display_list = new_display_list
-                    if not new_display_list:
-                        self.no_display_combo()
-                        return
-                    self.display_entry.hide()
-                    self.display_combo.show()
-                    if not changed:
-                        return
-                    current = self.display_combo.get_active_text()
-                    model = self.display_combo.get_model()
-                    if model:
-                        model.clear()
-                    selected = 0
-                    for i, display in enumerate(new_display_list):
-                        self.display_combo.append_text(display)
-                        if display==current:
-                            selected = i
-                    self.display_combo.set_active(selected)
-                GLib.idle_add(populate_display_combo)
+                GLib.idle_add(self.populate_display_combo, new_display_list)
+
+    def populate_display_combo(self, new_display_list):
+        changed = self.display_list!=new_display_list
+        self.display_list = new_display_list
+        if not new_display_list:
+            self.no_display_combo()
+            return
+        self.display_entry.hide()
+        self.display_combo.show()
+        if not changed:
+            return
+        current = self.display_combo.get_active_text()
+        model = self.display_combo.get_model()
+        if model:
+            model.clear()
+        selected = 0
+        for i, display in enumerate(new_display_list):
+            self.display_combo.append_text(display)
+            if display==current:
+                selected = i
+        self.display_combo.set_active(selected)
 
     def set_options(self, options):
         #cook some attributes,

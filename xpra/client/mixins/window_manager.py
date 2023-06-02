@@ -1215,7 +1215,7 @@ class WindowClient(StubClientMixin):
                     if len(self._id_to_window)==1:
                         log.info("%s, disconnecting", close)
                         self.quit(0)
-                        return True
+                        return
                     log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
             #default to forward:
             self.send("close-window", wid)

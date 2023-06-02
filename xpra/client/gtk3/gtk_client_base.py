@@ -10,7 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Dict, Any
+from typing import Dict, Any, List, Type
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -127,12 +127,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.connect("first-ui-received", self.start_UI_watcher)
 
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
 
 
-    def setup_frame_request_windows(self):
+    def setup_frame_request_windows(self) -> None:
         #query the window manager to get the frame size:
         from xpra.gtk_common.error import xsync
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
@@ -146,7 +146,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             framelog("setup_frame_request_windows() window=%#x", xid)
             send_wm_request_frame_extents(root.get_xid(), xid)
 
-    def run(self):
+    def run(self) -> int:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
@@ -155,13 +155,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
         return self.exit_code
 
-    def gtk_main(self):
+    def gtk_main(self) -> None:
         log(f"GTKXpraClient.gtk_main() calling {Gtk.main}",)
         Gtk.main()
         log("GTKXpraClient.gtk_main() ended")
 
 
-    def quit(self, exit_code=0):
+    def quit(self, exit_code=0) -> None:
         log(f"GTKXpraClient.quit({exit_code}) current exit_code={self.exit_code}")
         if self.exit_code is None:
             self.exit_code = exit_code
@@ -176,17 +176,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
             self.timeout_add(500, self.exit)
 
-    def force_quit(self):
+    def force_quit(self) -> None:
         from xpra.os_util import force_quit
         log(f"GTKXpraClient.force_quit() calling {force_quit}")
         force_quit()
 
-    def exit(self):
+    def exit(self) -> None:
         self.show_progress(100, "terminating")
         log(f"GTKXpraClient.exit() calling {Gtk.main_quit}", )
         Gtk.main_quit()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("GTKXpraClient.cleanup()")
         self.stop_pinentry()
         if self.shortcuts_info:
@@ -214,7 +214,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             uw.stop()
         UIXpraClient.cleanup(self)
 
-    def start_UI_watcher(self, _client):
+    def start_UI_watcher(self, _client) -> None:
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add, self.source_remove)
         self.UI_watcher.start()
@@ -232,7 +232,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.UI_watcher.add_fail_callback(UI_failed)
 
 
-    def get_vrefresh(self):
+    def get_vrefresh(self) -> int:
         rate = envint("XPRA_VREFRESH", 0)
         if rate:
             return rate
@@ -251,7 +251,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return rate
 
 
-    def get_notifier_classes(self):
+    def get_notifier_classes(self) -> List[Type]:
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
@@ -270,7 +270,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return ncs
 
 
-    def _process_startup_complete(self, packet):
+    def _process_startup_complete(self, packet) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
 
@@ -286,13 +286,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return self.handle_challenge_with_pinentry(prompt, pinentry_cmd)
         return self.process_challenge_prompt_dialog(prompt)
 
-    def stop_pinentry(self):
+    def stop_pinentry(self) -> None:
         pp = self.pinentry_proc
         if pp:
             self.pinentry_proc = None
             noerr(pp.terminate)
 
-    def get_server_authentication_string(self):
+    def get_server_authentication_string(self) -> str:
         p = self._protocol
         server_type = ""
         if p:
@@ -349,7 +349,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return None
         return values[0]
 
-    def do_process_challenge_prompt_dialog(self, values : list, wait : Event, prompt="password"):
+    def do_process_challenge_prompt_dialog(self, values : list, wait : Event, prompt="password") -> None:
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title,
@@ -412,7 +412,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return conn
 
 
-    def show_border_help(self):
+    def show_border_help(self) -> None:
         if not first_time("border-help"):
             return
         log.info(" border format: color[,size][:off]")
@@ -421,7 +421,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log.info("  eg: auto,5")
         log.info("  eg: blue")
 
-    def parse_border(self, warn=True):
+    def parse_border(self, warn=True) -> None:
         enabled = not self.border_str.endswith(":off")
         parts = [x.strip() for x in self.border_str.replace(":off", "").split(",")]
         color_str = parts[0]
@@ -471,7 +471,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("parse_border(%s)=%s", self.border_str, self.border)
 
 
-    def show_server_commands(self, *_args):
+    def show_server_commands(self, *_args) -> None:
         if not self.server_commands_info:
             log.warn("Warning: cannot show server commands")
             log.warn(" the feature is not available on the server")
@@ -481,7 +481,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.server_commands = getServerCommandsWindow(self)
         self.server_commands.show()
 
-    def show_start_new_command(self, *args):
+    def show_start_new_command(self, *args) -> None:
         if not self.server_start_new_commands:
             log.warn("Warning: cannot start new commands")
             log.warn(" the feature is currently disabled on the server")
@@ -499,11 +499,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     ################################
     # monitors
-    def send_remove_monitor(self, index):
+    def send_remove_monitor(self, index) -> None:
         assert self.server_monitors
         self.send("configure-monitor", "remove", "index", index)
 
-    def send_add_monitor(self, resolution="1024x768"):
+    def send_add_monitor(self, resolution="1024x768") -> None:
         assert self.server_monitors
         self.send("configure-monitor", "add", resolution)
 
@@ -661,16 +661,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.send_file(filename, "", data, filesize=filesize, openit=openit)
 
 
-    def show_about(self, *_args):
+    def show_about(self, *_args) -> None:
         from xpra.gtk_common.about import about
         force_focus()
         about()
 
-    def show_docs(self, *_args):
+    def show_docs(self, *_args) -> None:
         from xpra.scripts.main import run_docs
         run_docs()
 
-    def show_shortcuts(self, *_args):
+    def show_shortcuts(self, *_args) -> None:
         if self.shortcuts_info and not self.shortcuts_info.is_closed:
             force_focus()
             self.shortcuts_info.present()
@@ -681,7 +681,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.shortcuts_info = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
         self.shortcuts_info.show_all()
 
-    def show_session_info(self, *args):
+    def show_session_info(self, *args) -> None:
         if self.session_info and not self.session_info.is_closed:
             #exists already: just raise its window:
             self.session_info.set_args(*args)
@@ -696,7 +696,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         force_focus()
         self.session_info.show_all()
 
-    def show_bug_report(self, *_args):
+    def show_bug_report(self, *_args) -> None:
         self.send_info_request()
         if self.bug_report:
             force_focus()
@@ -739,7 +739,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return None
 
 
-    def request_frame_extents(self, window):
+    def request_frame_extents(self, window) -> None:
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         from xpra.gtk_common.error import xsync
         root = self.get_root_window()
@@ -797,7 +797,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return wfs
 
 
-    def _add_statusicon_tray(self, tray_list):
+    def _add_statusicon_tray(self, tray_list) -> List[Type]:
         #add Gtk.StatusIcon tray, but not under wayland:
         if not is_Wayland():
             try:
@@ -807,11 +807,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_list
 
-    def get_tray_classes(self):
+    def get_tray_classes(self) -> List[Type]:
         from xpra.client.mixins.tray import TrayClient
         return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
-    def get_system_tray_classes(self):
+    def get_system_tray_classes(self) -> List[Type]:
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
 
@@ -837,7 +837,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         p = self.get_raw_mouse_position()
         return self.cp(p[0], p[1])
 
-    def get_current_modifiers(self):
+    def get_current_modifiers(self) -> List[str]:
         root = self.get_root_window()
         if root is None:
             return ()
@@ -921,10 +921,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return screen.get_rgba_visual() is not None
 
 
-    def get_monitors_info(self):
+    def get_monitors_info(self) -> Dict[int,Any]:
         return get_monitors_info(self.xscale, self.yscale)
 
-    def get_screen_sizes(self, xscale=1, yscale=1):
+    def get_screen_sizes(self, xscale=1, yscale=1) -> List:
         return get_screen_sizes(xscale, yscale)
 
 
@@ -1083,7 +1083,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return c
 
 
-    def process_ui_capabilities(self, caps : typedict):
+    def process_ui_capabilities(self, caps : typedict) -> None:
         UIXpraClient.process_ui_capabilities(self, caps)
         #this requires the "DisplayClient" mixin:
         if not hasattr(self, "screen_size_changed"):
@@ -1093,7 +1093,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         screen.connect("size-changed", self.screen_size_changed)
 
 
-    def window_grab(self, wid, window):
+    def window_grab(self, wid, window) -> None:
         em = Gdk.EventMask
         event_mask = (em.BUTTON_PRESS_MASK |
                       em.BUTTON_RELEASE_MASK |
@@ -1111,7 +1111,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
         self._window_with_grab = wid
 
-    def window_ungrab(self):
+    def window_ungrab(self) -> None:
         grablog("window_ungrab()")
         etime = Gtk.get_current_event_time()
         Gdk.pointer_ungrab(etime)
@@ -1119,7 +1119,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self._window_with_grab = None
 
 
-    def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+    def window_bell(self, window, device, percent:int, pitch:int, duration:int, bell_class, bell_id:int, bell_name:str) -> None:
         gdkwindow = None
         if window:
             gdkwindow = window.get_window()
@@ -1131,7 +1131,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             Gdk.beep()
 
 
-    def _process_raise_window(self, packet):
+    def _process_raise_window(self, packet) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         focuslog(f"going to raise window {wid} - {window}")
@@ -1141,7 +1141,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return
             window.present()
 
-    def _process_restack_window(self, packet):
+    def _process_restack_window(self, packet) -> None:
         wid, detail, other_wid = packet[1:4]
         above = bool(detail==0)
         window = self._id_to_window.get(wid)
@@ -1151,7 +1151,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if window:
             window.restack(other_window, above)
 
-    def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
+    def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body="") -> None:
         OK = "0"
         DISABLE = "1"
         def notify_callback(event, nid, action_id, *args):
@@ -1195,7 +1195,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.timeout_add(2*1000, delayed_notify)
 
     #OpenGL bits:
-    def init_opengl(self, enable_opengl):
+    def init_opengl(self, enable_opengl:str) -> None:
         opengllog(f"init_opengl({enable_opengl})")
         #enable_opengl can be True, False, force, probe-failed, probe-success, or None (auto-detect)
         #ie: "on:native,gtk", "auto", "no"
@@ -1345,7 +1345,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return (self.GLClientWindowClass, self.ClientWindowClass)
         return (self.ClientWindowClass,)
 
-    def can_use_opengl(self, w : int, h : int, metadata : typedict, override_redirect : bool):
+    def can_use_opengl(self, w : int, h : int, metadata : typedict, override_redirect : bool) -> bool:
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return False
         if not self.opengl_force:
@@ -1383,7 +1383,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return False
         return True
 
-    def toggle_opengl(self, *_args):
+    def toggle_opengl(self, *_args) -> None:
         self.opengl_enabled = not self.opengl_enabled
         opengllog("opengl_toggled: %s", self.opengl_enabled)
         #now replace all the windows with new ones:
@@ -1408,7 +1408,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return gdk_window
         return None
 
-    def get_group_leader(self, wid, metadata, _override_redirect):
+    def get_group_leader(self, wid:int, metadata, _override_redirect):
         def find_gdk_window(metadata_key="transient-for"):
             return self.find_gdk_window(metadata, metadata_key)
         win = find_gdk_window("group-leader-wid") or find_gdk_window("transient-for") or find_gdk_window("parent")
@@ -1450,7 +1450,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
         return group_leader_window
 
-    def destroy_window(self, wid, window):
+    def destroy_window(self, wid:int, window) -> None:
         #override so we can cleanup the group-leader if needed,
         WindowClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
@@ -1496,13 +1496,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.connect("clipboard-toggled", self.clipboard_toggled)
         return ch
 
-    def cancel_clipboard_notification_timer(self):
+    def cancel_clipboard_notification_timer(self) -> None:
         cnt = self.clipboard_notification_timer
         if cnt:
             self.clipboard_notification_timer = 0
             self.source_remove(cnt)
 
-    def clipboard_notify(self, n):
+    def clipboard_notify(self, n:int) -> None:
         tray = self.tray
         if not tray or not CLIPBOARD_NOTIFY:
             return

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 from xpra.util import std, typedict, net_utf8
 from xpra.common import FULL_INFO
@@ -32,30 +32,29 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.user = ""
         self.name = ""
-        self.argv = ()
+        self.argv : Tuple[str,...] = ()
         self.sharing = False
         # client capabilities/options:
         self.client_setting_change = False
-        self.client_type = None
-        self.client_version = None
-        self.client_revision= None
+        self.client_type = ""
+        self.client_version = ""
+        self.client_revision= ""
         self.client_bits = 0
-        self.client_platform = None
-        self.client_machine = None
-        self.client_processor = None
-        self.client_release = None
-        self.client_linux_distribution = None
+        self.client_platform = ""
+        self.client_machine = ""
+        self.client_processor = ""
+        self.client_release = ""
+        self.client_linux_distribution : Tuple[str,...] = ()
         self.client_proxy = False
-        self.client_wm_name = None
-        self.client_session_type = None
-        self.client_session_type_full = None
-        self.client_connection_data = {}
-        self.client_opengl = {}
-        self.proxy_hostname = None
-        self.proxy_platform = None
-        self.proxy_release = None
-        self.proxy_version = None
-        self.proxy_version = None
+        self.client_wm_name = ""
+        self.client_session_type = ""
+        self.client_session_type_full = ""
+        self.client_opengl : typedict = typedict()
+        self.proxy_hostname = ""
+        self.proxy_platform = ""
+        self.proxy_release = ""
+        self.proxy_version = ""
+        self.proxy_version = ""
 
     def parse_client_caps(self, c : typedict) -> None:
         self.uuid = c.strget("uuid")

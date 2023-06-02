@@ -7,7 +7,7 @@
 #!python
 #cython: boundscheck=False, wraparound=False
 
-from typing import Dict, Any
+from typing import Dict, Any  # @UnusedImport
 
 from xpra.log import Logger
 log = Logger("util", "auth")

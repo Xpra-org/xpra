@@ -971,7 +971,7 @@ def engs(v) -> str:
 def obsc(v) -> str:
     OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)
     if OBSCURE_PASSWORDS:
-        return "".join("*" for _ in (v or ""))
+        return "".join("*" for _ in (bytestostr(v) or ""))
     return v
 
 

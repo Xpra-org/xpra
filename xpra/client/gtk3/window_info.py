@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,16 +32,16 @@ def x(self):
 def dict_str(d):
     return "\n".join("%s : %s" % (k,v) for k,v in d.items())
 
-def geom_str(geom):
+def geom_str(geom) -> str:
     return "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
 
-def hsc(sc):
+def hsc(sc) -> str:
     #make the dict more human readable
     ssc = dict((bytestostr(k),v) for k,v in sc.items())
     ssc.pop("gravity", None)
     return dict_str(ssc)
 
-def get_window_state(w):
+def get_window_state(w) -> str:
     state = []
     for s in (
         "fullscreen", "maximized",
@@ -58,7 +58,7 @@ def get_window_state(w):
             state.append(s)
     return csv(state) or "none"
 
-def get_window_attributes(w):
+def get_window_attributes(w) -> str:
     attr = {}
     workspace = w.get_desktop_workspace()
     if workspace not in (None, WORKSPACE_UNSET):
@@ -159,23 +159,23 @@ class WindowInfo(Gtk.Window):
         vbox.pack_start(tb.get_table(), True, True, 20)
         self.add(vbox)
 
-    def destroy(self, *_args):
+    def destroy(self, *_args) -> None:
         self.is_closed = True
         super().destroy()
 
-    def show(self):
+    def show(self) -> None:
         self.populate()
         self.set_size_request(320, -1)
         super().show_all()
         GLib.timeout_add(1000, self.populate)
 
-    def populate(self):
+    def populate(self) -> bool:
         if self.is_closed:
             return False
         self.do_populate()
         return True
 
-    def copy_to_clipboard(self, *_args):
+    def copy_to_clipboard(self, *_args) -> None:
         w = self._window
         if not w:
             return
@@ -212,7 +212,7 @@ class WindowInfo(Gtk.Window):
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text, len(text))
 
-    def do_populate(self):
+    def do_populate(self) -> None:
         w = self._window
         if not w:
             return
@@ -286,7 +286,7 @@ class WindowInfo(Gtk.Window):
             self.backing_properties.set_text("")
 
 
-    def bool_icon(self, image, on_off):
+    def bool_icon(self, image, on_off:bool) -> None:
         c = self._client
         if not c:
             return

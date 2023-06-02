@@ -320,7 +320,7 @@ def load_xdg_menu(submenu) -> Dict[str,Any]:
                 add_entries(entry.Entries)
     add_entries(submenu.getEntries())
     if not entries_data:
-        return None
+        return {}
     return submenu_data
 
 def remove_icons(menu_data):

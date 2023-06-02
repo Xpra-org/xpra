@@ -566,7 +566,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         elif self.recheck_focus_timer==0:
             self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
 
-    def do_xpra_focus_out_event(self, event) -> bool:
+    def do_xpra_focus_out_event(self, event) -> None:
         focuslog("do_xpra_focus_out_event(%s)", event)
         if NotifyInferior is not None:
             detail = getattr(event, "detail", None)
@@ -576,12 +576,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._focus_latest = False
         self.schedule_recheck_focus()
 
-    def do_xpra_focus_in_event(self, event) -> bool:
+    def do_xpra_focus_in_event(self, event) -> None:
         focuslog("do_xpra_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
         if self._been_mapped:
             self._focus_latest = True
             self.schedule_recheck_focus()
-        return True
 
 
     def init_max_window_size(self) -> None:
@@ -1576,7 +1575,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             d = gdkwin.get_display()
             if d:
                 d.pointer_ungrab(Gdk.CURRENT_TIME)
-        return True
 
     def toggle_pointer_grab(self) -> None:
         pg = self._client.pointer_grabbed
