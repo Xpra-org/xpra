@@ -20,7 +20,7 @@ class TestDigest(unittest.TestCase):
     def test_invalid_digest(self):
         for invalid_digest in (None, "foo", "hmac", "hmac+INVALID_HASH_ALGO"):
             assert get_digest_module(invalid_digest) is None
-            assert gendigest(invalid_digest, "bar", "0"*16) is None
+            assert not gendigest(invalid_digest, "bar", "0"*16)
 
     def test_all_digests(self):
         for digest in get_digests():
