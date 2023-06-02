@@ -31,7 +31,7 @@ if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
 #why is every workaround for setuptools so cumbersome?
-export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra" | head -n 1 | tr -d '\n'`
+export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
 export PYTHONPATH=".:`dirname $XPRA_MODULE_DIR`"
 echo "PYTHONPATH=${PYTHONPATH}"
 export PATH=$INSTALL_ROOT/bin:$PATH
