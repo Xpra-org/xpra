@@ -286,16 +286,24 @@ def isdisplaytype(args, *dtypes) -> bool:
     return any((d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes))
 
 def check_gtk_client() -> None:
+    no_gtk()
+    if POSIX and not OSX and not os.environ.get("GDK_BACKEND"):
+        if os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" or os.environ.get("SSH_TTY"):
+            os.environ["GDK_BACKEND"] = "x11"
+        else:
+            try:
+                from xpra.x11.bindings.xwayland import isX11, isxwayland
+            except ImportError:
+                pass
+            else:
+                if isX11() and not isxwayland():
+                    os.environ["GDK_BACKEND"] = "x11"
+    check_gtk()
     try:
         from xpra.client import gui, gtk3
         assert gui, gtk3
     except ImportError:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
-    if POSIX and not OSX and not os.environ.get("GDK_BACKEND") and (
-        os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" or os.environ.get("SSH_TTY")
-        ):
-        os.environ["GDK_BACKEND"] = "x11"
-    check_gtk()
 
 def check_gtk() -> None:
     import gi
@@ -1246,7 +1254,7 @@ def get_sockpath(display_desc:Dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
 
 def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> int:
     if mode=="attach":
-        check_gtk()
+        check_gtk_client()
     else:
         opts.reconnect = False
     if mode in ("attach", "detach") and len(extra_args)==1 and extra_args[0]=="all":
@@ -1470,7 +1478,6 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode:str):
 
 
 def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
-    check_gtk()
     try:
         app = make_client(error_cb, opts)
     except RuntimeError as e:
@@ -1703,7 +1710,6 @@ def run_opengl_probe():
     return probe_message(), props
 
 def make_client(error_cb, opts):
-    check_gtk_client()
     progress_process = None
     if opts.splash is not False:
         progress_process = make_progress_process("Xpra Client v%s" % XPRA_VERSION)
@@ -2272,6 +2278,8 @@ def no_gtk() -> None:
     if Gtk is None:
         #all good, not loaded
         return
+    import traceback
+    traceback.print_stack()
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 

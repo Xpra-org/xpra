@@ -52,6 +52,7 @@ def is_X11_Display(display=None) -> bool:
         manager = Gdk.DisplayManager.get()
         display = manager.get_default_display()
     if display is None:
+        log("no default display!")
         return False
     try:
         gdk_display = get_raw_display_for(display)

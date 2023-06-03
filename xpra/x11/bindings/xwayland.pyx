@@ -21,6 +21,18 @@ log = Logger("x11")
 DEF XNone = 0
 
 
+def isX11(display_name : str=os.environ.get("DISPLAY", "")):
+    b = display_name.encode()
+    cdef char* display = b
+    cdef Display *d = NULL
+    with HideStdErr():
+        d = XOpenDisplay(display)
+        if not d:
+            log(f"isX11({display_name}) cannot open display")
+            return False
+    return True
+
+
 def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
@@ -28,9 +40,8 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     with HideStdErr():
         d = XOpenDisplay(display)
         if not d:
-            log(f"isxwayland({display_name}) cannot open display")
+            log(f"isX11({display_name}) cannot open display")
             return False
-        log(f"isxwayland({display_name}) opened display")
     cdef int opcode, event, error
     try:
         #the easy way:
