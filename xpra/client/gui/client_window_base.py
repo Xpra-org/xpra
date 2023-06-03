@@ -546,7 +546,10 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_command(metadata.strget("command"))
 
         if "x11-property" in metadata:
-            self.set_x11_property(*metadata.tupleget("x11-property"))
+            attr = metadata.tupleget("x11-property")
+            if len(attr)>=4:
+                name, ptype, _, value = attr[:4]
+                self.set_x11_property(name, ptype, value)
 
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
