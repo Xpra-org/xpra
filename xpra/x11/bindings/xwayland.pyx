@@ -40,7 +40,7 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     with HideStdErr():
         d = XOpenDisplay(display)
         if not d:
-            log(f"isX11({display_name}) cannot open display")
+            log(f"isxwayland({display_name}) cannot open display")
             return False
     cdef int opcode, event, error
     try:
