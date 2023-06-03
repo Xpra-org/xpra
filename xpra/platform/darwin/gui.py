@@ -435,6 +435,25 @@ def get_info():
 #keep track of the window object for each view
 VIEW_TO_WINDOW : WeakValueDictionary[int,Any] = WeakValueDictionary()
 
+def get_nsview(window) -> int:
+    try:
+        from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr
+    except ImportError:
+        return 0
+    return get_nsview_ptr(window)
+
+def add_window_hooks(window):
+    if WHEEL:
+        nsview = get_nsview(window)
+        if nsview:
+            VIEW_TO_WINDOW[nsview] = window
+
+def remove_window_hooks(window):
+    if WHEEL:
+        nsview = get_nsview(window)
+        if nsview:
+            VIEW_TO_WINDOW.pop(nsview, None)
+
 
 def get_CG_imagewrapper(rect=None):
     from xpra.codecs.image_wrapper import ImageWrapper
