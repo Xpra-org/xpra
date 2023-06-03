@@ -570,7 +570,8 @@ class CoreX11WindowModel(WindowModelStub):
                             value = self.prop_get(name, ptype, ignore_errors=True)
                             if value is None:
                                 #retry using scalar type:
-                                value = self.prop_get(name, (ptype,), ignore_errors=True)
+                                ptype = (ptype, )
+                                value = self.prop_get(name, ptype, ignore_errors=True)
                             metalog("_handle_property_change(%s) value=%s", name, value)
                             if value:
                                 self.emit("x11-property-changed", (name, ptype, dformat, value))

@@ -1082,14 +1082,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         self.when_realized("x11-prop-%s" % prop_name, self.do_set_x11_property, prop_name, dtype, value)
 
-    def do_set_x11_property(self, prop_name:str, dtype=None, value=None) -> None:
-        metalog("do_set_x11_property%s", (prop_name, dtype, value))
+    def do_set_x11_property(self, prop_name:str, dtype:str=None, value=None) -> None:
+        xid = self.get_window().get_xid()
+        metalog(f"do_set_x11_property({prop_name!r}, {dtype!r}, {value!r}) xid={xid}")
         dtype = bytestostr(dtype)
         if dtype=="latin1":
             value = bytestostr(value)
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, (list, tuple)) and not isinstance(dtype, (list, tuple)):
             dtype = (dtype, )
-        xid = self.get_window().get_xid()
         if not dtype and not value:
             #remove prop
             prop_del(xid, prop_name)
