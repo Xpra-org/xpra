@@ -6,7 +6,7 @@
 import os
 import logging
 import binascii
-from typing import Tuple
+from typing import Tuple, Optional
 
 from xpra.os_util import load_binary_file, strtobytes, osexpand
 from xpra.log import Logger, is_debug_enabled
