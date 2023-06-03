@@ -5,7 +5,7 @@
 
 import os
 from collections import deque
-from typing import Tuple, Deque, List, Dict
+from typing import Tuple, Deque, List, Dict, Optional
 
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
@@ -20,6 +20,8 @@ log = Logger("auth")
 USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
 DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
+
+SessionData = Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]
 
 
 def xor(s1,s2):
@@ -101,7 +103,7 @@ class SysAuthenticatorBase:
         if required not in digests:
             raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
 
-    def get_challenge(self, digests) -> Tuple[bytes,str]:
+    def get_challenge(self, digests) -> Optional[Tuple[bytes,str]]:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
@@ -184,7 +186,7 @@ class SysAuthenticatorBase:
         client_salt = caps.strget("challenge_client_salt")
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
-            return False
+            return b""
         salt = self.get_response_salt(client_salt)
         value = gendigest("xor", challenge_response, salt)
         log(f"unxor_response(..) challenge-response=%s, client-salt={client_salt!r}, response salt={salt!r}",
@@ -213,7 +215,7 @@ class SysAuthenticatorBase:
         log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
-            return None
+            return False
         salt = self.get_response_salt(client_salt)
         passwords = self.get_passwords()
         if not passwords:
@@ -230,7 +232,7 @@ class SysAuthenticatorBase:
             log.warn(f" checked {len(passwords)} passwords")
         return False
 
-    def get_sessions(self) -> Tuple[int,int,List[str],Dict,Dict]:
+    def get_sessions(self) -> SessionData:
         uid = self.get_uid()
         gid = self.get_gid()
         log(f"{self}.get_sessions() uid={uid}, gid={gid}")

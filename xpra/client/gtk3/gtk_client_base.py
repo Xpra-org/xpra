@@ -840,7 +840,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_current_modifiers(self) -> List[str]:
         root = self.get_root_window()
         if root is None:
-            return ()
+            return []
         modifiers_mask = root.get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
 

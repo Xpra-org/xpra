@@ -8,7 +8,7 @@
 
 from typing import Dict, List, Tuple, Optional
 
-from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import parse_simple_dict, typedict
@@ -47,7 +47,7 @@ class Authenticator(FileAuthenticatorBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.sessions = None
+        self.sessions : Optional[SessionData] = None
 
     def parse_filedata(self, data:str) -> Dict[str,AuthLine]:
         if not data:
@@ -97,14 +97,14 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = None
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
-            return None
+            return False
         #ensure this salt does not get re-used:
         salt = self.get_response_salt(client_salt)
         entry = self.get_auth_info()
         if entry is None:
             log.warn("Warning: authentication failed")
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
-            return None
+            return False
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
         log("multifile authenticate_hmac password='%r', hex(salt)=%s", fpassword, hexstr(salt))
@@ -114,7 +114,7 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = uid, gid, displays, env_options, session_options
         return True
 
-    def get_sessions(self) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
+    def get_sessions(self) -> SessionData:
         return self.sessions
 
     def __repr__(self):

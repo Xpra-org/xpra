@@ -986,6 +986,9 @@ def unsetenv(*varnames) -> None:
     for x in varnames:
         os.environ.pop(x, None)
 
+def hasenv(name : str) -> bool:
+    return os.environ.get(name) is not None
+
 def envint(name : str, d:int=0) -> int:
     try:
         return int(os.environ.get(name, d))

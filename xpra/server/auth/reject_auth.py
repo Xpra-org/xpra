@@ -3,8 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
+from typing import Tuple, Optional
 
+from xpra.server.auth.sys_auth_base import SessionData
 from xpra.net.digest import get_salt, choose_digest
 from xpra.util import typedict
 
@@ -40,8 +41,8 @@ class Authenticator:
     def authenticate(self, _caps : typedict) -> bool:  #pylint: disable=unused-argument
         return False
 
-    def get_sessions(self) -> Tuple:
-        return ()
+    def get_sessions(self) -> Optional[SessionData]:
+        return None
 
     def __repr__(self):
         return "reject"

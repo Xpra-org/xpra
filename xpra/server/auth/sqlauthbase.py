@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, List, Dict, Type
+from typing import Tuple, Type, Optional
 
 from xpra.util import csv, parse_simple_dict
 from xpra.os_util import getuid, getgid
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.server.auth.sys_auth_base import SysAuthenticator, SessionData, log
 
 
 class SQLAuthenticator(SysAuthenticator):
@@ -33,14 +33,14 @@ class SQLAuthenticator(SysAuthenticator):
             return ()
         return tuple(str(x[0]) for x in data)
 
-    def get_sessions(self):
+    def get_sessions(self) -> Optional[SessionData]:
         cursor = self.db_cursor(self.sessions_query, (self.username, self.password_used or ""))
         data = cursor.fetchone()
         if not data:
             return None
         return self.parse_session_data(data)
 
-    def parse_session_data(self, data) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
+    def parse_session_data(self, data) -> Optional[SessionData]:
         try:
             uid = int(data[0] or "0")
             gid = int(data[1] or "0")

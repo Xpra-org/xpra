@@ -35,4 +35,4 @@ def override_aioquic_logger():
         aioquic_logger.setLevel(logging.DEBUG)
     else:
         aioquic_logger.setLevel(logging.WARN)
-    logger.addHandler(aioquic_logger)
+    logger.addHandler(aioquic_logger)               # type: ignore

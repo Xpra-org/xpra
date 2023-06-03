@@ -8,10 +8,10 @@ import sys
 import os
 import errno
 import socket
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
-from xpra.util import envint, envbool, csv
+from xpra.util import envint, envbool, hasenv, csv
 from xpra.common import FULL_INFO
 from xpra.make_thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
@@ -28,7 +28,9 @@ if SOCKET_CORK:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
         log.warn(" %s", cork_e)
         SOCKET_CORK = False
-SOCKET_NODELAY : bool = envbool("XPRA_SOCKET_NODELAY", None)
+SOCKET_NODELAY : Optional[bool] = None
+if hasenv("XPRA_SOCKET_NODELAY"):
+    SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY")
 SOCKET_KEEPALIVE : bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
 VSOCK_TIMEOUT : int = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT : int = envint("XPRA_SOCKET_TIMEOUT", 20)

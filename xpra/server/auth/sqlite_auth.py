@@ -6,10 +6,10 @@
 
 import os
 import sys
-from typing import Tuple, List, Dict, Type
+from typing import Optional, Type
 
 from xpra.util import parse_simple_dict
-from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
@@ -42,7 +42,7 @@ class Authenticator(SQLAuthenticator):
         log("db_cursor(%s)=%s", sqlargs, cursor)
         return cursor
 
-    def parse_session_data(self, data) -> Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]:
+    def parse_session_data(self, data) -> Optional[SessionData]:
         try:
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])
