@@ -947,10 +947,11 @@ class WindowClient(StubClientMixin):
             try:
                 signame = bytestostr(proc.stdout.readline()).strip("\n\r")
                 log("signal_watcher_event: %s", signame)
-                if signame and signame not in self.server_window_signals:
-                    self.send("window-signal", wid, signame)
-                else:
-                    log(f"Warning: signal {signame!r} cannot be forwarded to this server")
+                if signame:
+                    if signame in self.server_window_signals:
+                        self.send("window-signal", wid, signame)
+                    else:
+                        log(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:
                 log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
                 log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
