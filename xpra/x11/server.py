@@ -1146,24 +1146,24 @@ class XpraServer(GObject.GObject, X11ServerBase):
         wid = packet[1]
         sig = bytestostr(packet[2])
         if sig not in WINDOW_SIGNALS:
-            log.warn("Warning: window signal '%s' not handled", sig)
+            log.warn(f"Warning: window signal {sig!r} not handled")
             return
         w = self._lookup_window(wid)
         if not w:
-            log.warn("Warning: window %s not found", wid)
+            log.warn(f"Warning: window {wid} not found")
             return
         pid = w.get_property("pid")
         log("window-signal %s for wid=%i, pid=%s", sig, wid, pid)
         if not pid:
-            log.warn("Warning: no pid found for window %s, cannot send %s", wid, sig)
+            log.warn(f"Warning: no pid found for window {wid}, cannot send {sig}")
             return
         try:
             sigval = getattr(signal, sig)       #ie: signal.SIGINT
             os.kill(pid, sigval)
-            log.info("sent signal %s to pid %i for window %i", sig, pid, wid)
+            log.info(f"sent signal {sig!r} to pid {pid} for window {wid}")
         except Exception as e:
             log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
-            log.error("Error: failed to send signal %s to pid %i for window %i", sig, pid, wid)
+            log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid}")
             log.estr(e)
 
 
