@@ -32,7 +32,7 @@ if server_features.notifications:
     from xpra.server.mixins.notification import NotificationForwarder
     SERVER_BASES.append(NotificationForwarder)
 if server_features.webcam:
-    from xpra.server.mixins.webcam_server import WebcamServer
+    from xpra.server.mixins.webcam import WebcamServer
     SERVER_BASES.append(WebcamServer)
 if server_features.clipboard:
     from xpra.server.mixins.clipboard import ClipboardServer
