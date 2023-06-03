@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.os_util import HideStdErr
 from xpra.x11.bindings.xlib cimport (
     Success,
@@ -13,35 +14,45 @@ from xpra.x11.bindings.xlib cimport (
     XGetWindowProperty, XDefaultRootWindow,
     )
 from xpra.x11.bindings.randr cimport get_monitor_properties
+from xpra.log import Logger
+
+log = Logger("x11")
 
 DEF XNone = 0
 
 
-def isxwayland(display_name : str=":0"):
+def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
     with HideStdErr():
         d = XOpenDisplay(display)
         if not d:
+            log(f"isxwayland({display_name}) cannot open display")
             return False
+        log(f"isxwayland({display_name}) opened display")
     cdef int opcode, event, error
     try:
         #the easy way:
         if XQueryExtension(d, "XWAYLAND", &opcode, &event, &error):
+            log(f"isxwayland({display_name}) XWAYLAND extension found")
             return True
         #surely a vfb is not wayland?
         if get_xstring(d, "VFB_IDENT"):
+            log(f"isxwayland({display_name}) VFB_IDENT found")
             return False
         #we can't trust the monitor names of an xpra server!
         if get_xstring(d, "XPRA_SERVER_UUID"):
             #assume that xpra is not using XWayland as vfb
             #(that's a fair assumption - why would you do that?)
+            log(f"isxwayland({display_name}) XPRA_SERVER_UUID found")
             return False
         #this can go wrong...
         props = get_monitor_properties(d)
+        log(f"isxwayland({display_name}) monitor properties={props}")
         for mprops in props.values():
             if mprops.get("name", "").startswith("XWAYLAND"):
+                log(f"isxwayland({display_name}) found XWAYLAND monitor: {mprops}")
                 return True
         return False
     finally:
