@@ -16,7 +16,7 @@ from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
-    Status, Window, Drawable, Bool, 
+    Status, Window, Drawable, Bool,
     XFree, XWindowAttributes,
     MSBFirst, LSBFirst, ZPixmap,
     DoRed, DoGreen, DoBlue, AllPlanes,
@@ -863,7 +863,7 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         self.context_check("get_XShmWrapper")
         cdef XWindowAttributes attrs
         if XGetWindowAttributes(self.display, xwindow, &attrs)==0:
-            return 
+            return
         xshm = XShmWrapper()
         xshm.init(self.display, xwindow, attrs.visual, attrs.width, attrs.height, attrs.depth)
         return xshm

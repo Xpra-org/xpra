@@ -7,7 +7,7 @@
 import sys
 import hashlib
 import os.path
-from typing import Tuple, Dict, Any 
+from typing import Tuple, Dict, Any
 
 from xpra.audio.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict

@@ -468,7 +468,7 @@ decoders = WeakValueDictionary()
 
 #note: the C api is event based but we want synchronous behaviour
 #so we use an event to ensure that the data we feed produces an image as output
-#this will need to be changed to support B-frames 
+#this will need to be changed to support B-frames
 cdef class Decoder:
     cdef unsigned int width
     cdef unsigned int height

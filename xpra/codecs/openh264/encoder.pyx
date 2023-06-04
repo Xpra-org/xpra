@@ -92,7 +92,7 @@ cdef extern from "wels/codec_app_def.h":
         PRO_HIGH444
         PRO_CAVLC444
         PRO_SCALABLE_BASELINE
-        PRO_SCALABLE_HIGH              
+        PRO_SCALABLE_HIGH
 
     ctypedef enum ELevelIdc:
         LEVEL_UNKNOWN

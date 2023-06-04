@@ -1406,7 +1406,7 @@ def get_height_mask(colorspace):
     if colorspace=="YUV420":
         return 0xFFFE
     return 0xFFFF
-    
+
 
 def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())

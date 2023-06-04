@@ -33,13 +33,13 @@ cdef extern from "libproc2/pids.h":
     struct pids_stack:
         pids_result *head
 
-    # Return buffer that reports queried process counts and actual results 
+    # Return buffer that reports queried process counts and actual results
     struct pids_fetch:
         pids_counts *counts
         pids_stack **stacks
 
     # Flag used to query the parent process, part of the pids_item enum
-    int PIDS_ID_PPID 
+    int PIDS_ID_PPID
 
     # Flag used to return one value per process, part of pids_select_type enum.
     # All we care about here is PPID which is the same for each thread within a

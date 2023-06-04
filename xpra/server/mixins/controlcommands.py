@@ -177,7 +177,7 @@ class ServerBaseControlCommands(StubServerMixin):
         for csource in tuple(self._server_sources.values()):
             csource.suspend(True, self._id_to_window)
         count = len(self._server_sources)
-        return f"suspended {count} clients" 
+        return f"suspended {count} clients"
 
     def control_command_resume(self):
         for csource in tuple(self._server_sources.values()):
@@ -246,7 +246,7 @@ class ServerBaseControlCommands(StubServerMixin):
             return msg
         fn = feature.replace("-", "_")
         if not hasattr(self, feature):
-            msg = f"attribute {feature!r} not found - bug?" 
+            msg = f"attribute {feature!r} not found - bug?"
             log.warn(msg)
             return msg
         cur = getattr(self, fn, None)

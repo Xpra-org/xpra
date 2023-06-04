@@ -166,7 +166,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
     def makeRootWindowModels(self) -> Tuple[EVDIModel,...]:
         #TODO: remove root window
         root = get_default_root_window()
-        geom = (0, 0, 800, 600) 
+        geom = (0, 0, 800, 600)
         model = EVDIModel(root, self, "evdi", geom)
         return (model, )
 

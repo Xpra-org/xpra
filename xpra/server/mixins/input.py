@@ -447,7 +447,7 @@ class InputServer(StubServerMixin):
             modifiers = props.get("modifiers")
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
-        
+
 
     def _process_pointer_position(self, proto, packet) -> None:
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",

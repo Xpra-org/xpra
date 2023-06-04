@@ -31,7 +31,7 @@ class AudioMixin(StubSourceMixin):
             audio = typedict(audio)
             return audio.boolget("send") or audio.boolget("receive")
         #legacy:
-        return caps.boolget("sound.send") or caps.boolget("sound.receive") 
+        return caps.boolget("sound.send") or caps.boolget("sound.receive")
 
 
     def __init__(self):
@@ -538,7 +538,7 @@ class AudioMixin(StubSourceMixin):
                     #fallback to hard-coded values:
                     from xpra.audio.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY  # pylint: disable=import-outside-toplevel
                     encoder_latency = RECORD_PIPELINE_LATENCY + ENCODER_LATENCY.get(ss.codec, 0)
-                    cinfo = f"{ss.codec} " 
+                    cinfo = f"{ss.codec} "
                 #processing overhead
                 encoder_latency += 100
             except Exception as e:
