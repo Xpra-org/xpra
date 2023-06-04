@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,11 +10,12 @@ import shlex
 import inspect
 import os.path
 import tempfile
+from typing import Callable, List
 
 from xpra.platform import platform_import
 
 
-def valid_dir(path):
+def valid_dir(path) -> bool:
     try:
         return bool(path) and os.path.exists(path) and os.path.isdir(path)
     except TypeError:
@@ -22,128 +23,128 @@ def valid_dir(path):
 
 
 #helpers to easily override using env vars:
-def envaslist_or_delegate(env_name, impl, *args):
+def envaslist_or_delegate(env_name:str, impl:Callable, *args):
     env_value = os.environ.get(env_name)
     if env_value is not None:
         return [env_value]
     return impl(*args)
-def env_or_delegate(env_name, impl, *args):
+def env_or_delegate(env_name:str, impl:Callable, *args):
     env_value = os.environ.get(env_name)
     if env_value is not None:
         return env_value
     return impl(*args)
 
 
-def get_install_prefix():
+def get_install_prefix() -> str:
     return env_or_delegate("XPRA_INSTALL_PREFIX", do_get_install_prefix)
-def do_get_install_prefix():
+def do_get_install_prefix() -> str:
     return sys.prefix
 
 
-def get_system_conf_dirs():
+def get_system_conf_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SYSTEM_CONF_DIRS", do_get_system_conf_dirs)
-def do_get_system_conf_dirs():
+def do_get_system_conf_dirs() -> List[str]:
     #overridden in all platforms
     return []
 
-def get_ssl_cert_dirs():
+def get_ssl_cert_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SSL_CERT_PATHS", do_get_ssl_cert_dirs)
-def do_get_ssl_cert_dirs():
+def do_get_ssl_cert_dirs() -> List[str]:
     dirs = ["/etc/xpra/", "/etc/xpra/ssl", "/usr/local/etc/xpra", "/usr/local/etc/xpra/ssl"]
     if os.name!="posix" or os.getuid()!=0:
         dirs = ["~/.config/xpra/ssl", "~/.xpra/ssl"] + dirs + ["./"]
     return dirs
 
-def get_ssl_hosts_config_dirs():
+def get_ssl_hosts_config_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SSL_HOSTS_CONFIG_DIRS", do_get_ssl_hosts_config_dirs)
-def do_get_ssl_hosts_config_dirs():
+def do_get_ssl_hosts_config_dirs() -> List[str]:
     dirs = []
     for d in get_ssl_cert_dirs():
         if d.rstrip("/\\").endswith("ssl"):
             dirs.append(os.path.join(d, "hosts"))
     return dirs
 
-def get_ssh_conf_dirs():
+def get_ssh_conf_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SSH_CONF_DIRS", do_get_ssh_conf_dirs)
-def do_get_ssh_conf_dirs():
+def do_get_ssh_conf_dirs() -> List[str]:
     return ["/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
-def get_ssh_known_hosts_files():
+def get_ssh_known_hosts_files() -> List[str]:
     return envaslist_or_delegate("XPRA_SSH_KNOWN_HOSTS", do_get_ssh_known_hosts_files)
-def do_get_ssh_known_hosts_files():
-    return ("~/.ssh/known_hosts", "~/ssh/known_hosts")
+def do_get_ssh_known_hosts_files() -> List[str]:
+    return ["~/.ssh/known_hosts", "~/ssh/known_hosts"]
 
 
-def get_user_conf_dirs(uid=None):
+def get_user_conf_dirs(uid=None) -> List[str]:
     return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs, uid)
-def do_get_user_conf_dirs(_uid):
+def do_get_user_conf_dirs(_uid) -> List[str]:
     return []
 
-def get_default_conf_dirs():
+def get_default_conf_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_DEFAULT_CONF_DIRS", do_get_default_conf_dirs)
-def do_get_default_conf_dirs():
+def do_get_default_conf_dirs() -> List[str]:
     #some platforms may also ship a default config with the application
     return []
 
 
-def get_sessions_dir():
+def get_sessions_dir() -> str:
     return envaslist_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
-def do_get_sessions_dir():
+def do_get_sessions_dir() -> str:
     return "$XDG_RUNTIME_DIR/xpra"
 
 
-def get_socket_dirs():
+def get_socket_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SOCKET_DIRS", do_get_socket_dirs)
-def do_get_socket_dirs():
+def do_get_socket_dirs() -> List[str]:
     return ["~/.xpra"]
 
 
-def get_client_socket_dirs():
+def get_client_socket_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_CLIENT_SOCKET_DIRS", do_get_client_socket_dirs)
-def do_get_client_socket_dirs():
+def do_get_client_socket_dirs() -> List[str]:
     return []
 
 
-def get_default_log_dirs():
+def get_default_log_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_LOG_DIRS", do_get_default_log_dirs)
-def do_get_default_log_dirs():
+def do_get_default_log_dirs() -> List[str]:
     return ["~/.xpra"]
 
-def get_download_dir():
+def get_download_dir() -> str:
     return env_or_delegate("XPRA_DOWNLOAD_DIR", do_get_download_dir)
-def do_get_download_dir():
+def do_get_download_dir() -> str:
     d = "~/Downloads"
     if not os.path.exists(os.path.expanduser(d)):
         return "~"
     return d
 
 
-def get_mmap_dir():
+def get_mmap_dir() -> str:
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
-def do_get_mmap_dir():
+def do_get_mmap_dir() -> str:
     return tempfile.gettempdir()
 
 
-def get_xpra_tmp_dir():
+def get_xpra_tmp_dir() -> str:
     return env_or_delegate("XPRA_TMP_DIR", do_get_xpra_tmp_dir)
-def do_get_xpra_tmp_dir():
+def do_get_xpra_tmp_dir() -> str:
     return tempfile.gettempdir()
 
 
-def get_script_bin_dirs():
+def get_script_bin_dirs() -> List[str]:
     return envaslist_or_delegate("XPRA_SCRIPT_BIN_DIRS", do_get_script_bin_dirs)
-def do_get_script_bin_dirs():
+def do_get_script_bin_dirs() -> List[str]:
     return ["~/.xpra"]
 
-def get_remote_run_xpra_scripts():
+def get_remote_run_xpra_scripts() -> List[str]:
     return envaslist_or_delegate("XPRA_REMOTE_RUN_XPRA_SCRIPTS", do_get_remote_run_xpra_scripts)
-def do_get_remote_run_xpra_scripts():
+def do_get_remote_run_xpra_scripts() -> List[str]:
     return ["xpra", "$XDG_RUNTIME_DIR/xpra/run-xpra", "/usr/local/bin/xpra", "~/.xpra/run-xpra", "Xpra_cmd.exe"]
 
 
-def get_sshpass_command():
+def get_sshpass_command() -> str:
     return env_or_delegate("XPRA_SSHPASS", do_get_sshpass_command)
-def do_get_sshpass_command():
+def do_get_sshpass_command() -> str:
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
     SSHPASS = "sshpass"
@@ -156,16 +157,16 @@ def do_get_sshpass_command():
         exe_file = os.path.join(path, SSHPASS)
         if is_exe(exe_file):
             return exe_file
-    return None
+    return ""
 
 
 #overridden in platform code:
-def get_app_dir():
+def get_app_dir() -> str:
     return env_or_delegate("XPRA_APP_DIR", do_get_app_dir)
-def do_get_app_dir():
+def do_get_app_dir() -> str:
     return default_get_app_dir()
 
-def default_get_app_dir():
+def default_get_app_dir() -> str:
     if os.name=="posix":
         for prefix in (
             os.environ.get("RPM_BUILD_ROOT"),
@@ -195,15 +196,15 @@ def default_get_app_dir():
     return adir       #tried our best, hope this works!
 
 #may be overridden in platform code:
-def get_resources_dir():
+def get_resources_dir() -> str:
     return env_or_delegate("XPRA_RESOURCES_DIR", do_get_resources_dir)
-def do_get_resources_dir():
+def do_get_resources_dir() -> str:
     return get_app_dir()
 
 #may be overridden in platform code:
-def get_icon_dir():
+def get_icon_dir() -> str:
     return env_or_delegate("XPRA_ICON_DIR", do_get_icon_dir)
-def do_get_icon_dir():
+def do_get_icon_dir() -> str:
     adir = get_app_dir()
     idir = os.path.join(adir, "icons")
     if valid_dir(idir):
@@ -214,16 +215,16 @@ def do_get_icon_dir():
             return idir
     return adir     #better than nothing :(
 
-def get_icon(name):
+def get_icon(name:str):
     filename = get_icon_filename(name)
     if not filename:
-        return    None
+        return None
     from xpra.gtk_common.gtk_util import get_icon_from_file
     return get_icon_from_file(filename)
 
-def get_icon_filename(basename=None, ext="png"):
+def get_icon_filename(basename:str="", ext="png") -> str:
     if not basename:
-        return None
+        return ""
     filename = basename
     fext = os.path.splitext(filename)[1]
     if not fext:
@@ -232,63 +233,63 @@ def get_icon_filename(basename=None, ext="png"):
         icon_dir = get_icon_dir()
         filename = os.path.join(icon_dir, filename)
     if not os.path.exists(filename):
-        return None
+        return ""
     return os.path.abspath(filename)
 
 
-def get_desktop_background_paths():
+def get_desktop_background_paths() -> List[str]:
     return envaslist_or_delegate("XPRA_DESKTOP_BACKGROUND_PATHS", do_get_desktop_background_paths)
-def do_get_desktop_background_paths():
+def do_get_desktop_background_paths() -> List[str]:
     return []
 
 
-def get_xpra_command():
+def get_xpra_command() -> List[str]:
     envvalue = os.environ.get("XPRA_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_xpra_command()
-def do_get_xpra_command():
+def do_get_xpra_command() -> List[str]:
     return default_do_get_xpra_command()
-def default_do_get_xpra_command():
+def default_do_get_xpra_command() -> List[str]:
     #try to use the same "xpra" executable that launched this server:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return [sys.argv[0]]
     return ["xpra"]
 
 
-def get_nodock_command():
+def get_nodock_command() -> List[str]:
     envvalue = os.environ.get("XPRA_NODOCK_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_nodock_command()
-def do_get_nodock_command():
+def do_get_nodock_command() -> List[str]:
     return get_xpra_command()
 
 
-def get_audio_command():
+def get_audio_command() -> List[str]:
     envvalue = os.environ.get("XPRA_AUDIO_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_audio_command()
-def do_get_audio_command():
+def do_get_audio_command() -> List[str]:
     return get_xpra_command()
 
 
-def get_python_exec_command():
+def get_python_exec_command() -> List[str]:
     envvalue = os.environ.get("XPRA_PYTHON_EXEC_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_python_exec_command()
-def do_get_python_exec_command():
+def do_get_python_exec_command() -> List[str]:
     vi = sys.version_info
     return [f"python{vi.major}.{vi.minor}", "-c"]
 
-def get_python_execfile_command():
+def get_python_execfile_command() -> List[str]:
     envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_python_execfile_command()
-def do_get_python_execfile_command():
+def do_get_python_execfile_command() -> List[str]:
     vi = sys.version_info
     return [f"python{vi.major}.{vi.minor}"]
 

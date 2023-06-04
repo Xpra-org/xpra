@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
+from typing import List, Dict, Tuple, Optional, Callable
 
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
@@ -26,7 +27,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def _GetKeyboardLayoutList():
+def _GetKeyboardLayoutList() -> List[int]:
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
@@ -37,7 +38,7 @@ def _GetKeyboardLayoutList():
         layouts.append(int(handle_list[i]))
     return layouts
 
-def x11_layouts_to_win32_hkl():
+def x11_layouts_to_win32_hkl() -> Dict[str,int]:
     KMASKS = {
         0xffffffff : (0, 16),
         0xffff  : (0, ),
@@ -79,7 +80,7 @@ class Keyboard(KeyboardBase):
         * simulate 'Alt_Gr'
     """
 
-    def init_vars(self):
+    def init_vars(self) -> None:
         super().init_vars()
         self.num_lock_modifier = None
         self.altgr_modifier = None
@@ -93,21 +94,20 @@ class Keyboard(KeyboardBase):
         KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
         self.__x11_layouts_to_win32_hkl = x11_layouts_to_win32_hkl()
 
-    def set_platform_layout(self, layout):
+    def set_platform_layout(self, layout:str) -> None:
         hkl = self.__x11_layouts_to_win32_hkl.get(layout)
         if hkl is None:
             log(f"asked layout ({layout}) has no corresponding registered keyboard handle")
             return
         # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-activatekeyboardlayout
         # KLF_SETFORPROCESS|KLF_REORDER = 0x108
-        old_hkl_or_zero_on_failure = ActivateKeyboardLayout(hkl, 0x108)
-        if old_hkl_or_zero_on_failure == 0:
+        if not ActivateKeyboardLayout(hkl, 0x108):
             log(f"ActivateKeyboardLayout: cannot change layout to {layout}")
 
     def __repr__(self):
         return "win32.Keyboard"
 
-    def set_modifier_mappings(self, mappings):
+    def set_modifier_mappings(self, mappings) -> None:
         super().set_modifier_mappings(mappings)
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
         log("set_modifier_mappings found 'Num_Lock' with modifier value: %s", self.num_lock_modifier)
@@ -118,7 +118,7 @@ class Keyboard(KeyboardBase):
                 log("set_modifier_mappings found 'AltGr'='%s' with modifier value: %s", x, self.altgr_modifier)
                 break
 
-    def mask_to_names(self, mask):
+    def mask_to_names(self, mask) -> List[str]:
         """ Patch NUMLOCK and AltGr """
         names = super().mask_to_names(mask)
         if EMULATE_ALTGR:
@@ -135,7 +135,7 @@ class Keyboard(KeyboardBase):
                     names.remove(self.num_lock_modifier)
                 log("mask_to_names(%s) GetKeyState(VK_NUMLOCK)=%s, names=%s", mask, numlock, names)
             except Exception:
-                pass
+                log("mask_to_names error modifying numlock", exc_info=True)
         else:
             log("mask_to_names(%s)=%s", mask, names)
         return names
@@ -164,7 +164,7 @@ class Keyboard(KeyboardBase):
         return  {}, [], ["lock"]
 
 
-    def get_all_x11_layouts(self):
+    def get_all_x11_layouts(self) -> Dict[str,str]:
         x11_layouts = {}
         for win32_layout in WIN32_LAYOUTS.values():
             #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
@@ -176,7 +176,7 @@ class Keyboard(KeyboardBase):
         return x11_layouts
 
 
-    def get_layout_spec(self):
+    def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
         KMASKS = {
             0xffffffff : (0, 16),
             0xffff  : (0, ),
@@ -281,7 +281,7 @@ class Keyboard(KeyboardBase):
             self.last_layout_message = layout
         return layout, layouts, variant, variants, options
 
-    def get_keyboard_repeat(self):
+    def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:
         try:
             _delay = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
             _speed = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)
@@ -292,13 +292,13 @@ class Keyboard(KeyboardBase):
             _speed = min(31, max(0, _speed))
             speed = int(1000/(2.5+27.5*_speed/31))
             log("keyboard repeat speed(%s)=%s, delay(%s)=%s", _speed, speed, _delay, delay)
-            return  delay,speed
+            return delay,speed
         except Exception as e:
             log.error("failed to get keyboard rate: %s", e)
         return None
 
 
-    def process_key_event(self, send_key_action_cb, wid, key_event):
+    def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event) -> None:
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
             So we just ignore those and rely on the list of "modifiers" passed
@@ -342,7 +342,7 @@ class Keyboard(KeyboardBase):
         self.send_delayed_key()
         super().process_key_event(send_key_action_cb, wid, key_event)
 
-    def send_delayed_key(self):
+    def send_delayed_key(self) -> None:
         #timeout: this must be a real one, send it now
         dk = self.delayed_event
         log("send_delayed_key() delayed_event=%s", dk)
