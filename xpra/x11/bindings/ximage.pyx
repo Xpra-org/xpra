@@ -863,7 +863,7 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         self.context_check("get_XShmWrapper")
         cdef XWindowAttributes attrs
         if XGetWindowAttributes(self.display, xwindow, &attrs)==0:
-            return
+            return None
         xshm = XShmWrapper()
         xshm.init(self.display, xwindow, attrs.visual, attrs.width, attrs.height, attrs.depth)
         return xshm
