@@ -5,12 +5,15 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Dict, Any
 import notify2                 #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase
 
 
 class PyNotify_Notifier(NotifierBase):
+
+    CACHE : Dict[int,Any] = {}
 
     def show_notify(self, dbus_id, tray, nid:int,
                     app_name:str, replaces_nid:int, app_icon,
@@ -21,6 +24,7 @@ class PyNotify_Notifier(NotifierBase):
         if not notify2.is_initted():
             notify2.init(app_name or "Xpra", "glib")
         n = notify2.Notification(summary, body, icon_string)
+        PyNotify_Notifier.CACHE[nid] = n
         n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(timeout)
         n.show()
@@ -29,8 +33,14 @@ class PyNotify_Notifier(NotifierBase):
                 self.clean_notification(nid)
             n.connect("closed", notification_closed)
 
+    def clean_notification(self, nid : int):
+        PyNotify_Notifier.CACHE.pop(nid, None)
+        super.clean_notification(nid)
+
     def close_notify(self, nid:int):
-        pass
+        n = PyNotify_Notifier.CACHE.pop(nid, None)
+        if n:
+            n.close()
 
 
 def main(args):
@@ -44,8 +54,10 @@ def main(args):
     if len(args)>2:
         body = args[2]
     def show():
+        nid = 1
         n = PyNotify_Notifier()
-        n.show_notify("", None, 0, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
+        n.show_notify("", None, nid, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
+        GLib.timeout_add(5000, n.close_notify, nid)
         return False
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
