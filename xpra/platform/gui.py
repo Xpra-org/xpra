@@ -277,7 +277,7 @@ def can_access_display():
 
 
 def set_window_progress(window, pct):
-    pass
+    """ some platforms can indicate progress for a specific window """
 
 
 take_screenshot = None

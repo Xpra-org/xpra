@@ -147,11 +147,11 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.signal(BUS_NAME, signature='uu')
     def NotificationClosed(self, nid, reason):
-        pass
+        log(f"NotificationClosed({nid}, {reason})")
 
     @dbus.service.signal(BUS_NAME, signature='us')
     def ActionInvoked(self, nid, action_key):
-        pass
+        log(f"ActionInvoked({nid}, {action_key})")
 
 
     def release(self):

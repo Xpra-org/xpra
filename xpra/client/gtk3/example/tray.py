@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Callable, Tuple
 
 from xpra.platform import program_context
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
 from xpra.gtk_common.gtk_util import scaled_image
+from xpra.common import noop
 from xpra.log import Logger
 
 import gi
@@ -83,8 +86,6 @@ class FakeApplication:
         self.encoding = "png"
         self.send_download_request = None
         self._remote_subcommands = ()
-        def noop(*_args):
-            pass
         self._process_encodings = noop
         try:
             from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
@@ -114,33 +115,32 @@ class FakeApplication:
                     log.warn("failed to create tray %s: %s", x, e)
         self.tray.set_tooltip("Test System Tray")
 
-    def after_handshake(self, cb, *args):
+    def after_handshake(self, cb:Callable, *args) -> None:
         self.idle_add(cb, *args)
 
-    def on_server_setting_changed(self, setting, cb):
-        pass
+    def on_server_setting_changed(self, setting:str, cb:Callable) -> None:
+        """ this method is part of the GUI client "interface" """
 
-    def connect(self, *args):
-        pass
+    def connect(self, *args) -> None:
+        """ this method is part of the GUI client "interface" """
 
-    def get_encodings(self):
+    def get_encodings(self) -> Tuple[str,...]:
         from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 
     def show_start_new_command(self, *_args):
-        pass
+        """ this method is part of the GUI client "interface" """
     def show_server_commands(self, *_args):
-        pass
+        """ this method is part of the GUI client "interface" """
     def show_ask_data_dialog(self, *_args):
-        pass
+        """ this method is part of the GUI client "interface" """
     def show_file_upload(self, *_args):
-        pass
-
+        """ this method is part of the GUI client "interface" """
     def send_sharing_enabled(self, *_args):
-        pass
+        """ this method is part of the GUI client "interface" """
 
 
-    def get_image(self, icon_name, size=None):
+    def get_image(self, icon_name:str, size=None):
         try:
             if not icon_name:
                 return None
@@ -156,7 +156,7 @@ class FakeApplication:
             return None
 
 
-    def xpra_tray_click(self, button, pressed, time=0):
+    def xpra_tray_click(self, button:int, pressed:bool, time:int=0):
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
         if button==1 and pressed:
             self.idle_add(self.menu_helper.activate, button, time)

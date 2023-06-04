@@ -20,6 +20,7 @@ from gi.repository import GLib
 
 from xpra.client.gui import mixin_features
 from xpra.exit_codes import ExitCode
+from xpra.common import noop
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
@@ -1344,8 +1345,6 @@ def main():
         fake_client.suspend = suspend
         fake_client.resume = resume
         fake_client.keyboard_helper = None
-        def noop(*args):
-            pass
         fake_client.timeout_add = noop
         def signal_quit(*_args):
             loop.quit()

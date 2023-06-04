@@ -591,7 +591,7 @@ class ServerCore:
         return None
 
     def save_uuid(self):
-        pass
+        """ X11 servers use this method to save the uuid as a root window property """
 
     def open_html_url(self, html:str="open", mode:str="tcp", bind:str="127.0.0.1") -> None:
         httplog("open_html_url%s", (html, mode, bind))
@@ -1838,7 +1838,7 @@ class ServerCore:
         self.cleanup_protocol(protocol)
 
     def cleanup_protocol(self, protocol:SocketProtocol) -> None:
-        pass
+        """ some subclasses perform extra cleanup here """
 
     def _process_disconnect(self, proto:SocketProtocol, packet) -> None:
         info = bytestostr(packet[1])

@@ -12,11 +12,11 @@ from xpra.log import Logger
 log = Logger("audio")
 
 default_icon_path = None
-def set_icon_path(v):
+def set_icon_path(v) -> None:
     global default_icon_path
     default_icon_path = v
 
-def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
+def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
     """
         This is called audio-tagging in PulseAudio, see:
         http://pulseaudio.org/wiki/ApplicationProperties

@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("audio")
 
 
-def get_x11_property(atom_name):
+def get_x11_property(atom_name:str) -> bytes:
     from xpra.os_util import OSX, POSIX
     if envbool("XPRA_NOX11", not POSIX or OSX):
         return b""
@@ -62,10 +62,10 @@ def get_x11_property(atom_name):
             log.estr(e)
     return b""
 
-def get_pulse_server_x11_property():
+def get_pulse_server_x11_property() -> bytes:
     return get_x11_property("PULSE_SERVER")
 
-def get_pulse_id_x11_property():
+def get_pulse_id_x11_property() -> bytes:
     return get_x11_property("PULSE_ID")
 
 

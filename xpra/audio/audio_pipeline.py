@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@
 #pylint: disable=wrong-import-position
 
 import os
+from typing import Dict, Any
 
 from xpra.util import AtomicInteger
 from xpra.os_util import register_SIGUSR_signals
@@ -44,12 +45,12 @@ class AudioPipeline(Pipeline):
         self.buffer_count = 0
         self.byte_count = 0
         self.emit_info_timer = 0
-        self.info = {
+        self.info : Dict[str,Any] = {
                      "codec"        : self.codec,
                      "state"        : self.state,
                      }
 
-    def init_file(self, codec):
+    def init_file(self, codec:str) -> None:
         gen = self.generation.increase()
         log("init_file(%s) generation=%s, SAVE_AUDIO=%s", codec, gen, SAVE_AUDIO)
         if SAVE_AUDIO is not None:
@@ -62,7 +63,7 @@ class AudioPipeline(Pipeline):
             log.info(f"saving {codec} stream to {filename!r}")
 
 
-    def update_bitrate(self, new_bitrate):
+    def update_bitrate(self, new_bitrate:int):
         if new_bitrate==self.bitrate:
             return
         self.bitrate = new_bitrate
@@ -70,27 +71,27 @@ class AudioPipeline(Pipeline):
         self.info["bitrate"] = new_bitrate
 
 
-    def inc_buffer_count(self, inc=1):
+    def inc_buffer_count(self, inc:int=1) -> None:
         self.buffer_count += inc
         self.info["buffer_count"] = self.buffer_count
 
-    def inc_byte_count(self, count):
+    def inc_byte_count(self, count:int) -> None:
         self.byte_count += count
         self.info["bytes"]  = self.byte_count
 
 
-    def set_volume(self, volume=100):
+    def set_volume(self, volume:int=100) -> None:
         if self.volume:
             self.volume.set_property("volume", volume/100.0)
             self.info["volume"]  = volume
 
-    def get_volume(self):
+    def get_volume(self) -> int:
         if self.volume:
             return int(self.volume.get_property("volume")*100)
         return GST_FLOW_OK
 
 
-    def start(self):
+    def start(self) -> None:
         if not super().start():
             return
         register_SIGUSR_signals(self.idle_add)
@@ -115,12 +116,12 @@ class AudioPipeline(Pipeline):
             self.timeout_add(1000, logsc)
         log("AudioPipeline.start() done")
 
-    def stop(self):
+    def stop(self) -> None:
         if self.pipeline and self.state not in ("starting", "stopped", "ready", None):
             log.info("stopping")
         super().stop()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         self.codec = None
         self.bitrate = -1
@@ -128,19 +129,19 @@ class AudioPipeline(Pipeline):
         self.volume = None
 
 
-    def onstart(self):
+    def onstart(self) -> None:
         #we don't always get the "audio-codec" message..
         #so print the codec from here instead (and assume gstreamer is using what we told it to)
         #after a delay, just in case we do get the real "audio-codec" message!
         self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
 
-    def on_message(self, bus, message):
+    def on_message(self, bus, message) -> None:
         try:
             return super().on_message(bus, message)
         finally:
             self.emit_info()
 
-    def parse_message(self, message):
+    def parse_message(self, message) -> None:
         #message parsing code for GStreamer 1.x
         taglist = message.parse_tag()
         tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
@@ -181,7 +182,7 @@ class AudioPipeline(Pipeline):
             self.gstloginfo("unknown audio pipeline tag message: %s, tags=%s", structure.to_string(), tags)
 
 
-    def new_codec_description(self, desc):
+    def new_codec_description(self, desc) -> None:
         log("new_codec_description(%s) current codec description=%s", desc, self.codec_description)
         if not desc:
             return
@@ -194,7 +195,7 @@ class AudioPipeline(Pipeline):
         self.codec_description = dl
         self.info["codec_description"]  = dl
 
-    def new_container_description(self, desc):
+    def new_container_description(self, desc) -> None:
         log("new_container_description(%s) current container description=%s", desc, self.container_description)
         if not desc:
             return

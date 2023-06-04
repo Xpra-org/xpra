@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import hashlib
 import os.path
+from typing import Tuple, Dict, Any 
 
 from xpra.audio.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict
@@ -19,7 +20,7 @@ log = Logger("audio")
 pactl_bin = None
 has_pulseaudio = None
 
-def get_pactl_bin():
+def get_pactl_bin() -> str:
     global pactl_bin
     if pactl_bin is None:
         if WIN32 or OSX:
@@ -28,7 +29,7 @@ def get_pactl_bin():
             pactl_bin = which("pactl")
     return pactl_bin
 
-def pactl_output(log_errors=True, *pactl_args):
+def pactl_output(log_errors=True, *pactl_args) -> Tuple[int,Any,Any]:
     pactl_bin = get_pactl_bin()
     if not pactl_bin:
         return -1, None, None
@@ -57,29 +58,29 @@ def pactl_output(log_errors=True, *pactl_args):
             log("failed to execute %s: %s", cmd, e)
         return  -1, None, None
 
-def is_pa_installed():
+def is_pa_installed() -> bool:
     pactl_bin = get_pactl_bin()
     log("is_pa_installed() pactl_bin=%s", pactl_bin)
     return bool(pactl_bin)
 
-def has_pa():
+def has_pa() -> bool:
     global has_pulseaudio
     if has_pulseaudio is None:
         has_pulseaudio = get_pulse_server_x11_property() or is_pa_installed()
     return has_pulseaudio
 
 
-def set_source_mute(device, mute=False):
+def set_source_mute(device, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-source-mute", device, str(int(mute)))
     log("set_source_mute: output=%s, err=%s", out, err)
     return code==0
 
-def set_sink_mute(device, mute=False):
+def set_sink_mute(device, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-sink-mute", device, str(int(mute)))
     log("set_sink_mute: output=%s, err=%s", out, err)
     return code==0
 
-def get_pactl_info_line(prefix):
+def get_pactl_info_line(prefix) -> str:
     if not has_pa():
         return ""
     code, out, err = pactl_output(False, "info")
@@ -97,23 +98,23 @@ def get_pactl_info_line(prefix):
     log("get_pactl_info_line(%s)=%s", prefix, stat)
     return stat
 
-def get_default_sink():
+def get_default_sink() -> str:
     return get_pactl_info_line("Default Sink:")
 
-def get_pactl_server():
+def get_pactl_server() -> str:
     return get_pactl_info_line("Server String:")
 
-def get_pulse_cookie_hash():
+def get_pulse_cookie_hash() -> bytes:
     v = get_pactl_info_line("Cookie:")
     return strtobytes(hashlib.sha256(strtobytes(v)).hexdigest())
 
-def get_pulse_server(may_start_it=True):
+def get_pulse_server(may_start_it=True) -> str:
     xp = get_pulse_server_x11_property()
     if xp or not may_start_it:
         return xp
     return get_pactl_server()
 
-def get_pulse_id():
+def get_pulse_id() -> bytes:
     return get_pulse_id_x11_property()
 
 
@@ -172,7 +173,7 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     return devices
 
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     i = 0
     dinfo = {}
     status, out, _ = pactl_output(False, "list")

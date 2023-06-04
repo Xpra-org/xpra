@@ -61,7 +61,7 @@ class GTKImageCapture:
         return "GTK"
 
     def clean(self):
-        pass
+        """ subclasses may want to perform cleanup here """
 
     def refresh(self):
         return True

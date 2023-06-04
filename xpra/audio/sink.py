@@ -8,7 +8,7 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
-from typing import Dict
+from typing import Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
@@ -160,30 +160,30 @@ class AudioSink(AudioPipeline):
     def __repr__(self):  #pylint: disable=arguments-differ
         return "AudioSink('%s' - %s)" % (self.pipeline_str, self.state)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         self.cancel_volume_timer()
         self.sink_type = ""
         self.src = None
 
-    def start(self):
+    def start(self) -> None:
         super().start()
         self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
 
 
-    def start_adjust_volume(self, interval=100):
+    def start_adjust_volume(self, interval:int=100) -> bool:
         if self.volume_timer!=0:
             self.source_remove(self.volume_timer)
         self.volume_timer = self.timeout_add(interval, self.adjust_volume)
         return False
 
-    def cancel_volume_timer(self):
+    def cancel_volume_timer(self) -> None:
         if self.volume_timer!=0:
             self.source_remove(self.volume_timer)
             self.volume_timer = 0
 
 
-    def adjust_volume(self):
+    def adjust_volume(self) -> bool:
         if not self.volume:
             self.volume_timer = 0
             return False
@@ -199,19 +199,19 @@ class AudioSink(AudioPipeline):
         return True
 
 
-    def queue_pushing(self, *_args):
+    def queue_pushing(self, *_args) -> bool:
         gstlog("queue_pushing")
         self.queue_state = "pushing"
         self.emit_info()
         return True
 
-    def queue_running(self, *_args):
+    def queue_running(self, *_args) -> bool:
         gstlog("queue_running")
         self.queue_state = "running"
         self.emit_info()
         return True
 
-    def queue_underrun(self, *_args):
+    def queue_underrun(self, *_args) -> bool:
         now = monotonic()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
@@ -232,7 +232,7 @@ class AudioSink(AudioPipeline):
         self.emit_info()
         return True
 
-    def get_level_range(self, mintime=2, maxtime=10):
+    def get_level_range(self, mintime=2, maxtime=10) -> int:
         now = monotonic()
         filtered = [v for t,v in tuple(self.levels) if (now-t)>=mintime and (now-t)<=maxtime]
         if len(filtered)>=10:
@@ -242,7 +242,7 @@ class AudioSink(AudioPipeline):
             return maxl-minl
         return 0
 
-    def queue_overrun(self, *_args):
+    def queue_overrun(self, *_args) -> bool:
         now = monotonic()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
@@ -260,7 +260,7 @@ class AudioSink(AudioPipeline):
         self.overruns += 1
         return True
 
-    def set_min_level(self):
+    def set_min_level(self) -> None:
         if not self.queue:
             return
         now = monotonic()
@@ -293,7 +293,7 @@ class AudioSink(AudioPipeline):
         finally:
             self.level_lock.release()
 
-    def set_max_level(self):
+    def set_max_level(self) -> None:
         if not self.queue:
             return
         now = monotonic()
@@ -336,14 +336,14 @@ class AudioSink(AudioPipeline):
             self.level_lock.release()
 
 
-    def eos(self):
+    def eos(self) -> int:
         gstlog("eos()")
         if self.src:
             self.src.emit('end-of-stream')
         self.cleanup()
         return GST_FLOW_OK
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")
@@ -372,7 +372,7 @@ class AudioSink(AudioPipeline):
             )
         return info
 
-    def can_push_buffer(self):
+    def can_push_buffer(self) -> bool:
         if not self.src:
             log("no source, dropping buffer")
             return False
@@ -394,7 +394,7 @@ class AudioSink(AudioPipeline):
         return v
 
 
-    def add_data(self, data, metadata=None, packet_metadata=()):
+    def add_data(self, data, metadata=None, packet_metadata=()) -> None:
         if not self.can_push_buffer():
             return
         data = self.uncompress_data(data, metadata)
@@ -413,7 +413,7 @@ class AudioSink(AudioPipeline):
                     self.refill = False
         self.emit_info()
 
-    def do_add_data(self, data, metadata=None):
+    def do_add_data(self, data, metadata=None) -> bool:
         #having a timestamp causes problems with the queue and overruns:
         log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         self.save_to_file(data)
@@ -435,7 +435,7 @@ class AudioSink(AudioPipeline):
             return True
         return False
 
-    def rec_queue_level(self, data):
+    def rec_queue_level(self, data) -> None:
         q = self.queue
         if not q:
             return
@@ -444,7 +444,7 @@ class AudioSink(AudioPipeline):
         now = monotonic()
         self.levels.append((now, clt))
 
-    def push_buffer(self, buf):
+    def push_buffer(self, buf) -> int:
         #buf.size = size
         #buf.timestamp = timestamp
         #buf.duration = duration
@@ -463,7 +463,7 @@ class AudioSink(AudioPipeline):
 GObject.type_register(AudioSink)
 
 
-def main():
+def main() -> int:
     from gi.repository import GLib  # @UnresolvedImport
     from xpra.platform import program_context
     with program_context("Audio-Record"):

@@ -73,10 +73,18 @@ class StubSourceMixin:
         """
 
     def queue_encode(self, item):
-        pass
+        """
+        Used by the window source to send data to be processed in the encode thread
+        """
 
     def send_more(self, *parts, **kwargs):
-        pass
+        """
+        Send a packet to the client,
+        the `will_have_more` argument will be set to `True`
+        """
 
     def send_async(self, *parts, **kwargs):
-        pass
+        """
+        Send a packet to the client,
+        the `synchronous` and `will_have_more` arguments will be set to `False`
+        """

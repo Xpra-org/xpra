@@ -15,13 +15,14 @@ from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
 from xpra.util import prettify_plug_name, typedict, envint, csv
+from xpra.common import noop
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import mixin_features
 from xpra.client.base.gobject_client_base import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
-    TableBuilder, imagebutton, get_gtk_version_info,
+    TableBuilder, imagebutton,
     get_icon_pixbuf,
     )
 from xpra.log import Logger
@@ -1293,8 +1294,6 @@ class SessionInfoClient(InfoTimerClient):
         self.session_name = self.server_session_name = "session-info"
         self.mmap_enabled = False
         self.windows_enabled = False
-        def noop(*_args):
-            pass
         self.send_ping = noop
         self.server_audio_send = self.server_audio_receive = True
         self.server_audio_encoders = self.server_audio_decoders = []

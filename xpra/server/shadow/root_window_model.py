@@ -89,10 +89,10 @@ class RootWindowModel:
         return image
 
     def unmanage(self, exiting=False) -> None:
-        pass
+        """ subclasses may want to perform cleanup here """
 
     def suspend(self) -> None:
-        pass
+        """ subclasses may want to suspend pixel capture """
 
     def is_managed(self) -> bool:
         return True
@@ -116,7 +116,7 @@ class RootWindowModel:
         return None
 
     def acknowledge_changes(self) -> None:
-        pass
+        """ only window models that use the X11 Damage extension use this method """
 
     def get_dimensions(self):
         #used by get_window_info only

@@ -97,7 +97,7 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.signal(PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
-        pass
+        self.log(f"PropertiesChanged({interface_name}, {n(changed_properties)}, {n(invalidated_properties)})")
 
 
     @dbus.service.method(INTERFACE, in_signature='b')

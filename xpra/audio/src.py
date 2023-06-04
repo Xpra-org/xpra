@@ -8,7 +8,7 @@ import sys
 import os.path
 from queue import Queue
 from time import monotonic
-from typing import Dict
+from typing import Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import SIGNAMES
@@ -179,13 +179,13 @@ class AudioSource(AudioPipeline):
     def __repr__(self):  #pylint: disable=arguments-differ
         return "AudioSource('%s' - %s)" % (self.pipeline_str, self.state)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         self.src_type = ""
         self.sink = None
         self.caps = None
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}
@@ -206,7 +206,7 @@ class AudioSource(AudioPipeline):
         return info
 
 
-    def do_parse_element_message(self, _message, name, props=None):
+    def do_parse_element_message(self, _message, name, props=None) -> None:
         if name=="cutter" and props:
             above = props.get("above")
             ts = props.get("timestamp", 0)
@@ -224,11 +224,11 @@ class AudioSource(AudioPipeline):
               above, self.min_timestamp, self.max_timestamp)
 
 
-    def on_new_preroll(self, _appsink):
+    def on_new_preroll(self, _appsink) -> int:
         gstlog('new preroll')
         return GST_FLOW_OK
 
-    def on_new_sample(self, _bus):
+    def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         pts = normv(buf.pts)
@@ -263,7 +263,7 @@ class AudioSource(AudioPipeline):
             return GST_FLOW_OK
         return self._emit_buffer(data, metadata)
 
-    def _emit_buffer(self, data, metadata):
+    def _emit_buffer(self, data, metadata) -> int:
         if self.stream_compressor and data:
             cdata = compressed_wrapper("audio", data, level=9, can_inline=True,
                                        zlib=False,
@@ -295,12 +295,12 @@ class AudioSource(AudioPipeline):
         return self.do_emit_buffer(data, metadata)
 
 
-    def flush_jitter_queue(self):
+    def flush_jitter_queue(self) -> None:
         while not self.jitter_queue.empty():
             d,m = self.jitter_queue.get(False)
             self.do_emit_buffer(d, m)
 
-    def do_emit_buffer(self, data, metadata):
+    def do_emit_buffer(self, data, metadata) -> int:
         self.inc_buffer_count()
         self.inc_byte_count(len(data))
         for x in self.pending_metadata:
@@ -316,7 +316,7 @@ class AudioSource(AudioPipeline):
 GObject.type_register(AudioSource)
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     with program_context("Xpra-Audio-Source"):
         if "-v" in sys.argv:

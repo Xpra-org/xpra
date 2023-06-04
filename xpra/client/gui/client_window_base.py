@@ -123,7 +123,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.set_decorated(metadata.boolget("decorations", True))
 
     def finalize_window(self) -> None:
-        pass
+        """ subclasses override this method """
 
 
     def get_info(self) -> Dict[str,Any]:

@@ -134,7 +134,7 @@ class StubServerMixin:
         return os.environ.copy()
 
 
-    def get_full_child_command(self, cmd, use_wrapper : bool=True) -> List[str]:
+    def get_full_child_command(self, cmd, _use_wrapper : bool=True) -> List[str]:
         #make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return list(cmd)
@@ -148,10 +148,10 @@ class StubServerMixin:
 
 
     def add_packet_handler(self, packet_type, handler, main_thread=True) -> None:
-        pass
+        """ register a packet handler """
 
     def add_packet_handlers(self, defs, main_thread=True) -> None:
-        pass
+        """ register multiple packet handlers """
 
     def get_server_source(self, proto):
         return None

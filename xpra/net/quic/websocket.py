@@ -18,6 +18,7 @@ log = Logger("quic")
 
 #can be used to use substreams based on packet prefix: sound,webcam,draw
 SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "").split(",") if x.strip())
+#SUBSTREAM_PACKET_LOSS_PCT = envint("XPRA_QUIC_SUBSTREAM_PACKET_LOSS_PCT", 0)
 
 
 class ServerWebSocketConnection(XpraQuicConnection):
@@ -102,7 +103,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
                 #more than one error, stop trying:
                 self._use_substreams = False
             return 0
-        log(f"new stream: {stream_id} with headers={headers}")
+        log.info(f"new stream: {stream_id} for {stream_type!r} with headers={headers}")
         self.send_headers(stream_id=stream_id, headers={
             ":status" : 200,
             "substream" : self.stream_id,

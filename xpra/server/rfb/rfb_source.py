@@ -83,10 +83,10 @@ class RFBSource:
         self.close_event.set()
 
     def ping(self):
-        pass
+        """ ignore as there are no equivalent messages in RFB """
 
     def keys_changed(self):
-        pass
+        """ not implemented yet """
 
     def set_default_keymap(self):
         log("set_default_keymap() keyboard_config=%s", self.keyboard_config)
@@ -101,10 +101,10 @@ class RFBSource:
         kc.owner = self.uuid
 
     def send_server_event(self, *_args):
-        pass
+        """ ignore as there are no equivalent messages in RFB """
 
     def send_cursor(self):
-        pass
+        """ not implemented yet """
 
 
     def update_mouse(self, *args):

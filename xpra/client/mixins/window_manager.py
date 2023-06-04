@@ -128,7 +128,7 @@ class WindowClient(StubClientMixin):
 
         self.server_window_frame_extents : bool = False
         self.server_is_desktop : bool = False
-        self.server_window_states : Tuple[str,...] = []
+        self.server_window_states : Tuple[str,...] = ()
         self.server_window_signals : Tuple[str,...] = ()
 
         self.server_input_devices = None

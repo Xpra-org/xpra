@@ -8,6 +8,7 @@ import dbus.service  # @UnresolvedImport
 from dbus import PROPERTIES_IFACE  # @UnresolvedImport
 from dbus.exceptions import DBusException  # @UnresolvedImport
 
+from xpra.dbus.helper import dbus_to_native
 from xpra.log import Logger
 log = Logger("dbus", "server")
 
@@ -74,4 +75,5 @@ class DBUS_Server_Base(dbus.service.Object):
 
     @dbus.service.signal(PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
-        pass
+        n = dbus_to_native
+        self.log(f"PropertiesChanged({interface_name}, {n(changed_properties)}, {n(invalidated_properties)})")

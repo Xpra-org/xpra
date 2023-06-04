@@ -407,7 +407,7 @@ class ClipboardProtocolHelperCore:
         self._clipboard_proxies = {}
 
     def client_reset(self) -> None:
-        pass
+        """ overriden in subclasses to try to reset the state """
 
     def set_direction(self, can_send:bool, can_receive:bool,
                       max_send_size:Optional[int]=None, max_receive_size:Optional[int]=None) -> None:

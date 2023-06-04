@@ -6,7 +6,7 @@
 
 import sys
 import os
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, List, Any, Callable
 
 from xpra.gst_common import (
     has_plugins, get_all_plugin_names,
@@ -92,36 +92,36 @@ NAME_TO_INFO_PLUGIN = {
 #format: encoder, container-formatter, decoder, container-parser, stream-compressor
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
-CODEC_OPTIONS = [
+CODEC_OPTIONS : Tuple[Tuple[str,str,str,str,str]] = (
         (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux"),
         (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux"),
         #those two used to fail silently (older versions of gstreamer?)
         (VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
-        (VORBIS     , "vorbisenc",      None,           "vorbisparse ! vorbisdec",      None),
-        (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
+        (VORBIS     , "vorbisenc",      "",             "vorbisparse ! vorbisdec",      ""),
+        (FLAC       , "flacenc",        "",             "flacparse ! flacdec",          ""),
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
         (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", "id3demux"),
-        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
-        (WAV        , "wavenc",         None,           "wavparse",                     None),
-        (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,               "lz4"),
+        (MP3        , "lamemp3enc",     "",             "mpegaudioparse ! mpg123audiodec", ""),
+        (WAV        , "wavenc",         "",             "wavparse",                     ""),
+        (WAV_LZ4    , "wavenc",         "",             "wavparse",                     "",               "lz4"),
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
-        (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
+        (OPUS       , "opusenc",        "",             "opusparse ! opusdec",          ""),
         #this can cause "could not link opusenc0 to webmmux0"
         (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux"),
         (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux"),
         (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux"),
-        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",    None),
+        (WAVPACK    , "wavpackenc",      "",            "wavpackparse ! wavpackdec",    ""),
         (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux"),
         (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux"),
         (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux"),
-            ]
+            )
 
-MUX_OPTIONS = [
+MUX_OPTIONS : Tuple[Tuple[str,str,str]] = (
                (OGG,    "oggmux",   "oggdemux"),
                (MKA,    "webmmux",  "matroskademux"),
                (MKA,    "matroskamux",  "matroskademux"),
                (MPEG4,  "mp4mux",   "qtdemux"),
-              ]
+              )
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
 if emux:
     mo = [v for v in MUX_OPTIONS if v[0] in emux]
@@ -146,7 +146,7 @@ del emux
 
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
-ENCODER_DEFAULT_OPTIONS_COMMON = {
+ENCODER_DEFAULT_OPTIONS_COMMON : Dict[str,Dict[str,Any]] = {
             "lamemp3enc"    : {
                                "encoding-engine-quality" : 0,
                                },   #"fast"
@@ -166,7 +166,7 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
                                },
             #"vorbisenc"     : {"perfect-timestamp" : 1},
                            }
-ENCODER_DEFAULT_OPTIONS = {
+ENCODER_DEFAULT_OPTIONS : Dict[str,Dict[str,Any]] = {
     "opusenc"       : {
         #only available with 1.6 onwards?
         "bitrate-type"   : 1,      #vbr
@@ -174,7 +174,7 @@ ENCODER_DEFAULT_OPTIONS = {
         },
     }
 #we may want to review this if/when we implement UDP transport:
-MUXER_DEFAULT_OPTIONS = {
+MUXER_DEFAULT_OPTIONS : Dict[str,Dict[str,Any]] = {
             "oggmux"        : {
                                "max-delay"          : OGG_DELAY,
                                "max-page-delay"     : OGG_DELAY,
@@ -198,7 +198,7 @@ MUXER_DEFAULT_OPTIONS = {
 
 #based on the encoder options above:
 RECORD_PIPELINE_LATENCY = 25
-ENCODER_LATENCY = {
+ENCODER_LATENCY : Dict[str,int] = {
         VORBIS      : 0,
         VORBIS_OGG  : 0,
         VORBIS_MKA  : 0,
@@ -210,7 +210,7 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [
+CODEC_ORDER = (
     #best results:
     OPUS,
     #smooth playback but low compression:
@@ -219,10 +219,10 @@ CODEC_ORDER = [
     OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
     MP3, MP3_ID3V2, FLAC_OGG, AAC_MPEG4,
     SPEEX_OGG, VORBIS, OPUS_MKA, MP3_MPEG4,
-    ]
+    )
 
 
-def get_encoder_default_options(encoder):
+def get_encoder_default_options(encoder:str):
     #strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
@@ -231,14 +231,15 @@ def get_encoder_default_options(encoder):
 
 
 CODECS = None
-ENCODERS : Dict[str, Tuple[Any,Any,Any]] = {}       #(encoder, payloader, stream-compressor)
-DECODERS : Dict[str, Tuple[Any,Any,Any]] = {}       #(decoder, depayloader, stream-compressor)
+CODEC_DEFS = Dict[str, Tuple[Any,Any,Any]]
+ENCODERS : CODEC_DEFS = {}       #(encoder, payloader, stream-compressor)
+DECODERS : CODEC_DEFS = {}       #(decoder, depayloader, stream-compressor)
 
-def get_encoders():
+def get_encoders() -> CODEC_DEFS:
     init_codecs()
     return ENCODERS
 
-def get_decoders():
+def get_decoders() -> CODEC_DEFS:
     init_codecs()
     return DECODERS
 
@@ -273,7 +274,7 @@ def init_codecs():
                 log("  - %s", "".join([ci(v) for v in DECODERS[k]]))
     return CODECS
 
-def add_encoder(encoding, encoder, payloader, stream_compressor):
+def add_encoder(encoding:str, encoder:str, payloader:str, stream_compressor:str) -> None:
     if encoding in ENCODERS:
         return
     if OSX and encoding in (OPUS_OGG, ):
@@ -282,13 +283,13 @@ def add_encoder(encoding, encoder, payloader, stream_compressor):
     if has_plugins(encoder, payloader):
         ENCODERS[encoding] = (encoder, payloader, stream_compressor)
 
-def add_decoder(encoding, decoder, depayloader, stream_compressor):
+def add_decoder(encoding:str, decoder:str, depayloader:str, stream_compressor:str) -> None:
     if encoding in DECODERS:
         return
     if has_plugins(decoder, depayloader):
         DECODERS[encoding] = (decoder, depayloader, stream_compressor)
 
-def validate_encoding(elements):
+def validate_encoding(elements) -> bool:
     #generic platform validation of encodings and plugins
     #full of quirks
     encoding = elements[0]
@@ -313,7 +314,7 @@ def validate_encoding(elements):
         return False
     return True
 
-def has_stream_compressor(stream_compressor):
+def has_stream_compressor(stream_compressor:str) -> bool:
     if stream_compressor not in ("lz4", ):
         log.warn("Warning: invalid stream compressor '%s'", stream_compressor)
         return False
@@ -322,24 +323,24 @@ def has_stream_compressor(stream_compressor):
         return False
     return True
 
-def get_muxers():
+def get_muxers() -> List[str]:
     muxers = []
     for name,muxer,_ in MUX_OPTIONS:
         if has_plugins(muxer):
             muxers.append(name)
     return muxers
 
-def get_demuxers():
+def get_demuxers() -> List[str]:
     demuxers = []
     for name,_,demuxer in MUX_OPTIONS:
         if has_plugins(demuxer):
             demuxers.append(name)
     return demuxers
 
-def get_stream_compressors():
+def get_stream_compressors() -> List[str]:
     return [x for x in ("lz4", ) if has_stream_compressor(x)]
 
-def get_encoder_elements(name):
+def get_encoder_elements(name) -> Tuple[str,str,str]:
     encoders = get_encoders()
     if name not in encoders:
         raise RuntimeError(f"invalid codec: {name} (should be one of: {encoders.keys()})")
@@ -352,7 +353,7 @@ def get_encoder_elements(name):
         raise RuntimeError(f"formatter {formatter} not found")
     return encoder, formatter, stream_compressor
 
-def get_decoder_elements(name):
+def get_decoder_elements(name) -> Tuple[str,str,str]:
     decoders = get_decoders()
     if name not in decoders:
         raise RuntimeError(f"invalid codec: {name} (should be one of: {decoders.keys()})")
@@ -365,31 +366,31 @@ def get_decoder_elements(name):
         raise RuntimeError(f"parser {parser} not found")
     return decoder, parser, stream_compressor
 
-def has_encoder(name):
+def has_encoder(name:str) -> bool:
     encoders = get_encoders()
     if name not in encoders:
         return False
     encoder, fmt, _ = encoders.get(name)
     return has_plugins(encoder, fmt)
 
-def has_decoder(name):
+def has_decoder(name) -> bool:
     decoders = get_decoders()
     if name not in decoders:
         return False
     decoder, parser, _ = decoders.get(name)
     return has_plugins(decoder, parser)
 
-def has_codec(name):
+def has_codec(name) -> bool:
     return has_encoder(name) and has_decoder(name)
 
-def can_encode():
+def can_encode() -> List[str]:
     return [x for x in CODEC_ORDER if has_encoder(x)]
 
-def can_decode():
+def can_decode() -> List[str]:
     return [x for x in CODEC_ORDER if has_decoder(x)]
 
 
-def get_source_plugins():
+def get_source_plugins() -> List[str]:
     sources = []
     if POSIX and not OSX:
         try:
@@ -414,7 +415,7 @@ def get_source_plugins():
     sources.append("audiotestsrc")
     return sources
 
-def get_default_source():
+def get_default_source() -> str:
     source = os.environ.get("XPRA_SOUND_SRC")
     sources = get_source_plugins()
     if source:
@@ -436,9 +437,9 @@ def get_default_source():
     for source in sources:
         if has_plugins(source):
             return source
-    return None
+    return ""
 
-def get_sink_plugins():
+def get_sink_plugins() -> List[str]:
     SINKS = []
     if OSX:
         SINKS.append("osxaudiosink")
@@ -457,7 +458,7 @@ def get_sink_plugins():
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
 
-def get_default_sink_plugin():
+def get_default_sink_plugin() -> str:
     sink = os.environ.get("XPRA_SOUND_SINK")
     sinks = get_sink_plugins()
     if sink:
@@ -479,15 +480,15 @@ def get_default_sink_plugin():
     for sink in sinks:
         if has_plugins(sink):
             return sink
-    return None
+    return ""
 
 
-def get_test_defaults(*_args):
+def get_test_defaults(*_args) -> Dict[str,Any]:
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
 def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
-                       input_or_output=None, remote=None, env_device_name=None):
+                       input_or_output=None, remote=None, env_device_name=None) -> Dict[str,Any]:
     try:
         device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
     except Exception as e:
@@ -512,7 +513,7 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
     return {"device" : bytestostr(device)}
 
 def get_pulse_device(device_name_match=None, want_monitor_device=True,
-                     input_or_output=None, remote=None, env_device_name=None):
+                     input_or_output=None, remote=None, env_device_name=None) -> str:
     """
         choose the device to use
     """
@@ -525,11 +526,11 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
             )
         if not has_pa():
             log.warn("Warning: pulseaudio is not available!")
-            return None
+            return ""
     except ImportError as e:
         log.warn("Warning: pulseaudio is not available!")
         log.warn(" %s", e)
-        return None
+        return ""
     pa_server = get_pactl_server()
     log("get_pactl_server()=%s", pa_server)
     if remote:
@@ -540,13 +541,13 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
             remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
             log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio server '%s'", pa_server)
-            return None
+            return ""
         pa_id = get_pulse_id()
         log("start audio, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
         if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
             log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio ID '%s'", pa_id)
-            return None
+            return ""
 
     device_type_str = ""
     if input_or_output is not None:
@@ -576,7 +577,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     if not devices:
         log.error("Error: audio forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
-        return None
+        return ""
 
     env_device = None
     if env_device_name:
@@ -610,7 +611,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
                 for k,v in devices.items():
                     log.warn(" * '%s'", k)
                     log.warn("   '%s'", v)
-                return None
+                return ""
             devices = matches
 
     #still have too many devices to choose from?
@@ -644,23 +645,23 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         #default to first one:
         if USE_DEFAULT_DEVICE:
             log.info("using default pulseaudio device")
-            return None
+            return ""
     #default to first one:
     device, device_name = tuple(devices.items())[0]
     log.info("using pulseaudio device:")
     log.info(" '%s'", bytestostr(device_name))
     return device
 
-def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
+def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None) -> Dict[str,Any]:
     return get_pulse_defaults(device_name_match, want_monitor_device,
                               input_or_output=not want_monitor_device, remote=remote,
                               env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
 
-def get_pulse_sink_defaults():
+def get_pulse_sink_defaults() -> Dict[str,Any]:
     return get_pulse_defaults(want_monitor_device=False, input_or_output=False,
                               env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
-def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
+def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None) -> Dict[str,Any]:
     try:
         from xpra.platform.win32.directsound import get_devices, get_capture_devices
         if not want_monitor_device:
@@ -709,11 +710,11 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
 # to avoid audio loops for example)
-DEFAULT_SRC_PLUGIN_OPTIONS = {
+DEFAULT_SRC_PLUGIN_OPTIONS : Dict[str,Callable] = {
     "test"                  : get_test_defaults,
     "direct"                : get_directsound_source_defaults,
     }
-DEFAULT_SINK_PLUGIN_OPTIONS = {}
+DEFAULT_SINK_PLUGIN_OPTIONS : Dict[str,Any] = {}
 if POSIX and not OSX:
     DEFAULT_SINK_PLUGIN_OPTIONS["pulse"] = get_pulse_sink_defaults
     DEFAULT_SRC_PLUGIN_OPTIONS["pulse"] = get_pulse_source_defaults
@@ -782,7 +783,7 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
     return gst_audio_source_plugin, options
 
 
-def loop_warning_messages(mode="speaker"):
+def loop_warning_messages(mode="speaker") -> List[str]:
     return [
         "Cannot start %s forwarding:" % mode,
         "client and server environment are identical,",
