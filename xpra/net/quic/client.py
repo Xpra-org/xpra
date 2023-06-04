@@ -42,9 +42,6 @@ IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
 
-def save_session_ticket(ticket: SessionTicket) -> None:
-    pass
-
 WS_HEADERS = {
         ":method"   : "CONNECT",
         ":scheme"   : "https",
@@ -194,7 +191,7 @@ def quic_connect(host : str, port : int, path : str,
     tl = get_threaded_loop()
 
     def create_protocol():
-        connection = QuicConnection(configuration=configuration, session_ticket_handler=save_session_ticket)
+        connection = QuicConnection(configuration=configuration)
         return WebSocketClient(connection)
 
     async def get_address_options():
