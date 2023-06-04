@@ -20,7 +20,6 @@ from aioquic.h3.events import (
     HeadersReceived,
     PushPromiseReceived,
 )
-from aioquic.tls import SessionTicket
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
