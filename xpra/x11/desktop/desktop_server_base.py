@@ -200,7 +200,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def _lost_window(self, window, wm_exiting=False) -> None:
-        pass
+        """ could be used to slow down the refresh rate? """
 
     def _contents_changed(self, window, event) -> None:
         log("contents changed on %s: %s", window, event)

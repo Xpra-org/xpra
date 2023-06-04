@@ -134,8 +134,4 @@ class XpraDesktopServer(DesktopServerBase):
             ss.damage(wid, model, 0, 0, w, h)
 
 
-    def _lost_window(self, window, wm_exiting=False):
-        pass
-
-
 GObject.type_register(XpraDesktopServer)
