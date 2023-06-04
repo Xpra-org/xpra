@@ -92,31 +92,31 @@ NAME_TO_INFO_PLUGIN = {
 #format: encoder, container-formatter, decoder, container-parser, stream-compressor
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
-CODEC_OPTIONS : Tuple[Tuple[str,str,str,str,str]] = (
-        (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux"),
-        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux"),
+CODEC_OPTIONS : Tuple[Tuple[str,str,str,str,str,str],...] = (
+        (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux",    ""),
+        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux",    ""),
         #those two used to fail silently (older versions of gstreamer?)
-        (VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
-        (VORBIS     , "vorbisenc",      "",             "vorbisparse ! vorbisdec",      ""),
-        (FLAC       , "flacenc",        "",             "flacparse ! flacdec",          ""),
-        (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
-        (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", "id3demux"),
-        (MP3        , "lamemp3enc",     "",             "mpegaudioparse ! mpg123audiodec", ""),
-        (WAV        , "wavenc",         "",             "wavparse",                     ""),
-        (WAV_LZ4    , "wavenc",         "",             "wavparse",                     "",               "lz4"),
-        (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
-        (OPUS       , "opusenc",        "",             "opusparse ! opusdec",          ""),
+        (VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux",         ""),
+        (VORBIS     , "vorbisenc",      "",             "vorbisparse ! vorbisdec",      "",                 ""),
+        (FLAC       , "flacenc",        "",             "flacparse ! flacdec",          "",                 ""),
+        (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux",         ""),
+        (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", "id3demux",      ""),
+        (MP3        , "lamemp3enc",     "",             "mpegaudioparse ! mpg123audiodec", "",              ""),
+        (WAV        , "wavenc",         "",             "wavparse",                     "",                 ""),
+        (WAV_LZ4    , "wavenc",         "",             "wavparse",                     "",                 "lz4"),
+        (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux",         ""),
+        (OPUS       , "opusenc",        "",             "opusparse ! opusdec",          "",                 ""),
         #this can cause "could not link opusenc0 to webmmux0"
-        (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux"),
-        (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux"),
-        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux"),
-        (WAVPACK    , "wavpackenc",      "",            "wavpackparse ! wavpackdec",    ""),
-        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux"),
-        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux"),
-        (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux"),
+        (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux",    ""),
+        (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux",    ""),
+        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux",         ""),
+        (WAVPACK    , "wavpackenc",      "",            "wavpackparse ! wavpackdec",    "",                 ""),
+        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux",          ""),
+        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux",          ""),
+        (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux",          ""),
             )
 
-MUX_OPTIONS : Tuple[Tuple[str,str,str]] = (
+MUX_OPTIONS : Tuple[Tuple[str,str,str], ...] = (
                (OGG,    "oggmux",   "oggdemux"),
                (MKA,    "webmmux",  "matroskademux"),
                (MKA,    "matroskamux",  "matroskademux"),
@@ -124,7 +124,7 @@ MUX_OPTIONS : Tuple[Tuple[str,str,str]] = (
               )
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
 if emux:
-    mo = [v for v in MUX_OPTIONS if v[0] in emux]
+    mo = tuple(v for v in MUX_OPTIONS if v[0] in emux)
     if mo:
         MUX_OPTIONS = mo
     else:
@@ -253,7 +253,7 @@ def init_codecs():
         if not validate_encoding(elements):
             continue
         try:
-            encoding, encoder, payloader, decoder, depayloader, stream_compressor = (list(elements)+[None])[:6]
+            encoding, encoder, payloader, decoder, depayloader, stream_compressor = elements
         except ValueError as e:
             log.error("Error: invalid codec entry: %s", e)
             log.error(" %s", elements)
@@ -342,9 +342,10 @@ def get_stream_compressors() -> List[str]:
 
 def get_encoder_elements(name) -> Tuple[str,str,str]:
     encoders = get_encoders()
-    if name not in encoders:
+    enc = encoders.get(name)
+    if enc is None:
         raise RuntimeError(f"invalid codec: {name} (should be one of: {encoders.keys()})")
-    encoder, formatter, stream_compressor = encoders.get(name)
+    encoder, formatter, stream_compressor = enc
     if stream_compressor and not has_stream_compressor(stream_compressor):
         raise RuntimeError(f"stream-compressor {stream_compressor} not found")
     if encoder and not has_plugins(encoder):
@@ -355,9 +356,10 @@ def get_encoder_elements(name) -> Tuple[str,str,str]:
 
 def get_decoder_elements(name) -> Tuple[str,str,str]:
     decoders = get_decoders()
-    if name not in decoders:
+    dec = decoders.get(name)
+    if dec is None:
         raise RuntimeError(f"invalid codec: {name} (should be one of: {decoders.keys()})")
-    decoder, parser, stream_compressor = decoders.get(name)
+    decoder, parser, stream_compressor = dec
     if stream_compressor and not has_stream_compressor(stream_compressor):
         raise RuntimeError(f"stream-compressor {stream_compressor} not found")
     if decoder and not has_plugins(decoder):
@@ -368,16 +370,18 @@ def get_decoder_elements(name) -> Tuple[str,str,str]:
 
 def has_encoder(name:str) -> bool:
     encoders = get_encoders()
-    if name not in encoders:
+    enc = encoders.get(name)
+    if enc is None:
         return False
-    encoder, fmt, _ = encoders.get(name)
+    encoder, fmt, _ = enc
     return has_plugins(encoder, fmt)
 
 def has_decoder(name) -> bool:
     decoders = get_decoders()
-    if name not in decoders:
+    dec = decoders.get(name)
+    if dec is None:
         return False
-    decoder, parser, _ = decoders.get(name)
+    decoder, parser, _ = dec
     return has_plugins(decoder, parser)
 
 def has_codec(name) -> bool:

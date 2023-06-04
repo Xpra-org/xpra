@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_os_icons() -> Tuple[Tuple[int,int,str,bytes]]:
+def get_os_icons() -> Tuple[Tuple[int,int,str,bytes],...]:
     try:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -55,15 +55,15 @@ class RootWindowModel:
         self.title : str= title
         self.geometry = geometry
         self.capture = capture
-        self.property_names = [
+        self.property_names : List[str] = [
             "title", "class-instance",
             "client-machine", "window-type",
             "size-hints", "icons", "shadow",
             "depth",
             ]
-        self.dynamic_property_names = []
-        self.internal_property_names = ["content-type"]
-        self.signal_listeners = {}
+        self.dynamic_property_names : List[str] = []
+        self.internal_property_names : List[str] = ["content-type"]
+        self.signal_listeners : Dict[str,List[Tuple]] = {}
 
     def __repr__(self):
         return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
@@ -186,12 +186,12 @@ class RootWindowModel:
             return default_value
 
     def notify(self, prop:str) -> None:
-        if prop not in self.dynamic_property_names:
+        listeners = self.signal_listeners.get(prop)
+        if listeners is None:
             log.warn(f"Warning: ignoring notify for {prop!r}")
             return
         PSpec = namedtuple("PSpec", "name")
         pspec = PSpec(name=prop)
-        listeners = self.signal_listeners.get(prop)
         for listener, *args in listeners:
             try:
                 listener(self, pspec, *args)
