@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Callable
 
 from xpra.log import (
     Logger,
@@ -10,12 +12,13 @@ from xpra.log import (
     get_all_loggers,
     )
 from xpra.util import csv
+from xpra.common import noop
 
 log = Logger("util", "command")
 
 
 class ControlError(Exception):
-    def __init__(self, msg, help_text=None, code=127):
+    def __init__(self, msg:str, help_text:str="", code:int=127):
         super().__init__(msg)
         self.help = help_text
         self.code = code
@@ -24,7 +27,7 @@ class ControlError(Exception):
 class ControlCommand:
     """ Utility superclass for control commands """
     __slots__ = ("name", "help", "do_run")
-    def __init__(self, name, help_text=None, run=None):
+    def __init__(self, name:str, help_text:str="", run:Callable=noop):
         self.name = name
         self.help = help_text
         self.do_run = run
@@ -35,7 +38,7 @@ class ControlCommand:
             raise NotImplementedError(f"control command {self.name} undefined!")
         return self.do_run(*args)
 
-    def raise_error(self, msg):
+    def raise_error(self, msg) -> None:
         raise ControlError(msg, self.help)
 
     def __repr__(self):
@@ -45,7 +48,7 @@ class ControlCommand:
 class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
     __slots__ = ("validation", "min_args", "max_args")
-    def __init__(self, name, help_text=None, run=None, validation=(), min_args=None, max_args=None):
+    def __init__(self, name:str, help_text:str="", run:Callable=noop, validation=(), min_args=None, max_args=None):
         super().__init__(name, help_text, run)
         self.validation = validation
         self.min_args = min_args
@@ -75,7 +78,7 @@ class ArgsControlCommand(ControlCommand):
 class FixedMessageCommand(ControlCommand):
     """ A control command that returns a fixed message """
     __slots__ = ("message")
-    def __init__(self, name, message, help_text=None):
+    def __init__(self, name:str, message:str, help_text:str=""):
         super().__init__(name, help_text)
         self.message = message
 

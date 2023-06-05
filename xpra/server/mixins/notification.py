@@ -113,8 +113,8 @@ class NotificationForwarder(StubServerMixin):
             log.estr(e)
 
 
-    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon,
-                        summary, body, actions, hints, expire_timeout) -> None:
+    def notify_callback(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
+                        summary:str, body:str, actions, hints, expire_timeout:int) -> None:
         assert self.notifications_forwarder and self.notifications
         #make sure that we run in the main thread:
         GLib.idle_add(self.do_notify_callback, dbus_id, nid,
@@ -122,10 +122,10 @@ class NotificationForwarder(StubServerMixin):
                       summary, body,
                       actions, hints, expire_timeout)
 
-    def do_notify_callback(self, dbus_id, nid,
-                           app_name, replaces_nid, app_icon,
-                           summary, body,
-                           actions, hints, expire_timeout) -> None:
+    def do_notify_callback(self, dbus_id, nid:int,
+                           app_name:str, replaces_nid:int, app_icon,
+                           summary:str, body:str,
+                           actions, hints, expire_timeout:int) -> None:
         try:
             icon = self.get_notification_icon(str(app_icon))
             if os.path.isabs(str(app_icon)):

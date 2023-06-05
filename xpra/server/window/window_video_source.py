@@ -117,7 +117,7 @@ class WindowVideoSource(WindowSource):
     def __init__(self, *args):
         #this will call init_vars():
         self.supports_scrolling : bool = False
-        self.video_subregion = None
+        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         super().__init__(*args)
         self.supports_eos : bool= self.encoding_options.boolget("eos")
         self.supports_scrolling : bool = "scroll" in self.common_encodings or (
@@ -127,7 +127,6 @@ class WindowVideoSource(WindowSource):
         self.scroll_preference : int = self.encoding_options.intget("scrolling.preference", 100)
         self.supports_video_b_frames : bool = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
-        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_stream_file = None
 
     def __repr__(self) -> str:

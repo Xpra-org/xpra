@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -88,7 +88,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         return f"proxy instance pid {os.getpid()}"
 
 
-    def server_message_queue(self):
+    def server_message_queue(self) -> None:
         while not self.exit and self.message_queue:
             log("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
@@ -108,7 +108,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 log.warn("Warning: unexpected proxy server message:")
                 log.warn(" '%s'", m)
 
-    def signal_quit(self, signum, _frame=None):
+    def signal_quit(self, signum, _frame=None) -> None:
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
@@ -123,7 +123,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     ################################################################################
 
-    def run(self):
+    def run(self) -> None:
         register_SIGUSR_signals(self.idle_add)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
@@ -176,7 +176,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
 
-    def start_network_threads(self):
+    def start_network_threads(self) -> None:
         log("start_network_threads()")
         self.server_protocol.start()
         self.client_protocol.start()
@@ -184,7 +184,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     ################################################################################
     # control socket:
-    def create_control_socket(self):
+    def create_control_socket(self) -> bool:
         assert self.socket_dir
         def stop(msg):
             self.stop(None, f"cannot create the proxy control socket: {msg}")
@@ -221,7 +221,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log.info(" %s", self.control_socket_path)
         return True
 
-    def stop_control_socket(self):
+    def stop_control_socket(self) -> None:
         cs = self.control_socket
         if cs:
             try:
@@ -233,7 +233,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             self.control_socket_cleanup = None
             csc()
 
-    def control_socket_loop(self):
+    def control_socket_loop(self) -> None:
         while not self.exit:
             log("waiting for connection on %s", self.control_socket_path)
             try:
@@ -246,7 +246,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 self.new_control_connection(sock, address)
         self.control_socket_thread = None
 
-    def new_control_connection(self, sock, address):
+    def new_control_connection(self, sock, address) -> None:
         if len(self.potential_protocols)>=self.max_connections:
             log.error("too many connections (%s), ignoring new one", len(self.potential_protocols))
             sock.close()
@@ -269,19 +269,19 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
 
-    def verify_connection_accepted(self, protocol):
+    def verify_connection_accepted(self, protocol) -> None:
         if not protocol.is_closed() and protocol in self.potential_protocols:
             log.error("connection timedout: %s", protocol)
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
-    def process_control_packet(self, proto, packet):
+    def process_control_packet(self, proto, packet) -> None:
         try:
             self.do_process_control_packet(proto, packet)
         except Exception as e:
             log.error("error processing control packet", exc_info=True)
             self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR, str(e))
 
-    def do_process_control_packet(self, proto, packet):
+    def do_process_control_packet(self, proto, packet) -> None:
         log("process_control_packet(%s, %s)", proto, packet)
         packet_type = bytestostr(packet[0])
         if packet_type==CONNECTION_LOST:
@@ -324,7 +324,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     ################################################################################
 
-    def stop(self, skip_proto, *reasons):
+    def stop(self, skip_proto, *reasons) -> None:
         QueueScheduler.stop(self)
         self.message_queue.put_nowait(None)
         super().stop(skip_proto, *reasons)

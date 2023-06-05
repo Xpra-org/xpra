@@ -55,18 +55,18 @@ class WebcamMixin(StubSourceMixin):
         self.webcam_device = None
         self.webcam_encodings = []
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.webcam_enabled     = server.webcam_enabled
         self.webcam_device      = server.webcam_device
         self.webcam_encodings   = valid_encodings(server.webcam_encodings)
         log("WebcamMixin: enabled=%s, device=%s, encodings=%s",
             self.webcam_enabled, self.webcam_device, self.webcam_encodings)
 
-    def init_state(self):
+    def init_state(self) -> None:
         #for each webcam device_id, the actual device used
         self.webcam_forwarding_devices = {}
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.stop_all_virtual_webcams()
 
 
@@ -79,7 +79,7 @@ class WebcamMixin(StubSourceMixin):
             }
 
 
-    def get_device_options(self, device_id : int):  #pylint: disable=unused-argument
+    def get_device_options(self, device_id : int) -> Dict[str,Any]:  #pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:
@@ -93,14 +93,14 @@ class WebcamMixin(StubSourceMixin):
         return get_virtual_video_devices()
 
 
-    def send_webcam_ack(self, device, frame, *args):
+    def send_webcam_ack(self, device, frame:int, *args) -> None:
         self.send_async("webcam-ack", device, frame, *args)
 
-    def send_webcam_stop(self, device, message):
+    def send_webcam_stop(self, device, message) -> None:
         self.send_async("webcam-stop", device, message)
 
 
-    def start_virtual_webcam(self, device_id, w, h):
+    def start_virtual_webcam(self, device_id, w:int, h:int) -> bool:
         log("start_virtual_webcam%s", (device_id, w, h))
         assert w>0 and h>0
         webcam = self.webcam_forwarding_devices.get(device_id)
@@ -150,12 +150,12 @@ class WebcamMixin(StubSourceMixin):
             log.error(" %s : %s", device_str, err)
         return False
 
-    def stop_all_virtual_webcams(self):
+    def stop_all_virtual_webcams(self) -> None:
         log("stop_all_virtual_webcams() stopping: %s", self.webcam_forwarding_devices)
         for device_id in tuple(self.webcam_forwarding_devices.keys()):
             self.stop_virtual_webcam(device_id)
 
-    def stop_virtual_webcam(self, device_id, message=""):
+    def stop_virtual_webcam(self, device_id, message="") -> None:
         webcam = self.webcam_forwarding_devices.pop(device_id, None)
         log("stop_virtual_webcam(%s, %s) webcam=%s", device_id, message, webcam)
         if not webcam:
@@ -167,7 +167,7 @@ class WebcamMixin(StubSourceMixin):
             log.error("Error stopping virtual webcam device: %s", e)
             log("%s.clean()", exc_info=True)
 
-    def process_webcam_frame(self, device_id, frame_no, encoding, w, h, data):
+    def process_webcam_frame(self, device_id, frame_no:int, encoding:str, w:int, h:int, data) -> bool:
         webcam = self.webcam_forwarding_devices.get(device_id)
         log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, webcam=%s",
             device_id, frame_no, encoding, w, h, len(data), webcam)

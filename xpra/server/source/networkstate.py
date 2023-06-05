@@ -65,7 +65,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
 
-    def check_ping_echo_timeout(self, now_ms:int, timeout:int):
+    def check_ping_echo_timeout(self, now_ms:int, timeout:int) -> None:
         self.check_ping_echo_timers.pop(now_ms, None)
         if self.last_ping_echoed_time<now_ms and not self.is_closed():
             self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)

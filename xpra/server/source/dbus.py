@@ -24,10 +24,10 @@ class DBUS_Mixin(StubSourceMixin):
         self.dbus_control = False
         self.dbus_server = None
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.dbus_control = server.dbus_control
 
-    def init_state(self):
+    def init_state(self) -> None:
         if self.dbus_control:
             # pylint: disable=import-outside-toplevel
             from xpra.server.dbus.dbus_common import dbus_exception_wrap
@@ -37,7 +37,7 @@ class DBUS_Mixin(StubSourceMixin):
                 return DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
             self.dbus_server = dbus_exception_wrap(make_dbus_server, "setting up client dbus instance")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ds = self.dbus_server
         if ds:
             self.dbus_server = None

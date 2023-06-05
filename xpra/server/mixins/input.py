@@ -194,7 +194,8 @@ class InputServer(StubServerMixin):
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
-    def get_keycode(self, ss, client_keycode:int, keyname:str, pressed:bool, modifiers:List, keyval:int, keystr:str, group:int):
+    def get_keycode(self, ss, client_keycode:int, keyname:str,
+                    pressed:bool, modifiers:List, keyval:int, keystr:str, group:int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode, press):

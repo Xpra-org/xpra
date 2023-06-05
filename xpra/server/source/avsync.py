@@ -35,13 +35,13 @@ class AVSyncMixin(StubSourceMixin):
     def __init__(self):
         self.av_sync = False
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.av_sync = server.av_sync
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.init_state()
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.av_sync_enabled = False
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
@@ -59,7 +59,7 @@ class AVSyncMixin(StubSourceMixin):
                 },
             }
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         av_sync = c.get("av-sync")
         if isinstance(av_sync, dict):
             av_sync = typedict(av_sync)
@@ -75,17 +75,17 @@ class AVSyncMixin(StubSourceMixin):
                  self.av_sync, enabled, self.av_sync_enabled, self.av_sync_delay_total)
 
 
-    def set_av_sync_delta(self, delta):
+    def set_av_sync_delta(self, delta:int) -> None:
         log("set_av_sync_delta(%i)", delta)
         self.av_sync_delta = delta
         self.update_av_sync_delay_total()
 
-    def set_av_sync_delay(self, v):
+    def set_av_sync_delay(self, v:int) -> None:
         #update all window sources with the given delay
         self.av_sync_delay = v
         self.update_av_sync_delay_total()
 
-    def update_av_sync_delay_total(self):
+    def update_av_sync_delay_total(self) -> None:
         enabled = self.av_sync and bool(getattr(self, "audio_source", None))
         if enabled:
             encoder_latency = self.get_audio_source_latency()
@@ -103,12 +103,12 @@ class AVSyncMixin(StubSourceMixin):
 
     ##########################################################################
     # audio control commands:
-    def audio_control_sync(self, delay_str):
+    def audio_control_sync(self, delay_str) -> str:
         assert self.av_sync, "av-sync is not enabled"
         self.set_av_sync_delay(int(delay_str))
         return "av-sync delay set to %ims" % self.av_sync_delay
 
-    def audio_control_av_sync_delta(self, delta_str):
+    def audio_control_av_sync_delta(self, delta_str) -> str:
         assert self.av_sync, "av-sync is not enabled"
         self.set_av_sync_delta(int(delta_str))
         return "av-sync delta set to %ims" % self.av_sync_delta

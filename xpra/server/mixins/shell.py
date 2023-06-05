@@ -15,7 +15,7 @@ class ShellServer(StubServerMixin):
     """
     Mixin for adding shell support
     """
-    def init(self, _opts):
+    def init(self, _opts) -> None:
         self.counter = 0
         self.commands : Deque[str] = deque(maxlen=10)
 
@@ -32,7 +32,7 @@ class ShellServer(StubServerMixin):
             "shell" : True,
             }
 
-    def _process_shell_exec(self, proto, packet):
+    def _process_shell_exec(self, proto, packet) -> None:
         code = str(packet[1])
         ss = self.get_server_source(proto)
         if ss:
@@ -41,7 +41,7 @@ class ShellServer(StubServerMixin):
             ss.shell_exec(code)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             "shell-exec" : self._process_shell_exec,
           }, False)

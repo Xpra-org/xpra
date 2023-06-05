@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
@@ -40,7 +40,7 @@ class DisplayManager(StubServerMixin):
         self.opengl_props = {}
         self.refresh_rate = "auto"
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.opengl = opts.opengl
         self.bell = opts.bell
         self.cursors = opts.cursors
@@ -48,27 +48,27 @@ class DisplayManager(StubServerMixin):
         self.bit_depth = self.get_display_bit_depth()
         self.refresh_rate = opts.refresh_rate
 
-    def get_display_bit_depth(self):
+    def get_display_bit_depth(self) -> int:
         return 0
 
 
-    def get_refresh_rate_for_value(self, invalue):
+    def get_refresh_rate_for_value(self, invalue) -> int:
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
-    def parse_hello(self, ss, caps, send_ui):
+    def parse_hello(self, ss, caps, send_ui:bool):
         if send_ui:
             self.parse_screen_info(ss)
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         self.reset_icc_profile()
 
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         self.opengl_props = self.query_opengl()
 
 
-    def query_opengl(self):
+    def query_opengl(self) -> Dict[str,Any]:
         props = {}
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
@@ -191,20 +191,20 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # display / screen / root window:
-    def set_screen_geometry_attributes(self, w:int, h:int):
+    def set_screen_geometry_attributes(self, w:int, h:int) -> None:
         #by default, use the screen as desktop area:
         self.set_desktop_geometry_attributes(w, h)
 
-    def set_desktop_geometry_attributes(self, w:int, h:int):
+    def set_desktop_geometry_attributes(self, w:int, h:int) -> None:
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
 
 
-    def parse_screen_info(self, ss):
+    def parse_screen_info(self, ss) -> Tuple[int,int]:
         return self.do_parse_screen_info(ss, ss.desktop_size)
 
-    def do_parse_screen_info(self, ss, desktop_size):
+    def do_parse_screen_info(self, ss, desktop_size) -> Tuple[int,int]:
         log("do_parse_screen_info%s", (ss, desktop_size))
         dw, dh = None, None
         if desktop_size:
@@ -238,20 +238,20 @@ class DisplayManager(StubServerMixin):
         return w, h
 
 
-    def set_icc_profile(self):
+    def set_icc_profile(self) -> None:
         log("set_icc_profile() not implemented")
 
-    def reset_icc_profile(self):
+    def reset_icc_profile(self) -> None:
         log("reset_icc_profile() not implemented")
 
 
-    def _monitors_changed(self, screen):
+    def _monitors_changed(self, screen) -> None:
         self.do_screen_changed(screen)
 
-    def _screen_size_changed(self, screen):
+    def _screen_size_changed(self, screen) -> None:
         self.do_screen_changed(screen)
 
-    def do_screen_changed(self, screen):
+    def do_screen_changed(self, screen) -> None:
         log("do_screen_changed(%s)", screen)
         #randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
@@ -259,10 +259,10 @@ class DisplayManager(StubServerMixin):
         self.set_screen_geometry_attributes(w, h)
         self.idle_add(self.send_updated_screen_size)
 
-    def get_root_window_size(self):
+    def get_root_window_size(self) -> Tuple[int,int]:
         raise NotImplementedError()
 
-    def send_updated_screen_size(self):
+    def send_updated_screen_size(self) -> None:
         root_size = self.get_root_window_size()
         if not root_size:
             return
@@ -281,10 +281,10 @@ class DisplayManager(StubServerMixin):
             log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)",
                      count, engs(count), root_w, root_h, max_w, max_h)
 
-    def get_max_screen_size(self):
+    def get_max_screen_size(self) -> Tuple[int,int]:
         return self.get_root_window_size()
 
-    def _get_desktop_size_capability(self, server_source, root_w, root_h):
+    def _get_desktop_size_capability(self, server_source, root_w:int, root_h:int) -> Tuple[int,int]:
         client_size = server_source.desktop_size
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
@@ -295,24 +295,24 @@ class DisplayManager(StubServerMixin):
         h = min(client_h, root_h)
         return w, h
 
-    def configure_best_screen_size(self):
+    def configure_best_screen_size(self) -> Tuple[int,int]:
         return self.get_root_window_size()
 
 
-    def apply_refresh_rate(self, ss):
+    def apply_refresh_rate(self, ss) -> int:
         rrate = self.get_client_refresh_rate(ss)
         if rrate>0:
             self.set_window_refresh_rate(ss, rrate)
         return rrate
 
-    def set_window_refresh_rate(self, ss, rrate):
+    def set_window_refresh_rate(self, ss, rrate:int):
         if hasattr(ss, "all_window_sources"):
             for window_source in ss.all_window_sources():
                 bc = window_source.batch_config
                 if bc:
                     bc.match_vrefresh(rrate)
 
-    def get_client_refresh_rate(self, ss):
+    def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
         #use the refresh-rate value from the monitors
         #(value is pre-multiplied by 1000!)
@@ -334,7 +334,7 @@ class DisplayManager(StubServerMixin):
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
 
-    def _process_desktop_size(self, proto, packet):
+    def _process_desktop_size(self, proto, packet) -> None:
         log("new desktop size from %s: %s", proto, packet)
         ss = self.get_server_source(proto)
         if ss is None:
@@ -378,7 +378,7 @@ class DisplayManager(StubServerMixin):
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
-    def _process_configure_display(self, proto, packet):
+    def _process_configure_display(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -427,7 +427,7 @@ class DisplayManager(StubServerMixin):
         self.update_all_server_settings()
 
 
-    def dpi_changed(self):
+    def dpi_changed(self) -> None:
         """
         The x11 servers override this method
         to also update the XSettings.
@@ -436,16 +436,16 @@ class DisplayManager(StubServerMixin):
     def calculate_desktops(self):
         """ seamless servers can update the desktops """
 
-    def calculate_workarea(self, w, h):
+    def calculate_workarea(self, w:int, h:int):
         raise NotImplementedError()
 
-    def set_workarea(self, workarea):
+    def set_workarea(self, workarea) -> None:
         pass
 
 
     ######################################################################
     # screenshots:
-    def _process_screenshot(self, proto, _packet):
+    def _process_screenshot(self, proto, _packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:
@@ -461,7 +461,7 @@ class DisplayManager(StubServerMixin):
     def do_make_screenshot_packet(self):
         raise NotImplementedError("no screenshot capability in %s" % type(self))
 
-    def send_screenshot(self, proto):
+    def send_screenshot(self, proto) -> None:
         #this is a screenshot request, handle it and disconnect
         try:
             packet = self.make_screenshot_packet()
@@ -475,7 +475,7 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             "set-cursors"           : self._process_set_cursors,
             "set-bell"              : self._process_set_bell,

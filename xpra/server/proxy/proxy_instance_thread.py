@@ -26,7 +26,7 @@ class ProxyInstanceThread(ProxyInstance):
         self.server_conn = server_conn
 
 
-    def video_helper_init(self):
+    def video_helper_init(self) -> None:
         #all threads will use just use the same settings anyway,
         #so don't re-initialize the video helper:
         self.video_helper = getVideoHelper()
@@ -43,17 +43,17 @@ class ProxyInstanceThread(ProxyInstance):
         return "threaded proxy instance"
 
 
-    def idle_add(self, fn, *args, **kwargs):
+    def idle_add(self, fn, *args, **kwargs) -> int:
         return GLib.idle_add(fn, *args, **kwargs)
 
-    def timeout_add(self, timeout, fn, *args, **kwargs):
+    def timeout_add(self, timeout, fn, *args, **kwargs) -> int:
         return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
-    def source_remove(self, tid):
-        return GLib.source_remove(tid)
+    def source_remove(self, tid) -> None:
+        GLib.source_remove(tid)
 
 
-    def run(self):
+    def run(self) -> None:
         log("ProxyInstanceThread.run()")
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.server_protocol = server_protocol_class(self, self.server_conn,
@@ -61,7 +61,7 @@ class ProxyInstanceThread(ProxyInstance):
         self.log_start()
         super().run()
 
-    def start_network_threads(self):
+    def start_network_threads(self) -> None:
         log("start_network_threads()")
         self.server_protocol.start()
         self.client_protocol._process_packet_cb = self.process_client_packet

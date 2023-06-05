@@ -36,7 +36,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
 
-    def setup(self):
+    def setup(self) -> None:
         self.init_clipboard()
 
     def cleanup(self) -> None:
@@ -52,7 +52,7 @@ class ClipboardServer(StubServerMixin):
             ch.client_reset()
 
 
-    def parse_hello(self, ss, _caps, send_ui) -> None:
+    def parse_hello(self, ss, _caps, send_ui:bool) -> None:
         if send_ui and self.clipboard:
             self.parse_hello_ui_clipboard(ss)
 

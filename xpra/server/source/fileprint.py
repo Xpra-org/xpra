@@ -26,16 +26,16 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.printers = {}
         self.printers_added = set()
         #duplicated from clientinfo mixin
         self.machine_id = ""
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.remove_printers()
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 
@@ -45,7 +45,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             "file-transfers"    : FileTransferHandler.get_info(self),
             }
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.init_attributes()
         #copy attributes
         for x in ("file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
@@ -56,7 +56,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     ######################################################################
     # printing:
-    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
+    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile) -> None:
         log("set_printers%s for %s",
             (printers, password_file, auth, encryption, encryption_keyfile), self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
@@ -128,7 +128,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return self.unix_socket_paths[0]
 
 
-    def setup_printer(self, printer, props, attributes):
+    def setup_printer(self, printer, props:typedict, attributes:dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
         props = typedict(props)
         info = props.strget("printer-info", "")
@@ -154,14 +154,14 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             log.warn(" %s", e)
             log("setup_printer(%s, %s, %s)", printer, props, attributes, exc_info=True)
 
-    def remove_printers(self):
+    def remove_printers(self) -> None:
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             return
         self.printers = {}
         for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, name):
+    def remove_printer(self, name) -> None:
         printer = net_utf8(name)
         try:
             self.printers_added.remove(printer)

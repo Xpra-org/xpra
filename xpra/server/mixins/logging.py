@@ -90,7 +90,7 @@ class LoggingServer(StubServerMixin):
             set_global_logging_handler(ll)
 
 
-    def remote_logging_handler(self, log, level, msg, *args, **kwargs) -> None:
+    def remote_logging_handler(self, log, level:int, msg, *args, **kwargs) -> None:
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return

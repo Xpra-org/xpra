@@ -584,7 +584,7 @@ def get_display_info(xscale=1, yscale=1) -> Dict[str,Any]:
     return info
 
 
-def scaled_image(pixbuf, icon_size=None) -> Optional[Gtk.Image]:
+def scaled_image(pixbuf, icon_size:int=0) -> Optional[Gtk.Image]:
     if not pixbuf:
         return None
     if icon_size:

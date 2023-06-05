@@ -10,7 +10,7 @@ import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
-from typing import List
+from typing import Dict, List, Tuple, Any
 
 from xpra.util import (
     ConnectionMessage,
@@ -102,7 +102,7 @@ class ProxyServer(ServerCore):
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self.video_encoders = opts.proxy_video_encoders
@@ -115,7 +115,7 @@ class ProxyServer(ServerCore):
         self.child_reaper = getChildReaper()
         self.create_system_dir(opts.system_proxy_socket)
 
-    def create_system_dir(self, sps):
+    def create_system_dir(self, sps) -> None:
         if not POSIX or OSX or not sps:
             return
         xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
@@ -154,13 +154,13 @@ class ProxyServer(ServerCore):
                 log.error("Error: failed to create or change the permissions on '%s':", d)
                 log.estr(e)
 
-    def init_control_commands(self):
+    def init_control_commands(self) -> None:
         super().init_control_commands()
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
                                                            self.handle_stop_command, min_args=1, max_args=1)
 
 
-    def install_signal_handlers(self, callback):
+    def install_signal_handlers(self, callback) -> None:
         from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
@@ -171,34 +171,34 @@ class ProxyServer(ServerCore):
         return Proxy_DBUS_Server(self)
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         #add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 
-    def _process_proxy_shutdown_server(self, proto, _packet):
+    def _process_proxy_shutdown_server(self, proto, _packet) -> None:
         assert proto in self._requests
         self.clean_quit(False)
 
 
-    def print_screen_info(self):
+    def print_screen_info(self) -> None:
         #no screen, we just use a virtual display number
         pass
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "proxy"
 
-    def init_aliases(self):
+    def init_aliases(self) -> None:
         """
         It is a lot less confusing if proxy servers don't use packet aliases at all.
         So we override the aliases initialization and skip it.
         """
 
-    def do_run(self):
+    def do_run(self) -> None:
         self.main_loop = GLib.MainLoop()
         self.main_loop.run()
 
-    def handle_stop_command(self, *args):
+    def handle_stop_command(self, *args) -> str:
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
         for instance, v in dict(self.instances).items():
@@ -210,14 +210,14 @@ class ProxyServer(ServerCore):
                 return f"stopped proxy instance for display {display}"
         raise ControlError(f"no proxy found for display {display}")
 
-    def stop_all_proxies(self, force=False):
+    def stop_all_proxies(self, force:bool=False) -> None:
         instances = self.instances
         log("stop_all_proxies() will stop proxy instances: %s", instances)
         for instance in tuple(instances.keys()):
             self.stop_proxy(instance, force)
         log("stop_all_proxies() done")
 
-    def stop_proxy(self, instance, force=False):
+    def stop_proxy(self, instance, force:bool=False) -> None:
         v = self.instances.get(instance)
         if not v:
             log.error("Error: proxy instance not found for %s", instance)
@@ -243,7 +243,7 @@ class ProxyServer(ServerCore):
             instance.stop(None, "proxy server request")
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.stop_all_proxies()
         super().cleanup()
         start = monotonic()
@@ -261,23 +261,23 @@ class ProxyServer(ServerCore):
         dump_all_frames(log)
 
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         self.main_loop.quit()
         #from now on, we can't rely on the main loop:
         from xpra.os_util import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
         register_SIGUSR_signals()
 
-    def log_closing_message(self):
+    def log_closing_message(self) -> None:
         log.info("Proxy Server process ended")
 
 
-    def verify_connection_accepted(self, protocol):
+    def verify_connection_accepted(self, protocol) -> None:
         #if we start a proxy, the protocol will be closed
         #(a new one is created in the proxy process)
         if not protocol.is_closed():
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
-    def hello_oked(self, proto, c, auth_caps):
+    def hello_oked(self, proto, c, auth_caps) -> None:
         if super().hello_oked(proto, c, auth_caps):
             #already handled in superclass
             return
@@ -325,11 +325,11 @@ class ProxyServer(ServerCore):
             return
         self.proxy_auth(proto, c, auth_caps)
 
-    def proxy_auth(self, client_proto, c, auth_caps):
-        def disconnect(reason, *extras):
+    def proxy_auth(self, client_proto, c, auth_caps) -> None:
+        def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
-        def nosession(*extras):
+        def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
         #find the target server session:
         if not client_proto.authenticators:
@@ -362,11 +362,11 @@ class ProxyServer(ServerCore):
             return
         self.proxy_session(client_proto, c, auth_caps, sessions)
 
-    def proxy_session(self, client_proto, c, auth_caps, sessions):
-        def disconnect(reason, *extras):
+    def proxy_session(self, client_proto, c, auth_caps, sessions) -> None:
+        def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
-        def nosession(*extras):
+        def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
         uid, gid, displays, env_options, session_options = sessions
         if POSIX:
@@ -453,13 +453,13 @@ class ProxyServer(ServerCore):
             client_proto.send_now(("hello", hello))
             return
 
-        def stop_server_subprocess():
+        def stop_server_subprocess() -> None:
             log("stop_server_subprocess() proc=%s", proc)
             if proc and proc.poll() is None:
                 proc.terminate()
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
-        def parse_error(*args):
+        def parse_error(*args) -> None:
             stop_server_subprocess()
             nosession("invalid display string")
             log.warn("Error: parsing failed for display string '%s':", display)
@@ -519,7 +519,7 @@ class ProxyServer(ServerCore):
             return
 
         #this may block, so run it in a thread:
-        def start_proxy_process():
+        def start_proxy_process() -> None:
             log("start_proxy_process()")
             message_queue = MQueue()
             client_conn = None
@@ -572,7 +572,8 @@ class ProxyServer(ServerCore):
                 message_queue.put("socket-handover-complete")
         start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
-    def start_new_session(self, username, _password, uid, gid, new_session_dict=None, displays=()):
+    def start_new_session(self, username:str, _password, uid:int, gid:int,
+                          new_session_dict=None, displays=()) -> Tuple[Any,str,str]:
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
         mode = sns.strget("mode", "start")
@@ -640,7 +641,7 @@ class ProxyServer(ServerCore):
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
 
-    def get_proxy_env(self):
+    def get_proxy_env(self) -> Dict[str,str]:
         env = dict((k,v) for k,v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST)
         #env var to add to environment of subprocess:
         extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
@@ -655,7 +656,7 @@ class ProxyServer(ServerCore):
         return env
 
 
-    def reap(self, *args):
+    def reap(self, *args) -> None:
         log("reap%s", args)
         dead = []
         for instance in tuple(self.instances.keys()):
@@ -667,7 +668,7 @@ class ProxyServer(ServerCore):
             del self.instances[p]
 
 
-    def get_info(self, proto, *_args):
+    def get_info(self, proto, *_args) -> Dict[str,Any]:
         authenticated = proto and proto.authenticators
         if not authenticated:
             info = self.get_minimal_server_info()

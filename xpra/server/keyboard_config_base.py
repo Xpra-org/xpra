@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 
 class KeyboardConfigBase:
@@ -15,7 +15,7 @@ class KeyboardConfigBase:
         self.enabled = True
         self.owner = None
         self.sync = True
-        self.pressed_translation = {}
+        self.pressed_translation : Dict[int,Tuple[int,int]] = {}
 
     def __repr__(self):
         return "KeyboardConfigBase"
@@ -27,25 +27,26 @@ class KeyboardConfigBase:
                 "sync"      : self.sync,
                 }
 
-    def parse_options(self, props):
+    def parse_options(self, props) -> None:
         self.sync = props.boolget("keyboard_sync", True)
 
-    def get_hash(self):
+    def get_hash(self) -> bytes:
         return b""
 
-    def set_layout(self, layout, variant, options):
+    def set_layout(self, layout, variant, options) -> None:
         """ should be overridden to configure the keyboard layout """
 
-    def set_keymap(self, translate_only=False):
+    def set_keymap(self, translate_only=False) -> None:
         """ should be overridden to configure the keymap """
 
-    def set_default_keymap(self):
+    def set_default_keymap(self) -> None:
         """ should be overridden to set a default keymap """
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
         """ should be overridden to match the modifier state specified """
 
-    def get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
+                    modifiers, keyval:int, keystr:str, group:int) -> Tuple[int,int]:
         if not keyname and client_keycode<0:
             return -1, group
         if not pressed:
@@ -59,13 +60,14 @@ class KeyboardConfigBase:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+    def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
+                       modifiers, keyval:int, keystr:str, group:int) -> Tuple[int,int]:
         from xpra.log import Logger  # pylint: disable=import-outside-toplevel
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))
         log.warn("Warning: %s does not implement get_keycode!", type(self))
         return -1, 0
 
-    def is_modifier(self, _keycode):
+    def is_modifier(self, _keycode:int) -> bool:
         #should be overridden in subclasses
         return False

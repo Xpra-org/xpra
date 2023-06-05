@@ -51,7 +51,7 @@ class AudioServer(StubServerMixin):
         self.audio_properties = typedict()
         self.av_sync = False
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.audio_source_plugin = opts.audio_source
         self.supports_speaker = audio_option(opts.speaker) in ("on", "off")
         if self.supports_speaker:
@@ -67,7 +67,7 @@ class AudioServer(StubServerMixin):
         self.av_sync = opts.av_sync
         log("AudioServer.init(..) av-sync=%s", self.av_sync)
 
-    def setup(self):
+    def setup(self) -> None:
         #the setup code will mostly be waiting for subprocesses to run,
         #so do it in a separate thread
         #and just wait for the results where needed:
@@ -76,11 +76,11 @@ class AudioServer(StubServerMixin):
         #we don't use threaded_setup() here because it would delay
         #all the other mixins that use it, for no good reason.
 
-    def do_audio_setup(self):
+    def do_audio_setup(self) -> None:
         self.init_pulseaudio()
         self.init_audio_options()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.audio_init_done.wait(5)
         self.cleanup_pulseaudio()
 
@@ -110,7 +110,7 @@ class AudioServer(StubServerMixin):
         return {}
 
 
-    def init_pulseaudio(self):
+    def init_pulseaudio(self) -> None:
         audiolog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
             return
@@ -227,7 +227,7 @@ class AudioServer(StubServerMixin):
                     self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
             self.timeout_add(2*1000, configure_pulse)
 
-    def cleanup_pulseaudio(self):
+    def cleanup_pulseaudio(self) -> None:
         self.audio_init_done.wait(5)
         proc = self.pulseaudio_proc
         if not proc:
@@ -267,7 +267,7 @@ class AudioServer(StubServerMixin):
         if not self.is_child_alive(proc):
             self.do_clean_session_files("pulseaudio.pid")
 
-    def clean_pulseaudio_private_dir(self):
+    def clean_pulseaudio_private_dir(self) -> None:
         if self.pulseaudio_private_dir:
             if os.path.exists(self.pulseaudio_private_socket):
                 log.warn("Warning: the pulseaudio private socket file still exists:")
@@ -309,12 +309,14 @@ class AudioServer(StubServerMixin):
                         audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
 
-    def init_audio_options(self):
-        def audio_option_or_all(*_args):
+    def init_audio_options(self) -> None:
+        def audio_missing(*_args):
             return []
+        parse_codecs : Callable = audio_missing
         if self.supports_speaker or self.supports_microphone:
             try:
                 from xpra.audio.common import audio_option_or_all
+                parse_codecs = audio_option_or_all
                 from xpra.audio.wrapper import query_audio
                 self.audio_properties = query_audio()
                 assert self.audio_properties, "query did not return any data"
@@ -331,8 +333,8 @@ class AudioServer(StubServerMixin):
                 self.microphone_allowed = False
         encoders = self.audio_properties.strtupleget("encoders")
         decoders = self.audio_properties.strtupleget("decoders")
-        self.speaker_codecs = audio_option_or_all("speaker-codec", self.speaker_codecs, encoders)
-        self.microphone_codecs = audio_option_or_all("microphone-codec", self.microphone_codecs, decoders)
+        self.speaker_codecs = parse_codecs("speaker-codec", self.speaker_codecs, encoders)
+        self.microphone_codecs = parse_codecs("microphone-codec", self.microphone_codecs, decoders)
         if not self.speaker_codecs:
             self.supports_speaker = False
         if not self.microphone_codecs:
@@ -344,7 +346,7 @@ class AudioServer(StubServerMixin):
         self.idle_add(self.log_audio_properties)
         self.audio_init_done.set()
 
-    def query_pulseaudio_properties(self):
+    def query_pulseaudio_properties(self) -> None:
         try:
             from xpra.audio.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
             pa_info = get_pa_info()
@@ -356,7 +358,7 @@ class AudioServer(StubServerMixin):
                 log.warn("Warning: failed to set pulseaudio tagging icon:")
                 log.warn(" %s", e)
 
-    def log_audio_properties(self):
+    def log_audio_properties(self) -> None:
         audiolog("init_audio_options speaker: supported=%s, encoders=%s",
                  self.supports_speaker, csv(self.speaker_codecs))
         audiolog("init_audio_options microphone: supported=%s, decoders=%s",
@@ -377,18 +379,18 @@ class AudioServer(StubServerMixin):
         return info
 
 
-    def _process_sound_control(self, proto, packet):
+    def _process_sound_control(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_control(*packet[1:])
 
-    def _process_sound_data(self, proto, packet):
+    def _process_sound_data(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_data(*packet[1:])
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packet_handlers({
                 "sound-control" : self._process_sound_control,

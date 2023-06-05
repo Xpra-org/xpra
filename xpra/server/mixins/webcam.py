@@ -6,7 +6,7 @@
 #pylint: disable-msg=E1101
 
 import os.path
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.os_util import OSX, POSIX, bytestostr
 from xpra.util import engs
@@ -26,20 +26,20 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_device = ""
-        self.webcam_encodings = []
-        self.webcam_enabled = False
-        self.webcam_virtual_video_devices = 0
+        self.webcam_encodings : Tuple[str, ...] = []
+        self.webcam_enabled : bool = False
+        self.webcam_virtual_video_devices : int = 0
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.webcam_enabled = opts.webcam.lower() not in FALSE_OPTIONS
         if os.path.isabs(opts.webcam):
             self.webcam_device = opts.webcam
 
-    def init_state(self):
+    def init_state(self) -> None:
         #duplicated
         self.readonly = False
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         self.init_webcam()
 
 
@@ -65,7 +65,7 @@ class WebcamServer(StubServerMixin):
         return {"webcam" : info}
 
 
-    def init_webcam(self):
+    def init_webcam(self) -> None:
         if not self.webcam_enabled:
             return
         try:
@@ -90,7 +90,7 @@ class WebcamServer(StubServerMixin):
             if self.webcam_virtual_video_devices==0:
                 self.webcam_enabled = False
 
-    def init_virtual_video_devices(self):
+    def init_virtual_video_devices(self) -> int:
         log("init_virtual_video_devices")
         if not POSIX or OSX:
             return 0
@@ -114,7 +114,7 @@ class WebcamServer(StubServerMixin):
         log.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)
 
-    def _process_webcam_start(self, proto, packet):
+    def _process_webcam_start(self, proto, packet) -> None:
         if self.readonly:
             return
         assert self.webcam_enabled
@@ -125,7 +125,7 @@ class WebcamServer(StubServerMixin):
         device_id, w, h = packet[1:4]
         ss.start_virtual_webcam(device_id, w, h)
 
-    def _process_webcam_stop(self, proto, packet):
+    def _process_webcam_stop(self, proto, packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -135,7 +135,7 @@ class WebcamServer(StubServerMixin):
         device_id, message = (list(packet)+[""])[1:3]
         ss.stop_virtual_webcam(device_id, message)
 
-    def _process_webcam_frame(self, proto, packet):
+    def _process_webcam_frame(self, proto, packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -145,7 +145,7 @@ class WebcamServer(StubServerMixin):
         device_id, frame_no, encoding, w, h, data = packet[1:7]
         ss.process_webcam_frame(device_id, frame_no, bytestostr(encoding), w, h, data)
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.webcam_enabled:
             self.add_packet_handlers({
                 "webcam-start"  : self._process_webcam_start,

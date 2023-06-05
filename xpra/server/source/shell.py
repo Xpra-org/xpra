@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import io
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from contextlib import redirect_stdout, redirect_stderr
 
 from xpra.util import typedict
@@ -29,7 +29,7 @@ class ShellMixin(StubSourceMixin):
         self.log_records = []
         self.log_thread = None
 
-    def init_from(self, protocol, server):
+    def init_from(self, protocol, server) -> None:
         self._server = server
         try:
             options = protocol._conn.options
@@ -46,7 +46,7 @@ class ShellMixin(StubSourceMixin):
     def get_info(self) -> Dict[str,Any]:
         return {"shell" : self.shell_enabled}
 
-    def shell_exec(self, code):
+    def shell_exec(self, code:str) -> Tuple[str,str]:
         stdout, stderr = self.do_shell_exec(code)
         log("shell_exec(%s) stdout=%r", code, stdout)
         log("shell_exec(%s) stderr=%r", code, stderr)
@@ -56,7 +56,7 @@ class ShellMixin(StubSourceMixin):
             self.send("shell-reply", 2, stderr)
         return stdout, stderr
 
-    def do_shell_exec(self, code):
+    def do_shell_exec(self, code) -> Tuple[str,str]:
         log("shell_exec(%r)", code)
         try:
             assert self.shell_enabled, "shell support is not available with this connection"
@@ -75,4 +75,4 @@ class ShellMixin(StubSourceMixin):
             log("shell_exec(..)", exc_info=True)
             log.error("Error running %r:", code)
             log.estr(e)
-            return None, str(e)
+            return "", str(e)

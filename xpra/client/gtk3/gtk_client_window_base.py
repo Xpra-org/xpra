@@ -2298,7 +2298,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_focus_timer()
         self.cancel_moveresize_timer()
         self.cancel_follow_handler()
-        self.on_realize_cb : Dict[str,Tuple[Callable,Tuple[Any,...]]] = {}
+        self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
         if self._client.has_focus(self.wid):

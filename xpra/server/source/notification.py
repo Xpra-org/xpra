@@ -25,12 +25,12 @@ class NotificationMixin(StubSourceMixin):
         return False
 
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.send_notifications = False
         self.send_notifications_actions = False
         self.notification_callbacks = {}
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         v = c.get("notifications")
         if isinstance(v, dict):
             c = typedict(v)
@@ -51,7 +51,7 @@ class NotificationMixin(StubSourceMixin):
     # Utility functions for mixins (makes notifications optional)
     def may_notify(self, nid=0, summary="", body="",    #pylint: disable=arguments-differ
                    actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name=None, user_callback=None):
+                   icon_name=None, user_callback=None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -65,7 +65,7 @@ class NotificationMixin(StubSourceMixin):
                         expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon,
-               summary, body, actions, hints, expire_timeout, icon, user_callback=None):
+               summary, body, actions, hints, expire_timeout, icon, user_callback=None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
@@ -83,7 +83,7 @@ class NotificationMixin(StubSourceMixin):
                             summary, body, expire_timeout, icon, actions, hints)
         return True
 
-    def notify_close(self, nid : int):
+    def notify_close(self, nid : int) -> None:
         if not self.send_notifications or self.suspended  or not self.hello_sent:
             return
         self.send_more("notify_close", nid)

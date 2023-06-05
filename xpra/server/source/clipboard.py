@@ -27,7 +27,7 @@ class ClipboardConnection(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("clipboard")
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.clipboard_enabled = False
         self.clipboard_notifications = False
         self.clipboard_notifications_current = 0
@@ -39,10 +39,10 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_selections = CLIPBOARDS
         self.clipboard_preferred_targets = ()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         ccaps = c.get("clipboard")
         if ccaps and isinstance(ccaps, dict):
             ccaps = typedict(ccaps)
@@ -78,24 +78,24 @@ class ClipboardConnection(StubSourceMixin):
             }
 
 
-    def send_clipboard_enabled(self, reason=""):
+    def send_clipboard_enabled(self, reason:str="") -> None:
         if not self.hello_sent:
             return
         self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
 
-    def cancel_clipboard_progress_timer(self):
+    def cancel_clipboard_progress_timer(self) -> None:
         cpt = self.clipboard_progress_timer
         if cpt:
             self.clipboard_progress_timer = 0
             GLib.source_remove(cpt)
 
-    def send_clipboard_progress(self, count : int):
+    def send_clipboard_progress(self, count : int) -> None:
         if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
             return
         #always set "pending" to the latest value:
         self.clipboard_notifications_pending = count
         #but send the latest value via a timer to tame toggle storms:
-        def may_send_progress_update():
+        def may_send_progress_update() -> None:
             self.clipboard_progress_timer = 0
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
@@ -104,7 +104,7 @@ class ClipboardConnection(StubSourceMixin):
         delay = (count==0)*100
         self.clipboard_progress_timer = GLib.timeout_add(delay, may_send_progress_update)
 
-    def send_clipboard(self, packet):
+    def send_clipboard(self, packet) -> None:
         if not self.clipboard_enabled or not self.hello_sent:
             return
         if getattr(self, "suspended", False):
@@ -127,7 +127,7 @@ class ClipboardConnection(StubSourceMixin):
         #call compress_clibboard via the encode work queue:
         self.queue_encode((True, self.compress_clipboard, packet))
 
-    def compress_clipboard(self, packet):
+    def compress_clipboard(self, packet) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         #Note: this runs in the 'encode' thread!

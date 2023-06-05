@@ -6,7 +6,7 @@
 
 import math
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 from xpra.util import envint, envbool
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
@@ -27,7 +27,7 @@ RATIO_WEIGHT = envint("XPRA_VIDEO_DETECT_RATIO_WEIGHT", 80)
 KEEP_SCORE = envint("XPRA_VIDEO_DETECT_KEEP_SCORE", 160)
 
 
-def scoreinout(ww, wh, region, incount, outcount):
+def scoreinout(ww:int, wh:int, region, incount:int, outcount:int) -> int:
     total = incount+outcount
     assert total>0
     #proportion of damage events that are within this region:
@@ -66,7 +66,7 @@ class VideoSubregion:
         self.exclusion_zones = []
         self.init_vars()
 
-    def init_vars(self):
+    def init_vars(self) -> None:
         self.rectangle = None
         self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
@@ -84,12 +84,12 @@ class VideoSubregion:
         self.non_max_wait = 150
         self.min_time = monotonic()
 
-    def reset(self):
+    def reset(self) -> None:
         self.cancel_refresh_timer()
         self.cancel_nonvideo_refresh_timer()
         self.init_vars()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.reset()
 
 
@@ -97,17 +97,17 @@ class VideoSubregion:
         return f"VideoSubregion({self.rectangle})"
 
 
-    def set_enabled(self, enabled):
+    def set_enabled(self, enabled:bool) -> None:
         self.enabled = enabled
         if not enabled:
             self.novideoregion("disabled")
 
-    def set_detection(self, detection):
+    def set_detection(self, detection:bool) -> None:
         self.detection = detection
         if not self.detection:
             self.reset()
 
-    def set_region(self, x, y, w, h):
+    def set_region(self, x:int, y:int, w:int, h:int) -> None:
         sslog("set_region%s", (x, y, w, h))
         if self.detection:
             sslog("video region detection is on - the given region may or may not stick")
@@ -116,7 +116,7 @@ class VideoSubregion:
         else:
             self.rectangle = rectangle(x, y, w, h)
 
-    def set_exclusion_zones(self, zones):
+    def set_exclusion_zones(self, zones) -> None:
         rects = []
         for (x, y, w, h) in zones:
             rects.append(rectangle(int(x), int(y), int(w), int(h)))
@@ -124,13 +124,13 @@ class VideoSubregion:
         #force expire:
         self.counter = 0
 
-    def set_auto_refresh_delay(self, d):
+    def set_auto_refresh_delay(self, d:int) -> None:
         refreshlog("subregion auto-refresh delay: %s", d)
         if not isinstance(d, int):
             raise ValueError(f"delay is not an int: {d} ({type(d)})")
         self.auto_refresh_delay = d
 
-    def cancel_refresh_timer(self):
+    def cancel_refresh_timer(self) -> None:
         rt = self.refresh_timer
         refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
         if rt:
@@ -181,14 +181,14 @@ class VideoSubregion:
         return info
 
 
-    def remove_refresh_region(self, region):
+    def remove_refresh_region(self, region) -> None:
         remove_rectangle(self.refresh_regions, region)
         remove_rectangle(self.nonvideo_regions, region)
         refreshlog("remove_refresh_region(%s) updated refresh regions=%s, nonvideo regions=%s",
                    region, self.refresh_regions, self.nonvideo_regions)
 
 
-    def add_video_refresh(self, region):
+    def add_video_refresh(self, region) -> None:
         #called by add_refresh_region if the video region got painted on
         #Note: this does not run in the UI thread!
         rect = self.rectangle
@@ -220,7 +220,7 @@ class VideoSubregion:
         if self.refresh_regions:
             self.refresh_timer = self.timeout_add(delay, self.refresh)
 
-    def cancel_nonvideo_refresh_timer(self):
+    def cancel_nonvideo_refresh_timer(self) -> None:
         nvrt = self.nonvideo_refresh_timer
         refreshlog("cancel_nonvideo_refresh_timer() timer=%s", nvrt)
         if nvrt:
@@ -228,7 +228,7 @@ class VideoSubregion:
             self.source_remove(nvrt)
             self.nonvideo_regions = []
 
-    def nonvideo_refresh(self):
+    def nonvideo_refresh(self) -> None:
         self.nonvideo_refresh_timer = 0
         nonvideo = tuple(self.nonvideo_regions)
         refreshlog("nonvideo_refresh() nonvideo regions=%s", nonvideo)
@@ -240,7 +240,7 @@ class VideoSubregion:
         #then we should end up re-scheduling the nonvideo refresh
         #from add_video_refresh()
 
-    def refresh(self):
+    def refresh(self) -> None:
         regions = self.refresh_regions
         rect = self.rectangle
         refreshlog("refresh() refresh_timer=%s, refresh_regions=%s, rectangle=%s",
@@ -261,7 +261,7 @@ class VideoSubregion:
             self.refresh_timer = self.timeout_add(1000, self.refresh)
 
 
-    def novideoregion(self, msg, *args):
+    def novideoregion(self, msg, *args) -> None:
         sslog("novideoregion: "+msg, *args)
         self.rectangle = None
         self.time = 0
@@ -272,7 +272,7 @@ class VideoSubregion:
         self.fps = 0
         self.damaged = 0
 
-    def excluded_rectangles(self, rect, ww, wh):
+    def excluded_rectangles(self, rect, ww:int, wh:int) -> List:
         rects = [rect]
         if self.exclusion_zones:
             for e in self.exclusion_zones:
@@ -289,7 +289,7 @@ class VideoSubregion:
                 rects = new_rects
         return rects
 
-    def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0, children=None):
+    def identify_video_subregion(self, ww:int, wh:int, damage_events_count, last_damage_events, starting_at=0, children=None):
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
             return
@@ -453,7 +453,7 @@ class VideoSubregion:
                   info, region, ipct, opct, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             return rec(score)
 
-        def updateregion(rect):
+        def updateregion(rect) -> None:
             self.rectangle = rect
             self.time = monotonic()
             self.inout = inoutcount(rect)
@@ -467,7 +467,7 @@ class VideoSubregion:
             self.last_scores = scores
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
-        def setnewregion(rect, msg, *args):
+        def setnewregion(rect, msg, *args) -> None:
             rects = self.excluded_rectangles(rect, ww, wh)
             if not rects:
                 self.novideoregion("no match after removing excluded regions")

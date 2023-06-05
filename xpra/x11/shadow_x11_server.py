@@ -178,7 +178,7 @@ def window_matches(wspec, model_class):
 
 class XImageCapture:
     __slots__ = ("xshm", "xwindow", "XImage")
-    def __init__(self, xwindow):
+    def __init__(self, xwindow:int):
         log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow

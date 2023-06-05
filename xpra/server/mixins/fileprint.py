@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,6 +9,7 @@
 
 import os.path
 import hashlib
+from typing import Dict, Any
 
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
@@ -30,12 +31,12 @@ class FilePrintServer(StubServerMixin):
     """
 
     def __init__(self):
-        self.lpadmin = ""
-        self.lpinfo = ""
+        self.lpadmin : str = ""
+        self.lpinfo : str = ""
         self.add_printer_options = []
         self.file_transfer = FileTransferAttributes()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.file_transfer.init_opts(opts, can_ask=False)
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
@@ -44,10 +45,10 @@ class FilePrintServer(StubServerMixin):
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
 
-    def threaded_setup(self):
+    def threaded_setup(self) -> None:
         self.init_printing()
 
-    def init_sockets(self, sockets):
+    def init_sockets(self, sockets) -> None:
         #verify we have a local socket for printing:
         unixsockets = [info for socktype, _, info, _ in sockets if socktype=="socket"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)
@@ -59,7 +60,7 @@ class FilePrintServer(StubServerMixin):
             self.file_transfer.printing = False
 
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> Dict[str,Any]:
         f = self.file_transfer.get_file_transfer_features()
         f["printer.attributes"] = ("printer-info", "device-uri")
         ftf = self.file_transfer.get_file_transfer_features()
@@ -68,7 +69,7 @@ class FilePrintServer(StubServerMixin):
         f.update(ftf)
         return f
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> Dict[str,Any]:
         d = {}
         if POSIX:
             d.update({
@@ -88,7 +89,7 @@ class FilePrintServer(StubServerMixin):
         return info
 
 
-    def init_printing(self):
+    def init_printing(self) -> None:
         printing = self.file_transfer.printing
         if not printing or WIN32:
             return
@@ -131,7 +132,7 @@ class FilePrintServer(StubServerMixin):
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
 
-    def _process_print(self, _proto, packet):
+    def _process_print(self, _proto, packet) -> None:
         #ie: from the xpraforwarder we call this command:
         #command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -217,7 +218,7 @@ class FilePrintServer(StubServerMixin):
         unit_str, v = to_std_unit(len(file_data), unit=1024)
         l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
 
-    def _save_print_job(self, filename, file_data):
+    def _save_print_job(self, filename, file_data) -> None:
         try:
             save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
             with open(save_filename, "wb") as f:
@@ -227,7 +228,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: failed to save print job to %s", save_filename)
             printlog.estr(e)
 
-    def _process_printers(self, proto, packet):
+    def _process_printers(self, proto, packet) -> None:
         if not self.file_transfer.printing or WIN32:
             printlog.error("Error: received printer definitions data")
             printlog.error(" but this server does not support printer forwarding")
@@ -242,42 +243,42 @@ class FilePrintServer(StubServerMixin):
 
     ######################################################################
     # file transfers:
-    def _process_send_file(self, proto, packet):
+    def _process_send_file(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file packet")
             return
         ss._process_send_file(packet)
 
-    def _process_ack_file_chunk(self, proto, packet):
+    def _process_ack_file_chunk(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for ack-file-chunk packet")
             return
         ss._process_ack_file_chunk(packet)
 
-    def _process_send_file_chunk(self, proto, packet):
+    def _process_send_file_chunk(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-chunk packet")
             return
         ss._process_send_file_chunk(packet)
 
-    def _process_send_data_request(self, proto, packet):
+    def _process_send_data_request(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-request packet")
             return
         ss._process_send_data_request(packet)
 
-    def _process_send_data_response(self, proto, packet):
+    def _process_send_data_response(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
             return
         ss._process_send_data_response(packet)
 
-    def _process_request_file(self, proto, packet):
+    def _process_request_file(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
@@ -309,7 +310,7 @@ class FilePrintServer(StubServerMixin):
         ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file" : (argf, openit)})
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         if self.file_transfer.printing:
             self.add_packet_handlers({
                 "printers":                             self._process_printers,

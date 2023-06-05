@@ -27,8 +27,8 @@ class WindowServer(StubServerMixin):
     def __init__(self):
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
-        self._window_to_id = {}
-        self._id_to_window = {}
+        self._window_to_id : Dict[Any,int] = {}
+        self._id_to_window : Dict[int,Any] = {}
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2**15-1, 2**15-1
@@ -51,11 +51,11 @@ class WindowServer(StubServerMixin):
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
 
-    def setup(self):
+    def setup(self) -> None:
         self.load_existing_windows()
         self.add_init_thread_callback(self.reinit_window_encoders)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):
             window.unmanage()
         #this can cause errors if we receive packets during shutdown:
@@ -63,7 +63,7 @@ class WindowServer(StubServerMixin):
         #self._id_to_window = {}
 
 
-    def reinit_window_encoders(self):
+    def reinit_window_encoders(self) -> None:
         #any window mapped before the threaded init completed
         #may need to re-initialize its list of encoders:
         log("reinit_window_encoders()")
@@ -72,7 +72,7 @@ class WindowServer(StubServerMixin):
                 ss.reinit_encoders()
 
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         self._focus(None, 0, [])
 
 
@@ -97,15 +97,15 @@ class WindowServer(StubServerMixin):
         return {"windows" : self.get_windows_info(wids)}
 
 
-    def parse_hello(self, ss, caps:typedict, send_ui):
+    def parse_hello(self, ss, caps:typedict, send_ui) -> None:
         if send_ui:
             self.parse_hello_ui_window_settings(ss, caps)
 
-    def parse_hello_ui_window_settings(self, ss, c:typedict):
+    def parse_hello_ui_window_settings(self, ss, c:typedict) -> None:
         pass
 
 
-    def add_new_client(self, *_args):
+    def add_new_client(self, *_args) -> None:
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         for ss in tuple(self._server_sources.values()):
@@ -127,12 +127,12 @@ class WindowServer(StubServerMixin):
             maxh = minh
         self.update_size_constraints(minw, minh, maxw, maxh)
 
-    def update_size_constraints(self, minw, minh, maxw, maxh):
+    def update_size_constraints(self, minw:int, minh:int, maxw:int, maxh:int) -> None:
         #subclasses may update the window models
         pass
 
 
-    def send_initial_data(self, ss, caps, send_ui, share_count):
+    def send_initial_data(self, ss, caps, send_ui:bool, share_count:int) -> None:
         if not send_ui:
             return
         if not isinstance(ss, WindowsMixin):
@@ -150,11 +150,11 @@ class WindowServer(StubServerMixin):
         return 0
 
 
-    def reset_window_filters(self):
+    def reset_window_filters(self) -> None:
         self.window_filters = []
 
 
-    def get_windows_info(self, window_ids):
+    def get_windows_info(self, window_ids) -> Dict[int,Dict[str,Any]]:
         info = {}
         for wid, window in self._id_to_window.items():
             if window_ids is not None and wid not in window_ids:
@@ -185,7 +185,7 @@ class WindowServer(StubServerMixin):
                 info["client-properties"] = wprops
         return info
 
-    def _update_metadata(self, window, pspec):
+    def _update_metadata(self, window, pspec) -> None:
         metalog("updating metadata on %s: %s", window, pspec)
         wid = self._window_to_id.get(window)
         if not wid:
@@ -195,7 +195,7 @@ class WindowServer(StubServerMixin):
                 ss.window_metadata(wid, window, pspec.name)
 
 
-    def _remove_window(self, window):
+    def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
         log("remove_window: %s - %s", wid, window)
         for ss in self._server_sources.values():
@@ -209,12 +209,12 @@ class WindowServer(StubServerMixin):
         self.client_properties.pop(wid, None)
         return wid
 
-    def _add_new_window_common(self, window):
+    def _add_new_window_common(self, window) -> int:
         wid = self._max_window_id
         self.do_add_new_window_common(wid, window)
         return wid
 
-    def do_add_new_window_common(self, wid, window):
+    def do_add_new_window_common(self, wid:int, window) -> None:
         self._max_window_id = max(self._max_window_id, wid+1)
         props = window.get_dynamic_property_names()
         metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
@@ -223,7 +223,7 @@ class WindowServer(StubServerMixin):
         self._window_to_id[window] = wid
         self._id_to_window[wid] = window
 
-    def _do_send_new_window_packet(self, ptype, window, geometry):
+    def _do_send_new_window_packet(self, ptype, window, geometry) -> None:
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
             if not isinstance(ss, WindowsMixin):

@@ -76,7 +76,7 @@ class ChildCommandServer(StubServerMixin):
             self.late_start_requested : bool = True
             GLib.idle_add(self.late_start)
 
-    def late_start(self):
+    def late_start(self) -> None:
         def do_late_start():
             #wait for all threaded init to complete
             self.wait_for_threaded_init()
@@ -136,7 +136,7 @@ class ChildCommandServer(StubServerMixin):
             }
 
 
-    def _get_xdg_menu_data(self):
+    def _get_xdg_menu_data(self) -> Optional[Dict[str,Any]]:
         if not self.start_new_commands:
             return None
         assert self.menu_provider
@@ -370,7 +370,7 @@ class ChildCommandServer(StubServerMixin):
                 self.mdns_update()
 
 
-    def _process_start_command(self, proto, packet:Tuple):
+    def _process_start_command(self, proto, packet:Tuple) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")

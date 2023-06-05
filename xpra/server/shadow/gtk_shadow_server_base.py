@@ -6,6 +6,8 @@
 
 import os
 import gi
+from typing import List, Dict, Type, Any
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk   #pylint: disable=no-name-in-module
@@ -30,7 +32,7 @@ log = Logger("shadow")
 MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 
 
-def parse_geometry(s):
+def parse_geometry(s) -> List[int]:
     try:
         parts = s.split("@")
         if len(parts)==1:
@@ -47,7 +49,7 @@ def parse_geometry(s):
         screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
         raise
 
-def parse_geometries(s):
+def parse_geometries(s) -> List:
     g = []
     for geometry_str in s.split("/"):
         if geometry_str:
@@ -69,7 +71,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray = False
         self.tray_icon = None
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         GTKServerBase.init(self, opts)
         ShadowServerBase.init(self, opts)
         self.tray = opts.tray
@@ -78,18 +80,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.setup_tray()
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cleanup_tray()
         ShadowServerBase.cleanup(self)
         GTKServerBase.cleanup(self)     #@UndefinedVariable
 
 
-    def client_startup_complete(self, ss):
+    def client_startup_complete(self, ss) -> None:
         GTKServerBase.client_startup_complete(self, ss)
         if not self.tray_icon:
             self.set_tray_icon("server-connected")
 
-    def last_client_exited(self):
+    def last_client_exited(self) -> None:
         log("last_client_exited() mapped=%s", self.mapped)
         for wid in tuple(self.mapped):
             self.stop_refresh(wid)
@@ -99,7 +101,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         GTKServerBase.last_client_exited(self)
 
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> Dict[str,Any]:
         caps = ShadowServerBase.make_hello(self, source)
         caps.update(GTKServerBase.make_hello(self, source))
         if "features" in source.wants:
@@ -107,17 +109,17 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return caps
 
 
-    def get_info(self, proto=None, *args):
+    def get_info(self, proto=None, *args) -> Dict[str,Any]:
         info = ShadowServerBase.get_info(self, proto, *args)
         info.update(GTKServerBase.get_info(self, proto, *args))
         return info
 
 
-    def accept_client_ssh_agent(self, uuid, ssh_auth_sock):
+    def accept_client_ssh_agent(self, uuid:str, ssh_auth_sock:str) -> None:
         log("accept_client_ssh_agent: not setting up ssh agent forwarding for shadow servers")
 
 
-    def refresh(self):
+    def refresh(self) -> bool:
         log("refresh() mapped=%s, capture=%s", self.mapped, self.capture)
         if not self.mapped:
             self.refresh_timer = 0
@@ -145,7 +147,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.refresh_windows()
         return True
 
-    def refresh_windows(self):
+    def refresh_windows(self) -> None:
         for window in self._id_to_window.values():
             self.refresh_window(window)
 
@@ -153,13 +155,13 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     ############################################################################
     # handle monitor changes
 
-    def send_updated_screen_size(self):
+    def send_updated_screen_size(self) -> None:
         log("send_updated_screen_size")
         super().send_updated_screen_size()
         if server_features.windows:
             self.recreate_window_models()
 
-    def recreate_window_models(self):
+    def recreate_window_models(self) -> None:
         #remove all existing models and re-create them:
         for model in tuple(self._window_to_id.keys()):
             self._remove_window(model)
@@ -171,10 +173,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def setup_capture(self):
         raise NotImplementedError()
 
-    def get_root_window_model_class(self):
+    def get_root_window_model_class(self) -> Type:
         return RootWindowModel
 
-    def get_shadow_monitors(self):
+    def get_shadow_monitors(self) -> List:
         display = self.root.get_display()
         if not display:
             return []
@@ -202,7 +204,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
 
-    def makeRootWindowModels(self):
+    def makeRootWindowModels(self) -> List:
         screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
         self.capture = self.setup_capture()
         if not self.capture:
@@ -262,7 +264,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         assert self.window_matches
         raise NotImplementedError("dynamic window shadow is not implemented on this platform")
 
-    def refresh_window_models(self):
+    def refresh_window_models(self) -> None:
         if not self.window_matches or not server_features.windows:
             return
         #update the window models which may have changed,
@@ -300,7 +302,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_window(window)
 
 
-    def _adjust_pointer(self, proto, device_id, wid, opointer):
+    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> List:
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)
@@ -329,7 +331,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notification_tray(self):
         return self.tray_widget
 
-    def get_notifier_classes(self):
+    def get_notifier_classes(self) -> List[Type]:
         ncs = ShadowServerBase.get_notifier_classes(self)
         try:
             from xpra.gtk_common.gtk_notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
@@ -345,14 +347,14 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     # system tray methods, mostly copied from the gtk client...
     # (most of these should probably be moved to a common location instead)
 
-    def cleanup_tray(self):
+    def cleanup_tray(self) -> None:
         tw = self.tray_widget
         traylog("cleanup_tray() tray_widget=%s", tw)
         if tw:
             self.tray_widget = None
             tw.cleanup()
 
-    def setup_tray(self):
+    def setup_tray(self) -> None:
         if OSX:
             return
         display = Gdk.Display.get_default()
@@ -428,7 +430,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return None
 
 
-    def set_tray_icon(self, filename):
+    def set_tray_icon(self, filename:str) -> None:
         if not self.tray_widget:
             return
         try:
@@ -438,7 +440,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn(" %s", e)
 
 
-    def traymenuitem(self, title, icon_name=None, tooltip=None, cb=None):
+    def traymenuitem(self, title:str, icon_name=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
         from xpra.gtk_common.gtk_util import menuitem
@@ -449,7 +451,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
-    def checkitem(self, title, cb=None, active=False):
+    def checkitem(self, title:str, cb=None, active=False) -> Gtk.CheckMenuItem:
         check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
         if cb:
@@ -457,7 +459,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         check_item.show()
         return check_item
 
-    def get_image(self, icon_name, size=None):
+    def get_image(self, icon_name:str, size:int=0):
         from xpra.gtk_common.gtk_util import scaled_image
         try:
             pixbuf = get_icon_pixbuf(icon_name)
@@ -467,13 +469,13 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             return scaled_image(pixbuf, size)
         except Exception:
             traylog.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return  None
+            return None
 
 
-    def tray_menu_deactivated(self, *_args):
+    def tray_menu_deactivated(self, *_args) -> None:
         self.tray_menu_shown = False
 
-    def tray_click_callback(self, button, pressed, time=0):
+    def tray_click_callback(self, button:int, pressed:int, time=0) -> None:
         traylog("tray_click_callback(%s, %s, %i) tray menu=%s, shown=%s",
                 button, pressed, time, self.tray_menu, self.tray_menu_shown)
         if pressed:
@@ -489,11 +491,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 self.tray_menu.popup(None, None, None, None, button, time)
             self.tray_menu_shown = True
 
-    def tray_exit_callback(self, *_args):
+    def tray_exit_callback(self, *_args) -> None:
         self.close_tray_menu()
         self.idle_add(self.clean_quit, False)
 
-    def close_tray_menu(self, *_args):
+    def close_tray_menu(self, *_args) -> None:
         if self.tray_menu_shown:
             self.tray_menu.popdown()
             self.tray_menu_shown = False

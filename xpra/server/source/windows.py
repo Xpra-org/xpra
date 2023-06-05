@@ -374,7 +374,7 @@ class WindowsMixin(StubSourceMixin):
         log("initiate_moveresize sending to %s", self)
         self.send("initiate-moveresize", wid, x_root, y_root, direction, button, source_indication)
 
-    def or_window_geometry(self, wid:int, window, x:int, y:int, w:int, h:int):
+    def or_window_geometry(self, wid:int, window, x:int, y:int, w:int, h:int) -> None:
         if not self.can_send_window(window):
             return
         self.send("configure-override-redirect", wid, x, y, w, h)
@@ -615,7 +615,8 @@ class WindowsMixin(StubSourceMixin):
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
 
-    def client_ack_damage(self, damage_packet_sequence:int, wid:int, width:int, height:int, decode_time:int, message:str):
+    def client_ack_damage(self, damage_packet_sequence:int, wid:int,
+                          width:int, height:int, decode_time:int, message:str) -> None:
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (which is provided by the client)
@@ -635,7 +636,7 @@ class WindowsMixin(StubSourceMixin):
 #
 # Methods used by WindowSource:
 #
-    def record_congestion_event(self, source, late_pct:int=0, send_speed:int=0):
+    def record_congestion_event(self, source, late_pct:int=0, send_speed:int=0) -> None:
         if not self.bandwidth_detection:
             return
         gs = self.statistics
@@ -674,7 +675,7 @@ class WindowsMixin(StubSourceMixin):
                 self.may_notify(nid, summary, body, actions, hints,
                                 icon_name="connect", user_callback=self.congestion_notification_callback)
 
-    def congestion_notification_callback(self, nid:int, action_id:str):
+    def congestion_notification_callback(self, nid:int, action_id:str) -> None:
         bandwidthlog("congestion_notification_callback(%i, %s)", nid, action_id)
         if action_id=="lower-bandwidth":
             bandwidth_limit = 50*1024*1024

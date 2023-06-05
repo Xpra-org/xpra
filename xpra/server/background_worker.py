@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@
 from weakref import WeakSet
 from threading import Thread, Lock
 from queue import Queue
+from typing import Optional
 
 from xpra.log import Logger
 log = Logger("util")
@@ -30,7 +31,7 @@ class Worker_Thread(Thread):
     def __repr__(self):
         return f"Worker_Thread(items={self.items.qsize()}, exit={self.exit})"
 
-    def stop(self, force=False):
+    def stop(self, force:bool=False) -> None:
         if self.exit:
             return
         items = tuple(x for x in self.items.queue if x is not None and x not in self.daemon_work_items)
@@ -49,7 +50,7 @@ class Worker_Thread(Thread):
                 log.info("waiting for %s items in work queue to complete", len(items))
         self.items.put(None)
 
-    def add(self, item, allow_duplicates=True, daemon=False):
+    def add(self, item, allow_duplicates:bool=True, daemon:bool=False) -> None:
         if self.items.qsize()>10:
             log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
         if not allow_duplicates and item in self.items.queue:
@@ -58,7 +59,7 @@ class Worker_Thread(Thread):
         if daemon:
             self.daemon_work_items.add(item)
 
-    def run(self):
+    def run(self) -> None:
         log("Worker_Thread.run() starting")
         while not self.exit:
             item = self.items.get()
@@ -78,7 +79,7 @@ singleton = None
 #locking to ensure multi-threaded code doesn't create more than one
 lock = Lock()
 
-def get_worker(create=True):
+def get_worker(create:bool=True) -> Optional[Worker_Thread]:
     global singleton
     #fast path (no lock):
     if singleton is not None or not create:
@@ -89,12 +90,12 @@ def get_worker(create=True):
             singleton.start()
     return singleton
 
-def add_work_item(item, allow_duplicates=False, daemon=True):
+def add_work_item(item, allow_duplicates:bool=False, daemon:bool=True) -> None:
     w = get_worker(True)
     log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
     w.add(item, allow_duplicates, daemon)
 
-def stop_worker(force=False):
+def stop_worker(force:bool=False) -> None:
     w = get_worker(False)
     log("stop_worker(%s) worker=%s", force, w)
     if w:

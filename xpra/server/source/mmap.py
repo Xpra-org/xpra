@@ -31,12 +31,12 @@ class MMAP_Connection(StubSourceMixin):
         self.mmap_filename = None
         self.min_mmap_size = 0
 
-    def init_from(self, _protocol, server):
+    def init_from(self, _protocol, server) -> None:
         self.supports_mmap = server.supports_mmap
         self.mmap_filename = server.mmap_filename
         self.min_mmap_size = server.min_mmap_size
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.mmap = None
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
@@ -44,7 +44,7 @@ class MMAP_Connection(StubSourceMixin):
         self.mmap_client_token_bytes = 0
         self.mmap_client_namespace = False
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         mmap = self.mmap
         if mmap:
             self.mmap = None
@@ -52,7 +52,7 @@ class MMAP_Connection(StubSourceMixin):
             mmap.close()
 
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c : typedict) -> None:
         # pylint: disable=import-outside-toplevel
         import os
         from xpra.os_util import WIN32

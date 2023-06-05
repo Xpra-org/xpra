@@ -80,7 +80,7 @@ class InputMixin(StubSourceMixin):
         return {}
 
 
-    def set_layout(self, layout, variant, options):
+    def set_layout(self, layout:str, variant:str, options):
         if not self.keyboard_config:
             return
         return self.keyboard_config.set_layout(layout, variant, options)
@@ -115,7 +115,7 @@ class InputMixin(StubSourceMixin):
         return False
 
 
-    def set_keymap(self, current_keyboard_config, keys_pressed, force:bool=False, translate_only:bool=False):
+    def set_keymap(self, current_keyboard_config, keys_pressed, force:bool=False, translate_only:bool=False) -> None:
         kc = self.keyboard_config
         log("set_keymap%s keyboard_config=%s", (current_keyboard_config, keys_pressed, force, translate_only), kc)
         if kc and kc.enabled:
@@ -133,7 +133,8 @@ class InputMixin(StubSourceMixin):
                 self.keyboard_config = current_keyboard_config
 
 
-    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group:int) -> Tuple[int, int]:
+    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
+                    modifiers, keyval, keystr:str, group:int) -> Tuple[int, int]:
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)

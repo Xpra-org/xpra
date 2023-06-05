@@ -21,7 +21,7 @@ class MMAP_Server(StubServerMixin):
         self.mmap_filename = None
         self.min_mmap_size = 64*1024*1024
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         if opts.mmap and os.path.isabs(opts.mmap):
             self.supports_mmap = True
             self.mmap_filename = opts.mmap
