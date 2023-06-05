@@ -117,8 +117,8 @@ class WindowVideoSource(WindowSource):
     def __init__(self, *args):
         #this will call init_vars():
         self.supports_scrolling : bool = False
-        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         super().__init__(*args)
+        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.supports_eos : bool= self.encoding_options.boolget("eos")
         self.supports_scrolling : bool = "scroll" in self.common_encodings or (
             #for older clients, we check an encoding option:
