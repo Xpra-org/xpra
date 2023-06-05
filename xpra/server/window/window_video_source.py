@@ -118,11 +118,9 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         self.supports_scrolling : bool = False
         super().__init__(*args)
-        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
+        self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
+        self.supports_scrolling : bool = False
         self.supports_eos : bool= self.encoding_options.boolget("eos")
-        self.supports_scrolling : bool = "scroll" in self.common_encodings or (
-            #for older clients, we check an encoding option:
-            "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
         self.scroll_min_percent : int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference : int = self.encoding_options.intget("scrolling.preference", 100)
         self.supports_video_b_frames : bool = self.encoding_options.strtupleget("video_b_frames", ())
@@ -203,6 +201,9 @@ class WindowVideoSource(WindowSource):
         log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
+        self.supports_scrolling = "scroll" in self.common_encodings or (
+            #for older clients, we check an encoding option:
+            "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
 
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)

@@ -343,7 +343,6 @@ class WindowSource(WindowIconSource):
         self._lossless_threshold_pixel_boost : int = 20
         self._rgb_auto_threshold : int = MAX_PIXELS_PREFER_RGB
 
-        self.init_encoders()
         log("initial encoding for %s: %s", self.wid, self.encoding)
         #ready to service:
         self._damage_cancelled = 0

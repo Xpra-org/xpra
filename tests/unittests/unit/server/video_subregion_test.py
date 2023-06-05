@@ -7,7 +7,6 @@
 import unittest
 from time import monotonic
 from collections import deque
-from gi.repository import GLib  # @UnresolvedImport
 
 try:
     from xpra.server.window import video_subregion
@@ -24,7 +23,7 @@ class TestVideoSubregion(unittest.TestCase):
 
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
-        r = video_subregion.VideoSubregion(GLib.timeout_add, GLib.source_remove, refresh_cb, 150, True)
+        r = video_subregion.VideoSubregion(refresh_cb, 150, True)
         assert repr(r)
         r.set_detection(True)
         r.set_region(0, 0, 10, 10)

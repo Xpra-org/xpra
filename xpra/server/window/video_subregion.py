@@ -7,6 +7,7 @@
 import math
 from time import monotonic
 from typing import Dict, List, Any
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
@@ -55,9 +56,7 @@ def scoreinout(ww:int, wh:int, region, incount:int, outcount:int) -> int:
 
 
 class VideoSubregion:
-    def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay, supported=False):
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
+    def __init__(self, refresh_cb, auto_refresh_delay, supported=False):
         self.refresh_cb = refresh_cb        #usage: refresh_cb(window, regions)
         self.auto_refresh_delay = auto_refresh_delay
         self.supported = supported
@@ -135,7 +134,7 @@ class VideoSubregion:
         refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
         if rt:
             self.refresh_timer = 0
-            self.source_remove(rt)
+            GLib.source_remove(rt)
 
     def get_info(self) -> Dict[str,Any]:
         r = self.rectangle
@@ -210,7 +209,7 @@ class VideoSubregion:
         if self.nonvideo_regions:
             if not self.nonvideo_refresh_timer:
                 #refresh via timeout_add so this will run in the UI thread:
-                self.nonvideo_refresh_timer = self.timeout_add(delay, self.nonvideo_refresh)
+                self.nonvideo_refresh_timer = GLib.timeout_add(delay, self.nonvideo_refresh)
             #only keep the regions still in the video region:
             inrect = (rect.intersection_rect(r) for r in self.refresh_regions)
             self.refresh_regions = [r for r in inrect if r is not None]
@@ -218,14 +217,14 @@ class VideoSubregion:
                    region, rect, delay, self.nonvideo_regions, self.refresh_regions)
         #re-schedule the video region refresh (if we still have regions to fresh):
         if self.refresh_regions:
-            self.refresh_timer = self.timeout_add(delay, self.refresh)
+            self.refresh_timer = GLib.timeout_add(delay, self.refresh)
 
     def cancel_nonvideo_refresh_timer(self) -> None:
         nvrt = self.nonvideo_refresh_timer
         refreshlog("cancel_nonvideo_refresh_timer() timer=%s", nvrt)
         if nvrt:
             self.nonvideo_refresh_timer = 0
-            self.source_remove(nvrt)
+            GLib.source_remove(nvrt)
             self.nonvideo_regions = []
 
     def nonvideo_refresh(self) -> None:
@@ -258,7 +257,7 @@ class VideoSubregion:
             self.refresh_regions = []
         else:
             #retry later
-            self.refresh_timer = self.timeout_add(1000, self.refresh)
+            self.refresh_timer = GLib.timeout_add(1000, self.refresh)
 
 
     def novideoregion(self, msg, *args) -> None:
