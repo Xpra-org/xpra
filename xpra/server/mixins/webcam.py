@@ -26,7 +26,7 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_device = ""
-        self.webcam_encodings : Tuple[str, ...] = []
+        self.webcam_encodings : Tuple[str, ...] = ()
         self.webcam_enabled : bool = False
         self.webcam_virtual_video_devices : int = 0
 

@@ -701,7 +701,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_key(self, keycode_str:str, press) -> str:
         if self.readonly:
-            return
+            return "command key denied by readonly mode"
         try:
             if keycode_str.startswith("0x"):
                 keycode = int(keycode_str, 16)

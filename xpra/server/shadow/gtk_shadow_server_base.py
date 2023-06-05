@@ -6,7 +6,7 @@
 
 import os
 import gi
-from typing import List, Dict, Type, Any
+from typing import List, Dict, Type, Any, Optional
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -302,7 +302,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_window(window)
 
 
-    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> List:
+    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> Optional[List]:
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)

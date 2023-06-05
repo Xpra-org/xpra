@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Tuple
+from typing import Tuple, Optional
 from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -14,6 +14,7 @@ from xpra.log import Logger
 
 log = Logger("shadow")
 
+ScreenshotData = Tuple[int,int,str,int,bytes]
 
 def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Tuple[int,int,int,int,bytes,str,int,int,int]:
     """
@@ -39,7 +40,7 @@ def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Tuple[int,in
     rowstride = pixbuf.get_rowstride()
     return (x, y, width, height, raw_data, "RGB", 24, rowstride, 3)
 
-def take_png_screenshot(window) -> Tuple[int,int,str,int,bytes]:
+def take_png_screenshot(window) -> Optional[ScreenshotData]:
     log("grabbing screenshot")
     w,h = window.get_geometry()[2:4]
     pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
@@ -67,13 +68,13 @@ class GTKImageCapture:
     def refresh(self) -> bool:
         return True
 
-    def get_image(self, x:int, y:int, width:int, height:int) -> ImageWrapper:
+    def get_image(self, x:int, y:int, width:int, height:int) -> Optional[ImageWrapper]:
         attrs = get_rgb_rawdata(self.window, x, y, width, height)
         if not attrs:
             return None
         return ImageWrapper(*attrs)
 
-    def take_screenshot(self) -> Tuple[int,int,str,int,bytes]:
+    def take_screenshot(self) -> Optional[ScreenshotData]:
         return take_png_screenshot(self.window)
 
 

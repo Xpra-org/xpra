@@ -188,7 +188,7 @@ class AudioMixin(StubSourceMixin):
             log.warn(" %s", x)
         return False
 
-    def start_sending_audio(self, codec=None, volume=1.0,
+    def start_sending_audio(self, codec:str="", volume:float=1.0,
                             new_stream=None, new_buffer=None, skip_client_codec_check=False):
         log("start_sending_audio(%s)", codec)
         ss = None
@@ -204,7 +204,7 @@ class AudioMixin(StubSourceMixin):
         if not self.audio_receive:
             log.error("Error sending audio: support is not enabled on the client")
             return None
-        if codec is None:
+        if not codec:
             codecs = [x for x in self.audio_decoders if x in self.speaker_codecs]
             if not codecs:
                 log.error("Error sending audio: no codecs in common")
@@ -436,7 +436,7 @@ class AudioMixin(StubSourceMixin):
         self.do_audio_control_start(1.0, codec)
         return f"requested {codec} audio"
 
-    def do_audio_control_start(self, volume:int, codec:str) -> str:
+    def do_audio_control_start(self, volume:float, codec:str) -> str:
         codec = bytestostr(codec)
         log("do_audio_control_start(%s, %s)", volume, codec)
         if not self.start_sending_audio(codec, volume):
