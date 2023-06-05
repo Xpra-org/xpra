@@ -9,7 +9,7 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Set, List, Tuple, Dict, Any, Callable, Optional, Union
+from typing import Set, List, Tuple, Dict, Callable, Optional, Union
 from cairo import ( #pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
