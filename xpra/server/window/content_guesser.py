@@ -12,7 +12,6 @@ from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
-from aiohttp.hdrs import CONTENT_TYPE
 
 log = Logger("window", "util")
 
