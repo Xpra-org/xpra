@@ -237,7 +237,7 @@ if OSX or WIN32:
     NOLOAD += ["v4l2", "evdi", "drm"]
 
 
-def load_codec(name):
+def load_codec(name:str):
     log("load_codec(%s)", name)
     name = name.replace("-", "_")
     if not has_codec(name):

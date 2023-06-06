@@ -93,10 +93,10 @@ def do_get_encodings() -> List[str]:
     log("do_get_encodings()=%s", encodings)
     return encodings
 
-def get_encodings() -> Tuple[str]:
+def get_encodings() -> Tuple[str,...]:
     return ENCODINGS
 
-ENCODINGS = tuple(do_get_encodings())
+ENCODINGS : Tuple[str,...] = tuple(do_get_encodings())
 
 def get_info() -> Dict[str,Any]:
     return  {
@@ -104,7 +104,7 @@ def get_info() -> Dict[str,Any]:
             "encodings"     : get_encodings(),
             }
 
-def decompress(coding:str, img_data:bytes, options:typedict):
+def decompress(coding:str, img_data:bytes, options:typedict) -> Tuple[str,bytes,int,int,int]:
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):

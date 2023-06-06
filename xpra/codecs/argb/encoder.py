@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs import rgb_transform
@@ -13,13 +13,13 @@ from xpra.log import Logger
 log = Logger("encoder")
 
 
-def get_version():
+def get_version() -> Tuple[int,int]:
     return (4, 3)
 
 def get_type() -> str:
     return "rgb"
 
-def get_encodings():
+def get_encodings() -> Tuple[str,...]:
     return "rgb24", "rgb32"
 
 def get_info() -> Dict[str,Any]:
@@ -29,7 +29,7 @@ def get_info() -> Dict[str,Any]:
             }
 
 
-def encode(coding : str, image, options : Dict):
+def encode(coding : str, image, options : Dict) -> Tuple[str,Compressed,Dict[str,Any],int,int,int,int]:
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)

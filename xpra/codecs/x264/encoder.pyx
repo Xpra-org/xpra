@@ -402,7 +402,7 @@ def get_output_colorspaces(encoding:str, input_colorspace:str):
 #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
 MAX_WIDTH, MAX_HEIGHT = 8192, 4096
 
-def get_specs(encoding, colorspace):
+def get_specs(encoding:str, colorspace:str):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -490,7 +490,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
+    def init_context(self, encoding:str, unsigned int width, unsigned int height, src_format, options:typedict=None):
         log("enc_x264.init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         global COLORSPACE_FORMATS, generation

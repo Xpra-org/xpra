@@ -10,7 +10,7 @@ from PIL import Image, ImagePalette     #@UnresolvedImport
 from typing import Dict, Tuple, List, Any
 
 from xpra.codecs.codec_debug import may_save_image
-from xpra.util import csv
+from xpra.util import csv, typedict
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -64,20 +64,20 @@ def get_info() -> Dict[str,Any]:
             }
 
 
-def encode(coding : str, image, options=None):
+def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,Any],int,int,int,int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))
-    options = options or {}
-    quality = options.get("quality", 50)
-    speed = options.get("speed", 50)
-    supports_transparency = options.get("alpha", True)
-    grayscale = options.get("grayscale", False)
-    pixel_format = image.get_pixel_format()
+    options = typedict(options or {})
+    quality = options.intget("quality", 50)
+    speed = options.intget("speed", 50)
+    supports_transparency = options.boolget("alpha", True)
+    grayscale = options.boolget("grayscale", False)
+    pixel_format : str = image.get_pixel_format()
     palette = None
-    w = image.get_width()
-    h = image.get_height()
-    rgb = {
+    w : int = image.get_width()
+    h : int = image.get_height()
+    rgb : str = {
         "RLE8"  : "P",
         "XRGB"  : "RGB",
         "BGRX"  : "RGB",
@@ -169,9 +169,9 @@ def encode(coding : str, image, options=None):
         log.estr(e)
         log.error(" for %s", im)
         raise
-    scaled_width = options.get("scaled-width", w)
-    scaled_height = options.get("scaled-height", h)
-    client_options = {}
+    scaled_width = options.intget("scaled-width", w)
+    scaled_height = options.intget("scaled-height", h)
+    client_options : Dict[str,Any] = {}
     if scaled_width!=w or scaled_height!=h:
         if speed>=95:
             resample = NEAREST

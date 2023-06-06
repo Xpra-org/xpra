@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2022 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@
 import os
 import sys
 import time
+from typing import Tuple, Dict, List, Any
 
 from xpra.log import Logger
 log = Logger("csc", "cython")
@@ -81,32 +82,32 @@ COLORSPACES = {
                }
 
 
-def init_module():
+def init_module() -> None:
     #nothing to do!
     log("csc_cython.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("csc_cython.cleanup_module()")
 
-def get_type():
+def get_type() -> str:
     return "cython"
 
-def get_version():
+def get_version() -> Tuple[int,int]:
     return (4, 2)
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     info = {
             "version"   : (4, 1),
             }
     return info
 
-def get_input_colorspaces():
-    return COLORSPACES.keys()
+def get_input_colorspaces() -> Tuple[str,...]:
+    return tuple(COLORSPACES.keys())
 
-def get_output_colorspaces(input_colorspace):
+def get_output_colorspaces(input_colorspace) -> List[str]:
     return COLORSPACES[input_colorspace]
 
-def get_spec(in_colorspace, out_colorspace):
+def get_spec(in_colorspace:str, out_colorspace:str):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
@@ -129,7 +130,7 @@ def get_spec(in_colorspace, out_colorspace):
 
 class CythonImageWrapper(ImageWrapper):
 
-    def free(self):
+    def free(self) -> None:
         log("CythonImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
         super().free()
         cb = self.cython_buffer
@@ -312,7 +313,7 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, options=None):
+                           int dst_width, int dst_height, dst_format, options=None) -> None:
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
@@ -334,10 +335,10 @@ cdef class ColorspaceConverter:
             self.dst_sizes[i]   = 0
             self.offsets[i]     = 0
 
-        def assert_no_scaling():
+        def assert_no_scaling() -> None:
             assert src_width==dst_width and src_height==dst_height, "scaling is not supported for %s to %s" % (src_format, dst_format)
 
-        def allocate_yuv(fmt="YUV420P", Bpp=1):
+        def allocate_yuv(fmt="YUV420P", Bpp=1) -> None:
             divs = get_subsampling_divs(fmt)
             assert divs, "invalid pixel format '%s'" % fmt
             for i, div in enumerate(divs):
@@ -356,7 +357,7 @@ cdef class ColorspaceConverter:
                 (self.dst_strides[0], self.dst_strides[1], self.dst_strides[2])
                 )
 
-        def allocate_rgb(Bpp=4):
+        def allocate_rgb(Bpp=4) -> None:
             self.dst_strides[0] = roundup(self.dst_width*Bpp, STRIDE_ROUNDUP)
             self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
             self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
@@ -433,10 +434,10 @@ cdef class ColorspaceConverter:
         self.convert_image_function = None
         self.buffer_size = 0
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.convert_image_function is None
 
-    def get_info(self):
+    def get_info(self) -> Dict[str,Any]:
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
@@ -461,25 +462,25 @@ cdef class ColorspaceConverter:
     def __dealloc__(self):
         self.clean()
 
-    def get_src_width(self):
+    def get_src_width(self) -> int:
         return self.src_width
 
-    def get_src_height(self):
+    def get_src_height(self) -> int:
         return self.src_height
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
-    def get_dst_width(self):
+    def get_dst_width(self) -> int:
         return self.dst_width
 
-    def get_dst_height(self):
+    def get_dst_height(self) -> int:
         return self.dst_height
 
-    def get_dst_format(self):
+    def get_dst_format(self) -> str:
         return self.dst_format
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "cython"
 
 
@@ -632,7 +633,7 @@ cdef class ColorspaceConverter:
         return out_image
 
 
-    def validate_rgb_image(self, image):
+    def validate_rgb_image(self, image) -> None:
         assert image.get_planes()==ImageWrapper.PACKED, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)

@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import ByteString
+
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -13,7 +15,7 @@ log = Logger("codec")
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 
-def may_save_image(coding, data, now=0):
+def may_save_image(coding:str, data:ByteString, now:float=0):
     if SAVE_TO_FILE:    # pragma: no cover
         now = now or monotonic()
         ext = coding.lower().replace("/", "-")
