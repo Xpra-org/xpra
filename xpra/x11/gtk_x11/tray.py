@@ -230,7 +230,7 @@ class SystemTray(GObject.GObject):
             log.warn(f" {e}")
             log.warn(" the application may retry later")
 
-    def do_dock_tray(self, xid) -> None:
+    def do_dock_tray(self, xid:int) -> None:
         root = get_default_root_window()
         window = self.get_pywindow(xid)
         if window is None:

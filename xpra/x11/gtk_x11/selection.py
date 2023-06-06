@@ -56,10 +56,10 @@ class ManagerSelection(GObject.GObject):
         self.xid : int = 0
         self.exit_timer : int = 0
 
-    def _owner(self):
+    def _owner(self) -> int:
         return X11WindowBindings().XGetSelectionOwner(self.atom)
 
-    def owned(self):
+    def owned(self) -> bool:
         "Returns True if someone owns the given selection."
         return self._owner() != XNone
 
@@ -146,13 +146,13 @@ class ManagerSelection(GObject.GObject):
         window.set_title("Xpra_ManagerSelection%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
 
-    def exit_timeout(self):
+    def exit_timeout(self) -> None:
         self.exit_timer = 0
         log.error("selection timeout")
         log.error(" the current owner did not exit")
         sys.exit(ExitCode.TIMEOUT)
 
-    def _owner_change(self, clipboard, event):
+    def _owner_change(self, clipboard, event) -> None:
         log(f"owner_change({clipboard}, {event}) selection={event.selection}")
         if str(event.selection)!=self.atom or not event.owner:
             #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
@@ -166,7 +166,7 @@ class ManagerSelection(GObject.GObject):
             self.xid = 0
             self.emit("selection-lost")
 
-    def do_xpra_destroy_event(self, event):
+    def do_xpra_destroy_event(self, event) -> None:
         xid = event.window
         if xid:
             remove_event_receiver(xid, self)

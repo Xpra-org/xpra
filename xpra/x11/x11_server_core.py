@@ -478,10 +478,11 @@ class X11ServerCore(GTKServerBase):
         if self.readonly:
             return
 
-        def reenable_keymap_changes(*args):
+        def reenable_keymap_changes(*args) -> bool:
             keylog("reenable_keymap_changes(%s)", args)
             self.keymap_changing_timer = 0
             self._keys_changed()
+            return False
         #prevent _keys_changed() from firing:
         #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
         if not self.keymap_changing_timer:

@@ -22,19 +22,19 @@ class NotifierBase:
         self.action_cb = action_cb
         self.handles_actions = False
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         tf = self.temp_files
         if tf:
             self.temp_files = {}
             for nid in self.temp_files:
                 self.clean_notification(nid)
 
-    def show_notify(self, dbus_id, tray, nid,
-                    app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int,
+                    app_name:str, replaces_nid:int, app_icon,
+                    summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         raise NotImplementedError()
 
-    def get_icon_string(self, nid : int, app_icon, icon):
+    def get_icon_string(self, nid : int, app_icon, icon) -> str:
         if app_icon and not os.path.isabs(app_icon):
             #safe to use
             return app_icon
@@ -60,7 +60,7 @@ class NotifierBase:
             return temp.name
         return ""
 
-    def clean_notification(self, nid : int):
+    def clean_notification(self, nid : int) -> None:
         temp_file = self.temp_files.pop(nid, None)
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
         if temp_file:
@@ -70,7 +70,7 @@ class NotifierBase:
                 log("failed to remove temporary icon file '%s':", temp_file)
                 log(" %s", e)
 
-    def dbus_check(self, dbus_id):
+    def dbus_check(self, dbus_id) -> bool:
         if dbus_id and self.dbus_id==dbus_id:
             log.warn("remote dbus instance is the same as our local one")
             log.warn(" cannot forward notification to ourself as this would create a loop")

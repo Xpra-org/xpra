@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -103,7 +103,7 @@ class SplashScreen(Gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
 
-    def run(self):
+    def run(self) -> int:
         from xpra.make_thread import start_thread
         start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
@@ -121,7 +121,7 @@ class SplashScreen(Gtk.Window):
         Gtk.main()
         return self.exit_code or 0
 
-    def _focus_change(self, *args):
+    def _focus_change(self, *args) -> None:
         if WIN32 and monotonic()-self.start_time<1:
             #ignore initial focus events on win32
             return
@@ -134,7 +134,7 @@ class SplashScreen(Gtk.Window):
         elif has:
             self.had_top_level_focus = True
 
-    def timeout(self):
+    def timeout(self) -> None:
         log("timeout()")
         self.timeout_timer = 0
         self.exit_code = ExitCode.TIMEOUT
@@ -143,13 +143,13 @@ class SplashScreen(Gtk.Window):
         self.progress_bar.set_show_text(True)
         self.exit()
 
-    def cancel_timeout_timer(self):
+    def cancel_timeout_timer(self) -> None:
         tt = self.timeout_timer
         if tt:
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
-    def pulse(self):
+    def pulse(self) -> bool:
         if not self.current_label_text:
             return True
         if self.pct<100:
@@ -161,7 +161,7 @@ class SplashScreen(Gtk.Window):
         self.pulse_counter += 1
         return True
 
-    def read_stdin(self):
+    def read_stdin(self) -> None:
         log("read_stdin()")
         while self.exit_code is None:
             line = sys.stdin.readline()
@@ -172,7 +172,7 @@ class SplashScreen(Gtk.Window):
             GLib.idle_add(self.handle_stdin_line, line)
             sleep(READ_SLEEP)
 
-    def handle_stdin_line(self, line):
+    def handle_stdin_line(self, line:str) -> None:
         parts = line.rstrip("\n\r").split(":", 1)
         log("handle_stdin_line(%r)", line)
         pct = self.pct
@@ -203,7 +203,7 @@ class SplashScreen(Gtk.Window):
         if pct>0:
             self.pulse()
 
-    def show_progress_value(self, pct):
+    def show_progress_value(self, pct:int) -> None:
         self.cancel_progress_timer()
         GLib.idle_add(self.progress_bar.set_fraction, pct/100.0)
         if pct>=100:
@@ -221,31 +221,31 @@ class SplashScreen(Gtk.Window):
             self.set_opacity(self.opacity/100.0)
         set_window_progress(self, pct)
 
-    def cancel_exit_timer(self):
+    def cancel_exit_timer(self) -> None:
         et = self.exit_timer
         if et:
             self.exit_timer = 0
             GLib.source_remove(et)
 
-    def cancel_fade_out_timer(self):
+    def cancel_fade_out_timer(self) -> None:
         fot = self.fade_out_timer
         if fot:
             self.fade_out_timer = 0
             GLib.source_remove(fot)
 
-    def cancel_progress_timer(self):
+    def cancel_progress_timer(self) -> None:
         pt = self.progress_timer
         if pt:
             self.progress_timer = 0
             GLib.source_remove(pt)
 
-    def cancel_pulse_timer(self):
+    def cancel_pulse_timer(self) -> None:
         pt = self.pulse_timer
         if pt:
             self.pulse_timer = 0
             GLib.source_remove(pt)
 
-    def increase_fraction(self, pct, inc=1, max_increase=10):
+    def increase_fraction(self, pct:int, inc:int=1, max_increase:int=10) -> bool:
         log("increase_fraction%s", (pct, inc, max_increase))
         self.cancel_progress_timer()
         GLib.idle_add(self.progress_bar.set_fraction, (pct+inc)/100.0)
@@ -254,7 +254,7 @@ class SplashScreen(Gtk.Window):
         return False
 
 
-    def fade_out(self):
+    def fade_out(self) -> bool:
         self.opacity = max(0, self.opacity-1)
         actual = int(self.get_opacity()*100)
         if actual>self.opacity:
@@ -263,7 +263,7 @@ class SplashScreen(Gtk.Window):
             self.fade_out_timer = 0
         return actual>0
 
-    def exit(self, *args):
+    def exit(self, *args) -> None:
         log("exit%s calling %s", args, Gtk.main_quit)
         if self.exit_code is None:
             self.exit_code = 0
@@ -275,13 +275,13 @@ class SplashScreen(Gtk.Window):
         Gtk.main_quit()
 
 
-    def handle_signal(self, signum, frame=None):
+    def handle_signal(self, signum, frame=None) -> None:
         log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)
         self.exit_code = 128-(signum or 0)
         GLib.idle_add(self.exit)
 
 
-def main(_args):
+def main(_args) -> int:
     import os
     if os.environ.get("XPRA_HIDE_DOCK") is None:
         os.environ["XPRA_HIDE_DOCK"] = "1"

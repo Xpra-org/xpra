@@ -75,7 +75,7 @@ class Worker_Thread(Thread):
         log("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
 #only one worker thread for now:
-singleton = None
+singleton : Optional[Worker_Thread]= None
 #locking to ensure multi-threaded code doesn't create more than one
 lock = Lock()
 

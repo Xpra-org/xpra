@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict, Any, ByteString
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -48,7 +48,7 @@ def get_network_logger():
     return network_logger
 
 
-def create_unix_domain_socket(sockpath, socket_permissions=0o600):
+def create_unix_domain_socket(sockpath:str, socket_permissions=0o600):
     assert POSIX
     #convert this to a umask!
     umask = (0o777-socket_permissions) & 0o777
@@ -113,7 +113,7 @@ def has_dual_stack() -> bool:
     except socket.error:
         return False
 
-def hosts(host_str):
+def hosts(host_str:str):
     if host_str=="*":
         if has_dual_stack():
             #IPv6 will also listen for IPv4:
@@ -122,7 +122,7 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=None) -> Optional[Callable]:
+def add_listen_socket(socktype:str, sock, info, server, new_connection_cb, options=None) -> Optional[Callable]:
     log = get_network_logger()
     log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:
@@ -167,7 +167,7 @@ def add_listen_socket(socktype, sock, info, server, new_connection_cb, options=N
         return None
 
 
-def accept_connection(socktype, listener, timeout=None, socket_options=None):
+def accept_connection(socktype:str, listener, timeout=None, socket_options=None):
     log = get_network_logger()
     try:
         sock, address = listener.accept()
@@ -215,13 +215,13 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
 POSIX_TCP_INFO = (
         ("state",           c_uint8),
         )
-def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
+def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO) -> Dict[str,Any]:
     def get_tcpinfo_class(fields):
         class TCPInfo(Structure):
             _fields_ = tuple(fields)
             def __repr__(self):
                 return f"TCPInfo({self.getdict()})"
-            def getdict(self):
+            def getdict(self) -> Dict[str,Any]:
                 return {k[0] : getattr(self, k[0]) for k in self._fields_}
         return TCPInfo
     #calculate full structure size with all the fields defined:
@@ -254,10 +254,10 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
     return d
 
 
-def looks_like_xpra_packet(data):
-    if data[0]!=ord("P"):
-        return False
+def looks_like_xpra_packet(data:ByteString) -> bool:
     if len(data)<8:
+        return False
+    if data[0]!=ord("P"):
         return False
     from xpra.net.protocol.header import (
         unpack_header, HEADER_SIZE,
@@ -291,9 +291,9 @@ def looks_like_xpra_packet(data):
     #we passed all the checks
     return True
 
-def guess_packet_type(data):
+def guess_packet_type(data:ByteString) -> str:
     if not data:
-        return None
+        return ""
     if looks_like_xpra_packet(data):
         return "xpra"
     if data[:4]==b"SSH-":
@@ -307,10 +307,10 @@ def guess_packet_type(data):
         return "http"
     if line1.lower().startswith(b"<!doctype html") or line1.lower().startswith(b"<html"):
         return "http"
-    return None
+    return ""
 
 
-def create_sockets(opts, error_cb, retry=0):
+def create_sockets(opts, error_cb:Callable, retry:int=0):
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
@@ -413,7 +413,7 @@ def create_sockets(opts, error_cb, retry=0):
                 log("%s : %s", (stype, [addr]), sock)
     return sockets
 
-def create_tcp_socket(host, iport):
+def create_tcp_socket(host:str, iport:int):
     log = get_network_logger()
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -432,7 +432,7 @@ def create_tcp_socket(host, iport):
     listener.bind(sockaddr)
     return listener
 
-def setup_tcp_socket(host, iport, socktype="tcp"):
+def setup_tcp_socket(host:str, iport:int, socktype:str="tcp"):
     log = get_network_logger()
     try:
         tcp_socket = create_tcp_socket(host, iport)
@@ -453,7 +453,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
-def create_udp_socket(host, iport, family=socket.AF_INET):
+def create_udp_socket(host:str, iport:int, family=socket.AF_INET):
     if family==socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
@@ -472,7 +472,7 @@ def create_udp_socket(host, iport, family=socket.AF_INET):
         raise
     return listener
 
-def setup_quic_socket(host, port):
+def setup_quic_socket(host:str, port:int):
     try:
         from xpra.net.quic import common
         import aioquic
@@ -482,7 +482,7 @@ def setup_quic_socket(host, port):
                        f"cannot use quic sockets: {e}") from None
     return setup_udp_socket(host, port, "quic")
 
-def setup_udp_socket(host, iport, socktype):
+def setup_udp_socket(host:str, iport:int, socktype:str):
     log = get_network_logger()
     try:
         udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":")>=0 else socket.AF_INET)
@@ -503,7 +503,7 @@ def setup_udp_socket(host, iport, socktype):
     log.info(f"created {socktype} socket {host}:{iport}")
     return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
-def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
+def parse_bind_ip(bind_ip:str, default_port:int=DEFAULT_PORT):
     ip_sockets = {}
     if bind_ip:
         for spec in bind_ip:
@@ -530,7 +530,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
             ip_sockets[(host, iport)] = options
     return ip_sockets
 
-def setup_vsock_socket(cid, iport):
+def setup_vsock_socket(cid:int, iport:int):
     log = get_network_logger()
     try:
         from xpra.net.vsock.vsock import bind_vsocket     #@UnresolvedImport
@@ -546,7 +546,7 @@ def setup_vsock_socket(cid, iport):
             pass
     return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
-def parse_bind_vsock(bind_vsock):
+def parse_bind_vsock(bind_vsock:str):
     vsock_sockets = {}
     if bind_vsock:
         from xpra.scripts.parsing import parse_vsock  #@UnresolvedImport pylint: disable=import-outside-toplevel
@@ -570,7 +570,7 @@ def setup_sd_listen_socket(stype, sock, addr):
     return stype, sock, addr, cleanup_sd_listen_socket
 
 
-def normalize_local_display_name(local_display_name):
+def normalize_local_display_name(local_display_name:str):
     if local_display_name.startswith("wayland-") or os.path.isabs(local_display_name):
         return local_display_name
     pos = local_display_name.find(":")

@@ -17,7 +17,7 @@ class PyNotify_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid:int,
                     app_name:str, replaces_nid:int, app_icon,
-                    summary:str, body:str, actions, hints, timeout:int, icon):
+                    summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
@@ -33,11 +33,11 @@ class PyNotify_Notifier(NotifierBase):
                 self.clean_notification(nid)
             n.connect("closed", notification_closed)
 
-    def clean_notification(self, nid : int):
+    def clean_notification(self, nid : int) -> None:
         PyNotify_Notifier.CACHE.pop(nid, None)
         super.clean_notification(nid)
 
-    def close_notify(self, nid:int):
+    def close_notify(self, nid:int) -> None:
         n = PyNotify_Notifier.CACHE.pop(nid, None)
         if n:
             n.close()

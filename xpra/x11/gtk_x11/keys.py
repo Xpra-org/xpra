@@ -1,9 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
 from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
@@ -12,7 +13,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 X11Keyboard = X11KeyboardBindings()
 
 
-def grok_modifier_map(display, meanings):
+def grok_modifier_map(display, meanings) -> Dict[str,int]:
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
     #is this still correct for GTK3?

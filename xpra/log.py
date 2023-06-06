@@ -86,7 +86,7 @@ def remove_disabled_category(*cat) -> None:
 
 
 default_level : int = logging.DEBUG
-def set_default_level(level:int):
+def set_default_level(level:int) -> None:
     global default_level
     default_level = level
 
@@ -442,7 +442,7 @@ class Logger:
 #we may have multiple loggers for the same key, so use a dict
 #but we don't want to prevent garbage collection so use a list of weakrefs
 all_loggers : Dict[str, Set['weakref.ReferenceType[Logger]']] = {}
-def add_logger(categories, logger:Logger):
+def add_logger(categories, logger:Logger) -> None:
     categories = list(categories)
     categories.append("all")
     l = weakref.ref(logger)

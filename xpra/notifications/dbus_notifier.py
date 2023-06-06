@@ -46,7 +46,7 @@ class DBUS_Notifier(NotifierBase):
         self.setup_dbusnotify()
         self.handles_actions = True
 
-    def setup_dbusnotify(self):
+    def setup_dbusnotify(self) -> None:
         self.dbus_session = dbus.SessionBus()
         FD_NOTIFICATIONS = 'org.freedesktop.Notifications'
         self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
@@ -61,7 +61,7 @@ class DBUS_Notifier(NotifierBase):
         self.handles_actions = "actions" in caps
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         nids = list(self.actual_notification_id.items())
         self.actual_notification_id = {}
         for nid, actual_id in nids:
@@ -69,9 +69,9 @@ class DBUS_Notifier(NotifierBase):
         super().cleanup()
 
 
-    def show_notify(self, dbus_id, tray, nid,
-                    app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int,
+                    app_name:str, replaces_nid:int, app_icon,
+                    summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         self.may_retry = True
@@ -140,7 +140,7 @@ class DBUS_Notifier(NotifierBase):
         return dbus.types.Dictionary(hints, signature="sv")
 
 
-    def NotificationClosed(self, actual_id : int, reason):
+    def NotificationClosed(self, actual_id : int, reason) -> None:
         nid = self._find_nid(actual_id)
         reason_str = {
              1  : "expired",
@@ -155,13 +155,13 @@ class DBUS_Notifier(NotifierBase):
             if self.closed_cb:
                 self.closed_cb(nid, int(reason), reason_str)
 
-    def ActionInvoked(self, actual_id : int, action):
+    def ActionInvoked(self, actual_id : int, action) -> None:
         nid = self._find_nid(actual_id)
         log("ActionInvoked(%s, %s) nid=%s", actual_id, action, nid)
         if nid and self.action_cb:
             self.action_cb(nid, str(action))
 
-    def NotifyError(self, dbus_error, *_args):
+    def NotifyError(self, dbus_error, *_args) -> bool:
         try:
             if isinstance(dbus_error, dbus.exceptions.DBusException):
                 message = dbus_error.get_dbus_message()
@@ -187,7 +187,7 @@ class DBUS_Notifier(NotifierBase):
         log.estr(dbus_error)
         return False
 
-    def close_notify(self, nid : int):
+    def close_notify(self, nid : int) -> None:
         actual_id = self.actual_notification_id.get(nid)
         if actual_id is None:
             log("close_notify(%i) actual notification not found, already closed?", nid)
@@ -195,7 +195,7 @@ class DBUS_Notifier(NotifierBase):
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, nid : int, actual_id : int):
+    def do_close(self, nid : int, actual_id : int) -> None:
         log("do_close_notify(%i)", actual_id)
         def CloseNotificationReply():
             self.actual_notification_id.pop(nid, None)

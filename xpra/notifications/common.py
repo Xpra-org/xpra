@@ -5,6 +5,7 @@
 
 import os.path
 from io import BytesIO
+from typing import Tuple, Optional
 
 from xpra.util import first_time
 from xpra.os_util import load_binary_file
@@ -23,8 +24,9 @@ def PIL_Image():
             log.info("using notification icons requires python-pillow")
         return None
 
+ImageData = Tuple[str,int,int,bytes]
 
-def parse_image_data(data):
+def parse_image_data(data) -> Optional[ImageData]:
     try:
         width, height, rowstride, has_alpha, bpp, channels, pixels = data
         log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)",
@@ -67,7 +69,7 @@ def parse_image_path(path):
             log.error(f" {estr}")
     return None
 
-def image_data(img):
+def image_data(img) -> ImageData:
     buf = BytesIO()
     img.save(buf, "png")
     data = buf.getvalue()

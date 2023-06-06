@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple
+
 from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envint, envbool, typedict
@@ -178,7 +180,7 @@ class WindowModel(BaseWindowModel):
     # Setup and teardown
     #########################################
 
-    def setup(self):
+    def setup(self) -> None:
         super().setup()
         self.saved_events = X11Window.getEventMask(self.xid)
         ogeom = X11Window.getGeometry(self.xid)
@@ -245,7 +247,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("client-geometry", None)
 
 
-    def _clamp_to_desktop(self, x, y, w, h):
+    def _clamp_to_desktop(self, x:int, y:int, w:int, h:int) -> Tuple[int,int]:
         if self.desktop_geometry:
             dw, dh = self.desktop_geometry
             if x+w<0:
@@ -258,7 +260,7 @@ class WindowModel(BaseWindowModel):
                 y = max(0, dh-CLAMP_OVERLAP)
         return x, y
 
-    def update_desktop_geometry(self, width, height):
+    def update_desktop_geometry(self, width:int, height:int) -> None:
         if self.desktop_geometry==(width, height):
             return  #no need to do anything
         self.desktop_geometry = (width, height)
@@ -270,7 +272,7 @@ class WindowModel(BaseWindowModel):
             X11Window.MoveResizeWindow(nx, ny, w, h)
 
 
-    def _read_initial_X11_properties(self):
+    def _read_initial_X11_properties(self) -> None:
         metalog("read_initial_X11_properties() window")
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
         # WM_HINTS assumes that our "state" property is already set.  This is
@@ -328,7 +330,7 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("set-initial-position", False)
         self.update_children()
 
-    def do_unmanaged(self, wm_exiting):
+    def do_unmanaged(self, wm_exiting) -> None:
         log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
         cxid = self.corral_xid
         if cxid:
@@ -368,7 +370,7 @@ class WindowModel(BaseWindowModel):
                 X11Window.DestroyWindow(cxid)
         super().do_unmanaged(wm_exiting)
 
-    def send_configure_notify(self):
+    def send_configure_notify(self) -> None:
         with xswallow:
             X11Window.sendConfigureNotify(self.xid)
 
@@ -377,18 +379,18 @@ class WindowModel(BaseWindowModel):
     # Actions specific to WindowModel
     #########################################
 
-    def raise_window(self):
+    def raise_window(self) -> None:
         X11Window.XRaiseWindow(self.corral_xid)
         X11Window.XRaiseWindow(self.xid)
 
-    def unmap(self):
+    def unmap(self) -> None:
         with xsync:
             if X11Window.is_mapped(self.xid):
                 self.last_unmap_serial = X11Window.Unmap(self.xid)
                 log("client window %#x unmapped, serial=%#x", self.xid, self.last_unmap_serial)
                 self._internal_set_property("shown", False)
 
-    def map(self):
+    def map(self) -> None:
         with xsync:
             if not X11Window.is_mapped(self.xid):
                 X11Window.MapWindow(self.xid)
@@ -399,12 +401,12 @@ class WindowModel(BaseWindowModel):
     # X11 Events
     #########################################
 
-    def do_xpra_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event) -> None:
         if event.delivered_to==self.corral_xid:
             return
         super().do_xpra_property_notify_event(event)
 
-    def do_child_map_request_event(self, event):
+    def do_child_map_request_event(self, event) -> None:
         # If we get a MapRequest then it might mean that someone tried to map
         # this window multiple times in quick succession, before we actually
         # mapped it (so that several MapRequests ended up queued up; FSF Emacs
@@ -414,7 +416,7 @@ class WindowModel(BaseWindowModel):
         # request.
         log("do_child_map_request_event(%s)", event)
 
-    def do_xpra_unmap_event(self, event):
+    def do_xpra_unmap_event(self, event) -> None:
         log(f"do_xpra_unmap_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
@@ -430,7 +432,7 @@ class WindowModel(BaseWindowModel):
         if event.send_event or self.serial_after_last_unmap(event.serial):
             self.unmanage()
 
-    def do_xpra_destroy_event(self, event):
+    def do_xpra_destroy_event(self, event) -> None:
         log(f"do_xpra_destroy_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to==self.corral_xid:
             return
@@ -442,7 +444,7 @@ class WindowModel(BaseWindowModel):
     # Hooks for WM
     #########################################
 
-    def show(self):
+    def show(self) -> None:
         self.map()
         self._internal_set_property("shown", True)
         if self.get_property("iconic"):
@@ -452,7 +454,7 @@ class WindowModel(BaseWindowModel):
             if not X11Window.is_mapped(self.corral_xid):
                 X11Window.MapWindow(self.corral_xid)
 
-    def hide(self):
+    def hide(self) -> None:
         self._internal_set_property("shown", False)
         with xsync:
             if X11Window.is_mapped(self.corral_xid):
@@ -461,7 +463,7 @@ class WindowModel(BaseWindowModel):
             X11Window.sendConfigureNotify(self.xid)
 
 
-    def _update_client_geometry(self):
+    def _update_client_geometry(self) -> None:
         """ figure out where we're supposed to get the window geometry from,
             and call do_update_client_geometry which will send a Configure and Notify
         """
@@ -480,7 +482,7 @@ class WindowModel(BaseWindowModel):
         self._do_update_client_geometry(geometry)
 
 
-    def _do_update_client_geometry(self, geometry):
+    def _do_update_client_geometry(self, geometry) -> None:
         geomlog("_do_update_client_geometry(%s)", geometry)
         hints = self.get_property("size-hints")
         x, y, allocated_w, allocated_h = geometry
@@ -491,7 +493,7 @@ class WindowModel(BaseWindowModel):
             self._updateprop("geometry", (x, y, w, h))
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
-    def do_xpra_configure_event(self, event):
+    def do_xpra_configure_event(self, event) -> None:
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s",
                 event, self.corral_xid, self.xid, self._managed)
         if not self._managed or not self.corral_xid or not self.xid:
@@ -521,7 +523,7 @@ class WindowModel(BaseWindowModel):
             geomlog.warn("Warning: failed to resize corral window %#x", self.corral_xid)
             geomlog.warn(" %s", e)
 
-    def update_children(self):
+    def update_children(self) -> None:
         geom = X11Window.getGeometry(self.xid)
         if not geom:
             return
@@ -543,7 +545,7 @@ class WindowModel(BaseWindowModel):
             children.append([xid]+list(geom))
         self._internal_set_property("children", children)
 
-    def resize_corral_window(self, x : int, y : int, w : int, h : int):
+    def resize_corral_window(self, x : int, y : int, w : int, h : int) -> None:
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
         cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
@@ -566,7 +568,7 @@ class WindowModel(BaseWindowModel):
             X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
         self._updateprop("geometry", (x, y, w, h))
 
-    def do_child_configure_request_event(self, event):
+    def do_child_configure_request_event(self, event) -> None:
         hints = self.get_property("size-hints")
         geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
                 event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
@@ -613,7 +615,7 @@ class WindowModel(BaseWindowModel):
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
 
-    def process_client_message_event(self, event):
+    def process_client_message_event(self, event) -> bool:
         if event.message_type=="_NET_MOVERESIZE_WINDOW":
             #TODO: honour gravity, show source indication
             with xsync:
@@ -639,13 +641,13 @@ class WindowModel(BaseWindowModel):
             return True
         return super().process_client_message_event(event)
 
-    def calc_constrained_size(self, w, h, hints):
+    def calc_constrained_size(self, w, h, hints) -> Tuple[int,int]:
         mhints = typedict(hints)
         cw, ch = calc_constrained_size(w, h, mhints)
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
         return cw, ch
 
-    def update_size_constraints(self, minw=0, minh=0, maxw=MAX_WINDOW_SIZE, maxh=MAX_WINDOW_SIZE):
+    def update_size_constraints(self, minw:int=0, minh:int=0, maxw:int=MAX_WINDOW_SIZE, maxh:int=MAX_WINDOW_SIZE) -> None:
         if self.size_constraints==(minw, minh, maxw, maxh):
             geomlog("update_size_constraints%s unchanged", (minw, minh, maxw, maxh))
             return  #no need to do anything
@@ -662,7 +664,7 @@ class WindowModel(BaseWindowModel):
     # X11 properties synced to Python objects
     #########################################
 
-    def _handle_icon_title_change(self):
+    def _handle_icon_title_change(self) -> None:
         icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         iconlog("_NET_WM_ICON_NAME=%s", icon_name)
         if icon_name is None:
@@ -670,7 +672,7 @@ class WindowModel(BaseWindowModel):
             iconlog("WM_ICON_NAME=%s", icon_name)
         self._updateprop("icon-title", sanestr(icon_name))
 
-    def _handle_motif_wm_hints_change(self):
+    def _handle_motif_wm_hints_change(self) -> None:
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
@@ -683,7 +685,7 @@ class WindowModel(BaseWindowModel):
                 self._updateprop("modal", int(motif_hints.input_mode))
 
 
-    def _handle_wm_normal_hints_change(self):
+    def _handle_wm_normal_hints_change(self) -> None:
         with xswallow:
             size_hints = X11Window.getSizeHints(self.xid)
         metalog("WM_NORMAL_HINTS=%s", size_hints)
@@ -748,7 +750,7 @@ class WindowModel(BaseWindowModel):
                 self._update_client_geometry()
 
 
-    def _handle_net_wm_icon_change(self):
+    def _handle_net_wm_icon_change(self) -> None:
         iconlog("_NET_WM_ICON changed on %#x, re-reading", self.xid)
         icons = self.prop_get("_NET_WM_ICON", "icons")
         self._internal_set_property("icons", icons)
@@ -763,10 +765,10 @@ class WindowModel(BaseWindowModel):
        })
 
 
-    def get_default_window_icon(self, size=48):
+    def get_default_window_icon(self, size:int=48):
         return None
 
-    def get_wm_state(self, prop):
+    def get_wm_state(self, prop) -> bool:
         state_names = self._state_properties.get(prop)
         assert state_names, f"invalid window state {prop}"
         log("get_wm_state(%s) state_names=%s", prop, state_names)
@@ -782,7 +784,7 @@ class WindowModel(BaseWindowModel):
     # Focus handling:
     ################################
 
-    def give_client_focus(self):
+    def give_client_focus(self) -> None:
         """The focus manager has decided that our client should receive X
         focus.  See world_window.py for details."""
         log("give_client_focus() corral_xid=%s", self.corral_xid)
@@ -790,7 +792,7 @@ class WindowModel(BaseWindowModel):
             with xlog:
                 self.do_give_client_focus()
 
-    def do_give_client_focus(self):
+    def do_give_client_focus(self) -> None:
         protocols = self.get_property("protocols")
         focuslog("Giving focus to %#x, input_field=%s, FORCE_XSETINPUTFOCUS=%s, protocols=%s",
                  self.xid, self._input_field, FORCE_XSETINPUTFOCUS, protocols)

@@ -343,7 +343,7 @@ class Wm(GObject.GObject):
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, model, _wm_exiting, xid:int):
+    def _handle_client_unmanaged(self, model, _wm_exiting, xid:int) -> None:
         if xid not in self._windows:
             log.error(f"Error: gdk window {xid} not found in {self._windows}")
             return
@@ -352,7 +352,7 @@ class Wm(GObject.GObject):
         self._update_window_list()
         self.notify("windows")
 
-    def _update_window_list(self, *_args):
+    def _update_window_list(self, *_args) -> None:
         # Ignore errors because not all the windows may still exist; if so,
         # then it's okay to leave the lists out of date for a moment, because
         # in a moment we'll get a signal telling us about the window that
@@ -365,7 +365,7 @@ class Wm(GObject.GObject):
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)
 
-    def do_xpra_client_message_event(self, event):
+    def do_xpra_client_message_event(self, event) -> None:
         # FIXME
         # Need to listen for:
         #   _NET_ACTIVE_WINDOW

@@ -214,7 +214,7 @@ def send_client_message(window, message_type, *values) -> None:
 
 
 device_bell = None
-def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name) -> bool:
+def system_bell(window, device, percent:int, _pitch, _duration:int, bell_class, bell_id, bell_name:str) -> bool:
     global device_bell
     if device_bell is False:
         #failed already

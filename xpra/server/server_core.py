@@ -234,17 +234,17 @@ class ServerCore:
 
         self.init_uuid()
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "core"
 
 
-    def idle_add(self, *args, **kwargs):
+    def idle_add(self, *args, **kwargs) -> int:
         raise NotImplementedError()
 
-    def timeout_add(self, *args, **kwargs):
+    def timeout_add(self, *args, **kwargs) -> int:
         raise NotImplementedError()
 
-    def source_remove(self, timer):
+    def source_remove(self, timer:int) -> None:
         raise NotImplementedError()
 
 
@@ -378,7 +378,7 @@ class ServerCore:
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
 
-    def closing(self):
+    def closing(self) -> None:
         if not self._closing:
             self._closing = True
             self.log_closing_message()
@@ -590,7 +590,7 @@ class ServerCore:
     def get_uuid(self):
         return None
 
-    def save_uuid(self):
+    def save_uuid(self) -> None:
         """ X11 servers use this method to save the uuid as a root window property """
 
     def open_html_url(self, html:str="open", mode:str="tcp", bind:str="127.0.0.1") -> None:
@@ -1198,7 +1198,7 @@ class ServerCore:
 
         if socktype in ("ssl", "wss"):
             #verify that this isn't plain HTTP / xpra:
-            if packet_type not in ("ssl", None):
+            if packet_type not in ("ssl", ""):
                 self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                 return
             #always start by wrapping with SSL:
@@ -1291,7 +1291,7 @@ class ServerCore:
                 self.new_conn_err(conn, sock, socktype, socket_info, None, str(e))
                 return
 
-        if packet_type not in ("xpra", None):
+        if packet_type not in ("xpra", ""):
             self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
             return
 
@@ -1331,7 +1331,7 @@ class ServerCore:
                 kwargs[k] = v
         return kwargs
 
-    def _ssl_wrap_socket(self, socktype, sock, socket_options):
+    def _ssl_wrap_socket(self, socktype:str, sock, socket_options):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
         try:
             kwargs = self.get_ssl_socket_options(socket_options)
@@ -1431,7 +1431,7 @@ class ServerCore:
             return protocol
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 
-    def do_make_protocol(self, socktype, conn, socket_options, protocol_class, pre_read=None) -> SocketProtocol:
+    def do_make_protocol(self, socktype:str, conn, socket_options, protocol_class, pre_read=None) -> SocketProtocol:
         """ create a new Protocol instance and start it """
         netlog("make_protocol%s", (socktype, conn, socket_options, protocol_class, pre_read))
         socktype = socktype.lower()
@@ -1581,7 +1581,7 @@ class ServerCore:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype, conn, socket_options, is_ssl, req_info, line1, frominfo) -> None:
+    def start_http(self, socktype, conn, socket_options, is_ssl:bool, req_info, line1, frominfo) -> None:
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dirs)
@@ -1665,15 +1665,15 @@ class ServerCore:
             mime_type = "application/octet-stream"
         return self.http_response(icon_data, mime_type)
 
-    def http_menu_request(self, path):
+    def http_menu_request(self, path:str):
         xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
         return self.send_json_response(xdg_menu or "not available")
 
-    def http_desktop_menu_request(self, path):
+    def http_desktop_menu_request(self, path:str):
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
         return self.send_json_response(xsessions or "not available")
 
-    def http_menu_icon_request(self, path):
+    def http_menu_icon_request(self, path:str):
         def invalid_path():
             httplog("invalid menu-icon request path '%s'", path)
             return 404, None, None
@@ -1693,7 +1693,7 @@ class ServerCore:
         icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
         return self.send_icon(icon_type, icon_data)
 
-    def http_desktop_menu_icon_request(self, path):
+    def http_desktop_menu_icon_request(self, path:str):
         def invalid_path():
             httplog("invalid desktop menu-icon request path '%s'", path)
             return 404, None, None
@@ -1714,7 +1714,7 @@ class ServerCore:
         httplog("_filter_display_dict(%s)=%s", display_dict, displays_info)
         return displays_info
 
-    def http_displays_request(self, path):
+    def http_displays_request(self, path:str):
         displays = self.get_displays()
         displays_info = self._filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return self.send_json_response(displays_info)
@@ -1732,7 +1732,7 @@ class ServerCore:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
-    def http_info_request(self, path):
+    def http_info_request(self, path:str):
         return self.send_json_response(self.get_http_info())
 
     def get_http_info(self) -> Dict[str,Any]:
@@ -1742,10 +1742,10 @@ class ServerCore:
             "uuid"              : self.uuid,
             }
 
-    def http_status_request(self, path):
+    def http_status_request(self, path:str):
         return self.http_response("ready")
 
-    def http_response(self, content, content_type="text/plain"):
+    def http_response(self, content, content_type:str="text/plain"):
         if not content:
             return 404, {}, None
         if isinstance(content, str):

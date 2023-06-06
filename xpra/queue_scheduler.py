@@ -24,7 +24,7 @@ class QueueScheduler:
         self.timers : Dict[int,Union[Timer,None]] = {}
         self.timer_lock = RLock()
 
-    def source_remove(self, tid : int):
+    def source_remove(self, tid : int) -> None:
         log("source_remove(%i)", tid)
         with self.timer_lock:
             timer = self.timers.pop(tid, None)
@@ -44,26 +44,26 @@ class QueueScheduler:
             return False    #cancelled
         return fn(*args, **kwargs)
 
-    def timeout_add(self, timeout : int, fn : Callable, *args, **kwargs):
+    def timeout_add(self, timeout : int, fn : Callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
         self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
         return tid
 
-    def do_timeout_add(self, tid : int, timeout : int, fn : Callable, *args, **kwargs):
+    def do_timeout_add(self, tid : int, timeout : int, fn : Callable, *args, **kwargs) -> None:
         #emulate glib's timeout_add using Timers
         args = (tid, timeout, fn, args, kwargs)
         t = Timer(timeout/1000.0, self.queue_timeout_function, args)
         self.timers[tid] = t
         t.start()
 
-    def queue_timeout_function(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs):
+    def queue_timeout_function(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs) -> None:
         if tid not in self.timers:  # pragma: no cover
             return      #cancelled
         #add to run queue:
         mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
-    def timeout_repeat_call(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs):
+    def timeout_repeat_call(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs) -> bool:
         #executes the function then re-schedules it (if it returns True)
         if tid not in self.timers:  # pragma: no cover
             return False    #cancelled
@@ -80,7 +80,7 @@ class QueueScheduler:
         return False
 
 
-    def run(self):
+    def run(self) -> None:
         log("run() queue has %s items already in it", self.main_queue.qsize())
         #process "idle_add"/"timeout_add" events in the main loop:
         while not self.exit:
@@ -100,11 +100,11 @@ class QueueScheduler:
                 log.error(f"Error during main loop callback {fn}", exc_info=True)
         self.exit = True
 
-    def stop(self):
+    def stop(self) -> None:
         self.exit = True
         self.stop_main_queue()
 
-    def stop_main_queue(self):
+    def stop_main_queue(self) -> None:
         self.main_queue.put(None)
         #empty the main queue:
         q = Queue()

@@ -240,7 +240,7 @@ class CoreX11WindowModel(WindowModelStub):
                               #"_NET_WM_STATE",    # "..it should leave the property in place when it is shutting down"
                               "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
 
-    def __init__(self, xid):
+    def __init__(self, xid:int):
         super().__init__()
         if not isinstance(xid, int):
             raise TypeError(f"xid must be an int, not a {type(xid)}")
@@ -371,7 +371,7 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return c and c.has_xshm()
 
-    def get_image(self, x, y, width, height) -> ImageWrapper:
+    def get_image(self, x:int, y:int, width:int, height:int) -> ImageWrapper:
         return self._composite.get_image(x, y, width, height)
 
 

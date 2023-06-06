@@ -308,7 +308,7 @@ class ServerBase(ServerBaseClass):
             return
         #added in 2.2:
         request = c.strget("request")
-        def is_req(mode):
+        def is_req(mode) -> bool:
             return request==mode or c.boolget("%s_request" % mode, False)
         if not request:
             #"normal" connection, so log welcome message:
@@ -447,7 +447,7 @@ class ServerBase(ServerBaseClass):
 
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int) -> None:
-        def reject(message="server is shutting down"):
+        def reject(message="server is shutting down") -> None:
             p = ss.protocol
             if p:
                 self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, message)

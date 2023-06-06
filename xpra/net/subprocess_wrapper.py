@@ -102,7 +102,7 @@ class subprocess_callee:
         register_os_signals(self.handle_signal, self.name)
         self.setup_mainloop()
 
-    def setup_mainloop(self):
+    def setup_mainloop(self) -> None:
         from gi.repository import GLib  # @UnresolvedImport
         self.mainloop = GLib.MainLoop()
         self.idle_add = GLib.idle_add
@@ -110,7 +110,7 @@ class subprocess_callee:
         self.source_remove = GLib.source_remove
 
 
-    def connect_export(self, signal_name, *user_data):
+    def connect_export(self, signal_name:str, *user_data) -> None:
         """ gobject style signal registration for the wrapped object,
             the signals will automatically be forwarded to the wrapper process
             using send(signal_name, *signal_args, *user_data)
@@ -119,14 +119,14 @@ class subprocess_callee:
         args = list(user_data) + [signal_name]
         self.wrapped_object.connect(signal_name, self.export, *args)
 
-    def export(self, *args):
+    def export(self, *args) -> None:
         signal_name = args[-1]
         log("export(%s, ...)", signal_name)
         data = args[1:-1]
         self.send(signal_name, *tuple(data))
 
 
-    def start(self):
+    def start(self) -> None:
         self.protocol = self.make_protocol()
         self.protocol.start()
         try:
@@ -161,7 +161,7 @@ class subprocess_callee:
                 except OSError:
                     log("%s.close()", o, exc_info=True)
 
-    def make_protocol(self):
+    def make_protocol(self) -> SocketProtocol:
         #figure out where we read from and write to:
         if self.input_filename=="-":
             #disable stdin buffering:
@@ -189,21 +189,21 @@ class subprocess_callee:
         return protocol
 
 
-    def run(self):
+    def run(self) -> None:
         self.mainloop.run()
 
 
-    def net_stop(self):
+    def net_stop(self) -> None:
         #this is called from the network thread,
         #we use idle add to ensure we clean things up from the main thread
         log("net_stop() will call stop from main thread")
         self.idle_add(self.stop)
 
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """ subclasses may override this method """
 
-    def stop(self):
+    def stop(self) -> None:
         p = self.protocol
         log("stop() protocol=%s", p)
         self.cleanup()
@@ -212,11 +212,11 @@ class subprocess_callee:
             p.close()
         self.do_stop()
 
-    def do_stop(self):
+    def do_stop(self) -> None:
         log("do_stop() stopping mainloop %s", self.mainloop)
         self.mainloop.quit()
 
-    def handle_signal(self, sig):
+    def handle_signal(self, sig) -> None:
         """ This is for OS signals SIGINT and SIGTERM """
         #next time, just stop:
         register_os_signals(self.signal_stop, self.name)
@@ -227,14 +227,14 @@ class subprocess_callee:
         #give time for the network layer to send the signal message
         self.timeout_add(150, self.stop)
 
-    def signal_stop(self, sig):
+    def signal_stop(self, sig) -> None:
         """ This time we really want to exit without waiting """
         signame = SIGNAMES.get(sig, sig)
         log("signal_stop(%s) calling stop", signame)
         self.stop()
 
 
-    def send(self, *args):
+    def send(self, *args) -> None:
         if HEXLIFY_PACKETS:
             args = args[:1]+[hexstr(str(x)[:32]) for x in args[1:]]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
@@ -251,7 +251,7 @@ class subprocess_callee:
             item = None
         return (item, None, None, self.send_queue.qsize()>0)
 
-    def process_packet(self, proto, packet):
+    def process_packet(self, proto, packet) -> None:
         command = bytestostr(packet[0])
         if command==CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
@@ -351,28 +351,28 @@ class subprocess_caller:
         self.source_remove = GLib.source_remove
 
 
-    def connect(self, signal, cb, *args):
+    def connect(self, signal:str, cb, *args) -> None:
         """ gobject style signal registration """
         self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
 
-    def subprocess_exit(self, *args):
+    def subprocess_exit(self, *args) -> None:
         #beware: this may fire more than once!
         log("subprocess_exit%s command=%s", args, self.command)
         self._fire_callback("exit")
 
-    def start(self):
+    def start(self) -> None:
         assert self.process is None, "already started"
         self.process = self.exec_subprocess()
         self.protocol = self.make_protocol()
         self.protocol.start()
 
-    def abort_test(self, action):
+    def abort_test(self, action) -> None:
         p = self.process
         if p is None or p.poll():
             raise ConnectionClosedException("cannot %s: subprocess has terminated" % action) from None
 
-    def make_protocol(self):
+    def make_protocol(self) -> SocketProtocol:
         #make a connection using the process stdin / stdout
         conn = TwoFileConnection(self.process.stdin, self.process.stdout,
                                  abort_test=self.abort_test, target=self.description,
@@ -387,7 +387,7 @@ class subprocess_caller:
         return protocol
 
 
-    def exec_subprocess(self):
+    def exec_subprocess(self) -> subprocess.Popen:
         kwargs = exec_kwargs()
         env = self.get_env()
         log("exec_subprocess() command=%s, env=%s, kwargs=%s", self.command, env, kwargs)
@@ -396,20 +396,20 @@ class subprocess_caller:
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
-    def get_env(self):
+    def get_env(self) -> Dict[str,str]:
         env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
         env["XPRA_FIX_UNICODE_OUT"] = "0"
         return env
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.stop()
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_process()
         self.stop_protocol()
 
-    def stop_process(self):
+    def stop_process(self) -> None:
         log("%s.stop_process() sending stop request to %s", self, self.description)
         proc = self.process
         if proc and proc.poll() is None:
@@ -420,7 +420,7 @@ class subprocess_caller:
                 log("stop_process() proc=%s", proc, exc_info=True)
                 log.warn("Warning: failed to stop the wrapped subprocess %s: %s", proc, e)
 
-    def stop_protocol(self):
+    def stop_protocol(self) -> None:
         p = self.protocol
         if p:
             self.protocol = None
@@ -432,11 +432,11 @@ class subprocess_caller:
                 log.warn("Warning: failed to close the subprocess connection %s: %s", p, e)
 
 
-    def connection_lost(self, *args):
+    def connection_lost(self, *args) -> None:
         log("connection_lost%s", args)
         self.stop()
 
-    def gibberish(self, *args):
+    def gibberish(self, *args) -> None:
         log.warn("%s stopping on gibberish:", self.description)
         log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
@@ -449,7 +449,7 @@ class subprocess_caller:
             item = None
         return (item, None, None, None, False, self.send_queue.qsize()>0)
 
-    def send(self, *packet_data):
+    def send(self, *packet_data) -> None:
         self.send_queue.put(packet_data)
         p = self.protocol
         if p:
@@ -460,14 +460,14 @@ class subprocess_caller:
                     conn.flush()
         INJECT_FAULT(p)
 
-    def process_packet(self, proto, packet):
+    def process_packet(self, proto, packet) -> None:
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
         signal_name = bytestostr(packet[0])
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
 
-    def _fire_callback(self, signal_name, extra_args=()):
+    def _fire_callback(self, signal_name, extra_args=()) -> None:
         callbacks = self.signal_callbacks.get(signal_name)
         log("firing callback for '%s': %s", signal_name, callbacks)
         if callbacks:
