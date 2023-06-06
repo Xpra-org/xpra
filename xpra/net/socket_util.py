@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Callable, Optional, Dict, Any, ByteString
+from typing import Callable, Optional, Dict, List, Any, ByteString
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -77,7 +77,7 @@ def create_unix_domain_socket(sockpath:str, socket_permissions=0o600):
                 log.warn(" %s", e)
             #don't know why this doesn't work:
             #os.fchown(listener.fileno(), -1, group_id)
-    def cleanup_socket():
+    def cleanup_socket() -> None:
         log = get_network_logger()
         try:
             cur_inode = os.stat(sockpath).st_ino
@@ -113,7 +113,7 @@ def has_dual_stack() -> bool:
     except socket.error:
         return False
 
-def hosts(host_str:str):
+def hosts(host_str:str) -> List[str]:
     if host_str=="*":
         if has_dual_stack():
             #IPv6 will also listen for IPv4:
@@ -188,7 +188,7 @@ def accept_connection(socktype:str, listener, timeout=None, socket_options=None)
     log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
     return conn
 
-def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
+def peek_connection(conn, timeout:int=PEEK_TIMEOUT_MS, size:int=PEEK_SIZE):
     log = get_network_logger()
     log("peek_connection(%s, %i, %i)", conn, timeout, size)
     peek_data = b""
@@ -549,17 +549,24 @@ def setup_vsock_socket(cid:int, iport:int):
 def parse_bind_vsock(bind_vsock:str):
     vsock_sockets = {}
     if bind_vsock:
-        from xpra.scripts.parsing import parse_vsock  #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.scripts.parsing import parse_vsock_cid  #@UnresolvedImport pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
             parts = spec.split(",", 1)
-            cid, iport = parse_vsock(parts[0])
+            cid_port = parts[0].split(":")
+            if len(cid_port)!=2:
+                raise ValueError(f"invalid format for vsock: {parts[0]!r}, use 'CID:PORT' format")
+            cid = parse_vsock_cid(cid_port[0])
+            try:
+                iport = int(cid_port[1])
+            except ValueError:
+                raise ValueError(f"vsock port must be an integer, {cid_port[0]!r} is not")
             options = {}
             if len(parts)==2:
                 options = parse_simple_dict(parts[1])
             vsock_sockets[(cid, iport)] = options
     return vsock_sockets
 
-def setup_sd_listen_socket(stype, sock, addr):
+def setup_sd_listen_socket(stype:str, sock, addr):
     log = get_network_logger()
     def cleanup_sd_listen_socket():
         log.info(f"closing sd listen socket {pretty_socket(addr)}")
@@ -591,9 +598,10 @@ def normalize_local_display_name(local_display_name:str):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, session_dir,
-                        display_name, clobber,
-                        mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
+def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
+                        display_name:str, clobber,
+                        mmap_group:str="auto", socket_permissions:str="600", username:str="",
+                        uid:int=0, gid:int=0):
     log = get_network_logger()
     log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group, socket_permissions, username, uid, gid))
@@ -774,7 +782,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, session_dir,
         raise
     return defs
 
-def handle_socket_error(sockpath, sperms, e):
+def handle_socket_error(sockpath:str, sperms:int, e):
     log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
@@ -891,7 +899,7 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
-def get_ssl_attributes(opts, server_side=True, overrides=None) -> Dict[str,Any]:
+def get_ssl_attributes(opts, server_side:bool=True, overrides:Optional[dict]=None) -> Dict[str,Any]:
     args = {
         "server-side"   : server_side,
         }
@@ -1003,7 +1011,7 @@ def ssl_handshake(ssl_sock):
         raise InitExit(status, f"SSL handshake failed: {e}") from None
     return ssl_sock
 
-def get_ssl_verify_mode(verify_mode_str):
+def get_ssl_verify_mode(verify_mode_str:str):
     #parse verify-mode:
     import ssl
     ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode_str.upper(), None)
@@ -1013,11 +1021,11 @@ def get_ssl_verify_mode(verify_mode_str):
     return ssl_cert_reqs
 
 def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs=None, ca_data=None,
-                        protocol="TLSv1_2",
-                        client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
-                        check_hostname=False, server_hostname=None,
-                        options="ALL,NO_COMPRESSION", ciphers="DEFAULT",
-                        server_side=True):
+                        protocol:str="TLSv1_2",
+                        client_verify_mode:str="optional", server_verify_mode:str="required", verify_flags:str="X509_STRICT",
+                        check_hostname:bool=False, server_hostname=None,
+                        options:str="ALL,NO_COMPRESSION", ciphers:str="DEFAULT",
+                        server_side:bool=True):
     if server_side and not cert:
         raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
     from xpra.log import Logger
@@ -1165,7 +1173,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs):
+def ssl_retry(e, ssl_ca_certs) -> Optional[Dict[str,Any]]:
     SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
     from xpra.log import Logger
     ssllog = Logger("ssl")
@@ -1250,7 +1258,7 @@ def ssl_retry(e, ssl_ca_certs):
             return options
     return None
 
-def load_ssl_options(server_hostname, port) -> Dict[str,Any]:
+def load_ssl_options(server_hostname:str, port:int) -> Dict[str,Any]:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     f = find_ssl_config_file(server_hostname, port, "options")
@@ -1345,7 +1353,7 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
             ssllog(f"failed to save cert data to {d!r}", exc_info=True)
     return None
 
-def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
+def socket_connect(host:str, port:int, timeout:int=SOCKET_TIMEOUT):
     socktype = socket.SOCK_STREAM
     family = 0  #0 means any
     try:
