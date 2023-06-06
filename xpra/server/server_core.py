@@ -1288,7 +1288,7 @@ class ServerCore:
                 packet_type = guess_packet_type(peek_data)
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
-                self.new_conn_err(conn, sock, socktype, socket_info, None, str(e))
+                self.new_conn_err(conn, sock, socktype, socket_info, packet_type, str(e))
                 return
 
         if packet_type not in ("xpra", ""):

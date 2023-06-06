@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Deque
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -45,27 +45,31 @@ class WindowPerformanceStatistics:
 
     def reset(self) -> None:
         self.init_time : float = monotonic()
-        self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
-                                                            #(ack_time, no of pixels, decoding_time*1000*1000)
-        self.encoding_stats = deque(maxlen=NRECS)           #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
-        # statistics:
-        self.damage_in_latency = deque(maxlen=NRECS)        #records how long it took for a damage request to be sent
-                                                            #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_out_latency = deque(maxlen=NRECS)       #records how long it took for a damage request to be processed
-                                                            #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_ack_pending = {}                        #records when damage packets are sent
+        #records how long it took the client to decode frames:
+        #(ack_time, no of pixels, decoding_time*1000*1000)
+        self.client_decode_time : Deque[Tuple[float,int,int]] = deque(maxlen=NRECS)
+        #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
+        self.encoding_stats : Deque[Tuple[float,str,int,int,int,int]] = deque(maxlen=NRECS)
+        #records how long it took for a damage request to be sent
+        #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
+        self.damage_in_latency : Deque[Tuple[float,int,int,int]] = deque(maxlen=NRECS)
+        #records how long it took for a damage request to be processed
+        #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
+        self.damage_out_latency : Deque[Tuple[float,int,int,int]] = deque(maxlen=NRECS)
+        self.damage_ack_pending : Dict[int,Tuple] = {}                        #records when damage packets are sent
                                                             #so we can calculate the "client_latency" when the client sends
                                                             #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.encoding_totals = {}                           #for each encoding, how many frames we sent and how many pixels in total
-        self.encoding_pending = {}                          #damage regions waiting to be picked up by the encoding thread:
+        self.encoding_totals : Dict[str,Tuple] = {}                           #for each encoding, how many frames we sent and how many pixels in total
+        self.encoding_pending : Dict = {}                          #damage regions waiting to be picked up by the encoding thread:
                                                             #for each sequence no: (damage_time, w, h)
-        self.last_damage_events = deque(maxlen=4*NRECS)     #every time we get a damage event, we record: time,x,y,w,h
+        #every time we get a damage event, we record: time,x,y,w,h
+        self.last_damage_events : Deque[Tuple[float,int,int,int,int]] = deque(maxlen=4*NRECS)
         self.last_damage_event_time = 0
         self.last_recalculate = 0
         self.damage_events_count = 0
         self.packet_count = 0
 
-        self.resize_events = deque(maxlen=4)                #(time)
+        self.resize_events : Deque[float] = deque(maxlen=4)                #(time)
         self.last_resized = 0
         self.last_packet_time = 0
 

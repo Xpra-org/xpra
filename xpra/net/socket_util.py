@@ -1353,7 +1353,7 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
             ssllog(f"failed to save cert data to {d!r}", exc_info=True)
     return None
 
-def socket_connect(host:str, port:int, timeout:int=SOCKET_TIMEOUT):
+def socket_connect(host:str, port:int, timeout:float=SOCKET_TIMEOUT):
     socktype = socket.SOCK_STREAM
     family = 0  #0 means any
     try:
