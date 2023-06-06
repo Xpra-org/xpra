@@ -10,7 +10,7 @@ import time
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 from ctypes.wintypes import DWORD
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection
@@ -70,7 +70,7 @@ class NamedPipeConnection(Connection):
         self.write_overlapped.InternalHigh = None
         self.write_overlapped.union.Pointer = None
 
-    def can_retry(self, e):
+    def can_retry(self, e) -> Union[bool,str]:
         code = e.args[0]
         if code==errno.WSAEWOULDBLOCK:      #@UndefinedVariable pylint: disable=no-member
             return "WSAEWOULDBLOCK"

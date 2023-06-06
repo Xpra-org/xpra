@@ -8,7 +8,7 @@ import sys
 import os
 import errno
 import socket
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, hasenv, csv
@@ -57,7 +57,7 @@ for x in dir(socket):
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
 
-def can_retry(e) -> bool:
+def can_retry(e) -> Union[bool,str]:
     if isinstance(e, socket.timeout):
         return "socket.timeout"
     if isinstance(e, BlockingIOError):
@@ -67,7 +67,6 @@ def can_retry(e) -> bool:
     if isinstance(e, OSError):
         if isinstance(e, CAN_RETRY_EXCEPTIONS):
             return str(e)
-
         code = e.args[0]
         abort = ABORT.get(code, code)
         if abort is not None:
