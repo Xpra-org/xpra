@@ -93,6 +93,7 @@ def get_worker(create:bool=True) -> Optional[Worker_Thread]:
 def add_work_item(item, allow_duplicates:bool=False, daemon:bool=True) -> None:
     w = get_worker(True)
     log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
+    assert w is not None
     w.add(item, allow_duplicates, daemon)
 
 def stop_worker(force:bool=False) -> None:

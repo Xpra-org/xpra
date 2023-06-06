@@ -82,7 +82,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[s
     if not strs:
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
-    shortcuts = {}
+    shortcuts : Dict[str,List] = {}
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
     for s in strs:
@@ -105,7 +105,6 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[s
         if action.find("(")>0 and action.endswith(")"):
             try:
                 action, all_args = action[:-1].split("(", 1)
-                args = []
                 for x in all_args.split(","):
                     x = x.strip()
                     if not x:
@@ -122,7 +121,6 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[s
                         args.append(False)
                     else:
                         args.append(int(x))
-                args = tuple(args)
             except Exception as e:
                 log.warn("Warning: failed to parse arguments of shortcut:")
                 log.warn(" '%s': %s", s, e)
@@ -163,7 +161,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[s
         #remove any existing action using the same modifiers:
         key_shortcuts = [x for x in key_shortcuts if x[0]!=modifiers]
         if action!="_":
-            key_shortcuts.append((modifiers, action, args))
+            key_shortcuts.append((modifiers, action, tuple(args)))
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
     log("parse_shortcuts(%s)=%s", strs, shortcuts)

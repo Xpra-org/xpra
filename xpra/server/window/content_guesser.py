@@ -6,12 +6,13 @@
 
 import re
 import os.path
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, Any, Tuple
 
 from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
+from aiohttp.hdrs import CONTENT_TYPE
 
 log = Logger("window", "util")
 
@@ -96,8 +97,8 @@ def load_content_type_defs() -> Dict:
             content_type_defs.update(parse_content_types(CONTENT_TYPE_DEFS.split(",")))
     return content_type_defs
 
-def parse_content_types(lines) -> Dict[str,Dict]:
-    defs = {}
+def parse_content_types(lines) -> Dict[str,Dict[Any,Tuple[str,str]]]:
+    defs : Dict[str,Dict[Any,Tuple[str,str]]] = {}
     for line in lines:
         if not line:
             continue
@@ -140,6 +141,7 @@ def get_content_type_properties():
 
 def guess_content_type_from_defs(window) -> str:
     load_content_type_defs()
+    assert content_type_defs is not None
     for prop_name, defs in content_type_defs.items():
         if prop_name not in window.get_property_names():
             continue

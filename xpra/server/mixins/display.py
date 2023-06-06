@@ -69,7 +69,7 @@ class DisplayManager(StubServerMixin):
 
 
     def query_opengl(self) -> Dict[str,Any]:
-        props = {}
+        props : Dict[str,Any] = {}
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props

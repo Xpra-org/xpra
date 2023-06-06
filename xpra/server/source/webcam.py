@@ -64,7 +64,7 @@ class WebcamMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         #for each webcam device_id, the actual device used
-        self.webcam_forwarding_devices = {}
+        self.webcam_forwarding_devices : Dict = {}
 
     def cleanup(self) -> None:
         self.stop_all_virtual_webcams()

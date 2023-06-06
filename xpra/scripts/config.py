@@ -1177,10 +1177,10 @@ def print_bool(k, v, true_str='yes', false_str='no') -> str:
     warn(f"Warning: cannot print value {v!r} for {k!r} as a boolean")
     return ""
 
-def parse_bool_or_int(k, v) -> Union[int,bool]:
+def parse_bool_or_int(k, v) -> Union[int,float,bool]:
     return parse_bool_or_number(int, k, v)
 
-def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> Union[int,bool]:
+def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> Union[int,float,bool]:
     if isinstance(v, str):
         v = v.lower()
     if v in TRUE_OPTIONS:

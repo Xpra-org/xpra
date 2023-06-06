@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Callable, Tuple, Optional, Any, Dict
+from typing import Callable, Tuple, Optional, Any, Dict, cast
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr
@@ -156,7 +156,7 @@ def get_workarea() -> Optional[Tuple[int,int,int,int]]:
             log.warn(f"Warning: invalid `_NET_WORKAREA` value length: {workarea!r}")
         else:
             cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
-            v : Tuple[int,int,int,int] = struct.unpack(b"@LLLL", cur_workarea)
+            v = cast(Tuple[int,int,int,int], struct.unpack(b"@LLLL", cur_workarea))
             log("get_workarea() %s=%s", hexstr(cur_workarea), v)
             return v
     except Exception as e:

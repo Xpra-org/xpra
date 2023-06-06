@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,6 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
+from typing import Tuple, ByteString
 import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
@@ -33,7 +34,7 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
                                         "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
-def get_keyclass(keytype):
+def get_keyclass(keytype:str):
     if not keytype:
         return None
     #'dsa' -> 'DSS'
@@ -137,7 +138,7 @@ class SSHServer(paramiko.ServerInterface):
         self.agent = None
         self.transport = None
 
-    def get_banner(self) -> str:
+    def get_banner(self) -> Tuple[str,str]:
         return f"{BANNER}\n\r", "EN"
 
     def get_allowed_auths(self, username:str) -> str:
@@ -152,13 +153,13 @@ class SSHServer(paramiko.ServerInterface):
         log("get_allowed_auths(%s)=%s", username, mods)
         return ",".join(mods)
 
-    def check_channel_request(self, kind:str, chanid):
+    def check_channel_request(self, kind:str, chanid) -> int:
         log("check_channel_request(%s, %s)", kind, chanid)
         if kind=="session":
             return paramiko.OPEN_SUCCEEDED
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
-    def check_channel_forward_agent_request(self, channel):
+    def check_channel_forward_agent_request(self, channel) -> bool:
         log(f"check_channel_forward_agent_request({channel}) SSH_AGENT_DISPATCH={SSH_AGENT_DISPATCH}")
         if SSH_AGENT_DISPATCH:
             # pylint: disable=import-outside-toplevel
@@ -169,19 +170,19 @@ class SSHServer(paramiko.ServerInterface):
             return bool(ssh_auth_sock)
         return False
 
-    def check_auth_none(self, username:str):
+    def check_auth_none(self, username:str) -> int:
         log("check_auth_none(%s) none_auth=%s", username, self.none_auth)
         if self.none_auth:
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
-    def check_auth_password(self, username:str, password:str):
+    def check_auth_password(self, username:str, password:str) -> int:
         log("check_auth_password(%s, %s) password_auth=%s", username, "*"*len(password), self.password_auth)
         if not self.password_auth or not self.password_auth(username, password):
             return paramiko.AUTH_FAILED
         return paramiko.AUTH_SUCCESSFUL
 
-    def check_auth_publickey(self, username:str, key):
+    def check_auth_publickey(self, username:str, key) -> int:
         log("check_auth_publickey(%s, %r) pubkey_auth=%s", username, key, self.pubkey_auth)
         if not self.pubkey_auth:
             return paramiko.AUTH_FAILED
@@ -203,26 +204,26 @@ class SSHServer(paramiko.ServerInterface):
             return paramiko.OPEN_SUCCEEDED
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_keyex(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
+    def check_auth_gssapi_keyex(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
         log("check_auth_gssapi_keyex%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_with_mic(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
+    def check_auth_gssapi_with_mic(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
         log("check_auth_gssapi_with_mic%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
-    def check_channel_shell_request(self, channel):
+    def check_channel_shell_request(self, channel) -> bool:
         log(f"check_channel_shell_request({channel})")
         return False
 
-    def check_channel_exec_request(self, channel, command):
-        def fail(*messages):
+    def check_channel_exec_request(self, channel, command:ByteString) -> int:
+        def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)
             self.event.set()
             channel.close()
             return False
-        def setup_agent(cmd):
+        def setup_agent(cmd) -> None:
             if SSH_AGENT_DISPATCH and self.agent:
                 auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
                 log(f"paramiko agent socket={auth_sock!r}")
@@ -230,7 +231,7 @@ class SSHServer(paramiko.ServerInterface):
                     # pylint: disable=import-outside-toplevel
                     from xpra.net.ssh.agent import setup_proxy_ssh_socket
                     setup_proxy_ssh_socket(cmd, auth_sock)
-        def csend(exit_status=0, out=None, err=None):
+        def csend(exit_status=0, out=None, err=None) -> bool:
             channel.exec_response = (exit_status, out, err)
             self.event.set()
             return True
@@ -313,10 +314,9 @@ class SSHServer(paramiko.ServerInterface):
             setup_agent(proxy_cmd)
             self._run_proxy(channel)
             return True
-        return fail("Warning: unsupported ssh command:",
-                    f" {cmd!r}")
+        return fail("Warning: unsupported ssh command:", f" {cmd!r}")
 
-    def _run_proxy(self, channel):
+    def _run_proxy(self, channel) -> None:
         pc = self.proxy_channel
         log(f"run_proxy({channel}) proxy-channel={pc}")
         if pc:
@@ -325,16 +325,16 @@ class SSHServer(paramiko.ServerInterface):
         self.proxy_channel = channel
         self.event.set()
 
-    def check_channel_pty_request(self, channel, term, width:int, height:int, pixelwidth:int, pixelheight:int, modes):
+    def check_channel_pty_request(self, channel, term, width:int, height:int, pixelwidth:int, pixelheight:int, modes) -> bool:
         log("check_channel_pty_request%s", (channel, term, width, height, pixelwidth, pixelheight, modes))
         #refusing to open a pty:
         return False
 
-    def enable_auth_gssapi(self):
+    def enable_auth_gssapi(self) -> bool:
         log("enable_auth_gssapi()")
         return False
 
-    def proxy_start(self, channel, subcommand, args):
+    def proxy_start(self, channel, subcommand, args) -> None:
         log(f"ssh proxy-start({channel}, {subcommand}, {args})")
         if subcommand=="_proxy_shadow_start":
             server_mode = "shadow"
@@ -425,7 +425,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, passw
         PREFIX = "ssh_host_"
         SUFFIX = "_key"
         host_keys = {}
-        def add_host_key(fd, f):
+        def add_host_key(fd, f) -> bool:
             ff = os.path.join(fd, f)
             keytype = f[len(PREFIX):-len(SUFFIX)]
             keyclass = get_keyclass(keytype)

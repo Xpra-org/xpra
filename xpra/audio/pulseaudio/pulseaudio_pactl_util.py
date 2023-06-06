@@ -26,7 +26,7 @@ def get_pactl_bin() -> str:
         if WIN32 or OSX:
             pactl_bin = ""
         else:
-            pactl_bin = which("pactl")
+            pactl_bin = which("pactl") or ""
     return pactl_bin
 
 def pactl_output(log_errors=True, *pactl_args) -> Tuple[int,Any,Any]:
@@ -48,9 +48,9 @@ def pactl_output(log_errors=True, *pactl_args) -> Tuple[int,Any,Any]:
         log(f"waiting for `{cmd}` output")
         out, err = process.communicate()
         getChildReaper().add_dead_process(procinfo)
-        code = process.poll()
+        code = process.wait()
         log(f"pactl_output{pactl_args} returned {code}")
-        return  code, out, err
+        return code, out, err
     except Exception as e:
         if log_errors:
             log.error("failed to execute %s: %s", cmd, e)
@@ -67,7 +67,7 @@ def has_pa() -> bool:
     global has_pulseaudio
     if has_pulseaudio is None:
         has_pulseaudio = get_pulse_server_x11_property() or is_pa_installed()
-    return has_pulseaudio
+    return bool(has_pulseaudio)
 
 
 def set_source_mute(device, mute=False) -> bool:
@@ -111,7 +111,7 @@ def get_pulse_cookie_hash() -> bytes:
 def get_pulse_server(may_start_it=True) -> str:
     xp = get_pulse_server_x11_property()
     if xp or not may_start_it:
-        return xp
+        return bytestostr(xp or b"")
     return get_pactl_server()
 
 def get_pulse_id() -> bytes:

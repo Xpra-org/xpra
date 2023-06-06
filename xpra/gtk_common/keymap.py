@@ -29,7 +29,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
-def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[Tuple[int,str,int,int,int]]:
+def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[Tuple[int,str,int,int,int],...]:
     if not display:
         return ()
     import gi

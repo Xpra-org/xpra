@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.util import envint, typedict, ConnectionMessage, NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -106,7 +106,7 @@ class IdleMixin(StubSourceMixin):
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
-        actions = ()
+        actions : Tuple[str,...] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name!="Xpra":

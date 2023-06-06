@@ -97,7 +97,7 @@ class MMAP_Connection(StubSourceMixin):
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
-            if self.mmap_size>0:
+            if self.mmap_size>0 and self.mmap is not None:
                 index = c.intget(f"{prefix}token_index", 0)
                 count = c.intget(f"{prefix}token_bytes", DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)

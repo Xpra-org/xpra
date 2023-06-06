@@ -7,7 +7,7 @@
 import os
 from subprocess import Popen
 from shutil import which
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -58,8 +58,8 @@ class AudioMixin(StubSourceMixin):
         self.pulseaudio_id = None
         self.pulseaudio_cookie_hash = None
         self.pulseaudio_server = None
-        self.audio_decoders = ()
-        self.audio_encoders = ()
+        self.audio_decoders : Tuple[str,...] = ()
+        self.audio_encoders : Tuple[str,...]= ()
         self.audio_receive = False
         self.audio_send = False
         self.audio_fade_timer = 0
@@ -78,7 +78,7 @@ class AudioMixin(StubSourceMixin):
         timers = self.new_stream_timers.copy()
         self.new_stream_timers = {}
         for proc, timer in timers.items():
-            timer = self.new_stream_timers.pop(proc, None)
+            timer = self.new_stream_timers.pop(proc, 0)
             if timer:
                 self.source_remove(timer)
             self.stop_new_stream_notification(proc)
@@ -100,20 +100,20 @@ class AudioMixin(StubSourceMixin):
         audio = c.dictget("audio")
         if audio:
             audio = typedict(audio)
-            self.pulseaudio_id = audio.strget("pulseaudio.id")
-            self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
-            self.pulseaudio_server = audio.strget("pulseaudio.server")
-            self.audio_decoders = audio.strtupleget("decoders", [])
-            self.audio_encoders = audio.strtupleget("encoders", [])
+            self.pulseaudio_id = audio.strget("pulseaudio.id", "")
+            self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash", "")
+            self.pulseaudio_server = audio.strget("pulseaudio.server", "")
+            self.audio_decoders = audio.strtupleget("decoders", ())
+            self.audio_encoders = audio.strtupleget("encoders", ())
             self.audio_receive = audio.boolget("receive")
             self.audio_send = audio.boolget("send")
         else:
             #pre v4.4:
-            self.pulseaudio_id = c.strget("sound.pulseaudio.id")
-            self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash")
-            self.pulseaudio_server = c.strget("sound.pulseaudio.server")
-            self.audio_decoders = c.strtupleget("sound.decoders", [])
-            self.audio_encoders = c.strtupleget("sound.encoders", [])
+            self.pulseaudio_id = c.strget("sound.pulseaudio.id", "")
+            self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash", "")
+            self.pulseaudio_server = c.strget("sound.pulseaudio.server", "")
+            self.audio_decoders = c.strtupleget("sound.decoders", ())
+            self.audio_encoders = c.strtupleget("sound.encoders", ())
             self.audio_receive = c.boolget("sound.receive")
             self.audio_send = c.boolget("sound.send")
         log("pulseaudio id=%s, cookie-hash=%s, server=%s, audio decoders=%s, audio encoders=%s, receive=%s, send=%s",

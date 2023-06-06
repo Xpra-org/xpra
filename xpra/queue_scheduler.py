@@ -107,6 +107,6 @@ class QueueScheduler:
     def stop_main_queue(self) -> None:
         self.main_queue.put(None)
         #empty the main queue:
-        q = Queue()
+        q : Queue = Queue()
         q.put(None)
         self.main_queue = q

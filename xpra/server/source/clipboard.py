@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Any, Deque, Tuple
 from collections import deque
 from gi.repository import GLib
 
@@ -33,11 +33,11 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications_current = 0
         self.clipboard_notifications_pending = 0
         self.clipboard_progress_timer : int = 0
-        self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
+        self.clipboard_stats : Deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
         self.clipboard_selections = CLIPBOARDS
-        self.clipboard_preferred_targets = ()
+        self.clipboard_preferred_targets : Tuple[str,...] = ()
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()

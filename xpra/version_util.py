@@ -270,10 +270,9 @@ def get_platform_info():
 
 
 def get_version_from_url(url) -> Optional[Tuple[int,...]]:
-    e = None
     try:
         from urllib.request import urlopen
-    except ImportError:
+    except ImportError as e:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return None
     try:

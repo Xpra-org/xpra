@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.util import typedict
+
+from gi.repository import GLib
 
 
 class DBUS_Mixin(StubSourceMixin):
@@ -41,4 +43,4 @@ class DBUS_Mixin(StubSourceMixin):
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
-            self.idle_add(ds.cleanup)
+            GLib.idle_add(ds.cleanup)

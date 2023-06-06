@@ -154,12 +154,12 @@ class MenuProvider:
                 self.clear_cache()
         start_thread(load, "load-menu-data", True)
 
-    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> Optional[Dict[str,Any]]:
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> Dict[str,Any]:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
-            return None
+            return {}
         if OSX:
-            return None
+            return {}
         menu_data = self.menu_data
         if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
             menu_data = self.menu_data
