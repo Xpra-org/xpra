@@ -9,7 +9,7 @@ import posixpath
 import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Iterable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
@@ -35,7 +35,7 @@ EXTENSION_TO_MIMETYPE = {
 
 
 #should be converted to use standard library
-def parse_url(handler):
+def parse_url(handler) -> Dict[str,str]:
     try:
         args_str = handler.path.split("?", 1)[1]
     except IndexError:
@@ -223,9 +223,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     server_version = "Xpra-HTTP-Server"
 
     def __init__(self, sock, addr,
-                 web_root="/usr/share/xpra/www/",
-                 http_headers_dirs=("/etc/xpra/http-headers",), script_paths=None,
-                 username=AUTH_USERNAME, password=AUTH_PASSWORD):
+                 web_root:str="/usr/share/xpra/www/",
+                 http_headers_dirs:Iterable[str]=("/etc/xpra/http-headers",), script_paths=None,
+                 username:str=AUTH_USERNAME, password:str=AUTH_PASSWORD):
         self.web_root = web_root
         self.http_headers_dirs = http_headers_dirs
         self.script_paths = script_paths or {}
@@ -238,14 +238,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         super().__init__(sock, addr, server)
 
 
-    def log_error(self, fmt, *args):  #pylint: disable=arguments-differ
+    def log_error(self, fmt, *args) -> None:  #pylint: disable=arguments-differ
         #don't log 404s at error level:
         if len(args)==2 and args[0]==404:
             log(fmt, *args)
         else:
             log.error(fmt, *args)
 
-    def log_message(self, fmt, *args):  #pylint: disable=arguments-differ
+    def log_message(self, fmt, *args) -> None:  #pylint: disable=arguments-differ
         if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
             fmt = '"%r" %s %s'
             args = list(args)
@@ -253,7 +253,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         log(fmt, *args)
 
 
-    def end_headers(self):
+    def end_headers(self) -> None:
         #magic for querying request header values:
         path = getattr(self, "path", "")
         if path.endswith("?echo-headers"):
@@ -272,7 +272,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def get_headers(self):
         return may_reload_headers(self.http_headers_dirs)
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         try:
             length = int(self.headers.get('content-length'))
             data = self.rfile.read(length)
@@ -281,11 +281,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception:
             log.error("Error processing POST request", exc_info=True)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         self.handle_request()
 
 
-    def handle_authentication(self):
+    def handle_authentication(self) -> bool:
         if not self.password:
             return True
         authlog = Logger("auth", "http")
@@ -323,7 +323,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         authlog("http authentication passed")
         return True
 
-    def handle_request(self):
+    def handle_request(self) -> None:
         if not self.handle_authentication():
             return
         content = self.send_head()
@@ -343,10 +343,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 log.error("Error handling http request")
                 log.error(" for '%s'", self.path, exc_info=True)
 
-    def do_HEAD(self):
+    def do_HEAD(self) -> None:
         self.send_head()
 
-    def do_AUTHHEAD(self):
+    def do_AUTHHEAD(self) -> None:
         self.send_response(401)
         if self.password:
             self.send_header("WWW-Authenticate", f"Basic realm=\"{AUTH_REALM}\"")
@@ -354,7 +354,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
-    def send_error(self, code, message=None, explain=None):
+    def send_error(self, code, message=None, explain=None) -> None:
         try:
             super().send_error(code, message, explain)
         except OSError:

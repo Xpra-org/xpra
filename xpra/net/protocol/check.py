@@ -3,13 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-def verify_error(msg, *args):
+def verify_error(msg, *args) -> None:
     from xpra.log import Logger
     log = Logger("network")
     log.error(msg, *args)
 
 
-def verify_packet(packet):
+def verify_packet(packet) -> bool:
     """ look for None values which may have caused the packet to fail encoding """
     if not isinstance(packet, (list, tuple)):
         return False
@@ -18,7 +18,7 @@ def verify_packet(packet):
     tree = [f"{packet[0]!r} packet"]
     return do_verify_packet(tree, packet)
 
-def do_verify_packet(tree, packet):
+def do_verify_packet(tree, packet) -> bool:
     def err(msg):
         verify_error("%s in %s", msg, "->".join(tree))
     def new_tree(append):

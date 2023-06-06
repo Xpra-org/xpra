@@ -181,7 +181,7 @@ class SocketProtocol:
     def is_sending_encrypted(self) -> bool:
         return bool(self.cipher_out) or self._conn.socktype in ("ssl", "wss", "ssh")
 
-    def wait_for_io_threads_exit(self, timeout=None):
+    def wait_for_io_threads_exit(self, timeout=None) -> bool:
         io_threads = (self._read_thread, self._write_thread)
         for t in io_threads:
             if t and t.is_alive():
@@ -198,7 +198,7 @@ class SocketProtocol:
         self._get_packet_cb = get_packet_cb
 
 
-    def set_cipher_in(self, ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding):
+    def set_cipher_in(self, ciphername:str, iv, password, key_salt, key_hash, key_size:int, iterations:int, padding):
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, password,
@@ -208,7 +208,7 @@ class SocketProtocol:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding):
+    def set_cipher_out(self, ciphername:str, iv, password, key_salt, key_hash, key_size:int, iterations:int, padding):
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, password,
@@ -374,9 +374,9 @@ class SocketProtocol:
                 log("add_chunks_to_queue%s", (chunks, start_cb, end_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, packet_type, chunks,
+    def _add_chunks_to_queue(self, packet_type:str, chunks,
                              start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None, fail_cb:Optional[Callable]=None,
-                             synchronous=True, more=False):
+                             synchronous=True, more=False) -> None:
         """ the write_lock must be held when calling this function """
         items = []
         for proto_flags,index,level,data in chunks:
@@ -640,7 +640,7 @@ class SocketProtocol:
             log.info(f"sending  {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         return packets
 
-    def set_compression_level(self, level : int):
+    def set_compression_level(self, level : int) -> None:
         #this may be used next time encode() is called
         if level<0 or level>10:
             raise ValueError(f"invalid compression level: {level} (must be between 0 and 10")
@@ -668,9 +668,9 @@ class SocketProtocol:
                 self.close()
 
 
-    def _write_thread_loop(self):
+    def _write_thread_loop(self) -> None:
         self._io_thread_loop("write", self._write)
-    def _write(self):
+    def _write(self) -> bool:
         items = self._write_queue.get()
         # Used to signal that we should exit:
         if items is None:
@@ -679,7 +679,9 @@ class SocketProtocol:
             return False
         return self.write_items(*items)
 
-    def write_items(self, buf_data, packet_type=None, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
+    def write_items(self, buf_data, packet_type:str="",
+                    start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None,
+                    fail_cb:Optional[Callable]=None, synchronous:int=True, more:bool=False):
         conn = self._conn
         if not conn:
             return False
@@ -716,7 +718,7 @@ class SocketProtocol:
                     log.error(f"Error on write end callback {end_cb}", exc_info=True)
         return True
 
-    def write_buffers(self, buf_data, packet_type, _fail_cb, _synchronous):
+    def write_buffers(self, buf_data, packet_type:str, _fail_cb:Optional[Callable], _synchronous:bool):
         con = self._conn
         if not con:
             return
@@ -1096,7 +1098,7 @@ class SocketProtocol:
 
     def flush_then_close(self, encoder:Optional[Callable]=None,
                          last_packet=None,
-                         done_callback:Optional[Callable]=None):    #pylint: disable=method-hidden
+                         done_callback:Optional[Callable]=None) -> None:    #pylint: disable=method-hidden
         """ Note: this is best effort only
             the packet may not get sent.
 
@@ -1111,7 +1113,7 @@ class SocketProtocol:
                 (encoder, last_packet, done_callback))
         self.flush_then_close = closing_already
         log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
-        def done():
+        def done() -> None:
             log("flush_then_close: done, callback=%s", done_callback)
             if done_callback:
                 done_callback()
@@ -1119,14 +1121,14 @@ class SocketProtocol:
             log("flush_then_close: already closed")
             done()
             return
-        def writelockrelease():
+        def writelockrelease() -> None:
             wl = self._write_lock
             try:
                 if wl:
                     wl.release()
             except Exception as e:
                 log(f"error releasing the write lock: {e}")
-        def wait_for_queue(timeout=10):
+        def wait_for_queue(timeout:int=10) -> None:
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
                 #write queue still has stuff in it..
@@ -1173,7 +1175,7 @@ class SocketProtocol:
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 
-        def wait_for_write_lock(timeout=100):
+        def wait_for_write_lock(timeout:int=100) -> None:
             wl = self._write_lock
             if not wl:
                 #cleaned up already
@@ -1231,7 +1233,7 @@ class SocketProtocol:
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
 
-    def steal_connection(self, read_callback=None):
+    def steal_connection(self, read_callback:Optional[Callable]=None):
         #so we can re-use this connection somewhere else
         #(frees all protocol threads and resources)
         #Note: this method can only be used with non-blocking sockets,

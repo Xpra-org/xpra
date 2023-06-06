@@ -16,6 +16,7 @@ from xpra.net.protocol.header import (
     FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER,
     pack_header,
     )
+from xpra.os_util import strtobytes
 from xpra.util import envbool
 
 #all the encoders we know about, in best compatibility order:
@@ -119,7 +120,7 @@ def get_encoder(e) -> Callable:
         raise ValueError(f"{e!r} is not available")
     return ENCODERS[e].encode
 
-def get_packet_encoding_type(protocol_flags) -> str:
+def get_packet_encoding_type(protocol_flags:int) -> str:
     if protocol_flags & FLAGS_RENCODEPLUS:
         return "rencodeplus"
     if protocol_flags & FLAGS_RENCODE:
@@ -133,16 +134,16 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
-def pack_one_packet(packet:Tuple):
+def pack_one_packet(packet:Tuple) -> bytes:
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])
         data, flags = e(packet)
         return pack_header(flags, 0, 0, len(data))+data
-    return str(packet)
+    return strtobytes(packet)
 
 
-def decode(data, protocol_flags):
+def decode(data, protocol_flags:int):
     if isinstance(data, memoryview):
         data = data.tobytes()
     ptype = get_packet_encoding_type(protocol_flags)

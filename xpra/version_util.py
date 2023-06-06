@@ -8,7 +8,7 @@ import sys
 import os
 import socket
 import platform
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
@@ -87,7 +87,7 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     return rstr
 
 
-def version_compat_check(remote_version):
+def version_compat_check(remote_version) -> Optional[str]:
     if remote_version is None:
         msg = "remote version not available!"
         log(msg)
@@ -269,7 +269,7 @@ def get_platform_info():
     return platform_info_cache
 
 
-def get_version_from_url(url):
+def get_version_from_url(url) -> Optional[Tuple[int,...]]:
     e = None
     try:
         from urllib.request import urlopen

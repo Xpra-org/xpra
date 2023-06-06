@@ -38,11 +38,11 @@ def unpack_header(buf):
 #'P' + protocol-flags + compression_level + packet_index + data_size
 _header_pack_struct = struct.Struct(b'!BBBBL')
 assert ord("P") == 80
-def pack_header(proto_flags, level, index, payload_size) -> bytes:
+def pack_header(proto_flags:int, level:int, index:int, payload_size:int) -> bytes:
     return _header_pack_struct.pack(80, proto_flags, level, index, payload_size)
 
 
-def find_xpra_header(data, index=0, max_data_size=2**16):
+def find_xpra_header(data, index:int=0, max_data_size:int=2**16):
     pos = data.find(b"P")
     while pos>=0:
         if len(data)<pos+8:

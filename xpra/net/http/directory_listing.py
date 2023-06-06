@@ -14,7 +14,7 @@ from io import BytesIO
 from urllib.parse import quote, unquote
 
 
-def list_directory(path):
+def list_directory(path:str):
     try:
         dirlist = os.listdir(path)
     except OSError:

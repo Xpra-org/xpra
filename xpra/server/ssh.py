@@ -91,7 +91,7 @@ def detect_ssh_stanza(cmd):
     log(f"subcommands={subcommands}")
     return subcommands.get("_proxy")
 
-def find_fingerprint(filename, fingerprint):
+def find_fingerprint(filename:str, fingerprint):
     hex_fingerprint = binascii.hexlify(fingerprint)
     log(f"looking for key fingerprint {hex_fingerprint} in {filename!r}")
     count = 0
@@ -137,10 +137,10 @@ class SSHServer(paramiko.ServerInterface):
         self.agent = None
         self.transport = None
 
-    def get_banner(self):
+    def get_banner(self) -> str:
         return f"{BANNER}\n\r", "EN"
 
-    def get_allowed_auths(self, username):
+    def get_allowed_auths(self, username:str) -> str:
         #return "gssapi-keyex,gssapi-with-mic,password,publickey"
         mods = []
         if self.none_auth:
@@ -152,7 +152,7 @@ class SSHServer(paramiko.ServerInterface):
         log("get_allowed_auths(%s)=%s", username, mods)
         return ",".join(mods)
 
-    def check_channel_request(self, kind, chanid):
+    def check_channel_request(self, kind:str, chanid):
         log("check_channel_request(%s, %s)", kind, chanid)
         if kind=="session":
             return paramiko.OPEN_SUCCEEDED
@@ -169,19 +169,19 @@ class SSHServer(paramiko.ServerInterface):
             return bool(ssh_auth_sock)
         return False
 
-    def check_auth_none(self, username):
+    def check_auth_none(self, username:str):
         log("check_auth_none(%s) none_auth=%s", username, self.none_auth)
         if self.none_auth:
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
-    def check_auth_password(self, username, password):
+    def check_auth_password(self, username:str, password:str):
         log("check_auth_password(%s, %s) password_auth=%s", username, "*"*len(password), self.password_auth)
         if not self.password_auth or not self.password_auth(username, password):
             return paramiko.AUTH_FAILED
         return paramiko.AUTH_SUCCESSFUL
 
-    def check_auth_publickey(self, username, key):
+    def check_auth_publickey(self, username:str, key):
         log("check_auth_publickey(%s, %r) pubkey_auth=%s", username, key, self.pubkey_auth)
         if not self.pubkey_auth:
             return paramiko.AUTH_FAILED
@@ -203,11 +203,11 @@ class SSHServer(paramiko.ServerInterface):
             return paramiko.OPEN_SUCCEEDED
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_keyex(self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
+    def check_auth_gssapi_keyex(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
         log("check_auth_gssapi_keyex%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_with_mic(self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
+    def check_auth_gssapi_with_mic(self, username:str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):
         log("check_auth_gssapi_with_mic%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
@@ -325,7 +325,7 @@ class SSHServer(paramiko.ServerInterface):
         self.proxy_channel = channel
         self.event.set()
 
-    def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
+    def check_channel_pty_request(self, channel, term, width:int, height:int, pixelwidth:int, pixelheight:int, modes):
         log("check_channel_pty_request%s", (channel, term, width, height, pixelwidth, pixelheight, modes))
         #refusing to open a pty:
         return False
@@ -353,13 +353,13 @@ class SSHServer(paramiko.ServerInterface):
             return
         # pylint: disable=import-outside-toplevel
         from xpra.child_reaper import getChildReaper
-        def proxy_ended(*args):
+        def proxy_ended(*args) -> None:
             log("proxy_ended(%s)", args)
-        def close():
+        def close() -> None:
             if proc.poll() is None:
                 proc.terminate()
         getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
-        def proc_to_channel(read, send):
+        def proc_to_channel(read, send) -> None:
             while proc.poll() is None:
                 #log("proc_to_channel(%s, %s) waiting for data", read, send)
                 try:
@@ -377,11 +377,11 @@ class SSHServer(paramiko.ServerInterface):
                         close()
                         return
         #forward to/from the process and the channel:
-        def stderr_reader():
+        def stderr_reader() -> None:
             proc_to_channel(proc.stderr.read, channel.send_stderr)
-        def stdout_reader():
+        def stdout_reader() -> None:
             proc_to_channel(proc.stdout.read, channel.send)
-        def stdin_reader():
+        def stdin_reader() -> None:
             stdin = proc.stdin
             while proc.poll() is None:
                 r = channel.recv(4096)
@@ -398,13 +398,13 @@ class SSHServer(paramiko.ServerInterface):
         channel.proxy_process = proc
 
 
-def make_ssh_server_connection(conn, socket_options, none_auth=False, password_auth=None):
+def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, password_auth:bool=None):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options)
     DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)
     sock = conn._socket
     t = None
-    def close():
+    def close() -> None:
         if t:
             log(f"close() closing {t}")
             try:

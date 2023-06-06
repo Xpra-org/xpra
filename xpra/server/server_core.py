@@ -774,7 +774,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict]]:
+    def get_auth_modules(self, socket_type:str, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict]]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()
@@ -1071,14 +1071,14 @@ class ServerCore:
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, socktype, sock, options) -> None:
+    def add_listen_socket(self, socktype:str, sock, options) -> None:
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
         cleanup = add_listen_socket(socktype, sock, info, self, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
-    def _new_connection(self, socktype:str, listener, handle=0):
+    def _new_connection(self, socktype:str, listener, handle:int=0):
         """
             Accept the new connection,
             verify that there aren't too many,
@@ -1115,7 +1115,7 @@ class ServerCore:
                      args=(conn, socket_info, socket_options))
         return True
 
-    def new_conn_err(self, conn, sock, socktype, socket_info, packet_type, msg=None) -> None:
+    def new_conn_err(self, conn, sock, socktype:str, socket_info, packet_type:str, msg=None) -> None:
         #not an xpra client
         netlog.error("Error: %s connection failed:", socktype)
         if conn.remote:
@@ -1581,7 +1581,7 @@ class ServerCore:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype, conn, socket_options, is_ssl:bool, req_info, line1, frominfo) -> None:
+    def start_http(self, socktype:str, conn, socket_options, is_ssl:bool, req_info, line1, frominfo) -> None:
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dirs)
@@ -1966,7 +1966,7 @@ class ServerCore:
                 i += 1
         return tuple(authenticators)
 
-    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:Dict, digest, salt_digest, prompt="password") -> None:
+    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:Dict, digest, salt_digest, prompt:str="password") -> None:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
@@ -1976,7 +1976,7 @@ class ServerCore:
         self.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto:SocketProtocol, packet, c:typedict) -> None:
-        def auth_failed(msg):
+        def auth_failed(msg:str):
             self.auth_failed(proto, msg)
         remote = {}
         for key in ("hostname", "uuid", "session-id", "username", "name"):

@@ -235,7 +235,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # handle new connections:
-    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False, uuid=None) -> Tuple[bool,int,int]:
+    def handle_sharing(self, proto, ui_client:bool=True, detach_request:bool=False, share:bool=False, uuid=None) -> Tuple[bool,int,int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
@@ -511,7 +511,7 @@ class ServerBase(ServerBaseClass):
         return True
 
 
-    def update_all_server_settings(self, reset=False) -> None:
+    def update_all_server_settings(self, reset:bool=False) -> None:
         pass        #may be overridden in subclasses (ie: x11 server)
 
 

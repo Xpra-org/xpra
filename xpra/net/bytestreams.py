@@ -57,7 +57,7 @@ for x in dir(socket):
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
 
-def can_retry(e):
+def can_retry(e) -> bool:
     if isinstance(e, socket.timeout):
         return "socket.timeout"
     if isinstance(e, BlockingIOError):
@@ -150,7 +150,7 @@ class Connection:
     def untilConcludes(self, *args):
         return untilConcludes(self.is_active, self.can_retry, *args)
 
-    def peek(self, _n : int):
+    def peek(self, _n : int) -> bytes:
         #not implemented
         return b""
 
@@ -219,7 +219,7 @@ class TwoFileConnection(Connection):
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type:str=""):
         self.may_abort("write")
         return self._write(os.write, self._write_fd, buf)
 
@@ -235,7 +235,7 @@ class TwoFileConnection(Connection):
                 cc()
             except Exception:
                 log.error("%s.close() error on callback %s", self, cc, exc_info=True)
-        def close_files_thread():
+        def close_files_thread() -> None:
             log("close_files_thread() _readable=%s", self._readable)
             log("close_files_thread() calling %s", self._readable.close)
             try:
@@ -320,7 +320,7 @@ class SocketConnection(Connection):
     def get_raw_socket(self):
         return self._socket
 
-    def _setsockopt(self, *args):
+    def _setsockopt(self, *args) -> None:
         if self.active:
             sock = self.get_raw_socket()
             if sock:
@@ -341,14 +341,14 @@ class SocketConnection(Connection):
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
-    def peek(self, n : int):
+    def peek(self, n : int) -> bytes:
         log("%s(%s, MSG_PEEK)", self._socket.recv, n)
         return self._socket.recv(n, socket.MSG_PEEK)
 
-    def read(self, n : int):
+    def read(self, n : int) -> bytes:
         return self._read(self._socket.recv, n)
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type:str=""):
         return self._write(self._socket.send, buf)
 
     def close(self) -> None:
@@ -503,7 +503,7 @@ def get_socket_options(sock, level, options) -> Dict:
 class SocketPeekFile:
     def __init__(self, fileobj, peeked, update_peek):
         self.fileobj = fileobj
-        self.peeked = peeked
+        self.peeked : bytes = peeked
         self.update_peek = update_peek
 
     def __getattr__(self, attr):
@@ -511,7 +511,7 @@ class SocketPeekFile:
             return self.readline
         return getattr(self.fileobj, attr)
 
-    def readline(self, limit=-1):
+    def readline(self, limit:int=-1):
         if self.peeked:
             newline = self.peeked.find(b"\n")
             peeked = self.peeked
@@ -559,7 +559,7 @@ class SocketPeekWrapper:
     def _update_peek(self, peeked):
         self.peeked = peeked
 
-    def recv(self, bufsize, flags=0):
+    def recv(self, bufsize, flags=0) -> bytes:
         if flags & socket.MSG_PEEK:
             l = len(self.peeked)
             if l>=bufsize:
@@ -637,7 +637,7 @@ def set_socket_timeout(conn, timeout=None) -> None:
         log("set_socket_timeout(%s, %s) ignored for %s", conn, timeout, type(conn))
 
 
-def log_new_connection(conn, socket_info="") -> None:
+def log_new_connection(conn, socket_info:str="") -> None:
     """ logs the new connection message """
     sock = conn._socket
     address = conn.remote

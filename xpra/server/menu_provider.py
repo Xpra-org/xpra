@@ -27,7 +27,7 @@ MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
 
 
-def noicondata(menu_data):
+def noicondata(menu_data:Dict) -> Dict:
     newdata = {}
     for k,v in menu_data.items():
         if k in ("IconData", b"IconData"):
@@ -62,20 +62,20 @@ class MenuProvider:
         self.desktop_sessions = None
         self.load_lock = Lock()
 
-    def setup(self):
+    def setup(self) -> None:
         if OSX or not EXPORT_XDG_MENU_DATA:
             return
         if MENU_WATCHER:
             self.setup_menu_watcher()
         self.load_menu_data()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.on_reload = []
         self.cancel_xdg_menu_reload()
         self.cancel_pynotify_watch()
 
 
-    def setup_menu_watcher(self):
+    def setup_menu_watcher(self) -> None:
         try:
             self.do_setup_menu_watcher()
         except Exception as e:
@@ -83,7 +83,7 @@ class MenuProvider:
             log.error("Error setting up menu watcher:")
             log.estr(e)
 
-    def do_setup_menu_watcher(self):
+    def do_setup_menu_watcher(self) -> None:
         if self.watch_manager or OSX or WIN32:
             #already setup
             return
@@ -123,7 +123,7 @@ class MenuProvider:
             for wd in watched:
                 log.info(" '%s'", wd)
 
-    def cancel_pynotify_watch(self):
+    def cancel_pynotify_watch(self) -> None:
         wn = self.watch_notifier
         if wn:
             self.watch_notifier = None
@@ -137,11 +137,11 @@ class MenuProvider:
                 log("error closing watch manager %s", wm, exc_info=True)
 
 
-    def load_menu_data(self, force_reload=False):
+    def load_menu_data(self, force_reload:bool=False) -> None:
         #start loading in a thread,
         #as this may take a while and
         #so server startup can complete:
-        def load():
+        def load() -> None:
             try:
                 self.get_menu_data(force_reload)
                 self.get_desktop_sessions()
@@ -174,28 +174,28 @@ class MenuProvider:
             menu_data = noicondata(self.menu_data)
         return menu_data
 
-    def got_menu_data(self):
+    def got_menu_data(self) -> bool:
         log("got_menu_data(..) on_reload=%s", self.on_reload)
         for cb in self.on_reload:
             cb(self.menu_data)
         return False
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         from xpra.platform.menu_helper import clear_cache  #pylint: disable=import-outside-toplevel
         log("%s()", clear_cache)
         clear_cache()
 
-    def cancel_xdg_menu_reload(self):
+    def cancel_xdg_menu_reload(self) -> None:
         xmrt = self.xdg_menu_reload_timer
         if xmrt:
             self.xdg_menu_reload_timer = 0
             GLib.source_remove(xmrt)
 
-    def schedule_xdg_menu_reload(self):
+    def schedule_xdg_menu_reload(self) -> None:
         self.cancel_xdg_menu_reload()
         self.xdg_menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
 
-    def xdg_menu_reload(self):
+    def xdg_menu_reload(self) -> bool:
         self.xdg_menu_reload_timer = 0
         log("xdg_menu_reload()")
         self.load_menu_data(True)
@@ -224,7 +224,7 @@ class MenuProvider:
         return app.get("IconType"), app.get("IconData")
 
 
-    def get_desktop_sessions(self, force_reload=False, remove_icons=False):
+    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False):
         if not POSIX or OSX:
             return None
         if force_reload or self.desktop_sessions is None:
@@ -235,7 +235,7 @@ class MenuProvider:
             desktop_sessions = noicondata(desktop_sessions)
         return desktop_sessions
 
-    def get_desktop_menu_icon(self, sessionname):
+    def get_desktop_menu_icon(self, sessionname:str):
         desktop_sessions = self.get_desktop_sessions(False) or {}
         de = desktop_sessions.get(sessionname, {})
         return de.get("IconType"), de.get("IconData")

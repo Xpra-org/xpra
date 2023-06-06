@@ -211,7 +211,7 @@ fi
 """)
     return b"\n".join(script)
 
-def write_runner_shell_scripts(contents:bytes, overwrite:bool=True):
+def write_runner_shell_scripts(contents:bytes, overwrite:bool=True) -> None:
     assert POSIX
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -268,7 +268,7 @@ def open_log_file(logpath:str):
     except OSError as e:
         raise InitException(f"cannot open log file {logpath!r}: {e}") from None
 
-def select_log_file(log_dir, log_file, display_name) -> str:
+def select_log_file(log_dir:str, log_file:str, display_name:str) -> str:
     """ returns the log file path we should be using given the parameters,
         this may return a temporary logpath if display_name is not available.
     """
@@ -290,7 +290,7 @@ def select_log_file(log_dir, log_file, display_name) -> str:
 # Redirects stdin from /dev/null, and stdout and stderr to the file with the
 # given file descriptor. Returns file objects pointing to the old stdout and
 # stderr, which can be used to write a message about the redirection.
-def redirect_std_to_log(logfd):
+def redirect_std_to_log(logfd:int):
     # preserve old stdio in new filehandles for use (and subsequent closing)
     # by the caller
     old_fd_stdout = os.dup(1)
@@ -329,7 +329,7 @@ def daemonize() -> None:
         os._exit(0)     #pylint: disable=protected-access
 
 
-def write_pidfile(pidfile) -> int:
+def write_pidfile(pidfile:str) -> int:
     log = get_util_logger()
     pidstr = str(os.getpid())
     inode = 0
@@ -475,7 +475,7 @@ def create_uinput_pointer_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
     name = f"Xpra Virtual Pointer {uuid}"
     return create_uinput_device(uuid, uid, events, name)
 
-def create_uinput_touchpad_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
+def create_uinput_touchpad_device(uuid, uid:int)-> Optional[Tuple[str, Any, str]]:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import (
@@ -519,5 +519,5 @@ def create_uinput_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
         "touchpad"  : i(touchpad),
         }
 
-def create_input_devices(uinput_uuid, uid) -> Dict[str,Any]:
+def create_input_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
     return create_uinput_devices(uinput_uuid, uid)

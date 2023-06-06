@@ -8,7 +8,7 @@ import os
 import sys
 import secrets
 from struct import pack
-from typing import Dict, Any
+from typing import Dict, Tuple, Any, Iterable
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version
@@ -58,10 +58,10 @@ PADDING_OPTIONS = get_padding_options()
 
 
 # pylint: disable=import-outside-toplevel
-CIPHERS = []
-MODES = []
-KEY_HASHES = []
-KEY_STRETCHING = []
+CIPHERS = ()
+MODES = ()
+KEY_HASHES = ()
+KEY_STRETCHING = ()
 def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
@@ -121,13 +121,13 @@ def patch_crypto_be_discovery():
         be for be in (be_cc, be_ossl) if be is not None
     ])
 
-def get_ciphers():
+def get_ciphers() -> Tuple[str, ...]:
     return CIPHERS
 
-def get_modes():
+def get_modes() -> Tuple[str, ...]:
     return MODES
 
-def get_key_hashes():
+def get_key_hashes() -> Tuple[str, ...]:
     return KEY_HASHES
 
 def validate_backend():
@@ -167,14 +167,14 @@ def validate_backend():
             log(" test passed")
 
 
-def pad(padding, size):
+def pad(padding:str, size:int):
     if padding==PADDING_LEGACY:
         return b" "*size
     if padding==PADDING_PKCS7:
         return pack("B", size)*size
     raise ValueError(f"invalid padding: {padding}")
 
-def choose_padding(options):
+def choose_padding(options:Iterable[str]) -> str:
     if PREFERRED_PADDING in options:
         return PREFERRED_PADDING
     for x in options:
@@ -183,7 +183,7 @@ def choose_padding(options):
     raise ValueError(f"cannot find a valid padding in {options}")
 
 
-def get_iv():
+def get_iv() -> str:
     return secrets.token_urlsafe(16)[:16]
 
 def get_iterations() -> int:
@@ -237,7 +237,7 @@ def get_crypto_caps(full=True) -> Dict[str,Any]:
     return caps
 
 
-def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_size : int, iterations : int):
+def get_encryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
     log("get_encryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
@@ -250,12 +250,12 @@ def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     key = get_key(password, key_salt, key_hash, key_size, iterations)
     return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
 
-def get_cipher_encryptor(key, iv, mode):
+def get_cipher_encryptor(key, iv:str, mode:str):
     encryptor = _get_cipher(key, iv, mode).encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
 
-def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_size : int, iterations : int):
+def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
@@ -268,7 +268,7 @@ def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     key = get_key(password, key_salt, key_hash, key_size, iterations)
     return get_cipher_decryptor(key, iv, mode), get_block_size(mode)
 
-def get_cipher_decryptor(key, iv, mode):
+def get_cipher_decryptor(key, iv:str, mode:str):
     decryptor = _get_cipher(key, iv, mode).decryptor()
     def i(s):
         try:
@@ -292,14 +292,14 @@ def _patch_decryptor(decryptor):
         return decryptor.update(memoryview_to_bytes(v))
     decryptor.decrypt = decrypt
 
-def get_block_size(mode):
+def get_block_size(mode:str) -> int:
     if mode=="CBC":
         #16 would also work,
         #but older versions require 32
         return 32
     return 0
 
-def get_key(password, key_salt, key_hash, block_size, iterations):
+def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     from cryptography.hazmat.primitives import hashes
     if key_hash.upper() not in KEY_HASHES:
@@ -314,7 +314,7 @@ def get_key(password, key_salt, key_hash, block_size, iterations):
     key = kdf.derive(strtobytes(password))
     return key
 
-def _get_cipher(key, iv, mode=DEFAULT_MODE):
+def _get_cipher(key, iv:str, mode:str=DEFAULT_MODE):
     assert mode in MODES
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     mode_class = getattr(modes, mode, None)
