@@ -126,7 +126,7 @@ class subprocess_callee:
         self.send(signal_name, *tuple(data))
 
 
-    def start(self) -> None:
+    def start(self) -> int:
         self.protocol = self.make_protocol()
         self.protocol.start()
         try:
