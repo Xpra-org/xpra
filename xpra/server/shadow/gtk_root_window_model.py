@@ -16,7 +16,7 @@ log = Logger("shadow")
 
 ScreenshotData = Tuple[int,int,str,int,bytes]
 
-def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Tuple[int,int,int,int,bytes,str,int,int,int]:
+def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Optional[Tuple[int,int,int,int,bytes,str,int,int,int]]:
     """
         Extracts pixels from the given pixmap
     """
