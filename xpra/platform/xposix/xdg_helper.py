@@ -39,6 +39,11 @@ def check_xdg():
             log.warn("Warning: cannot load menu data")
             log.warn(" %s", e)
         return False
+    except SyntaxError as e:
+        if first_time("load-xdg"):
+            log.warn("Warning: cannot load menu data")
+            log.warn(" %s", e)
+        return False
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
