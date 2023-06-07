@@ -260,6 +260,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
+        self.recheck_focus_timer : int = 0
         self.window_state_timer : int = 0
         self.send_iconify_timer : int = 0
         self.remove_pointer_overlay_timer : int = 0
@@ -458,7 +459,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     ######################################################################
     # focus:
     def init_focus(self) -> None:
-        self.recheck_focus_timer = 0
         self.when_realized("init-focus", self.do_init_focus)
 
     def do_init_focus(self) -> None:
@@ -506,7 +506,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def send_latest_focus(self) -> None:
         focused = self._client._focused
-        focuslog("recheck_focus() wid=%i, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
+        focuslog("send_latest_focus() wid=%i, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()
         else:
@@ -565,6 +565,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if FOCUS_RECHECK_DELAY<0:
             self.recheck_focus()
         elif self.recheck_focus_timer==0:
+            focuslog(f"will recheck focus in {FOCUS_RECHECK_DELAY}ms")
             self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
 
     def do_xpra_focus_out_event(self, event) -> None:
