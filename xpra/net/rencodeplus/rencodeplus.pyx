@@ -23,6 +23,8 @@
 #     Boston, MA  02110-1301, USA.
 #
 
+#cython: wraparound=False, language_level=3
+
 import sys
 
 from cpython cimport bool
