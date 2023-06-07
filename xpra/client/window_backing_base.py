@@ -47,7 +47,7 @@ GRAVITY_STR = {
 log = Logger("paint")
 deltalog = Logger("delta")
 
-DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
+DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 0)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
