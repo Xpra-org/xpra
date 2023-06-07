@@ -1355,7 +1355,7 @@ class ServerCore(object):
             }
 
     def http_404(self, handler):
-        self.send_http_response(self, handler)
+        self.send_http_response(handler)
 
     def start_http_socket(self, socktype, conn, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
