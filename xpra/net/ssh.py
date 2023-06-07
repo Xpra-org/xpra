@@ -246,7 +246,7 @@ def safe_lookup(config_obj, host):
             log.warn(" (looks like a 'paramiko' distribution packaging issue)")
     except KeyError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
-        log.info(f"paramiko ssh config lookup error for host {host!r}:")
+        log.info("paramiko ssh config lookup error for host %r:", host)
         log.info(" %s: %s", type(e), e)
     return {}
 
