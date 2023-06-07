@@ -185,7 +185,7 @@ class WindowModel(BaseWindowModel):
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
-        parking_xid = self.parking_window.get_xid()
+        parking_xid = get_xwindow(self.parking_window)
         cxid = X11Window.CreateCorralWindow(parking_xid, self.xid, x, y)
         self.corral_window = get_pywindow(self.client_window.get_display(), cxid)
         log("setup() corral_xid=%#x, corral_window=", cxid, self.corral_window)
@@ -359,7 +359,7 @@ class WindowModel(BaseWindowModel):
             if wm_exiting:
                 self.client_window.show_unraised()
             #it is now safe to destroy the corral window:
-            cxid = cwin.get_xid()
+            cxid = get_xwindow(cwin)
             if cxid:
                 with xsync:
                     X11Window.DestroyWindow(cxid)

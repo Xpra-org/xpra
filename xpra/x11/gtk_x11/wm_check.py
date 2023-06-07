@@ -46,7 +46,7 @@ def wm_check(wm_name, upgrading=False):
                 found_name = True
             elif not name:
                 log.warn("Warning: no window manager found")
-                log.warn(" on screen %s using window %#x", i, ewmh_wm.get_xid())
+                log.warn(" on screen %s using window %#x", i, get_xwindow(ewmh_wm))
             else:
                 log.warn("Warning: found an existing window manager")
                 log.warn(" on screen %s using window %#x: %s", i, get_xwindow(ewmh_wm), name or "unknown")

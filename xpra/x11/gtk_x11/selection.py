@@ -150,7 +150,7 @@ class ManagerSelection(gobject.GObject):
             #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
             return
         if event.owner:
-            owner = event.owner.get_xid()
+            owner = get_xwindow(event.owner)
             if owner==self._xwindow:
                 log("_owner_change(..) we still own %s", event.selection)
                 return
