@@ -621,7 +621,7 @@ class SocketProtocol:
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
-            log.warn(f" packet: {repr_ellipsized(packet)}")
+            log.warn(f" packet: {repr_ellipsized(packet, limit=4096)}")
         #compress, but don't bother for small packets:
         if level>0 and l>min_comp_size:
             try:
