@@ -1007,7 +1007,10 @@ cdef class Decoder:
             av_frame_free(&av_frame)
             raise RuntimeError("output size is zero!")
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
-            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
+            av_frame_unref(av_frame)
+            av_frame_free(&av_frame)
+            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
+                self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         cdef AVFrameWrapper framewrapper = AVFrameWrapper()
