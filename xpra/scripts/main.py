@@ -2278,8 +2278,6 @@ def no_gtk() -> None:
     if Gtk is None:
         #all good, not loaded
         return
-    import traceback
-    traceback.print_stack()
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 
