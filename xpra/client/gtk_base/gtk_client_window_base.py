@@ -503,7 +503,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         focuslog("%s focus_change%s has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
         if self._been_mapped:
             self._focus_latest = htf
-            self.send_latest_focus()
+            self.schedule_recheck_focus()
 
     def recheck_focus(self):
         self.recheck_focus_timer = 0
