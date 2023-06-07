@@ -576,7 +576,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         opts.display = display_name
         return desc
 
-    error_cb(f"unknown format for display name: {display_name!r}")
+    error_cb(f"unknown protocol {protocol!r} for display name: {display_name!r}")
     assert False
 
 
