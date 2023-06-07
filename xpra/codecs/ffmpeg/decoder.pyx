@@ -964,7 +964,7 @@ cdef class Decoder:
             if self.actual_pix_fmt not in ENUM_TO_FORMAT:
                 av_frame_unref(av_frame)
                 av_frame_free(&av_frame)
-                log.error("unknown output pixel format: %s, expected %s for '%s'",
+                log.error("Error: unknown output pixel format: %s, expected %s for '%s'",
                           FORMAT_TO_STR.get(self.actual_pix_fmt, self.actual_pix_fmt),
                           FORMAT_TO_STR.get(self.pix_fmt, self.pix_fmt),
                           self.colorspace)
@@ -1007,10 +1007,17 @@ cdef class Decoder:
             av_frame_free(&av_frame)
             raise RuntimeError("output size is zero!")
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
-            av_frame_unref(av_frame)
-            av_frame_free(&av_frame)
-            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
-                self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
+            log.warn(f"Error: {self.encoding} context size mismatch")
+            log.warn(f" on {self.frames+1} with colorspace {self.colorspace} (actual: {self.get_actual_colorspace()})")
+            log.warn(f" {self.get_type()} decoder object is configured for {self.width}x{self.height}")
+            log.warn(f" but AVCodecContext is set to {self.codec_ctx.width}x{self.codec_ctx.height}")
+            #looks like a server bug if the dimensions are rounded down to the nearest multiple of 2
+            #so don't fail in that case:
+            if self.width-self.codec_ctx.width>1 or self.height-self.codec_ctx.height>1:
+                av_frame_unref(av_frame)
+                av_frame_free(&av_frame)
+                raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
+                    self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         cdef AVFrameWrapper framewrapper = AVFrameWrapper()
