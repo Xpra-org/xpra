@@ -216,6 +216,7 @@ def get_follow_window_types() -> Tuple[Gdk.WindowTypeHint,...]:
         except KeyError:
             log.warn(f"Warning: invalid follow window type specified {v!r}")
             continue
+    return tuple(types)
 FOLLOW_WINDOW_TYPES = get_follow_window_types()
 
 
