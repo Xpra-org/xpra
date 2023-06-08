@@ -478,12 +478,15 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     cdef RROutput get_current_output(self):
         self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        assert rsc!=NULL
         try:
-            rsc = XRRGetScreenResourcesCurrent(self.display, window)
             log("get_current_output() screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
-            if rsc.noutput!=1:
-                log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)
+            if rsc.noutput==0:
+                log.error("Error: this display has no outputs")
                 return 0
+            if rsc.noutput>1:
+                log(f"{rsc.noutput} outputs")
             return rsc.outputs[0]
         finally:
             XRRFreeScreenResources(rsc)
