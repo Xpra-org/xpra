@@ -10,13 +10,13 @@
 %global srcname PyOpenGL
 
 Name:           python2-pyopengl
-Version:        3.1.7
+Version:        3.1.6
 Release:        1xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/PyOpenGL-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/PyOpenGL-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/5b/01/f8fd986bc7f456f1a925ee0239f0391838ade92cdb6e5b674ffb8b86cfd6/PyOpenGL-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/8e/47/64aa665af0f7d0c2f6c4a865c1d521c3697504da971366d4dea12ce8b339/PyOpenGL-accelerate-%{version}.tar.gz
 
 Requires:       freeglut
 Obsoletes:      python-pyopengl < %{version}-%{release}
@@ -68,12 +68,12 @@ Provides:       python-pyopengl-tk = %{version}-%{release}
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "eef31a3888e6984fd4d8e6c9961b184c9813ca82604d37fe3da80eb000a76c86" ]; then
+if [ "${sha256}" != "8ea6c8773927eda7405bffc6f5bb93be81569a7b05c8cac50cd94e969dce5e27" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
-if [ "${sha256}" != "2b123621273a939f7fd2ec227541e399f9b5d4e815d69ae0bdb1b6c70a293680" ]; then
+if [ "${sha256}" != "ad8a300256eca25228261de16f741e51a30f34f1e1b1cf68359f5c62dbcdcdc3" ]; then
 	echo "invalid checksum for %{SOURCE1}"
 	exit 1
 fi
@@ -111,9 +111,6 @@ find %{buildroot}%{python2_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 7
 %{python2_sitelib}/OpenGL/Tk
 
 %changelog
-* Thu Jun 08 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-1xpra1
-- new upstream release
-
 * Mon Jan 09 2023 Antoine Martin <antoine@xpra.org> - 3.1.6-1xpra1
 - new upstream release
 
