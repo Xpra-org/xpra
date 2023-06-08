@@ -30,9 +30,12 @@ try:
     from gi.repository import AyatanaAppIndicator3 as AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
     log("loaded AyatanaAppIndicator3")
 except (ImportError, ValueError):
-    gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
-    from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
-    log("loaded AppIndicator3")
+    try:
+        gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
+        from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+        log("loaded AppIndicator3")
+    except ValueError as e:
+        raise ImportError(f"failed to load `AppIndicator3`: {e}")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
