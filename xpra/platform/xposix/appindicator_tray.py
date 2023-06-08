@@ -41,7 +41,7 @@ else:
             from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
             log("loaded AppIndicator3")
         except ValueError as e:
-            raise ImportError(f"failed to load `AppIndicator3`: {e}")
+            raise ImportError("failed to load `AppIndicator3`: %s", e)
     PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
     ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
     APPLICATION_STATUS = AppIndicator3.IndicatorCategory.APPLICATION_STATUS
