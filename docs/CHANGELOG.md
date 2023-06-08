@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.4.6] 2023-06-08
+* major fixes:
+    * [OpenGL sanity check regression introduced in 4.4.5](https://github.com/Xpra-org/xpra/commit/a5bccfca2cae9b64528b140e90568d2fa899fd97)
+    * [handle paramiko `CanonicalizeHostname` ssh config parsing errors more gracefully](https://github.com/Xpra-org/xpra/commit/d9efbd264d945ef8412e9822f73ec46938205bd5)
+    * [Xpra-Launcher.exe crashes on MS Windows when closed with shortcut keys](https://github.com/Xpra-org/xpra/commit/b93d5fee7941a7aac72b481a43edf996e8a4fa39)
+    * [python-cryptography / OpenSSL workaround missing from some entrypoints](https://github.com/Xpra-org/xpra/commit/11164643ae02263a1eca88444aa7918d53027628)
+    * [focus not synchronized properly](https://github.com/Xpra-org/xpra/commit/93c90aecf2fea540637ea3a02b68e7e24c277a19)
+* system tray:
+    * [unhandled exceptions loading the new AppIndicator bindings](https://github.com/Xpra-org/xpra/commit/25302e1a9f667951f0975dfafb5a5016e5c0487d)[and older ones](https://github.com/Xpra-org/xpra/commit/f8590909973a5303607638a5b7efc4887b985082)
+    * [use AppIndicator for system tray forwarding](https://github.com/Xpra-org/xpra/commit/0a1819f904525feb625bb1ea1ce4451e2c6a6901)
+    * [don't use Gtk.StatusIcon on Wayland](https://github.com/Xpra-org/xpra/commit/55608da0a0cf9b923716b9950863ec557d363b1d)
+* packaging:
+    * [compatibility with the latest cx_Freeze release](https://github.com/Xpra-org/xpra/commit/15062aca4dc927b9091ed517f54aa6678a83cb07)
+* minor fixes:
+    * [maximize-window menu entry state not synced](https://github.com/Xpra-org/xpra/commit/ae77a11cdeba00ec27b8a176a08f59e009a3d5eb)
+    * [not yet used command parsing functionality not working as intended](https://github.com/Xpra-org/xpra/commit/449a654310ab5435ef79abcfc321e2f4336feb5b)
+
 ## [4.4.5] 2023-05-14
 * major fixes:
     * [use after free crash in GTK](https://github.com/Xpra-org/xpra/commit/a0cc7229a0ee8443e6b99d587e94143905bad337)
