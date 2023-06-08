@@ -15,6 +15,7 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
    - workaround exotic x264 library version strings
    - compatibility with the latest cx_Freeze
    - Cython 0.29.35
+   - PyOpenGL 3.1.7
    - xorg-x11-drv-dummy 0.4.1
   * major fixes:
    - GLib memory allocator crash
@@ -23,13 +24,14 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
    - clients without keymaps
    - clients without desktops attributes
    - only allow logging tweaks via env vars for non-root users
+   - match client desktop geometry and skip DPI warnings
    - potential unflushed X11 errors could crash GTK
    - stricter validation of `xdg` menu data
    - handle mode `xdg` library loading errors
    - unwanted lost-focus events
    - only use synthetic unfocus events when needed
   * network:
-   - rencodeplus compatibility with python2 builds, specify language level
+   - html5 client v5 compatibility regression with python2 builds
    - protocol was not flushing on close
    - IPv6 parsing
    - handle paramiko ssh config parsing errors more gracefully: `CanonicalizeHostname`
