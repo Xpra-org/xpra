@@ -31,7 +31,7 @@ def init_rencodeplus():
         has_rencodeplus = True
     except ImportError:
         return
-    use_rencodeplus = has_rencodeplus and use_rencodeplus
+    use_rencodeplus = has_rencodeplus and use_rencodeplus and PYTHON3
     log("init_rencodeplus() use_rencodeplus=%s", use_rencodeplus)
 
 
