@@ -912,7 +912,7 @@ fi
 
 
 %changelog
-* Wed Jun 07 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
+* Thu Jun 08 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
 - build, packaging and platforms:
     MacOS arm64 builds
     MacOS builds fail early outside `jhbuild` shell, clean `.cpp` files
@@ -940,6 +940,7 @@ fi
     potential unflushed X11 errors could crash GTK
     stricter validation of `xdg` menu data
     handle mode `xdg` library loading errors
+    unwanted lost-focus events
     only use synthetic unfocus events when needed
 - network:
     rencodeplus compatibility with python2 builds, specify language level

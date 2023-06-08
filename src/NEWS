@@ -1,4 +1,4 @@
-v3.1.5 (2023-03-30)
+v3.1.5 (2023-06-08)
 ======================
 	-- build, packaging and platforms:
 		- MacOS arm64 builds
@@ -27,6 +27,7 @@ v3.1.5 (2023-03-30)
 		- potential unflushed X11 errors could crash GTK
 		- stricter validation of `xdg` menu data
 		- handle mode `xdg` library loading errors
+		- unwanted lost-focus events
 		- only use synthetic unfocus events when needed
 	-- network:
 		- rencodeplus compatibility with python2 builds, specify language level
