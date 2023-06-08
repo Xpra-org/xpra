@@ -13,7 +13,7 @@ import os
 import sys
 import glob
 from time import monotonic
-from typing import Type, Tuple, List, Dict, Any, Generator as generator       #@UnresolvedImport, @UnusedImport
+from typing import Type, Tuple, List, Dict, Any, Optional, Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
@@ -72,12 +72,16 @@ def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
 
 
 MAX_THEMES : int = 2
-IconTheme = Config = themes = None
+IconTheme : Optional[Type] = None
+Config : Optional[Type] = None
+themes : Optional[Type] = None
 IconLoadingContext : Type = DummyContextManager
 if LOAD_FROM_THEME:
     try:
-        from xdg import IconTheme, Config
-    except ImportError:
+        import xdg
+        IconTheme = xdg.IconTheme
+        Config = xdg.Config
+    except (ImportError, AttributeError):
         log("python xdg is missing", exc_info=True)
     else:
         class KeepCacheLoadingContext():

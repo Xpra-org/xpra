@@ -51,7 +51,7 @@ class NotificationMixin(StubSourceMixin):
     # Utility functions for mixins (makes notifications optional)
     def may_notify(self, nid:int=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
                    actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name:str=None, user_callback:Callable=None) -> None:
+                   icon_name:str="", user_callback:Callable=None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -59,7 +59,7 @@ class NotificationMixin(StubSourceMixin):
             log("not sending notification: %s", e)
         else:
             icon_filename = get_icon_filename(icon_name)
-            icon = parse_image_path(icon_filename) or ""
+            icon = parse_image_path(icon_filename)
             self.notify("", nid, "Xpra", 0, "",
                         summary, body, actions, hints or {},
                         expire_timeout, icon, user_callback)

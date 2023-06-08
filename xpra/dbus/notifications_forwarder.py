@@ -98,10 +98,9 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                     break
         if "image-data" not in hints:
             image_path = h.pop("image-path", None)
-            if image_path:
-                v = parse_image_path(image_path)
-                if v:
-                    hints["image-data"] = v
+            v = parse_image_path(image_path)
+            if v:
+                hints["image-data"] = v
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
             v = h.get(x)
             if v is not None:

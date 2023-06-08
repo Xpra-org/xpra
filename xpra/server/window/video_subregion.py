@@ -6,7 +6,7 @@
 
 import math
 from time import monotonic
-from typing import Dict, List, Any
+from typing import Dict, List, Tuple, Any, Optional, Set, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -56,28 +56,28 @@ def scoreinout(ww:int, wh:int, region, incount:int, outcount:int) -> int:
 
 
 class VideoSubregion:
-    def __init__(self, refresh_cb, auto_refresh_delay, supported=False):
+    def __init__(self, refresh_cb:Callable, auto_refresh_delay:int, supported=False):
         self.refresh_cb = refresh_cb        #usage: refresh_cb(window, regions)
         self.auto_refresh_delay = auto_refresh_delay
         self.supported = supported
         self.enabled = True
         self.detection = True
-        self.exclusion_zones = []
+        self.exclusion_zones : List[rectangle] = []
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.rectangle = None
+        self.rectangle : Optional[rectangle] = None
         self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
         self.fps = 0
         self.damaged = 0        #proportion of the rectangle that got damaged (percentage)
         self.set_at = 0         #value of the "damage event count" when the region was set
         self.counter = 0        #value of the "damage event count" recorded at "time"
-        self.time = 0           #see above
+        self.time : float = 0           #see above
         self.refresh_timer = 0
-        self.refresh_regions = []
-        self.last_scores = {}
-        self.nonvideo_regions = []
+        self.refresh_regions : List[rectangle] = []
+        self.last_scores : Dict[Optional[rectangle],int] = {}
+        self.nonvideo_regions : List[rectangle] = []
         self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
@@ -315,7 +315,7 @@ class VideoSubregion:
         sslog("identify_video_subregion%s",
               (ww, wh, damage_events_count, last_damage_events, starting_at, children))
 
-        children_rects = ()
+        children_rects : Tuple[rectangle,...] = ()
         if children:
             children_rects = tuple(rectangle(x, y, w, h)
                                    for _xid, x, y, w, h, _border, _depth in children
@@ -363,9 +363,9 @@ class VideoSubregion:
             self.novideoregion("not enough damage events yet (%s)", dc)
             return
         #structures for counting areas and sizes:
-        wc = {}
-        hc = {}
-        dec = {}
+        wc : Dict[int,Dict[int,Set[rectangle]]] = {}
+        hc : Dict[int,Dict[int,Set[rectangle]]] = {}
+        dec : Dict[rectangle,int] = {}
         #count how many times we see each area, each width/height and where,
         #after removing any exclusion zones:
         for _,x,y,w,h in lde:
@@ -414,7 +414,7 @@ class VideoSubregion:
             return max(0, min(1, 1.0-not_damaged_pixels/rect_pixels))
 
         scores = {None : 0}
-        def score_region(info, region, ignore_size=0, d_ratio=0) -> int:
+        def score_region(info:str, region:rectangle, ignore_size=0, d_ratio=0) -> int:
             score = scores.get(region)
             if score is not None:
                 return score
@@ -452,7 +452,7 @@ class VideoSubregion:
                   info, region, ipct, opct, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             return rec(score)
 
-        def updateregion(rect) -> None:
+        def updateregion(rect:rectangle) -> None:
             self.rectangle = rect
             self.time = monotonic()
             self.inout = inoutcount(rect)
@@ -466,7 +466,7 @@ class VideoSubregion:
             self.last_scores = scores
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
-        def setnewregion(rect, msg, *args) -> None:
+        def setnewregion(rect : rectangle, msg : str, *args) -> None:
             rects = self.excluded_rectangles(rect, ww, wh)
             if not rects:
                 self.novideoregion("no match after removing excluded regions")
@@ -522,7 +522,7 @@ class VideoSubregion:
         most_pct = 0
         if c>0:
             most_damaged = int(sorted(damage_count.values())[-1])
-            most_pct = 100*most_damaged/c
+            most_pct = round(100*most_damaged/c)
             sslog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
             #is there a region that stands out?
             #try to use the region which is responsible for most of the large damage requests:

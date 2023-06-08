@@ -97,20 +97,22 @@ class DisplayManager(StubServerMixin):
                     k = parts[0].strip()
                     v = parts[1].strip()
                     if k in ("GLX", "GLU.version", "opengl", "pyopengl", "accelerate", "shading-language-version"):
-                        v = parse_version(v)
-                    props[k] = v
+                        props[k] = parse_version(v)
+                    else:
+                        props[k] = v
                 gllog("opengl props=%s", props)
                 if props:
-                    if props.get("success", "").lower() in TRUE_OPTIONS:
+                    glprops = typedict(props)
+                    if glprops.strget("success", "").lower() in TRUE_OPTIONS:
                         gllog.info(f"OpenGL is supported on display {self.display_name!r}")
-                        renderer = props.get("renderer").split(";")[0]
+                        renderer = glprops.strget("renderer").split(";")[0]
                         if renderer:
                             gllog.info(f" using {renderer!r} renderer")
                     else:
                         gllog.info("OpenGL is not supported on this display")
-                        err = props.get("error")
-                        if err:
-                            gllog.info(f" {err}")
+                        probe_err = glprops.strget("error")
+                        if probe_err:
+                            gllog.info(f" {probe_err}")
                 else:
                     gllog.info("No OpenGL information available")
             else:

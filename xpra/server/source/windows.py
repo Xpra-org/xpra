@@ -73,24 +73,22 @@ class WindowsMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         #WindowSource for each Window ID
-        self.window_sources = {}
-
-        self.window_frame_sizes = {}
+        self.window_sources : Dict[int,Any] = {}
+        self.window_frame_sizes : Dict = {}
         self.suspended = False
         self.send_cursors = False
-        self.cursor_encodings = ()
+        self.cursor_encodings : Tuple[str,...] = ()
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
-        self.window_min_size = 0, 0
-        self.window_max_size = 0, 0
+        self.window_min_size : Tuple[int,int] = 0, 0
+        self.window_max_size : Tuple[int,int] = 0, 0
         self.window_restack = False
         self.window_pre_map = False
         self.system_tray = False
-        self.metadata_supported = ()
-
+        self.metadata_supported : Tuple[str,...] = ()
         self.cursor_timer = 0
-        self.last_cursor_sent = None
+        self.last_cursor_sent : Tuple = ()
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
@@ -315,7 +313,7 @@ class WindowsMixin(StubSourceMixin):
 
     def send_empty_cursor(self) -> None:
         cursorlog("send_empty_cursor(..)")
-        self.last_cursor_sent = None
+        self.last_cursor_sent = ()
         self.send_more("cursor", "")
 
 

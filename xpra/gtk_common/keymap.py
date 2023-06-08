@@ -14,10 +14,10 @@ log = Logger("keyboard")
 #this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
 # the value is the keyname override
-KEY_TRANSLATIONS : Dict[tuple, str] = {}
+KEY_TRANSLATIONS : Dict[Tuple, str] = {}
 
 
-def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[int,str,int,int,int]]:
+def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[int,str,int,int,int],...]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.

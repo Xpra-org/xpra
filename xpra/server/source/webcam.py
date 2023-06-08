@@ -79,7 +79,7 @@ class WebcamMixin(StubSourceMixin):
             }
 
 
-    def get_device_options(self, device_id : int) -> Dict[str,Any]:  #pylint: disable=unused-argument
+    def get_device_options(self, device_id : int) -> Dict[Any,Any]:  #pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:

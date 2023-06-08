@@ -35,7 +35,7 @@ class AudioMixin(StubSourceMixin):
 
 
     def __init__(self):
-        self.audio_properties = {}
+        self.audio_properties : typedict = typedict()
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.speaker_codecs = []
@@ -43,7 +43,7 @@ class AudioMixin(StubSourceMixin):
         self.microphone_codecs = []
 
     def init_from(self, _protocol, server) -> None:
-        self.audio_properties       = server.audio_properties
+        self.audio_properties       = typedict(server.audio_properties)
         self.audio_source_plugin    = server.audio_source_plugin
         self.supports_speaker       = server.supports_speaker
         self.supports_microphone    = server.supports_microphone
@@ -53,11 +53,11 @@ class AudioMixin(StubSourceMixin):
     def init_state(self) -> None:
         self.wants_audio = True
         self.audio_source_sequence = 0
-        self.audio_source = None
-        self.audio_sink = None
-        self.pulseaudio_id = None
-        self.pulseaudio_cookie_hash = None
-        self.pulseaudio_server = None
+        self.audio_source : Any = None
+        self.audio_sink : Any = None
+        self.pulseaudio_id = ""
+        self.pulseaudio_cookie_hash = ""
+        self.pulseaudio_server = ""
         self.audio_decoders : Tuple[str,...] = ()
         self.audio_encoders : Tuple[str,...]= ()
         self.audio_receive = False
@@ -123,7 +123,7 @@ class AudioMixin(StubSourceMixin):
     def get_caps(self) -> Dict[str,Any]:
         if not self.wants_audio or not self.audio_properties:
             return {}
-        audio_props = self.audio_properties.copy()
+        audio_props = dict(self.audio_properties)
         if FULL_INFO<2:
             #only expose these specific keys:
             audio_props = dict((k,v) for k,v in audio_props.items() if k in (
@@ -163,8 +163,9 @@ class AudioMixin(StubSourceMixin):
                 #different user, assume different pulseaudio server
                 return True
         #check pulseaudio id if we have it
-        pulseaudio_id = self.audio_properties.get("pulseaudio", {}).get("id")
-        pulseaudio_cookie_hash = self.audio_properties.get("pulseaudio", {}).get("cookie-hash")
+        padict = typedict(self.audio_properties.get("pulseaudio", {}))
+        pulseaudio_id = padict.strget("id")
+        pulseaudio_cookie_hash = padict.strget("cookie-hash")
         log("audio_loop_check(%s) pulseaudio id=%s, client pulseaudio id=%s",
                  mode, pulseaudio_id, self.pulseaudio_id)
         log("audio_loop_check(%s) pulseaudio cookie hash=%s, client pulseaudio cookie hash=%s",

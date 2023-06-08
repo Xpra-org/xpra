@@ -216,10 +216,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             body = "\n".join(ss.get_connect_info())
             actions = []
             hints = {}
-            icon = None
             icon_filename = os.path.join(get_icon_dir(), "user.png")
-            if os.path.exists(icon_filename):
-                icon = parse_image_path(icon_filename)
+            icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)
 
     def get_notification_tray(self):
@@ -236,10 +234,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
             actions = []
             hints = {}
-            icon = None
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
-            if os.path.exists(icon_filename):
-                icon = parse_image_path(icon_filename)
+            icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, NotificationID.STARTUP, "Xpra", replaces_nid, "",
                                       title, body, actions, hints, 10*1000, icon)
 

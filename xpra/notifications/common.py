@@ -51,7 +51,7 @@ def parse_image_data(data) -> Optional[ImageData]:
         log.estr(e)
     return None
 
-def parse_image_path(path):
+def parse_image_path(path:str) -> Optional[ImageData]:
     if path and os.path.exists(path):
         Image = PIL_Image()
         if not Image:
