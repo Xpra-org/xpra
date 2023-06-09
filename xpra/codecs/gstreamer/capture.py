@@ -51,7 +51,7 @@ class Capture(Pipeline):
         self.create_pipeline(element)
         assert width>0 and height>0
 
-    def create_pipeline(self, capture_element:str="ximagesrc"):
+    def create_pipeline(self, capture_element:str="ximagesrc") -> None:
         #CAPS = f"video/x-raw,width={self.width},height={self.height},format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
             capture_element,
@@ -69,7 +69,7 @@ class Capture(Pipeline):
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
 
-    def on_new_sample(self, _bus):
+    def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         size = buf.get_size()
@@ -96,7 +96,7 @@ class Capture(Pipeline):
                 self.emit("new-image", self.pixel_format, image, client_info)
         return GST_FLOW_OK
 
-    def on_new_preroll(self, _appsink):
+    def on_new_preroll(self, _appsink) -> int:
         log("new-preroll")
         return GST_FLOW_OK
 
@@ -109,13 +109,13 @@ class Capture(Pipeline):
         except Empty:
             return None
 
-    def refresh(self):
+    def refresh(self) -> bool:
         return not self.image.empty()
 
-    def clean(self):
+    def clean(self) -> None:
         self.stop()
 
-    def get_type(self):
+    def get_type(self) -> str:
         return self.capture_element
 
 GObject.type_register(Capture)
@@ -127,7 +127,7 @@ class CaptureAndEncode(Capture):
     and encode it to a video stream
     """
 
-    def create_pipeline(self, capture_element:str="ximagesrc"):
+    def create_pipeline(self, capture_element:str="ximagesrc") -> None:
         #encode_element:str="x264enc pass=4 speed-preset=1 tune=4 byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
         #encode_element="x264enc threads=8 pass=4 speed-preset=1 tune=zerolatency byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
         #encode_element="vp8enc deadline=1 min-quantizer=60 max-quantizer=63 cq-level=61"):
@@ -180,7 +180,7 @@ class CaptureAndEncode(Capture):
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
 
-    def on_new_sample(self, _bus):
+    def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         size = buf.get_size()
@@ -194,24 +194,24 @@ class CaptureAndEncode(Capture):
             self.emit("new-image", self.pixel_format, data, client_info)
         return GST_FLOW_OK
 
-    def on_new_preroll(self, _appsink):
+    def on_new_preroll(self, _appsink) -> int:
         log("new-preroll")
         return GST_FLOW_OK
 
-    def refresh(self):
+    def refresh(self) -> bool:
         return True
 
-    def clean(self):
+    def clean(self) -> None:
         self.stop()
 
-    def get_type(self):
+    def get_type(self) -> str:
         return f"{self.capture_element}-{self.pixel_format}"
 
 
 GObject.type_register(CaptureAndEncode)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
     from gi.repository import GLib  # @UnresolvedImport
     from xpra.gtk_common.gtk_util import get_root_size

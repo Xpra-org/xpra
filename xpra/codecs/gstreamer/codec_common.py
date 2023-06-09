@@ -20,8 +20,8 @@ FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
 FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3)
 
 
-def get_default_encoder_options():
-    options = {
+def get_default_encoder_options() -> Dict[str,Dict[str,Any]]:
+    options : Dict[str,Dict[str,Any]] = {
         "vaapih264enc" : {
             "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
             #"tune"          : 3,    #low-power
@@ -225,7 +225,7 @@ class VideoPipeline(Pipeline):
     def create_pipeline(self, options):
         raise NotImplementedError()
 
-    def on_message(self, bus, message):
+    def on_message(self, bus, message) -> int:
         if message.type == Gst.MessageType.NEED_CONTEXT and self.pipeline_str.find("vaapi")>=0:
             log("vaapi is requesting a context")
             return GST_FLOW_OK
