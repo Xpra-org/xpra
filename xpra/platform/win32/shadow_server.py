@@ -452,7 +452,7 @@ class ShadowServer(GTKShadowServerBase):
         GetPhysicalCursorPos(byref(pos))
         return pos.x, pos.y
 
-    def do_process_mouse_common(self, proto, device_id, wid, pointer, props):
+    def do_process_mouse_common(self, proto, device_id, wid:int, pointer, props) -> bool:
         ss = self._server_sources.get(proto)
         if not ss:
             return False

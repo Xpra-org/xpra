@@ -37,13 +37,13 @@ class RemoteDesktop(PortalShadow):
         keylog.info("key mapping not implemented - YMMV")
 
 
-    def do_process_mouse_common(self, proto, device_id, wid, pointer, props) -> None:
+    def do_process_mouse_common(self, proto, device_id, wid, pointer, props) -> bool:
         if self.readonly or not self.input_devices:
             return False
         win = self._id_to_window.get(wid)
         if not win:
             mouselog.error(f"Error: window {wid} not found")
-            return
+            return False
         x, y = pointer[:2]
         node_id = win.pipewire_id
         options = native_to_dbus([], "{sv}")
@@ -53,6 +53,7 @@ class RemoteDesktop(PortalShadow):
             node_id,
             x, y,
             dbus_interface=REMOTEDESKTOP_IFACE)
+        return True
 
     def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props) -> None:
         options = native_to_dbus([], "{sv}")
