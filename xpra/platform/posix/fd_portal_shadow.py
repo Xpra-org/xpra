@@ -7,14 +7,12 @@
 
 import os
 import random
-from time import monotonic
 from dbus.types import UInt32
 from dbus.types import Dictionary
 from typing import Optional, List, Dict, Any
 
 from xpra.exit_codes import ExitCode
 from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
-from xpra.net.compression import Compressed
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode
 from xpra.gst_common import get_element_str
@@ -307,12 +305,6 @@ class PortalShadow(GTKShadowServerBase):
             return
         #this is a frame from a compressed stream,
         #send it to all the window sources for this window:
-        cdata = Compressed(coding, data)
-        options = {}
-        x = y = 0
-        w, h = model.geometry[2:4]
-        outstride = 0
-        damage_time = process_damage_time = monotonic()
         for ss in tuple(self._server_sources.values()):
             if not hasattr(ss, "get_window_source"):
                 #client is not showing any windows
@@ -321,9 +313,7 @@ class PortalShadow(GTKShadowServerBase):
             if not ws:
                 #client not showing this window
                 continue
-            log(f"sending {len(data)} bytes packet of {coding} stream to {ws} of {ss}")
-            packet = ws.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_info, options)
-            ws.queue_damage_packet(packet, damage_time, process_damage_time, options)
+            ws.direct_queue_draw(coding, data, client_info)
 
 
     def capture_error(self, capture, message) -> None:

@@ -28,7 +28,7 @@ from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import preforder, LOSSY_PIXEL_FORMATS
-from xpra.net.compression import use
+from xpra.net.compression import use, Compressed
 from xpra.log import Logger
 
 log = Logger("window", "encoding")
@@ -2741,6 +2741,20 @@ class WindowSource(WindowIconSource):
         self.encoding_last_used = coding
         #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
+
+
+    def direct_queue_draw(self, coding:str, data:bytes, client_info:Dict) -> None:
+        #this is a frame from a compressed stream,
+        #send it to all the window sources for this window:
+        cdata = Compressed(coding, data)
+        options = {}
+        x = y = 0
+        w, h = self.window_dimensions
+        outstride = 0
+        damage_time = process_damage_time = monotonic()
+        log(f"direct_queue_draw({coding}, {len(data)} bytes, {client_info})")
+        packet = self.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_info, options)
+        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 
     def mmap_encode(self, coding : str, image : ImageWrapper, _options) -> Tuple:
