@@ -10,13 +10,16 @@
 %if 0%{?el9}
 %define with_python2 0
 %endif
+%if 0%{?el7}
+%define with_python3 0
+%endif
 
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %if %{with_python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 %if %{with_python3}
+%{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
