@@ -98,6 +98,8 @@ VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 128)
 
+STREAM_MODE = os.environ.get("XPRA_STREAM_MODE", "")
+
 SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
 SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
@@ -159,6 +161,7 @@ class WindowVideoSource(WindowSource):
         self.encode_from_queue_due = 0
         self.scroll_data = None
         self.last_scroll_time = 0
+        self.gstreamer_pipeline = None
 
         self._csc_encoder = None
         self._video_encoder = None
@@ -336,6 +339,7 @@ class WindowVideoSource(WindowSource):
     def cleanup(self) -> None:
         super().cleanup()
         self.cleanup_codecs()
+        self.stop_gstreamer_pipeline()
 
     def cleanup_codecs(self) -> None:
         """ Video encoders (x264, nvenc and vpx) and their csc helpers
@@ -597,6 +601,12 @@ class WindowVideoSource(WindowSource):
 
 
     def do_damage(self, ww : int, wh : int, x : int, y : int, w : int, h : int, options):
+        if ww>=64 and wh>=64 and self.encoding=="stream" and STREAM_MODE=="gstreamer" and self.common_video_encodings:
+            #in this mode, we start a pipeline once
+            #and let it submit packets, bypassing all the usual logic:
+            if not self.gstreamer_pipeline:
+                self.start_gstreamer_pipeline()
+            return
         vs = self.video_subregion
         if vs:
             r = vs.rectangle
@@ -604,6 +614,40 @@ class WindowVideoSource(WindowSource):
                 #the damage will take care of scheduling it again
                 vs.cancel_refresh_timer()
         super().do_damage(ww, wh, x, y, w, h, options)
+
+    def start_gstreamer_pipeline(self):
+        from xpra.gst_common import plugin_str
+        from xpra.codecs.gstreamer.capture import CaptureAndEncode
+        attrs = {
+            "show-pointer"  : False,
+            "do-timestamp"  : True,
+            "use-damage"    : True,
+            }
+        try:
+            xid = self.window.get_property("xid")
+        except (TypeError, AttributeError):
+            xid = 0
+        if xid:
+            attrs["xid"] = xid
+        element = plugin_str("ximagesrc", attrs)
+        encoding = self.common_video_encodings[0]
+        w, h = self.window_dimensions
+        self.gstreamer_pipeline = CaptureAndEncode(element, encoding, w, h)
+        self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
+        self.gstreamer_pipeline.start()
+
+    def stop_gstreamer_pipeline(self):
+        gp = self.gstreamer_pipeline
+        if gp:
+            self.gstreamer_pipeline = None
+            gp.stop()
+
+    def new_gstreamer_frame(self, capture, coding:str, data, client_info:Dict) -> None:
+        self.direct_queue_draw(coding, data, client_info)
+
+    def update_window_dimensions(self, ww, wh):
+        super().update_window_dimensions(ww, wh)
+        self.stop_gstreamer_pipeline()
 
 
     def cancel_damage(self, limit : int=0):
@@ -615,6 +659,7 @@ class WindowVideoSource(WindowSource):
         self.free_scroll_data()
         self.last_scroll_time = 0
         super().cancel_damage(limit)
+        self.stop_gstreamer_pipeline()
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
         self.cleanup_codecs()

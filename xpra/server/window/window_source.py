@@ -1630,13 +1630,17 @@ class WindowSource(WindowIconSource):
     def may_update_window_dimensions(self) -> Tuple[int,int]:
         ww, wh = self.window.get_dimensions()
         if self.window_dimensions != (ww, wh):
-            now = monotonic()
-            self.statistics.last_resized = now
-            self.statistics.resize_events.append(now)
-            log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
-            self.window_dimensions = ww, wh
-            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+            self.update_window_dimensions(ww, wh)
         return ww, wh
+
+    def update_window_dimensions(self, ww, wh):
+        now = monotonic()
+        self.statistics.last_resized = now
+        self.statistics.resize_events.append(now)
+        log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
+        self.window_dimensions = ww, wh
+        self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+
 
     def get_packets_backlog(self) -> int:
         s = self.statistics
@@ -2183,6 +2187,9 @@ class WindowSource(WindowIconSource):
 
     def do_schedule_auto_refresh(self, encoding : str, data, region, client_options, options) -> None:
         assert data
+        if self.encoding=="stream":
+            #streaming mode doesn't use refresh
+            return
         if encoding.startswith("png"):
             actual_quality = 100
             lossy = self.image_depth>32 or self.image_depth==30
