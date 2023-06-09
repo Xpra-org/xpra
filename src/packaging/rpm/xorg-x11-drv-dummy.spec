@@ -1,5 +1,5 @@
 %global tarball xf86-video-dummy
-%global moduledir %(pkg-config xorg-server --variable=moduledir )
+%global moduledir %(pkg-config xorg-server --variable=moduledir)
 %global driverdir %{moduledir}/drivers
 %{!?make_build: %global make_build make}
 
@@ -25,8 +25,8 @@ BuildRequires: make
 BuildRequires: xorg-x11-server-devel >= 1.10.99.902
 BuildRequires: autoconf automake libtool
 
-Requires: Xorg %(xserver-sdk-abi-requires ansic)
-Requires: Xorg %(xserver-sdk-abi-requires videodrv)
+Requires: Xorg %(xserver-sdk-abi-requires ansic 2> /dev/null)
+Requires: Xorg %(xserver-sdk-abi-requires videodrv 2> /dev/null)
 
 %description
 X.Org X11 dummy video driver.
