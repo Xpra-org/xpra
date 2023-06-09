@@ -20,7 +20,6 @@ python2-pyopengl
 python2-pyu2f
 python2-uinput
 python3-pytools
-python3-pycuda
 python3-pynvml
 python3-pyu2f
 pangox-compat
