@@ -208,7 +208,7 @@ class CaptureAndEncode(Capture):
         return f"{self.capture_element}-{self.pixel_format}"
 
 
-GObject.type_register(Capture)
+GObject.type_register(CaptureAndEncode)
 
 
 def selftest(full=False):
