@@ -8,8 +8,8 @@ import os
 import sys
 import struct
 
-from xpra.os_util import bytestostr, hexstr
-from xpra.util import iround, envbool, envint, csv, ellipsizer
+from xpra.os_util import bytestostr, hexstr, get_saved_env_var
+from xpra.util import iround, envbool, envint, csv, ellipsizer, first_time
 from xpra.os_util import is_unity, is_gnome, is_kde, is_Fedora, is_X11, is_Wayland
 from xpra.log import Logger
 
