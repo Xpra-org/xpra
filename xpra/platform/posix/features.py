@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -42,7 +42,7 @@ if not is_Wayland():
     CLIPBOARDS = ("CLIPBOARD", "PRIMARY", "SECONDARY")
     CLIPBOARD_GREEDY = False
 else:
-    CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
+    CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
     CLIPBOARD_GREEDY = True
 CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 

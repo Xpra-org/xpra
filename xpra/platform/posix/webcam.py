@@ -5,7 +5,7 @@
 #pylint: disable-msg=E1101
 
 import os
-from typing import Dict
+from typing import Dict, Any, Callable
 
 from xpra.util import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
@@ -31,7 +31,7 @@ def _can_capture_video(dev_file, dev_info):
     return True
 
 v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
-def check_virtual_dir(warn=True):
+def check_virtual_dir(warn=True) -> bool:
     if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
         if warn:
             log.warn("Warning: webcam forwarding is disabled")
@@ -41,7 +41,7 @@ def check_virtual_dir(warn=True):
         return False
     return True
 
-def query_video_device(device):
+def query_video_device(device) -> Dict[str,Any]:
     try:
         # pylint: disable=import-outside-toplevel
         from xpra.codecs.v4l2.pusher import query_video_device as v4l_query_video_device
@@ -89,7 +89,7 @@ def get_virtual_video_devices(capture_only=True) -> Dict[int, Dict]:
     log(f"found {len(devices)} virtual video devices")
     return devices
 
-def get_all_video_devices(capture_only=True):
+def get_all_video_devices(capture_only=True) -> Dict[int,str]:
     contents = os.listdir("/dev")
     devices = {}
     device_paths = set()
@@ -122,12 +122,12 @@ def get_all_video_devices(capture_only=True):
 _watch_manager = None
 _notifier = None
 
-def _video_device_file_filter(event):
+def _video_device_file_filter(event) -> bool:
     # return True to stop processing of event (to "stop chaining")
     return not event.pathname.startswith("/dev/video")
 
 
-def add_video_device_change_callback(callback):
+def add_video_device_change_callback(callback:Callable) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
     global _watch_manager, _notifier
@@ -160,7 +160,7 @@ def add_video_device_change_callback(callback):
     #for running standalone:
     #notifier.loop()
 
-def remove_video_device_change_callback(callback):
+def remove_video_device_change_callback(callback:Callable) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks
     global _watch_manager, _notifier

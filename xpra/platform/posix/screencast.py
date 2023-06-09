@@ -13,17 +13,17 @@ log = Logger("shadow")
 
 class ScreenCast(PortalShadow):
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "pipewire screencast"
 
 
-    def on_session_created(self):
+    def on_session_created(self) -> None:
         #skip select_devices() and go straight to sources then start:
         self.select_sources()
 
-    def set_keymap(self, server_source, force=False):
+    def set_keymap(self, server_source, force=False) -> None:
         #no input devices
         pass
 
-    def do_process_button_action(self, *args):
+    def do_process_button_action(self, *args) -> None:
         pass

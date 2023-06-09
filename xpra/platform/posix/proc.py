@@ -13,7 +13,7 @@ except ImportError:
         get_parent_pid = None
 
 
-def main(argv):
+def main(argv) -> int:
     from xpra.platform import program_context
     with program_context("Get-Parent-Pid", "Get Parent Pid"):
         if not get_parent_pid:
@@ -31,6 +31,7 @@ def main(argv):
                 print(f"{pid_str} is not a valid pid number")
             else:
                 print(f" get_parent_pid({pid})={get_parent_pid(pid)}")
+    return 0
 
 if __name__ == "__main__":
     import sys

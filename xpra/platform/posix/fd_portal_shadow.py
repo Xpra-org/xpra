@@ -10,7 +10,7 @@ import random
 from time import monotonic
 from dbus.types import UInt32
 from dbus.types import Dictionary
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from xpra.exit_codes import ExitCode
 from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
@@ -128,7 +128,7 @@ class PortalShadow(GTKShadowServerBase):
         session_counter += 1
         token = f"u{session_counter}"
         self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
-        options = {
+        options : Dict[str,Any] = {
             "session_handle_token"  : token,
             }
         log(f"create_session() session_counter={session_counter}")
@@ -292,7 +292,7 @@ class PortalShadow(GTKShadowServerBase):
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, coding, data, client_info) -> None:
+    def capture_new_image(self, capture, coding:str, data, client_info:Dict) -> None:
         wid = capture.node_id
         model = self._id_to_window.get(wid)
         log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")

@@ -32,7 +32,7 @@ cdef extern from "proc/readproc.h":
     proc_t* readproc(PROCTAB *PT, proc_t *p)
     void closeproc(PROCTAB* PT)
 
-def get_parent_pid(int pid):
+def get_parent_pid(int pid) -> int:
     cdef proc_t proc_info
     memset(&proc_info, 0, sizeof(proc_t))
     cdef PROCTAB *pt_ptr = openproc(PROC_FILLSTATUS | PROC_PID, &pid)

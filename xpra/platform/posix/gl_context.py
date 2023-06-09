@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
@@ -20,7 +21,7 @@ log = Logger("opengl")
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
 
-GLX_ATTRIBUTES = {
+GLX_ATTRIBUTES : Dict[Any,str] = {
     GLX.GLX_ACCUM_RED_SIZE      : "accum-red-size",
     GLX.GLX_ACCUM_GREEN_SIZE    : "accum-green-size",
     GLX.GLX_ACCUM_BLUE_SIZE     : "accum-blue-size",
@@ -50,7 +51,7 @@ def c_attrs(props):
     attrs += [0, 0]
     return (c_int * len(attrs))(*attrs)
 
-def get_xdisplay():
+def get_xdisplay() -> POINTER:
     ptr = get_display_ptr()
     assert ptr, "no X11 display registered"
     # pylint: disable=import-outside-toplevel
@@ -60,11 +61,11 @@ def get_xdisplay():
 
 class GLXWindowContext:
 
-    def __init__(self, glx_context, xid):
+    def __init__(self, glx_context, xid : int):
         self.context = glx_context
         self.xid = xid
-        self.xdisplay = get_xdisplay()
-        self.valid = False
+        self.xdisplay : int = get_xdisplay()
+        self.valid : bool = False
 
     def __enter__(self):
         log("glXMakeCurrent: xid=%#x, context=%s", self.xid, self.context)
@@ -82,10 +83,10 @@ class GLXWindowContext:
             if not GLX.glXMakeCurrent(self.xdisplay, 0, null_context):
                 log.error("Error: glXMakeCurrent NULL failed")
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         """ not needed on X11 """
 
-    def swap_buffers(self):
+    def swap_buffers(self) -> None:
         assert self.valid, "GLX window context is no longer valid"
         GLX.glXSwapBuffers(self.xdisplay, self.xid)
 
@@ -95,11 +96,11 @@ class GLXWindowContext:
 
 class GLXContext:
 
-    def __init__(self, alpha=False):
-        self.props = {}
-        self.xdisplay = None
+    def __init__(self, alpha:bool=False):
+        self.props : Dict[str,Any] = {}
+        self.xdisplay : int = 0
         self.context = None
-        self.bit_depth = 0
+        self.bit_depth : int = 0
         import gi
         gi.require_version("Gdk", "3.0")  # @UndefinedVariable
         from gi.repository import Gdk  # @UnresolvedImport
@@ -108,7 +109,10 @@ class GLXContext:
             log.warn("Warning: GLXContext: no default display")
             return
         screen = display.get_default_screen()
-        bpc = 8
+        if not screen:
+            log.warn("Warning: GLXContext: no default screen")
+            return
+        bpc : int = 8
         pyattrs = {
             GLX.GLX_RGBA            : None,
             GLX.GLX_RED_SIZE        : bpc,
@@ -160,7 +164,7 @@ class GLXContext:
         self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
-        def getstr(k):
+        def getstr(k) -> str:
             try:
                 return glGetString(k)
             except Exception as e:  # pragma: no cover
@@ -173,7 +177,7 @@ class GLXContext:
         self.props["renderer"] = getstr(GL_RENDERER)
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
-    def check_support(self, force_enable=False):
+    def check_support(self, force_enable:bool=False) -> Dict[str,Any]:
         i = self.props
         if not self.xdisplay:
             return {
@@ -199,17 +203,17 @@ class GLXContext:
         tmp.destroy()
         return i
 
-    def get_bit_depth(self):
+    def get_bit_depth(self) -> int:
         return self.bit_depth
 
-    def is_double_buffered(self):
+    def is_double_buffered(self) -> bool:
         return DOUBLE_BUFFERED
 
-    def get_paint_context(self, gdk_window):
+    def get_paint_context(self, gdk_window) -> GLXWindowContext:
         assert self.context and gdk_window
         return GLXWindowContext(self.context, gdk_window.get_xid())
 
-    def destroy(self):
+    def destroy(self) -> None:
         c = self.context
         if c:
             self.context = None
@@ -221,7 +225,7 @@ class GLXContext:
 GLContext = GLXContext
 
 
-def check_support():
+def check_support() -> Dict[str,Any]:
     ptr = get_display_ptr()
     if not ptr:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source    #@UnresolvedImport, @UnusedImport

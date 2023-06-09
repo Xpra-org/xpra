@@ -50,7 +50,7 @@ cdef extern from "libproc2/pids.h":
     int procps_pids_unref(pids_info **info)
     pids_fetch *procps_pids_select(pids_info *info, unsigned int *pids, int pidcount, int select_type)
 
-def get_parent_pid(int pid):
+def get_parent_pid(int pid) -> int:
     cdef pids_info *handle
     cdef int selector
 

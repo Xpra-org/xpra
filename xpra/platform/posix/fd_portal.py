@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 from enum import IntEnum
+from typing import Callable
 
 from xpra.dbus.common import loop_init, init_session_bus
 from xpra.log import Logger
@@ -38,13 +39,13 @@ class AvailableSourceTypes(IntEnum):
 dbus_sender_name : str = (bus.get_unique_name()[1:]).replace(".", "_")
 request_counter : int = 0
 
-def screenscast_dbus_call(method, callback, *args, options=None):
+def screenscast_dbus_call(method, callback:Callable, *args, options=None) -> None:
     dbus_desktop_call(SCREENCAST_IFACE, method, callback, *args, options=options)
 
-def remotedesktop_dbus_call(method, callback, *args, options=None):
+def remotedesktop_dbus_call(method, callback:Callable, *args, options=None) -> None:
     dbus_desktop_call(REMOTEDESKTOP_IFACE, method, callback, *args, options=options)
 
-def dbus_desktop_call(interface, method, callback, *args, options=None):
+def dbus_desktop_call(interface:str, method, callback:Callable, *args, options=None) -> None:
     #generate a new token and path:
     options = options or {}
     global request_counter
@@ -64,5 +65,5 @@ def dbus_desktop_call(interface, method, callback, *args, options=None):
 def get_portal_interface():
     return bus.get_object(PORTAL_DESKTOP_INTERFACE, PORTAL_DESKTOP_PATH)
 
-def get_session_interface(session_path):
+def get_session_interface(session_path:str):
     return bus.get_object(PORTAL_DESKTOP_INTERFACE, session_path)

@@ -5,17 +5,18 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Optional, Type
 
 from xpra.util import envbool
 from xpra.log import Logger
 
-def warn(*messages):
+def warn(*messages) -> None:
     log = Logger("server")
     log("warning loading backend", exc_info=True)
     for m in messages:
         log.warn(m)
 
-def load_screencast():
+def load_screencast() -> Optional[Type]:
     if envbool("XPRA_SHADOW_SCREENCAST", True):
         try:
             from xpra.platform.posix import screencast
@@ -25,7 +26,7 @@ def load_screencast():
                  f" {e}")
     return None
 
-def load_remotedesktop():
+def load_remotedesktop() -> Optional[Type]:
     if envbool("XPRA_SHADOW_REMOTEDESKTOP", True):
         try:
             from xpra.platform.posix import remotedesktop
@@ -35,7 +36,7 @@ def load_remotedesktop():
                  f" {e}")
     return None
 
-def load_shadow_wayland(display_name=None):
+def load_shadow_wayland(display_name=None) -> Optional[Type]:
     c = load_remotedesktop() or load_screencast()
     if c:
         os.environ["GDK_BACKEND"] = "wayland"
@@ -45,7 +46,7 @@ def load_shadow_wayland(display_name=None):
             os.environ["XPRA_NOX11"] = "1"
     return c
 
-def load_shadow_x11():
+def load_shadow_x11() -> Optional[Type]:
     if envbool("XPRA_SHADOW_X11", True):
         try:
             from xpra.x11 import shadow_x11_server
@@ -57,11 +58,12 @@ def load_shadow_x11():
     return None
 
 
-def ShadowServer(display_name=None, multi_window=True):
-    c = None
+def ShadowServer(display_name:str="", multi_window:bool=True):
+    c  : Optional[Type] = None
     if display_name.startswith("wayland-") or os.path.isabs(display_name):
         c = load_shadow_wayland(display_name)
     elif display_name.startswith(":"):
         c = load_shadow_x11()
     c = c or load_remotedesktop() or load_screencast() or load_shadow_x11()
+    assert c
     return c(multi_window)
