@@ -35,7 +35,7 @@ if [ "${sha256}" != "552092b3b6c23f47f4beee05495d0f9a153781f62a1c4b7ec53857a37df
 fi
 xz -dc ../SOURCES/%{name}-%{version}.tar.xz | /usr/bin/tar --no-same-owner -xf -
 cd %{name}-%{version}
-%patch0 -p1
+%patch -P 0 -p1
 
 %build
 cd %{name}-%{version}

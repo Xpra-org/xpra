@@ -98,14 +98,14 @@ will manipulate JPEG files using the TurboJPEG library.
 %prep
 %setup -q
 
-%patch0 -p1 -b .noinst
-%patch1 -p1 -b .CVE-2013-6630
-%patch2 -p1 -b .CVE-2013-6629
-%patch3 -p1 -b .pkgconfig
-%patch4 -p1 -b .CVE-2018-11212
-%patch5 -p1 -b .CVE-2016-3616_CVE-2018-11213_CVE-2018-11214
-%patch6 -p1 -b .CVE-2018-11813
-%patch7 -p1 -b .CVE-2018-14498
+%patch -P 0 -p1 -b .noinst
+%patch -P 1 -p1 -b .CVE-2013-6630
+%patch -P 2 -p1 -b .CVE-2013-6629
+%patch -P 3 -p1 -b .pkgconfig
+%patch -P 4 -p1 -b .CVE-2018-11212
+%patch -P 5 -p1 -b .CVE-2016-3616_CVE-2018-11213_CVE-2018-11214
+%patch -P 6 -p1 -b .CVE-2018-11813
+%patch -P 7 -p1 -b .CVE-2018-14498
 
 %build
 autoreconf -fiv

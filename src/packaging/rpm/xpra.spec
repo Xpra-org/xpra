@@ -529,10 +529,10 @@ xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd $RPM_BUILD_DIR/xpra-%{version}
 %if 0%{?el7}
 #remove some systemd configuration options:
-%patch0 -p1
-%patch1 -p1
+%patch -P 0 -p1
+%patch -P 1 -p1
 #missing definitions in turbojpeg headers:
-%patch2 -p1
+%patch -P 2 -p1
 %endif
 
 popd

@@ -69,9 +69,9 @@ if [ "${sha256}" != "16bd736074f6b14180f206b7e91263fc721b49912ea3258ab5f094cfa54
 	exit 1
 fi
 %setup -q -n gtkglext-%{version}
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
+%patch -P 0 -p1
+%patch -P 1 -p1
+%patch -P 2 -p1
 
 %build
 %configure --disable-gtk-doc --disable-static

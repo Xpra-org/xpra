@@ -53,7 +53,7 @@ if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
-%patch0 -p1
+%patch -P 0 -p1
 
 %build
 CUDA=/opt/cuda

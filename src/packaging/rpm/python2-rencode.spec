@@ -40,10 +40,10 @@ if [ "${sha256}" != "0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52
 	exit 1
 fi 
 %setup -qn rencode-%{version}
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
+%patch -P 0 -p1
+%patch -P 1 -p1
+%patch -P 2 -p1
+%patch -P 3 -p1
 
 %build
 %if 0%{?el7}
