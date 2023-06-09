@@ -3,7 +3,7 @@ libfakeXinerama
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
 python3-pytools
-python3-puda
+python3-pycuda
 python3-pynvml
 python3-pyu2f
 pangox-compat
