@@ -519,7 +519,6 @@ cdef get_monitor_properties(Display *display):
     return props
 
 
-
 cdef RandRBindingsInstance singleton = None
 def RandRBindings():
     global singleton
