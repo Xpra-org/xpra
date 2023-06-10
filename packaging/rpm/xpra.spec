@@ -638,13 +638,13 @@ fi
    Xpra-Launcher.exe crashes on MS Windows when closed with shortcut keys
    python-cryptography / OpenSSL workaround missing from some entrypoints
    focus not synchronized properly
-* system tray:
+- system tray:
    unhandled exceptions loading the new AppIndicator bindings
    use AppIndicator for system tray forwarding
    don't use Gtk.StatusIcon on Wayland
-* packaging:
+- packaging:
    compatibility with the latest cx_Freeze release
-* minor fixes:
+- minor fixes:
    maximize-window menu entry state not synced
    not yet used command parsing functionality not working as intended
 
