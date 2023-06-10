@@ -121,7 +121,7 @@ def get_display_icc_info():
 def get_icc_info() -> Dict[str,Any]:
     return default_get_icc_info()
 
-def default_get_icc_info():
+def default_get_icc_info() -> Dict[str,Any]:
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
     if ENV_ICC_DATA:
         return {
@@ -130,7 +130,7 @@ def default_get_icc_info():
             }
     return get_pillow_icc_info()
 
-def get_pillow_icc_info():
+def get_pillow_icc_info() -> Dict[str,Any]:
     screenlog = Logger("screen")
     info = {}
     try:

@@ -89,9 +89,9 @@ def get_virtual_video_devices(capture_only=True) -> Dict[int, Dict]:
     log(f"found {len(devices)} virtual video devices")
     return devices
 
-def get_all_video_devices(capture_only=True) -> Dict[int,str]:
+def get_all_video_devices(capture_only=True) -> Dict[int,Dict[str,Any]]:
     contents = os.listdir("/dev")
-    devices = {}
+    devices : Dict[int,Dict[str,Any]] = {}
     device_paths = set()
     for f in contents:
         if not f.startswith("video"):
@@ -175,13 +175,15 @@ def remove_video_device_change_callback(callback:Callable) -> None:
     if not _video_device_change_callbacks:
         log("last video device change callback removed, closing the watch manager")
         #we can close it:
-        try:
-            _notifier.stop()
-        except Exception:
-            pass
-        _notifier = None
-        try:
-            _watch_manager.close()
-        except Exception:
-            pass
-        _watch_manager = None
+        if _notifier:
+            try:
+                _notifier.stop()
+            except Exception:
+                pass
+            _notifier = None
+        if _watch_manager:
+            try:
+                _watch_manager.close()
+            except Exception:
+                pass
+            _watch_manager = None

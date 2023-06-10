@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Tuple, Dict, Any, Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
@@ -77,10 +77,10 @@ def gl_check() -> str:
     return ""
 
 
-def get_wm_name():
+def get_wm_name() -> str:
     return do_get_wm_name(get_saved_env())
 
-def do_get_wm_name(env):
+def do_get_wm_name(env) -> str:
     wm_name = env.get("XDG_CURRENT_DESKTOP", "") or env.get("XDG_SESSION_DESKTOP") or env.get("DESKTOP_SESSION")
     if env.get("XDG_SESSION_TYPE")=="wayland" or env.get("GDK_BACKEND")=="wayland":
         if wm_name:
@@ -95,7 +95,7 @@ def do_get_wm_name(env):
     return wm_name
 
 
-def get_clipboard_native_class():
+def get_clipboard_native_class() -> str:
     gtk_clipboard_class = "xpra.gtk_common.gtk_clipboard.GTK_Clipboard"
     if not x11_bindings():
         return gtk_clipboard_class
@@ -135,7 +135,7 @@ def _try_load_appindicator() -> Optional[Type]:
     return None
 
 
-def get_native_notifier_classes():
+def get_native_notifier_classes() -> List[Type]:
     ncs = []
     try:
         from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
@@ -150,7 +150,7 @@ def get_native_notifier_classes():
     return ncs
 
 
-def get_session_type():
+def get_session_type() -> str:
     return os.environ.get("XDG_SESSION_TYPE", "")
 
 
@@ -169,7 +169,7 @@ def _get_xsettings_dict():
     return xsettings_to_dict(_get_xsettings())
 
 
-def _get_xsettings_dpi():
+def _get_xsettings_dpi() -> int:
     if XSETTINGS_DPI and x11_bindings():
         try:
             from xpra.x11.xsettings_prop import XSettingsType
@@ -190,7 +190,7 @@ def _get_xsettings_dpi():
                     return actual_value
     return -1
 
-def _get_randr_dpi():
+def _get_randr_dpi() -> Tuple[int,int]:
     if RANDR_DPI and x11_bindings():
         from xpra.x11.common import get_randr_dpi
         from xpra.gtk_common.error import xlog
@@ -198,20 +198,20 @@ def _get_randr_dpi():
             return get_randr_dpi()
     return -1, -1
 
-def get_xdpi():
+def get_xdpi() -> int:
     dpi = _get_xsettings_dpi()
     if dpi>0:
         return dpi
     return _get_randr_dpi()[0]
 
-def get_ydpi():
+def get_ydpi() -> int:
     dpi = _get_xsettings_dpi()
     if dpi>0:
         return dpi
     return _get_randr_dpi()[1]
 
 
-def get_icc_info():
+def get_icc_info() -> Dict[str,Any]:
     if x11_bindings():
         from xpra.x11.common import get_icc_data as get_x11_icc_data
         from xpra.gtk_common.error import xsync
@@ -221,7 +221,7 @@ def get_icc_info():
     return default_get_icc_info()
 
 
-def get_antialias_info():
+def get_antialias_info() -> Dict[str,Any]:
     info = {}
     if not x11_bindings():
         return info
@@ -258,7 +258,7 @@ def get_antialias_info():
     return info
 
 
-def get_current_desktop():
+def get_current_desktop() -> int:
     if x11_bindings():
         from xpra.x11.common import get_current_desktop as get_x11_current_desktop
         from xpra.gtk_common.error import xsync
@@ -274,7 +274,7 @@ def get_workarea():
             return get_x11_workarea()
     return None
 
-def get_number_of_desktops():
+def get_number_of_desktops() -> int:
     if x11_bindings():
         from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
         from xpra.gtk_common.error import xsync
@@ -282,7 +282,7 @@ def get_number_of_desktops():
             return get_x11_number_of_desktops()
     return 0
 
-def get_desktop_names():
+def get_desktop_names() -> Tuple[str,...]:
     if x11_bindings():
         from xpra.x11.common import get_desktop_names as get_x11_desktop_names
         from xpra.gtk_common.error import xsync
@@ -291,7 +291,7 @@ def get_desktop_names():
     return ("Main", )
 
 
-def get_vrefresh():
+def get_vrefresh() -> int:
     if x11_bindings():
         from xpra.x11.common import get_vrefresh as get_x11_vrefresh
         from xpra.gtk_common.error import xsync
@@ -300,7 +300,7 @@ def get_vrefresh():
     return -1
 
 
-def get_cursor_size():
+def get_cursor_size() -> int:
     if x11_bindings():
         from xpra.x11.common import get_cursor_size as get_x11_cursor_size
         from xpra.gtk_common.error import xsync
@@ -309,7 +309,7 @@ def get_cursor_size():
     return -1
 
 
-def _get_xsettings_int(name, default_value):
+def _get_xsettings_int(name:str, default_value:int) -> int:
     d = _get_xsettings_dict()
     if name not in d:
         return default_value
@@ -319,21 +319,21 @@ def _get_xsettings_int(name, default_value):
         return default_value
     return value
 
-def get_double_click_time():
+def get_double_click_time() -> int:
     return _get_xsettings_int("Net/DoubleClickTime", -1)
 
-def get_double_click_distance():
+def get_double_click_distance() -> int:
     v = _get_xsettings_int("Net/DoubleClickDistance", -1)
     return v, v
 
-def get_window_frame_sizes():
+def get_window_frame_sizes() -> Dict:
     #for X11, have to create a window and then check the
     #_NET_FRAME_EXTENTS value after sending a _NET_REQUEST_FRAME_EXTENTS message,
     #so this is done in the gtk client instead of here...
     return {}
 
 
-def system_bell(*args):
+def system_bell(*args) -> bool:
     if not x11_bindings():
         return False
     global device_bell
@@ -359,7 +359,7 @@ def system_bell(*args):
         return False
 
 
-def pointer_grab(gdk_window):
+def pointer_grab(gdk_window) -> bool:
     if x11_bindings():
         try:
             from xpra.gtk_common.error import xsync
@@ -369,7 +369,7 @@ def pointer_grab(gdk_window):
             log.error("Error: failed to grab pointer", exc_info=True)
     return False
 
-def pointer_ungrab(_window):
+def pointer_ungrab(_window) -> bool:
     if x11_bindings():
         try:
             from xpra.gtk_common.error import xsync
@@ -381,7 +381,7 @@ def pointer_ungrab(_window):
     return False
 
 
-def _send_client_message(window, message_type, *values):
+def _send_client_message(window, message_type, *values) -> None:
     if not x11_bindings():
         log(f"cannot send client message {message_type} without the X11 bindings")
         return
@@ -389,10 +389,10 @@ def _send_client_message(window, message_type, *values):
     send_client_message(window, message_type, *values)
 
 
-def show_desktop(b):
+def show_desktop(b) -> None:
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
 
-def set_fullscreen_monitors(window, fsm, source_indication=0):
+def set_fullscreen_monitors(window, fsm, source_indication:int=0) -> None:
     if not isinstance(fsm, (tuple, list)):
         log.warn("invalid type for fullscreen-monitors: %s", type(fsm))
         return
@@ -402,32 +402,32 @@ def set_fullscreen_monitors(window, fsm, source_indication=0):
     values = list(fsm)+[source_indication]
     _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *values)
 
-def _toggle_wm_state(window, state, enabled):
+def _toggle_wm_state(window, state, enabled:bool) -> None:
     if enabled:
         action = 1  #"_NET_WM_STATE_ADD"
     else:
         action = 0  #"_NET_WM_STATE_REMOVE"
     _send_client_message(window, "_NET_WM_STATE", action, state)
 
-def set_shaded(window, shaded):
+def set_shaded(window, shaded:bool) -> None:
     _toggle_wm_state(window, "_NET_WM_STATE_SHADED", shaded)
 
 
 
-WINDOW_ADD_HOOKS = []
-def add_window_hooks(window):
+WINDOW_ADD_HOOKS : List[Callable] = []
+def add_window_hooks(window) -> None:
     for x in WINDOW_ADD_HOOKS:
         x(window)
     log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
 
-WINDOW_REMOVE_HOOKS = []
+WINDOW_REMOVE_HOOKS : List[Callable] = []
 def remove_window_hooks(window):
     for x in WINDOW_REMOVE_HOOKS:
         x(window)
     log("remove_window_hooks(%s) added %s", window, WINDOW_REMOVE_HOOKS)
 
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     from xpra.platform.gui import get_info_base  # pylint: disable=import-outside-toplevel
     i = get_info_base()
     s = _get_xsettings()
@@ -444,7 +444,7 @@ def get_info():
     return i
 
 
-def suppress_event(*_args):
+def suppress_event(*_args) -> None:
     """ we'll use XI2 to receive events """
 
 class XI2_Window:
@@ -466,13 +466,13 @@ class XI2_Window:
         window._do_scroll_event = suppress_event
         window.connect("destroy", self.cleanup)
 
-    def cleanup(self, *_args):
+    def cleanup(self, *_args) -> None:
         for window in self.windows:
             self.XI2.disconnect(window)
         self.windows = []
         self.window = None
 
-    def configured(self, *_args):
+    def configured(self, *_args) -> None:
         from xpra.gtk_common.error import xlog
         with xlog:
             self.windows = self.get_parent_windows(self.xid)
@@ -483,14 +483,14 @@ class XI2_Window:
             self.XI2.connect(window, "XI_DeviceChanged", self.do_xi_device_changed)
             self.XI2.connect(window, "XI_HierarchyChanged", self.do_xi_hierarchy_changed)
 
-    def do_xi_device_changed(self, *_args):
+    def do_xi_device_changed(self, *_args) -> None:
         self.motion_valuators = {}
 
-    def do_xi_hierarchy_changed(self, *_args):
+    def do_xi_hierarchy_changed(self, *_args) -> None:
         self.motion_valuators = {}
 
 
-    def get_parent_windows(self, oxid):
+    def get_parent_windows(self, oxid:int) -> List[int]:
         windows = [oxid]
         root = self.X11Window.get_root_xid()
         xid = oxid
@@ -503,7 +503,7 @@ class XI2_Window:
         return windows
 
 
-    def do_xi_button(self, event, device):
+    def do_xi_button(self, event, device) -> None:
         window = self.window
         client = window._client
         if client.readonly:
@@ -522,7 +522,7 @@ class XI2_Window:
         props = self.get_pointer_extra_args(event)
         window._button_action(button, event, depressed, props)
 
-    def do_xi_motion(self, event, device):
+    def do_xi_motion(self, event, device) -> None:
         window = self.window
         if window.moveresize_event:
             xinputlog("do_xi_motion(%s, %s) handling as a moveresize event on window %s", event, device, window)
@@ -589,7 +589,7 @@ class XI2_Window:
             #normalize (xinput is always using 15 degrees?)
             client.wheel_event(event.device, wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, pointer_data, props)
 
-    def get_pointer_extra_args(self, event):
+    def get_pointer_extra_args(self, event) -> Dict[str,Any]:
         def intscaled(f):
             return int(f*1000000), 1000000
         def dictscaled(d):
@@ -631,10 +631,10 @@ class ClientExtras:
             self.client.after_handshake(self.setup_xi)
         self.setup_dbus_signals()
 
-    def ready(self):
+    def ready(self) -> None:
         """ unused on posix """
 
-    def init_x11_filter(self):
+    def init_x11_filter(self) -> None:
         if self.x11_filter:
             return
         try:
@@ -647,7 +647,7 @@ class ClientExtras:
             log.estr(e)
             self.x11_filter = None
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self.x11_filter:
             self.x11_filter = None
@@ -679,16 +679,16 @@ class ClientExtras:
         global WINDOW_METHOD_OVERRIDES
         WINDOW_METHOD_OVERRIDES = {}
 
-    def resuming_callback(self, *args):
+    def resuming_callback(self, *args) -> None:
         eventlog("resuming_callback%s", args)
         self.client.resume()
 
-    def sleeping_callback(self, *args):
+    def sleeping_callback(self, *args) -> None:
         eventlog("sleeping_callback%s", args)
         self.client.suspend()
 
 
-    def setup_dbus_signals(self):
+    def setup_dbus_signals(self) -> None:
         try:
             import xpra.dbus
             assert xpra.dbus
@@ -769,7 +769,7 @@ class ClientExtras:
                 except Exception as e:
                     dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
 
-    def ActiveChanged(self, active):
+    def ActiveChanged(self, active) -> None:
         log("ActiveChanged(%s)", active)
         if active:
             self.client.suspend()
@@ -777,12 +777,12 @@ class ClientExtras:
             self.client.resume()
 
 
-    def setup_xprops(self):
+    def setup_xprops(self) -> None:
         #wait for handshake to complete:
         if x11_bindings():
             self.client.after_handshake(self.do_setup_xprops)
 
-    def do_setup_xprops(self, *args):
+    def do_setup_xprops(self, *args) -> None:
         log("do_setup_xprops(%s)", args)
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
@@ -808,17 +808,17 @@ class ClientExtras:
             log.error(" root window properties will not be propagated")
 
 
-    def do_xi_devices_changed(self, event):
+    def do_xi_devices_changed(self, event) -> None:
         log("do_xi_devices_changed(%s)", event)
         XI2 = X11XI2Bindings()
         devices = XI2.get_devices()
         if devices:
             self.client.send_input_devices("xi", devices)
 
-    def setup_xi(self):
+    def setup_xi(self) -> None:
         self.client.timeout_add(100, self.do_setup_xi)
 
-    def do_setup_xi(self):
+    def do_setup_xi(self) -> None:
         if self.client.server_input_devices not in ("xi", "uinput"):
             xinputlog("server does not support xi input devices")
             if self.client.server_input_devices:
@@ -856,7 +856,7 @@ class ClientExtras:
             self.add_xi2_method_overrides()
         return False
 
-    def add_xi2_method_overrides(self):
+    def add_xi2_method_overrides(self) -> None:
         global WINDOW_ADD_HOOKS
         WINDOW_ADD_HOOKS = [XI2_Window]
 
@@ -870,7 +870,7 @@ class ClientExtras:
                 log.error("failed to get XSETTINGS", exc_info=True)
         return None
 
-    def _handle_xsettings_changed(self, *_args):
+    def _handle_xsettings_changed(self, *_args) -> None:
         settings = self._get_xsettings()
         log("xsettings_changed new value=%s", settings)
         if settings is not None:
@@ -889,7 +889,7 @@ class ClientExtras:
             log.error("failed to get RESOURCE_MANAGER", exc_info=True)
         return None
 
-    def _handle_root_prop_changed(self, obj, prop):
+    def _handle_root_prop_changed(self, obj, prop) -> None:
         log("root_prop_changed(%s, %s)", obj, prop)
         if prop=="RESOURCE_MANAGER":
             rm = self.get_resource_manager()
