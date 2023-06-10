@@ -20,7 +20,7 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
   * major fixes:
    - GLib memory allocator crash
    - fix missing system tray with 'AyatanaAppIndicator3' vs 'AppIndicator3'
-   - don't use Gtk.StatusIcon on Wayland, it does't work
+   - don't use Gtk.StatusIcon on Wayland, it doesn't work
    - clients without keymaps
    - clients without desktops attributes
    - only allow logging tweaks via env vars for non-root users
@@ -34,7 +34,7 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
    - html5 client v5 compatibility regression with python2 builds
    - protocol was not flushing on close
    - IPv6 parsing
-   - handle paramiko ssh config parsing errors more gracefully: `CanonicalizeHostname`
+   - handle paramiko ssh config parsing errors more gracefully
    - 404 handler was missing!
   * encodings:
    - handle mixed case encoding names correctly (ie: `png/P`)

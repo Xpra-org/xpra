@@ -937,7 +937,7 @@ fi
 - major fixes:
     GLib memory allocator crash
     fix missing system tray with 'AyatanaAppIndicator3' vs 'AppIndicator3'
-    don't use Gtk.StatusIcon on Wayland, it does't work
+    don't use Gtk.StatusIcon on Wayland, it doesn't work
     clients without keymaps
     clients without desktops attributes
     only allow logging tweaks via env vars for non-root users
