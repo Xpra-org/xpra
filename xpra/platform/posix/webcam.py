@@ -19,7 +19,7 @@ log = Logger("webcam")
 CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not (is_Ubuntu() or is_Debian()))
 
 
-def _can_capture_video(dev_file, dev_info):
+def _can_capture_video(dev_file, dev_info) -> bool:
     if not dev_info:
         return False
     caps = dev_info.get("capabilities", [])

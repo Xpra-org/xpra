@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Callable
 
 from xpra.util import envint, typedict, ConnectionMessage, NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -28,7 +28,7 @@ class IdleMixin(StubSourceMixin):
     def __init__(self) -> None:
         self.idle_timeout = 0
         #duplicated from clientconnection:
-        self.notification_callbacks = {}
+        self.notification_callbacks : Dict[int,Callable] = {}
         self.send_notifications = False
         self.send_notifications_actions = False
 

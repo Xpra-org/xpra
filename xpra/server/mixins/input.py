@@ -7,7 +7,7 @@
 #pylint: disable-msg=E1101
 
 from time import monotonic
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from xpra.os_util import bytestostr
 from xpra.util import typedict, net_utf8, envbool
@@ -326,7 +326,7 @@ class InputServer(StubServerMixin):
     def clear_keys_pressed(self) -> None:
         keylog("clear_keys_pressed() is not implemented")
 
-    def get_keyboard_config(self, props=None) -> None:
+    def get_keyboard_config(self, props=None) -> Optional[object]:
         keylog("get_keyboard_config(%s) is not implemented", props)
         return None
 

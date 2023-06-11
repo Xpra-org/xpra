@@ -322,7 +322,7 @@ def _get_xsettings_int(name:str, default_value:int) -> int:
 def get_double_click_time() -> int:
     return _get_xsettings_int("Net/DoubleClickTime", -1)
 
-def get_double_click_distance() -> int:
+def get_double_click_distance() -> Tuple[int,int]:
     v = _get_xsettings_int("Net/DoubleClickDistance", -1)
     return v, v
 
@@ -818,7 +818,7 @@ class ClientExtras:
     def setup_xi(self) -> None:
         self.client.timeout_add(100, self.do_setup_xi)
 
-    def do_setup_xi(self) -> None:
+    def do_setup_xi(self) -> bool:
         if self.client.server_input_devices not in ("xi", "uinput"):
             xinputlog("server does not support xi input devices")
             if self.client.server_input_devices:
@@ -905,7 +905,7 @@ class ClientExtras:
             log.error("unknown property %s", prop)
 
 
-def main():
+def main() -> int:
     try:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
@@ -913,6 +913,7 @@ def main():
         pass
     from xpra.platform.gui import main as gui_main
     gui_main()
+    return 0
 
 
 if __name__ == "__main__":

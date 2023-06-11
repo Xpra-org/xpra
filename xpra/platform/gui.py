@@ -8,7 +8,7 @@
 import os
 import sys
 import binascii
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List, Optional, Type
 
 from xpra.platform import platform_import
 from xpra.os_util import bytestostr
@@ -16,7 +16,7 @@ from xpra.log import Logger
 
 
 _init_done = False
-def init():
+def init() -> None:
     #warning: we currently call init() from multiple places to try
     #to ensure we run it as early as possible..
     global _init_done
@@ -24,22 +24,22 @@ def init():
         _init_done = True
         do_init()
 
-def do_init():
+def do_init() -> None:
     """ some platforms override this """
 
 _ready_done = False
-def ready():
+def ready() -> None:
     global _ready_done
     if not _ready_done:
         _ready_done = True
         do_ready()
 
-def do_ready():
+def do_ready() -> None:
     """ some platforms override this """
 
 
 _default_icon = "xpra.png"
-def set_default_icon(icon_filename):
+def set_default_icon(icon_filename:str) -> None:
     global _default_icon
     _default_icon = icon_filename
 
@@ -48,55 +48,55 @@ def get_default_icon():
     return _default_icon
 
 
-def force_focus(duration=2000):
+def force_focus(duration=2000) -> None:
     #only implemented on macos
     assert isinstance(duration, int)
 
 
-def use_stdin():
+def use_stdin() -> bool:
     stdin = sys.stdin
-    return stdin and stdin.isatty()
+    return bool(stdin) and stdin.isatty()
 
-def get_clipboard_native_class():
-    return None
+def get_clipboard_native_class() -> str:
+    return ""
 
 #defaults:
-def get_native_tray_menu_helper_class():
+def get_native_tray_menu_helper_class() -> Optional[Type]:
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return None
-def get_native_tray_classes(*_args):
+def get_native_tray_classes(*_args) -> Tuple[Optional[Type],...]:
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
     return ()
-def get_native_system_tray_classes(*_args):
+def get_native_system_tray_classes(*_args) -> Tuple[Optional[Type],...]:
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
     return ()
-def system_bell(*_args):
+def system_bell(*_args) -> bool:
     #let the toolkit classes use their own
     return False
-def get_native_notifier_classes():
+def get_native_notifier_classes() -> Tuple[Type,...]:
     return ()
 
 
-def get_session_type():
+def get_session_type() -> str:
     return ""
 
 
-def get_xdpi():
+def get_xdpi() -> int:
     return -1
 
-def get_ydpi():
+def get_ydpi() -> int:
     return -1
 
 
-def get_monitors_info(xscale=1, yscale=1):
+def get_monitors_info(xscale=1, yscale=1) -> Dict[str,Any]:
     from xpra.gtk_common import gtk_util
     return gtk_util.get_monitors_info(xscale, yscale)
 
 
-def get_icon_size():
+def get_icon_size() -> int:
     xdpi = get_xdpi()
     ydpi = get_ydpi()
     if xdpi>0 and ydpi>0:
@@ -111,10 +111,10 @@ def get_icon_size():
         return 24
     return 16
 
-def get_antialias_info():
+def get_antialias_info() -> Dict[str,Any]:
     return {}
 
-def get_display_icc_info():
+def get_display_icc_info() -> Dict[str,Any]:
     #per display info
     return {}
 
@@ -136,7 +136,7 @@ def get_pillow_icc_info() -> Dict[str,Any]:
     try:
         from PIL import ImageCms
         from PIL.ImageCms import get_display_profile
-        INTENT_STR = {}
+        INTENT_STR : Dict[Any, str] = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
             intent = getattr(ImageCms, "Intent", None)
             if intent:
@@ -149,9 +149,9 @@ def get_pillow_icc_info() -> Dict[str,Any]:
         p = get_display_profile()
         screenlog("get_icc_info() display_profile=%s", p)
         if p:
-            def getDefaultIntentStr(v):
+            def getDefaultIntentStr(v) -> str:
                 return INTENT_STR.get(v, "unknown")
-            def getData(v):
+            def getData(v) -> bytes:
                 return v.tobytes()
             for (k, fn, conv) in (
                 ("name",            "getProfileName",           None),
@@ -190,34 +190,34 @@ def get_workarea():
 def get_workareas():
     return ()
 
-def get_number_of_desktops():
+def get_number_of_desktops() -> int:
     return 1
 
-def get_desktop_names():
+def get_desktop_names()  -> Tuple[str,...]:
     return ()
 
-def get_vrefresh():
+def get_vrefresh() -> int:
     return -1
 
 def get_mouse_config():
     return {}
 
-def get_double_click_time():
+def get_double_click_time() -> int:
     return -1
 
-def get_double_click_distance():
+def get_double_click_distance() -> Tuple[int,int]:
     return -1, -1
 
-def get_fixed_cursor_size():
+def get_fixed_cursor_size() -> Tuple[int,int]:
     return -1, -1
 
-def get_cursor_size():
+def get_cursor_size() -> int:
     return -1
 
-def get_window_min_size():
+def get_window_min_size() -> Tuple[int,int]:
     return 0, 0
 
-def get_window_max_size():
+def get_window_max_size() -> Tuple[int,int]:
     return 2**15-1, 2**15-1
 
 def get_window_frame_size(_x, _y, _w, _h):
@@ -227,26 +227,26 @@ def get_window_frame_sizes():
     return {}
 
 
-def add_window_hooks(_window):
+def add_window_hooks(_window) -> None:
     """
     To add platform specific code to each window,
     called when the window is created.
     """
 
-def remove_window_hooks(_window):
+def remove_window_hooks(_window) -> None:
     """
     Remove the hooks,
     called when the window is destroyed
     """
 
 
-def show_desktop(_show):
+def show_desktop(_show) -> None:
     """ If possible, show the desktop """
 
-def set_fullscreen_monitors(_window, _fsm, _source_indication=0):
+def set_fullscreen_monitors(_window, _fsm, _source_indication:int=0) -> None:
     """ Only overridden by posix """
 
-def set_shaded(_window, _shaded):
+def set_shaded(_window, _shaded:bool) -> None:
     """
     GTK never exposed the 'shaded' window attribute,
     posix clients will hook it up here.
@@ -268,15 +268,15 @@ def pointer_ungrab(_window):
 def gl_check() -> str:
     return ""     #no problem
 
-def get_wm_name():
-    return None
+def get_wm_name() -> str:
+    return ""
 
 
-def can_access_display():
+def can_access_display() -> bool:
     return True
 
 
-def set_window_progress(window, pct):
+def set_window_progress(window, pct:int) -> None:
     """ some platforms can indicate progress for a specific window """
 
 
@@ -284,7 +284,7 @@ take_screenshot = None
 ClientExtras = None
 
 
-def get_info_base():
+def get_info_base() -> Dict[str,Any]:
     def fname(v):
         try:
             return v.__name__
@@ -362,7 +362,7 @@ platform_import(globals(), "gui", False,
                 )
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     from xpra.util import print_nested_dict
     from xpra.os_util import OSX, POSIX
