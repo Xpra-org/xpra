@@ -38,7 +38,7 @@ class ExitCode(IntEnum):
     AUTHENTICATION_FAILED = 28
     DEVICE_NOT_FOUND = 29
 
-def exit_str(code):
+def exit_str(code) -> str:
     try:
         return ExitCode(code).name
     except ValueError:
