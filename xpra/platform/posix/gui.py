@@ -808,6 +808,7 @@ class ClientExtras:
             log.error(" root window properties will not be propagated")
 
 
+
     def do_xi_devices_changed(self, event) -> None:
         log("do_xi_devices_changed(%s)", event)
         XI2 = X11XI2Bindings()
