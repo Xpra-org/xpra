@@ -881,6 +881,12 @@ def get_default_pulseaudio_command() -> List[str]:
     MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", False)
     if not MEMFD:
         cmd.append("--enable-memfd=no")
+    REALTIME = envbool("XPRA_PULSEAUDIO_REALTIME", True)
+    if not REALTIME:
+        cmd.append("--realtime=no")
+    HIGH_PRIORITY = envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True)
+    if not HIGH_PRIORITY:
+        cmd.append("--high-priority=no")
     return cmd
 
 

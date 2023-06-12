@@ -90,7 +90,10 @@ start-new-commands = yes
 pulseaudio = %(pulseaudio)s
 
 # pulseaudio server start command:
-pulseaudio-command = %(pulseaudio_command)s
+#pulseaudio-command = %(pulseaudio_command)s
+# Note: only uncomment the above setting if you want to adjust the
+# pulseaudio command string, so the actual default value can depend on
+# the XPRA_PULSEAUDIO_* environment variables.
 
 # commands used to configure the pulseaudio server:
 # pactl set-source-volume SomeSource 20%%
