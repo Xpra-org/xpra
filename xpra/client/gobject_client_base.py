@@ -13,7 +13,7 @@ from gi.repository import GLib, GObject  # @UnresolvedImport
 from xpra.util import (
     u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
-    repr_ellipsized,
+    repr_ellipsized, stderr_write,
     SERVER_EXIT, DONE,
     )
 from xpra.os_util import (
@@ -36,11 +36,7 @@ FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
 
 def errwrite(msg):
-    try:
-        sys.stderr.write(msg)
-        sys.stderr.flush()
-    except (OSError, AttributeError):
-        pass
+    stderr_write(msg)
 
 
 class GObjectXpraClient(GObject.GObject, XpraClientBase):

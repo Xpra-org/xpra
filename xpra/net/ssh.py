@@ -31,7 +31,7 @@ from xpra.os_util import (
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, envfloat, engs, noerr, csv
+from xpra.util import envint, envbool, envfloat, engs, noerr, csv, stderr_write
 from xpra.log import Logger, is_debug_enabled
 
 #pylint: disable=import-outside-toplevel
@@ -537,7 +537,7 @@ keymd5(host_key),
                         f"Offending {keyname()} key in {host_keys_filename}",
                         f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
                         ]
-                    sys.stderr.write(os.linesep.join(qinfo))
+                    stderr_write(os.linesep.join(qinfo))
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
                 if not confirm(qinfo):

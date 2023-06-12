@@ -8,13 +8,12 @@
 
 #pylint: disable=import-outside-toplevel
 
-import sys
 import shlex
 import os.path
 import optparse
 
 from xpra.version_util import full_version_str
-from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS, stderr_write
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS,
@@ -57,30 +56,18 @@ def sound_option(v):
     return bool_or(vl, "disabled", "on", "off", "disabled")
 
 
-def _stderr_write(msg):
-    #use this function to print warnings
-    #we must write to stderr to prevent
-    #the output from interfering when running as proxy over ssh
-    #(which uses stdin / stdout as communication channel)
-    try:
-        sys.stderr.write(msg+"\n")
-        sys.stderr.flush()
-        return True
-    except OSError:
-        return False
-
 def info(msg):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
 def warn(msg):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
 
 def error(msg):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
 

@@ -8,7 +8,7 @@ import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
-from xpra.util import typedict
+from xpra.util import typedict, stderr_write
 from xpra.os_util import WIN32
 
 
@@ -79,8 +79,8 @@ def main(argv):
     from xpra.platform import program_context
     with program_context("Kerberos-Token-Auth", "Kerberos Token Authentication"):
         if len(argv)!=3:
-            sys.stderr.write("%s invalid arguments\n" % argv[0])
-            sys.stderr.write("usage: %s username token\n" % argv[0])
+            stderr_write("%s invalid arguments\n" % argv[0])
+            stderr_write("usage: %s username token\n" % argv[0])
             return 1
         username = argv[1]
         token = argv[2]

@@ -9,7 +9,7 @@ import sys
 import os
 import shlex
 
-from xpra.util import csv, sorted_nicely, remove_dupes
+from xpra.util import csv, sorted_nicely, remove_dupes, stderr_write
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
@@ -19,7 +19,7 @@ from xpra.os_util import (
     )
 
 def warn(msg):
-    sys.stderr.write(msg+"\n")
+    stderr_write(msg+"\n")
 
 def nodebug(*_args):
     #can be overriden

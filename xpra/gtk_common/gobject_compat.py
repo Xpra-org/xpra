@@ -5,10 +5,9 @@
 
 #legacy compatibility file
 
-import sys
 import signal
 
-from xpra.util import dump_all_frames, dump_gc_frames
+from xpra.util import dump_all_frames, dump_gc_frames, stderr_write
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger
 
 
@@ -24,8 +23,7 @@ def register_os_signal(callback, commandtype="", signum=signal.SIGINT):
         if commandtype is None:
             return
         try:
-            sys.stderr.write("\n")
-            sys.stderr.flush()
+            stderr_write("\n")
             cstr = ""
             if commandtype:
                 cstr = commandtype+" "
