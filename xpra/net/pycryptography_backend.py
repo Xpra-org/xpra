@@ -85,7 +85,13 @@ def get_key(password, key_salt, key_hash, block_size, iterations):
     assert key_hash.upper() in KEY_HASHES, "invalid key hash %s, should be one of %s" % (key_hash.upper(), KEY_HASHES)
     algorithm = getattr(hashes, key_hash.upper(), None)
     assert algorithm, "%s not found in cryptography hashes" % key_hash.upper()
-    kdf = PBKDF2HMAC(algorithm=algorithm, length=block_size,
+    try:
+        #newer versions (41 for sure) require us to instantiate the "constant"
+        hash_algo = algorithm()
+    except TypeError:
+        #older versions are OK using it directly:
+        hash_algo = algorithm
+    kdf = PBKDF2HMAC(algorithm=hash_algo, length=block_size,
                      salt=strtobytes(key_salt), iterations=iterations, backend=backend)
     key = kdf.derive(strtobytes(password))
     return key
