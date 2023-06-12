@@ -171,14 +171,16 @@ def noerr(fn, *args):
     except Exception:
         return None
 
-def stderr_write(msg:str) -> None:
+def stderr_write(msg:str) -> bool:
     stderr = sys.stderr
     if stderr:
         try:
             noerr(stderr.write, msg+"\n")
             noerr(stderr.flush)
+            return True
         except (OSError, AttributeError):
             pass
+    return False
 
 
 def nicestr(obj):

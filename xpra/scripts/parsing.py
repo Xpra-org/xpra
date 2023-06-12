@@ -16,7 +16,7 @@ from urllib import parse
 from typing import Any, List, Dict, Tuple, Optional
 
 from xpra.version_util import full_version_str
-from xpra.util import envbool, csv, parse_simple_dict
+from xpra.util import envbool, csv, parse_simple_dict, stderr_write
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
@@ -62,30 +62,18 @@ def audio_option(v):
     return bool_or(vl, "disabled", "on", "off", "disabled")
 
 
-def _stderr_write(msg:str) -> bool:
-    #use this function to print warnings
-    #we must write to stderr to prevent
-    #the output from interfering when running as proxy over ssh
-    #(which uses stdin / stdout as communication channel)
-    try:
-        sys.stderr.write(msg+"\n")
-        sys.stderr.flush()
-        return True
-    except OSError:
-        return False
-
 def info(msg:str):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
 def warn(msg:str):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
 
 def error(msg:str):
-    if not _stderr_write(msg) and POSIX:
+    if not stderr_write(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
 
