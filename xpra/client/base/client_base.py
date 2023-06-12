@@ -476,10 +476,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             mode = DEFAULT_MODE
         ciphers = get_ciphers()
         if enc not in ciphers:
-            raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers)}")
+            raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers) or 'none'}")
         modes = get_modes()
         if mode not in modes:
-            raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes)}")
+            raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes) or 'none'}")
         iv = get_iv()
         key_salt = get_salt()
         iterations = get_iterations()
