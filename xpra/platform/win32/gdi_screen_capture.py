@@ -10,7 +10,7 @@ from ctypes import (
     Structure, create_string_buffer, addressof, byref, c_ubyte,
     )
 from io import BytesIO
-from typing import Dict, Any, List, Tuple, Optional, ByteString
+from typing import Dict, Any, List, Tuple, Optional
 from PIL import Image
 
 from xpra.log import Logger
