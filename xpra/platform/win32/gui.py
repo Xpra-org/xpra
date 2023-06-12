@@ -64,7 +64,11 @@ PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
 PyCapsule_GetPointer.restype = HGDIOBJ
 PyCapsule_GetPointer.argtypes = [py_object]
 log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
-gdkdll = CDLL(find_library("libgdk-3-0.dll"))
+GDK_DLL_NAME = "libgdk-3-0.dll"
+gdk_dll = find_library(GDK_DLL_NAME)
+if not gdk_dll:
+    raise ImportError(f"ctypes cannot find {GDK_DLL_NAME!r}")
+gdkdll = CDLL(gdk_dll)
 gdk_win32_window_get_handle = gdkdll.gdk_win32_window_get_handle
 gdk_win32_window_get_handle.argtypes = [HGDIOBJ]
 gdk_win32_window_get_handle.restype = HWND
