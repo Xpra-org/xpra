@@ -307,8 +307,14 @@ def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
     algorithm = getattr(hashes, key_hash.upper(), None)
     if not algorithm:
         raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
+    try:
+        #newer versions (41 for sure) require us to instantiate the "constant"
+        hash_algo = algorithm()
+    except TypeError:
+        #older versions are OK using it directly:
+        hash_algo = algorithm
     from cryptography.hazmat.backends import default_backend
-    kdf = PBKDF2HMAC(algorithm=algorithm, length=block_size,
+    kdf = PBKDF2HMAC(algorithm=hash_algo, length=block_size,
                      salt=strtobytes(key_salt), iterations=iterations,
                      backend=default_backend())
     key = kdf.derive(strtobytes(password))
