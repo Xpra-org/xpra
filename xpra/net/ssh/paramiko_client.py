@@ -27,7 +27,7 @@ from xpra.os_util import (
     umask_context,
     WIN32,
     )
-from xpra.util import envint, envbool, envfloat, engs, noerr, csv
+from xpra.util import envint, envbool, envfloat, engs, noerr, csv, stderr_write
 from xpra.log import Logger
 
 #pylint: disable=import-outside-toplevel
@@ -516,7 +516,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                         f"Offending {keyname()} key in {host_keys_filename}",
                         f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
                         ]
-                    sys.stderr.write(os.linesep.join(qinfo))
+                    stderr_write(os.linesep.join(qinfo))
                     transport.close()
                     raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
                 if not confirm(qinfo):

@@ -259,6 +259,7 @@ def confirm(info=(), title:str="Confirm Key", prompt:str="Are you sure you want 
     log("confirm%s will use stdin prompt", (info, title, prompt))
     prompt = "Are you sure you want to continue connecting (yes/NO)? "
     sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
+    sys.stderr.flush()
     try:
         v = sys.stdin.readline().rstrip(os.linesep)
     except KeyboardInterrupt:

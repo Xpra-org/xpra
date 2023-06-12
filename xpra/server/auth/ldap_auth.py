@@ -8,7 +8,7 @@ import os
 import sys
 import socket
 
-from xpra.util import envint, obsc, typedict
+from xpra.util import envint, obsc, typedict, stderr_write
 from xpra.os_util import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
@@ -130,8 +130,8 @@ def main(argv) -> int:
                 enable_debug_for("auth")
                 argv.remove(x)
         if len(argv) not in (3,4,5,6,7):
-            sys.stderr.write("%s invalid arguments\n" % argv[0])
-            sys.stderr.write("usage: %s username password [host] [port] [tls] [username_format]\n" % argv[0])
+            stderr_write("%s invalid arguments\n" % argv[0])
+            stderr_write("usage: %s username password [host] [port] [tls] [username_format]\n" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]

@@ -1,15 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #legacy compatibility file
 
-import sys
 import signal
 from typing import Dict, Callable
 
-from xpra.util import dump_all_frames, dump_gc_frames
+from xpra.util import dump_all_frames, dump_gc_frames, stderr_write
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger
 
 
@@ -25,8 +24,7 @@ def register_os_signal(callback:Callable, commandtype:str="", signum=signal.SIGI
         if not commandtype:
             return
         try:
-            sys.stderr.write("\n")
-            sys.stderr.flush()
+            stderr_write("\n")
             cstr = ""
             if commandtype:
                 cstr = commandtype+" "

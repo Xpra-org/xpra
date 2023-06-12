@@ -44,6 +44,7 @@ from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl, print_nested_dict,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
+    stderr_write,
     ConnectionMessage,
     )
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
@@ -253,8 +254,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def handle_deadly_signal(self, signum:int, _frame=None):
-        sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-        sys.stderr.flush()
+        stderr_write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
         self.cleanup()
         force_quit(128 + signum)
 
@@ -273,8 +273,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         def os_signal(signum, _frame=None):
             if self.exit_code is None:
                 try:
-                    sys.stderr.write("\n")
-                    sys.stderr.flush()
+                    stderr_write("\n")
                     log.info("client got signal %s", SIGNAMES.get(signum, signum))
                 except Exception:
                     pass

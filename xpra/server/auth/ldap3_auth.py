@@ -8,7 +8,7 @@ import os
 import sys
 
 from typing import Tuple
-from xpra.util import obsc, typedict
+from xpra.util import obsc, typedict, stderr_write
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
 assert log #tests will disable logging from here
@@ -111,8 +111,8 @@ def main(argv) -> int:
                 enable_debug_for("auth")
                 argv.remove(x)
         if len(argv) not in (3,4,5,6):
-            sys.stderr.write("%s invalid arguments\n" % argv[0])
-            sys.stderr.write("usage: %s username password [host] [port] [tls]\n" % argv[0])
+            stderr_write("%s invalid arguments\n" % argv[0])
+            stderr_write("usage: %s username password [host] [port] [tls]\n" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]

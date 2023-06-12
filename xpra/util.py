@@ -171,6 +171,15 @@ def noerr(fn, *args):
     except Exception:
         return None
 
+def stderr_write(msg:str) -> None:
+    stderr = sys.stderr
+    if stderr:
+        try:
+            noerr(stderr.write, msg+"\n")
+            noerr(stderr.flush)
+        except (OSError, AttributeError):
+            pass
+
 
 def nicestr(obj):
     """ Python 3.10 and older don't give us a nice string representation for enums """

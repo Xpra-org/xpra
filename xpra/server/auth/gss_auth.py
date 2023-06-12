@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.util import typedict
+from xpra.util import typedict, stderr_write
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 
@@ -63,8 +63,8 @@ def main(argv):
     from xpra.platform import program_context
     with program_context("GSS-Auth", "GSS-Authentication"):
         if len(argv)!=3:
-            sys.stderr.write("%s invalid arguments\n" % argv[0])
-            sys.stderr.write("usage: %s username token\n" % argv[0])
+            stderr_write("%s invalid arguments\n" % argv[0])
+            stderr_write("usage: %s username token\n" % argv[0])
             return 1
         username = argv[1]
         token = argv[2]

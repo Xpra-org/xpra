@@ -24,7 +24,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
     csv, envbool, envint, nonl, pver, engs,
-    noerr, sorted_nicely, typedict,
+    noerr, sorted_nicely, typedict, stderr_write,
     )
 from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -78,8 +78,7 @@ def nox() -> str:
 
 def werr(*msg) -> None:
     for x in msg:
-        noerr(sys.stderr.write, "%s\n" % (x,))
-    noerr(sys.stderr.flush)
+        stderr_write(f"{x}\n")
 
 def add_process(*args, **kwargs):
     from xpra.child_reaper import getChildReaper
@@ -93,10 +92,10 @@ def main(script_file:str, cmdline) -> int:
         start_mem_watcher(ml)
 
     if sys.flags.optimize>0:    # pragma: no cover
-        sys.stderr.write("************************************************************\n")
-        sys.stderr.write(f"Warning: the python optimize flag is set to {sys.flags.optimize}\n")
-        sys.stderr.write(" xpra is very likely to crash\n")
-        sys.stderr.write("************************************************************\n")
+        stderr_write("************************************************************\n")
+        stderr_write(f"Warning: the python optimize flag is set to {sys.flags.optimize}\n")
+        stderr_write(" xpra is very likely to crash\n")
+        stderr_write("************************************************************\n")
         time.sleep(5)
 
     from xpra.platform import clean as platform_clean, command_error, command_info
@@ -2383,8 +2382,7 @@ def do_run_glcheck(opts, show=False) -> Dict[str,Any]:
         if is_debug_enabled("opengl"):
             log("do_run_glcheck(..)", exc_info=True)
         if use_tty():
-            noerr(sys.stderr.write, "error=%s\n" % nonl(e))
-            noerr(sys.stderr.flush)
+            stderr_write("error=%s\n" % nonl(e))
         return {
             "success"   : False,
             "message"   : str(e).replace("\n", " "),
@@ -2779,7 +2777,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> int
             if display_name:
                 state = dotxpra.get_display_state(display_name)
                 if state!=DotXpra.DEAD:
-                    sys.stderr.write(f"found existing display {display_name} : {state}\n")
+                    stderr_write(f"found existing display {display_name} : {state}\n")
         if state!=DotXpra.LIVE:
             #strip defaults, only keep extra ones:
             for x in ("start", "start-child",
