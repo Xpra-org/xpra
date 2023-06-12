@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,6 @@ from xpra.os_util import strtobytes
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
-from mypy.argmap import ArgTypeExpander
 
 log = Logger("notify", "win32")
 
@@ -27,7 +26,7 @@ NIIF_INFO = 1
 NIM_MODIFY = 1
 
 
-def chop_string(command, max_len=100, no_nl=True):
+def chop_string(command, max_len:int=100, no_nl:bool=True):
     assert max_len>3
     if not command:
         return b""
@@ -112,7 +111,7 @@ Shell_NotifyIcon.restype = BOOL
 Shell_NotifyIcon.argtypes = [DWORD, c_void_p]
 
 
-def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
+def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None):
     log("notify%s", (hwnd, app_id, title, message, timeout, icon))
     if timeout<=0:
         timeout = 5000
