@@ -43,6 +43,9 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
 	shift
 fi
+if [ "${DO_CUDA}" == "0" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvidia"
+fi
 
 ################################################################################
 # get paths and compilation options:
