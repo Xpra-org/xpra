@@ -128,7 +128,7 @@ class SessionsGUI(Gtk.Window):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.do_quit()
+        GLib.idle_add(self.do_quit)
 
     def do_quit(self):
         log("do_quit()")
