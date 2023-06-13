@@ -309,11 +309,15 @@ BuildRequires:		pkgconfig(xtst)
 BuildRequires:		pkgconfig(xcomposite)
 BuildRequires:		pkgconfig(xdamage)
 BuildRequires:		pkgconfig(xres)
+BuildRequires:		pkgconfig(xfixes)
+BuildRequires:		pkgconfig(xrandr)
 Requires:			libxkbfile
 Requires:			libXtst
 Requires:			libXcomposite
 Requires:			libXdamage
 Requires:			libXres
+Requires:			libXfixes
+Requires:			libXrandr
 Requires:			gtk3
 %if 0%{?fedora}
 Suggests:			xmodmap
