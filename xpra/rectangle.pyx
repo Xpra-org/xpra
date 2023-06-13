@@ -26,7 +26,8 @@ cdef class rectangle:
     cdef readonly long hash
 
     def __init__(self, const int x, const int y, const int w, const int h):
-        assert w>=0 and h>=0
+        if w<0 or h<0:
+            raise ValueError(f"invalid dimensions: {w}x{h}")
         self.x = x
         self.y = y
         self.width = w
@@ -199,7 +200,8 @@ def remove_rectangle(object regions, rectangle region):
     regions[:] = new_regions
 
 def merge_all(rectangles):
-    assert len(rectangles)>0
+    if not rectangles:
+        raise ValueError("no rectangles to merge")
     cdef rectangle r = rectangles[0]
     cdef int rx = r.x
     cdef int ry = r.y

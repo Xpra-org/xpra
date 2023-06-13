@@ -17,7 +17,8 @@ cdef extern from "Python.h":
 
 
 def xor_str(a, b):
-    assert len(a)==len(b), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b))
+    if len(a)!=len(b):
+        raise ValueError("cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b)))
     cdef Py_buffer py_bufa
     memset(&py_bufa, 0, sizeof(Py_buffer))
     if PyObject_GetBuffer(a, &py_bufa, PyBUF_ANY_CONTIGUOUS):
