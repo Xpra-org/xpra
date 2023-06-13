@@ -1146,7 +1146,7 @@ cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) except 0:
         return -1
     return encoder.write_packet(<uintptr_t> buf, buf_size)
 
-MAX_WIDTH, MAX_HEIGHT = 4096, 4096
+MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
 def get_specs(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))

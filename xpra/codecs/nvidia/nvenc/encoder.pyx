@@ -1415,7 +1415,7 @@ def get_specs(encoding, colorspace):
     #undocumented and found the hard way, see:
     #https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
     #https://github.com/Xpra-org/xpra/issues/1550
-    min_w, min_h = 128, 128
+    min_w, min_h = (128, 128)
     width_mask = get_width_mask(colorspace)
     height_mask = get_height_mask(colorspace)
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
@@ -2512,10 +2512,10 @@ cdef class Encoder:
         if self.pixel_format=="NV12":
             #(these values are derived from the kernel code - which we should know nothing about here..)
             #divide each dimension by 2 since we process 4 pixels at a time:
-            dx, dy = 2, 2
+            dx, dy = (2, 2)
         elif self.pixel_format=="YUV444P":
             #one pixel at a time:
-            dx, dy = 1, 1
+            dx, dy = (1, 1)
         else:
             raise ValueError(f"bug: invalid pixel format {self.pixel_format!r}")
 

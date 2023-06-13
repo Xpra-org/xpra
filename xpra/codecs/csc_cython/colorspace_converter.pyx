@@ -40,15 +40,15 @@ cdef uint8_t RGB_R, RGB_G, RGB_B
 cdef uint8_t BGR_R, BGR_G, BGR_B
 
 if sys.byteorder=="little":
-    BGRX_B, BGRX_G, BGRX_R, BGRX_X = 0, 1, 2, 3
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
-    BGR_R, BGR_G, BGR_B = 2, 1, 0
-    RGB_R, RGB_G, RGB_B = 0, 1, 2
+    BGRX_B, BGRX_G, BGRX_R, BGRX_X = (0, 1, 2, 3)
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = (0, 1, 2, 3)
+    BGR_R, BGR_G, BGR_B = (2, 1, 0)
+    RGB_R, RGB_G, RGB_B = (0, 1, 2)
 else:
-    BGRX_B, BGRX_G, BGRX_R, BGRX_X = 0, 1, 2, 3
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
-    BGR_R, BGR_G, BGR_B = 0, 1, 2
-    RGB_R, RGB_G, RGB_B = 2, 1, 0
+    BGRX_B, BGRX_G, BGRX_R, BGRX_X = (0, 1, 2, 3)
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = (0, 1, 2, 3)
+    BGR_R, BGR_G, BGR_B = (0, 1, 2)
+    RGB_R, RGB_G, RGB_B = (2, 1, 0)
 
 log("csc_cython: %s endian:", sys.byteorder)
 log("csc_cython: byteorder(BGRX)=%s", (BGRX_B, BGRX_G, BGRX_R, BGRX_X))
