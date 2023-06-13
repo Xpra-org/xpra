@@ -8,7 +8,7 @@ import sys
 import os
 import errno
 import socket
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, Callable
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, hasenv, csv
@@ -77,7 +77,7 @@ def can_retry(e) -> Union[bool,str]:
         raise ConnectionClosedException(e) from None
     return False
 
-def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
+def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a, **kw):
     while is_active_cb():
         try:
             return f(*a, **kw)

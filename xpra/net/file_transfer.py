@@ -10,7 +10,7 @@ import hashlib
 import uuid
 from time import monotonic
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Callable, Set
+from typing import Dict, Any, Optional, Callable, Set, Tuple
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
@@ -40,7 +40,7 @@ DENY = 0
 ACCEPT = 1      #the file / URL will be sent
 OPEN = 2        #don't send, open on sender
 
-def osclose(fd):
+def osclose(fd:int) -> None:
     try:
         os.close(fd)
     except OSError as e:
@@ -48,7 +48,7 @@ def osclose(fd):
         filelog.error("Error closing file download:")
         filelog.estr(e)
 
-def basename(filename):
+def basename(filename:str) -> str:
     #we can't use os.path.basename,
     #because the remote end may have sent us a filename
     #which is using a different pathsep
@@ -66,7 +66,7 @@ def basename(filename):
             tmp += char
     return tmp
 
-def safe_open_download_file(basefilename, mimetype):
+def safe_open_download_file(basefilename:str, mimetype:str):
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
     filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
@@ -124,13 +124,13 @@ class FileTransferAttributes:
     def __init__(self):
         self.init_attributes()
 
-    def init_opts(self, opts, can_ask=True):
+    def init_opts(self, opts, can_ask=True) -> None:
         #get the settings from a config object
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
     def init_attributes(self, file_transfer="no", file_size_limit=10, printing="no",
-                        open_files="no", open_url="no", open_command=None, can_ask=True):
+                        open_files="no", open_url="no", open_command=None, can_ask=True) -> None:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
         def pbool(name, v):
@@ -206,7 +206,7 @@ class FileTransferHandler(FileTransferAttributes):
         used by both clients and server to share the common code and attributes
     """
 
-    def init_attributes(self, *args):
+    def init_attributes(self, *args) -> None:
         super().init_attributes(*args)
         self.remote_file_transfer = False
         self.remote_file_transfer_ask = False
@@ -230,7 +230,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.idle_add = GLib.idle_add
             self.source_remove = GLib.source_remove
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         for t in self.pending_send_data_timers.values():
             self.source_remove(t)
         self.pending_send_data_timers = {}
@@ -247,7 +247,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.init_attributes()
 
 
-    def parse_file_transfer_caps(self, c):
+    def parse_file_transfer_caps(self, c) -> None:
         fc = c.dictget("file")
         if fc:
             fc = typedict(fc)
@@ -278,7 +278,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.remote_file_chunks = max(0, min(self.remote_file_size_limit, c.intget("file-chunks")))
         self.dump_remote_caps()
 
-    def dump_remote_caps(self):
+    def dump_remote_caps(self) -> None:
         filelog("file transfer remote caps: file-transfer=%-5s   (ask=%s)",
                 self.remote_file_transfer, self.remote_file_transfer_ask)
         filelog("file transfer remote caps: printing=%-5s        (ask=%s)",
@@ -306,7 +306,7 @@ class FileTransferHandler(FileTransferAttributes):
         return info
 
 
-    def digest_mismatch(self, filename:str, digest, expected_digest):
+    def digest_mismatch(self, filename:str, digest, expected_digest) -> None:
         filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
         filelog.error(f" for {filename!r}")
         filelog.error(f" received {digest.hexdigest()}")
@@ -318,7 +318,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: failed to delete uploaded file {filename}")
 
 
-    def _check_chunk_receiving(self, chunk_id:int, chunk_no:int):
+    def _check_chunk_receiving(self, chunk_id:int, chunk_no:int) -> None:
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_receiving(%s, %s) chunk_state=%s", chunk_id, chunk_no, chunk_state)
         if not chunk_state:
@@ -332,7 +332,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: chunked file transfer f{chunk_id} timed out")
             self.receive_chunks_in_progress.pop(chunk_id, None)
 
-    def cancel_download(self, send_id:str, message="Cancelled"):
+    def cancel_download(self, send_id:str, message="Cancelled") -> None:
         filelog("cancel_download(%s, %s)", send_id, message)
         for chunk_id, chunk_state in dict(self.receive_chunks_in_progress).items():
             if chunk_state.send_id==send_id:
@@ -340,7 +340,7 @@ class FileTransferHandler(FileTransferAttributes):
                 return
         filelog.error("Error: cannot cancel download %s, entry not found!", u(send_id))
 
-    def cancel_file(self, chunk_id:int, message:str, chunk:int=0):
+    def cancel_file(self, chunk_id:int, message:str, chunk:int=0) -> None:
         filelog("cancel_file%s", (chunk_id, message, chunk))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if chunk_state:
@@ -366,7 +366,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
-    def _process_send_file_chunk(self, packet):
+    def _process_send_file_chunk(self, packet) -> None:
         chunk_id, chunk, file_data, has_more = packet[1:5]
         chunk_id = net_utf8(chunk_id)
         #if len(file_data)<1024:
@@ -452,7 +452,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, chunk_state.mimetype,
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
 
-    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool):
+    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> Tuple[bool,bool]:
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
@@ -477,7 +477,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return (printit, openit)
 
-    def _process_send_file(self, packet):
+    def _process_send_file(self, packet) -> None:
         #the remote end is sending us a file
         start = monotonic()
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
@@ -569,7 +569,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
 
-    def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
+    def process_downloaded_file(self, filename:str, mimetype:str, printit:bool, openit:bool, filesize:int, options) -> None:
         filelog.info("downloaded %s bytes to %s file%s:",
                      filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
@@ -665,11 +665,11 @@ class FileTransferHandler(FileTransferAttributes):
         env["XPRA_XDG_OPEN"] = "1"
         return env
 
-    def _open_file(self, url:str):
+    def _open_file(self, url:str) -> None:
         filelog("_open_file(%s)", url)
         self.exec_open_command(url)
 
-    def _open_url(self, url:str):
+    def _open_url(self, url:str) -> None:
         filelog("_open_url(%s)", url)
         if POSIX:
             #we can't use webbrowser,
@@ -680,7 +680,7 @@ class FileTransferHandler(FileTransferAttributes):
             import webbrowser  #pylint: disable=import-outside-toplevel
             webbrowser.open_new_tab(url)
 
-    def exec_open_command(self, url:str):
+    def exec_open_command(self, url:str) -> None:
         filelog("exec_open_command(%s)", url)
         try:
             import shlex  #pylint: disable=import-outside-toplevel
@@ -705,12 +705,12 @@ class FileTransferHandler(FileTransferAttributes):
         cr = getChildReaper()
         cr.add_process(proc, f"Open file {url}", command, True, True, open_done)
 
-    def file_size_warning(self, action:str, location:str, basefilename:str, filesize:int, limit:int):
+    def file_size_warning(self, action:str, location:str, basefilename:str, filesize:int, limit:int) -> None:
         filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
         filelog.warn(" this file is too large: %sB", std_unit(filesize))
         filelog.warn(" the %s file size limit is %sB", location, std_unit(limit))
 
-    def check_file_size(self, action:str, filename:str, filesize:int):
+    def check_file_size(self, action:str, filename:str, filesize:int) -> bool:
         basefilename = os.path.basename(filename)
         if filesize>self.file_size_limit:
             self.file_size_warning(action, "local", basefilename, filesize, self.file_size_limit)

@@ -26,7 +26,7 @@ def get_socket_group(socket_filename) -> int:
     if isinstance(socket_filename, str) and os.path.exists(socket_filename):
         s = os.stat(socket_filename)
         return s.st_gid
-    log.warn("Warning: missing valid socket filename to set mmap group")
+    log.warn(f"Warning: missing valid socket filename {socket_filename!r} to set mmap group")
     return -1
 
 def xpra_group() -> int:
@@ -42,7 +42,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):
+def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str=""):
     """
         Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
@@ -169,7 +169,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 clean_mmap(mmap_filename)
         return rerr()
 
-def clean_mmap(mmap_filename):
+def clean_mmap(mmap_filename:str):
     log("clean_mmap(%s)", mmap_filename)
     if mmap_filename and os.path.exists(mmap_filename):
         try:
@@ -180,7 +180,7 @@ def clean_mmap(mmap_filename):
 
 DEFAULT_TOKEN_BYTES : int = 128
 
-def write_mmap_token(mmap_area, token, index, count=DEFAULT_TOKEN_BYTES):
+def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES):
     assert count>0
     #write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
@@ -191,7 +191,7 @@ def write_mmap_token(mmap_area, token, index, count=DEFAULT_TOKEN_BYTES):
         v = v>>8
     assert v==0, "token value is too big"
 
-def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES) -> int:
+def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
     assert count>0
     v = 0
     for i in range(0, count):
@@ -202,7 +202,7 @@ def read_mmap_token(mmap_area, index, count=DEFAULT_TOKEN_BYTES) -> int:
     return v
 
 
-def init_server_mmap(mmap_filename:str, mmap_size=0):
+def init_server_mmap(mmap_filename:str, mmap_size:int=0):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
@@ -242,7 +242,7 @@ def init_server_mmap(mmap_filename:str, mmap_size=0):
             mmap_area.close()
         return None, 0
 
-def int_from_buffer(mmap_area, pos) -> c_uint32:
+def int_from_buffer(mmap_area, pos:int) -> c_uint32:
     return c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
 
 

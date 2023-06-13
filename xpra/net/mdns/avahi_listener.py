@@ -38,10 +38,11 @@ class AvahiListener:
         #self.mdns_update = mdns_update
         self.server = None
 
-    def resolve_error(self, *args):
+    def resolve_error(self, *args) -> None:
         log.error("AvahiListener.resolve_error%s", args)
 
-    def service_resolved(self, interface, protocol, name, stype, domain, host, x, address, port, text_array, v):
+    def service_resolved(self, interface, protocol, name:str, stype:str,
+                         domain:str, host:str, x, address, port:int, text_array, v) -> None:
         log("AvahiListener.service_resolved%s",
         (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
         if self.mdns_add:
@@ -61,7 +62,7 @@ class AvahiListener:
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, host, address, port, text))
             self.mdns_add(*nargs)
 
-    def service_found(self, interface, protocol, name, stype, domain, flags):
+    def service_found(self, interface, protocol, name:str, stype:str, domain:str, flags:int) -> None:
         log("service_found%s", (interface, protocol, name, stype, domain, flags))
         if flags & avahi.LOOKUP_RESULT_LOCAL:
             # local service, skip
@@ -72,14 +73,14 @@ class AvahiListener:
                 domain, avahi.PROTO_UNSPEC, dbus.UInt32(0),
                 reply_handler=self.service_resolved, error_handler=self.resolve_error)
 
-    def service_removed(self, interface, protocol, name, stype, domain, flags):
+    def service_removed(self, interface, protocol, name:str, stype:str, domain, flags:int) -> None:
         log("service_removed%s", (interface, protocol, name, stype, domain, flags))
         if self.mdns_remove:
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, flags))
             self.mdns_remove(*nargs)
 
 
-    def start(self):
+    def start(self) -> None:
         self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, '/'), 'org.freedesktop.Avahi.Server')
         log("AvahiListener.start() server=%s", self.server)
 
@@ -93,7 +94,7 @@ class AvahiListener:
         s = self.sbrowser.connect_to_signal("ItemRemove", self.service_removed)
         self.signal_match.append(s)
 
-    def stop(self):
+    def stop(self) -> None:
         sm = self.signal_match
         self.signal_match = []
         for s in sm:

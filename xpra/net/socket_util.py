@@ -48,7 +48,7 @@ def get_network_logger():
     return network_logger
 
 
-def create_unix_domain_socket(sockpath:str, socket_permissions=0o600):
+def create_unix_domain_socket(sockpath:str, socket_permissions:int=0o600):
     assert POSIX
     #convert this to a umask!
     umask = (0o777-socket_permissions) & 0o777

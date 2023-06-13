@@ -6,7 +6,7 @@
 from xpra.util import csv
 
 
-def upnp_add(socktype, info, options):
+def upnp_add(socktype:str, info, options):
     from xpra.log import Logger
     log = Logger("network", "upnp")
     log("upnp_add%s", (socktype, info, options))

@@ -29,18 +29,18 @@ class ZeroconfListener:
     def __repr__(self):
         return "ZeroconfListener(%s)" % self.service_type
 
-    def update_service(self, zeroconf, stype, name):
+    def update_service(self, zeroconf, stype:str, name:str) -> None:
         log("update_service%s", (zeroconf, stype, name))
         if self.mdns_update:
             self.mdns_update(name, stype)
 
-    def remove_service(self, zeroconf, stype, name):
+    def remove_service(self, zeroconf, stype:str, name:str) -> None:
         log("remove_service%s", (zeroconf, stype, name))
         if self.mdns_remove:
             domain = "local"
             self.mdns_remove(0, 0, name, stype, domain, 0)
 
-    def add_service(self, zeroconf, stype, name):
+    def add_service(self, zeroconf, stype:str, name:str):
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)
@@ -61,11 +61,11 @@ class ZeroconfListener:
                 saddress = socket.inet_ntoa(address)
                 self.mdns_add(interface, protocol, name, stype, domain, server, saddress, port, props)
 
-    def start(self):
+    def start(self) -> None:
         self.browser = ServiceBrowser(self.zeroconf, self.service_type, listener=self)
         log("ServiceBrowser%s=%s", (self.zeroconf, self.service_type, self), self.browser)
 
-    def stop(self):
+    def stop(self) -> None:
         b = self.browser
         if b:
             self.browser = None

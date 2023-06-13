@@ -73,7 +73,7 @@ class ProxyFactory(object):
     def __init__(self):
         self._pf = _libproxy.px_proxy_factory_new()
 
-    def getProxies(self, url):
+    def getProxies(self, url:str):
         """Given a URL, returns a list of proxies in priority order to be used
         to reach that URL.
 
@@ -121,14 +121,13 @@ class ProxyFactory(object):
         i=0
         while array[i]:
             proxy_bytes = cast(array[i], c_char_p).value
-            proxies.append(proxy_bytes.decode('utf-8', errors='replace'))
+            if proxy_bytes:
+                proxies.append(proxy_bytes.decode('utf-8', errors='replace'))
             i += 1
 
         _libproxy.px_proxy_factory_free_proxies(array)
-
         return proxies
 
     def __del__(self):
         if _libproxy:
             _libproxy.px_proxy_factory_free(self._pf)
-

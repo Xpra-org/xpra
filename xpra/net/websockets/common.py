@@ -44,7 +44,7 @@ def make_websocket_accept_hash(key:str) -> bytes:
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
-def get_headers(host:str, port:int):
+def get_headers(host:str, port:int) -> Dict:
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:

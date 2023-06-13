@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
 import browser_cookie3  # @UnresolvedImport
 
 from xpra.os_util import strtobytes
 
 
-def get_headers(host, port):    #pylint: disable=unused-argument
+def get_headers(host:str, port:int) -> Dict[bytes,bytes]:    #pylint: disable=unused-argument
     headers = {}
     cookie_domain = host
     cookie_string = ''

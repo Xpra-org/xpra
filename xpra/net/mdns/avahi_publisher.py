@@ -22,7 +22,7 @@ from xpra.log import Logger
 log = Logger("network", "mdns")
 
 
-def get_interface_index(host):
+def get_interface_index(host) -> int:
     log("get_interface_index(%s)", host)
     if host in ("0.0.0.0", "", "*", "::"):
         return avahi.IF_UNSPEC
@@ -52,7 +52,7 @@ class AvahiPublishers:
     and to convert the text dict into a TXT string.
     """
 
-    def __init__(self, listen_on, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
+    def __init__(self, listen_on, service_name:str, service_type:str=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("AvahiPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         try:
@@ -93,7 +93,7 @@ class AvahiPublishers:
                                                   service_type, domain="", host=fqdn,
                                                   text=txt, interface=iface_index))
 
-    def start(self):
+    def start(self) -> None:
         log("avahi:starting: %s", self.publishers)
         if not self.publishers:
             return
@@ -105,12 +105,12 @@ class AvahiPublishers:
             log.warn(" to avoid this warning, disable mdns support ")
             log.warn(" using the 'mdns=no' option")
 
-    def stop(self):
+    def stop(self) -> None:
         log("stopping: %s", self.publishers)
         for publisher in self.publishers:
             publisher.stop()
 
-    def update_txt(self, txt):
+    def update_txt(self, txt) -> None:
         for publisher in self.publishers:
             publisher.update_txt(txt)
 
@@ -132,7 +132,7 @@ class AvahiPublisher:
         self.server = None
         self.group = None
 
-    def iface(self):
+    def iface(self) -> str:
         if self.interface>0:
             return "interface %i" % self.interface
         return "all interfaces"
@@ -143,7 +143,7 @@ class AvahiPublisher:
     def __repr__(self):
         return "AvahiPublisher(%s)" % self.host_str()
 
-    def start(self):
+    def start(self) -> bool:
         try:
             self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER),
                                          avahi.DBUS_INTERFACE_SERVER)
@@ -157,7 +157,7 @@ class AvahiPublisher:
         self.server.connect_to_signal("StateChanged", self.server_state_changed)
         return self.server_state_changed(self.server.GetState())
 
-    def server_state_changed(self, state, error=None):
+    def server_state_changed(self, state, error=None) -> bool:
         log("server_state_changed(%s, %s) on %s", state, error, self.server)
         if state == avahi.SERVER_COLLISION:
             log.error("Error: mdns server name collision")
@@ -179,7 +179,7 @@ class AvahiPublisher:
         log.warn(" for name '%s' and port %i on %s", self.name, self.port, self.iface())
         return False
 
-    def add_service(self):
+    def add_service(self) -> None:
         if not self.group:
             return
         try:
@@ -207,7 +207,7 @@ class AvahiPublisher:
                             log.error(" %s", x)
             self.stop()
 
-    def stop(self):
+    def stop(self) -> None:
         group = self.group
         log("%s.stop() group=%s", self, group)
         if group:
@@ -220,7 +220,7 @@ class AvahiPublisher:
         self.server = None
 
 
-    def update_txt(self, txt):
+    def update_txt(self, txt) -> None:
         if not self.server:
             log("update_txt(%s) ignored, already stopped", txt)
             return
@@ -257,7 +257,7 @@ def main():
     name = "test service"
     bus = init_system_bus()
     publishers = []
-    def add(service_type=XPRA_TCP_MDNS_TYPE):
+    def add(service_type:str=XPRA_TCP_MDNS_TYPE):
         publisher = AvahiPublisher(bus, name, port, stype=service_type, host=host, text=("somename=somevalue",))
         publishers.append(publisher)
         def start():

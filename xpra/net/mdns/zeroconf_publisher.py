@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+from typing import Dict
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
 
 from xpra.log import Logger
@@ -42,7 +43,7 @@ class ZeroconfPublishers:
     """
     Expose services via python zeroconf
     """
-    def __init__(self, listen_on, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
+    def __init__(self, listen_on, service_name:str, service_type:str=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
         self.ports = {}
@@ -105,15 +106,15 @@ class ZeroconfPublishers:
                     host = "127.0.0.1"
             add_address(host, port, af)
 
-    def start(self):
+    def start(self) -> None:
         for s in self.services:
             s.start()
 
-    def stop(self):
+    def stop(self) -> None:
         for s in self.services:
             s.stop()
 
-    def update_txt(self, txt):
+    def update_txt(self, txt) -> None:
         for s in self.services:
             s.update_txt(txt)
 
@@ -158,7 +159,7 @@ class ZeroconfPublisher:
             log.error(" for port %i", port)
             log.estr(e)
 
-    def start(self):
+    def start(self) -> None:
         try:
             self.zeroconf = Zeroconf(interfaces=[self.host])
         except OSError:
@@ -172,13 +173,13 @@ class ZeroconfPublisher:
         else:
             self.registered = True
 
-    def stop(self):
+    def stop(self) -> None:
         log("ZeroConfPublishers.stop(): %s", self.service)
         if self.registered:
             self.zeroconf.unregister_service(self.service)
         self.zeroconf = None
 
-    def txt_rec(self, text_dict):
+    def txt_rec(self, text_dict) -> Dict:
         #prevent zeroconf from mangling our ints into booleans:
         new_dict = {}
         for k,v in text_dict.items():
@@ -188,7 +189,7 @@ class ZeroconfPublisher:
                 new_dict[k] = v
         return new_dict
 
-    def update_txt(self, txt):
+    def update_txt(self, txt) -> None:
         if not hasattr(self.zeroconf, "update_service"):
             log("no update_service with zeroconf version %s", zeroconf_version)
             return

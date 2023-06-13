@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,7 +40,7 @@ class WebSocketProtocol(SocketProtocol):
     def __repr__(self):
         return f"WebSocket({self._conn})"
 
-    def close(self, message=None):
+    def close(self, message=None) -> None:
         if self._closed:
             return
         self.send_ws_close(reason=message)
@@ -48,7 +48,7 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_data = b""
         self.ws_payload = []
 
-    def send_ws_close(self, code:int=1000, reason:str="closing"):
+    def send_ws_close(self, code:int=1000, reason:str="closing") -> None:
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
@@ -66,7 +66,7 @@ class WebSocketProtocol(SocketProtocol):
             return header+mask
         return header
 
-    def parse_ws_frame(self, buf:ByteString):
+    def parse_ws_frame(self, buf:ByteString) -> None:
         if not buf:
             self._read_queue_put(buf)
             return
