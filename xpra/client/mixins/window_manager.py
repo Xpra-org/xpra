@@ -111,8 +111,8 @@ class WindowClient(StubClientMixin):
         self._id_to_window : Dict[int,Any] = {}
 
         self.auto_refresh_delay : int = -1
-        self.min_window_size : Tuple[int, int] = 0, 0
-        self.max_window_size : Tuple[int, int] = 0, 0
+        self.min_window_size : Tuple[int, int] = (0, 0)
+        self.max_window_size : Tuple[int, int] = (0, 0)
 
         #draw thread:
         self._draw_queue = None

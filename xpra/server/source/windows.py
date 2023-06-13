@@ -81,8 +81,8 @@ class WindowsMixin(StubSourceMixin):
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
-        self.window_min_size : Tuple[int,int] = 0, 0
-        self.window_max_size : Tuple[int,int] = 0, 0
+        self.window_min_size : Tuple[int,int] = (0, 0)
+        self.window_max_size : Tuple[int,int] = (0, 0)
         self.window_restack = False
         self.window_pre_map = False
         self.system_tray = False

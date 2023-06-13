@@ -276,7 +276,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pixel_format : str = ""
         self.textures = None # OpenGL texture IDs
         self.shaders = None
-        self.texture_size : Tuple[int,int] = 0, 0
+        self.texture_size : Tuple[int,int] = (0, 0)
         self.gl_setup : bool = False
         self.debug_setup : bool = False
         self.border : WindowBorder = WindowBorder(shown=False)

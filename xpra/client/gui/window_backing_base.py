@@ -117,12 +117,12 @@ class WindowBackingBase:
         load_csc_options()
         load_video_decoders()
         self.wid : int = wid
-        self.size : Tuple[int,int] = 0, 0
-        self.render_size : Tuple[int,int] = 0, 0
+        self.size : Tuple[int,int] = (0, 0)
+        self.render_size : Tuple[int,int] = (0, 0)
         #padding between the window contents and where we actually draw the backing
         #(ie: if the window is bigger than the backing,
         # we may be rendering the backing in the center of the window)
-        self.offsets : Tuple[int,int,int,int] = 0, 0, 0, 0       #top,left,bottom,right
+        self.offsets : Tuple[int,int,int,int] = (0, 0, 0, 0)       #top,left,bottom,right
         self.gravity : int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
@@ -152,7 +152,7 @@ class WindowBackingBase:
         self.mmap = None
         self.mmap_enabled : bool = False
         self.fps_events : deque = deque(maxlen=120)
-        self.fps_buffer_size : Tuple[int,int] = 0, 0
+        self.fps_buffer_size : Tuple[int,int] = (0, 0)
         self.fps_buffer_update_time : float = 0
         self.fps_value : int = 0
         self.fps_refresh_timer : int = 0
