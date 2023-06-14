@@ -90,7 +90,7 @@ def get_wm_name():
     return wm_name
 
 def get_clipboard_native_class():
-    if is_Wayland():
+    if os.environ.get("GDK_BACKEND", "")!="x11" and is_Wayland():
         return None
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
