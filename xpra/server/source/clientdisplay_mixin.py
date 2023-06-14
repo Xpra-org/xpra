@@ -92,7 +92,9 @@ class ClientDisplayMixin(StubSourceMixin):
                     "subpixel-layout" : td.strget,
                     "workarea"      : td.inttupleget,
                     }.items():
-                    vdef[attr] = conv(attr)
+                    v = conv(attr)
+                    if v is not None:
+                        vdef[attr] = conv(attr)
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
     def set_screen_sizes(self, screen_sizes):
