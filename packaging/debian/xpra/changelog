@@ -5,17 +5,24 @@ xpra (4.4.6-1) UNRELEASED; urgency=low
     - Xpra-Launcher.exe crashes on MS Windows when closed with shortcut keys
     - python-cryptography / OpenSSL workaround missing from some entrypoints
     - focus not synchronized properly
+    - sessions gui crashing when exiting using a key shortcut on MS Windows](https://github.com/Xpra-org/xpra/commit/ff7e951f3797b0dce23aabf96ce0be4676159fcc)
+    - run without a valid stderr
+    - AES setup errors with newer versions of python-cryptography
+    - packet encoding errors preventing clients from connecting
   * system tray:
     - unhandled exceptions loading the new AppIndicator bindings
     - use AppIndicator for system tray forwarding
     - don't use Gtk.StatusIcon on Wayland
-  * packaging:
+  * build and packaging:
     - compatibility with the latest cx_Freeze release
+    - Cython 3.0.0b3
+    - runtime errors with CUDA-free builds on MS Windows
+    - missing explicit RPM build dependencies
   * minor fixes:
     - maximize-window menu entry state not synced
     - not yet used command parsing functionality not working as intended
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Jun 2023 11:24:10 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jun 2023 15:28:15 +0700
 
 xpra (4.4.5-1) UNRELEASED; urgency=low
   * major fixes:

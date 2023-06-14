@@ -1,18 +1,25 @@
 # Changelog
 
-## [4.4.6] 2023-06-08
+## [4.4.6] 2023-06-14
 * major fixes:
     * [OpenGL sanity check regression introduced in 4.4.5](https://github.com/Xpra-org/xpra/commit/a5bccfca2cae9b64528b140e90568d2fa899fd97)
     * [handle paramiko `CanonicalizeHostname` ssh config parsing errors more gracefully](https://github.com/Xpra-org/xpra/commit/d9efbd264d945ef8412e9822f73ec46938205bd5)
     * [Xpra-Launcher.exe crashes on MS Windows when closed with shortcut keys](https://github.com/Xpra-org/xpra/commit/b93d5fee7941a7aac72b481a43edf996e8a4fa39)
     * [python-cryptography / OpenSSL workaround missing from some entrypoints](https://github.com/Xpra-org/xpra/commit/11164643ae02263a1eca88444aa7918d53027628)
     * [focus not synchronized properly](https://github.com/Xpra-org/xpra/commit/93c90aecf2fea540637ea3a02b68e7e24c277a19)
+    * [sessions gui crashing when exiting using a key shortcut on MS Windows](https://github.com/Xpra-org/xpra/commit/ff7e951f3797b0dce23aabf96ce0be4676159fcc)
+    * [run without a valid stderr](https://github.com/Xpra-org/xpra/commit/1dd54528161e3ae83cb7cd104f0ab96a5f2a4027)
+    * [AES setup errors with newer versions of python-cryptography](https://github.com/Xpra-org/xpra/commit/f813eed5dd0e12effd81087f2a7c63caf903d204)
+    * [packet encoding errors preventing clients from connecting](https://github.com/Xpra-org/xpra/commit/3fa3f78ed746b387a50f3308c993b763c9ddada2)
 * system tray:
     * [unhandled exceptions loading the new AppIndicator bindings](https://github.com/Xpra-org/xpra/commit/25302e1a9f667951f0975dfafb5a5016e5c0487d)[and older ones](https://github.com/Xpra-org/xpra/commit/f8590909973a5303607638a5b7efc4887b985082)
     * [use AppIndicator for system tray forwarding](https://github.com/Xpra-org/xpra/commit/0a1819f904525feb625bb1ea1ce4451e2c6a6901)
     * [don't use Gtk.StatusIcon on Wayland](https://github.com/Xpra-org/xpra/commit/55608da0a0cf9b923716b9950863ec557d363b1d)
-* packaging:
+* build and packaging:
     * [compatibility with the latest cx_Freeze release](https://github.com/Xpra-org/xpra/commit/15062aca4dc927b9091ed517f54aa6678a83cb07)
+    * [Cython 3.0.0b3](https://github.com/Xpra-org/xpra/commit/d4f7f49ea1351410a2cc4782942efa8c6b1099a7)
+    * [runtime errors with CUDA-free builds on MS Windows](https://github.com/Xpra-org/xpra/commit/b5918aa6cf586dcc16c47715e1552e589d2dab54)
+    * [missing explicit RPM build dependencies](https://github.com/Xpra-org/xpra/commit/4ce34f7480123af5d0d56c5b1c4811206de66da4)
 * minor fixes:
     * [maximize-window menu entry state not synced](https://github.com/Xpra-org/xpra/commit/ae77a11cdeba00ec27b8a176a08f59e009a3d5eb)
     * [not yet used command parsing functionality not working as intended](https://github.com/Xpra-org/xpra/commit/449a654310ab5435ef79abcfc321e2f4336feb5b)

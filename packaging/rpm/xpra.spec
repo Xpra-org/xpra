@@ -633,19 +633,26 @@ fi
 
 
 %changelog
-* Thu Jun 08 2023 Antoine Martin <antoine@xpra.org> 4.4.6-10
+* Wed Jun 14 2023 Antoine Martin <antoine@xpra.org> 4.4.6-10
 - major fixes:
    OpenGL sanity check regression introduced in 4.4.5
    handle paramiko `CanonicalizeHostname` ssh config parsing errors more gracefully
    Xpra-Launcher.exe crashes on MS Windows when closed with shortcut keys
    python-cryptography / OpenSSL workaround missing from some entrypoints
    focus not synchronized properly
+   sessions gui crashing when exiting using a key shortcut on MS Windows](https://github.com/Xpra-org/xpra/commit/ff7e951f3797b0dce23aabf96ce0be4676159fcc)
+   run without a valid stderr
+   AES setup errors with newer versions of python-cryptography
+   packet encoding errors preventing clients from connecting
 - system tray:
    unhandled exceptions loading the new AppIndicator bindings
    use AppIndicator for system tray forwarding
    don't use Gtk.StatusIcon on Wayland
-- packaging:
+- build and packaging:
    compatibility with the latest cx_Freeze release
+   Cython 3.0.0b3
+   runtime errors with CUDA-free builds on MS Windows
+   missing explicit RPM build dependencies
 - minor fixes:
    maximize-window menu entry state not synced
    not yet used command parsing functionality not working as intended
