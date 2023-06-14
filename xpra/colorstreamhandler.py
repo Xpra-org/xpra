@@ -58,7 +58,10 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
         logging.StreamHandler.__init__(self, stream)
 
     def format(self, record):
-        text = logging.StreamHandler.format(self, record)
+        try:
+            text = logging.StreamHandler.format(self, record)
+        except:
+            text = str(record)
         color = self._get_color(record.levelno)
         return color + text + self.DEFAULT
 
