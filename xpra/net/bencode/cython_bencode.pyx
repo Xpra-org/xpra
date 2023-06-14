@@ -65,7 +65,7 @@ cdef decode_string(const unsigned char *x, unsigned int f, int l):
         try:
             slen = int(lenstr)
         except:
-            raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, ucolon, x))
+            raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, ucolon, x)) from None
     if x[f] == b'0' and ucolon != f+1:
         raise ValueError("leading zeroes are not allowed (found in string length)")
     ucolon += 1
@@ -95,7 +95,7 @@ cdef decode_dict(const unsigned char *x, unsigned int f, int l):
         try:
             r[k] = v
         except TypeError as e:
-            raise ValueError("failed to set dictionary key %s: %s" % (k, e))
+            raise ValueError("failed to set dictionary key %s: %s" % (k, e)) from None
     return (r, f + 1)
 
 
@@ -126,7 +126,7 @@ def bdecode(x):
     try:
         return decode(<const unsigned char*> py_buf.buf, f, py_buf.len, "bencoded string")
     except (IndexError, KeyError):
-        raise ValueError
+        raise ValueError(f"cannot decode string {xs!r}") from None
     finally:
         PyBuffer_Release(&py_buf)
 
@@ -190,6 +190,4 @@ def bencode(x) -> bytes:
         assert encode(x, r)==0
         return b''.join(b(v) for v in r)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise ValueError("cannot encode '%s': %s" % (x, e))
+        raise ValueError("cannot encode '%s': %s" % (x, e)) from None
