@@ -60,7 +60,7 @@ ${PYTHON} ./setup.py clean
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details - this may take a minute or two)"
-${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
+${PYTHON} ./setup.py install --single-version-externally-managed --root=/ --prefix=$JHBUILD_PREFIX ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
@@ -188,7 +188,7 @@ echo "**************************************************************************
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
-rm ${MACOS_DIR}/Launcher-bin
+rm ${MACOS_DIR}/*bin
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
@@ -291,7 +291,8 @@ echo " * remove numpy"
 rm -fr $LIBDIR/python/numpy
 if [ "${ZIP_MODULES}" == "1" ]; then
 	pushd $LIBDIR/python
-	zip --move -ur site-packages.zip OpenGL
+	echo " * zipping OpenGL"
+	zip --move -q -r site-packages.zip OpenGL
 	popd
 fi
 echo " * add gobject-introspection (py2app refuses to do it)"
