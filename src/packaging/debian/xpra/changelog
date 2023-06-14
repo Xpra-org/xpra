@@ -15,6 +15,8 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
    - workaround exotic x264 library version strings
    - compatibility with the latest cx_Freeze
    - runtime errors with CUDA-free builds on MS Windows
+   - more setuptools workarounds
+   - strip Cython html files
    - Cython 0.29.35
    - Python2 PyOpenGL 3.1.6, Python3 PyOpenGL 3.1.7
    - xorg-x11-drv-dummy 0.4.1
@@ -61,7 +63,7 @@ xpra (3.1.5-1) UNRELEASED; urgency=low
    - MacOS GUI diagnostic tool standalone runtime failure
    - linter warnings and typos
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jun 2023 15:39:43 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jun 2023 23:15:00 +0700
 
 xpra (3.1.4-1) UNRELEASED; urgency=low
   * major fixes:

@@ -932,6 +932,8 @@ fi
     workaround exotic x264 library version strings
     compatibility with the latest cx_Freeze
     runtime errors with CUDA-free builds on MS Windows
+    more setuptools workarounds
+    strip Cython html files
     Cython 0.29.35
     PyOpenGL 3.1.7
     Python2 PyOpenGL 3.1.6, Python3 PyOpenGL 3.1.7
