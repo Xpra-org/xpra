@@ -22,6 +22,8 @@ from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
+log = Logger("tray", "posix")
+
 import gi
 try:
     gi.require_version("AyatanaAppIndicator3", "0.1")  # @UndefinedVariable
@@ -33,8 +35,6 @@ except (ImportError, ValueError):
         log("loaded AppIndicator3")
     except ValueError as e:
         raise ImportError(f"failed to load `AppIndicator3`: {e}")
-
-log = Logger("tray", "posix")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
