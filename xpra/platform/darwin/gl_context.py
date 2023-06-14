@@ -50,7 +50,6 @@ class AGLWindowContext(object):
 
     def update_geometry(self):
         glc = self.gl_context
-        log.warn("update() gl_context=%s", glc)
         if glc:
             glc.update()
 
