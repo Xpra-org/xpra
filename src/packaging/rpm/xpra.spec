@@ -920,7 +920,7 @@ fi
     MacOS arm64 builds
     MacOS builds fail early outside `jhbuild` shell, clean `.cpp` files
     fix building libyuv on RHEL 7
-    avoid spec file patch warnings with newer rpm build tools
+    avoid spec file patch warnings with newer rpm build tools, CentOS7
     compilation warnings with Python2
     Python3 str vs bytes error in client
     silence Python cryptography 'openssl legacy' error
@@ -931,8 +931,10 @@ fi
     remove invalid DEB dependency on `python-minimal`
     workaround exotic x264 library version strings
     compatibility with the latest cx_Freeze
+    runtime errors with CUDA-free builds on MS Windows
     Cython 0.29.35
     PyOpenGL 3.1.7
+    Python2 PyOpenGL 3.1.6, Python3 PyOpenGL 3.1.7
     xorg-x11-drv-dummy 0.4.1
 - major fixes:
     GLib memory allocator crash
@@ -947,6 +949,10 @@ fi
     handle mode `xdg` library loading errors
     unwanted lost-focus events
     only use synthetic unfocus events when needed
+    focus not synchronized properly
+    sessions gui crashing when exiting using a key shortcut on MS Windows
+    handle invalid 'use-display' option more gracefully
+    Python2 builds cannot use 'rencodeplus'
 - network:
     html5 client v5 compatibility regression with python2 builds
     protocol was not flushing on close
@@ -959,6 +965,7 @@ fi
     handle RGBA icon data
     disable `delta` encoding - which caused some visual corruption
 - cosmetic:
+    spurious DPI warnings
     handle malformed display names better
     make it possible to disable `sha1`
     avoid errors if `md5` has already been removed
