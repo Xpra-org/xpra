@@ -36,7 +36,7 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	shift
 fi
 if [ "${DO_CUDA}" == "0" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg_encoder --without-nvjpeg_decoder --without-nvenc --without-nvfbc"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg --without-nvenc --without-nvfbc"
 fi
 
 ################################################################################
