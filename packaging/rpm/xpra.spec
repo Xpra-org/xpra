@@ -306,6 +306,8 @@ BuildRequires:		libXtst-devel
 BuildRequires:		libXcomposite-devel
 BuildRequires:		libXdamage-devel
 BuildRequires:		libXres-devel
+BuildRequires:		libXrandr-devel
+BuildRequires:		libXfixes-devel
 Requires:			libxkbfile
 Requires:			libXtst
 Requires:			libXcomposite
