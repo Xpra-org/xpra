@@ -650,6 +650,7 @@ fi
    don't use Gtk.StatusIcon on Wayland
 - build and packaging:
    compatibility with the latest cx_Freeze release
+   strip Cython html files
    Cython 3.0.0b3
    runtime errors with CUDA-free builds on MS Windows
    missing explicit RPM build dependencies

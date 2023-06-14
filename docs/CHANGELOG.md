@@ -17,6 +17,7 @@
     * [don't use Gtk.StatusIcon on Wayland](https://github.com/Xpra-org/xpra/commit/55608da0a0cf9b923716b9950863ec557d363b1d)
 * build and packaging:
     * [compatibility with the latest cx_Freeze release](https://github.com/Xpra-org/xpra/commit/15062aca4dc927b9091ed517f54aa6678a83cb07)
+    * [strip Cython html files](https://github.com/Xpra-org/xpra/commit/12acc01c47200396b8a84b50c4d35e8f2a470649)
     * [Cython 3.0.0b3](https://github.com/Xpra-org/xpra/commit/d4f7f49ea1351410a2cc4782942efa8c6b1099a7)
     * [runtime errors with CUDA-free builds on MS Windows](https://github.com/Xpra-org/xpra/commit/b5918aa6cf586dcc16c47715e1552e589d2dab54)
     * [missing explicit RPM build dependencies](https://github.com/Xpra-org/xpra/commit/4ce34f7480123af5d0d56c5b1c4811206de66da4)
