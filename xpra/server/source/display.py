@@ -101,7 +101,9 @@ class ClientDisplayMixin(StubSourceMixin):
                     "name"          : td.strget,
                     }
                 for attr, conv in aconv.items():
-                    vdef[attr] = conv(attr)
+                    v = conv(attr)
+                    if v is not None:
+                        vdef[attr] = v
                 #generate a name if we don't have one:
                 name = vdef.get("name")
                 if not name:
