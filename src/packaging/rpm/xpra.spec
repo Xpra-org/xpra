@@ -915,10 +915,11 @@ fi
 
 
 %changelog
-* Thu Jun 08 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
+* Thu Jun 15 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
 - build, packaging and platforms:
     MacOS arm64 builds
     MacOS builds fail early outside `jhbuild` shell, clean `.cpp` files
+    MacOS bundle numpy for PyOpenGL
     fix building libyuv on RHEL 7
     avoid spec file patch warnings with newer rpm build tools, CentOS7
     compilation warnings with Python2
@@ -945,6 +946,7 @@ fi
     clients without keymaps
     clients without desktops attributes
     only allow logging tweaks via env vars for non-root users
+    always format the log record
     match client desktop geometry and skip DPI warnings
     potential unflushed X11 errors could crash GTK
     stricter validation of `xdg` menu data
@@ -955,6 +957,7 @@ fi
     sessions gui crashing when exiting using a key shortcut on MS Windows
     handle invalid 'use-display' option more gracefully
     Python2 builds cannot use 'rencodeplus'
+    MacOS OpenGL race condition causing blank windows
 - network:
     html5 client v5 compatibility regression with python2 builds
     protocol was not flushing on close
