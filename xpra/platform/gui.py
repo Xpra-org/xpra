@@ -8,7 +8,7 @@
 import os
 import sys
 import binascii
-from typing import Dict, Any, Tuple, List, Optional, Type
+from typing import Dict, Any, Tuple, Optional, Type
 
 from xpra.platform import platform_import
 from xpra.os_util import bytestostr
