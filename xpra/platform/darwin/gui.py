@@ -758,7 +758,7 @@ class ClientExtras:
             self.delegate.callbacks.update({
                 "sleep" : self.client.suspend,
                 "wake" : self.client.resume,
-                "deiconify" : self.client.deiconify,
+                "deiconify" : self.client.deiconify_windows,
                 })
         self.shared_app.setDelegate_(self.delegate)
         log("setup_event_listener() the application delegate has been registered")
