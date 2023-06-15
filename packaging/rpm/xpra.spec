@@ -633,7 +633,7 @@ fi
 
 
 %changelog
-* Wed Jun 14 2023 Antoine Martin <antoine@xpra.org> 4.4.6-10
+* Thu Jun 15 2023 Antoine Martin <antoine@xpra.org> 4.4.6-10
 - major fixes:
    OpenGL sanity check regression introduced in 4.4.5
    handle paramiko `CanonicalizeHostname` ssh config parsing errors more gracefully
@@ -644,6 +644,7 @@ fi
    run without a valid stderr
    AES setup errors with newer versions of python-cryptography
    packet encoding errors preventing clients from connecting
+   try harder to format the log record
 - system tray:
    unhandled exceptions loading the new AppIndicator bindings
    use AppIndicator for system tray forwarding
@@ -654,6 +655,7 @@ fi
    Cython 3.0.0b3
    runtime errors with CUDA-free builds on MS Windows
    missing explicit RPM build dependencies
+   MacOS bundle numpy for PyOpenGL
 - minor fixes:
    maximize-window menu entry state not synced
    not yet used command parsing functionality not working as intended

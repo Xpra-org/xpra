@@ -9,6 +9,7 @@ xpra (4.4.6-1) UNRELEASED; urgency=low
     - run without a valid stderr
     - AES setup errors with newer versions of python-cryptography
     - packet encoding errors preventing clients from connecting
+    - try harder to format the log record
   * system tray:
     - unhandled exceptions loading the new AppIndicator bindings
     - use AppIndicator for system tray forwarding
@@ -19,11 +20,12 @@ xpra (4.4.6-1) UNRELEASED; urgency=low
     - Cython 3.0.0b3
     - runtime errors with CUDA-free builds on MS Windows
     - missing explicit RPM build dependencies
+    - MacOS bundle numpy for PyOpenGL
   * minor fixes:
     - maximize-window menu entry state not synced
     - not yet used command parsing functionality not working as intended
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jun 2023 15:28:15 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 15 Jun 2023 22:00:05 +0700
 
 xpra (4.4.5-1) UNRELEASED; urgency=low
   * major fixes:
