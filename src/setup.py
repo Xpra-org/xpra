@@ -1672,7 +1672,7 @@ else:
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
         modules.append("mimetypes")
-        external_excludes.append("numpy")
+        add_packages("numpy.core._methods", "numpy.lib.format")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")

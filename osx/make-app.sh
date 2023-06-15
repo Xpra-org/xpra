@@ -287,8 +287,6 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 	done
 	popd
 fi
-echo " * remove numpy"
-rm -fr $LIBDIR/python/numpy
 if [ "${ZIP_MODULES}" == "1" ]; then
 	pushd $LIBDIR/python
 	echo " * zipping OpenGL"
