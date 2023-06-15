@@ -14,9 +14,9 @@ from xpra.notifications.notifier_base import NotifierBase
 
 class GTK3_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid,
-                    app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int,
+                    app_name:str, replaces_nid:int, app_icon,
+                    summary:str, body:str, actions, hints, timeout:int, icon):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
@@ -28,9 +28,9 @@ class GTK3_Notifier(NotifierBase):
         n.show()
 
 
-    def close_notify(self, nid):
+    def close_notify(self, nid:int) -> None:
         self.clean_notification(nid)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         Notify.uninit()
         super().cleanup()

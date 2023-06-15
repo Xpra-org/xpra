@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Type
 from gi.repository import Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
@@ -118,11 +118,11 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 
-    def get_backing_class(self):
+    def get_backing_class(self) -> Type:
         raise NotImplementedError()
 
 
-    def xget_u32_property(self, target, name):
+    def xget_u32_property(self, target, name:str):
         if HAS_X11_BINDINGS:
             return GTKClientWindowBase.xget_u32_property(self, target, name)
         #pure Gdk lookup:

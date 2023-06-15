@@ -1,9 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple, Callable
 from time import monotonic
 from collections import deque
 
@@ -18,7 +19,8 @@ class TrayBase:
         Utility superclass for all tray implementations
     """
 
-    def __init__(self, _client, app_id, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+    def __init__(self, _client, app_id, menu, tooltip:str, icon_filename:str,
+                 size_changed_cb:Callable, click_cb:Callable, mouseover_cb:Callable, exit_cb:Callable):
         #we don't keep a reference to client,
         #because calling functions on the client directly should be discouraged
         self.app_id = app_id
@@ -39,24 +41,24 @@ class TrayBase:
     def __repr__(self):
         return f"Tray({self.app_id}:{self.tooltip})"
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if self.tray_widget:
             self.hide()
             self.tray_widget = None
 
-    def ready(self):
+    def ready(self) -> None:
         """
         This is called when we have finished the startup sequence.
         The MacOS dock overrides this method.
         """
 
-    def show(self):
+    def show(self) -> None:
         raise NotImplementedError
 
-    def hide(self):
+    def hide(self) -> None:
         raise NotImplementedError
 
-    def get_screen(self):
+    def get_screen(self) -> int:
         return -1
 
     def get_orientation(self):
@@ -65,48 +67,48 @@ class TrayBase:
     def get_geometry(self):
         raise NotImplementedError
 
-    def get_size(self):
+    def get_size(self) -> Tuple[int,int]:
         g = self.get_geometry()
         if g is None:
             return None
         return g[2:4]
 
-    def set_tooltip(self, tooltip=None):
+    def set_tooltip(self, tooltip:str="") -> None:
         self.tooltip = tooltip
         raise NotImplementedError
 
-    def set_blinking(self, on):
+    def set_blinking(self, on:bool) -> None:
         raise NotImplementedError
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
+    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, options=None):
         raise NotImplementedError
 
-    def get_icon_filename(self, basename=None):
+    def get_icon_filename(self, basename="") -> str:
         name = basename or self.default_icon_filename
         f = get_icon_filename(name, self.default_icon_extension)
         if not f:
             log.error(f"Error: cannot find icon {name!r}")
         return f
 
-    def set_icon(self, basename=None):
+    def set_icon(self, basename="") -> None:
         filename = self.get_icon_filename(basename)
         if not filename:
             return
         log(f"set_icon({basename}) using filename={filename!r}")
         self.set_icon_from_file(filename)
 
-    def set_icon_from_file(self, filename):
+    def set_icon_from_file(self, filename:str) -> None:
         log(f"set_icon_from_file({filename}) tray_widget={self.tray_widget}")
         if not self.tray_widget:
             return
         self.do_set_icon_from_file(filename)
         self.icon_timestamp = monotonic()
 
-    def do_set_icon_from_file(self, filename):
+    def do_set_icon_from_file(self, filename:str) -> None:
         raise NotImplementedError
 
-    def recalculate_geometry(self, x, y, width, height):
+    def recalculate_geometry(self, x:int, y:int, width:int, height:int) -> None:
         log("recalculate_geometry%s guess=%s, tray event locations: %s",
             (x, y, width, height), self.geometry_guess, len(self.tray_event_locations))
         if x is None or y is None:

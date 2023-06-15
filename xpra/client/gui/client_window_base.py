@@ -200,7 +200,7 @@ class ClientWindowBase(ClientWidgetBase):
         return self.cx(x), self.cy(y)
 
 
-    def new_backing(self, bw, bh):
+    def new_backing(self, bw:int, bh:int):
         backing_class = self.get_backing_class()
         log("new_backing(%s, %s) backing_class=%s", bw, bh, backing_class)
         assert backing_class is not None
@@ -223,7 +223,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._backing = None
 
 
-    def setup_window(self, bw, bh) -> None:
+    def setup_window(self, bw:int, bh:int) -> None:
         self.new_backing(bw, bh)
         #tell the server about the encoding capabilities of this backing instance:
         #but don't bother if they're the same as what we sent as defaults

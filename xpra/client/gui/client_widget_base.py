@@ -1,21 +1,23 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pretend to draw the windows, but don't actually do anything
+from typing import Dict, Any, Type
+
 from xpra.util import envbool
 from xpra.log import Logger
 
 log = Logger("window")
+#pretend to draw the windows, but don't actually do anything:
 USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 
 class ClientWidgetBase:
 
-    def __init__(self, client, watcher_pid, wid, has_alpha):
+    def __init__(self, client, watcher_pid:int, wid:int, has_alpha:bool):
         self.wid = wid
         self.watcher_pid = watcher_pid
         #gobject-like scheduler:
@@ -32,7 +34,7 @@ class ClientWidgetBase:
         self._backing = None
         self.pixel_depth = 24
 
-    def get_info(self):
+    def get_info(self) -> Dict[str,Any]:
         info = {
             "has-alpha"     : self._has_alpha,
             "window-alpha"  : self._window_alpha,
@@ -43,7 +45,7 @@ class ClientWidgetBase:
             info["backing"] = b.get_info()
         return info
 
-    def make_new_backing(self, backing_class, ww, wh, bw, bh):
+    def make_new_backing(self, backing_class:Type, ww:int, wh:int, bw:int, bh:int):
         #size of the backing (same as server window source):
         bw = max(1, bw)
         bh = max(1, bh)
@@ -66,31 +68,31 @@ class ClientWidgetBase:
         backing.init(ww, wh, bw, bh)
         return backing
 
-    def freeze(self):
+    def freeze(self) -> None:
         """
         Subclasses can suspend screen updates and free some resources
         """
 
-    def unfreeze(self):
+    def unfreeze(self) -> None:
         """
         Subclasses may resume normal operation that were suspended by freeze()
         """
 
 
-    def workspace_changed(self):            # pragma: no cover
+    def workspace_changed(self) -> None:            # pragma: no cover
         pass
 
-    def set_cursor_data(self, cursor_data): # pragma: no cover
+    def set_cursor_data(self, cursor_data) -> None: # pragma: no cover
         pass
 
-    def new_backing(self, _w, _h):          # pragma: no cover
+    def new_backing(self, w:int, h:int):          # pragma: no cover
         raise NotImplementedError
 
-    def is_OR(self):                        # pragma: no cover
+    def is_OR(self) -> bool:                        # pragma: no cover
         return False
 
-    def is_tray(self):                      # pragma: no cover
+    def is_tray(self) -> bool:                      # pragma: no cover
         return False
 
-    def is_GL(self):                        # pragma: no cover
+    def is_GL(self) -> bool:                        # pragma: no cover
         return False

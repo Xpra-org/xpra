@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
+from typing import Type
 
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
@@ -24,13 +25,13 @@ class GLClientWindowBase(GTK3ClientWindow):
     def __repr__(self):
         return "GLClientWindow(%s : %s)" % (self.wid, self._backing)
 
-    def get_backing_class(self):
+    def get_backing_class(self) -> Type:
         raise NotImplementedError()
 
-    def is_GL(self):
+    def is_GL(self) -> bool:
         return True
 
-    def spinner(self, ok):
+    def spinner(self, ok:bool) -> None:
         b = self._backing
         log("spinner(%s) opengl window %s: backing=%s", ok, self.wid, b)
         if not b:
@@ -42,14 +43,14 @@ class GLClientWindowBase(GTK3ClientWindow):
             w, h = self.get_size()
             self.repaint(0, 0, w, h)
 
-    def queue_draw_area(self, x, y, w, h):
+    def queue_draw_area(self, x:int, y:int, w:int, h:int) -> None:
         b = self._backing
         if not b:
             return
         rect = (x, y, w, h)
         b.gl_expose_rect(rect)
 
-    def monitor_changed(self, monitor):
+    def monitor_changed(self, monitor) -> None:
         super().monitor_changed(monitor)
         da = self.drawing_area
         if da and MONITOR_REINIT:
@@ -64,7 +65,7 @@ class GLClientWindowBase(GTK3ClientWindow):
             self.new_backing(w, h)
 
 
-    def remove_backing(self):
+    def remove_backing(self) -> None:
         b = self._backing
         log("remove_backing() backing=%s", b)
         if b:
@@ -79,7 +80,7 @@ class GLClientWindowBase(GTK3ClientWindow):
                 except Exception:
                     log.warn("Warning: cannot remove %s", glarea, exc_info=True)
 
-    def magic_key(self, *args):
+    def magic_key(self, *args) -> None:
         b = self._backing
         if self.border:
             self.border.toggle()
@@ -91,7 +92,7 @@ class GLClientWindowBase(GTK3ClientWindow):
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
 
 
-    def set_alpha(self):
+    def set_alpha(self) -> None:
         super().set_alpha()
         rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
         #gl_window_backing supports BGR(A) too:
@@ -102,16 +103,16 @@ class GLClientWindowBase(GTK3ClientWindow):
         #TODO: we could handle BGRX as BGRA too...
         #rgb_formats.append("BGRX")
 
-    def do_configure_event(self, event):
+    def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)
         GTK3ClientWindow.do_configure_event(self, event)
         self._backing.paint_screen = True
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.remove_backing()
         super().destroy()
 
-    def new_backing(self, bw, bh):
+    def new_backing(self, bw:int, bh:int) -> None:
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
@@ -128,7 +129,7 @@ class GLClientWindowBase(GTK3ClientWindow):
         #maybe redundant?:
         self.apply_geometry_hints(self.geometry_hints)
 
-    def draw_widget(self, widget, context):
+    def draw_widget(self, widget, context) -> bool:
         log("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
             return False

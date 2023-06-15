@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Any, Optional
 
 import objc #@UnresolvedImport
 from Cocoa import (
@@ -23,7 +25,7 @@ log = Logger("opengl")
 
 class AGLWindowContext:
 
-    def __init__(self, gl_context, nsview):
+    def __init__(self, gl_context:NSOpenGLContext, nsview:int):
         self.gl_context = gl_context
         self.nsview = nsview
         log("%s", self)
@@ -37,11 +39,11 @@ class AGLWindowContext:
     def __exit__(self, *_args):
         NSOpenGLContext.clearCurrentContext()
 
-    def swap_buffers(self):
+    def swap_buffers(self) -> None:
         assert self.gl_context
         self.gl_context.flushBuffer()
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         """
         The window has been resized,
         the gl context must be updated.
@@ -54,7 +56,7 @@ class AGLWindowContext:
     def __del__(self):
         self.destroy()
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.gl_context = None
         self.nsview = 0
 
@@ -66,9 +68,9 @@ class AGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha
-        self.gl_context = None
-        self.nsview_ptr = None
-        self.window_context = None
+        self.gl_context : Optional[NSOpenGLContext] = None
+        self.nsview_ptr : int = 0
+        self.window_context : Optional[AGLWindowContext] = None
         self.pixel_format = NSOpenGLPixelFormat.new()
         attrs = [
             NSOpenGLPFAWindow,
@@ -85,7 +87,7 @@ class AGLContext:
         assert c is not None, "failed to initialize NSOpenGLContext with %s" % (self.pixel_format,)
         self.gl_context = c
 
-    def check_support(self, force_enable=False):
+    def check_support(self, force_enable:bool=False) -> Dict[str,Any]:
         #map our names (based on GTK's) to apple's constants:
         attr_name = {
             "rgba"              : (bool,    NSOpenGLPFAAlphaSize),
@@ -140,13 +142,13 @@ class AGLContext:
     def _get_apfa(self, attr, fn=min):
         return fn(self._get_pfa(attr, screen) for screen in range(self.pixel_format.numberOfVirtualScreens()))
 
-    def get_bit_depth(self):
-        return self._get_apfa(NSOpenGLPFAColorSize)
+    def get_bit_depth(self) -> int:
+        return int(self._get_apfa(NSOpenGLPFAColorSize))
 
-    def is_double_buffered(self):
-        return self._get_apfa(NSOpenGLPFADoubleBuffer)
+    def is_double_buffered(self) -> bool:
+        return bool(self._get_apfa(NSOpenGLPFADoubleBuffer))
 
-    def get_paint_context(self, gdk_window):
+    def get_paint_context(self, gdk_window) -> AGLWindowContext:
         nsview_ptr = get_nsview_ptr(gdk_window)
         if self.window_context and self.nsview_ptr!=nsview_ptr:
             log("get_paint_context(%s) nsview_ptr has changed, was %#x, now %#x - destroying window context",
@@ -166,7 +168,7 @@ class AGLContext:
     def __del__(self):
         self.destroy()
 
-    def destroy(self):
+    def destroy(self) -> None:
         c = self.window_context
         log("AGLContext.destroy() window_context=%s", c)
         if c:

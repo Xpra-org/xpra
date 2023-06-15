@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
@@ -83,7 +83,7 @@ def load_video_decoders():
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks, success=True, message=""):
+def fire_paint_callbacks(callbacks:List[Callable], success=True, message=""):
     for x in callbacks:
         try:
             x(success, message)

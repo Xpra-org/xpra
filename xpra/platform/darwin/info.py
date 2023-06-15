@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
 
 def get_pyobjc_version():
     try:
@@ -11,7 +12,7 @@ def get_pyobjc_version():
     except ImportError:
         return None
 
-def get_version_info():
+def get_version_info() -> Dict[str,Any]:
     d = {}
     v = get_pyobjc_version()
     if v:
