@@ -440,7 +440,10 @@ def get_nsview(window) -> int:
         from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr
     except ImportError:
         return 0
-    return get_nsview_ptr(window)
+    try:
+        return get_nsview_ptr(window.get_window())
+    except Exception:
+        return 0
 
 def add_window_hooks(window):
     if WHEEL:
