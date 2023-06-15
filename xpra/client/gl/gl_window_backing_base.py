@@ -79,6 +79,7 @@ FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
+CONTEXT_RELOAD = envbool("XPRA_OPENGL_CONTEXT_RELOAD", OSX)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -327,7 +328,7 @@ class GLWindowBackingBase(WindowBackingBase):
         #re-init gl projection with new dimensions
         #(see gl_init)
         self.render_size = ww, wh
-        if self.size!=(bw, bh):
+        if self.size!=(bw, bh) or CONTEXT_RELOAD:
             self.gl_setup = False
             oldw, oldh = self.size
             self.size = bw, bh
