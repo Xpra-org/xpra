@@ -295,8 +295,6 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 	done
 	popd
 fi
-echo " * remove numpy"
-rm -fr $LIBDIR/python/numpy
 pushd $LIBDIR/python
 echo " * zipping OpenGL"
 zip --move -q -r site-packages.zip OpenGL

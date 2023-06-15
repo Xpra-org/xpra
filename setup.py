@@ -1937,7 +1937,8 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.posix")
         #to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
-        external_excludes.append("numpy")
+        #for PyOpenGL:
+        add_packages("numpy.core._methods", "numpy.lib.format")
     else:
         add_packages("xpra.platform.posix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
