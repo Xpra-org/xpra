@@ -11,7 +11,7 @@ See [versions](https://github.com/Xpra-org/xpra/wiki/Versions) and [platforms](h
 You probably forgot to import the GPG key before installing the package.\
 The key signature is: `c11c 0a4d f702 edf6 c04f 458c 18ad b31c f18a d6bb`.
 ### I get a GPG error: `KEYEXPIRED 1273837137`
-The key had expired. Try re-importing the [updated key](https://xpra.org/gpg.asc).\
+The key had expired. Try re-importing the [updated key](https://xpra.org/xpra.asc).\
 On Debian you may have to delete the key (`apt-key -d`) before adding it again.
 ### Debian's APT says *Origin changed*, *this must be accepted explicitly...* when updating
 Run `apt-get update --allow-releaseinfo-change`.
