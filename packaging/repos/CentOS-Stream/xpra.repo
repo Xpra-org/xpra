@@ -3,5 +3,5 @@ name=Xpra $releasever - $basearch
 enabled=1
 metadata_expire=1d
 gpgcheck=1
-gpgkey=https://xpra.org/gpg.asc
+gpgkey=https://xpra.org/xpra.asc
 baseurl=https://xpra.org/dists/CentOS/stream$releasever/$basearch/
