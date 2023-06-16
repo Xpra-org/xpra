@@ -1,6 +1,6 @@
 Types: deb
 URIs: https://xpra.org
-Suites: buster
+Suites: trixie
 Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
 Architectures: amd64 arm64
