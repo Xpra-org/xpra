@@ -14,7 +14,7 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     5.1.2
+Version:     5.1.3
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
@@ -59,7 +59,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "619e706d662c8420859832ddc259cd4d4096a48a2ce1eefd052db9e440eef3dc" ]; then
+if [ "${sha256}" != "1b113593ff907293be7aed95acdda5e785dd73616d7d4ec90a0f6adbc5a0312e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
