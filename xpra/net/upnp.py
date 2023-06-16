@@ -219,7 +219,7 @@ def upnp_add(socktype:str, info, options):
     except Exception as e:
         return err(e)
 
-def get_action(service, action_name):
+def get_action(service, action_name:str):
     actions = service.get_actions()
     for action in actions:
         if action.name==action_name:

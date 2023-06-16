@@ -62,7 +62,7 @@ CIPHERS = ()
 MODES = ()
 KEY_HASHES = ()
 KEY_STRETCHING = ()
-def crypto_backend_init():
+def crypto_backend_init() -> None:
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
     if cryptography:
@@ -95,7 +95,7 @@ def crypto_backend_init():
     CIPHERS = MODES = KEY_HASHES = KEY_STRETCHING = ()
     return None
 
-def patch_crypto_be_discovery():
+def patch_crypto_be_discovery() -> None:
     """
     Monkey patches cryptography's backend detection.
     Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
@@ -130,7 +130,7 @@ def get_modes() -> Tuple[str, ...]:
 def get_key_hashes() -> Tuple[str, ...]:
     return KEY_HASHES
 
-def validate_backend():
+def validate_backend() -> None:
     log("validate_backend() will validate AES modes: "+csv(MODES))
     message = b"some message1234"*8
     password = "this is our secret"
@@ -167,7 +167,7 @@ def validate_backend():
             log(" test passed")
 
 
-def pad(padding:str, size:int):
+def pad(padding:str, size:int) -> bytes:
     if padding==PADDING_LEGACY:
         return b" "*size
     if padding==PADDING_PKCS7:
