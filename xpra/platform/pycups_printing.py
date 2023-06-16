@@ -13,6 +13,7 @@ import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
+from typing import Callable
 from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
@@ -87,7 +88,7 @@ def set_lpinfo_command(lpinfo):
     LPINFO = lpinfo
 
 
-def find_ppd_file(short_name, filename):
+def find_ppd_file(short_name:str, filename:str):
     ev = os.environ.get(f"XPRA_{short_name}_PPD")
     if ev and os.path.exists(ev):
         log("using environment override for %s ppd file: %s", short_name, ev)
@@ -107,10 +108,10 @@ def find_ppd_file(short_name, filename):
     return None
 
 
-def get_lpinfo_drv(make_and_model):
+def get_lpinfo_drv(make_and_model) -> str:
     if not LPINFO:
         log.error("Error: lpinfo command is not defined")
-        return None
+        return ""
     command = shlex.split(LPINFO)+["--make-and-model", make_and_model, "-m"]
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
     try:
@@ -120,7 +121,7 @@ def get_lpinfo_drv(make_and_model):
         log.error("Error: lpinfo command failed to run")
         log.estr(e)
         log.error(" command used: '%s'", " ".join(command))
-        return None
+        return ""
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
@@ -147,7 +148,7 @@ def get_lpinfo_drv(make_and_model):
     if proc.wait()!=0:
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
         log.warn(" command used: '%s'", " ".join(command))
-        return None
+        return ""
     try:
         out = out.decode()
     except Exception:
@@ -160,11 +161,11 @@ def get_lpinfo_drv(make_and_model):
     for line in out.splitlines():
         if line.startswith("drv://"):
             return line.split(" ")[0]
-    return None
+    return ""
 
 
 UNPROBED_PRINTER_DEFS = {}
-def add_printer_def(mimetype, definition):
+def add_printer_def(mimetype:str, definition:str) -> None:
     if definition.startswith("drv://"):
         UNPROBED_PRINTER_DEFS[mimetype] = ["-m", definition]
     elif definition.lower().endswith("ppd"):
@@ -220,7 +221,7 @@ def get_printer_definitions():
         log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
     return PRINTER_DEF
 
-def get_printer_definition(mimetype):
+def get_printer_definition(mimetype:str) -> str:
     v = get_printer_definitions().get("application/%s" % mimetype)
     if not v:
         return ""
@@ -239,7 +240,7 @@ def validate_setup():
     return defs
 
 
-def exec_lpadmin(args, success_cb=None):
+def exec_lpadmin(args, success_cb:Callable=None):
     # pylint: disable=import-outside-toplevel
     command = shlex.split(LPADMIN)+args
     log("exec_lpadmin(%s) command=%s", args, command)

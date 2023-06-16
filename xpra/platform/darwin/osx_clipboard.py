@@ -32,41 +32,6 @@ def filter_targets(targets):
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
 
-class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
-
-    def __init__(self, *args, **kwargs):
-        self.pasteboard = NSPasteboard.generalPasteboard()
-        if self.pasteboard is None:
-            raise RuntimeError("cannot load Pasteboard, maybe not running from a GUI session?")
-        kwargs["clipboard.local"] = "CLIPBOARD"
-        kwargs["clipboards.local"] = ["CLIPBOARD"]
-        super().__init__(*args, **kwargs)
-
-
-    def __repr__(self):
-        return "OSXClipboardProtocolHelper"
-
-
-    def cleanup(self):
-        super().cleanup()
-        self.pasteboard = None
-
-    def make_proxy(self, selection):
-        proxy = OSXClipboardProxy(selection, self.pasteboard,
-                                  self._send_clipboard_request_handler, self._send_clipboard_token_handler)
-        proxy.set_direction(self.can_send, self.can_receive)
-        return proxy
-
-    ############################################################################
-    # just pass ATOM targets through
-    # (we use them internally as strings)
-    ############################################################################
-    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        if encoding=="atoms":
-            return _filter_targets(data)
-        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
-
-
 class OSXClipboardProxy(ClipboardProxyCore):
 
     def __init__(self, selection, pasteboard, send_clipboard_request_handler, send_clipboard_token_handler):
@@ -263,6 +228,41 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def local_clipboard_changed(self):
         log("local_clipboard_changed()")
         self.do_owner_changed()
+
+
+class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
+
+    def __init__(self, *args, **kwargs):
+        self.pasteboard = NSPasteboard.generalPasteboard()
+        if self.pasteboard is None:
+            raise RuntimeError("cannot load Pasteboard, maybe not running from a GUI session?")
+        kwargs["clipboard.local"] = "CLIPBOARD"
+        kwargs["clipboards.local"] = ["CLIPBOARD"]
+        super().__init__(*args, **kwargs)
+
+
+    def __repr__(self):
+        return "OSXClipboardProtocolHelper"
+
+
+    def cleanup(self) -> None:
+        super().cleanup()
+        self.pasteboard = None
+
+    def make_proxy(self, selection) -> OSXClipboardProxy:
+        proxy = OSXClipboardProxy(selection, self.pasteboard,
+                                  self._send_clipboard_request_handler, self._send_clipboard_token_handler)
+        proxy.set_direction(self.can_send, self.can_receive)
+        return proxy
+
+    ############################################################################
+    # just pass ATOM targets through
+    # (we use them internally as strings)
+    ############################################################################
+    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes:
+        if encoding=="atoms":
+            return _filter_targets(data)
+        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
 
 def main():

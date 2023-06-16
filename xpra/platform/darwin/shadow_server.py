@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -72,7 +72,7 @@ class OSXRootCapture:
             "type" : "CoreGraphics",
             }
 
-    def take_screenshot(self):
+    def take_screenshot(self) -> Tuple[int,int,str,int,bytes]:
         log("grabbing screenshot")
         return take_screenshot()
 

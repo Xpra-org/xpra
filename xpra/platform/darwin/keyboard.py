@@ -1,10 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict, List, Callable
+
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
@@ -16,7 +18,7 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
 #a key and the keys we want to translate it into when swapping keys
 #(a list so we can hopefully find a good match, best options come first)
-KEYS_TRANSLATION_OPTIONS = {
+KEYS_TRANSLATION_OPTIONS : Dict[str,List[str]] = {
     #try to swap with "Meta" first, fallback to "Alt":
     "Control_L"     : ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],
     "Control_R"     : ["Meta_R", "Meta_L", "Alt_R", "Alt_L"],
@@ -29,7 +31,7 @@ KEYS_TRANSLATION_OPTIONS = {
     }
 #keys we always want to swap,
 #irrespective of the swap-keys option:
-ALWAYS_SWAP = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
+ALWAYS_SWAP : List[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
 
 
 #data extracted from:
@@ -37,7 +39,7 @@ ALWAYS_SWAP = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split
 #"How to identify keyboard localizations"
 #maps Apple's names into standard X11 keyboard identifiers
 
-APPLE_LAYOUTS = {
+APPLE_LAYOUTS : Dict[str,str] = {
     "Arabic"    : "ar",
     "Belgian"   : "be",
     "Bulgarian" : "bg",
@@ -76,7 +78,7 @@ class Keyboard(KeyboardBase):
         Switch Meta and Control
     """
 
-    def init_vars(self):
+    def init_vars(self) -> None:
         super().init_vars()
         self.swap_keys = True
         self.meta_modifier = None
@@ -92,7 +94,7 @@ class Keyboard(KeyboardBase):
         return "darwin.Keyboard"
 
 
-    def get_all_x11_layouts(self):
+    def get_all_x11_layouts(self) -> Dict[str,str]:
         x11_layouts = {}
         for name, layout in APPLE_LAYOUTS.items():
             x11_layouts[layout] = name
@@ -142,7 +144,7 @@ class Keyboard(KeyboardBase):
         """
         return  {}, [], ["lock", "control"]
 
-    def set_modifier_mappings(self, mappings):
+    def set_modifier_mappings(self, mappings) -> None:
         super().set_modifier_mappings(mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R") or "control"
@@ -224,7 +226,7 @@ class Keyboard(KeyboardBase):
         log("mask_to_names(%s)=%s swap_keys=%s, modmap=%s, num_lock_state=%s, num_lock_modifier=%s", mask, names, self.swap_keys, modmap, self.num_lock_state, self.num_lock_modifier)
         return names
 
-    def process_key_event(self, send_key_action_cb, wid, key_event):
+    def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event):
         if self.swap_keys or key_event.keyname in ALWAYS_SWAP:
             trans = self.key_translations.get(key_event.keyname)
             if trans:

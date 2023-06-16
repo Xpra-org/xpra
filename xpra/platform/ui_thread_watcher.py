@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import time
 import threading
 from time import monotonic
 from threading import Event
+from typing import Callable, List, Optional
 
 from xpra.make_thread import start_thread
 from xpra.util import envint
@@ -30,23 +31,23 @@ class UI_thread_watcher:
         Beware that the callbacks (fail, resume and alive)
         will run from different threads..
     """
-    def __init__(self, timeout_add, source_remove, polling_timeout, announce_timeout):
+    def __init__(self, timeout_add:Callable, source_remove:Callable, polling_timeout:int, announce_timeout:float):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.polling_timeout = polling_timeout
-        self.max_delta = polling_timeout * 2
-        self.announce_timeout = announce_timeout/1000.0 if announce_timeout else float('inf')
+        self.max_delta : int = polling_timeout * 2
+        self.announce_timeout : float = announce_timeout/1000.0 if announce_timeout else float('inf')
         self.init_vars()
 
-    def init_vars(self):
-        self.alive_callbacks = []
-        self.fail_callbacks = []
-        self.resume_callbacks = []
-        self.UI_blocked = False
-        self.announced_blocked = False
-        self.last_UI_thread_time = 0
-        self.ui_wakeup_timer = 0
-        self.exit = Event()
+    def init_vars(self) -> None:
+        self.alive_callbacks : List[Callable] = []
+        self.fail_callbacks : List[Callable] = []
+        self.resume_callbacks : List[Callable] = []
+        self.UI_blocked : bool = False
+        self.announced_blocked : bool = False
+        self.last_UI_thread_time : float = 0
+        self.ui_wakeup_timer : int = 0
+        self.exit : Event = Event()
 
     def start(self):
         if self.last_UI_thread_time>0:
@@ -67,37 +68,37 @@ class UI_thread_watcher:
                 return True
             self.timeout_add(10*1000+FAKE_UI_LOCKUPS, sleep_in_ui_thread)
 
-    def stop(self):
+    def stop(self) -> None:
         self.exit.set()
 
-    def add_fail_callback(self, cb):
+    def add_fail_callback(self, cb:Callable):
         self.fail_callbacks.append(cb)
 
-    def add_resume_callback(self, cb):
+    def add_resume_callback(self, cb:Callable):
         self.resume_callbacks.append(cb)
 
-    def add_alive_callback(self, cb):
+    def add_alive_callback(self, cb:Callable):
         self.alive_callbacks.append(cb)
 
 
-    def remove_fail_callback(self, cb):
+    def remove_fail_callback(self, cb:Callable):
         self.fail_callbacks.remove(cb)
 
-    def remove_resume_callback(self, cb):
+    def remove_resume_callback(self, cb:Callable):
         self.resume_callbacks.remove(cb)
 
-    def remove_alive_callback(self, cb):
+    def remove_alive_callback(self, cb:Callable):
         self.alive_callbacks.remove(cb)
 
 
-    def run_callbacks(self, callbacks):
+    def run_callbacks(self, callbacks:List[Callable]) -> None:
         for x in callbacks:
             try:
                 x()
             except Exception:
                 log.error("failed to run %s", x, exc_info=True)
 
-    def UI_thread_wakeup(self, scheduled_at=0):
+    def UI_thread_wakeup(self, scheduled_at:float=0) -> bool:
         if scheduled_at:
             elapsed = monotonic()-scheduled_at
         else:
@@ -114,7 +115,7 @@ class UI_thread_watcher:
             self.run_callbacks(self.resume_callbacks)
         return False
 
-    def poll_UI_loop(self):
+    def poll_UI_loop(self) -> None:
         log("poll_UI_loop() running")
         while not self.exit.is_set():
             delta = monotonic()-self.last_UI_thread_time
@@ -159,8 +160,8 @@ class UI_thread_watcher:
             self.source_remove(uiwt)
 
 
-UI_watcher = None
-def get_UI_watcher(timeout_add=None, source_remove=None):
+UI_watcher : Optional[UI_thread_watcher] = None
+def get_UI_watcher(timeout_add=None, source_remove=None) -> UI_thread_watcher:
     global UI_watcher
     if UI_watcher is None and timeout_add:
         UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)

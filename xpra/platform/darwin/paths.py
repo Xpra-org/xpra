@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os.path
+from typing import List
 
 from xpra.util import envbool, get_util_logger
 
@@ -51,7 +52,7 @@ def do_get_resources_dir():
     debug("get_resources_dir()=%s", rsc)
     return rsc
 
-def do_get_app_dir():
+def do_get_app_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     rsc = get_resources_dir()
     CONTENTS = "/Contents/"
@@ -61,20 +62,20 @@ def do_get_app_dir():
     debug("get_app_dir()=%s", rsc)
     return rsc  #hope for the best..
 
-def do_get_icon_dir():
+def do_get_icon_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     i = os.path.join(get_resources_dir(), "share", "xpra", "icons")
     debug("get_icon_dir()=%s", i)
     return i
 
 
-def do_get_default_conf_dirs():
+def do_get_default_conf_dirs() -> List[str]:
     #the default config file we install into the Resources folder:
     #ie: /Volumes/Xpra/Xpra.app/Contents/Resources/etc
     from xpra.platform.paths import get_resources_dir
     return [os.path.join(get_resources_dir(), "etc", "xpra")]
 
-def do_get_system_conf_dirs():
+def do_get_system_conf_dirs() -> List[str]:
     #the system wide configuration directory
     dirs = []
     try:
@@ -94,10 +95,10 @@ def do_get_system_conf_dirs():
     dirs.append("/etc/xpra")
     return dirs
 
-def do_get_ssh_conf_dirs():
+def do_get_ssh_conf_dirs() -> List[str]:
     return ["/private/etc", "/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
-def do_get_user_conf_dirs(_uid):
+def do_get_user_conf_dirs(_uid) -> List[str]:
     #the system wide configuration directory
     dirs = []
     try:
@@ -116,7 +117,7 @@ def do_get_user_conf_dirs(_uid):
     dirs.append("~/.xpra")
     return dirs
 
-def do_get_default_log_dirs():
+def do_get_default_log_dirs() -> List[str]:
     dirs = []
     try:
         from Foundation import (
@@ -133,16 +134,16 @@ def do_get_default_log_dirs():
     dirs.append(tempfile.gettempdir())
     return dirs
 
-def do_get_socket_dirs():
+def do_get_socket_dirs() -> List[str]:
     #return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
     import tempfile
     return [tempfile.gettempdir(), "~/.xpra"]
 
-def do_get_client_socket_dirs():
+def do_get_client_socket_dirs() -> List[str]:
     return ["~/.xpra/clients"]
 
 
-def do_get_download_dir():
+def do_get_download_dir() -> str:
     d = "~/Downloads"
     try:
         from Foundation import (
@@ -157,22 +158,22 @@ def do_get_download_dir():
     return d
 
 
-def do_get_desktop_background_paths():
+def do_get_desktop_background_paths() -> List[str]:
     return [
         "/System/Library/CoreServices/DefaultDesktop.jpg",
         "/Library/Desktop Pictures/*jpg",
         ]
 
 
-def do_get_sshpass_command():
+def do_get_sshpass_command() -> str:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
     p = os.path.join(base, "Resources", "bin", "sshpass")
     if os.path.exists(p):
         return p
-    return None
+    return ""
 
-def do_get_xpra_command():
+def do_get_xpra_command() -> List[str]:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return [sys.argv[0]]
     #try to use the one from the app bundle:
@@ -184,13 +185,13 @@ def do_get_xpra_command():
     return ["xpra"]
 
 
-def _get_helpers_dir():
+def _get_helpers_dir() -> str:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
     p = os.path.join(base, "Helpers")
     return p
 
-def do_get_nodock_command():
+def do_get_nodock_command() -> List[str]:
     #try to use the subapp:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
@@ -208,12 +209,12 @@ def do_get_nodock_command():
         return get_xpra_command()
     return [helper]
 
-def do_get_audio_command():
+def do_get_audio_command() -> List[str]:
     return do_get_nodock_command()
 
 
-def do_get_python_exec_command():
+def do_get_python_exec_command() -> List[str]:
     return [os.path.join(_get_helpers_dir(), "Python"), "-c"]
 
-def do_get_python_execfile_command():
+def do_get_python_execfile_command() -> List[str]:
     return [os.path.join(_get_helpers_dir(), "Python")]

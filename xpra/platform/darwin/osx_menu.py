@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import List, Optional, Callable
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -74,14 +76,14 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.set_client(client)
         self._clipboard_change_pending = False
 
-    def set_client(self, client):
+    def set_client(self, client) -> None:
         self.client = client
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:
             client.after_handshake(self.add_about)
 
-    def show_menu(self, button, time):
+    def show_menu(self, button:int, time) -> None:
         #does not mean anything on OSX since the menu is controlled by the OS
         pass
 
@@ -99,7 +101,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.remove_all_menus()
         return self.menu_bar
 
-    def remove_all_menus(self):
+    def remove_all_menus(self) -> None:
         log("OSXMenuHelper.remove_all_menus()")
         if self.menu_bar:
             for x in self.menus.values():
@@ -110,7 +112,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.full = False
 
 
-    def add_top_level_menu(self, label, submenu):
+    def add_top_level_menu(self, label:str, submenu) -> None:
         """ Adds the item to the app-menu or to the top bar,
             but only if it has not been added yet.
             (depending on the SINGLE_MENU flag)
@@ -121,7 +123,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         else:
             self.add_to_menu_bar(label, submenu)
 
-    def add_to_app_menu(self, label, submenu):
+    def add_to_app_menu(self, label:str, submenu) -> None:
         item = self.app_menus.get(label)
         if item:
             log("application menu already has a '%s' entry", label)
@@ -153,13 +155,13 @@ class OSXMenuHelper(GTKTrayMenuBase):
             item.set_submenu(submenu)
             item.show_all()
 
-    def get_menu(self, label):
+    def get_menu(self, label:str):
         if SINGLE_MENU:
             return self.app_menus.get(label)
         return self.menus.get(label)
 
 
-    def add_about(self):
+    def add_about(self) -> None:
         if "About" in self.app_menus:
             return
         item = self.menuitem("About", cb=about)
@@ -169,7 +171,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.app_menus["About"] = item
 
 
-    def add_full_menu(self):
+    def add_full_menu(self) -> None:
         log("OSXMenuHelper.add_full_menu()")
         if self.full or not self.client:
             return
@@ -184,7 +186,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 macapp = get_OSXApplication()
                 macapp.set_window_menu(self.window_menu_item)
 
-    def get_extra_menus(self):
+    def get_extra_menus(self) -> List:
         menus = []
         def add(menu, item):
             if item:
@@ -260,13 +262,13 @@ class OSXMenuHelper(GTKTrayMenuBase):
         return menus
 
 
-    def _clipboard_direction_changed(self, item, label):
+    def _clipboard_direction_changed(self, item, label:str):
         clipboardlog("_clipboard_direction_changed(%s, %s) clipboard_change_pending=%s",
                      item, label, self._clipboard_change_pending)
         label = self.select_clipboard_menu_option(item, label, CLIPBOARD_DIRECTION_LABELS)
         self.do_clipboard_direction_changed(label or "")
 
-    def _remote_clipboard_changed(self, item, label):
+    def _remote_clipboard_changed(self, item, label:str):
         clipboardlog("_remote_clipboard_changed(%s, %s) clipboard_change_pending=%s",
                      item, label, self._clipboard_change_pending)
         #ensure this is the only clipboard label selected:
@@ -277,7 +279,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         clipboardlog("will select clipboard menu item with label=%s, for remote_clipboard=%s", label, remote_clipboard)
         GLib.timeout_add(0, self._do_clipboard_change, remote_clipboard)
 
-    def _do_clipboard_change(self, remote_clipboard):
+    def _do_clipboard_change(self, remote_clipboard:str):
         #why do we look it up again when we could just pass it in
         #to make_clipboard_submenuitem as an extra argument?
         #because gtk-osx would fall over itself, making a complete mess of the menus in the process
@@ -285,7 +287,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self._clipboard_change_pending = False
         self.set_new_remote_clipboard(remote_clipboard)
 
-    def make_clipboard_submenuitem(self, label, cb=None):
+    def make_clipboard_submenuitem(self, label:str, cb:Optional[Callable]=None):
         clipboard_item = self.checkitem(label)
         clipboard_item.set_draw_as_radio(True)
         def clipboard_option_changed(item):
@@ -296,7 +298,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         clipboard_item.connect("toggled", clipboard_option_changed)
         return clipboard_item
 
-    def select_clipboard_menu_option(self, item=None, label=None, labels=()):
+    def select_clipboard_menu_option(self, item=None, label:str="", labels=()):
         #ensure that only the matching menu item is selected,
         #(can be specified as a menuitem object, or using its label)
         #all the other menu items whose labels are specified will be made inactive
@@ -428,10 +430,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
             pixbuf = get_icon(icon_name)
             log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
-                return  None
+                return None
             if size:
                 return scaled_image(pixbuf, size)
             return Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return  None
+            return None

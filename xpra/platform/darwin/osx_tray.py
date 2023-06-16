@@ -40,31 +40,31 @@ class OSXTray(TrayBase):
     def get_geometry(self):
         return None
 
-    def show(self):
+    def show(self) -> None:
         """
         This cannot be implemented on MacOS,
         as the dock icon is always shown
         """
 
-    def hide(self):
+    def hide(self) -> None:
         """ Unfortunately, the dock icon cannot be hidden """
 
 
-    def quit(self, *args):
+    def quit(self, *args) -> bool:
         log("quit(%s) exit_cb=%s", args, self.exit_cb)
         if self.exit_cb:
             self.exit_cb()
             return True     #we've handled the quit request ourselves - I hope..
         return False
 
-    def ready(self):
+    def ready(self) -> None:
         gui_ready()
 
-    def set_tooltip(self, tooltip=None):
+    def set_tooltip(self, tooltip:str) -> None:
         #label cannot be set on the dock icon?
         pass
 
-    def set_blinking(self, on):
+    def set_blinking(self, on:bool) -> None:
         if on:
             if self.last_attention_request_id<0:
                 self.last_attention_request_id = self.macapp.attention_request(INFO_REQUEST)
@@ -73,12 +73,12 @@ class OSXTray(TrayBase):
                 self.macapp.cancel_attention_request(self.last_attention_request_id)
                 self.last_attention_request_id = -1
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
+    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, options=None) -> None:
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
         self.icon_timestamp = monotonic()
 
-    def do_set_icon_from_file(self, filename):
+    def do_set_icon_from_file(self, filename:str) -> None:
         if not self.macapp:
             return
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
@@ -86,7 +86,7 @@ class OSXTray(TrayBase):
         self.icon_timestamp = monotonic()
 
 
-    def set_global_menu(self):
+    def set_global_menu(self) -> None:
         mh = getOSXMenuHelper()
         if mh.build()!=self.menu:
             log.error("the menu (%s) is not from the menu helper!", self.menu)
@@ -100,7 +100,7 @@ class OSXTray(TrayBase):
         mh.add_full_menu()
         log("OSXTray.set_global_menu() done")
 
-    def set_dock_menu(self):
+    def set_dock_menu(self) -> None:
         #dock menu
         log("OSXTray.set_dock_menu()")
         gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -113,7 +113,7 @@ class OSXTray(TrayBase):
         self.macapp.set_dock_menu(self.dock_menu)
         log("OSXTray.set_dock_menu() done")
 
-    def set_dock_icon(self):
+    def set_dock_icon(self) -> None:
         filename = self.get_icon_filename()
         if not filename:
             log.warn("Warning: cannot set dock icon, file not found!")

@@ -4,14 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Callable
+from typing import List, Callable, Dict
 
 from xpra.platform import platform_import
 from xpra.log import Logger
 log = Logger("webcam")
 
 
-def get_virtual_video_devices():
+def get_virtual_video_devices() -> Dict:
     return {}
 
 def get_all_video_devices():
@@ -19,10 +19,10 @@ def get_all_video_devices():
     #this is different from an empty dict!
     return None
 
-def add_video_device_change_callback(_callback):
+def add_video_device_change_callback(_callback:Callable):
     #not implemented here
     pass
-def remove_video_device_change_callback(_callback):
+def remove_video_device_change_callback(_callback:Callable):
     #not implemented here
     pass
 
