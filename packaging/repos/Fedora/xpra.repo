@@ -4,5 +4,4 @@ enabled=1
 metadata_expire=1d
 gpgcheck=1
 gpgkey=https://xpra.org/gpg.asc
-       https://xpra.org/gpg-2022.asc
 baseurl=https://xpra.org/dists/Fedora/$releasever/$basearch/

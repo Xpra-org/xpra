@@ -1,2 +1,2 @@
-deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra-2022.gpg] https://xpra.org/ focal main
-deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra-2022.gpg] https://xpra.org/beta/ focal main
+deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ focal main
+deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/beta/ focal main
