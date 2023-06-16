@@ -60,7 +60,7 @@ class OSXTray(TrayBase):
     def ready(self) -> None:
         gui_ready()
 
-    def set_tooltip(self, tooltip:str) -> None:
+    def set_tooltip(self, tooltip:str="") -> None:
         #label cannot be set on the dock icon?
         pass
 

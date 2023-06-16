@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional
 from time import monotonic
 from collections import deque
 
@@ -67,7 +67,7 @@ class TrayBase:
     def get_geometry(self):
         raise NotImplementedError
 
-    def get_size(self) -> Tuple[int,int]:
+    def get_size(self) -> Optional[Tuple[int,int]]:
         g = self.get_geometry()
         if g is None:
             return None
