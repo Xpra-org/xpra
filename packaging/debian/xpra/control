@@ -25,17 +25,20 @@ Build-Depends: debhelper (>= 8)
 #kinetic:              ,libavif-dev
 #lunar:              ,libavif-dev
 #bookworm:              ,libavif-dev
+#trixie:              ,libavif-dev
 #sid:              ,libavif-dev
 #lunar:              ,libyuv-dev
 #jammy:              ,libyuv-dev
 #kinetic:              ,libyuv-dev
 #bookworm:              ,libyuv-dev
+#trixie:              ,libyuv-dev
 #sid:              ,libyuv-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
 #bookworm:              ,libspng-dev
+#trixie:              ,libspng-dev
 #sid:              ,libspng-dev
 #luna:              ,libspng-dev
               ,libgtk-3-dev
@@ -271,13 +274,16 @@ Depends: xpra-common (= ${binary:Version})
 #kinetic:              ,libavif14
 #lunar:              ,libavif15
 #bookworm:              ,libavif15
+#trixie:              ,libavif15
 #sid:              ,libavif15
 #lunar:              ,libyuv0
 #jammy:              ,libyuv0
 #kinetic:              ,libyuv0
 #bookworm:              ,libyuv0
+#trixie:              ,libyuv0
 #sid:              ,libyuv0
 #bookworm:Recommends: libspng0
+#trixie:Recommends: libspng0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,python3-opencv
