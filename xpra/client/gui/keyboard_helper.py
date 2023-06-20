@@ -185,14 +185,13 @@ class KeyboardHelper:
         return  True
 
 
-    def handle_key_action(self, window, wid:int, key_event:KeyEvent):
+    def process_key_event(self, wid:int, key_event:KeyEvent):
         """
-            Intercept key shortcuts and gives the Keyboard class
+            This method gives the Keyboard class
             a chance to fire more than one send_key_action.
             (win32 uses this for AltGr emulation)
         """
-        if not self.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
-            self.keyboard.process_key_event(self.send_key_action, wid, key_event)
+        self.keyboard.process_key_event(self.send_key_action, wid, key_event)
         return False
 
 

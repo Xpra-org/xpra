@@ -13,7 +13,7 @@ from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, noop
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.net_util import get_info as get_net_info
@@ -190,28 +190,30 @@ class UIXpraClient(ClientBaseClass):
 
     def init_ui(self, opts):
         """ initialize user interface """
+        def noauto(v):
+            if not v:
+                return None
+            if str(v).lower()=="auto":
+                return None
+            return v
+        overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
+            "layout", "layouts", "variant", "variants", "options",
+            )]
+        send_keyboard = noop
         if not self.readonly:
-            def noauto(v):
-                if not v:
-                    return None
-                if str(v).lower()=="auto":
-                    return None
-                return v
-            overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
-                "layout", "layouts", "variant", "variants", "options",
-                )]
-            def send_keyboard(*parts):
+            def do_send_keyboard(*parts):
                 self.after_handshake(self.send, *parts)
-            try:
-                self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
-                                                                  opts.shortcut_modifiers,
-                                                                  opts.key_shortcut,
-                                                                  opts.keyboard_raw, *overrides)
-                if DELAY_KEYBOARD_DATA:
-                    self.after_handshake(self.keyboard_helper.send_keymap)
-            except ImportError as e:
-                keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
-                keylog.warn(f"Warning: no keyboard support, {e}")
+            send_keyboard = do_send_keyboard
+        try:
+            self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
+                                                              opts.shortcut_modifiers,
+                                                              opts.key_shortcut,
+                                                              opts.keyboard_raw, *overrides)
+            if DELAY_KEYBOARD_DATA and not self.readonly:
+                self.after_handshake(self.keyboard_helper.send_keymap)
+        except ImportError as e:
+            keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
+            keylog.warn(f"Warning: no keyboard support, {e}")
 
         if mixin_features.windows:
             self.init_opengl(opts.opengl)
@@ -790,11 +792,17 @@ class UIXpraClient(ClientBaseClass):
             self.keyboard_helper.keymap_changed()
 
     def handle_key_action(self, window, key_event):
-        if self.readonly or self.keyboard_helper is None:
+        kh = self.keyboard_helper
+        if not kh:
             return False
         wid = self._window_to_id[window]
         keylog(f"handle_key_action({window}, {key_event}) wid={wid}")
-        return self.keyboard_helper.handle_key_action(window, wid, key_event)
+        if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
+            return False
+        if self.readonly:
+            return False
+        self.keyboard.process_key_event(wid, key_event)
+        return False
 
     def mask_to_names(self, mask) -> List[str]:
         if self.keyboard_helper is None:
