@@ -655,7 +655,7 @@ class ProxyInstance:
                     #force clear alpha (which may be garbage):
                     newdata = bytearray(pixels)
                     c = chr(255)
-                    for i in range(len(pixels)/4):
+                    for i in range(len(pixels)//4):
                         newdata[i*4+Xindex] = c
                     packet[9] = client_options.intget("rowstride", 0)
                     cdata = bytes(newdata)
