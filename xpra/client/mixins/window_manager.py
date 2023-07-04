@@ -785,7 +785,7 @@ class WindowClient(StubClientMixin):
                 #shrunk by ICON_SHRINKAGE pct
                 shrunk_width = max(1, width*ICON_SHRINKAGE//100)
                 shrunk_height = max(1, height*ICON_SHRINKAGE//100)
-                icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
+                icon_resized = icon.resize((shrunk_width, shrunk_height), Image.LANCZOS)
                 icon = Image.new("RGBA", (width, height))
                 icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
                 if SAVE_WINDOW_ICONS:
@@ -795,7 +795,7 @@ class WindowClient(StubClientMixin):
             assert 0<ICON_OVERLAY<=100
             overlay_width = max(1, width*ICON_OVERLAY//100)
             overlay_height = max(1, height*ICON_OVERLAY//100)
-            xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
+            xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.LANCZOS)
             xpra_corner = Image.new("RGBA", (width, height))
             xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
             if SAVE_WINDOW_ICONS:
