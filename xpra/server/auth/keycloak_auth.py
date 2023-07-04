@@ -78,7 +78,7 @@ class Authenticator(SysAuthenticator):
 
         try:
             response = json.loads(response_json)
-        except (json.JSONDecodeError, TypeError) as e:
+        except (json.JSONDecodeError, TypeError):
             log.error("Error: keycloak authentication failed")
             log.error(" invalid response received from authorization endpoint")
             log("failed to parse json: %r", response_json, exc_info=True)
