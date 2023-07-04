@@ -8,7 +8,7 @@ On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpr
 
 ## Simple [seamless](./Seamless.md) application forwarding
 This is how xpra is most often used.\
-This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](./SSH) transport:
+This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](../Network/SSH) transport:
 ```shell
 xpra start ssh://USERNAME@HOST/ --start-child=xterm
 ```

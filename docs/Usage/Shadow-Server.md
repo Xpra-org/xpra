@@ -36,7 +36,7 @@ Notes:
 * this is insecure and does not cover [authentication](./Authentication.md) or [encryption](../Network/Encryption.md)
 * MS Windows and Mac OS X do not have X11 display names (`:0` in the example above), in this case you can simply omit the display argument
 * if there is only a single `$DISPLAY` active on the system, you do not need to specify it (no `:0`)
-* do not shadow an existing [seamless](../../docs/Usage/Seamless.md) or [desktop](../../docs/Usage/Start-Desktop.md) xpra session when you can just attach to it
+* do not shadow an existing [seamless](https://github.com/Xpra-org/xpra/tree/master/docs/Usage/Seamless.md) or [desktop](https://github.com/Xpra-org/xpra/tree/master/docs/Usage/Start-Desktop.md) xpra session when you can just attach to it
 </details>
 
 # Debugging

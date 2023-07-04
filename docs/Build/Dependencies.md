@@ -41,31 +41,31 @@ See [Network](../Network/README.md)
 See [authentication modules](../Usage/Authentication.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
-|[python-gssapi](https://github.com/sigmaris/python-gssapi)|https://pypi.org/project/gssapi/|GSSAPI|server|[#1691](../../issues/1691)|
-|[python-kerberos](https://github.com/apple/ccs-pykerberos)|https://pypi.org/project/kerberos/|Kerberos|server|[#1691](../../issues/1691)|
-|[python-ldap](https://www.python-ldap.org)|https://pypi.org/project/python-ldap/|LDAP|server|[#1691](../../issues/1691)|
-|[python-ldap3](https://github.com/cannatag/ldap3)|https://pypi.org/project/ldap3/|LDAP v3|server|[#1691](../../issues/1691)|
-|[pyu2f](https://github.com/google/pyu2f)|https://pypi.org/project/pyu2f/|U2F|server|[#1789](../../issues/1789)|
+|[python-gssapi](https://github.com/sigmaris/python-gssapi)|https://pypi.org/project/gssapi/ |GSSAPI|server|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[python-kerberos](https://github.com/apple/ccs-pykerberos)|https://pypi.org/project/kerberos/ |Kerberos|server|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[python-ldap](https://www.python-ldap.org)|https://pypi.org/project/python-ldap/ |LDAP|server|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[python-ldap3](https://github.com/cannatag/ldap3)|https://pypi.org/project/ldap3/ |LDAP v3|server|[#1691](https://github.com/Xpra-org/xpra/issues/1691)|
+|[pyu2f](https://github.com/google/pyu2f)|https://pypi.org/project/pyu2f/ |U2F|server|[#1789](https://github.com/Xpra-org/xpra/issues/1789)|
 </details>
 
 <details>
   <summary>Python modules</summary>
 
-| Project | Source Download Link | Notes |
-|---------|----------------------|:------|
-|[python-ipaddress](https://github.com/phihag/ipaddress)|https://pypi.org/project/ipaddress/|unspecified: r11859|
-|[python-idna](https://github.com/kjd/idna)|https://pypi.org/project/idna/|unspecified: r11860|
-|[python-decorator](https://github.com/micheles/decorator)|https://pypi.org/project/decorator/|required by gssapi: r18781|
-|[pyasn1](https://github.com/etingof/pyasn1)|https://pypi.org/project/pyasn1/|unspecified: r5829|
-|[asn1crypto](https://github.com/wbond/asn1crypto)|https://pypi.org/project/asn1crypto/|required by python-cryptography: r17856|
-|[python-packaging](https://github.com/pypa/packaging)|https://pypi.org/project/packaging/|required by python-cryptography: r15310|
-|[pyparsing](https://github.com/pyparsing/pyparsing/)|https://pypi.org/project/pyparsing/|required by python-cryptography: r15310|
-|[cffi](https://cffi.readthedocs.io/en/latest/)|https://pypi.org/project/cffi/|required by python-cryptography: r11633|
-|[six](https://github.com/benjaminp/six)|https://pypi.org/project/six/|required by python-cryptography: r11640|
-|[setuptools](https://github.com/pypa/setuptools)|https://pypi.org/project/setuptools/|unspecified: r5829|
-|[pycparser](https://github.com/eliben/pycparser)|https://pypi.org/project/pycparser/|required by cffi: r11634|
-|[pynacl](https://github.com/pyca/pynacl/)|https://pypi.org/project/PyNaCl/|crypto library used by paramiko: r19967|
-|[bcrypt](https://github.com/pyca/bcrypt/)|https://pypi.org/project/bcrypt/|crypto library used by paramiko: r19965|
+| Project                                                   | Source Download Link                 | Notes                                   |
+|-----------------------------------------------------------|--------------------------------------|:----------------------------------------|
+| [python-ipaddress](https://github.com/phihag/ipaddress)   | https://pypi.org/project/ipaddress/  | unspecified: r11859                     |
+| [python-idna](https://github.com/kjd/idna)                | https://pypi.org/project/idna/       | unspecified: r11860                     |
+| [python-decorator](https://github.com/micheles/decorator) | https://pypi.org/project/decorator/  | required by gssapi: r18781              |
+| [pyasn1](https://github.com/etingof/pyasn1)               | https://pypi.org/project/pyasn1/     | unspecified: r5829                      |
+| [asn1crypto](https://github.com/wbond/asn1crypto)         | https://pypi.org/project/asn1crypto/ | required by python-cryptography: r17856 |
+| [python-packaging](https://github.com/pypa/packaging)     | https://pypi.org/project/packaging/  | required by python-cryptography: r15310 |
+| [pyparsing](https://github.com/pyparsing/pyparsing/)      | https://pypi.org/project/pyparsing/  | required by python-cryptography: r15310 |
+| [cffi](https://cffi.readthedocs.io/en/latest/)            | https://pypi.org/project/cffi/       | required by python-cryptography: r11633 |
+| [six](https://github.com/benjaminp/six)                   | https://pypi.org/project/six/        | required by python-cryptography: r11640 |
+| [setuptools](https://github.com/pypa/setuptools)          | https://pypi.org/project/setuptools/ | unspecified: r5829                      |
+| [pycparser](https://github.com/eliben/pycparser)          | https://pypi.org/project/pycparser/  | required by cffi: r11634                |
+| [pynacl](https://github.com/pyca/pynacl/)                 | https://pypi.org/project/PyNaCl/     | crypto library used by paramiko: r19967 |
+| [bcrypt](https://github.com/pyca/bcrypt/)                 | https://pypi.org/project/bcrypt/     | crypto library used by paramiko: r19965 |
 </details>
 
 <details>

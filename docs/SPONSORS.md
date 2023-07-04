@@ -19,8 +19,8 @@ For hardware donations or sponsorship, please contact [xpra@xpra.org](mailto:xpr
 
 ## Sponsors List
 
-|Company|From| To |About|
-|-------|----|----|------|
-|Anonymous|2012|2020|Web security and isolation|
-|[![Atos HPC](./images/logos/atos-black.png)](https://atos.net/en/solutions/high-performance-computing-hpc)|2012| |_"Designing the future of the digital space"._<br />_"A leader in cloud and digital workplace, Atos is also ranked #1 in managed security services worldwide by revenue (2021)"_|
-|[![VPO](./images/logos/vpo-small.png)](vpo.nl)|2020| |_"We set the tone for a new (IT) culture of freedom and trust by embracing and sharing exceptional openness"._|
+| Company                                                                                                    | From | To   | About                                                                                                                                                                            |
+|------------------------------------------------------------------------------------------------------------|------|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Anonymous                                                                                                  | 2012 | 2020 | Web security and isolation                                                                                                                                                       |
+| [![Atos HPC](./images/logos/atos-black.png)](https://atos.net/en/solutions/high-performance-computing-hpc) | 2012 |      | _"Designing the future of the digital space"._<br />_"A leader in cloud and digital workplace, Atos is also ranked #1 in managed security services worldwide by revenue (2021)"_ |
+| [![VPO](./images/logos/vpo-small.png)](https://vpo.nl)                                                     | 2020 |      | _"We set the tone for a new (IT) culture of freedom and trust by embracing and sharing exceptional openness"._                                                                   |

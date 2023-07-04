@@ -1,6 +1,6 @@
 # ![Debian](../images/icons/debian.png)   ![Ubuntu](../images/icons/ubuntu.png) Building DEB packages
 
-The debian packaging files can be found here: [packaging/debian](../../packaging/debian).
+The debian packaging files can be found here: [packaging/debian](https://github.com/Xpra-org/xpra/blob/master/packaging/debian).
 
 Debian and Ubuntu also ships xpra packages, though their _stable_ versions are completely out of date, broken and unsupported, [they should not be used](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
 

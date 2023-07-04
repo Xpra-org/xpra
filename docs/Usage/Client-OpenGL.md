@@ -22,7 +22,7 @@ Some screen updates, in particular for some of the [video codecs](./Encodings.md
 
 
 # GPUs and drivers
-Due to some known bugs and incompatibilities, some drivers are disabled by default. (see [gl driver list](../../xpra/client/gl/gl_drivers.py))
+Due to some known bugs and incompatibilities, some drivers are disabled by default. (see [gl driver list](https://github.com/Xpra-org/xpra/blob/master/xpra/client/gl/gl_drivers.py))
 
 Basic information about the OpenGL driver in use can be found in the "Features" pane of the "Session Info" dialog or the client's command line output.\
 For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.exe` shortcut.
@@ -37,12 +37,12 @@ See:
 * [#1367 enable more opengl chipsets](https://github.com/Xpra-org/xpra/issues/1367)
 * [#1233 whitelist some more intel chipsets](https://github.com/Xpra-org/xpra/issues/1233)
 * [#1364 painting random window as solid white upon connection](https://github.com/Xpra-org/xpra/issues/1364)
-* window resizing problems: [#1469](https://github.com/Xpra-org/xpra/issues/1469) / [#1468](../issues/1468)
+* window resizing problems: [#1469](https://github.com/Xpra-org/xpra/issues/1469) / [#1468](https://github.com/Xpra-org/xpra/issues/1468)
 * [#1050 fullscreen crash on win32](https://github.com/Xpra-org/xpra/issues/1050)
 * [#1024 `glTexParameteri` error](https://github.com/Xpra-org/xpra/issues/1024)
 * [#968 rendering dimensions](https://github.com/Xpra-org/xpra/issues/968)
 * [#809 rendering fails](https://github.com/Xpra-org/xpra/issues/809)
-* OSX crashes: [#808](https://github.com/Xpra-org/xpra/issues/808) / [#563](../issues/563) / [#1087](../issues/1087)
+* OSX crashes: [#808](https://github.com/Xpra-org/xpra/issues/808) / [#563](https://github.com/Xpra-org/xpra/issues/563) / [#1087](https://github.com/Xpra-org/xpra/issues/1087)
 * [#745 windows greyed out](https://github.com/Xpra-org/xpra/issues/745)
 * [#565 Linux opengl errors](https://github.com/Xpra-org/xpra/issues/565)
 * [#147 original feature ticket - odd behaviour already reported](https://github.com/Xpra-org/xpra/issues/147)

@@ -16,7 +16,7 @@ Depending on the [authentication](./Authentication.md) module configured, the pr
 
 
 ## GPU Accelerated Transcoding
-If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](./NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](../issues/504))
+If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](./NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](https://github.com/Xpra-org/xpra/issues/504))
 
 
 ## Diagram

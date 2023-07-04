@@ -55,7 +55,7 @@ On MS Windows, the installer will bundle the [tortoisesvn](https://tortoisesvn.n
 Since this mechanism relies on executing the ssh client program, you can use the same command line options as you normally would and / or use the openssh configuration files for using tunnels, restricting ciphers, etc.
 ie: `--ssh="ssh -x -c blowfish-cbc"`
 
-The `--exit-ssh` switch controls whether the SSH transport is killed when the client terminates, this can be useful if openssh is setup to use connection sharing. (see [#203](../https://github.com/Xpra-org/xpra/issues/203) for details)
+The `--exit-ssh` switch controls whether the SSH transport is killed when the client terminates, this can be useful if openssh is setup to use connection sharing. (see [#203](https://github.com/Xpra-org/xpra/issues/203) for details)
 
 ### [paramiko](http://www.paramiko.org/)
 

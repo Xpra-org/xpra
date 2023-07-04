@@ -58,7 +58,7 @@ And here is a good quote from it:
 of support for virtualization (Qemu, Xen, VMWare). Sharing the clipboard between a virtual machine and the desktop itself is painfully difficult to implement correctly (in case X11 is running on the host operating system)._
 
 ### Source code
-[xpra/clipboard](../xpra/tree/master/xpra/clipboard/)
+[xpra/clipboard](https://github.com/Xpra-org/xpra/tree/master/xpra/clipboard/)
 
 
 <details>

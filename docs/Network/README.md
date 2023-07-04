@@ -4,18 +4,18 @@ See also: [authentication](../Usage/Authentication.md), [encryption](./Encryptio
 
 
 ## Connection Types
-|Type|Bind option|Availability|Information|
-|----|-----------|---------|-----------|
-|`TCP`|`bind-tcp`|All|
-|[QUIC](./QUIC.md)|`bind-quic`|All|
-|[SSL](./SSL.md)|`bind-ssl`|All|
-|[SSH](./SSH.md)|`bind-ssh`|All|
-|`WebSocket`|`bind-ws`|All|
-|`Secure WebSocket`|`bind-wss`|All|
-|`RFB`|`bind-rfb`|[desktop](../Usage/Start-Desktop.md) and [shadow](../Usage/Shadow-Server.md) servers only|Allows VNC clients to connect|
-|`unix domain socket`|`bind`|Posix|Local connections or via [SSH](./SSH.md)|
-|`named-pipe`|`bind`|MS Windows|[#1150](https://github.com/Xpra-org/xpra/issues/1150)|
-|`vsock`|`bind-vsock`|Linux|host - guest virtual machines connections - see [#983](https://github.com/Xpra-org/xpra/issues/983)|
+| Type                 | Bind option  | Availability                                                                              | Information                                                                                         |
+|----------------------|--------------|-------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `TCP`                | `bind-tcp`   | All                                                                                       |
+| [QUIC](./QUIC.md)    | `bind-quic`  | All                                                                                       |
+| [SSL](./SSL.md)      | `bind-ssl`   | All                                                                                       |
+| [SSH](./SSH.md)      | `bind-ssh`   | All                                                                                       |
+| `WebSocket`          | `bind-ws`    | All                                                                                       |
+| `Secure WebSocket`   | `bind-wss`   | All                                                                                       |
+| `RFB`                | `bind-rfb`   | [desktop](../Usage/Start-Desktop.md) and [shadow](../Usage/Shadow-Server.md) servers only | Allows VNC clients to connect                                                                       |
+| `unix domain socket` | `bind`       | Posix                                                                                     | Local connections or via [SSH](./SSH.md)                                                            |
+| `named-pipe`         | `bind`       | MS Windows                                                                                | [#1150](https://github.com/Xpra-org/xpra/issues/1150)                                               |
+| `vsock`              | `bind-vsock` | Linux                                                                                     | host - guest virtual machines connections - see [#983](https://github.com/Xpra-org/xpra/issues/983) |
 
 `TCP` sockets can also be upgraded transparently to (`Secure`) `WebSocket`, `SSL`, `SSH` and `RFB`, so a single `TCP` port can support 6 different protocols automatically.\
 Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured with [AES](./AES.md).\

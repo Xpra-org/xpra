@@ -25,7 +25,7 @@ You can start a new display using the dummy driver without needing any special p
 Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
      -logfile ./10.log -config /etc/xpra/xorg.conf :10
 ```
-You can find a sample configuration file for dummy here: [xorg.conf](../../fs/etc/xpra/xorg.conf).
+You can find a sample configuration file for dummy here: [xorg.conf](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/xorg.conf).
 It contains many of the most common resolutions you are likely to need, including those found on phones and tablets. 
 However if your client uses unusual resolutions, for instance multiple screens of differing sizes, you may want to add new `Modelines` to match your specific resolution.
 </details>
@@ -95,7 +95,7 @@ Then there are also ABI problems with their HWE releases, which is why Xdummy is
 <details>
   <summary>non-suid binary</summary>
 
-If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](../../fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary. 
+If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](https://github.com/Xpra-org/xpra/tree/master/fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary. 
 
 This script executes `Xorg` via `ld-linux.so`, which takes care of stripping the suid bit.
 </details>

@@ -34,7 +34,7 @@ The HTML5 client is written in Javascript so it does not have access to the prin
 <details>
   <summary>Diagnostics</summary>
 
-* run the [printing.py](../../xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
+* run the [printing.py](https://github.com/Xpra-org/xpra/tree/master/xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
 * you can use the same script to print files, ie: `./xpra/platform/printing.py /path/to/yourfile.pdf`
 * run the client and server with the `-d printing` debug flags (see [debug logging](../Usage/Logging))
 * look for the cups backend messages in your system log (ie: with journald: `sudo journalctl -f -t xpraforwarder`)

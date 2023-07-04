@@ -48,7 +48,7 @@ This allows a single port to be used with multiple protocols (including also [SS
 There are many options to configure and certificates to deal with.
 See https://docs.python.org/2/library/ssl.html, on which this is based.
 
-For more details see [#1252](../https://github.com/Xpra-org/xpra/issues/1252).
+For more details see [#1252](https://github.com/Xpra-org/xpra/issues/1252).
 
 ### Default Certificate
 When using the binary packages from https://xpra.org, a self-signed SSL certificate will be generated during the first installation.\
