@@ -129,7 +129,7 @@ class SysAuthenticatorBase:
         try:
             password = value.decode("utf8")
         except UnicodeDecodeError:
-            password = bytestostr(password)
+            password = bytestostr(value)
         return self.check_password(password)
 
     def check_password(self, _password:str) -> bool:

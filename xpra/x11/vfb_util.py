@@ -305,6 +305,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
                 try:
                     buf = read_displayfd(r_pipe)
                 except Exception as e:
+                    buf = b""
                     log("read_displayfd(%s)", r_pipe, exc_info=True)
                     displayfd_err(f"failed to read displayfd pipe {r_pipe}: {e}")
             finally:
@@ -325,7 +326,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
                     except Exception as e:
                         log.warn("Warning: failed to rename Xorg log file,")
                         log.warn(f" from {f0!r} to {f1!r}")
-                        log.warn(" {e}")
+                        log.warn(f" {e}")
             display_name = new_display_name
         else:
             # use display specified
@@ -341,7 +342,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
             # pylint: disable=subprocess-popen-preexec-fn
             xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
                          stdin=PIPE, preexec_fn=preexec)
-    except Exception as e:
+    except Exception:
         if xvfb and xvfb.poll() is None:
             log.error(" stopping vfb process with pid %i", xvfb.pid)
             xvfb.terminate()
@@ -365,9 +366,9 @@ def kill_xvfb(xvfb_pid:int) -> None:
 
 
 def set_initial_resolution(resolutions, dpi:int=0) -> None:
+    log = get_vfb_logger()
+    log("set_initial_resolution(%s)", resolutions)
     try:
-        log = get_vfb_logger()
-        log("set_initial_resolution(%s)", resolutions)
         #pylint: disable=import-outside-toplevel
         from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
         #try to set a reasonable display size:
@@ -430,12 +431,12 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
 
 def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) -> None:
     xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
+    xauth_cmd = ["xauth"] + xauth_args
     try:
         def preexec():
             os.setsid()
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
-        xauth_cmd = ["xauth"]+xauth_args
         start = monotonic()
         log = get_vfb_logger()
         log("xauth command: %s", xauth_cmd)

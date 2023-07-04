@@ -614,7 +614,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         else:
             packet = None
         has_more = packet is not None and \
-                (bool(self._priority_packets) or bool(self._ordinary_packets) \
+                (bool(self._priority_packets) or bool(self._ordinary_packets)
                  or self._mouse_position is not None)
         return packet, None, None, None, synchronous, has_more
 
@@ -650,7 +650,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         dump_all_frames()
 
 
-    def glib_init(self) -> None:
+    @staticmethod
+    def glib_init() -> None:
         #this will take care of calling threads_init if needed:
         from gi.repository import GLib  # @UnresolvedImport
         register_SIGUSR_signals(GLib.idle_add)
@@ -706,7 +707,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def server_disconnect(self, reason:str, *extra_info) -> None:
         self.quit(self.server_disconnect_exit_code(reason, *extra_info))
 
-    def server_disconnect_exit_code(self, reason:str, *extra_info) -> None:
+    def server_disconnect_exit_code(self, reason:str, *extra_info) -> int:
         if self.exit_code is None and (LOG_DISCONNECT or disconnect_is_an_error(reason)):
             l = log.info
         else:
@@ -823,7 +824,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code, message, server_message=ConnectionMessage.AUTHENTICATION_FAILED):
+    def auth_error(self, code, message, server_message=str(ConnectionMessage.AUTHENTICATION_FAILED)):
         authlog.error("Error: authentication failed:")
         authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)
@@ -1109,7 +1110,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         exit_code = ExitCode.PACKET_FAILURE
         pcount = p.input_packetcount if p else 0
         data = bytestostr(data).strip("\n\r")
-        show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
+        show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in "\n\r" for c in data)
         if pcount<=1:
             exit_code = ExitCode.CONNECTION_FAILED
             netlog.error("Error: failed to connect")
@@ -1187,8 +1188,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         handlers[packet_type] = handler
 
     def process_packet(self, _proto, packet):
+        packet_type = ""
+        handler = None
         try:
-            handler = None
             packet_type = packet[0]
             if packet_type!=int:
                 packet_type = bytestostr(packet_type)

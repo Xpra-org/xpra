@@ -42,6 +42,7 @@ class AudioClient(StubClientMixin):
         self.microphone_device = None
         self.av_sync : bool = False
         self.av_sync_delta : int = AV_SYNC_DELTA
+        self.audio_properties : typedict = typedict()
         #audio state:
         self.on_sink_ready : Optional[Callable] = None
         self.audio_sink = None
@@ -64,7 +65,6 @@ class AudioClient(StubClientMixin):
 
     def init(self, opts) -> None:
         self.av_sync = opts.av_sync
-        self.audio_properties = typedict()
         self.speaker_allowed = audio_option(opts.speaker) in ("on", "off")
         #ie: "on", "off", "on:Some Device", "off:Some Device"
         mic = [x.strip() for x in opts.microphone.split(":", 1)]
@@ -80,7 +80,7 @@ class AudioClient(StubClientMixin):
             try:
                 from xpra.audio import common
                 assert common
-            except ImportError as e:
+            except ImportError:
                 self.may_notify_audio("No Audio",
                                       "audio subsystem is not installed\n" +
                                       " speaker and microphone forwarding are disabled")
@@ -128,7 +128,7 @@ class AudioClient(StubClientMixin):
                 log.warn("Warning: no pulseaudio information available")
                 log.warn(" %s", e)
             except Exception:
-                log.error("failed to add pulseaudio info", exc_info=True)
+                log.error("Error: failed to add pulseaudio info", exc_info=True)
         #audio tagging:
         self.init_audio_tagging(opts.tray_icon)
 

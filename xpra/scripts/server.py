@@ -411,8 +411,8 @@ def save_session_file(filename:str, contents, uid:int=None, gid:int=None):
     if not isinstance(contents, bytes):
         contents = str(contents).encode("utf8")
     assert contents
+    path = session_file_path(filename)
     try:
-        path = session_file_path(filename)
         with open(path, "wb+") as f:
             if POSIX:
                 os.fchmod(f.fileno(), 0o640)
@@ -659,7 +659,7 @@ def request_exit(uri:str) -> bool:
     env["XPRA_CONNECT_TIMEOUT"] = "5"
     #don't log disconnect message
     env["XPRA_LOG_DISCONNECT"] = "0"
-    env["XPRA_EXIT_MESSAGE"] = ConnectionMessage.SERVER_UPGRADE
+    env["XPRA_EXIT_MESSAGE"] = str(ConnectionMessage.SERVER_UPGRADE)
     try:
         p = Popen(cmd, env=env)
         p.wait()
@@ -1023,10 +1023,10 @@ def _do_run_server(script_file:str, cmdline,
 
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
+    log_dir = opts.log_dir or ""
     if start_vfb or log_to_file:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
-        log_dir = opts.log_dir or ""
         if not log_dir or log_dir.lower()=="auto":
             log_dir = session_dir
         #expose the log-dir as "XPRA_LOG_DIR",
@@ -1034,6 +1034,7 @@ def _do_run_server(script_file:str, cmdline,
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
 
+    log_filename0 = ""
     if log_to_file:
         log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
@@ -1049,6 +1050,7 @@ def _do_run_server(script_file:str, cmdline,
                     os.fchown(logfd, uid, gid)
                 except OSError as e:
                     noerr(stderr.write, f"failed to chown the log file {log_filename0!r}\n")
+                    noerr(stderr.write, f" {e!r}\n")
                     noerr(stderr.flush)
         stdout, stderr = redirect_std_to_log(logfd)
         noerr(stderr.write, "Entering daemon mode; "
@@ -1110,11 +1112,7 @@ def _do_run_server(script_file:str, cmdline,
     xauthority = None
     if start_vfb or clobber:
         #XAUTHORITY
-        from xpra.x11.vfb_util import (
-            start_Xvfb, check_xvfb_process, parse_resolutions,
-            get_xauthority_path,
-            xauth_add,
-            )
+        from xpra.x11.vfb_util import get_xauthority_path, xauth_add
         if not shadowing or display_name.find("wayland")<0:
             xauthority = load_session_file("xauthority")
             if xauthority and os.path.exists(xauthority):
@@ -1180,6 +1178,7 @@ def _do_run_server(script_file:str, cmdline,
         use_uinput = has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing
         if start_vfb:
             progress(40, "starting a virtual display")
+            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
@@ -1245,6 +1244,7 @@ def _do_run_server(script_file:str, cmdline,
     def check_xvfb(timeout=0):
         if xvfb is None:
             return True
+        from xpra.x11.vfb_util import check_xvfb_process
         if not check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb):
             progress(100, "xvfb failed")
             return False
@@ -1286,7 +1286,6 @@ def _do_run_server(script_file:str, cmdline,
     del stderr
 
     if not check_xvfb():
-        noerr(stderr.write, "vfb failed to start, exiting\n")
         return ExitCode.VFB_ERROR
 
     if ROOT and (uid!=0 or gid!=0):

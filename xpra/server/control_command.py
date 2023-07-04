@@ -77,7 +77,7 @@ class ArgsControlCommand(ControlCommand):
 
 class FixedMessageCommand(ControlCommand):
     """ A control command that returns a fixed message """
-    __slots__ = ("message")
+    __slots__ = ("message", )
     def __init__(self, name:str, message:str, help_text:str=""):
         super().__init__(name, help_text)
         self.message = message
@@ -101,7 +101,7 @@ class HelloCommand(FixedMessageCommand):
 
 class HelpCommand(ArgsControlCommand):
     """ The help command looks at the 'help' definition of other commands """
-    __slots__ = ("control_commands")
+    __slots__ = ("control_commands", )
     def __init__(self, control_commands):
         super().__init__("help", max_args=1)
         self.control_commands = control_commands

@@ -60,7 +60,7 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
         scale *= scale_unit
     if scale==1:
         return scale, data
-    sdata = []
+    sdata : List[Any] = []
     for x in data:
         if x is None:
             sdata.append(None)
@@ -105,6 +105,7 @@ def find_invpow(x, n):
     while high ** n < x:
         high *= 2
     low = high/2
+    mid = low
     while low < high:
         mid = (low + high) // 2
         if low < mid and mid**n < x:

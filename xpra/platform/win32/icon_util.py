@@ -78,14 +78,15 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     #header.bV5GreenMask = 0x0000ff00
     #header.bV5BlueMask = 0x00ff0000
     #header.bV5AlphaMask = 0xff000000
-    bitmap = 0
+    hdc = 0
     try:
         hdc = GetDC(None)
         dataptr = c_void_p()
         log("GetDC()=%#x", hdc)
         bitmap = CreateDIBSection(hdc, byref(header), win32con.DIB_RGB_COLORS, byref(dataptr), None, 0)
     finally:
-        ReleaseDC(None, hdc)
+        if hdc:
+            ReleaseDC(None, hdc)
     if not dataptr or not bitmap:
         raise WinError(get_last_error())
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)

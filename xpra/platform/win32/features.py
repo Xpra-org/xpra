@@ -11,7 +11,7 @@ REINIT_WINDOWS = True
 CLIPBOARDS = ("CLIPBOARD", )
 CLIPBOARD_GREEDY = True
 
-SOURCE = []
+SOURCE : Tuple[str, ...] = ()
 
 EXECUTABLE_EXTENSION = "exe"
 

@@ -26,12 +26,10 @@ def get_cursor_data(hCursor):
     #w, h = get_fixed_cursor_size()
     if not hCursor:
         return None
-    x, y = 0, 0
     dc = None
     memdc = None
     bitmap = None
     old_handle = None
-    pixels = None
     try:
         ii = ICONINFO()
         ii.cbSize = sizeof(ICONINFO)

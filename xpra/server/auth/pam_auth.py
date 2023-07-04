@@ -27,12 +27,16 @@ def check(username:str, password:str, service:str=PAM_AUTH_SERVICE, check_accoun
         success = session.authenticate()
         if success and check_account:
             success = session.check_account()
+        return success
+    except Exception as e:
+        log.error("Error during pam authentication check")
+        log.estr(e)
+        return False
     finally:
         try:
             session.close()
         except Exception:
             log("error closing session %s", session, exc_info=True)
-    return success
 
 
 class Authenticator(SysAuthenticator):

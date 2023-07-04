@@ -303,7 +303,6 @@ def main():
     import sys
     for verbose in ("-v", "--verbose"):
         if verbose in sys.argv:
-            sys.argv.pop(verbose)
             log.enable_debug()
     pipe_name = "Xpra\\Test"
     if len(sys.argv)>1:

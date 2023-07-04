@@ -83,7 +83,7 @@ def init_write_back_fn():
     write_back = _write_back
 
 
-def exec_command(command, env=os.environ.copy()):
+def exec_command(command, env):
     info("running: %s" % command)
     PIPE = subprocess.PIPE
     proc = subprocess.Popen(command, stdout=PIPE, stderr=PIPE, env=env)

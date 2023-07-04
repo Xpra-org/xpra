@@ -64,7 +64,8 @@ class AuthDialog(Gtk.Window):
         register_os_signals(self.app_signal, "Authentication Dialog")
         self.show_all()
 
-    def btn(self, label, stock_icon, callback):
+    @staticmethod
+    def btn(label, stock_icon, callback):
         btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
@@ -97,7 +98,8 @@ class AuthDialog(Gtk.Window):
         log("quit%s", args)
         self.do_quit()
 
-    def do_quit(self):
+    @staticmethod
+    def do_quit():
         log("do_quit()")
         Gtk.main_quit()
 

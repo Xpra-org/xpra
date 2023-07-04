@@ -309,14 +309,14 @@ def connect_to(display_desc):
         auth_modes = get_auth_modes(paramiko_config, host_config, password)
         log(f"authentication modes={auth_modes}")
         sock = None
-        while True:
+        transport = None
+        while not transport:
             sock = socket_connect(host, port)
             if not sock:
                 fail(f"SSH failed to connect to {host}:{port}")
             sockname = sock.getsockname()
             peername = sock.getpeername()
             log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
-            transport = None
             try:
                 transport = do_connect(sock, host, username, password,
                                                     host_config or ssh_lookup("*"),
@@ -340,9 +340,6 @@ def connect_to(display_desc):
                     log.info(f"retrying SSH authentication with modes {csv(auth_modes)}")
                     continue
                 raise
-            else:
-                #we have a transport!
-                break
             finally:
                 if sock and not transport:
                     noerr(sock.shutdown)
@@ -565,7 +562,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log(f"failed to add key to {host_keys_filename!r}")
                     log.error(f"Error adding key to {host_keys_filename!r}")
                     log.error(f" {e}")
-                except Exception as e:
+                except Exception:
                     log.error("cannot add key", exc_info=True)
     else:
         log("ssh host key verification skipped")

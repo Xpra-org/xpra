@@ -142,6 +142,7 @@ def fix_unicode_out():
 
         real_stdout = (old_stdout_fileno == STDOUT_FILENO)
         real_stderr = (old_stderr_fileno == STDERR_FILENO)
+        hStdout = hStderr = 0
 
         if real_stdout:
             hStdout = GetStdHandle(STD_OUTPUT_HANDLE)
@@ -306,10 +307,10 @@ def should_wait_for_input():
 
 
 def setup_console_event_listener(handler, enable):
+    from xpra.log import Logger
+    log = Logger("win32")
     try:
         from xpra.platform.win32.common import SetConsoleCtrlHandler, ConsoleCtrlHandler
-        from xpra.log import Logger
-        log = Logger("win32")
         log("calling SetConsoleCtrlHandler(%s, %s)", handler, enable)
         ctypes_handler = ConsoleCtrlHandler(handler)
         result = SetConsoleCtrlHandler(ctypes_handler, enable)

@@ -118,7 +118,6 @@ class WindowIconSource:
             return None
         from gi.repository import Gtk
         it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
-        pixbuf = None
         log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
         for icon_name in (
             f"{wmclass_name}-color",
@@ -292,7 +291,8 @@ class WindowIconSource:
         self.queue_packet(packet, wait_for_more=True)
 
 
-    def choose_icon(self, icons, max_w=1024, max_h=1024):
+    @staticmethod
+    def choose_icon(icons, max_w=1024, max_h=1024):
         if not icons:
             return None
         log("choose_icon from: %s", csv("%ix%i %s" % icon[:3] for icon in icons))

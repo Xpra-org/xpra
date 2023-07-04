@@ -124,8 +124,8 @@ def do_get_prefs() -> Dict[str,Any]:
         if not os.path.isfile(conf_file):
             log(f"get_prefs() {conf_file!r} is not a file!")
             continue
+        c_prefs: Dict[str, Any] = {}
         try:
-            c_prefs : Dict[str,Any] = {}
             with open(conf_file, "rb") as f:
                 for line in f:
                     sline = line.strip().rstrip(b'\r\n').strip().decode("latin1")
@@ -224,7 +224,6 @@ def init_all_devices():
         if disabled_gpus is not None and i in disabled_gpus:
             log(f"device {i} is in the list of disabled gpus, skipped")
             continue
-        device = None
         devinfo = f"gpu {i}"
         try:
             device = Device(i)
@@ -356,6 +355,8 @@ def select_round_robin(min_compute:int):
     devices = list(range(ngpus))
     global rr
     i = rr
+    device_id = 0
+    device = None
     while devices:
         n = len(devices)
         i = (rr+1) % n
@@ -368,7 +369,7 @@ def select_round_robin(min_compute:int):
     return device_id, device
 
 
-def select_best_free_memory(min_compute:int=0):
+def select_best_free_memory(min_compute:int=0) -> Tuple[int,Any]:
     #load preferences:
     preferred_device_name = get_pref("device-name")
     devices = init_all_devices()

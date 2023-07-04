@@ -107,11 +107,10 @@ def find_fingerprint(filename:str, fingerprint):
                 log(f"ignoring line {line}: {e}")
                 continue
             for hash_algo in AUTHORIZED_KEYS_HASHES:
-                hash_instance = None
                 try:
                     hash_class = getattr(hashlib, hash_algo) #ie: hashlib.md5
                     hash_instance = hash_class(key)     #can raise ValueError (ie: on FIPS compliant systems)
-                except ValueError:
+                except (AttributeError, ValueError):
                     hash_instance = None
                 if not hash_instance:
                     if first_time(f"hash-{hash_algo}-missing"):

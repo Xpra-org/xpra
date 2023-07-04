@@ -22,7 +22,7 @@ def write_displayfd(w_pipe, display, timeout=10):
     log("write_displayfd%s", (w_pipe, display, timeout))
     while buf and monotonic()<limit:
         try:
-            timeout = max(0, limit-monotonic())
+            timeout = max(0.0, limit-monotonic())
             if POSIX:
                 w = select.select([], [w_pipe], [], timeout)[1]
                 log("select.select(..) writeable=%s", w)
@@ -87,6 +87,7 @@ def parse_displayfd(buf, err):
         n = int(buf)
     except ValueError:
         err("display number is not a valid number: %s" % buf)
+        return -1
     if n<0 or n>=2**16:
         err("provided an invalid display number: %s" % n)
     return n

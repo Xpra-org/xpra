@@ -7,6 +7,7 @@
 import os
 import re
 from time import monotonic
+from typing import Dict, Any, Tuple, Optional, Type
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -72,12 +73,12 @@ GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
-def get_root_window_size():
+def get_root_window_size() -> Tuple[int,int]:
     w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
     h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
     return w, h
 
-def get_monitors():
+def get_monitors() -> List[Dict[str,Any]]:
     monitors = []
     for m in EnumDisplayMonitors():
         mi = GetMonitorInfo(m)
@@ -145,7 +146,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         self.dynamic_property_names.append("shape")
         self.rectangles = self.get_shape_rectangles(logit=True)
 
-    def refresh_shape(self):
+    def refresh_shape(self) -> None:
         rectangles = self.get_shape_rectangles()
         if rectangles==self.rectangles:
             return  #unchanged
@@ -153,7 +154,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
         self.notify("shape")
 
-    def get_shape_rectangles(self, logit=False):
+    def get_shape_rectangles(self, logit=False) -> List:
         #get the list of windows
         l = log
         if logit or envbool("XPRA_SHAPE_DEBUG", False):
@@ -184,7 +185,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             if GetWindowRect(hwnd, byref(rect))==0:
                 l("GetWindowRect failure")
                 return True
-            left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+            left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
             if right<0 or bottom<0:
                 l("skipped offscreen window at %ix%i", right, bottom)
                 return True
@@ -251,7 +252,7 @@ class Win32ShadowModel(RootWindowModel):
         self.property_names.append("hwnd")
         self.dynamic_property_names.append("size-hints")
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.hwnd
 
     def __repr__(self):
@@ -281,14 +282,14 @@ class ShadowServer(GTKShadowServerBase):
                                  win32con.WM_WININICHANGE       : "WM_WININICHANGE",
                                  })
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.pixel_depth = int(opts.pixel_depth) or 32
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         super().init(opts)
 
 
-    def power_broadcast_event(self, wParam, lParam):
+    def power_broadcast_event(self, wParam, lParam) -> None:
         log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
         if wParam==win32con.PBT_APMSUSPEND:
             log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
@@ -300,14 +301,14 @@ class ShadowServer(GTKShadowServerBase):
             log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
 
-    def guess_session_name(self, _procs=None):
+    def guess_session_name(self, _procs=None) -> None:
         desktop_name = get_desktop_name()
         log("get_desktop_name()=%s", desktop_name)
         if desktop_name:
             self.session_name = desktop_name
 
 
-    def print_screen_info(self):
+    def print_screen_info(self) -> None:
         w, h = self.get_root_window_size()
         try:
             display = prettify_plug_name(self.root.get_screen().get_display().get_name())
@@ -327,7 +328,7 @@ class ShadowServer(GTKShadowServerBase):
         return init_capture(w, h, self.pixel_depth)
 
 
-    def get_root_window_model_class(self):
+    def get_root_window_model_class(self) -> Type:
         if SEAMLESS:
             return SeamlessRootWindowModel
         return RootWindowModel
@@ -400,7 +401,7 @@ class ShadowServer(GTKShadowServerBase):
         return models
 
 
-    def get_shadow_monitors(self):
+    def get_shadow_monitors(self) -> List:
         #convert to the format expected by GTKShadowServerBase:
         monitors = []
         for i, monitor in enumerate(get_monitors()):
@@ -414,7 +415,7 @@ class ShadowServer(GTKShadowServerBase):
         return monitors
 
 
-    def refresh(self):
+    def refresh(self) -> bool:
         v = super().refresh()
         if v and SEAMLESS:
             for rwm in self._id_to_window.values():
@@ -422,7 +423,7 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def do_get_cursor_data(self):
+    def do_get_cursor_data(self) -> Optional[Tuple]:
         ci = CURSORINFO()
         ci.cbSize = sizeof(CURSORINFO)
         GetCursorInfo(byref(ci))
@@ -447,7 +448,7 @@ class ShadowServer(GTKShadowServerBase):
             ((w,h), [(w,h), ]),
             )
 
-    def get_pointer_position(self):
+    def get_pointer_position(self) -> Tuple[int,int]:
         pos = POINT()
         GetPhysicalCursorPos(byref(pos))
         return pos.x, pos.y
@@ -477,7 +478,7 @@ class ShadowServer(GTKShadowServerBase):
             log.estr(e)
         return False
 
-    def clear_keys_pressed(self):
+    def clear_keys_pressed(self) -> None:
         keystate = (BYTE*256)()
         if GetKeyboardState(keystate):
             vknames = {}
@@ -497,13 +498,13 @@ class ShadowServer(GTKShadowServerBase):
                 keystate[x] = 0
             SetKeyboardState(keystate)
 
-    def get_keyboard_config(self, _props=None):
+    def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
-    def fake_key(self, keycode, press):
+    def fake_key(self, keycode:int, press:bool) -> None:
         fake_key(keycode, press)
 
-    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props):
+    def do_process_button_action(self, proto, device_id, wid:int, button:int, pressed:bool, pointer, props) -> None:
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         #ignore device_id on win32:
@@ -513,7 +514,7 @@ class ShadowServer(GTKShadowServerBase):
             self.get_server_source(proto).user_event()
             self.button_action(did, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id, wid, pointer, button, pressed, props):
+    def button_action(self, device_id, wid:int, pointer, button:int, pressed:bool, props) -> None:
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)
@@ -524,13 +525,13 @@ class ShadowServer(GTKShadowServerBase):
         x, y = pointer[:2]
         mouse_event(dwFlags, x, y, dwData, 0)
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/win32-shadow"
         return capabilities
 
-    def get_info(self, proto, *_args):
+    def get_info(self, proto, *_args) -> Dict[str,Any]:
         info = GTKServerBase.get_info(self, proto)
         info.update(GTKShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True

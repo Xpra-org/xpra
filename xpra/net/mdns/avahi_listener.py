@@ -37,8 +37,10 @@ class AvahiListener:
         self.mdns_remove = mdns_remove
         #self.mdns_update = mdns_update
         self.server = None
+        self.sbrowser = None
 
-    def resolve_error(self, *args) -> None:
+    @staticmethod
+    def resolve_error(*args) -> None:
         log.error("AvahiListener.resolve_error%s", args)
 
     def service_resolved(self, interface, protocol, name:str, stype:str,
@@ -125,8 +127,8 @@ def main():
     try:
         GLib.MainLoop().run()
     finally:
-        for listener in listeners:
-            listener.stop()
+        for l in listeners:
+            l.stop()
 
 
 if __name__ == "__main__":

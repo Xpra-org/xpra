@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import re
 from gi.repository import GLib, Gtk  # @UnresolvedImport
+from typing import Optional
 
 from xpra.util import (
     ConnectionMessage,
@@ -925,7 +926,7 @@ class GTKTrayMenuBase(MenuHelper):
         current_value = 0
         if not self.client.av_sync:
             current_value = None
-        def syncitem(label, delta=0):
+        def syncitem(label, delta:Optional[int]=0):
             c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(current_value==delta)
@@ -1022,7 +1023,6 @@ class GTKTrayMenuBase(MenuHelper):
                 on = deviceitem("On", start_webcam)
                 menu.append(on)
             else:
-                on = None
                 virt_devices = get_virtual_video_devices()
                 non_virtual = dict((k,v) for k,v in all_video_devices.items() if k not in virt_devices)
                 for device_no,info in non_virtual.items():

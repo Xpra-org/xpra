@@ -91,7 +91,7 @@ def get_ydpi() -> int:
     return -1
 
 
-def get_monitors_info(xscale=1, yscale=1) -> Dict[str,Any]:
+def get_monitors_info(xscale=1, yscale=1) -> Dict[int,Any]:
     from xpra.gtk_common import gtk_util
     return gtk_util.get_monitors_info(xscale, yscale)
 
@@ -293,7 +293,7 @@ def get_info_base() -> Dict[str,Any]:
     def fnames(l):
         return [fname(x) for x in l]
     return {
-            "native-clipboard"              : fname(get_clipboard_native_class()),
+            "native-clipboard"              : get_clipboard_native_class(),
             "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
             "native_trays"                  : fnames(get_native_tray_classes()),
             "native_system_trays"           : fnames(get_native_system_tray_classes()),

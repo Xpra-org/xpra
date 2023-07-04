@@ -39,7 +39,7 @@ class MMAP_Connection(StubSourceMixin):
     def init_state(self) -> None:
         self.mmap = None
         self.mmap_size = 0
-        self.mmap_client_token = None                   #the token we write that the client may check
+        self.mmap_client_token = 0                   #the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
         self.mmap_client_namespace = False

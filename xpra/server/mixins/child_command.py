@@ -44,7 +44,9 @@ class ChildCommandServer(StubServerMixin):
     def __init__(self):
         self.child_display : str = ""
         self.start_commands = []
+        self.start_late_commands = []
         self.start_child_commands = []
+        self.start_child_late_commands = []
         self.start_after_connect = []
         self.start_child_after_connect = []
         self.start_on_connect = []
@@ -297,7 +299,8 @@ class ChildCommandServer(StubServerMixin):
     def add_process(self, process, name:str, command, ignore:bool=False, callback:Optional[Callable]=None) -> ProcInfo:
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
-    def is_child_alive(self, proc) -> bool:
+    @staticmethod
+    def is_child_alive(proc) -> bool:
         return proc is not None and proc.poll() is None
 
     def reaper_exit_check(self) -> None:

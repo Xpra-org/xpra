@@ -63,7 +63,7 @@ def get_frame_info(ignore_threads:Tuple[Thread,...]=()) -> Dict[Any,Any]:
         thread_ident : Dict[Optional[int],Optional[str]] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
-                thread_ident[t.ident] = t.getName()
+                thread_ident[t.ident] = t.name
             else:
                 thread_ident[t.ident] = None
         thread_ident.update({
@@ -942,9 +942,9 @@ def setuidgid(uid:int, gid:int) -> None:
     log(f"new uid={os.getuid()}, gid={os.getgid()}")
 
 def get_peercred(sock) -> Optional[Tuple[int,int,int]]:
+    log = get_util_logger()
     if LINUX:
         SO_PEERCRED = 17
-        log = get_util_logger()
         try:
             creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))
             pid, uid, gid = struct.unpack(b'3i',creds)

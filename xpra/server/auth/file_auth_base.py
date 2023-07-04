@@ -76,13 +76,13 @@ class FileAuthenticatorBase(SysAuthenticator):
                     self.password_filedata = None
         return self.password_filedata
 
-    def stat_password_filetime(self) -> int:
+    def stat_password_filetime(self) -> float:
+        full_path = os.path.abspath(self.password_filename or "")
         try:
-            full_path = os.path.abspath(self.password_filename)
             v = os.stat(full_path).st_mtime
             log("mtime(%s)=%s", full_path, v)
             return v
         except Exception as e:
-            log.error("Error accessing time of password file '%s'", full_path)
+            log.error(f"Error accessing time of password file {full_path!r}")
             log.estr(e)
             return 0

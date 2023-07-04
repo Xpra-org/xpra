@@ -104,13 +104,13 @@ class MotifWMHints:
     BELOW_BIT       = 10     # like _NET_WM_ACTION_BELOW
     MAXIMUS_BIT     = 11     # like _NET_WM_ACTION_MAXIMUS_(LEFT|RIGHT|TOP|BOTTOM)
     # "decorations":
-    ALL_BIT         = 0
+    # ALL_BIT         = 0 (same as above)
     BORDER_BIT      = 1
     RESIZEH_BIT     = 2
     TITLE_BIT       = 3
     MENU_BIT        = 4
-    MINIMIZE_BIT    = 5
-    MAXIMIZE_BIT    = 6
+    # MINIMIZE_BIT    = 5 (same as above)
+    # MAXIMIZE_BIT    = 6 (same as above)
     #CLOSE_BIT                # non-standard close button
     #RESIZE_BIT               # non-standard resize button
     #SHADE_BIT,               # non-standard shade button

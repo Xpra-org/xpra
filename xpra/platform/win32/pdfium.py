@@ -172,19 +172,20 @@ def watch_print_job_status():
 
 def main():
     # pylint: disable=import-outside-toplevel
-    if len(sys.argv) not in (2, 3, 4):
-        print(f"usage: {sys.argv[0]} /path/to/document.pdf [printer-name] [document-title]")
-        return -3
-    filename = sys.argv[1]
-    with open(filename, "rb") as f:
-        pdf_data = f.read()
-
     if len(sys.argv)==2:
         from xpra.platform.win32.printing import get_printers
         printers = get_printers()
         printer_name = strtobytes(printers.keys()[0])
-    if len(sys.argv) in (3, 4):
+    elif len(sys.argv) in (3, 4):
         printer_name = strtobytes(sys.argv[2])
+    else:
+        print(f"usage: {sys.argv[0]} /path/to/document.pdf [printer-name] [document-title]")
+        return -3
+
+    filename = sys.argv[1]
+    with open(filename, "rb") as f:
+        pdf_data = f.read()
+
     if len(sys.argv)==4:
         title = strtobytes(sys.argv[3])
     else:

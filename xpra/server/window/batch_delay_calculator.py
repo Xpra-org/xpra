@@ -110,7 +110,7 @@ def update_batch_delay(batch, factors, min_delay=0):
         return
     for _, _, factor, weight in valid_factors:
         target_delay = max(0, min(max_delay, current_delay*factor))
-        w = max(1, hist_w)*weight/all_factors_weight
+        w = max(hist_w, 1)*weight/all_factors_weight
         tw += w
         tv += target_delay*w
     batch.delay = int(max(min_delay, min(max_delay, tv // tw)))
@@ -139,7 +139,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     mpixels = low_limit/1024.0/1024.0
     #for larger window sizes, we should be downscaling,
     #and don't want to wait too long for those anyway:
-    ref_damage_latency = (10 + 25 * (1+mathlog(max(1, mpixels))))/1000.0
+    ref_damage_latency = (10 + 25 * (1+mathlog(max(mpixels, 1))))/1000.0
 
     adil = statistics.avg_damage_in_latency or 0
     #abs: try to never go higher than N times the reference latency:
@@ -147,7 +147,6 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
 
     if batch.locked:
         dam_lat_rel = 0
-        frame_delay = 0
         dam_lat_s = 100
     else:
         #calculate a target latency and try to get close to it
@@ -216,7 +215,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     ms = min(100, max(min_speed, 0))
     max_speed = max(ms, min(pixels_bl_s, dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
     #combine factors: use the highest one:
-    target = min(1, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0))
+    target = min(max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0), 1)
     #scale target between min_speed and 100:
     speed = int(ms + (100-ms) * target)
     speed = max(ms, min(max_speed, speed))
@@ -291,7 +290,7 @@ def get_target_quality(window_dimensions, batch,
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
 
     #target is the lowest value of all those limits:
-    target = max(0, min(1, pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q))
+    target = max(min(pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q, 1), 0)
 
     info = {}
     #boost based on recent compression ratio

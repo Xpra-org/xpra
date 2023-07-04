@@ -280,7 +280,7 @@ def get_net_sys_config():
         net_sys_config = {}
         def stripnl(v):
             return str(v).rstrip("\r").rstrip("\n")
-        def addproc(procpath, subsystem, name, conv=stripnl):
+        def addproc(procpath:str, subsystem:str, name:str, conv:Callable=stripnl):
             assert name
             try:
                 with open(procpath, mode="r", encoding="latin1") as f:
@@ -324,7 +324,7 @@ def get_net_sys_config():
             "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
             ):
             addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k)
-        def parsenums(v):
+        def parsenums(v:str):
             return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
         for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
             addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, parsenums)
@@ -410,13 +410,13 @@ def get_network_caps(full_info : int=1) -> Dict[str,Any]:
     digests = get_digests()
     #"hmac" is the legacy name, "xor" and "des" should not be used for salt:
     salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
-    caps = {
-                "digest"                : digests,
-                "salt-digest"           : salt_digests,
-                "compressors"           : get_enabled_compressors(),
-                "encoders"              : get_enabled_encoders(),
-               }
-    caps["flush"] = FLUSH_HEADER
+    caps : Dict[str,Any] = {
+        "digest"                : digests,
+        "salt-digest"           : salt_digests,
+        "compressors"           : get_enabled_compressors(),
+        "encoders"              : get_enabled_encoders(),
+        "flush"                 : FLUSH_HEADER,
+    }
     caps.update(get_compression_caps(full_info))
     caps.update(get_packet_encoding_caps(full_info))
     return caps

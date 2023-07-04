@@ -270,7 +270,6 @@ class subprocess_callee:
         if command=="exit":
             log("received exit message")
             sys.exit(0)
-            return
         #make it easier to hookup signals to methods:
         attr = command.replace("-", "_")
         if self.method_whitelist is not None and attr not in self.method_whitelist:

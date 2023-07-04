@@ -22,6 +22,17 @@ NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 NEW_STREAM_SOUND_STOP = envint("XPRA_NEW_STREAM_SOUND_STOP", 20)
 
 
+class FakeSink:
+    def __init__(self, codec):
+        self.codec = codec
+
+    def add_data(self, *args):
+        log("FakeSink.add_data%s ignored", args)
+
+    def cleanup(self, *args):
+        log("FakeSink.cleanup%s ignored", args)
+
+
 class AudioMixin(StubSourceMixin):
 
     @classmethod
@@ -496,13 +507,6 @@ class AudioMixin(StubSourceMixin):
         if not self.audio_sink:
             if not self.audio_loop_check("microphone"):
                 #make a fake object so we don't fire the audio loop check warning repeatedly
-                class FakeSink:
-                    def __init__(self, codec):
-                        self.codec = codec
-                    def add_data(self, *args):
-                        log("FakeSink.add_data%s ignored", args)
-                    def cleanup(self, *args):
-                        log("FakeSink.cleanup%s ignored", args)
                 self.audio_sink = FakeSink(codec)
                 return
             try:
@@ -556,15 +560,15 @@ class AudioMixin(StubSourceMixin):
         return {"audio" : self.get_audio_info()}
 
     def get_audio_info(self) -> Dict[str,Any]:
-        def audio_info(supported, prop, codecs):
+        def audio_info(supported, subprocess_wrapper, codecs):
             i = {"codecs" : codecs}
             if not supported:
                 i["state"] = "disabled"
                 return i
-            if prop is None:
+            if subprocess_wrapper is None:
                 i["state"] = "inactive"
                 return i
-            i.update(prop.get_info())
+            i.update(subprocess_wrapper.get_info())
             return i
         info = {
                 "speaker"       : audio_info(self.supports_speaker, self.audio_source, self.audio_decoders),

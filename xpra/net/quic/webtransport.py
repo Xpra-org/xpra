@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from queue import Queue
-from typing import Callable, Dict
+from typing import Callable, Dict, Any
 
 from aioquic.h3.events import (
     DatagramReceived,
@@ -38,13 +38,13 @@ class WebTransportHandler(XpraQuicConnection):
 
     def send_accept(self) -> None:
         self.accepted = True
-        headers = {
+        headers : Dict[str,Any] = {
             ":status"   : "200",
             "server"    : SERVER_NAME,
             "date"      : http_date(),
             "sec-webtransport-http3-draft" : "draft02",
             }
-        self.send_headers(headers)
+        self.send_headers(0, headers)
         self.transmit()
 
     def flush_http_event_queue(self):
@@ -54,7 +54,7 @@ class WebTransportHandler(XpraQuicConnection):
     def send_close(self, code : int = 403, reason : str = ""):
         if not self.accepted:
             self.closed = True
-            self.send_headers({":status", code})
+            self.send_headers(0, {":status", code})
             self.transmit()
 
     def send_datagram(self, data):

@@ -139,7 +139,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Optional[Gtk.Ima
             rowstride = width * (3+int(has_alpha))
             pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
             return scaled_image(pixbuf, icon_size=menu_icon_size)
-        except Exception:
+        except Exception as e:
             err(e)
     if pixbuf:
         return scaled_image(pixbuf, icon_size=menu_icon_size)

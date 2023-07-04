@@ -191,13 +191,13 @@ class Win32EventListener:
                 log.info("%s: %s / %s", self.log_events.get(msg), wParam, lParam)
             else:
                 l = log.warn
-                if (msg>=0 and msg<=win32con.WM_USER) or msg>0xFFFF:
+                if 0<=msg<=win32con.WM_USER or msg>0xFFFF:
                     ut = "reserved system"
-                elif msg>=win32con.WM_USER and msg<=0x7FFF:
+                elif win32con.WM_USER<=msg<=0x7FFF:
                     ut = "WM_USER"
-                elif msg>=0x8000 and msg<=0xBFFF:
+                elif 0x8000<=msg<=0xBFFF:
                     ut = "WM_APP"
-                elif msg>=0xC000 and msg<=0xFFFF:
+                elif 0xC000<=msg<=0xFFFF:
                     ut = "string"
                     l = log.debug
                 else:
@@ -205,7 +205,7 @@ class Win32EventListener:
                 l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
             if msg==win32con.WM_DESTROY:
                 self.cleanup()
-        elif self.hwnd and hWnd!=None:
+        elif self.hwnd and hWnd:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         r = DefWindowProcW(hWnd, msg, wParam, lParam)
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)

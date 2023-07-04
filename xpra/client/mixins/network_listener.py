@@ -38,6 +38,7 @@ class NetworkListener(StubClientMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.sockets = {}
         self.socket_info = {}
         self.socket_options = {}
@@ -155,7 +156,7 @@ class NetworkListener(StubClientMixin):
         log_new_connection(conn, socket_info)
         self.make_protocol(socktype, conn, listener)
 
-    def make_protocol(self, socktype, conn, listener) -> SocketProtocol:
+    def make_protocol(self, socktype, conn, listener) -> None:
         socktype = socktype.lower()
         protocol = SocketProtocol(self, conn, self.process_network_packet)
         #protocol.large_packets.append(b"info-response")

@@ -337,14 +337,14 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
             sshlog("import paramiko", exc_info=True)
             sshlog.warn("Warning: cannot enable SSH socket upgrades")
             sshlog.warn(f" {e}")
-            ssh_upgrades = False
+            opts.ssh_upgrades = False
         except Exception as e:
             from xpra.log import Logger
             sshlog = Logger("ssh")
             sshlog("import paramiko", exc_info=True)
             sshlog.error("Error: cannot enable SSH socket upgrades")
             sshlog.estr(e)
-            ssh_upgrades = False
+            opts.ssh_upgrades = False
     log = get_network_logger()
     #prepare tcp socket definitions:
     tcp_defs = []
@@ -376,7 +376,6 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
                 log("setup_tcp_socket%s attempt=%s", (host, iport, options), attempt)
                 tcp_defs.append((socktype, host, iport, options, e))
             else:
-                host, iport = sock[2]
                 sockets[sock] = options
         if tcp_defs:
             sleep(1)
@@ -617,7 +616,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    defs = {}
+    defs : Dict[Any, Callable] = {}
     try:
         sockpaths = {}
         log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
@@ -777,6 +776,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
             try:
                 cleanup_socket()
             except Exception:
+                log(f"error cleaning up socket {sock}", exc_info=True)
                 log.error(f"Error cleaning up socket {sock}:", exc_info=True)
                 log.error(f" using {cleanup_socket}")
         raise
@@ -1321,8 +1321,8 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     #if there is an existing host config dir, try to use it:
     for d in [x for x in host_dirs if os.path.exists(x)]:
+        f = os.path.join(d, filename)
         try:
-            f = os.path.join(d, filename)
             with open(f, "wb") as fd:
                 fd.write(filedata)
             ssllog.info(f"saved SSL {fileinfo} to {f!r}")

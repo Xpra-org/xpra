@@ -79,6 +79,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             except Exception as e:
                 log.error("Error: failed to parse Notify arguments:")
                 log.estr(e)
+                return 0
             try:
                 self.notify_callback(*args)
             except Exception:

@@ -35,7 +35,7 @@ from xpra.client.gui import mixin_features
 from xpra.log import Logger, get_info as get_log_info
 
 
-CLIENT_BASES = [XpraClientBase]
+CLIENT_BASES : List[Type] = [XpraClientBase]
 if mixin_features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
@@ -77,7 +77,7 @@ if mixin_features.tray:
     CLIENT_BASES.append(TrayClient)
 
 CLIENT_BASES = tuple(CLIENT_BASES)
-ClientBaseClass : Type = type('ClientBaseClass', CLIENT_BASES, {})
+ClientBaseClass : Type[XpraClientBase] = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 keylog = Logger("client", "keyboard")
@@ -166,7 +166,7 @@ class UIXpraClient(ClientBaseClass):
 
         #state:
         self._on_handshake : List[Callable] = []
-        self._on_server_setting_changed : Dict[str,Callable] = {}
+        self._on_server_setting_changed : Dict[str,List[Callable]] = {}
 
 
     def init(self, opts) -> None:
@@ -593,7 +593,7 @@ class UIXpraClient(ClientBaseClass):
     def _process_server_event(self, packet):
         log(": ".join((str(x) for x in packet[1:])))
 
-    def on_server_setting_changed(self, setting, cb):
+    def on_server_setting_changed(self, setting:str, cb:Callable):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
     def _process_setting_change(self, packet):

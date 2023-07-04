@@ -55,7 +55,7 @@ def exec_command(cmd):
     return proc
 
 
-def xal(widget, xalign=1):
+def xal(widget, xalign=1.0):
     al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0, yscale=0)
     al.add(widget)
     return al
@@ -69,7 +69,7 @@ def l(label):
     return sf(widget)
 
 
-def link_btn(link, label=None, icon_name="question.png"):
+def link_btn(link, label="", icon_name="question.png"):
     def open_link():
         import webbrowser
         webbrowser.open(link)
@@ -846,6 +846,7 @@ class SessionOptions(Gtk.Window):
             values = self.valuesfromscale(option_name)
         else:
             log.warn("unknown widget type '%s'", widget_type)
+            return
         if len(values)!=1 or values[0]!=UNSET:
             current_value = getattr(self.options, fn)
             for v in values:
@@ -904,7 +905,7 @@ class FeaturesWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
-                       label="Open Features Documentation", icon_name=None)
+                       label="Open Features Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -958,7 +959,7 @@ class NetworkWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Network/README.md",
-                       label="Open Network Documentation", icon_name=None)
+                       label="Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -996,7 +997,7 @@ class DisplayWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Display.md",
-                       label="Open Display Documentation", icon_name=None)
+                       label="Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1047,7 +1048,7 @@ class EncodingWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md",
-                       label="Open Encodings Documentation", icon_name=None)
+                       label="Open Encodings Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1093,7 +1094,7 @@ class KeyboardWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Keyboard.md",
-                       label="Open Keyboard Documentation", icon_name=None)
+                       label="Open Keyboard Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1130,7 +1131,7 @@ class AudioWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Audio.md",
-                       label="Open Audio Documentation", icon_name=None)
+                       label="Open Audio Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1168,7 +1169,7 @@ class WebcamWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Webcam.md",
-                       label="Open Webcam Documentation", icon_name=None)
+                       label="Open Webcam Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1189,7 +1190,7 @@ class PrintingWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Printing.md",
-                       label="Open Printing Documentation", icon_name=None)
+                       label="Open Printing Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()

@@ -145,11 +145,11 @@ class ClientInfoMixin(StubSourceMixin):
                 }
         if self.client_version:
             info["version"] = vparts(self.client_version, FULL_INFO+1)
-        def addattr(k, name=None):
-            v = getattr(self, (name or k).replace("-", "_"))
+        def addattr(key, name=None):
+            v = getattr(self, (name or key).replace("-", "_"))
             #skip empty values:
             if v:
-                info[k.replace("_", "-")] = v
+                info[key.replace("_", "-")] = v
         for k in ("session-id", "uuid"):
             addattr(k)
         if FULL_INFO>1:

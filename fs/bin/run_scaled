@@ -31,16 +31,18 @@ def parse_scale(scale):
     try:
         try:
             if scale.endswith("%"):
-                return float(scale[:-1])/100
-            return float(scale)
+                value = float(scale[:-1])/100
+            else:
+                value = float(scale)
         except ValueError:
             #try parsing as a fraction:
             from fractions import Fraction
-            return float(Fraction(scale))
+            value = float(Fraction(scale))
     except ValueError:
         return usage("invalid scale value '%s'" % (scale,))
-    if scale<0.1 or scale>10:
-        return usage("scale value %f is out of range" % (scale,))
+    if value<0.1 or value>10:
+        return usage("scale value %f is out of range" % (value,))
+    return value
 
 def get_screen_spec():
     #figure out the dpi and vfb size to use,

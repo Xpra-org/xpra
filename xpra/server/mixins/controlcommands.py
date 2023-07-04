@@ -262,7 +262,6 @@ class ServerBaseControlCommands(StubServerMixin):
         #find the client uuid specified as a string:
         if client_uuids_str=="UI":
             sources = [ss for ss in self._server_sources.values() if ss.ui_client]
-            notfound = ()
         elif client_uuids_str=="*":
             sources = self._server_sources.values()
         else:

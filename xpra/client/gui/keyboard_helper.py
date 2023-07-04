@@ -106,7 +106,7 @@ class KeyboardHelper:
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
         return self.key_shortcuts
 
-    def get_modifier_names(self) -> List[str]:
+    def get_modifier_names(self) -> Dict[str,str]:
         return get_modifier_names(self.mod_meanings)
 
     def key_handled_as_shortcut(self, window, key_name:str, modifiers:List[str], depressed:bool):
@@ -246,8 +246,7 @@ class KeyboardHelper:
         layouts  = inl(layout, self.layouts_option or layouts)
         variant  = self.variant_option or variant
         variants = inl(variant, self.variants_option or variants)
-        options  = self.options or options
-        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants, self.options)
+        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants, self.options or options)
         log("get_layout_spec()=%s", val)
         return val
 

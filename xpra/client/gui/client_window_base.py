@@ -431,7 +431,7 @@ class ClientWindowBase(ClientWidgetBase):
             if opacity<0:
                 opacity = 1
             else:
-                opacity = min(1, opacity/0xffffffff)
+                opacity = min(1, opacity//0xffffffff)
             #requires gtk>=2.12!
             if hasattr(self, "set_opacity"):
                 self.set_opacity(opacity)
@@ -608,10 +608,10 @@ class ClientWindowBase(ClientWidgetBase):
                     #rounding is not allowed for these values
                     fsv1 = client.fsx(v1)
                     fsv2 = client.fsy(v2)
-                    def closetoint(v):
+                    def closetoint(value):
                         #tolerate some rounding error:
                         #(ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
-                        return abs(int(v)-v)<0.00001
+                        return abs(round(value)-value)<0.00001
                     if not closetoint(fsv1) or not closetoint(fsv2):
                         #the scaled value is not close to an int,
                         #so we can't honour it:
@@ -893,7 +893,7 @@ class ClientWindowBase(ClientWidgetBase):
         without triggering any specific action.
         """
 
-    def show_window_info(self, *args) -> None:
+    def show_window_info(self, *_args) -> None:
         from xpra.client.gtk3.window_info import WindowInfo
         wi = WindowInfo(self._client, self)
         wi.show()
@@ -938,7 +938,7 @@ class ClientWindowBase(ClientWidgetBase):
             log.error("Error: cannot send remote dbus call:")
             log.error(" this server does not support dbus-proxying")
             return
-        rpc_args = [self.wid]+args
+        rpc_args = [self.wid]+list(args)
         self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 

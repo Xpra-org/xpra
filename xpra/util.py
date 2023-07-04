@@ -789,7 +789,7 @@ def repr_ellipsized(obj, limit=100) -> str:
     return repr_ellipsized(repr(obj), limit)
 
 
-def rindex(alist:List, avalue) -> int:
+def rindex(alist:Union[List,Tuple], avalue:Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 

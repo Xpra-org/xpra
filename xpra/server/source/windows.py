@@ -54,9 +54,9 @@ class WindowsMixin(StubSourceMixin):
 
 
     def __init__(self):
-        self.get_focus : Callable = None
-        self.get_cursor_data_cb : Callable = None
-        self.get_window_id : Callable = None
+        self.get_focus : Optional[Callable] = None
+        self.get_cursor_data_cb : Optional[Callable] = None
+        self.get_window_id : Optional[Callable] = None
         self.window_filters = []
         self.readonly = False
         #duplicated from encodings:
@@ -176,14 +176,13 @@ class WindowsMixin(StubSourceMixin):
             "restack"       : self.window_restack,
             "pre-map"       : self.window_pre_map,
             }
-        wsize : Dict[str,Any] = {}
-        wsize = info.setdefault("window-size", wsize)
-        wsize.update({
+        wsize : Dict[str,Any] = {
             "min"   : self.window_min_size,
             "max"   : self.window_max_size,
-            })
+            }
         if self.window_frame_sizes:
-            wsize.update({"frame-sizes" : self.window_frame_sizes})
+            wsize["frame-sizes"] = self.window_frame_sizes
+        info["window-size"] = wsize
         info.update(self.get_window_info())
         return info
 
@@ -213,11 +212,11 @@ class WindowsMixin(StubSourceMixin):
             total_pixels = 0
             total_time = 0.0
             in_latencies, out_latencies = [], []
-            winfo = {}
+            winfo:Dict[int,Any] = {}
             for wid, ws in list(self.window_sources.items()):
-                #per-window source stats:
+                # per-window source stats:
                 winfo[wid] = ws.get_info()
-                #collect stats for global averages:
+                # collect stats for global averages:
                 for _, _, pixels, _, _, encoding_time in tuple(ws.statistics.encoding_stats):
                     total_pixels += pixels
                     total_time += encoding_time
@@ -548,7 +547,7 @@ class WindowsMixin(StubSourceMixin):
                     setattr(ws.batch_config, x, batch_props.intget(x))
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
-    def set_client_properties(self, wid:int, window, new_client_properties:Dict) -> None:
+    def set_client_properties(self, wid:int, window, new_client_properties:typedict) -> None:
         assert self.send_windows
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)

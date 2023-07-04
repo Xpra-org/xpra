@@ -53,7 +53,7 @@ class FullDebugContext:
         for x in self.enabled:
             x.disable_debug()
         debug_enabled_categories.clear()
-        debug_enabled_categories.add(self.debug_enabled_categories)
+        debug_enabled_categories.update(self.debug_enabled_categories)
 
 
 def add_debug_category(*cat) -> None:

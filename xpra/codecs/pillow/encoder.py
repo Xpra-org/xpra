@@ -271,6 +271,8 @@ def selftest(full=False) -> None:
     if full:
         vrange = (0, 50, 100)
     for encoding in tuple(ENCODINGS):
+        q = s = 0
+        alpha = False
         try:
             for q in vrange:
                 for s in vrange:

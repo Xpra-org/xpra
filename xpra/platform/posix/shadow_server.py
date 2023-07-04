@@ -49,8 +49,8 @@ def load_shadow_wayland(display_name=None) -> Optional[Type]:
 def load_shadow_x11() -> Optional[Type]:
     if envbool("XPRA_SHADOW_X11", True):
         try:
-            from xpra.x11 import shadow_x11_server
             os.environ["GDK_BACKEND"] = "x11"
+            from xpra.x11 import shadow_x11_server
             return shadow_x11_server.ShadowX11Server
         except ImportError as e:
             warn("Warning: unable to load x11 shadow server",

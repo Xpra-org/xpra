@@ -264,10 +264,12 @@ class Wm(GObject.GObject):
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
 
-    def root_set(self, *args) -> None:
+    @staticmethod
+    def root_set(*args) -> None:
         prop_set(X11Window.get_root_xid(), *args)
 
-    def root_get(self, *args):
+    @staticmethod
+    def root_get(*args):
         return prop_get(X11Window.get_root_xid(), *args)
 
     def set_workarea(self, x:int, y:int, width:int, height:int) -> None:
@@ -343,7 +345,8 @@ class Wm(GObject.GObject):
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, model, _wm_exiting, xid:int) -> None:
+    def _handle_client_unmanaged(self, model, wm_exiting, xid:int) -> None:
+        log(f"_handle_client_unmanaged({model}, {wm_exiting}, {xid:x})")
         if xid not in self._windows:
             log.error(f"Error: gdk window {xid} not found in {self._windows}")
             return

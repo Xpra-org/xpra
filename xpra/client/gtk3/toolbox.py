@@ -140,10 +140,12 @@ class ToolboxGUI(Gtk.Window):
                 ))
         self.vbox.show_all()
 
-    def label(self, text):
+    @staticmethod
+    def label(text):
         return label(text, font="sans 14")
 
-    def button(self, label_str, tooltip, relpath, enabled=True):
+    @staticmethod
+    def button(label_str, tooltip, relpath, enabled=True):
         def cb(_btn):
             cp = os.path.dirname(__file__)
             script = os.path.join(cp, relpath)
@@ -172,7 +174,8 @@ class ToolboxGUI(Gtk.Window):
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 
-    def show_about(self, *_args):
+    @staticmethod
+    def show_about(*_args):
         from xpra.gtk_common.about import about
         about()
 

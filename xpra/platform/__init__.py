@@ -11,7 +11,7 @@ import sys
 _init_done = False
 def init(prgname=None, appname=None):
     """ do whatever is needed to prepare an application for running,
-        some platforms may initialize logging to file, etc
+        some platforms may initialize logging to file, etc.
         If the names are supplied, we call set_name()
     """
     global _init_done
@@ -165,7 +165,7 @@ def platform_import(where, pm, required, *imports):
     elif POSIX:         # pragma: no cover
         p = "posix"
     else:               # pragma: no cover
-        raise OSError("Unknown OS %s" % (os.name))
+        raise OSError(f"Unknown OS {os.name}")
 
     module = "xpra.platform.%s" % p
     if pm:

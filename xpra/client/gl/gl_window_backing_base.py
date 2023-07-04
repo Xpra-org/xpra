@@ -7,7 +7,7 @@
 import os
 import time
 from time import monotonic
-from typing import Dict, Tuple, Any, Optional, Callable
+from typing import Dict, Tuple, Any, Optional, Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from OpenGL import version as OpenGL_version
@@ -640,7 +640,7 @@ class GLWindowBackingBase(WindowBackingBase):
         flush = options.intget("flush", 0)
         self.idle_add(self.with_gl_context, self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, context, scrolls, flush:int=0, callbacks:Tuple[Callable,...]=()) -> None:
+    def do_scroll_paints(self, context, scrolls, flush:int=0, callbacks:Iterable[Callable]=()) -> None:
         log("do_scroll_paints%s", (context, scrolls, flush))
         if not context:
             log("%s.do_scroll_paints(..) no context!", self)
@@ -981,8 +981,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data
-        cw = cursor_data[3]
-        ch = cursor_data[4]
+        cw : int = cursor_data[3]
+        ch : int = cursor_data[4]
         pixels = cursor_data[8]
         blen = cw*ch*4
         if len(pixels)!=blen:

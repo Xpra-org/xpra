@@ -36,9 +36,8 @@ def main(args):
                 now = time.time()
                 log("speed=%iMB/s", (l/1024/1024/(now-start)))
             else:
-                break
+                return 0
         connection.send("hello")
-    return 0
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

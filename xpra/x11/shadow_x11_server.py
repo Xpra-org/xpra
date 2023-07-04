@@ -247,7 +247,6 @@ class XImageCapture:
 
 def setup_capture(window):
     ww, wh = window.get_geometry()[2:4]
-    capture = None
     if NVFBC:
         try:
             capture = get_capture_instance()
@@ -258,8 +257,7 @@ def setup_capture(window):
             return capture
         except Exception as e:
             log("get_image() NvFBC test failed", exc_info=True)
-            log(f"not using {capture}: {e}")
-            capture = None
+            log(f"not using NvFBC capture: {e}")
     if GSTREAMER:
         try:
             from xpra.codecs.gstreamer.capture import Capture
@@ -277,7 +275,7 @@ def setup_capture(window):
             if image:
                 return capture
             log("gstreamer capture failed to return an image")
-        except ImportError:
+        except ImportError as e:
             log(f"not using X11 capture using gstreamer: {e}")
         except Exception:
             log("not using X11 capture using gstreamer", exc_info=True)
@@ -289,8 +287,7 @@ def setup_capture(window):
             log(f"not using X11 capture using bindings: {e}")
         else:
             if XImage.has_XShm():
-                capture = XImageCapture(window.get_xid())
-                return capture
+                return XImageCapture(window.get_xid())
     return GTKImageCapture(window)
 
 
@@ -409,10 +406,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def verify_capture(self, ss) -> None:
         #verify capture works:
         log(f"verify_capture({ss})")
+        nid = NotificationID.DISPLAY
         try:
             capture = GTKImageCapture(self.root)
             bdata = capture.take_screenshot()[-1]
-            nid = NotificationID.DISPLAY
             title = body = ""
             if any(b!=0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)

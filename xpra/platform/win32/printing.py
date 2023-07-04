@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
 import subprocess
+from typing import Optional, Callable
 
 from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint, envbool, reverse_dict
@@ -69,7 +70,7 @@ log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 JOB_ID = 0
 PROCESSES = {}
 
-printers_modified_callback = None
+printers_modified_callback : Optional[Callable] = None
 def init_printing(callback=None):
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)

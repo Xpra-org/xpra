@@ -300,7 +300,6 @@ def version_update_check():
     our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
-    latest_version_no = None
     for url in (
         f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
         f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",

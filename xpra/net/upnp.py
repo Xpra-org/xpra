@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import csv
+from typing import Tuple
 
 
 def upnp_add(socktype:str, info, options):
@@ -48,7 +49,7 @@ def upnp_add(socktype:str, info, options):
                 device = upnp.get_igd()
                 log("using IGD device %s", device)
             except Exception as e:
-                dstr = ()
+                dstr : Tuple[str,...] = ()
                 if devices:
                     dstr = (
                         "%i devices:" % len(devices),
@@ -197,7 +198,7 @@ def upnp_add(socktype:str, info, options):
                 if ip:
                     log.info("UPnP port mapping added for %s:%s", ip, external_port)
                     options["upnp-address"] = (ip, external_port)
-            except Exception as e:
+            except Exception:
                 log("%s", getip, exc_info=True)
         def cleanup():
             try:

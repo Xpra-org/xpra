@@ -20,11 +20,8 @@ gstlog = Logger("gstreamer")
 
 SAVE_AUDIO = os.environ.get("XPRA_SAVE_AUDIO")
 
-KNOWN_TAGS = set((
-    "bitrate", "codec", "audio-codec", "mode",
-    "container-format", "encoder", "description", "language-code",
-    "minimum-bitrate", "maximum-bitrate", "channel-mode",
-    ))
+KNOWN_TAGS = {"bitrate", "codec", "audio-codec", "mode", "container-format", "encoder", "description", "language-code",
+              "minimum-bitrate", "maximum-bitrate", "channel-mode"}
 
 
 class AudioPipeline(Pipeline):
@@ -45,6 +42,7 @@ class AudioPipeline(Pipeline):
         self.buffer_count = 0
         self.byte_count = 0
         self.emit_info_timer = 0
+        self.volume = None
         self.info : Dict[str,Any] = {
                      "codec"        : self.codec,
                      "state"        : self.state,
@@ -135,7 +133,7 @@ class AudioPipeline(Pipeline):
         #after a delay, just in case we do get the real "audio-codec" message!
         self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
 
-    def on_message(self, bus, message) -> None:
+    def on_message(self, bus, message) -> int:
         try:
             return super().on_message(bus, message)
         finally:

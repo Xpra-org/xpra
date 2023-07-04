@@ -40,7 +40,7 @@ def show_qr(uri:str, width:int=640, height:int=640):
     add_close_accel(window, close)
     window.show_all()
     if Gtk.main_level()<=0:
-        def gtk_quit(*args):
+        def gtk_quit(*_args):
             window.destroy()
             Gtk.main_quit()
         window.connect("delete-event", gtk_quit)

@@ -52,7 +52,7 @@ for x in dir(socket):
         PROTOCOL_STR[getattr(socket, x)] = x
     if x.startswith("SOCK_"):
         FAMILY_STR[getattr(socket, x)] = x
-
+del x
 
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
@@ -83,12 +83,11 @@ def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a,
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry_cb(e)
+            if not retry:
+                raise
             if LOG_TIMEOUTS>0:
                 log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
                     is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS>=2)
-            e = None
-            if not retry:
-                raise
 
 
 def pretty_socket(s) -> str:

@@ -70,7 +70,7 @@ class AvahiPublishers:
                 td["iface"] = if_indextoname(iface_index)
             txt = []
             if text_dict:
-                for k,v in text_dict.items():
+                for k,v in td.items():
                     txt.append("%s=%s" % (k,v))
             fqdn = host
             if host in ("0.0.0.0", "::"):

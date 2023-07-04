@@ -49,7 +49,7 @@ def scoreinout(ww:int, wh:int, region, incount:int, outcount:int) -> int:
     score = 100.0*inregion
     #if the region has at least 35% of updates, boost it with window ratio
     #(capped at 6, and smoothed with sqrt):
-    score += max(0, inregion-0.35) * (math.sqrt(min(6, ratio))-1.0) * RATIO_WEIGHT
+    score += max(0.0, inregion-0.35) * (math.sqrt(min(6.0, ratio))-1.0) * RATIO_WEIGHT
     sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i",
           ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
     return max(0, int(score))
@@ -414,7 +414,7 @@ class VideoSubregion:
             return max(0, min(1, 1.0-not_damaged_pixels/rect_pixels))
 
         scores = {None : 0}
-        def score_region(info:str, region:rectangle, ignore_size=0, d_ratio=0) -> int:
+        def score_region(info:str, region:rectangle, ignore_size=0, d_ratio=0.0) -> int:
             score = scores.get(region)
             if score is not None:
                 return score
@@ -512,14 +512,12 @@ class VideoSubregion:
 
         #split the regions we really care about (enough pixels, big enough):
         damage_count = {}
-        min_count = max(2, len(lde)/40)
+        min_count = max(2, len(lde)//40)
         for r, count in dec.items():
             #ignore small regions:
             if count>min_count and r.width>=MIN_W and r.height>=MIN_H:
                 damage_count[r] = count
         c = sum(int(x) for x in damage_count.values())
-        most_damaged = -1
-        most_pct = 0
         if c>0:
             most_damaged = int(sorted(damage_count.values())[-1])
             most_pct = round(100*most_damaged/c)

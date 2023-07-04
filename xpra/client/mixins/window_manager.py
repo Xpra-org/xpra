@@ -99,6 +99,34 @@ SHOW_DELAY : int = envint("XPRA_SHOW_DELAY", -1)
 DRAW_TYPES : Dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
 
+def kill_signalwatcher(proc) -> None:
+    log("kill_signalwatcher(%s)", proc)
+    if proc.poll() is None:
+        stdout_io_watch = proc.stdout_io_watch
+        if stdout_io_watch:
+            proc.stdout_io_watch = 0
+            GLib.source_remove(stdout_io_watch)
+        stdout = proc.stdout
+        if stdout:
+            noerr(stdout.close)
+        stderr = proc.stderr
+        if stderr:
+            noerr(stderr.close)
+        try:
+            stdin = proc.stdin
+            if stdin:
+                stdin.write(b"exit\n")
+                stdin.flush()
+                stdin.close()
+        except IOError:
+            log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+        try:
+            os.kill(proc.pid, signal.SIGKILL)
+        except OSError as e:
+            if e.errno!=errno.ESRCH:
+                log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+
+
 class WindowClient(StubClientMixin):
     """
     Utility superclass for clients that handle windows:
@@ -595,7 +623,7 @@ class WindowClient(StubClientMixin):
         traylog("make_system_tray%s system tray classes=%s", args, tc)
         return make_instance(tc, self, *args)
 
-    def get_system_tray_classes(self) -> Tuple[Type,...]:
+    def get_system_tray_classes(self) -> Tuple[Optional[Type],...]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:
@@ -739,15 +767,12 @@ class WindowClient(StubClientMixin):
         elif coding in ("BGRA", "RGBA"):
             rowstride = width*4
             img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", coding, rowstride, 1)
-            has_alpha = True
         else:
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img = open_only(data, ("png", ))
             if img.mode not in ("RGB", "RGBA"):
                 img = img.convert("RGBA")
-            has_alpha = img.mode=="RGBA"
-            rowstride = width * (3+int(has_alpha))
         icon = img
         save_time = int(time())
         if SAVE_WINDOW_ICONS:
@@ -834,6 +859,7 @@ class WindowClient(StubClientMixin):
         watcher_pid = self.assign_signal_watcher_pid(wid, pid)
         if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.strget("role")=="popup":
             tfor = None
+            twid = 0
             for twid, twin in self._id_to_window.items():
                 if not twin._override_redirect and twin._metadata.intget("pid", -1)==pid:
                     tfor = twin
@@ -1200,7 +1226,7 @@ class WindowClient(StubClientMixin):
                 self.quit(0)
                 return
             if window:
-                metadata = getattr(window, "_metadata", {})
+                metadata = typedict(getattr(window, "_metadata", {}))
                 log("window_close_event(%i) metadata=%s", wid, metadata)
                 class_instance = metadata.strtupleget("class-instance", (None, None), 2, 2)
                 title = metadata.strget("title", "")
@@ -1267,38 +1293,11 @@ class WindowClient(StubClientMixin):
                 if not wids:
                     log("last window, removing watcher %s", signalwatcher)
                     self._signalwatcher_to_wids.pop(signalwatcher, None)
-                    self.kill_signalwatcher(signalwatcher)
+                    kill_signalwatcher(signalwatcher)
                     #now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
                             del self._pid_to_signalwatcher[pid]
-
-    def kill_signalwatcher(self, proc) -> None:
-        log("kill_signalwatcher(%s)", proc)
-        if proc.poll() is None:
-            stdout_io_watch = proc.stdout_io_watch
-            if stdout_io_watch:
-                proc.stdout_io_watch = 0
-                GLib.source_remove(stdout_io_watch)
-            stdout = proc.stdout
-            if stdout:
-                noerr(stdout.close)
-            stderr = proc.stderr
-            if stderr:
-                noerr(stderr.close)
-            try:
-                stdin = proc.stdin
-                if stdin:
-                    stdin.write(b"exit\n")
-                    stdin.flush()
-                    stdin.close()
-            except IOError:
-                log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
-            try:
-                os.kill(proc.pid, signal.SIGKILL)
-            except OSError as e:
-                if e.errno!=errno.ESRCH:
-                    log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
 
     def destroy_all_windows(self) -> None:
         for wid, window in self._id_to_window.items():
@@ -1313,7 +1312,7 @@ class WindowClient(StubClientMixin):
         #make sure we don't leave any behind:
         for signalwatcher in tuple(self._signalwatcher_to_wids.keys()):
             try:
-                self.kill_signalwatcher(signalwatcher)
+                kill_signalwatcher(signalwatcher)
             except Exception:
                 log("destroy_all_windows() error killing signal watcher %s", signalwatcher, exc_info=True)
 
@@ -1417,7 +1416,7 @@ class WindowClient(StubClientMixin):
         self.control_refresh(-1, True, False)
 
     def resume(self) -> None:
-        elapsed = 0
+        elapsed = 0.0
         if self._suspended_at>0:
             elapsed = max(0, time()-self._suspended_at)
             self._suspended_at = 0
@@ -1579,29 +1578,35 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # screen scaling:
-    def fsx(self, v):
+    @staticmethod
+    def fsx(v):
         """ convert X coordinate from server to client """
         return v
-    def fsy(self, v):
+    @staticmethod
+    def fsy(v):
         """ convert Y coordinate from server to client """
         return v
-    def sx(self, v) -> int:
+    @staticmethod
+    def sx(v) -> int:
         """ convert X coordinate from server to client """
         return round(v)
-    def sy(self, v) -> int:
+    @staticmethod
+    def sy(v) -> int:
         """ convert Y coordinate from server to client """
         return round(v)
-    def srect(self, x, y, w, h) -> Tuple[int,int]:
+    def srect(self, x, y, w, h) -> Tuple[int,int,int,int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
     def sp(self, x, y) -> Tuple[int,int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
-    def cx(self, v) -> int:
+    @staticmethod
+    def cx(v) -> int:
         """ convert X coordinate from client to server """
         return round(v)
-    def cy(self, v) -> int:
+    @staticmethod
+    def cy(v) -> int:
         """ convert Y coordinate from client to server """
         return round(v)
     def crect(self, x, y, w, h)-> Tuple[int,int,int,int]:

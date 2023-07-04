@@ -111,7 +111,6 @@ def patch_crypto_be_discovery() -> None:
         log("loaded _ssl=%s", _ssl)
     except ImportError:
         log("failed to import _ssl", exc_info=True)
-        be_ossl = None
     try:
         from cryptography.hazmat.backends.openssl.backend import backend as be_ossl
     except ImportError:

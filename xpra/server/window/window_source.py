@@ -98,10 +98,10 @@ def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> Tuple[str,..
     log("%s encodings: %s", etype, encodings)
     return encodings
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
-LOSSLESS_ENCODINGS : List[str] = ["rgb", "png", "png/P", "png/L", "webp", "avif"]
-if not TRUE_LOSSLESS:
-    LOSSLESS_ENCODINGS.append("jpeg")
-    LOSSLESS_ENCODINGS.append("jpega")
+if TRUE_LOSSLESS:
+    LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif")
+else:
+    LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
@@ -439,8 +439,8 @@ class WindowSource(WindowIconSource):
         self.video_helper = None
         self.refresh_quality = AUTO_REFRESH_QUALITY
         self.refresh_speed = AUTO_REFRESH_SPEED
-        self.refresh_event_time = 0
-        self.refresh_target_time = 0
+        self.refresh_event_time : float = 0.0
+        self.refresh_target_time : float = 0.0
         self.refresh_timer : int = 0
         self.refresh_regions : List[rectangle] = []
         self.timeout_timer : int = 0
@@ -894,7 +894,7 @@ class WindowSource(WindowIconSource):
         if (self.refresh_quality<100 or not TRUE_LOSSLESS) and self.image_depth>16:
             ropts.add("jpeg")
             ropts.add("jpega")
-        are : Tuple[str] = ()
+        are : Tuple[str,...] = ()
         if self.supports_transparency:
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:
@@ -923,8 +923,8 @@ class WindowSource(WindowIconSource):
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
-        qmult = max(0, self._current_quality/20.0)
-        pcmult = min(20, 0.5+self.statistics.packet_count)/20.0
+        qmult = max(0.0, self._current_quality/20.0)
+        pcmult = min(20.0, 0.5+self.statistics.packet_count)/20.0
         max_rgb_threshold = 16*1024
         min_rgb_threshold = 2048
         if cv>0.1:
@@ -1024,25 +1024,31 @@ class WindowSource(WindowIconSource):
             return self.encoding_is_grayscale
         return self.get_current_or_rgb
 
-    def hardcoded_encoding(self, *_args) -> str:
+    @staticmethod
+    def hardcoded_encoding(*_args) -> str:
         return HARDCODED_ENCODING
 
     def encoding_is_hint(self, *_args) -> str:
         return self._encoding_hint
 
-    def encoding_is_mmap(self, *_args) -> str:
+    @staticmethod
+    def encoding_is_mmap(*_args) -> str:
         return "mmap"
 
-    def encoding_is_pngL(self, *_args) -> str:
+    @staticmethod
+    def encoding_is_pngL(*_args) -> str:
         return "png/L"
 
-    def encoding_is_pngP(self, *_args) -> str:
+    @staticmethod
+    def encoding_is_pngP(*_args) -> str:
         return "png/P"
 
-    def encoding_is_rgb32(self, *_args) -> str:
+    @staticmethod
+    def encoding_is_rgb32(*_args) -> str:
         return "rgb32"
 
-    def encoding_is_rgb24(self, *_args) -> str:
+    @staticmethod
+    def encoding_is_rgb24(*_args) -> str:
         return "rgb24"
 
     def get_strict_encoding(self, *_args) -> str:
@@ -1155,7 +1161,7 @@ class WindowSource(WindowIconSource):
         self.go_idle()
 
 
-    def cancel_damage(self, limit=0) -> None:
+    def cancel_damage(self, limit=0.0) -> None:
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
@@ -2048,7 +2054,7 @@ class WindowSource(WindowIconSource):
             self.idle_add(do_free_image)
 
 
-    def get_damage_image(self, x:int, y:int, w:int, h:int) -> ImageWrapper:
+    def get_damage_image(self, x:int, y:int, w:int, h:int) -> Optional[ImageWrapper]:
         self.ui_thread_check()
         def nodata(msg, *args):
             log("get_damage_image: "+msg, *args)
@@ -2270,7 +2276,6 @@ class WindowSource(WindowIconSource):
         #some of those rectangles may overlap,
         #so the value may be greater than the size of the window:
         due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
-        sched_delay = 0
         #a refresh is already due
         if added_pixcount>=due_pixcount//2:
             #we have more than doubled the number of pixels to refresh
@@ -2298,7 +2303,7 @@ class WindowSource(WindowIconSource):
         #(also overridden in window video source)
         remove_rectangle(self.refresh_regions, region)
 
-    def add_refresh_region(self, region) -> None:
+    def add_refresh_region(self, region) -> int:
         #adds the given region to the refresh list
         #returns the number of pixels in the region update
         #(overridden in window video source to exclude the video region)
@@ -2406,7 +2411,7 @@ class WindowSource(WindowIconSource):
                 "speed"         : self.refresh_speed,
                 }
 
-    def queue_damage_packet(self, packet, damage_time:int=0, process_damage_time:int=0, options=None) -> None:
+    def queue_damage_packet(self, packet, damage_time:float=0, process_damage_time:float=0, options=None) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2438,7 +2443,7 @@ class WindowSource(WindowIconSource):
                 #if this packet completed late, record congestion send speed:
                 max_send_delay = 5 + self.estimate_send_delay(ldata)
                 if elapsed_ms>max_send_delay:
-                    late_pct = (elapsed_ms*100/max_send_delay)-100
+                    late_pct = round(elapsed_ms*100/max_send_delay)-100
                     send_speed = int(ldata*8*1000/elapsed_ms)
                     self.networksend_congestion_event("slow send", late_pct, send_speed)
             self.schedule_auto_refresh(packet, options or {})
@@ -2462,6 +2467,7 @@ class WindowSource(WindowIconSource):
         if len(gs.bytes_sent)>=5:
             #find a sample more than a second old
             #(hopefully before the congestion started)
+            stime1 = svalue1 = svalue2 = 0
             i = 1
             while i<4:
                 stime1, svalue1 = gs.bytes_sent[-i]
@@ -2632,7 +2638,7 @@ class WindowSource(WindowIconSource):
 
 
     def make_data_packet(self, damage_time, process_damage_time,
-                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> Tuple:
+                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> Optional[Tuple]:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'

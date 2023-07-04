@@ -5,6 +5,7 @@
 
 import os
 import sys
+from typing import Optional, Callable
 
 def do_init():
     for x in list(sys.argv):
@@ -28,7 +29,7 @@ def do_init_env():
         os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "bin", "gst-plugin-scanner-1.0")
 
 
-exit_cb = None
+exit_cb : Optional[Callable] = None
 def quit_handler(*_args):
     global exit_cb
     if exit_cb:
@@ -40,7 +41,7 @@ def quit_handler(*_args):
         Gtk.main_quit()
     return True
 
-def set_exit_cb(ecb):
+def set_exit_cb(ecb : Optional[Callable]):
     global exit_cb
     exit_cb = ecb
 

@@ -86,8 +86,11 @@ def init_compressors(*names) -> None:
         assert x not in ("compressors", "all"), "attempted to recurse!"
         if not envbool("XPRA_"+x.upper(), True):
             continue
-        fn : Callable = globals().get(f"init_{x}")
+        attr = globals().get(f"init_{x}", None)
         try:
+            if not callable(attr):
+                raise ValueError(f"{attr!r} is not callable")
+            fn : Callable = attr
             c = fn()
             assert c
             COMPRESSION[x] = c
@@ -120,7 +123,7 @@ def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
 def get_enabled_compressors(order=ALL_COMPRESSORS) -> Tuple[str,...]:
     return tuple(x for x in order if x in COMPRESSION)
 
-def get_compressor(name) -> Compression:
+def get_compressor(name) -> Callable:
     c = COMPRESSION.get(name)
     if c is not None:
         return c.compress

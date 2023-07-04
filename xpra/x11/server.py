@@ -560,7 +560,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #TODO: find a better way to choose the timer delay:
         #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         #(lcce should always be in the past, so min(..) should be redundant here)
-        delay = max(100, min(250, 250 + 1000 * (lcce-monotonic())))
+        delay = max(100, min(250, 250 + round(1000 * (lcce-monotonic()))))
         self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1) -> None:
@@ -811,7 +811,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.restack_window(wid, window, detail, sibling)
 
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> Tuple[str]:
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> Tuple[str,...]:
         if proto not in self._server_sources:
             return ()
         if not new_window_state:
@@ -1047,7 +1047,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                     self.client_configure_window(window, geometry, resize_counter)
                     ax, ay, aw, ah = geometry
-                    resized = False
                     if cg:
                         owx, owy, oww, owh = cg
                         resized = oww!=aw or owh!=ah

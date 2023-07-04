@@ -40,6 +40,8 @@ def parse_image_data(data) -> Optional[ImageData]:
         elif channels==3:
             rgb_format = "BGR"
             fmt = "RGB"
+        else:
+            raise ValueError(f"invalid number of channels: {channels}")
         if isinstance(pixels, (list, tuple)):
             pixels = bytes(pixels)
         img = Image.frombytes(fmt, (width, height), pixels, "raw", rgb_format, rowstride)
@@ -89,6 +91,7 @@ def get_notification_icon(icon_string):
         return ()
     MAX_SIZE = 256
     img = None
+    w = h = 0
     from PIL import Image  #pylint: disable=import-outside-toplevel
     if os.path.isabs(icon_string):
         if os.path.exists(icon_string) and os.path.isfile(icon_string):

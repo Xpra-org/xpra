@@ -59,17 +59,20 @@ class XTestPointerDevice:
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, x:int, y:int, props=None) -> None:
+    @staticmethod
+    def move_pointer(x:int, y:int, props=None) -> None:
         mouselog("xtest_fake_motion%s", (x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(-1, x, y)
 
-    def click(self, button:int, pressed:bool, props) -> None:
+    @staticmethod
+    def click(button:int, pressed:bool, props) -> None:
         mouselog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def has_precise_wheel(self) -> bool:
+    @staticmethod
+    def has_precise_wheel() -> bool:
         return False
 
 
@@ -464,12 +467,13 @@ class X11ServerCore(GTKServerBase):
         return 0
 
 
-    def get_keyboard_config(self, props=typedict()):
+    def get_keyboard_config(self, props=None):
+        p = props or typedict()
         from xpra.x11.server_keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
-        keyboard_config.enabled = props.boolget("keyboard", True)
-        keyboard_config.parse_options(props)
-        keyboard_config.parse_layout(props)
+        keyboard_config.enabled = p.boolget("keyboard", True)
+        keyboard_config.parse_options(p)
+        keyboard_config.parse_layout(p)
         keylog("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 
@@ -1072,16 +1076,16 @@ class X11ServerCore(GTKServerBase):
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 
-    def make_screenshot_packet_from_regions(self, regions) -> Tuple[str,int,int,str,int,bytes]:
+    def make_screenshot_packet_from_regions(self, regions) -> Tuple[str,int,int,str,int,Any]:
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")
             return ("screenshot", 0, 0, "png", 0, b"")
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
-        minx = min(x for (_,x,_,_) in regions)
-        miny = min(y for (_,_,y,_) in regions)
-        maxx = max((x+img.get_width()) for (_,x,_,img) in regions)
-        maxy = max((y+img.get_height()) for (_,_,y,img) in regions)
+        minx : int = min(x for (_,x,_,_) in regions)
+        miny : int = min(y for (_,_,y,_) in regions)
+        maxx : int = max((x+img.get_width()) for (_,x,_,img) in regions)
+        maxy : int = max((y+img.get_height()) for (_,_,y,img) in regions)
         width = maxx-minx
         height = maxy-miny
         log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)

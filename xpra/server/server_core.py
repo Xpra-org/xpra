@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Tuple, Dict, Any, Type
+from typing import Callable, List, Tuple, Dict, Any, Type, Union, Optional
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -190,7 +190,7 @@ class ServerCore:
         self.socket_verify_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self._max_connections : int = MAX_CONCURRENT_CONNECTIONS
-        self._socket_timeout : int = SERVER_SOCKET_TIMEOUT
+        self._socket_timeout : float = SERVER_SOCKET_TIMEOUT
         self._ws_timeout : int = 5
         self._socket_dir : str = ""
         self._socket_dirs : List = []
@@ -774,7 +774,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type:str, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict]]:
+    def get_auth_modules(self, socket_type:str, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict],...]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()
@@ -1034,7 +1034,7 @@ class ServerCore:
 
     def init_packet_handlers(self) -> None:
         netlog("initializing packet handlers")
-        self._default_packet_handlers = {
+        self._default_packet_handlers : Dict[str,Callable] = {
             "hello":                       self._process_hello,
             "disconnect":                  self._process_disconnect,
             CONNECTION_LOST:               self._process_connection_lost,
@@ -1137,7 +1137,7 @@ class ServerCore:
             if packet_type=="xpra":
                 #try xpra packet format:
                 from xpra.net.packet_encoding import pack_one_packet
-                packet_data = pack_one_packet(["disconnect", "invalid protocol for this port"]) or packet_data
+                packet_data = pack_one_packet(("disconnect", "invalid protocol for this port")) or packet_data
             elif packet_type=="http":
                 #HTTP 400 error:
                 packet_data = HTTP_UNSUPORTED
@@ -1333,8 +1333,8 @@ class ServerCore:
 
     def _ssl_wrap_socket(self, socktype:str, sock, socket_options):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
+        kwargs = self.get_ssl_socket_options(socket_options)
         try:
-            kwargs = self.get_ssl_socket_options(socket_options)
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:
@@ -1524,7 +1524,6 @@ class ServerCore:
             elif ssl_mode=="www":
                 http = True
             elif ssl_mode=="auto" or ssl_mode in TRUE_OPTIONS:
-                http = False
                 #use the header to guess:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
                     http = True
@@ -1561,7 +1560,7 @@ class ServerCore:
 
     ######################################################################
     # http / websockets:
-    def start_http_socket(self, socktype:str, conn, socket_options:Dict, is_ssl:bool=False, peek_data:str=""):
+    def start_http_socket(self, socktype:str, conn, socket_options:Dict, is_ssl:bool=False, peek_data:bytes=b""):
         frominfo = pretty_socket(conn.remote)
         line1 = peek_data.split(b"\n")[0]
         http_proto = "http"+["","s"][int(is_ssl)]
@@ -1632,7 +1631,7 @@ class ServerCore:
     def get_http_scripts(self) -> Dict[str,Any]:
         return self._http_scripts
 
-    def http_query_dict(self, path) -> Dict[str,Any]:
+    def http_query_dict(self, path) -> Dict:
         return dict(parse_qsl(urlparse(path).query))
 
     def send_json_response(self, data):
@@ -1665,11 +1664,11 @@ class ServerCore:
             mime_type = "application/octet-stream"
         return self.http_response(icon_data, mime_type)
 
-    def http_menu_request(self, path:str):
+    def http_menu_request(self, _path:str):
         xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
         return self.send_json_response(xdg_menu or "not available")
 
-    def http_desktop_menu_request(self, path:str):
+    def http_desktop_menu_request(self, _path:str):
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
         return self.send_json_response(xsessions or "not available")
 
@@ -1714,7 +1713,7 @@ class ServerCore:
         httplog("_filter_display_dict(%s)=%s", display_dict, displays_info)
         return displays_info
 
-    def http_displays_request(self, path:str):
+    def http_displays_request(self, _path:str):
         displays = self.get_displays()
         displays_info = self._filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return self.send_json_response(displays_info)
@@ -1723,7 +1722,7 @@ class ServerCore:
         from xpra.scripts.main import get_displays_info #pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
-    def http_sessions_request(self, path):
+    def http_sessions_request(self, _path):
         sessions = self.get_xpra_sessions()
         sessions_info = self._filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return self.send_json_response(sessions_info)
@@ -1732,7 +1731,7 @@ class ServerCore:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
-    def http_info_request(self, path:str):
+    def http_info_request(self, _path:str):
         return self.send_json_response(self.get_http_info())
 
     def get_http_info(self) -> Dict[str,Any]:
@@ -1742,7 +1741,7 @@ class ServerCore:
             "uuid"              : self.uuid,
             }
 
-    def http_status_request(self, path:str):
+    def http_status_request(self, _path:str):
         return self.http_response("ready")
 
     def http_response(self, content, content_type:str="text/plain"):
@@ -1809,10 +1808,10 @@ class ServerCore:
         self.cancel_upgrade_to_rfb_timer(proto)
         proto.close()
 
-    def disconnect_client(self, protocol:SocketProtocol, reason:str, *extra):
+    def disconnect_client(self, protocol:SocketProtocol, reason:Union[str,ConnectionMessage], *extra):
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol.is_closed():
-            self.disconnect_protocol(protocol, reason, *extra)
+            self.disconnect_protocol(protocol, str(reason), *extra)
 
     def disconnect_protocol(self, protocol:SocketProtocol, *reasons):
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)
@@ -2092,7 +2091,7 @@ class ServerCore:
         self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
 
-    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Dict[str,Any]:
+    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Optional[Dict[str,Any]]:
         def auth_failed(msg):
             self.auth_failed(proto, msg)
             return None
@@ -2107,7 +2106,6 @@ class ServerCore:
             prefix = "cipher."
         cipher = c.strget("cipher")
         cipher_iv = c.strget(f"{prefix}iv")
-        auth_caps = {}
         cryptolog(f"setup_encryption(..) for cipher={cipher} and iv={cipher_iv}")
         if cipher and cipher_iv:
             #check that the server supports encryption:
@@ -2179,7 +2177,7 @@ class ServerCore:
         v = os.environ.get(KVAR)
         if v:
             authlog(f"using encryption key from {KVAR!r} environment variable")
-            return v
+            return strtobytes(v)
         if authenticators:
             for authenticator in authenticators:
                 v = authenticator.get_password()

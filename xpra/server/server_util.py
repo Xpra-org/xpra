@@ -99,6 +99,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         cmd = [sh, "-c", f"{source} 1>&2 && {dump}"]
         decode = decode_json
     out = err = b""
+    proc = None
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -109,7 +110,9 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
         log(f" stdout={out!r} ({type(out)})")
         log(f" stderr={err!r} ({type(err)})")
-        log.error(f"Error {proc.returncode} running source script {file_to_source_path!r}")
+        log.error(f"Error running source script {file_to_source_path!r}")
+        if proc and proc.returncode is not None:
+            log.error(f" exit codde: {proc.returncode}")
         log.error(f" {e}")
         return {}
     log(f"stdout({filename})={out!r}")
@@ -171,10 +174,9 @@ def xpra_env_shell_script(socket_dir, env) -> bytes:
     return b"\n".join(script)
 
 def xpra_runner_shell_script(xpra_file, starting_dir) -> bytes:
-    script = []
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
-    script.append(b"cd %s" % sh_quotemeta(starting_dir.encode()))
+    script = [b"cd %s" % sh_quotemeta(starting_dir.encode())]
     if OSX:
         #OSX contortions:
         #The executable is the python interpreter,
@@ -430,7 +432,7 @@ def has_uinput() -> bool:
         return False
     return True
 
-def create_uinput_device(uuid, uid:int, events, name:str) -> Optional[Tuple[str, Any, str]]:
+def create_uinput_device(uid:int, events, name:str) -> Optional[Tuple[str, Any, str]]:
     log = get_util_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
@@ -473,7 +475,7 @@ def create_uinput_pointer_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
     #REL_HIRES_WHEEL = 0x10
     #uinput.REL_HWHEEL,
     name = f"Xpra Virtual Pointer {uuid}"
-    return create_uinput_device(uuid, uid, events, name)
+    return create_uinput_device(uid, events, name)
 
 def create_uinput_touchpad_device(uuid, uid:int)-> Optional[Tuple[str, Any, str]]:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
@@ -489,7 +491,7 @@ def create_uinput_touchpad_device(uuid, uid:int)-> Optional[Tuple[str, Any, str]
         #BTN_TOOL_PEN,
         )
     name = f"Xpra Virtual Touchpad {uuid}"
-    return create_uinput_device(uuid, uid, events, name)
+    return create_uinput_device(uid, events, name)
 
 
 def create_uinput_devices(uinput_uuid, uid:int) -> Dict[str,Any]:

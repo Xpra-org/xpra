@@ -8,7 +8,7 @@ import os
 import re
 from time import monotonic
 from collections import deque
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Callable
 from gi.repository import GLib
 
 from xpra.os_util import POSIX
@@ -123,7 +123,7 @@ class NetworkState(StubClientMixin):
         except AttributeError:
             coptions = {}
         log("get_caps() device_info=%s, connection options=%s", device_info, coptions)
-        def device_value(attr, conv=str, default_value=""):
+        def device_value(attr:str, conv:Callable=str, default_value:Any=""):
             #first try an env var:
             v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
             #next try device options (ie: from connection URI)

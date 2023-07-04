@@ -48,17 +48,17 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     if not ssh_fail_cb:
         ssh_fail_cb = connect_failed
     sshpass_command = None
+    cmd = list(display_desc["full_ssh"])
+    kwargs = {}
+    env = display_desc.get("env")
+    if env is None:
+        env = get_saved_env()
+    if display_desc.get("is_putty"):
+        # special env used by plink:
+        env = os.environ.copy()
+        env["PLINK_PROTOCOL"] = "ssh"
+    kwargs["stderr"] = sys.stderr
     try:
-        cmd = list(display_desc["full_ssh"])
-        kwargs = {}
-        env = display_desc.get("env")
-        if env is None:
-            env = get_saved_env()
-        if display_desc.get("is_putty"):
-            #special env used by plink:
-            env = os.environ.copy()
-            env["PLINK_PROTOCOL"] = "ssh"
-        kwargs["stderr"] = sys.stderr
         if WIN32:
             from subprocess import (
                 CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW,  # @UnresolvedImport

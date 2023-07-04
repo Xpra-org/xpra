@@ -143,7 +143,6 @@ WTSFreeMemory.restype = BOOL
 WTSEnumerateSessionsA = wtsapi32.WTSEnumerateSessionsA
 WTSEnumerateSessionsA.restype = BOOL
 WTSEnumerateSessionsA.argtypes = [HANDLE, DWORD, DWORD, PPWTS_SESSION_INFOA, PDWORD]
-WTS_CURRENT_SERVER_HANDLE = 0
 WTSEnumerateProcessesExA = wtsapi32.WTSEnumerateProcessesExA
 WTSEnumerateProcessesExA.restype = BOOL
 WTSEnumerateProcessesExA.argtypes = [HANDLE, PDWORD, DWORD, POINTER(LPSTR), PDWORD]

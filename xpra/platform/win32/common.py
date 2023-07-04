@@ -369,8 +369,6 @@ EnumWindowsProc = WINFUNCTYPE(BOOL, HWND, LPARAM)
 EnumWindows = user32.EnumWindows
 EnumWindows.argtypes = [EnumWindowsProc, LPARAM]
 IsWindowVisible = user32.IsWindowVisible
-GetWindowTextLengthW = user32.GetWindowTextLengthW
-GetWindowTextW = user32.GetWindowTextW
 GetWindowThreadProcessId = user32.GetWindowThreadProcessId
 GetWindowThreadProcessId.argtypes = [HWND, LPDWORD]
 GetWindowThreadProcessId.restype = DWORD
@@ -622,7 +620,6 @@ GetSystemPaletteEntries.restype = UINT
 GetStockObject = gdi32.GetStockObject
 GetStockObject.restype = HGDIOBJ
 SetPixelV = gdi32.SetPixelV
-DeleteDC = gdi32.DeleteDC
 CreateDIBSection = gdi32.CreateDIBSection
 CreateDIBSection.restype = HBITMAP
 CreateDIBSection.argtypes = [HANDLE, POINTER(BITMAPV5HEADER), UINT, POINTER(c_void_p), HANDLE, DWORD]
@@ -723,7 +720,6 @@ IID = GUID
 REFIID = POINTER(IID)
 
 
-ERROR_BROKEN_PIPE = 109
 ERROR_PIPE_NOT_CONNECTED = 233
 ERROR_MORE_DATA = 234
 ERROR_BROKEN_PIPE = 109

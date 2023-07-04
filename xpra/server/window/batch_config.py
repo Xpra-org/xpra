@@ -27,10 +27,10 @@ MAX_VREFRESH : int = envint("XPRA_MAX_VREFRESH", 250)
 log = Logger("damage")
 
 def ival(key, default:int, minv:Optional[int]=0, maxv:Optional[int]=None) -> int:
+    v = os.environ.get(f"XPRA_BATCH_{key}")
+    if v is None:
+        return default
     try:
-        v = os.environ.get(f"XPRA_BATCH_{key}")
-        if v is None:
-            return default
         iv = int(v)
         if minv is not None and iv<minv:
             log.warn("value for %s is too small: %s (minimum is %s)", key, iv, minv)
@@ -150,4 +150,4 @@ class DamageBatchConfig:
         return c
 
     def __repr__(self):
-        return  "DamageBatchConfig(%i)" % (self.wid)
+        return f"DamageBatchConfig({self.wid})"

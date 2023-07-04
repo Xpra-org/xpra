@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Dict, Any, Tuple, List, Callable
+from typing import Dict, Any, Tuple, List, Callable, Union, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
@@ -83,7 +83,7 @@ def load_video_decoders():
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks:List[Callable], success=True, message=""):
+def fire_paint_callbacks(callbacks:Iterable[Callable], success:Union[int,bool]=True, message=""):
     for x in callbacks:
         try:
             x(success, message)
@@ -99,11 +99,26 @@ def verify_checksum(img_data, options):
     chksum = options.get("z.sha256")
     if chksum:
         h = hashlib.sha256(img_data)
-    if h:
         hd = h.hexdigest()
         if chksum!=hd:
             raise ValueError("pixel data failed compressed chksum integrity check:"+
-                             f" expected {chksum} but got {hd}")
+                                 f" expected {chksum} but got {hd}")
+
+
+def rgba_text(text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
+    try:
+        from PIL import Image, ImageDraw  #@UnresolvedImport pylint: disable=import-outside-toplevel
+    except ImportError:
+        log("rgba_text(..)", exc_info=True)
+        if first_time("pillow-text-overlay"):
+            log.warn("Warning: cannot show text overlay without python pillow")
+        return None
+    rgb_format = "RGBA"
+    img = Image.new(rgb_format, (width, height), color=bg)
+    draw = ImageDraw.Draw(img)
+    font = load_PIL_font()
+    draw.text((x, y), text, "blue", font=font)
+    return img.tobytes("raw", rgb_format)
 
 
 class WindowBackingBase:
@@ -204,7 +219,7 @@ class WindowBackingBase:
             text = f"{self.fps_value} fps"
             width, height = 64, 32
             self.fps_buffer_size = (width, height)
-            pixels = self.rgba_text(text, width, height)
+            pixels = rgba_text(text, width, height)
             if pixels:
                 self.update_fps_buffer(width, height, pixels)
 
@@ -239,21 +254,6 @@ class WindowBackingBase:
         #or if there was an event less than N seconds ago:
         N = 4
         return monotonic()-last_fps_event<N
-
-    def rgba_text(self, text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
-        try:
-            from PIL import Image, ImageDraw  #@UnresolvedImport pylint: disable=import-outside-toplevel
-        except ImportError:
-            log("rgba_text(..)", exc_info=True)
-            if first_time("pillow-text-overlay"):
-                log.warn("Warning: cannot show text overlay without python pillow")
-            return None
-        rgb_format = "RGBA"
-        img = Image.new(rgb_format, (width, height), color=bg)
-        draw = ImageDraw.Draw(img)
-        font = load_PIL_font()
-        draw.text((x, y), text, "blue", font=font)
-        return img.tobytes("raw", rgb_format)
 
     def cancel_fps_refresh(self) -> None:
         frt = self.fps_refresh_timer
@@ -604,7 +604,7 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def do_paint_rgb(self, rgb_format, img_data,
+    def do_paint_rgb(self, rgb_format:str, img_data,
                      x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int,
                      options, callbacks):
         """ must be called from the UI thread
@@ -612,6 +612,12 @@ class WindowBackingBase:
             the actual paint code is in _do_paint_rgb[24|32]
         """
         x, y = self.gravity_adjust(x, y, options)
+        if rgb_format == "r210":
+            bpp = 30
+        elif rgb_format == "BGR565":
+            bpp = 16
+        else:
+            bpp = len(rgb_format) * 8  # ie: "BGRA" -> 32
         try:
             if not options.boolget("paint", True):
                 fire_paint_callbacks(callbacks)
@@ -619,12 +625,6 @@ class WindowBackingBase:
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
-            if rgb_format=="r210":
-                bpp = 30
-            elif rgb_format=="BGR565":
-                bpp = 16
-            else:
-                bpp = len(rgb_format)*8     #ie: "BGRA" -> 32
             if bpp==16:
                 paint_fn = self._do_paint_rgb16
             elif bpp==24:
@@ -716,7 +716,8 @@ class WindowBackingBase:
                         (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
                          dst_width, dst_height, CSC_OPTIONS))
 
-    def validate_csc_size(self, spec, src_width:int, src_height:int, dst_width:int, dst_height:int):
+    @staticmethod
+    def validate_csc_size(spec, src_width:int, src_height:int, dst_width:int, dst_height:int):
         if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
             return "scaling not supported"
         if src_width<spec.min_w:
@@ -833,7 +834,7 @@ class WindowBackingBase:
             #(which generally means that we downscaled via YUV422P or lower)
             #or when upscaling the video:
             q = options.intget("quality", 50)
-            csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
+            csc_speed = min(100, 100-q, round(100.0 * (enc_width*enc_height) / (width*height)))
             cd = self.make_csc(enc_width, enc_height, pixel_format,
                                            width, height, target_rgb_formats, csc_speed)
             videolog("do_video_paint new csc decoder: %s", cd)

@@ -63,11 +63,11 @@ class Authenticator(FileAuthenticatorBase):
             try:
                 v = parse_auth_line(line)
                 if v:
-                    username, password, uid, gid, displays, env_options, session_options = v
+                    username = v[0]
                     if username in auth_data:
                         log.error(f"Error: duplicate entry for username {username!r} in {self.password_filename!r}")
                     else:
-                        auth_data[username] = password, uid, gid, displays, env_options, session_options
+                        auth_data[username] = v
             except Exception as e:
                 log("parsing error", exc_info=True)
                 log.error(f"Error parsing password file {self.password_filename!r} at line {i}:")
@@ -106,7 +106,7 @@ class Authenticator(FileAuthenticatorBase):
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return False
         log("authenticate: auth-info(%s)=%s", self.username, entry)
-        fpassword, uid, gid, displays, env_options, session_options = entry
+        fpassword, uid, gid, displays, env_options, session_options = entry[1:]
         log("multifile authenticate_hmac password='%r', hex(salt)=%s", fpassword, hexstr(salt))
         if not verify_digest(self.digest, fpassword, salt, challenge_response):
             log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)

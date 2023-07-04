@@ -145,7 +145,7 @@ def parse_padding_colors(colors_str:str) -> Tuple[int,int,int]:
 PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS"))
 
 #window types we map to POPUP rather than TOPLEVEL
-POPUP_TYPE_HINTS : Set[str] = set((
+POPUP_TYPE_HINTS : Set[str] = {
                     #"DIALOG",
                     #"MENU",
                     #"TOOLBAR",
@@ -158,10 +158,10 @@ POPUP_TYPE_HINTS : Set[str] = set((
                     #"TOOLTIP",
                     #"NOTIFICATION",
                     #"COMBO",
-                    #"DND"
-                    ))
+                    #"DND",
+                    }
 #window types for which we skip window decorations (title bar)
-UNDECORATED_TYPE_HINTS = set((
+UNDECORATED_TYPE_HINTS : Set[str] = {
                     #"DIALOG",
                     "MENU",
                     #"TOOLBAR",
@@ -175,7 +175,20 @@ UNDECORATED_TYPE_HINTS = set((
                     "TOOLTIP",
                     "NOTIFICATION",
                     "COMBO",
-                    "DND"))
+                    "DND",
+                    }
+
+GDK_MOVERESIZE_MAP = dict((int(d), we) for d, we in {
+    MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
+    MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
+    MoveResize.SIZE_TOPRIGHT: Gdk.WindowEdge.NORTH_EAST,
+    MoveResize.SIZE_RIGHT: Gdk.WindowEdge.EAST,
+    MoveResize.SIZE_BOTTOMRIGHT: Gdk.WindowEdge.SOUTH_EAST,
+    MoveResize.SIZE_BOTTOM: Gdk.WindowEdge.SOUTH,
+    MoveResize.SIZE_BOTTOMLEFT: Gdk.WindowEdge.SOUTH_WEST,
+    MoveResize.SIZE_LEFT: Gdk.WindowEdge.WEST,
+    # MOVERESIZE_SIZE_KEYBOARD,
+}.items())
 
 GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.UP       : 4,
@@ -703,7 +716,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #the window is not realized yet, and it may take a while for the window manager
             #to set the frame-extents property anyway
             wfs = self._client.get_window_frame_sizes()
-            dx, dy = 0, 0
             if wfs:
                 geomlog("setup_window() window frame sizes=%s", wfs)
                 v = wfs.get("offset")
@@ -1131,24 +1143,25 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                         X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
         self.when_realized("shape", do_set_shape)
 
+    def lazy_scale_shape(self, rectangles) -> List:
+        # scale the rectangles without a bitmap...
+        # results aren't so good! (but better than nothing?)
+        return [self.srect(*x) for x in rectangles]
+
     def scale_shape_rectangles(self, kind_name, rectangles):
-        lazy_shape = LAZY_SHAPE or len(rectangles)<2
-        if not lazy_shape:
-            try:
-                from PIL import Image, ImageDraw        #@UnresolvedImport
-            except ImportError:
-                lazy_shape = True
-        if lazy_shape:
-            #scale the rectangles without a bitmap...
-            #results aren't so good! (but better than nothing?)
-            return [self.srect(*x) for x in rectangles]
+        if LAZY_SHAPE or len(rectangles)<2:
+            return self.lazy_scale_shape(rectangles)
+        try:
+            from PIL import Image, ImageDraw        #@UnresolvedImport
+        except ImportError:
+            return self.lazy_scale_shape(rectangles)
         ww, wh = self._size
         sw, sh = self.cp(ww, wh)
         img = Image.new('1', (sw, sh), color=0)
         shapelog("drawing %s on bitmap(%s,%s)=%s", kind_name, sw, sh, img)
         d = ImageDraw.Draw(img)
         for x,y,w,h in rectangles:
-            d.rectangle([x, y, x+w, y+h], fill=1)
+            d.rectangle((x, y, x+w, y+h), fill=1)
         shapelog("drawing complete")
         img = img.resize((ww, wh), resample=Image.BICUBIC)
         shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
@@ -1674,7 +1687,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay(None)
 
-    def _button_resolve(self, button) -> None:
+    def _button_resolve(self, button:int) -> int:
         if WIN32 and button in (4, 5):
             # On Windows "X" buttons (the extra buttons sometimes found on the
             # side of the mouse) are numbered 4 and 5, as there is a different
@@ -1791,6 +1804,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not mrd:
             return
         move, resize = mrd
+        x = y = w = h = 0
         if move:
             x, y = int(move[0]), int(move[1])
         if resize:
@@ -1798,7 +1812,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._client.readonly:
                 #change size-constraints first,
                 #so the resize can be honoured:
-                sc = self._force_size_constraint(w, h)
+                sc = typedict(self._force_size_constraint(w, h))
                 self._metadata.update(sc)
                 self.set_metadata(sc)
         if move and resize:
@@ -1829,17 +1843,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
                 self.begin_move_drag(button, x, y, 0)
             else:
-                edge = {
-                    MoveResize.SIZE_TOPLEFT     : Gdk.WindowEdge.NORTH_WEST,
-                    MoveResize.SIZE_TOP         : Gdk.WindowEdge.NORTH,
-                    MoveResize.SIZE_TOPRIGHT    : Gdk.WindowEdge.NORTH_EAST,
-                    MoveResize.SIZE_RIGHT       : Gdk.WindowEdge.EAST,
-                    MoveResize.SIZE_BOTTOMRIGHT : Gdk.WindowEdge.SOUTH_EAST,
-                    MoveResize.SIZE_BOTTOM      : Gdk.WindowEdge.SOUTH,
-                    MoveResize.SIZE_BOTTOMLEFT  : Gdk.WindowEdge.SOUTH_WEST,
-                    MoveResize.SIZE_LEFT        : Gdk.WindowEdge.WEST,
-                    #MOVERESIZE_SIZE_KEYBOARD,
-                    }.get(direction)
+                edge = GDK_MOVERESIZE_MAP.get(direction)
                 geomlog("edge(%s)=%s", MOVERESIZE_DIRECTION_STRING.get(direction), edge)
                 if direction is not None:
                     etime = Gtk.get_current_event_time()
@@ -1888,13 +1892,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         s = b.size
         ww, wh = self.get_size()
-        borders = []
-        #window is wide enough, add borders on the side:
-        borders.append((0, 0, s, wh))           #left
-        borders.append((ww-s, 0, s, wh))        #right
-        #window is tall enough, add borders on top and bottom:
-        borders.append((0, 0, ww, s))           #top
-        borders.append((0, wh-s, ww, s))        #bottom
+        borders = (
+            # window is wide enough, add borders on the side:
+            (0, 0, s, wh),           #left
+            (ww-s, 0, s, wh),        #right
+            # window is tall enough, add borders on top and bottom:
+            (0, 0, ww, s),           #top
+            (0, wh-s, ww, s),        #bottom
+        )
         for x, y, w, h in borders:
             if w<=0 or h<=0:
                 continue
@@ -2322,7 +2327,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return True
 
 
-    def get_mouse_position(self) -> None:
+    def get_mouse_position(self) -> Tuple[int,int]:
         #this method is used on some platforms
         #to get the pointer position for events that don't include it
         #(ie: wheel events)
@@ -2353,7 +2358,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         data = self._offset_pointer(x, y)
         if self._client.server_pointer_relative:
             data = list(data) + list(self.cp(rx, ry))
-        return data
+        return tuple(data)
 
     def _pointer_modifiers(self, event) -> Tuple[Tuple[int,int,int,int],List[str],List[int]]:
         pointer_data = self.get_pointer_data(event)

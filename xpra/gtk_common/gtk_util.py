@@ -629,7 +629,7 @@ def get_icon_pixbuf(icon_name):
     return None
 
 
-def imagebutton(title, icon=None, tooltip=None, clicked_callback=None, icon_size=32,
+def imagebutton(title, icon=None, tooltip="", clicked_callback:Optional[Callable]=None, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font=None) -> Gtk.Button:
     button = Gtk.Button(title)
     settings = button.get_settings()

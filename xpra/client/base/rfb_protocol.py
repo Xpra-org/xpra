@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import struct
 from threading import RLock
+from typing import Dict, Callable
 
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import (
@@ -27,7 +28,7 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles = 0
         self.position = 0, 0
         #translate xpra packets into rfb packets:
-        self._rfb_converters = {
+        self._rfb_converters : Dict[str,Callable] = {
             "pointer-position"  : self.send_pointer_position,
             "button-action"     : self.send_button_action,
             "key-action"        : self.send_key_action,

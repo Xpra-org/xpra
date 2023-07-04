@@ -48,6 +48,8 @@ class Capture(Pipeline):
         self.frames : int = 0
         self.framerate : int  = 10
         self.image : Queue[ImageWrapper] = Queue(maxsize=1)
+        self.sink = None
+        self.extra_client_info = {}
         self.create_pipeline(element)
         assert width>0 and height>0
 
@@ -152,13 +154,13 @@ class CaptureAndEncode(Capture):
             "speed" : 100,
             "quality" : 100,
             })
-        self.profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
-        eopts = get_video_encoder_options(encoder, self.profile, options)
+        profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
+        eopts = get_video_encoder_options(encoder, profile, options)
         vcaps = get_video_encoder_caps(encoder)
         self.extra_client_info = vcaps.copy()
         if self.profile:
-            vcaps["profile"] = self.profile
-            self.extra_client_info["profile"] = self.profile
+            vcaps["profile"] = profile
+            self.extra_client_info["profile"] = profile
         gst_encoding = get_gst_encoding(encoding)  #ie: "hevc" -> "h265"
         elements = [
             capture_element,   #ie: ximagesrc or pipewiresrc

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,6 +11,7 @@ import platform
 from time import monotonic
 from collections import deque
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
+from typing import Callable
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
@@ -1024,7 +1025,7 @@ class SessionInfo(Gtk.Window):
                 len(labels), len(values), labels, values)
             for i, l in enumerate(labels):
                 l.set_text(str(values[i]))
-        def setlabels(labels, values, rounding=int):
+        def setlabels(labels, values, rounding:Callable=int):
             if not values:
                 return
             avg = sum(values)/len(values)
@@ -1158,14 +1159,15 @@ class SessionInfo(Gtk.Window):
         h = min(maxh-pad//ngraphs, max(H, (h-bh-pad)//ngraphs, (rect.height-bh-pad)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
+        def unit(scale):
+            if scale == 1:
+                return ""
+            unit, value = to_std_unit(scale)
+            if value == 1:
+                return str(unit)
+            return "x%s%s" % (int(value), unit)
+
         if self.net_in_bitcount and self.net_out_bitcount:
-            def unit(scale):
-                if scale==1:
-                    return ""
-                unit, value = to_std_unit(scale)
-                if value==1:
-                    return str(unit)
-                return "x%s%s" % (int(value), unit)
             net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(self.net_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(self.net_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             if SHOW_RECV:

@@ -6,7 +6,7 @@
 import socket
 import ipaddress
 from queue import Queue
-from typing import Dict, Callable, Optional, Union, cast
+from typing import Dict, Callable, Optional, Union, cast, Tuple
 
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
@@ -151,6 +151,47 @@ class WebSocketClient(QuicConnectionProtocol):
         websocket.http_event_received(event)
 
 
+def create_local_socket(family=socket.AF_INET):
+    if family==socket.AF_INET6:
+        local_host = "::"
+    else:
+        local_host = "0.0.0.0"
+    local_port = 0
+    sock = create_udp_socket(local_host, local_port, family)
+    addr = (local_host, local_port)
+    log(f"create_udp_socket({pretty_socket(addr)}, {family})={sock}")
+    return sock, addr
+
+async def get_address_options(host:str, port:int) -> Tuple:
+    if IPV6:
+        family = socket.AF_UNSPEC
+        family_options = (socket.AF_INET, socket.AF_INET6)
+    else:
+        family = socket.AF_INET
+        family_options = (socket.AF_INET, )
+    try:
+        tl = get_threaded_loop()
+        infos = await tl.loop.getaddrinfo(host, port, family=family, type=socket.SOCK_DGRAM)
+        log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)={infos}")
+    except Exception as e:
+        log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)", exc_info=True)
+        raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
+    if PREFER_IPV6 and not any(addr_info[0]==socket.AF_INET6 for addr_info in infos):
+        #no ipv6 returned, cook one up:
+        ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0]==socket.AF_INET)
+        #ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
+        if ipv4_infos:
+            ipv4 = ipv4_infos[0]
+            addr = ipv4[4]          #ie: ('192.168.0.114', 10000)
+            if len(addr)==2:
+                addr = ("::ffff:" + addr[0], addr[1], 0, 0)
+                infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
+                log(f"added IPv6 option: {infos[0]}")
+    #ensure only the family_options we want are included,
+    #(only really needed for AF_UNSPEC)
+    return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
+
+
 def quic_connect(host : str, port : int, path : str,
                  ssl_cert : str, ssl_key : str, ssl_key_password : str,
                  ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
@@ -177,51 +218,12 @@ def quic_connect(host : str, port : int, path : str,
     #configuration.quic_logger = QuicFileLogger(args.quic_log)
     #configuration.secrets_log_file = open(args.secrets_log, "a")
 
-    def create_local_socket(family=socket.AF_INET):
-        if family==socket.AF_INET6:
-            local_host = "::"
-        else:
-            local_host = "0.0.0.0"
-        local_port = 0
-        sock = create_udp_socket(local_host, local_port, family)
-        addr = (local_host, local_port)
-        log(f"create_udp_socket({pretty_socket(addr)}, {family})={sock}")
-        return sock, addr
-    tl = get_threaded_loop()
-
     def create_protocol():
         connection = QuicConnection(configuration=configuration)
         return WebSocketClient(connection)
 
-    async def get_address_options():
-        if IPV6:
-            family = socket.AF_UNSPEC
-            family_options = (socket.AF_INET, socket.AF_INET6)
-        else:
-            family = socket.AF_INET
-            family_options = (socket.AF_INET, )
-        try:
-            infos = await tl.loop.getaddrinfo(host, port, family=family, type=socket.SOCK_DGRAM)
-            log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)={infos}")
-        except Exception as e:
-            log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)={infos}", exc_info=True)
-            raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
-        if PREFER_IPV6 and not any(addr_info[0]==socket.AF_INET6 for addr_info in infos):
-            #no ipv6 returned, cook one up:
-            ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0]==socket.AF_INET)
-            #ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
-            if ipv4_infos:
-                ipv4 = ipv4_infos[0]
-                addr = ipv4[4]          #ie: ('192.168.0.114', 10000)
-                if len(addr)==2:
-                    addr = ("::ffff:" + addr[0], addr[1], 0, 0)
-                    infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
-                    log(f"added IPv6 option: {infos[0]}")
-        #ensure only the family_options we want are included,
-        #(only really needed for AF_UNSPEC)
-        return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
-
-    addresses = tl.sync(get_address_options)
+    tl = get_threaded_loop()
+    addresses = tl.sync(get_address_options, host, port)
 
     async def connect(addr_info):
         #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
@@ -267,9 +269,9 @@ def quic_connect(host : str, port : int, path : str,
     for address in addresses:
         try:
             return tl.sync(connect, address)
-        except Exception as e:
+        except Exception as ce:
             log("failed to connect:", exc_info=True)
-            estr = str(e) or type(e)
+            estr = str(ce) or type(ce)
             if estr not in errors:
                 errors.append(estr)
     raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: "+csv(errors))

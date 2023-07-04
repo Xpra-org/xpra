@@ -35,9 +35,9 @@ except (ImportError, ValueError):
         gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
         from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
         log("loaded `AppIndicator3`")
-    except ValueError as e:
+    except ValueError as ve:
         log("failed to load `AppIndicator3`", exc_info=True)
-        raise ImportError(f"failed to load `AppIndicator3`: {e}") from None
+        raise ImportError(f"failed to load `AppIndicator3`: {ve}") from None
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 

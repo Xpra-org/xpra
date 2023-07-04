@@ -45,7 +45,7 @@ def get_interface_info(_fd, iface):
     return {}
 
 
-def get_tcp_info(sock):  #pylint: disable=unused-argument
+def get_tcp_info(_sock):  #pylint: disable=unused-argument
     """
     #not implemented yet!
     #the functions below would require administrator privileges:

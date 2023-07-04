@@ -17,7 +17,7 @@ class ZeroconfListener:
     def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
         log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
-        self.browser = None
+        self.browser : Optional[ServiceBrowser] = None
         if not service_type.endswith("local."):
             service_type += "local."
         self.service_type = service_type

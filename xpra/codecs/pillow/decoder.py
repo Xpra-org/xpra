@@ -199,7 +199,7 @@ def selftest(_full=False) -> None:
                     buf = BytesIO(cdata)
                     try:
                         img = PIL.Image.open(buf)
-                        log.warn("Pillow failed to generate an error parsing invalid input")
+                        log.warn(f"Pillow failed to generate an error parsing invalid input: {img}")
                     except Exception as e:
                         log("correctly raised exception for invalid input: %s", e)
                 except Exception as e:

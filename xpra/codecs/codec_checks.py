@@ -470,6 +470,7 @@ def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:st
             })
         e.init_context(encoding, W, H, cs_in, options)
         N = 5
+        data = meta = None
         for i in range(N):
             image = make_test_image(cs_in, W, H)
             v = e.compress_image(image)

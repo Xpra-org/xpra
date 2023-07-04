@@ -132,16 +132,16 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                     #so we can skip calling damage
                     #(this shortcut is only used with nvfbc)
                     return True
-            except TransientCodecException as e:
+            except TransientCodecException as tce:
                 log("refresh()", exc_info=True)
                 log.warn("Warning: transient codec exception:")
-                log.warn(" %s", e)
+                log.warn(" %s", tce)
                 self.recreate_window_models()
                 return False
-            except CodecStateException:
+            except CodecStateException as cse:
                 log("refresh()", exc_info=True)
                 log.warn("Warning: codec state exception:")
-                log.warn(" %s", e)
+                log.warn(" %s", cse)
                 self.recreate_window_models()
                 return False
         self.refresh_windows()

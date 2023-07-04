@@ -1518,7 +1518,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #reset the tray icon,
             #but wait at least N seconds after the last clipboard transfer:
             N = 1
-            delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic())))
+            delay = max(0, round(1000*(self.last_clipboard_notification+N-monotonic())))
             def reset_tray_icon():
                 self.clipboard_notification_timer = 0
                 tray = self.tray

@@ -10,6 +10,7 @@ import traceback
 from time import monotonic
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
+from typing import Dict, Tuple
 
 from xpra.version_util import caps_to_version, full_version_str
 from xpra.util import u, noerr, typedict, std, envint, csv
@@ -95,6 +96,63 @@ def box(stdscr, x, y, w, h, ul, ur, ll, lr):
     stdscr.addch(y, x + w - 1, ur)
     stdscr.addch(y + h - 1, x, ll)
     stdscr.addch(y + h - 1, x + w - 1, lr)
+
+def get_display_id_info(path:str) -> Dict[str,str]:
+    d = {}
+    try:
+        cmd = get_nodock_command()+["id", f"socket://{path}"]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        out, err = proc.communicate()
+        for line in bytestostr(out or err).splitlines():
+            try:
+                k,v = line.split("=", 1)
+                d[k] = v
+            except ValueError:
+                continue
+        return d
+    except Exception as e:
+        d["error"] = str(e)
+    return d
+
+def get_window_info(wi : typedict) -> Tuple[Tuple[str,int],...]:
+    #version info:
+    geom = wi.inttupleget("geometry")
+    g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
+    sc = wi.dictget("size-constraints")
+    if sc:
+        def sc_str(k, v):
+            k = bytestostr(k)
+            if k=="gravity":
+                v = GravityStr(v)
+            return f"{k}={v}"
+        g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
+    line1 = ""
+    pid = wi.intget("pid", 0)
+    if pid:
+        line1 = f"pid {pid}: "
+    title = wi.get("title", "")
+    if not isinstance(title, str):
+        title = u(strtobytes(title))
+    if title:
+        line1 += f' "{title}"'
+    attrs = [
+        x for x in (
+            "above", "below", "bypass-compositor",
+            "focused", "fullscreen",
+            "grabbed", "iconic", "maximized", "modal",
+            "override-redirect", "shaded", "skip-pager",
+            "skip-taskbar", "sticky", "tray",
+            ) if wi.boolget(x)
+        ]
+    if not wi.boolget("shown"):
+        attrs.insert(0, "hidden")
+    wtype = wi.strtupleget("window-type", ("NORMAL",))
+    tinfo = " - ".join(csv(x) for x in (wtype, attrs) if x)
+    info = []
+    if line1:
+        info.append(line1)
+    info += [g_str, tinfo]
+    return tuple((x, WHITE) for x in info if x)
 
 
 class TopClient:
@@ -287,7 +345,7 @@ class TopClient:
             if state==DotXpra.LIVE:
                 valid_path = path
         if valid_path:
-            d = self.get_display_id_info(valid_path)
+            d = get_display_id_info(valid_path)
             name = d.get("session-name")
             uuid = d.get("uuid")
             stype = d.get("session-type")
@@ -316,23 +374,6 @@ class TopClient:
                     except Exception:
                         pass
         return info
-
-    def get_display_id_info(self, path):
-        d = {}
-        try:
-            cmd = get_nodock_command()+["id", f"socket://{path}"]
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-            out, err = proc.communicate()
-            for line in bytestostr(out or err).splitlines():
-                try:
-                    k,v = line.split("=", 1)
-                    d[k] = v
-                except ValueError:
-                    continue
-            return d
-        except Exception as e:
-            d["error"] = str(e)
-        return d
 
 
     def box(self, x, y, w, h, open_top=False, open_bottom=False):
@@ -641,7 +682,7 @@ class TopSessionClient(InfoTimerClient):
             wins = tuple(windows.values())
             nwindows = len(wins)
             for win_no, win in enumerate(wins):
-                wi = self.get_window_info(self.td(win))
+                wi = get_window_info(self.td(win))
                 l = len(wi)
                 if hpos+2+l>height:
                     if hpos<height:
@@ -738,9 +779,11 @@ class TopSessionClient(InfoTimerClient):
         if not minfo:
             return f"{mode} off"
         minfo = self.td(minfo)
-        audio_info = f"{mode}: %s" % (minfo.strget("codec_description") or \
-                                      minfo.strget("codec") or \
-                                      minfo.strget("state", "unknown"))
+        audio_info = f"{mode}: %s" % (
+                minfo.strget("codec_description") or
+                minfo.strget("codec") or
+                minfo.strget("state", "unknown")
+        )
         bitrate = minfo.intget("bitrate")
         if bitrate:
             audio_info += f" {std_unit(bitrate)}bps"
@@ -758,45 +801,6 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
-    def get_window_info(self, wi):
-        #version info:
-        geom = wi.inttupleget("geometry")
-        g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
-        sc = wi.dictget("size-constraints")
-        if sc:
-            def sc_str(k, v):
-                k = bytestostr(k)
-                if k=="gravity":
-                    v = GravityStr(v)
-                return f"{k}={v}"
-            g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
-        line1 = ""
-        pid = wi.intget("pid", 0)
-        if pid:
-            line1 = f"pid {pid}: "
-        title = wi.get("title", "")
-        if not isinstance(title, str):
-            title = u(strtobytes(title))
-        if title:
-            line1 += f' "{title}"'
-        attrs = [
-            x for x in (
-                "above", "below", "bypass-compositor",
-                "focused", "fullscreen",
-                "grabbed", "iconic", "maximized", "modal",
-                "override-redirect", "shaded", "skip-pager",
-                "skip-taskbar", "sticky", "tray",
-                ) if wi.boolget(x)
-            ]
-        if not wi.boolget("shown"):
-            attrs.insert(0, "hidden")
-        wtype = wi.strtupleget("window-type", ("NORMAL",))
-        tinfo = " - ".join(csv(x) for x in (wtype, attrs) if x)
-        info = []
-        if line1:
-            info.append(line1)
-        info += [g_str, tinfo]
-        return tuple((x, WHITE) for x in info if x)
 
     def get_gl_info(self, gli):
         if not gli:

@@ -179,7 +179,7 @@ class _codec_spec:
         from xpra.log import Logger
         log = Logger("encoding")
         cur = self.get_instance_count()
-        if (self.max_instances>0 and cur>=self.max_instances) or cur>=WARN_LIMIT:
+        if 0<self.max_instances<cur or cur>=WARN_LIMIT:
             instances = tuple(self.instances)
             log.warn(f"Warning: already {cur} active instances of {self.codec_class}:")
             try:
@@ -216,7 +216,7 @@ class _codec_spec:
             return 0                        #not possible
         if mi>0 and ic>0:
             #squared slope: 50% utilisation -> value=0.75
-            return max(0, 1.0 - (1.0*ic/mi)**2)
+            return max(0.0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
 

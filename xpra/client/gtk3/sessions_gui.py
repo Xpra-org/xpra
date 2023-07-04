@@ -270,6 +270,9 @@ class SessionsGUI(Gtk.Window):
         #group them by uuid
         d = {}
         session_names = {}
+        address = ""
+        port = 0
+        display = ""
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record
             td = typedict(text)
@@ -292,14 +295,16 @@ class SessionsGUI(Gtk.Window):
         for key, recs in d.items():
             if isinstance(key, tuple):
                 host, display = key
+                uuid = str(display)
+                title = f"{host} : {display}"
             else:
-                uuid = key
-                host, platform, dtype = None, sys.platform, None
+                uuid = str(key)
                 #try to find a valid host name:
                 hosts = [rec[5] for rec in recs if not rec[5].startswith("local")]
                 if not hosts:
                     hosts = [rec[5] for rec in recs]
                 host = hosts[0]
+                title = str(host)
             platform, dtype = None, None
             for rec in recs:
                 td = typedict(rec[-1])
@@ -307,9 +312,6 @@ class SessionsGUI(Gtk.Window):
                     platform = td.strget("platform", "")
                 if not dtype:
                     dtype = td.strget("type", "")
-            title = uuid
-            if display:
-                title = display
             label = l(title)
             if uuid!=title:
                 label.set_tooltip_text(uuid)
@@ -327,7 +329,7 @@ class SessionsGUI(Gtk.Window):
             tb.add_row(l(host), label, l(session_name), pwidget, l(dtype), w, c, b)
         self.table.show_all()
 
-    def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
+    def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str, address, port:int, text) -> str:
         dstr = ""
         tt = typedict(text)
         display = tt.strget("display", "")
@@ -357,8 +359,9 @@ class SessionsGUI(Gtk.Window):
                 uri = "%s://%s@%s" % (mode, username, address)
         else:
             uri = "%s://%s" % (mode, address)
-        if port>0 and DEFAULT_PORTS.get(mode, 0)!=port:
-            uri += ":%s" % port
+        if port>0:
+            if DEFAULT_PORTS.get(mode, 0)!=port:
+                uri += ":%s" % port
         if protocol not in ("socket", "namedpipe"):
             uri += "/"
             if dstr:
@@ -409,7 +412,7 @@ class SessionsGUI(Gtk.Window):
         url = url[:url.rfind("/")]
         webbrowser.open_new_tab(url)
 
-    def make_connect_widgets(self, key, recs, address, port, display):
+    def make_connect_widgets(self, key, recs, address, port:int, display):
         d = {}
         proc = self.clients.get(key)
         if proc and proc.poll() is None:

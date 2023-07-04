@@ -60,7 +60,7 @@ class ManagerSelection(GObject.GObject):
         return X11WindowBindings().XGetSelectionOwner(self.atom)
 
     def owned(self) -> bool:
-        "Returns True if someone owns the given selection."
+        """Returns True if someone owns the given selection."""
         return self._owner() != XNone
 
     # If the selection is already owned, then raise AlreadyOwned rather

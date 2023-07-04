@@ -1284,7 +1284,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> in
             dcmd = cmd + [display] + ["--splash=no"]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return 0
-    app = get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode)
+    app = get_client_app(cmdline, error_cb, opts, extra_args, mode)
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
@@ -1364,13 +1364,8 @@ def connect_to_server(app, display_desc:Dict[str,Any], opts) -> None:
     GLib.idle_add(setup_connection)
 
 
-def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode:str):
+def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
     validate_encryption(opts)
-    if mode=="screenshot":
-        if not extra_args:
-            error_cb("invalid number of arguments for screenshot mode")
-        screenshot_filename = extra_args[0]
-        extra_args = extra_args[1:]
 
     request_mode = None
     if mode.startswith("request-"):
@@ -1396,6 +1391,10 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode:str):
     dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
         from xpra.client.base.gobject_client_base import ScreenshotXpraClient
+        if not extra_args:
+            error_cb("invalid number of arguments for screenshot mode")
+        screenshot_filename = extra_args[0]
+        extra_args = extra_args[1:]
         app = ScreenshotXpraClient(opts, screenshot_filename)
     elif mode=="info":
         from xpra.client.base.gobject_client_base import InfoXpraClient
@@ -1488,6 +1487,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
         if opts.encoding=="auto":
             opts.encoding = ""
         if opts.encoding:
+            einfo = ""
             encodings = list(app.get_encodings())+["auto", "stream"]
             err = opts.encoding not in encodings
             ehelp = opts.encoding=="help"
@@ -1541,7 +1541,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                                                 opts.socket_dir, opts.socket_dirs, "",
                                                 "", False,
                                                 opts.mmap_group, opts.socket_permissions,
-                                                get_username(), getuid, getgid)
+                                                get_username(), getuid(), getgid())
             sockets.update(local_sockets)
             listen_cleanup : List[Callable] = []
             socket_cleanup : List[Callable] = []
@@ -1708,7 +1708,7 @@ def run_opengl_probe():
     #log.warn("Warning: OpenGL probe failed: %s", msg)
     return probe_message(), props
 
-def make_client(error_cb, opts):
+def make_client(error_cb:Callable, opts):
     progress_process = None
     if opts.splash is not False:
         progress_process = make_progress_process("Xpra Client v%s" % XPRA_VERSION)
@@ -1899,6 +1899,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         from xpra.scripts.server import do_run_server
     except ImportError:
         error_cb("Xpra server is not installed")
+        sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
 
 def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mode:str) -> Union[int,None]:
@@ -1920,27 +1921,26 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
             error_cb("cannot start-via-proxy: xpra client is not installed")
         return None
     ################################################################################
-    err = None
     try:
         #this will use the client "start-new-session" feature,
         #to start a new session and connect to it at the same time:
         if not args:
             from xpra.platform.features import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
-        app = get_client_app(script_file, cmdline, error_cb, options, args, "request-%s" % mode)
+        app = get_client_app(cmdline, error_cb, options, args, "request-%s" % mode)
         r = do_run_client(app)
         #OK or got a signal:
-        NO_RETRY = [ExitCode.OK] + list(range(128, 128+16))
+        NO_RETRY : List[int] = [int(ExitCode.OK)] + list(range(128, 128+16))
         #TODO: honour "--attach=yes"
         if app.completed_startup:
             #if we had connected to the session,
             #we can ignore more error codes:
-            NO_RETRY += [
+            NO_RETRY += [int(x) for x in (
                 ExitCode.CONNECTION_LOST,
                 ExitCode.REMOTE_ERROR,
                 ExitCode.INTERNAL_ERROR,
                 ExitCode.FILE_TOO_BIG,
-                ]
+            )]
         if r in NO_RETRY:
             return r
         if r==ExitCode.FAILURE:
@@ -2013,6 +2013,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             #ie: "_proxy_start_desktop"
             proxy_command = f"_proxy_start_{mode.replace('-', '_')}"
         params["proxy_command"] = [proxy_command]
+        sns = {}    #will be unused, but this silences a warning
     else:
         #tcp, ssl or vsock:
         sns = {
@@ -2169,15 +2170,17 @@ def stat_display_socket(socket_path:str, timeout=VERIFY_SOCKET_TIMEOUT) -> Dict[
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
         if timeout>0:
+            sock : Optional[socket.socket] = None
             try:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(timeout)
                 sock.connect(socket_path)
-            except OSError as e:
+            except OSError:
                 #warn(f"Error trying to connect to {socket_path!r}: {e}")
                 return {}
             finally:
-                sock.close()
+                if sock:
+                    sock.close()
         return {
             "uid"   : sstat.st_uid,
             "gid"   : sstat.st_gid,
@@ -2529,8 +2532,10 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
 
 def start_server_subprocess(script_file, args, mode, opts,
-                            username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
+                            username="", uid=getuid(), gid=getgid(), env=None, cwd=None):
     log = Logger("server", "exec")
+    if env is None:
+        env = os.environ.copy()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
@@ -2599,6 +2604,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         #cmd.append("--log-file=/tmp/proxy.log")
         preexec_fn = None
         pass_fds = ()
+        r_pipe = w_pipe = 0
         if POSIX:
             preexec_fn = os.setpgrp
             cmd.append("--daemon=yes")
@@ -2616,7 +2622,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log(f"proc={proc}")
         add_process(proc, "server", cmd, ignore=True, forget=True)
-        if POSIX and not OSX and not matching_display:
+        if r_pipe:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd  #pylint: disable=import-outside-toplevel
             buf = read_displayfd(r_pipe, proc=None) #proc daemonizes!
             noerr(os.close, r_pipe)
@@ -2831,7 +2837,6 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> int
                     setup_proxy_ssh_socket(cmdline)
             except OSError:
                 sshlog = Logger("ssh")
-                sshlog = Logger("ssh")
                 sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
@@ -2864,6 +2869,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> int:
                     break
                 time.sleep(0.2)
             #next 5 seconds: actually try to connect
+            final_state = DotXpra.UNKNOWN
             for _ in range(5):
                 final_state = sockdir.get_server_state(sockfile, 1)
                 if final_state is DotXpra.DEAD:
@@ -2919,7 +2925,6 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> int:
 
     display_desc = pick_display(error_cb, opts, extra_args, cmdline)
     app = None
-    e = 1
     try:
         if mode=="stop":
             from xpra.client.base.gobject_client_base import StopXpraClient
@@ -3056,11 +3061,12 @@ def run_mdns_gui(options) -> int:
 
 def run_list_mdns(error_cb, extra_args) -> int:
     no_gtk()
+    mdns_wait = 5
     if len(extra_args)<=1:
         try:
-            MDNS_WAIT = int(extra_args[0])
+            mdns_wait = int(extra_args[0])
         except (IndexError, ValueError):
-            MDNS_WAIT = 5
+            pass
     else:
         error_cb("too many arguments for mode")
     from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
@@ -3128,7 +3134,7 @@ def run_list_mdns(error_cb, extra_args) -> int:
     print("Looking for xpra services via mdns")
     try:
         loop = GLib.MainLoop()
-        GLib.timeout_add(MDNS_WAIT*1000, loop.quit)
+        GLib.timeout_add(mdns_wait*1000, loop.quit)
         loop.run()
     finally:
         for listener in listeners:
@@ -3168,7 +3174,7 @@ def run_clean(opts, args:Iterable[str]) -> int:
             if not os.path.isdir(d):
                 continue
             try:
-                dno = int(x)
+                int(x)
             except ValueError:
                 continue
             else:
@@ -3260,8 +3266,8 @@ def run_clean(opts, args:Iterable[str]) -> int:
             error(f" the session directory {session_dir!r} has not been removed")
             continue
         for x in session_files:
+            pathname = os.path.join(session_dir, x)
             try:
-                pathname = os.path.join(session_dir, x)
                 if x in KNOWN_SERVER_FILES:
                     os.unlink(pathname)
                 else:
@@ -3530,6 +3536,8 @@ def get_x11_display_info(display, sessions_dir=None) -> Dict[str,Any]:
                     if not os.path.exists(session_file_path("server.pid")) and not os.path.exists(session_file_path("socket")):
                         #looks like the server has exited
                         display_info["state"] = "DEAD"
+                    if xvfb_pid:
+                        display_info["pid"] = xvfb_pid
     xauthority = xauthority or os.environ.get("XAUTHORITY", "")
     with OSEnvContext():
         if xauthority:
@@ -3737,6 +3745,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         return
     sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in sockets))))
     counter = 0
+    unknown = []
     while reprobe and counter<timeout:
         time.sleep(1)
         counter += 1

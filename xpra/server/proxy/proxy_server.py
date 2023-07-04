@@ -342,7 +342,6 @@ class ProxyServer(ServerCore):
             nosession("no sessions found")
             return
         sessions = None
-        authenticator = None
         for authenticator in client_proto.authenticators:
             try:
                 auth_sessions = authenticator.get_sessions()
@@ -386,6 +385,7 @@ class ProxyServer(ServerCore):
         else:
             #the auth module recorded the username we authenticate against
             assert client_proto.authenticators
+            username = password = ""
             for authenticator in client_proto.authenticators:
                 username = getattr(authenticator, "username", "")
                 password = authenticator.get_password()
@@ -597,8 +597,8 @@ class ProxyServer(ServerCore):
                 log.warn("Warning: ignoring invalid start override")
                 log.warn(" %s=%s", k, v)
                 continue
+            vt = OPTION_TYPES[k]
             try:
-                vt = OPTION_TYPES[k]
                 if vt==str:
                     v = bytestostr(v)
                 elif vt==bool:

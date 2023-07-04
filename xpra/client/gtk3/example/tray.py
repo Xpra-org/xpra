@@ -87,11 +87,13 @@ class FakeApplication:
         self.send_download_request = None
         self._remote_subcommands = ()
         self._process_encodings = noop
+        classes = [get_native_tray_menu_helper_class()]
         try:
             from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
+            classes.append(GTKTrayMenu)
         except ImportError as e:
             log.warn("failed to load GTK tray menu class: %s", e)
-        for x in (get_native_tray_menu_helper_class(), GTKTrayMenu):
+        for x in classes:
             if x:
                 try:
                     self.menu_helper = x(self)
@@ -99,16 +101,18 @@ class FakeApplication:
                     log.warn("failed to create menu helper %s: %s", x, e)
         assert self.menu_helper
         menu = self.menu_helper.build()
+        tray_classes = list(get_native_tray_classes())
         try:
             from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+            tray_classes.apend(GTKStatusIconTray)
         except ImportError:
-            GTKStatusIconTray = None
-        for x in get_native_tray_classes()+[GTKStatusIconTray]:
+            log("no StatusIcon tray")
+        for x in tray_classes:
             if x:
                 try:
-                    XPRA_APP_ID = 0
+                    xpra_app_id = 0
                     tray_icon_filename = "xpra"
-                    self.tray = x(self, XPRA_APP_ID, menu, "Test System Tray", tray_icon_filename,
+                    self.tray = x(self, xpra_app_id, menu, "Test System Tray", tray_icon_filename,
                                   self.xpra_tray_geometry, self.xpra_tray_click,
                                   self.xpra_tray_mouseover, self.xpra_tray_exit)
                 except Exception as e:

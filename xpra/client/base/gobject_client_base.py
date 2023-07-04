@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -7,6 +7,7 @@
 import os.path
 import sys
 from time import monotonic
+from typing import Dict, Any
 
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
@@ -41,6 +42,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self):
+        self.glib_mainloop = None
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
@@ -55,7 +57,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         return GLib
 
 
-    def install_signal_handlers(self):
+    def install_signal_handlers(self) -> None:
         from xpra.gtk_common.gobject_compat import install_signal_handlers
         install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
 
@@ -67,12 +69,12 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         return protocol
 
 
-    def client_type(self):
+    def client_type(self) -> str:
         #overridden in subclasses!
         return "Python3/GObject"
 
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         XpraClientBase.init_packet_handlers(self)
         def noop(*args):    # pragma: no cover
             log("ignoring packet: %s", args)
@@ -88,28 +90,28 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
             ):
             self._packet_handlers[t] = noop
 
-    def run(self):
+    def run(self) -> int:
         XpraClientBase.run(self)
         self.run_loop()
-        return self.exit_code
+        return self.exit_code or 0
 
-    def run_loop(self):
+    def run_loop(self) -> None:
         self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
 
-    def make_hello(self):
+    def make_hello(self) -> Dict[str,Any]:
         capabilities = XpraClientBase.make_hello(self)
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code=0):
+    def quit(self, exit_code=0) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()
         GLib.timeout_add(50, self.exit_loop)
 
-    def exit_loop(self):
+    def exit_loop(self) -> None:
         self.glib_mainloop.quit()
 
 
@@ -143,16 +145,16 @@ class CommandConnectClient(GObjectXpraClient):
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         log.warn("timeout!")    # pragma: no cover
 
-    def cancel_command_timeout(self):
+    def cancel_command_timeout(self) -> None:
         ct = self.command_timeout
         if ct:
             self.command_timeout = None
             GLib.source_remove(ct)
 
-    def _process_connection_lost(self, packet):
+    def _process_connection_lost(self, packet) -> None:
         log("_process_connection_lost%s", packet)
         #override so we don't log a warning
         #"command clients" are meant to exit quickly by losing the connection
@@ -168,7 +170,7 @@ class CommandConnectClient(GObjectXpraClient):
         else:
             self.quit(ExitCode.OK)
 
-    def server_connection_established(self, caps : typedict):
+    def server_connection_established(self, caps : typedict) -> bool:
         #don't bother parsing the network caps:
         #* it could cause errors if the caps are missing
         #* we don't care about sending anything back after hello
@@ -189,7 +191,7 @@ class SendCommandConnectClient(CommandConnectClient):
         So unlike CommandConnectClient, we do need the network and encryption to be setup.
     """
 
-    def server_connection_established(self, caps):
+    def server_connection_established(self, caps) -> bool:
         assert self.parse_encryption_capabilities(caps), "encryption failure"
         assert self.parse_network_capabilities(caps), "network capabilities failure"
         return super().server_connection_established(caps)
@@ -204,21 +206,21 @@ class HelloRequestClient(SendCommandConnectClient):
         as part of the hello packet.
     """
 
-    def make_hello_base(self):
+    def make_hello_base(self) -> Dict[str,Any]:
         caps = super().make_hello_base()
         caps.update(self.hello_request())
         return caps
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not disconnect us")
 
     def hello_request(self):        # pragma: no cover
         raise NotImplementedError()
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         self.quit(ExitCode.OK)
 
-    def _process_disconnect(self, packet):
+    def _process_disconnect(self, packet) -> None:
         #overridden method so we can avoid printing a warning,
         #we haven't received the hello back from the server
         #but that's fine for a request client
@@ -246,7 +248,7 @@ class ScreenshotXpraClient(CommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
 
-    def _process_screenshot(self, packet):
+    def _process_screenshot(self, packet) -> None:
         (w, h, encoding, _, img_data) = packet[1:6]
         assert bytestostr(encoding)=="png", "expected png screenshot data but got %s" % bytestostr(encoding)
         if not img_data:
@@ -263,7 +265,7 @@ class ScreenshotXpraClient(CommandConnectClient):
             output.flush()
         self.warn_and_quit(ExitCode.OK, f"screenshot {w}x{h} saved to: {self.screenshot_filename!r}")
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
@@ -282,7 +284,7 @@ class InfoXpraClient(CommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         def print_fn(s):
             sys.stdout.write(f"{s}\n")
         if not caps:
@@ -337,7 +339,7 @@ class RequestXpraClient(CommandConnectClient):
         super().__init__(opts)
         self.hello_extra["request"] = request
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         self.quit(ExitCode.OK)
 
 
@@ -361,12 +363,12 @@ class ConnectTestXpraClient(CommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: no server response")
 
-    def _process_connection_lost(self, _packet):
+    def _process_connection_lost(self, _packet) -> None:
         #we should always receive a hello back and call do_command,
         #which sets the correct exit code, landing here is an error:
         self.quit(ExitCode.FAILURE)
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         if caps:
             ctr = caps.strget("connect_test_response")
             log("do_command(..) expected connect test response='%s', got '%s'", self.value, ctr)
@@ -396,18 +398,18 @@ class MonitorXpraClient(SendCommandConnectClient):
         pass
         #self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         log.info("waiting for server events")
 
-    def _process_server_event(self, packet):
+    def _process_server_event(self, packet) -> None:
         log.info(": ".join(bytestostr(x) for x in packet[1:]))
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self._packet_handlers["server-event"] = self._process_server_event
         self._packet_handlers["ping"] = self._process_ping
 
-    def _process_ping(self, packet):
+    def _process_ping(self, packet) -> None:
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
@@ -426,7 +428,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.server_last_info_time = 0
         self.info_timer = 0
 
-    def run(self):
+    def run(self) -> int:
         from xpra.gtk_common.gobject_compat import register_os_signals
         register_os_signals(self.signal_handler, "")
         v = super().run()
@@ -434,28 +436,28 @@ class InfoTimerClient(MonitorXpraClient):
         self.cleanup()
         return v
 
-    def signal_handler(self, signum, *args):
+    def signal_handler(self, signum, *args) -> None:
         self.log("exit_code=%s" % self.exit_code)
         self.log("signal_handler(%s, %s)" % (signum, args,))
         self.quit(128+signum)
         self.log("exit_code=%s" % self.exit_code)
 
-    def log(self, message):
+    def log(self, message) -> None:
         #this method is overridden in top client to use a log file
         log(message)
 
-    def err(self, e):
+    def err(self, e) -> None:
         log.error(str(e))
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_info_timer()
         MonitorXpraClient.cleanup(self)
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         self.send_info_request()
         self.timeout_add(self.REFRESH_RATE*1000, self.send_info_request)
 
-    def send_info_request(self, *categories):
+    def send_info_request(self, *categories) -> bool:
         self.log("send_info_request%s" % (categories,))
         if not self.info_request_pending:
             self.info_request_pending = True
@@ -465,16 +467,16 @@ class InfoTimerClient(MonitorXpraClient):
             self.info_timer = self.timeout_add((self.REFRESH_RATE+2)*1000, self.info_timeout)
         return True
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         MonitorXpraClient.init_packet_handlers(self)
         self.add_packet_handler("info-response", self._process_info_response, False)
 
-    def _process_server_event(self, packet):
+    def _process_server_event(self, packet) -> None:
         self.log("server event: %s" % (packet,))
         self.last_server_event = packet[1:]
         self.update_screen()
 
-    def _process_info_response(self, packet):
+    def _process_info_response(self, packet) -> None:
         self.log("info response: %s" % repr_ellipsized(packet))
         self.cancel_info_timer()
         self.info_request_pending = False
@@ -483,13 +485,13 @@ class InfoTimerClient(MonitorXpraClient):
         #log.info("server_last_info=%s", self.server_last_info)
         self.update_screen()
 
-    def cancel_info_timer(self):
+    def cancel_info_timer(self) -> None:
         it = self.info_timer
         if it:
             self.info_timer = 0
             self.source_remove(it)
 
-    def info_timeout(self):
+    def info_timeout(self) -> bool:
         self.log("info timeout")
         self.update_screen()
         return True
@@ -516,14 +518,14 @@ class ShellXpraClient(SendCommandConnectClient):
         just ignore it.
         """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         siw = self.stdin_io_watch
         if siw:
             self.stdin_io_watch = None
             self.source_remove(siw)
         super().cleanup()
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         if not caps.boolget("shell"):
             msg = "this server does not support the 'shell' subcommand"
             log.error(msg)
@@ -541,7 +543,7 @@ class ShellXpraClient(SendCommandConnectClient):
                                                 self.stdin_ready)
         self.print_prompt()
 
-    def stdin_ready(self, *_args):
+    def stdin_ready(self, *_args) -> bool:
         data = sys.stdin.read()
         #log.warn("stdin=%r", data)
         self.stdin_buffer += data
@@ -560,16 +562,16 @@ class ShellXpraClient(SendCommandConnectClient):
             self.print_prompt()
         return True
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self._packet_handlers["shell-reply"] = self._process_shell_reply
         self._packet_handlers["ping"] = self._process_ping
 
-    def _process_ping(self, packet):
+    def _process_ping(self, packet) -> None:
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
-    def _process_shell_reply(self, packet):
+    def _process_shell_reply(self, packet) -> None:
         fd = int(packet[1])
         message = packet[2]
         if fd==1:
@@ -587,7 +589,7 @@ class ShellXpraClient(SendCommandConnectClient):
             stream.write("\n")
             self.print_prompt()
 
-    def print_prompt(self):
+    def print_prompt(self) -> None:
         sys.stdout.write("> ")
         sys.stdout.flush()
 
@@ -597,17 +599,17 @@ class VersionXpraClient(HelloRequestClient):
         it queries the server for version information and prints it out
     """
 
-    def hello_request(self):
+    def hello_request(self) -> Dict[str,Any]:
         return {
             "request"               : "version",
             "full-version-request"  : True,
             }
 
-    def parse_network_capabilities(self, *_args):
+    def parse_network_capabilities(self, *_args) -> bool:
         #don't bother checking anything - this could generate warnings
         return True
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         v = caps.strget("version")
         if not v:
             self.warn_and_quit(ExitCode.FAILURE, "server did not provide the version information")
@@ -620,13 +622,13 @@ class VersionXpraClient(HelloRequestClient):
 class ControlXpraClient(CommandConnectClient):
     """ Allows us to send commands to a server.
     """
-    def set_command_args(self, command):
+    def set_command_args(self, command) -> None:
         self.command = command
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         cr = caps.tupleget("command_response")
         if cr is None:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support control command")
@@ -639,7 +641,7 @@ class ControlXpraClient(CommandConnectClient):
             return
         self.warn_and_quit(ExitCode.OK, text)
 
-    def make_hello(self):
+    def make_hello(self) -> Dict[str,Any]:
         capabilities = super().make_hello()
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = tuple(self.command)
@@ -682,13 +684,13 @@ class PrintClient(SendCommandConnectClient):
             return
         assert self.file_data, "no data found for '%s'" % self.filename
 
-    def client_type(self):
+    def client_type(self) -> str:
         return "Python/GObject/Print"
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         printing = caps.boolget("printing")
         if not printing:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support printing")
@@ -701,7 +703,7 @@ class PrintClient(SendCommandConnectClient):
         log("print: sending %s as %s for printing", self.filename, blob)
         self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
 
-    def make_hello(self):
+    def make_hello(self) -> Dict[str,Any]:
         capabilities = super().make_hello()
         capabilities.setdefault("wants", []).append("features")
         capabilities["wants_features"] = True   #so we know if printing is supported or not
@@ -715,24 +717,24 @@ class ExitXpraClient(HelloRequestClient):
         but without killing the Xvfb or clients.
     """
 
-    def hello_request(self):
+    def hello_request(self) -> Dict[str,Any]:
         return {
             "request"       : "exit",
             }
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT))
 
 
 class StopXpraClient(HelloRequestClient):
     """ stop a server """
 
-    def hello_request(self):
+    def hello_request(self) -> Dict[str,Any]:
         return {
             "request"       : "stop",
             }
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         if not self.server_client_shutdown:
             log.error("Error: cannot shutdown this server")
             log.error(" the feature is disabled on the server")
@@ -750,12 +752,12 @@ class StopXpraClient(HelloRequestClient):
 class DetachXpraClient(HelloRequestClient):
     """ run the detach subcommand """
 
-    def hello_request(self):
+    def hello_request(self) -> Dict[str,Any]:
         return {
             "request"           : "detach",
             }
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps : typedict) -> None:
         self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response
@@ -763,7 +765,7 @@ class DetachXpraClient(HelloRequestClient):
 class WaitForDisconnectXpraClient(DetachXpraClient):
     """ we just want the connection to close """
 
-    def _process_disconnect(self, _packet):
+    def _process_disconnect(self, _packet) -> None:
         self.quit(ExitCode.OK)
 
 
@@ -773,15 +775,15 @@ class RequestStartClient(HelloRequestClient):
     from xpra.scripts.main import WAIT_SERVER_TIMEOUT
     COMMAND_TIMEOUT = EXTRA_TIMEOUT+WAIT_SERVER_TIMEOUT
 
-    def dots(self):
+    def dots(self) -> bool:
         errwrite(".")
         return not self.connection_established
 
-    def _process_connection_lost(self, packet):
+    def _process_connection_lost(self, packet) -> None:
         errwrite("\n")
         super()._process_connection_lost(packet)
 
-    def hello_request(self):
+    def hello_request(self) -> Dict[str,Any]:
         if first_time("hello-request"):
             #this can be called again if we receive a challenge,
             #but only print this message once:
@@ -793,7 +795,7 @@ class RequestStartClient(HelloRequestClient):
             "connect"                   : False,
             }
 
-    def server_connection_established(self, caps : typedict):
+    def server_connection_established(self, caps : typedict) -> bool:
         #the server should respond with the display chosen
         log("server_connection_established() exit_code=%s", self.exit_code)
         display = caps.strget("display")

@@ -97,7 +97,7 @@ def codec_import_check(name:str, description:str, top_module, class_module, clas
                     for classname in classnames:
                         try:
                             clazz = getattr(ic, classname)
-                        except AttributeError as e:
+                        except AttributeError:
                             raise ImportError(f"cannot find {classname!r} in {ic}") from None
                         log(f"{class_module}.{classname}={clazz}")
 
@@ -162,7 +162,7 @@ def add_codec_version(name:str, top_module, version:str="get_version()", alt_ver
                 log(f" {name} {top_module}.{info}={info()}")
             return v
         if name in codecs:
-            log.warn(f" cannot find %s in {module}", " or ".join(fieldnames))
+            log.warn(f" cannot find %s in {top_module}", " or ".join(fieldnames))
         else:
             log(f" no version information for missing codec {name}")
     except ImportError as e:
@@ -174,10 +174,10 @@ def add_codec_version(name:str, top_module, version:str="get_version()", alt_ver
         log.warn("", exc_info=True)
     return None
 
-def xpra_codec_import(name:str, description:str, top_module, class_module, classname:str):
+def xpra_codec_import(name:str, description:str, top_module, class_module, classnames):
     xpra_top_module = f"xpra.codecs.{top_module}"
     xpra_class_module = f"{xpra_top_module}.{class_module}"
-    if codec_import_check(name, description, xpra_top_module, xpra_class_module, classname):
+    if codec_import_check(name, description, xpra_top_module, xpra_class_module, classnames):
         version_name = name
         if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
             version_name = name[4:]

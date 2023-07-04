@@ -228,6 +228,10 @@ def identify_cards():
                        ):
                     try:
                         fn = getattr(pynvml, fn_name)
+                    except AttributeError:
+                        log(f"{fn_name} not found in {pynvml}")
+                        continue
+                    try:
                         v = fn(handle, *args)
                         if conv:
                             v = conv(v)

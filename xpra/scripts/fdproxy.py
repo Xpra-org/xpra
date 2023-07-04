@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import signal
 import threading
+from typing import Optional, Callable
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool
@@ -33,11 +34,11 @@ class XpraProxy:
     def __repr__(self):
         return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
-    def __init__(self, name, client_conn, server_conn, quit_cb=None):
+    def __init__(self, name, client_conn, server_conn, quit_cb:Optional[Callable]=None):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
-        self._quit_cb = quit_cb or self.do_quit
+        self._quit_cb : Callable = quit_cb or self.do_quit
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop, daemon=True)
         self._to_server = threading.Thread(target=self._to_server_loop, daemon=True)

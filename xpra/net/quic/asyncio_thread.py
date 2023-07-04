@@ -84,22 +84,25 @@ class threaded_asyncio_loop:
 
     def sync(self, async_fn, *args):
         response = Queue()
+
         async def awaitable():
             log("awaitable()")
             try:
-                r = await async_fn(*args)
-                response.put(r)
+                a = await async_fn(*args)
+                response.put(a)
             except InitExit as e:
                 log(f"error calling async function {async_fn} with {args}", exc_info=True)
                 response.put(ExceptionWrapper(InitExit, (e.status, str(e))))
             except Exception as e:
                 log(f"error calling async function {async_fn} with {args}", exc_info=True)
                 response.put(ExceptionWrapper(RuntimeError, (str(e), )))
+
         def tsafe():
-            r = awaitable()
-            log(f"awaitable={r}")
-            f = asyncio.run_coroutine_threadsafe(r, self.loop)
-            log(f"run_coroutine_threadsafe({r}, {self.loop})={f}")
+            a = awaitable()
+            log(f"awaitable={a}")
+            f = asyncio.run_coroutine_threadsafe(a, self.loop)
+            log(f"run_coroutine_threadsafe({a}, {self.loop})={f}")
+
         self.loop.call_soon_threadsafe(tsafe)
         log("sync: waiting for response")
         r = response.get()

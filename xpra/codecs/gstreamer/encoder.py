@@ -60,10 +60,10 @@ def get_output_colorspaces(encoding:str, input_colorspace:str) -> Tuple[str]:
 def ElementEncoderClass(element:str):
     class ElementEncoder(Encoder):
         pass
-    ElementEncoder.encoder_element : str = element
+    ElementEncoder.encoder_element = element
     return ElementEncoder
 
-def make_spec(element:str, encoding:str, cs_in:str, css_out:str, cpu_cost:int=50, gpu_cost:int=50):
+def make_spec(element:str, encoding:str, cs_in:str, css_out:Tuple[str,...], cpu_cost:int=50, gpu_cost:int=50):
     #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     #each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
@@ -215,7 +215,7 @@ class Encoder(VideoPipeline):
             #"nvh264enc" : "main",
             "vp8enc"   : None, #0-4
             "vp9enc"   : None, #0-4
-            }.get(self.encoder_element)
+            }.get(self.encoder_element, "")
         return get_profile(options, self.encoding, self.colorspace, default_profile)
 
     def get_src_format(self) -> str:

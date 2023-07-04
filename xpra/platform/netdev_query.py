@@ -8,7 +8,7 @@ import socket
 def get_interface_info(*_args):
     return {}
 
-def get_tcp_info(sock):  #pylint: disable=unused-argument
+def get_tcp_info(_sock):  #pylint: disable=unused-argument
     return {}
 
 
@@ -32,6 +32,7 @@ def print_address(iface, addr, defs):
             print(f" * {stype}:     {ip}")
             if POSIX:
                 from xpra.net.socket_util import create_tcp_socket
+                sock = None
                 try:
                     sock = create_tcp_socket(ip, 0)
                     sockfd = sock.fileno()
@@ -39,7 +40,8 @@ def print_address(iface, addr, defs):
                     if info:
                         print_nested_dict(info, prefix="    ", lchar="-")
                 finally:
-                    sock.close()
+                    if sock:
+                        sock.close()
 
 def print_iface(iface):
     from xpra.os_util import POSIX

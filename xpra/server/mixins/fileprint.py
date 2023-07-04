@@ -219,8 +219,8 @@ class FilePrintServer(StubServerMixin):
         l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
 
     def _save_print_job(self, filename, file_data) -> None:
+        save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
         try:
-            save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
             with open(save_filename, "wb") as f:
                 f.write(file_data)
             printlog.info("saved print job to: %s", save_filename)

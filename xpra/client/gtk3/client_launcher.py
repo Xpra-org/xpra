@@ -159,8 +159,7 @@ class ApplicationWindow:
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
     def get_connection_modes(self):
-        modes = [MODE_SSH]
-        modes.append(MODE_NESTED_SSH)
+        modes = [MODE_SSH, MODE_NESTED_SSH]
         try:
             import ssl
             assert ssl

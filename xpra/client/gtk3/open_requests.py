@@ -191,7 +191,7 @@ class OpenRequestsWindow:
             for b in hbox.get_children():
                 hbox.remove(b)
             stop_btn = None
-            if position!=None:
+            if position is not None:
                 stop_btn = self.btn("Stop", stop, "close.png")
                 hbox.pack_start(stop_btn)
             pb = Gtk.ProgressBar()
@@ -199,7 +199,7 @@ class OpenRequestsWindow:
             hbox.pack_start(pb)
             hbox.show_all()
             pb.set_size_request(420, 30)
-            if position!=None and total>0:
+            if position is not None and total>0:
                 pb.set_fraction(position/total)
                 pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             self.progress_bars[send_id] = [stop_btn, pb, position, total]

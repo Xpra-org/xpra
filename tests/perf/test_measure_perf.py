@@ -957,8 +957,8 @@ def test_vnc():
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % \
                                         (command_name, encoding, zlibtxt,
                                          compression, jpegtxt, trickle_str(down, up, latency))
-                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, \
-                                          encoding, False, compression, None, False, \
+                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION,
+                                          encoding, False, compression, None, False,
                                           (down,up,latency), x11_test_command, cmd))
     return with_server(config.XVNC_SERVER_START_COMMAND, config.XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 

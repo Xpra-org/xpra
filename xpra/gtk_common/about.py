@@ -61,7 +61,7 @@ def about(on_close=None):
         dialog.set_program_name(APPLICATION_NAME)
     def close(*_args):
         close_about()
-        #the about function may be called as a widget callback
+        #the `about` function may be called as a widget callback
         #so avoid calling the widget as if it was a function!
         if on_close and callable(on_close):
             on_close()

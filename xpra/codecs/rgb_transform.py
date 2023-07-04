@@ -59,6 +59,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         from PIL import Image
     except ImportError:
         log("PIL.Image not found!")
+        Image = None
     else:
         if supports_transparency:
             modes = PIL_conv.get(pixel_format, ())
@@ -75,6 +76,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         if first_time(warning_key):
             log.warn(f"Warning: cannot convert {pixel_format!r} to one of: "+csv(rgb_formats))
         return False
+    assert Image is not None
     input_format, target_format = target_rgb[0]
     start = monotonic()
     w = image.get_width()

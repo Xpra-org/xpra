@@ -22,9 +22,9 @@ class WindowPropertyFilter:
         return window.get_property(self.property_name)
 
     def matches(self, window):
+        w = self.get_window(window)
+        log("get_window(%s)=%s", window, w)
         try:
-            w = self.get_window(window)
-            log("get_window(%s)=%s", window, w)
             v = self.get_window_value(w)
             log("%s.matches(%s) %s(..)=%s", self, w, self.get_window_value, v)
         except Exception:

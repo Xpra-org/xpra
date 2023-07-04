@@ -63,6 +63,8 @@ class TestForm(object):
         return True
 
     def button_press_event(self, _obj, event):
+        # nothing we can do about the "_" prefixed names that Gdk uses
+        # noinspection PyProtectedMember
         if event.type == Gdk.EventType._3BUTTON_PRESS:  #pylint: disable=protected-access
             self.label.set_text("Triple Click!")
         elif event.type == Gdk.EventType._2BUTTON_PRESS:  #pylint: disable=protected-access

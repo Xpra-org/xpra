@@ -132,6 +132,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
             log(" assuming this is at least 1.1 to continue")
             unsafe()
+            gl_major = gl_minor = 0
         else:
             props["opengl"] = gl_major, gl_minor
             MIN_VERSION = (1,1)
@@ -299,9 +300,9 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             from OpenGL.GL import glEnablei
         except ImportError:
             glEnablei = None
+        global GL_ALPHA_SUPPORTED
         if not bool(glEnablei):
             log.warn("OpenGL glEnablei is not available, disabling transparency")
-            global GL_ALPHA_SUPPORTED
             GL_ALPHA_SUPPORTED = False
         props["transparency"] = GL_ALPHA_SUPPORTED
 

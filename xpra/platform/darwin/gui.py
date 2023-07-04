@@ -131,8 +131,8 @@ class OSX_Notifier(NotifierBase):
                 return
         GLib.idle_add(self.do_show_notify, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
 
-    def do_show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon,
-                       summary, body, actions, hints, expire_timeout, icon):
+    def do_show_notify(self, dbus_id, tray, nid:int, app_name, replaces_nid:int, app_icon,
+                       summary:str, body:str, actions, hints, expire_timeout:int, icon):
         notification = NSUserNotification.alloc()
         notification.init()
         notification.setTitle_(summary)
@@ -171,7 +171,7 @@ def get_native_notifier_classes() -> List[Type]:
     notifylog("get_native_notifier_classes()=%s", v)
     return v
 
-def get_native_tray_menu_helper_class() -> Optional[Type]:
+def get_native_tray_menu_helper_class() -> Optional[Callable]:
     if get_OSXApplication():
         from xpra.platform.darwin.osx_menu import getOSXMenuHelper
         return getOSXMenuHelper
@@ -191,7 +191,7 @@ def system_bell(*_args) -> bool:
 def _sizetotuple(s) -> Tuple[int,int]:
     return int(s.width), int(s.height)
 def _recttotuple(r) -> Tuple[int,int,int,int]:
-    return tuple(int(v) for v in (r.origin.x, r.origin.y, r.size.width, r.size.height))
+    return int(r.origin.x), int(r.origin.y), int(r.size.width), int(r.size.height)
 
 def get_double_click_time() -> int:
     try:
@@ -372,7 +372,7 @@ def _call_CG_conv(defs:Tuple[Tuple[str,str,Callable]], argument) -> Dict[str,Any
             log("function %s does not exist", fn_name)
     return info
 
-def get_display_info(did) -> Dict[str,Dict[int,Any]]:
+def get_display_info(did) -> Dict[str,Any]:
     defs = (
             ("height",                  "CGDisplayPixelsHigh",              int),
             ("width",                   "CGDisplayPixelsWide",              int),
@@ -409,7 +409,7 @@ def get_display_info(did) -> Dict[str,Dict[int,Any]]:
 
 def get_displays_info() -> Dict[str,Any]:
     did = CG.CGMainDisplayID()
-    info = {
+    info : Dict[str,Any] = {
             "main" : get_display_info(did),
             }
     err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
@@ -714,8 +714,7 @@ class ClientExtras:
                 enable_focus_workaround()
                 client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
             client.connect("first-ui-received", first_ui_received)
-        swap_keys = opts and opts.swap_keys
-        log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
+        log("ClientExtras.__init__(%s, %s)", client, opts)
         self.client = client
         self.event_loop_started = False
         self.check_display_timer = 0
@@ -723,6 +722,7 @@ class ClientExtras:
         self.shared_app = None
         self.delegate = None
         if opts and client:
+            swap_keys = opts.swap_keys
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
                 log("%s.swap_keys=%s", client.keyboard_helper.keyboard, swap_keys)

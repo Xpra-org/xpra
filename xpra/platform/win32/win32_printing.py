@@ -154,6 +154,7 @@ class GDIPrinterContext:
 			info = cast(self.info2, POINTER(PRINTER_INFO_2))
 			log(" driver=%#s" % info[0].pDriverName)
 
+		devmode = 0
 		size = DWORD(0)
 		GetPrinterA(self.handle, 8, None, 0, pointer(size))
 		if size.value==0:
@@ -178,7 +179,8 @@ class GDIPrinterContext:
 				devmode = cast(info[0].pDevMode, POINTER(DEVMODE))
 				log("PRINTER_INFO_9: devmode=%s" % devmode)
 				log("PRINTER_INFO_9: device name=%s" % devmode[0].dmDeviceName)
-		assert devmode, "failed to query a DEVMODE for %s" % self.printer_name
+		if not devmode:
+			raise RuntimeError(f"failed to query a DEVMODE for {self.printer_name!r}")
 		self.hdc = CreateDCA(None, name, None, devmode)
 		log("CreateDCA(..)=%#x", self.hdc)
 		return self.hdc

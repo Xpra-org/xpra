@@ -91,7 +91,8 @@ class UI_thread_watcher:
         self.alive_callbacks.remove(cb)
 
 
-    def run_callbacks(self, callbacks:List[Callable]) -> None:
+    @staticmethod
+    def run_callbacks(callbacks:List[Callable]) -> None:
         for x in callbacks:
             try:
                 x()

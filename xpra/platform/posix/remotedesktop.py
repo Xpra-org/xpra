@@ -83,7 +83,7 @@ class RemoteDesktop(PortalShadow):
             return
         keyname = net_utf8(keyname)
         keystr = net_utf8(keystr)
-        modifiers = list(net_utf8(x) for x in modifiers)
+        # modifiers = list(net_utf8(x) for x in modifiers)
         self.set_ui_driver(ss)
         keylog(f"key: name={keyname}, keyval={keyval}, keystr={keystr}")
         options = native_to_dbus([], "{sv}")

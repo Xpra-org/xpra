@@ -49,6 +49,7 @@ def get_remote_lib_versions(c : typedict,
 class ServerInfoMixin(StubClientMixin):
 
     def __init__(self):  #pylint: disable=super-init-not-called
+        super().__init__()
         self._remote_protocol = None
         self._remote_machine_id = None
         self._remote_uuid = None

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 import sys
 import time
+from typing import Dict, Optional, Callable
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gtk_util import (
@@ -30,8 +31,17 @@ class BugReport:
     def __init__(self):
         self.checkboxes = {}
         self.server_log = None
+        self.show_about = True
+        self.get_server_info : Optional[Callable] = None
+        self.opengl_info : Dict = {}
+        self.includes : Dict = {}
+        self.window : Optional[Gtk.Window] = None
+        self.description : Optional[Gtk.TextView] = None
+        self.toggles : Tuple = ()
 
-    def init(self, show_about=True, get_server_info=None, opengl_info=None, includes=None):
+    def init(self, show_about:bool=True,
+             get_server_info:Optional[Callable]=None,
+             opengl_info=None, includes=None):
         self.show_about = show_about
         self.get_server_info = get_server_info
         self.opengl_info = opengl_info
@@ -198,16 +208,16 @@ class BugReport:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
-        def btn(label, tooltip, callback, icon_name=None):
-            btn = Gtk.Button(label)
-            btn.set_tooltip_text(tooltip)
-            btn.connect("clicked", callback)
+        def btn(label, tooltip_text, callback, icon_name=None):
+            b = Gtk.Button(label)
+            b.set_tooltip_text(tooltip_text)
+            b.connect("clicked", callback)
             if icon_name:
                 icon = get_icon_pixbuf(icon_name)
                 if icon:
-                    btn.set_image(scaled_image(icon, 24))
-            hbox.pack_start(btn)
-            return btn
+                    b.set_image(scaled_image(icon, 24))
+            hbox.pack_start(b)
+            return b
 
         btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
@@ -256,7 +266,8 @@ class BugReport:
             self.window = None
 
 
-    def run(self):
+    @staticmethod
+    def run():
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
@@ -344,10 +355,12 @@ class BugReport:
                 info.external_attr = 0o644 << 16
                 info.comment = str(tooltip).encode("utf8")
                 if isinstance(s, bytes):
+                    rm : str = ""
                     try:
                         try:
                             import tempfile
                             temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".%s" % dtype, delete=False)
+                            rm = temp.name
                             with temp:
                                 temp.write(s)
                                 temp.flush()
@@ -357,8 +370,8 @@ class BugReport:
                         else:
                             zf.write(temp.name, cfile, zipfile.ZIP_STORED if dtype=="png" else zipfile.ZIP_DEFLATED)
                     finally:
-                        if temp:
-                            os.unlink(temp.name)
+                        if rm:
+                            os.unlink(rm)
                 else:
                     zf.writestr(info, str(s))
         except OSError as e:

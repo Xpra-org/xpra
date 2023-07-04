@@ -561,7 +561,6 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"])
     devices = get_pa_device_options(want_monitor_device, input_or_output)
     log("found %i pulseaudio %s device%s: %s", len(devices), device_type_str, engs(devices), devices)
-    ignore = ()
     if input_or_output is True:
         ignore = IGNORED_INPUT_DEVICES
     elif input_or_output is False:

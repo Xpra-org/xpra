@@ -113,7 +113,7 @@ class FontWindow(Gtk.Window):
     def paint_to_image(self, bw, bh, background, foreground, antialias=ANTIALIAS_NONE):
         img = ImageSurface(FORMAT_RGB24, bw, bh)
         icr = Context(img)
-        self.paint_pattern(icr, 0, 0, antialias, None, background, foreground)
+        self.paint_pattern(icr, 0, 0, antialias, "", background, foreground)
         img.flush()
         return img
 

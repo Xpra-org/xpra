@@ -34,10 +34,10 @@ from xpra.log import Logger
 log = Logger("audio")
 gstlog = Logger("gstreamer")
 
-SINK_SHARED_DEFAULT_ATTRIBUTES = {
+SINK_SHARED_DEFAULT_ATTRIBUTES : Dict[str,Any] = {
     "sync"    : False,
     }
-NON_AUTO_SINK_ATTRIBUTES = {
+NON_AUTO_SINK_ATTRIBUTES : Dict[str,Any] = {
     "async"     : True,
     "qos"       : True,
     }
@@ -234,7 +234,7 @@ class AudioSink(AudioPipeline):
 
     def get_level_range(self, mintime=2, maxtime=10) -> int:
         now = monotonic()
-        filtered = [v for t,v in tuple(self.levels) if (now-t)>=mintime and (now-t)<=maxtime]
+        filtered = [v for t,v in tuple(self.levels) if mintime<=(now-t)<=maxtime]
         if len(filtered)>=10:
             maxl = max(filtered)
             minl = min(filtered)
@@ -388,7 +388,8 @@ class AudioSink(AudioPipeline):
         compress = metadata.get("compress")
         if not compress:
             return data
-        assert compress in ("lz4", )
+        if compress!="lz4":
+            raise ValueError(f"unsupported compresssion {compress!r}")
         v = decompress_by_name(data, compress)
         #log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
         return v

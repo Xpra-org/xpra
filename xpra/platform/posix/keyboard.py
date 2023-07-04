@@ -228,7 +228,6 @@ class Keyboard(KeyboardBase):
         layouts = []
         variant = ""
         options = ""
-        v = None
         if self.keyboard_bindings:
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()

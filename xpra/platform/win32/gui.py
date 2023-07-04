@@ -467,7 +467,7 @@ def apply_maxsize_hints(window, hints):
         else:
             maxw, maxh = workw, workh
     log("apply_maxsize_hints(%s, %s) found min: %sx%s, max: %sx%s", window, hints, minw, minh, maxw, maxh)
-    if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
+    if 0<maxw<32767 or 0<maxh<32767:
         window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
     elif window.win32hooks.max_size:
         #was set, clear it
@@ -956,6 +956,7 @@ def getTaskbar():
     # pylint: disable=import-outside-toplevel
     global TaskbarLib
     if TaskbarLib is None:
+        taskbar_tlb = ""
         try:
             from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init
             taskbar_tlb = find_tlb_file("TaskbarLib.tlb")
@@ -1236,7 +1237,6 @@ class ClientExtras:
         ENDSESSION_CLOSEAPP = 0x1
         ENDSESSION_CRITICAL = 0x40000000
         ENDSESSION_LOGOFF   = 0x80000000
-        reason = None
         if (wParam & ENDSESSION_CLOSEAPP) and wParam:
             reason = "restart manager request"
         elif wParam & ENDSESSION_CRITICAL:

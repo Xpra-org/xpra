@@ -104,11 +104,11 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if target in IMAGE_FORMATS:
             try:
                 data = self.get_image_contents(target)
+                if data:
+                    got_contents(target, 8, data)
+                    return
             except Exception:
                 log.error("Error: failed to copy image from clipboard", exc_info=True)
-            if data:
-                got_contents(target, 8, data)
-                return
         if target in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             text = self.get_clipboard_text()
             got_contents(target, 8, text)
@@ -297,8 +297,6 @@ def main():
             else:
                 log.info(".")
             time.sleep(1)
-        if v==cc:
-            log.info("no clipboard change detected")
 
 
 if __name__ == "__main__":

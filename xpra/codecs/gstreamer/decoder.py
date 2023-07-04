@@ -29,7 +29,7 @@ log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 def get_default_mappings():
     #should always be available:
-    m = {
+    m : Dict[str,Tuple[str,...]] = {
         "vp8"   : ("vp8dec", ),
         "vp9"   : ("vp9dec", ),
         }
@@ -51,7 +51,7 @@ def get_default_mappings():
     return m
 
 
-def get_codecs_options() -> Dict[str,List[str]]:
+def get_codecs_options() -> Dict[str,Tuple[str,...]]:
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS")
     if not dm:
         return get_default_mappings()
@@ -63,7 +63,7 @@ def get_codecs_options() -> Dict[str,List[str]]:
             log.warn(f"Warning: invalid decoder mapping {mapping}")
         else:
             #ie: codec_options["h264"] = ["avdec_h264", "nvh264dec"]
-            codec_options[enc] = elements_str.split(",")
+            codec_options[enc] = tuple(elements_str.split(","))
     return codec_options
 
 def find_codecs(options) -> Dict[str,str]:

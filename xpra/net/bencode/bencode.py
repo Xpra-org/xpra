@@ -86,8 +86,8 @@ def add_decode(c:str, fn:Callable):
 add_decode('l', decode_list)
 add_decode('d', decode_dict)
 add_decode('i', decode_int)
-for c in '0123456789':
-    add_decode(c, decode_string)
+for digit in '0123456789':
+    add_decode(digit, decode_string)
 add_decode('u', decode_unicode)
 
 

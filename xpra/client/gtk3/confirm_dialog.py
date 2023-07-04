@@ -39,7 +39,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(label, font="sans 14", xalign=0):
+        def al(label, font="sans 14", xalign=0.0):
             l = Gtk.Label(label=label)
             l.modify_font(Pango.FontDescription(font))
             if label.startswith("WARNING"):

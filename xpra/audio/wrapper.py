@@ -404,7 +404,7 @@ def start_receiving_audio(codec):
         log.error("Error starting audio sink", exc_info=True)
         return None
 
-def query_audio():
+def query_audio() -> typedict:
     import subprocess
     command = get_full_audio_command()+["_audio_query"]
     _add_debug_args(command)

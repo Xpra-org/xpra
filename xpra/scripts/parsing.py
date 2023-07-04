@@ -13,7 +13,7 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple, Optional, Callable
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, stderr_write
@@ -242,10 +242,9 @@ def parse_remote_display(s:str) -> Dict[str,Any]:
         #(so this is not a display)
         display = ""
         attr_sep = ","
-        parts = ["", s]
-        options_str = parts[1]
+        options_str = s
     else:
-        parts = []
+        attr_sep = ","
     if display is None:
         try:
             assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
@@ -365,7 +364,7 @@ def normalize_display_name(display_name:str) -> str:
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name=False):
+def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Optional[Callable]=None) -> Dict[str,Any]:
     display_name = normalize_display_name(display_name)
     #last chance to find it by name:
     if display_name.find(":")<0 and display_name.find("wayland-")<0:
@@ -397,7 +396,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         "type"          : protocol,
         }
 
-    def add_credentials():
+    def add_credentials() -> None:
         username = parsed.username or opts.username
         if username is not None:
             desc["username"] = username
@@ -409,7 +408,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
             desc["password"] = password
             opts.password = password
 
-    def add_host_port(default_port=DEFAULT_PORT):
+    def add_host_port(default_port=DEFAULT_PORT) -> Tuple[str,int]:
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or default_port
         if port<=0 or port>=65536:
@@ -419,7 +418,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         desc["port"] = port
         return host, port
 
-    def add_path():
+    def add_path() -> None:
         if parsed.path:
             path = parsed.path.lstrip("/")
             if path.find(",")>0:
@@ -432,7 +431,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
                 return
             desc["display"] = path
 
-    def process_query_string(s):
+    def process_query_string(s) -> None:
         r = parse.parse_qs(s)
         for k, v in r.items():
             if k in desc:
@@ -446,7 +445,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         if parsed.fragment:
             desc["fragment"] = parsed.fragment
 
-    def add_query():
+    def add_query() -> None:
         process_query_string(parsed.query)
 
     if display_name.startswith(":") or display_name.startswith("wayland-"):
@@ -594,8 +593,8 @@ def parse_ssh_option(ssh_setting:str) -> List[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
+        from xpra.log import is_debug_enabled, Logger
         try:
-            from xpra.log import is_debug_enabled, Logger
             from xpra.net.ssh.util import nogssapi_context
             with nogssapi_context():
                 import paramiko
@@ -1775,6 +1774,7 @@ When unspecified, all the available codecs are allowed and the first one is used
             #split on "," or "x":
             pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
         except ValueError:
+            pv = ()
             pws_fail()
         if len(pv)!=2:
             pws_fail()

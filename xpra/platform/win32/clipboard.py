@@ -258,10 +258,11 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
     def wnd_proc(self, hwnd, msg, wparam, lparam):
         r = DefWindowProcW(hwnd, msg, wparam, lparam)
-        if msg in CLIPBOARD_EVENTS:
-            owner = GetClipboardOwner()
-            log("clipboard event: %s, current owner: %s",
-                CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
+        if msg not in CLIPBOARD_EVENTS:
+            return r
+        owner = GetClipboardOwner()
+        log("clipboard event: %s, current owner: %s",
+            CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
         if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
             owner = GetClipboardOwner()
             owner_info = get_owner_info(owner, self.window)
@@ -574,7 +575,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         rgb_data = img.tobytes("raw", "BGRA")
         w, h = img.size
         log("set_clipboard_image(%s, %s) image size=%s, BGR buffer=%i bytes",
-            img_format, ellipsizer(data), img.size, len(rgb_data))
+            img_format, ellipsizer(rgb_data), img.size, len(rgb_data))
         header = BITMAPINFOHEADER()
         memset(byref(header), 0, sizeof(BITMAPINFOHEADER ))
         header.biSize       = sizeof(BITMAPINFOHEADER)
@@ -702,8 +703,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return True
         try:
             locked_buf = cast(locked, LPWSTR)
-            r = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
-            if not r:
+            wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
+            if not wlen:
                 self.set_err("failed to convert to wide char")
                 GlobalFree(buf)
                 return True

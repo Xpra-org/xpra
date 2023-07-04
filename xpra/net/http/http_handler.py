@@ -373,7 +373,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             log("request for %s handled using %s", path, script)
             try:
                 code, headers, body = script(path)
-            except Exception as e:
+            except Exception:
                 log.error(f"Error calling script {script}", script, exc_info=True)
                 self.send_error(500, "Server error")
                 return None

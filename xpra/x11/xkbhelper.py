@@ -757,6 +757,7 @@ def map_missing_modifiers(keynames_for_mod):
     xmodmap_changes = []
     for mod, keysyms in keynames_for_mod.items():
         missing = []
+        keysym = ""
         for keysym in keysyms:
             if keysym not in keysyms_to_keycode:
                 missing.append(keysym)

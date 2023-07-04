@@ -18,6 +18,23 @@ WM_S0 = "WM_S0"
 _NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
+
+def get_ewmh_xid() -> int:
+    with xlog:
+        X11Window = X11WindowBindings()
+        root_xid = X11Window.get_root_xid()
+        ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
+        if ewmh_xid:
+            try:
+                with xsync:
+                    X11Window.getGeometry(ewmh_xid)
+                return ewmh_xid
+            except Exception as e:
+                log(f"getGeometry({ewmh_xid:x}) {e}")
+                #invalid
+                ewmh_xid = 0
+    return 0
+
 def get_wm_info() -> Dict[str,Any]:
     with xsync:
         X11Window = X11WindowBindings()
@@ -27,20 +44,10 @@ def get_wm_info() -> Dict[str,Any]:
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-    ewmh_xid = 0
-    with xlog:
-        ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
-        if ewmh_xid:
-            try:
-                with xsync:
-                    X11Window.getGeometry(ewmh_xid)
-            except Exception as e:
-                log(f"getGeometry({ewmh_xid:x}) {e}")
-                #invalid
-                ewmh_xid = 0
-    with xlog:
-        if ewmh_xid:
-            info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
+    ewmh_xid = get_ewmh_xid()
+    if ewmh_xid:
+        info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
+        with xlog:
             wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if not wm_name:
                 wm_name = prop_get(root_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)

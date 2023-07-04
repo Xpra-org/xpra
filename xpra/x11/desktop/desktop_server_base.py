@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Type
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -37,13 +37,13 @@ MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 
-DESKTOPSERVER_BASES = [GObject.GObject]
+DESKTOPSERVER_BASES : List[Type] = [GObject.GObject]
 if server_features.rfb:
     from xpra.server.rfb.rfb_server import RFBServer
     DESKTOPSERVER_BASES.append(RFBServer)
 DESKTOPSERVER_BASES.append(X11ServerBase)
 DESKTOPSERVER_BASES = tuple(DESKTOPSERVER_BASES)
-DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
+DesktopServerBaseClass : Type[X11ServerBase] = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 

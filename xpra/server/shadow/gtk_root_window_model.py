@@ -80,9 +80,10 @@ class GTKImageCapture:
 
 def main(filename) -> int:
     root = get_default_root_window()
-    data = take_png_screenshot(root)[-1]
+    data = take_png_screenshot(root)
+    assert data
     with open(filename, "wb") as f:
-        f.write(data)
+        f.write(data[-1])
     return 0
 
 if __name__ == "__main__":

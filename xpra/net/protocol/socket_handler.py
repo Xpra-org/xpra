@@ -14,7 +14,7 @@ from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread
 from queue import Queue
-from typing import Dict, List, Tuple, Any, ByteString, Callable, Optional
+from typing import Dict, List, Tuple, Any, ByteString, Callable, Optional, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
@@ -105,7 +105,7 @@ class SocketProtocol:
         self._conn = conn
         self._process_packet_cb : Callable = process_packet_cb
         self.make_chunk_header : Callable = self.make_xpra_header
-        self.make_frame_header : Callable = self.noframe_header
+        self.make_frame_header : Callable[[str,Iterable], ByteString] = self.noframe_header
         self._write_queue : Queue[Tuple] = Queue(1)
         self._read_queue : Queue[ByteString] = Queue(20)
         self._pre_read = None
@@ -435,11 +435,13 @@ class SocketProtocol:
                 items.insert(0, frame_header)
         self.raw_write(items, packet_type, start_cb, end_cb, fail_cb, synchronous, more)
 
-    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size) -> ByteString:
+    @staticmethod
+    def make_xpra_header(_packet_type, proto_flags, level, index, payload_size) -> ByteString:
         return pack_header(proto_flags, level, index, payload_size)
 
-    def noframe_header(self, _packet_type, _items):
-        return None
+    @staticmethod
+    def noframe_header(_packet_type, _items) -> ByteString:
+        return b""
 
 
     def start_write_thread(self) -> None:
@@ -681,7 +683,7 @@ class SocketProtocol:
 
     def write_items(self, buf_data, packet_type:str="",
                     start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None,
-                    fail_cb:Optional[Callable]=None, synchronous:int=True, more:bool=False):
+                    fail_cb:Optional[Callable]=None, synchronous:bool=True, more:bool=False):
         conn = self._conn
         if not conn:
             return False
@@ -772,7 +774,6 @@ class SocketProtocol:
         log.error(f"Error: {message}", exc_info=ei)
         if exc:
             log.error(f" {exc}", exc_info=exc_info)
-            exc = None
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False) -> bool:
@@ -856,6 +857,8 @@ class SocketProtocol:
         payload_size = -1
         padding_size = 0
         packet_index = 0
+        protocol_flags = 0
+        data_size = 0
         compression_level = 0
         raw_packets = {}
         PACKET_HEADER_CHAR = ord("P")
@@ -1094,7 +1097,7 @@ class SocketProtocol:
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", bytestostr(packet_type))
                 self._process_packet_cb(self, packet)
-                packet = None
+                del packet
 
     def flush_then_close(self, encoder:Optional[Callable]=None,
                          last_packet=None,

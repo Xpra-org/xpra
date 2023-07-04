@@ -39,6 +39,17 @@ def inet_ton(af, addr):
     return socket.inet_pton(af, addr)   #@UndefinedVariable
 
 
+def txt_rec(text_dict) -> Dict:
+    #prevent zeroconf from mangling our ints into booleans:
+    new_dict = {}
+    for k,v in text_dict.items():
+        if isinstance(v, int):
+            new_dict[k] = str(v)
+        else:
+            new_dict[k] = v
+    return new_dict
+
+
 class ZeroconfPublishers:
     """
     Expose services via python zeroconf
@@ -69,7 +80,7 @@ class ZeroconfPublishers:
                 sn += f"-{len(ports)}"
             try:
                 zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
-            except Exception:
+            except Exception as e:
                 log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
                 log.warn(" %s", e)
             else:
@@ -142,7 +153,7 @@ class ZeroconfPublisher:
             #ie: regname = localhost-2-ssl
             st = service_type+"local."
             regname += "."+st
-            td = self.txt_rec(text_dict or {})
+            td = txt_rec(text_dict or {})
             self.kwargs = {
                 "type_"         : st,       #_xpra._tcp.local.
                 "name"          : regname,
@@ -179,21 +190,11 @@ class ZeroconfPublisher:
             self.zeroconf.unregister_service(self.service)
         self.zeroconf = None
 
-    def txt_rec(self, text_dict) -> Dict:
-        #prevent zeroconf from mangling our ints into booleans:
-        new_dict = {}
-        for k,v in text_dict.items():
-            if isinstance(v, int):
-                new_dict[k] = str(v)
-            else:
-                new_dict[k] = v
-        return new_dict
-
     def update_txt(self, txt) -> None:
         if not hasattr(self.zeroconf, "update_service"):
             log("no update_service with zeroconf version %s", zeroconf_version)
             return
-        props = self.txt_rec(txt)
+        props = txt_rec(txt)
         self.kwargs["properties"] = props
         si = ServiceInfo(**self.kwargs)
         try:

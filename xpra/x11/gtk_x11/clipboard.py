@@ -50,8 +50,8 @@ MAX_DATA_SIZE : int = 4*1024*1024
 
 BLACKLISTED_CLIPBOARD_CLIENTS : List[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
-def parse_translated_targets(v:str) -> Dict[str,str]:
-    trans : Dict[str,str] = {}
+def parse_translated_targets(v:str) -> Dict[str,List[str]]:
+    trans : Dict[str,List[str]] = {}
     #we can't use ";" or "/" as separators
     #because those are used in mime-types
     #and we use "," and ":" ourselves..

@@ -42,6 +42,7 @@ class AnimatedColorWindow(Gtk.Window):
         self.show_all()
         super().present()
 
+    # noinspection PyTypeChecker
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)

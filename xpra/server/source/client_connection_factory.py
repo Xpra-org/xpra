@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Type, List
 
 from xpra.server import server_features
 from xpra.util import merge_dicts, typedict, print_nested_dict
@@ -14,63 +14,72 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-def get_client_connection_class(caps):
+def get_enabled_mixins() -> Tuple[StubSourceMixin,...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
-    CC = [ClientInfoMixin]
+    mixins : List[StubSourceMixin] = [ClientInfoMixin]
     if server_features.notifications:
         from xpra.server.source.notification import NotificationMixin
-        CC.append(NotificationMixin)
+        mixins.append(NotificationMixin)
     if server_features.clipboard:
         from xpra.server.source.clipboard import ClipboardConnection
-        CC.append(ClipboardConnection)
+        mixins.append(ClipboardConnection)
     if server_features.audio:
         from xpra.server.source.audio import AudioMixin
-        CC.append(AudioMixin)
+        mixins.append(AudioMixin)
     if server_features.webcam:
         from xpra.server.source.webcam import WebcamMixin
-        CC.append(WebcamMixin)
+        mixins.append(WebcamMixin)
     if server_features.fileprint:
         from xpra.server.source.fileprint import FilePrintMixin
-        CC.append(FilePrintMixin)
+        mixins.append(FilePrintMixin)
     if server_features.mmap:
         from xpra.server.source.mmap import MMAP_Connection
-        CC.append(MMAP_Connection)
+        mixins.append(MMAP_Connection)
     if server_features.input_devices:
         from xpra.server.source.input import InputMixin
-        CC.append(InputMixin)
+        mixins.append(InputMixin)
     if server_features.dbus:
         from xpra.server.source.dbus import DBUS_Mixin
-        CC.append(DBUS_Mixin)
+        mixins.append(DBUS_Mixin)
     if server_features.network_state:
         from xpra.server.source.networkstate import NetworkStateMixin
-        CC.append(NetworkStateMixin)
+        mixins.append(NetworkStateMixin)
     if server_features.shell:
         from xpra.server.source.shell import ShellMixin
-        CC.append(ShellMixin)
+        mixins.append(ShellMixin)
     if server_features.display:
         from xpra.server.source.display import ClientDisplayMixin
-        CC.append(ClientDisplayMixin)
+        mixins.append(ClientDisplayMixin)
     if server_features.windows:
         from xpra.server.source.windows import WindowsMixin
-        CC.append(WindowsMixin)
+        mixins.append(WindowsMixin)
         #must be after windows mixin so it can assume "self.send_windows" is set
         if server_features.encoding:
             from xpra.server.source.encodings import EncodingsMixin
-            CC.append(EncodingsMixin)
+            mixins.append(EncodingsMixin)
         if server_features.audio and server_features.av_sync:
             from xpra.server.source.avsync import AVSyncMixin
-            CC.append(AVSyncMixin)
+            mixins.append(AVSyncMixin)
     from xpra.server.source.idle_mixin import IdleMixin
-    CC.append(IdleMixin)
-    CC_BASES = []
-    for c in CC:
+    mixins.append(IdleMixin)
+    return tuple(mixins)
+
+
+def get_needed_based_classes(caps:typedict) -> Tuple[Type,...]:
+    from xpra.server.source.client_connection import ClientConnection
+    classes = [ClientConnection]
+    mixins = get_enabled_mixins()
+    for c in mixins:
         r = c.is_needed(caps)
         log("get_client_connection_class(..) %s enabled=%s", c.__name__.split(".")[-1], r)
         if r:
-            CC_BASES.append(c)
-    from xpra.server.source.client_connection import ClientConnection
-    CC_BASES = tuple([ClientConnection]+list(CC_BASES))
+            classes.append(c)
+    return tuple(classes)
+
+def get_client_connection_class(caps):
+
+    CC_BASES = get_needed_based_classes(caps)
     ClientConnectionClass  = type('ClientConnectionClass', CC_BASES, {})
     log("ClientConnectionClass%s", CC_BASES)
 
@@ -82,6 +91,7 @@ def get_client_connection_class(caps):
             self.idle_add = idle_add
             self.timeout_add = timeout_add
             self.source_remove = source_remove
+            from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
                 try:
                     if bc==ClientConnection:

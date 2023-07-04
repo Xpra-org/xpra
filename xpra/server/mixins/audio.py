@@ -46,6 +46,8 @@ class AudioServer(StubServerMixin):
         self.audio_source_plugin = None
         self.supports_speaker = False
         self.supports_microphone = False
+        self.speaker_allowed = False
+        self.microphone_allowed = False
         self.speaker_codecs = ()
         self.microphone_codecs = ()
         self.audio_properties = typedict()

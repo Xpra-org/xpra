@@ -6,6 +6,7 @@
 import os
 import sys
 from ctypes import c_ubyte, c_char, c_uint32
+from typing import Tuple, Optional, Any
 
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
@@ -42,7 +43,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str=""):
+def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, Any, int, Any, str]:
     """
         Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
@@ -101,9 +102,9 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
                 mmap_dir = get_mmap_dir()
                 subs = os.environ.copy()
                 subs.update({
-                    "UID"               : os.getuid(),
-                    "GID"               : os.getgid(),
-                    "PID"               : os.getpid(),
+                    "UID"               : str(os.getuid()),
+                    "GID"               : str(os.getgid()),
+                    "PID"               : str(os.getpid()),
                     })
                 mmap_dir = shellsub(mmap_dir, subs)
                 if mmap_dir and not os.path.exists(mmap_dir):
@@ -125,7 +126,6 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
             #set the group permissions and gid if the mmap-group option is specified
             mmap_group = (mmap_group or "")
             if POSIX and mmap_group and mmap_group not in FALSE_OPTIONS:
-                group_id = None
                 if mmap_group=="SOCKET":
                     group_id = get_socket_group(socket_filename)
                 elif mmap_group.lower()=="auto":
@@ -169,7 +169,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
                 clean_mmap(mmap_filename)
         return rerr()
 
-def clean_mmap(mmap_filename:str):
+def clean_mmap(mmap_filename:str) -> None:
     log("clean_mmap(%s)", mmap_filename)
     if mmap_filename and os.path.exists(mmap_filename):
         try:
@@ -180,7 +180,7 @@ def clean_mmap(mmap_filename:str):
 
 DEFAULT_TOKEN_BYTES : int = 128
 
-def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES):
+def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES) -> None:
     assert count>0
     #write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
@@ -202,42 +202,39 @@ def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
     return v
 
 
-def init_server_mmap(mmap_filename:str, mmap_size:int=0):
+def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Optional[Any],int]:
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
         Returns the mmap object and its size: (mmap, size)
     """
-    if not WIN32:
-        try:
-            f = open(mmap_filename, "r+b")
-        except Exception as e:
-            log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
-            log.estr(e)
-            log.error(" see mmap-group option?")
-            return None, 0
-
     mmap_area = None
     try:
         import mmap
         if not WIN32:
+            try:
+                f = open(mmap_filename, "r+b")
+            except Exception as e:
+                log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
+                log.estr(e)
+                log.error(" see mmap-group option?")
+                return None, 0
             actual_mmap_size = os.path.getsize(mmap_filename)
             if mmap_size and actual_mmap_size!=mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                          mmap_filename, mmap_size, actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
-        else:
-            assert sys.platform=="win32"
-            if mmap_size==0:
-                log.error("Error: client did not supply the mmap area size")
-                log.error(" try updating your client version?")
-                return None, 0
-            mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
-            actual_mmap_size = mmap_size
-        f.close()
-        return mmap_area, actual_mmap_size
-    except Exception as e:
-        log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
+            f.close()
+            return mmap_area, actual_mmap_size
+        assert sys.platform=="win32"
+        if mmap_size==0:
+            log.error("Error: client did not supply the mmap area size")
+            log.error(" try updating your client version?")
+            return None, 0
+        mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
+        return mmap_area, mmap_size
+    except Exception:
+        log.error("Error: cannot use mmap file '%s'", mmap_filename, exc_info=True)
         if mmap_area:
             mmap_area.close()
         return None, 0
@@ -248,7 +245,7 @@ def int_from_buffer(mmap_area, pos:int) -> c_uint32:
 
 #descr_data is a list of (offset, length)
 #areas from the mmap region
-def mmap_read(mmap_area, *descr_data):
+def mmap_read(mmap_area, *descr_data) -> bytes:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.

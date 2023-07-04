@@ -10,6 +10,7 @@ import os
 import shlex
 from typing import Tuple, Dict, Union, List, Callable, Any, Optional
 
+from xpra.common import noop
 from xpra.util import csv, stderr_write, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
@@ -928,11 +929,12 @@ def get_defaults():
         conf_dirs.append("/etc/xpra")
     else:
         conf_dirs.append(os.path.join(sys.prefix, "etc", "xpra"))
+    conf_dir = os.getcwd()
     for conf_dir in conf_dirs:
         if conf_dir and os.path.exists(conf_dir):
             break
-    xvfb = detect_xvfb_command(conf_dir, bin_dir, warn_fn=None)
-    xdummy = detect_xdummy_command(conf_dir, bin_dir, warn_fn=None)
+    xvfb = detect_xvfb_command(conf_dir, bin_dir, warn_fn=noop)
+    xdummy = detect_xdummy_command(conf_dir, bin_dir, warn_fn=noop)
 
     ssl_protocol = "TLSv1_2"
 

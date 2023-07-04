@@ -10,7 +10,6 @@ from xpra.os_util import strtobytes
 
 
 def get_headers(host:str, port:int) -> Dict[bytes,bytes]:    #pylint: disable=unused-argument
-    headers = {}
     cookie_domain = host
     cookie_string = ''
     # get cookies for domain and all parent domains except tld
@@ -22,5 +21,6 @@ def get_headers(host:str, port:int) -> Dict[bytes,bytes]:    #pylint: disable=un
             if c.name + "=" not in cookie_string:
                 cookie_string += cookie
         cookie_domain = cookie_domain.split('.', 1)[1]
-    headers[b"Cookie"] = strtobytes(cookie_string)
-    return headers
+    return {
+        b"Cookie"   : strtobytes(cookie_string),
+    }

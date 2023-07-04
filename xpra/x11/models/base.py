@@ -640,7 +640,7 @@ class BaseWindowModel(CoreX11WindowModel):
             workspace = int(event.data[0])
             #query the workspace count on the root window
             #since we cannot access Wm from here..
-            ndesktops = self.root_prop_get("_NET_NUMBER_OF_DESKTOPS", "u32")
+            ndesktops = int(self.root_prop_get("_NET_NUMBER_OF_DESKTOPS", "u32") or 0)
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)
             if ndesktops>0 and (

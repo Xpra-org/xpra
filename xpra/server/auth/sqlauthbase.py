@@ -25,7 +25,7 @@ class SQLAuthenticator(SysAuthenticator):
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
 
-    def get_passwords(self) -> Tuple[str]:
+    def get_passwords(self) -> Tuple[str,...]:
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:

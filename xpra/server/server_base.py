@@ -24,7 +24,7 @@ from xpra.server import server_features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
 
-SERVER_BASES = [ServerCore]
+SERVER_BASES : List[Type] = [ServerCore]
 if server_features.control:
     from xpra.server.mixins.controlcommands import ServerBaseControlCommands
     SERVER_BASES.append(ServerBaseControlCommands)
@@ -74,7 +74,7 @@ if server_features.commands:
     from xpra.server.mixins.child_command import ChildCommandServer
     SERVER_BASES.append(ChildCommandServer)
 SERVER_BASES = tuple(SERVER_BASES)
-ServerBaseClass : Type = type('ServerBaseClass', SERVER_BASES, {})
+ServerBaseClass : Type[ServerCore] = type('ServerBaseClass', SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")
@@ -967,8 +967,9 @@ class ServerBase(ServerBaseClass):
         self.do_init_aliases(packet_types)
 
     def process_packet(self, proto, packet) -> None:
+        packet_type = ""
+        handler : Optional[Callable] = None
         try:
-            handler = None
             packet_type = bytestostr(packet[0])
             def call_handler():
                 may_log_packet(False, packet_type, packet)

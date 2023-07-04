@@ -143,7 +143,6 @@ class DisplayClient(StubClientMixin):
                      "up" if scaled_up else "down", sinfo, root_w, root_h)
             log_screen_sizes(root_w, root_h, sss)
         else:
-            root_w, root_h = u_root_w, u_root_h
             sss = ss
         caps["screen_sizes"] = sss
         monitors = self.get_monitors_info()
@@ -586,11 +585,11 @@ class DisplayClient(StubClientMixin):
     def scalereset(self) -> None:
         self.scaleset(*self.initial_scaling)
 
-    def scaleset(self, xscale=1, yscale=1) -> None:
+    def scaleset(self, xscale=1.0, yscale=1.0) -> None:
         scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
         self.scale_change(xscale/self.xscale, yscale/self.yscale)
 
-    def scale_change(self, xchange=1, ychange=1) -> None:
+    def scale_change(self, xchange=1.0, ychange=1.0) -> None:
         scalinglog("scale_change(%s, %s)", xchange, ychange)
         if self.server_is_desktop and self.desktop_fullscreen:
             scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)

@@ -19,7 +19,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 ###############################################################################
 
-"A library for proxy configuration and autodetection."
+"""
+A library for proxy configuration and autodetection.
+"""
 
 from ctypes import POINTER, cast, c_void_p, c_char_p
 import ctypes.util

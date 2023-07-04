@@ -46,7 +46,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     pixels = cursor_data[8]
     x = px-xhot
     y = py-yhot
-    alpha = max(0, (5.0-elapsed)/5.0)
+    alpha = max(0.0, (5.0-elapsed)/5.0)
     log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
         (context, x, y, start_time), alpha)
     context.translate(x, y)
@@ -56,7 +56,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw*4)
     context.set_operator(OPERATOR_OVER)
     Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
-    context.paint()
+    context.paint_with_alpha(alpha)
 
 
 class CairoBackingBase(WindowBackingBase):
@@ -319,6 +319,6 @@ class CairoBackingBase(WindowBackingBase):
                 b = self._backing
                 if b:
                     self.update_fps()
-                    w, h = self.render_size
-                    self.repaint(0, 0, w, h)
+                    rw, rh = self.render_size
+                    self.repaint(0, 0, rw, rh)
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
