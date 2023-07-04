@@ -801,7 +801,7 @@ class UIXpraClient(ClientBaseClass):
             return False
         if self.readonly:
             return False
-        self.keyboard.process_key_event(wid, key_event)
+        kh.process_key_event(wid, key_event)
         return False
 
     def mask_to_names(self, mask) -> List[str]:
