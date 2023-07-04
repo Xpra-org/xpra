@@ -118,7 +118,7 @@ class ServerCommandsWindow:
                             log("icons: %s", icons)
                             if icons:
                                 from PIL import Image  # @UnresolvedImport
-                                img = icons[0].resize((24, 24), Image.ANTIALIAS)
+                                img = icons[0].resize((24, 24), Image.Resampling.LANCZOS)
                                 has_alpha = img.mode=="RGBA"
                                 width, height = img.size
                                 rowstride = width * (3+int(has_alpha))

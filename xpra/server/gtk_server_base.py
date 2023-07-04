@@ -337,7 +337,7 @@ class GTKServerBase(ServerBase):
                     img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
         if img:
             if w>MAX_SIZE or h>MAX_SIZE:
-                img = img.resize((MAX_SIZE, MAX_SIZE), Image.ANTIALIAS)
+                img = img.resize((MAX_SIZE, MAX_SIZE), Image.Resampling.LANCZOS)
                 w = h = MAX_SIZE
             from io import BytesIO
             buf = BytesIO()
