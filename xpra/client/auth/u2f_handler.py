@@ -16,13 +16,15 @@ log = Logger("auth")
 
 class Handler:
 
-    def __init__(self, client, **_kwargs):
+    def __init__(self, client, **kwargs):
         self.client = client
+        self.app_id = kwargs.get("APP_ID", "") or os.environ.get("XPRA_U2F_APP_ID", "") or "Xpra"
 
     def __repr__(self):
         return "u2f"
 
-    def get_digest(self) -> str:
+    @staticmethod
+    def get_digest() -> str:
         return "u2f"
 
     def handle(self, challenge, digest:str, prompt:str) -> Optional[Tuple[bytes,bytes]]:  # pylint: disable=unused-argument
@@ -41,14 +43,13 @@ class Handler:
             logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
             logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
         dev = GetLocalU2FInterface()
-        APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
         key_handle = self.get_key_handle()
         if not key_handle:
             return None
         key = model.RegisteredKey(key_handle)
         #use server salt as challenge directly
         log.info("activate your U2F device for authentication")
-        response = dev.Authenticate(APP_ID, challenge, [key])
+        response = dev.Authenticate(self.app_id, challenge, [key])
         sig = response.signature_data
         client_data = response.client_data
         log("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))

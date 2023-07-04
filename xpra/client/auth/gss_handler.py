@@ -14,14 +14,15 @@ log = Logger("auth")
 
 class Handler:
 
-    def __init__(self, client, **_kwargs):
+    def __init__(self, client, **kwargs):
         self.client = client
-        self.services = os.environ.get("XPRA_GSS_SERVICES", "*").split(",")
+        self.services = (kwargs.pop("gss-services", "") or os.environ.get("XPRA_GSS_SERVICES", "") or "*").split(",")
 
     def __repr__(self):
         return "gss"
 
-    def get_digest(self) -> str:
+    @staticmethod
+    def get_digest() -> str:
         return "gss"
 
     def handle(self, challenge:str, digest, prompt:str):  # pylint: disable=unused-argument

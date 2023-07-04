@@ -12,7 +12,8 @@ class Handler:
     def __repr__(self):
         return "uri"
 
-    def get_digest(self) -> str:
+    @staticmethod
+    def get_digest() -> str:
         return ""
 
     def handle(self, challenge, digest:str, prompt:str) -> str:  # pylint: disable=unused-argument

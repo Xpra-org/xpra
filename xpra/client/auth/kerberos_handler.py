@@ -27,9 +27,9 @@ def log_kerberos_exception(e):
 
 class Handler:
 
-    def __init__(self, client, **_kwargs):
+    def __init__(self, client, **kwargs):
         self.client = client
-        self.services = os.environ.get("XPRA_KERBEROS_SERVICES", "*").split(",")
+        self.services = (kwargs.pop("kerberos-services", "") or os.environ.get("XPRA_KERBEROS_SERVICES", "") or "*").split(",")
 
     def __repr__(self):
         return "kerberos"
