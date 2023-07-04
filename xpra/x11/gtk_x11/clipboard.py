@@ -698,7 +698,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                     log.warn(" invalid mode '%s'", overlay.mode)
                 else:
                     log("adding clipboard image overlay to %s", dtype)
-                    overlay_resized = overlay.resize((w, h), Image.ANTIALIAS)
+                    overlay_resized = overlay.resize((w, h), Image.Resampling.LANCZOS)
                     composite = Image.alpha_composite(img, overlay_resized)
                     if not has_alpha and img.mode=="RGBA":
                         composite = composite.convert("RGB")

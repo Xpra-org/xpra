@@ -375,7 +375,7 @@ class win32NotifyIcon:
         icon_h = GetSystemMetrics(win32con.SM_CYSMICON)
         if w!=icon_w or h!=icon_h:
             log("resizing tray icon to %ix%i", icon_w, icon_h)
-            img = img.resize((icon_w, icon_h), Image.ANTIALIAS)
+            img = img.resize((icon_w, icon_h), Image.Resampling.LANCZOS)
             rowstride = w*4
 
         hicon = image_to_ICONINFO(img)
