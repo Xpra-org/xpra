@@ -63,10 +63,11 @@ packaging/MacOS/xpra-html5
 *.cubin
 #CUDA symlink on MS Windows:
 /cuda
-#xpra's own:
+# generated during the build:
 /xpra/src_info.py
 /xpra/build_info.py
 /fs/etc/xpra/xpra.conf
+# the .conf files are generated:
 /fs/etc/xpra/conf.d/*.conf
 /packaging/buildah/*log
 #debian packaging tools leave cruft:
@@ -86,9 +87,6 @@ packaging/debian/xpra/xpra-server
 # generated during the tests:
 tests/unittests/test-file*
 
-# the .conf files are generated:
-/fs/etc/xpra/conf.d/*.conf
-
 # these files are compiled using semodule:
 /fs/share/selinux/cups_xpra/cups_xpra.pp
 /fs/share/selinux/cups_xpra/tmp
@@ -105,10 +103,6 @@ tests/unittests/test-file*
 /packaging/MSWindows/service/event_log.h
 /packaging/MSWindows/service/MSG00409.bin
 /packaging/MSWindows/service/Xpra-Service.exe
-
-# Generated during the build:
-/xpra/build_info.py
-/xpra/src_info.py
 
 # Cython files:
 *.html
