@@ -139,7 +139,7 @@ def get_notification_icon(icon_string):
                 img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
     if img:
         if w>MAX_SIZE or h>MAX_SIZE:
-            img = img.resize((MAX_SIZE, MAX_SIZE), Image.LANCZOS)
+            img = img.resize((MAX_SIZE, MAX_SIZE), Image.Resampling.LANCZOS)
             w = h = MAX_SIZE
         buf = BytesIO()
         img.save(buf, "PNG")

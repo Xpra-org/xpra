@@ -128,7 +128,7 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
             iw = GetSystemMetrics(SM_CXSMICON)
             ih = GetSystemMetrics(SM_CYSMICON)
             if w!=iw or h!=ih:
-                img = img.resize((iw, ih), Image.LANCZOS)
+                img = img.resize((iw, ih), Image.Resampling.LANCZOS)
                 log("notification icon resized to %s", img.size)
             hicon = image_to_ICONINFO(img)
             log("notify: image_to_ICONINFO(%s)=%#x", img, hicon)
