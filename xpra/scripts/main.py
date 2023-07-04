@@ -1986,8 +1986,13 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         for x in get_start_server_args(opts, compat=True):
             proxy_args.append(x)
         #we have consumed the start[-child] options
-        opts.start_child = []
-        opts.start = []
+        for x in (
+                "start", "start-child",
+                "start-after-connect", "start-child-after-connect",
+                "start-on-connect", "start-child-on-connect",
+                "start-on-last-client-exit", "start-child-on-last-client-exit",
+        ):
+            setattr(opts, x.replace("-", "_"), [])
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
         params["proxy_command"] = [{
