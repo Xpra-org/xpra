@@ -21,7 +21,7 @@ class RFBServerProtocol(RFBProtocol):
         self._authenticator = auth
         self._get_rfb_pixelformat = get_rfb_pixelformat
         self.session_name = session_name
-        super().__init__(scheduler, conn, process_packet_cb, data=b"")
+        super().__init__(scheduler, conn, process_packet_cb, data=data)
 
     def handshake_complete(self):
         log.info("RFB connection from %s", self._conn.target)
