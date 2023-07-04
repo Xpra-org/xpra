@@ -15,7 +15,7 @@ import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
-from typing import Dict, List, Tuple, Any, Type, Callable
+from typing import Dict, List, Tuple, Any, Type, Callable, Optional
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
