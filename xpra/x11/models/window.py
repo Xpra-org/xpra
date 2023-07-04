@@ -269,7 +269,7 @@ class WindowModel(BaseWindowModel):
         nx, ny = self._clamp_to_desktop(x, y, w, h)
         if nx!=x or ny!=y:
             log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
-            X11Window.MoveResizeWindow(nx, ny, w, h)
+            X11Window.MoveResizeWindow(self.corral_xid, nx, ny, w, h)
 
 
     def _read_initial_X11_properties(self) -> None:
