@@ -99,7 +99,8 @@ class X11ClientTest(X11ClientTestUtil):
             display = self.find_free_display()
             server = self.check_fast_start_server(display, "--file-transfer=yes")
             xvfb, client = self.run_client(display, "--file-transfer=yes")
-            assert pollwait(client, CLIENT_TIMEOUT) is None
+            r = pollwait(client, CLIENT_TIMEOUT)
+            assert r is None, f"client terminated unexpectedly with code {exit_str(r)}"
             #send a file to this client:
             send_file_command = ["control", display, "send-file", f.name, "0", "*"]
             env = os.environ.copy()
