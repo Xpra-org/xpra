@@ -7,6 +7,7 @@
 from typing import Dict, Any, Tuple, Type, List
 
 from xpra.server import server_features
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.util import merge_dicts, typedict, print_nested_dict
 from xpra.common import LOG_HELLO
 from xpra.log import Logger
