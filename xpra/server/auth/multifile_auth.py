@@ -88,7 +88,7 @@ class Authenticator(FileAuthenticatorBase):
         log(f"get_password() found entry={entry}")
         if entry is None:
             return ""
-        return entry[0]
+        return entry[1]
 
     def authenticate_hmac(self, caps : typedict) -> bool:
         challenge_response = caps.bytesget("challenge_response")
