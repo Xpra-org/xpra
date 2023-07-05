@@ -231,7 +231,7 @@ def remove_dupes(seq:Iterable[Any]) -> List[Any]:
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:List[Any]=None) -> Dict[str,Any]:
+def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:Optional[List[str]]=None) -> Dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []

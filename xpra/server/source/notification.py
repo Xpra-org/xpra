@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import typedict
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -51,7 +51,7 @@ class NotificationMixin(StubSourceMixin):
     # Utility functions for mixins (makes notifications optional)
     def may_notify(self, nid:int=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
                    actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name:str="", user_callback:Callable=None) -> None:
+                   icon_name:str="", user_callback:Optional[Callable]=None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path

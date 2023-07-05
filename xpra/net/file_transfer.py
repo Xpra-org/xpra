@@ -154,9 +154,9 @@ class FileTransferAttributes:
         self.open_url = oua or pbool("open-url", open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
-        self.files_requested = {}
-        self.files_accepted = {}
-        self.file_request_callback = {}
+        self.files_requested : Dict[str,bool] = {}
+        self.files_accepted : Dict[str,bool] = {}
+        self.file_request_callback : Dict[str,Callable] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> Dict[str,Any]:

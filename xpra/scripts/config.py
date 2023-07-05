@@ -133,7 +133,7 @@ def get_Xvfb_command(width:int=8192, height:int=4096, dpi:int=96) -> List[str]:
     return cmd
 
 def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir=None,
-                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn):
+                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Optional[Callable]=warn):
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,

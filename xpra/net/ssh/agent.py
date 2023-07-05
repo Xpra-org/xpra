@@ -41,7 +41,7 @@ def get_ssh_agent_path(filename:str) -> str:
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
 
-def set_ssh_agent(filename:str=None) -> None:
+def set_ssh_agent(filename:str="") -> None:
     ssh_dir = ssh_dir_path()
     if filename and os.path.isabs(filename):
         sockpath = filename

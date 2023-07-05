@@ -98,7 +98,7 @@ def get_profile(options:typedict, encoding:str="h264", csc_mode:str="YUV420P", d
         default_profile
         )
 
-def get_x264_quality(pct:int, profile:str=None) -> int:
+def get_x264_quality(pct:int, profile:str="") -> int:
     if pct>=100 and profile=="high444":
         return 0
     return 50 - (min(100, max(0, pct)) * 49 // 100)

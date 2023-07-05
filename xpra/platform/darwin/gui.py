@@ -350,7 +350,7 @@ def get_display_modes_info(modes) -> Dict[int,Any]:
     return dict((i,get_display_mode_info(mode)) for i,mode in enumerate(modes))
 
 
-def _call_CG_conv(defs:Tuple[Tuple[str,str,Callable]], argument) -> Dict[str,Any]:
+def _call_CG_conv(defs:Tuple[Tuple[str,str,Callable],...], argument) -> Dict[str,Any]:
     #utility for calling functions on CG with an argument,
     #then convert the return value using another function
     #missing functions are ignored, and None values are skipped
