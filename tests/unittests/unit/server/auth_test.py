@@ -235,9 +235,10 @@ class TestAuth(unittest.TestCase):
                     salt_digest = a.choose_salt_digest(get_digests())
                     assert salt_digest and isinstance(salt_digest, str)
                     auth_salt = gendigest(salt_digest, client_salt, server_salt)
-                    assert isinstance(auth_salt, bytes)
+                    assert isinstance(auth_salt, bytes), f"auth salt is {type(auth_salt)}, expected bytes for {salt_digest!r}"
                     if muck==0:
                         verify = gendigest(digest, password, auth_salt)
+                        assert isinstance(verify, bytes), f"value is {type(verify)}, expected bytes for {digest!r}"
                         assert self.capsauth(a, verify, client_salt), "%s failed" % a.authenticate
                         if display_count>0:
                             sessions = a.get_sessions()
