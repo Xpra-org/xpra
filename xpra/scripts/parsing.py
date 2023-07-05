@@ -541,9 +541,16 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         add_query()
         if protocol in ("ssl", "wss", "quic"):
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
+            alt_scheme = "https"
+        else:
+            alt_scheme = "http"
         proxy = desc.get("proxy")
         if proxy=="auto":
-            desc.update(auto_proxy(host, port))
+            for scheme in (protocol, alt_scheme):
+                pprops = auto_proxy(protocol, host)
+                if pprops:
+                    desc.update(pprops)
+                    break
         return desc
 
     if protocol=="named-pipe":   # pragma: no cover
@@ -622,9 +629,10 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     if is_paramiko:
         ssh[0] = "paramiko"
         desc["is_paramiko"] = is_paramiko
-        paramiko_config = desc.setdefault("paramiko-config", {})
+        paramiko_config = {}
         if ssh_option.find(":")>0:
             paramiko_config = parse_simple_dict(ssh_option.split(":", 1)[1])
+            desc["paramiko-config"] = paramiko_config
         agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
         paramiko_config["agent"] = str(agent_forwarding)
     elif is_putty:
