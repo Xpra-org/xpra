@@ -112,7 +112,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         log(f" stderr={err!r} ({type(err)})")
         log.error(f"Error running source script {file_to_source_path!r}")
         if proc and proc.returncode is not None:
-            log.error(f" exit codde: {proc.returncode}")
+            log.error(f" exit code: {proc.returncode}")
         log.error(f" {e}")
         return {}
     log(f"stdout({filename})={out!r}")
