@@ -547,7 +547,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         proxy = desc.get("proxy")
         if proxy=="auto":
             for scheme in (protocol, alt_scheme):
-                pprops = auto_proxy(protocol, host)
+                pprops = auto_proxy(scheme, host)
                 if pprops:
                     desc.update(pprops)
                     break
