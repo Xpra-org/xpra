@@ -8,7 +8,7 @@
 from weakref import WeakSet
 from threading import Thread, Lock
 from queue import Queue
-from typing import Optional
+from typing import Optional, Callable
 
 from xpra.log import Logger
 log = Logger("util")
@@ -24,9 +24,9 @@ class Worker_Thread(Thread):
 
     def __init__(self):
         super().__init__(name="Worker_Thread", daemon=True)
-        self.items = Queue()
+        self.items : Queue[Optional[Callable]] = Queue()
         self.exit = False
-        self.daemon_work_items = WeakSet()
+        self.daemon_work_items : WeakSet[Callable] = WeakSet()
 
     def __repr__(self):
         return f"Worker_Thread(items={self.items.qsize()}, exit={self.exit})"
@@ -50,7 +50,7 @@ class Worker_Thread(Thread):
                 log.info("waiting for %s items in work queue to complete", len(items))
         self.items.put(None)
 
-    def add(self, item, allow_duplicates:bool=True, daemon:bool=False) -> None:
+    def add(self, item:Callable, allow_duplicates:bool=True, daemon:bool=False) -> None:
         if self.items.qsize()>10:
             log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
         if not allow_duplicates and item in self.items.queue:

@@ -88,7 +88,7 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = None
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
-        self.key_translations = {}
+        self.key_translations : Dict[str,Tuple[int,str]] = {}
 
     def __repr__(self):
         return "darwin.Keyboard"
@@ -128,7 +128,7 @@ class Keyboard(KeyboardBase):
                 if not layouts:
                     layouts.append("us")
             else:
-                if code not in layouts:
+                if code and code not in layouts:
                     layouts.insert(0, code)
             log("get_layout_spec() view=%s, input_context=%s, layout=%s, layouts=%s", view, text_input_context, layout, layouts)
         except Exception as e:

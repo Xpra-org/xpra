@@ -44,7 +44,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
-        self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
+        self.check_account = bool(parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False))
         super().__init__(**kwargs)
 
     def check_password(self, password:str) -> bool:

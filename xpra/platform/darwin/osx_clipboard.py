@@ -1,9 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from io import BytesIO
+from typing import Tuple
+
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
     NSPasteboard,       #@UnresolvedImport
@@ -28,7 +30,7 @@ TARGET_TRANS = {
 
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
 
-def filter_targets(targets):
+def filter_targets(targets) -> Tuple[str,...]:
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
 
@@ -261,7 +263,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
     ############################################################################
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes:
         if encoding=="atoms":
-            return _filter_targets(data)
+            data = _filter_targets(data)
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
 

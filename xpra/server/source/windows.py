@@ -8,7 +8,7 @@
 import os
 from io import BytesIO
 from time import monotonic
-from typing import Union, Dict, Tuple, Any, Callable, List
+from typing import Union, Dict, Tuple, Any, Callable, List, Optional
 
 try:
     from PIL import Image

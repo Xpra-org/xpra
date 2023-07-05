@@ -2139,7 +2139,7 @@ def find_wayland_display_sockets(uid:int=getuid(), gid:int=getgid()) -> Dict[str
 
 
 X11_SOCKET_DIR = "/tmp/.X11-unix"
-def find_x11_display_sockets(max_display_no:int=None) -> Dict[str,str]:
+def find_x11_display_sockets(max_display_no:int=0) -> Dict[str,str]:
     displays : Dict[str,str] = {}
     if not os.path.exists(X11_SOCKET_DIR):
         return displays
@@ -2514,7 +2514,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     log(f"proxy shadow start command: {cmd}")
     proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
     start = monotonic()
-    elapsed = 0
+    elapsed = 0.0
     while elapsed<WAIT_SERVER_TIMEOUT:
         state = dotxpra.get_display_state(display_name)
         if state==DotXpra.LIVE:

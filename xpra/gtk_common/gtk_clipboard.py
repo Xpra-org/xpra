@@ -47,7 +47,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def __init__(self, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
-        self._owner_change_embargo = 0
+        self._owner_change_embargo = 0.0
         self._want_targets = False
         display = Gdk.Display.get_default()
         if not display:

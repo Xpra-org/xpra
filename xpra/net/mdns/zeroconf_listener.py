@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+from typing import Optional
 from zeroconf import ServiceBrowser, Zeroconf        #@UnresolvedImport
 
 from xpra.log import Logger

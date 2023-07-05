@@ -106,7 +106,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             logger.saved_handlers = logger.handlers
             logger.saved_propagate = logger.propagate
             logger.handlers = [CaptureHandler()]
-            logger.propagate = 0
+            logger.propagate = False
             return logger
         fhlogger = redirect_log('OpenGL.formathandler')
         elogger = redirect_log('OpenGL.extensions')

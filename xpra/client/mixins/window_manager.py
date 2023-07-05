@@ -489,10 +489,10 @@ class WindowClient(StubClientMixin):
         #accumulate deltas:
         self.wheel_deltax += deltax
         self.wheel_deltay += deltay
-        button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
+        button = self.wheel_map.get(6+int(self.wheel_deltax>0), 0)            #RIGHT=7, LEFT=6
         if button>0:
             self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
-        button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
+        button = self.wheel_map.get(5-int(self.wheel_deltay>0), 0)            #UP=4, DOWN=5
         if button>0:
             self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
         mouselog("wheel_event%s new deltas=%s,%s",

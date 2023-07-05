@@ -2056,7 +2056,7 @@ class WindowSource(WindowIconSource):
 
     def get_damage_image(self, x:int, y:int, w:int, h:int) -> Optional[ImageWrapper]:
         self.ui_thread_check()
-        def nodata(msg, *args):
+        def nodata(msg, *args) -> None:
             log("get_damage_image: "+msg, *args)
             return None
         if not self.window.is_managed():

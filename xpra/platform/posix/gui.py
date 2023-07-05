@@ -136,7 +136,7 @@ def _try_load_appindicator() -> Optional[Type]:
 
 
 def get_native_notifier_classes() -> List[Type]:
-    ncs = []
+    ncs : List[Type] = []
     try:
         from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
@@ -221,7 +221,7 @@ def get_icc_info() -> Dict[str,Any]:
 
 
 def get_antialias_info() -> Dict[str,Any]:
-    info = {}
+    info : Dict[str,Any] = {}
     if not x11_bindings():
         return info
     try:
@@ -467,7 +467,7 @@ class XI2_Window:
     def cleanup(self, *_args) -> None:
         for window in self.windows:
             self.XI2.disconnect(window)
-        self.windows = []
+        self.windows = ()
         self.window = None
 
     def configured(self, *_args) -> None:

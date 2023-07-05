@@ -5,7 +5,7 @@
 
 from queue import Queue
 from threading import Timer, RLock
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Union, Tuple, Any
 
 from xpra.util import AtomicInteger
 from xpra.log import Logger
@@ -18,7 +18,7 @@ class QueueScheduler:
     __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
     def __init__(self):
-        self.main_queue = Queue()
+        self.main_queue : Queue[Tuple[Callable,Tuple[Any,...],Dict[str,Any]]] = Queue()
         self.exit = False
         self.timer_id = AtomicInteger()
         self.timers : Dict[int,Union[Timer,None]] = {}

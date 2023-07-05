@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Optional
 from ctypes import (
     sizeof, byref,
     WinError, get_last_error,  # @UnresolvedImport
@@ -85,12 +86,6 @@ for x in dir(win32con):
         KNOWN_WM_EVENTS[v] = x
 
 
-singleton = None
-def get_win32_event_listener(create=True):
-    global singleton
-    if not singleton and create:
-        singleton = Win32EventListener()
-    return singleton
 
 WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
@@ -210,3 +205,10 @@ class Win32EventListener:
         r = DefWindowProcW(hWnd, msg, wParam, lParam)
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r
+
+singleton : Optional[Win32EventListener] = None
+def get_win32_event_listener(create=True) -> Optional[Win32EventListener]:
+    global singleton
+    if not singleton and create:
+        singleton = Win32EventListener()
+    return singleton

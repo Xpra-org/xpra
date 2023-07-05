@@ -208,7 +208,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #maybe this should be configurable?
     min_decode_speed = 1*1000*1000      #MPixels/s
     ads = statistics.avg_decode_speed or 0
-    dec_lat = 0
+    dec_lat = 0.0
     if ads>0:
         dec_lat = min_decode_speed/ads
 

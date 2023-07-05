@@ -5,7 +5,7 @@
 
 import os
 from queue import Queue, Empty
-from typing import Tuple, Dict, Any, Callable
+from typing import Tuple, Dict, Any, Callable, Optional
 
 from xpra.util import typedict, envint, parse_simple_dict
 from xpra.os_util import OSX
@@ -178,7 +178,7 @@ def get_video_encoder_caps(encoder:str="x264enc"):
         "stream-format" : "byte-stream",
         }
 
-def get_video_encoder_options(encoder:str="x264", profile:str=None, options:typedict=None):
+def get_video_encoder_options(encoder:str="x264", profile:str="", options:Optional[typedict]=None):
     eopts = get_default_encoder_options().get(encoder, {})
     eopts["name"] = "encoder"
     if encoder=="x264enc" and options:

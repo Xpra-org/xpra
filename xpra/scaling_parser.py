@@ -7,6 +7,7 @@ import os
 from xpra.util import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
+from typing import List, Tuple
 
 log = Logger("scaling")
 
@@ -27,7 +28,7 @@ def scaleup_value(scaling):
 def scaledown_value(scaling):
     return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10))
 
-def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING):
+def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> Tuple[int,int]:
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
     if desktop_scaling in TRUE_OPTIONS:
         return 1, 1
@@ -44,7 +45,7 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
         if desktop_scaling.startswith("auto:"):
             limstr = desktop_scaling[5:]    #ie: '1920x1080:1,2560x1600:1.5,...
             limp = limstr.split(",")
-            limits = []
+            limits : List[Tuple[int,int,int,int]] = []
             for l in limp:
                 try:
                     ldef = l.split(":")

@@ -7,7 +7,7 @@
 import os
 import re
 from time import monotonic
-from typing import Dict, Any, Tuple, Optional, Type
+from typing import Dict, Any, Tuple, Optional, Type, List
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -266,7 +266,7 @@ class ShadowServer(GTKShadowServerBase):
         self.keycodes = {}
         self.cursor_handle = None
         self.cursor_data = None
-        self.cursor_errors = [0, 0]
+        self.cursor_errors = [0.0, 0]
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
@@ -362,7 +362,7 @@ class ShadowServer(GTKShadowServerBase):
                 window_title = buf.value
             else:
                 window_title = ''
-            left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+            left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
             w = right-left
             h = bottom-top
             if left<=-32000 or top<=-32000:

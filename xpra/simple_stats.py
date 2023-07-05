@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Simple statistical functions
 
 import math
+from typing import List, Any
 
 def to_std_unit(v, unit=1000):
     if v>=unit**3:
@@ -101,7 +102,7 @@ def find_invpow(x, n):
     """Finds the integer component of the n'th root of x,
     an integer such that y ** n <= x < (y + 1) ** n.
     """
-    high = 1
+    high = 1.0
     while high ** n < x:
         high *= 2
     low = high/2

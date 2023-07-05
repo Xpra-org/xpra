@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,8 +26,6 @@ def _device_change_callback(*args):
     _fire_video_device_change()
 
 def add_video_device_change_callback(callback):
-    if not get_win32_event_listener:
-        return
     from xpra.platform.webcam import _video_device_change_callbacks
     if len(_video_device_change_callbacks)==0:
         #first callback added, register our handler:

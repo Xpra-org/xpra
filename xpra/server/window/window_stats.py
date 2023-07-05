@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple, List, Deque
+from typing import Dict, Any, Tuple, List, Deque, Any
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -192,7 +192,7 @@ class WindowPerformanceStatistics:
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                einfo : Dict[str,any] = info.setdefault(encoding or "encoding", {})
+                einfo : Dict[str,Any] = info.setdefault(encoding or "encoding", {})
                 einfo["ratio_pct"] = get_weighted_list_stats(comp_ratios_pct)
                 einfo["pixels_per_ns"] = get_weighted_list_stats(comp_times_ns)
                 if total_time>0:

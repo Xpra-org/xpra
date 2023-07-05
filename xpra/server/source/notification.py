@@ -65,7 +65,7 @@ class NotificationMixin(StubSourceMixin):
                         expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
-               summary:str, body:str, actions, hints, expire_timeout:int, icon, user_callback:Callable=None) -> bool:
+               summary:str, body:str, actions, hints, expire_timeout:int, icon, user_callback:Optional[Callable]=None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
