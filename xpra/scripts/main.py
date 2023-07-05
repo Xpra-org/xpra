@@ -1656,7 +1656,7 @@ def run_opengl_probe():
     env["XPRA_REDIRECT_OUTPUT"] = "0"
     start = monotonic()
     try:
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
         log.warn(" %s", e)
@@ -1670,16 +1670,16 @@ def run_opengl_probe():
         stdout, stderr = proc.communicate()
         r = None
     log("xpra opengl stdout:")
-    for line in stdout.decode().splitlines():
+    for line in stdout.splitlines():
         log(" %s", line)
     log("xpra opengl stderr:")
-    for line in stderr.decode().splitlines():
+    for line in stderr.splitlines():
         log(" %s", line)
     log("OpenGL probe command returned %s for command=%s", r, cmd)
     end = monotonic()
     log("probe took %ims", 1000*(end-start))
     props = {}
-    for line in stdout.decode().splitlines():
+    for line in stdout.splitlines():
         parts = line.split("=", 1)
         if len(parts)==2:
             props[parts[0]] = parts[1]
