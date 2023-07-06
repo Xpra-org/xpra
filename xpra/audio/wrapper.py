@@ -413,7 +413,7 @@ def query_audio() -> typedict:
     env.update(get_audio_wrapper_env())
     env.pop("DISPLAY", None)
     log(f"query_audio() command=`{command}`, env={env}, kwargs={kwargs}")
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, **kwargs)
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, universal_newlines=True, **kwargs)
     out, err = proc.communicate(None)
     log(f"query_audio() process returned {proc.returncode}")
     log(f"query_audio() out={out!r}, err={err!r}")
@@ -421,14 +421,14 @@ def query_audio() -> typedict:
         return typedict()
     d = typedict()
     for x in out.splitlines():
-        kv = x.split(b"=", 1)
+        kv = x.split("=", 1)
         if len(kv)==2:
             #ie: kv = ["decoders", "mp3,vorbis"]
             k,v = kv
             #fugly warning: all the other values are lists.. but this one is not:
-            if k!=b"python.bits":
-                v = [bytestostr(x) for x in v.split(b",")]
+            if k!="python.bits":
+                v = v.split(",")
             #d["decoders"] = ["mp3", "vorbis"]
-            d[bytestostr(k)] = v
+            d[k] = v
     log(f"query_audio()={d}")
     return d
