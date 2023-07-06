@@ -2422,16 +2422,18 @@ class WindowSource(WindowIconSource):
             - damage latency (via a callback once the packet is actually sent)
         """
         #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
-        width:int, height:int, coding, data, damage_packet_sequence, _, client_options = packet[4:11]
+        width = int(packet[4])
+        height = int(packet[5])
+        coding, data, damage_packet_sequence, _, client_options = packet[6:11]
         ldata = len(data)
         actual_batch_delay = process_damage_time-damage_time
         ack_pending = [0, coding, 0, 0, 0, width*height, client_options, damage_time]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
-        def start_send(bytecount):
+        def start_send(bytecount:int):
             ack_pending[0] = monotonic()
             ack_pending[2] = bytecount
-        def damage_packet_sent(bytecount):
+        def damage_packet_sent(bytecount:int):
             now = monotonic()
             ack_pending[3] = now
             ack_pending[4] = bytecount
