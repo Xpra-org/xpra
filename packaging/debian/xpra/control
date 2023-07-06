@@ -92,6 +92,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}, ${x11:Depends}
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-gi
+Recommends: python3-lxml
 Description: tool to detach/reattach running X programs,
  this package contains the X11 bindings
  used by both the server and client under X11

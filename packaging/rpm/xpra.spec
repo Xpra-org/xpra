@@ -332,6 +332,7 @@ Recommends:			xterm
 BuildRequires:		libfakeXinerama
 Recommends:			libfakeXinerama
 Recommends:			mesa-dri-drivers
+Recommends:         python3-lxml
 %description x11
 This package contains the x11 bindings
 
