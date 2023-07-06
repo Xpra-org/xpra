@@ -80,7 +80,7 @@ class RFBProtocol:
         #ie: packet==b'RFB 003.008\n'
         protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
         if protocol_version!=PROTOCOL_VERSION:
-            msg = "unsupported protocol version"
+            msg = b"unsupported protocol version"
             log.error(f"Error: {msg}")
             self.send(struct.pack(b"!BI", 0, len(msg))+msg)
             self.invalid(msg, packet)
