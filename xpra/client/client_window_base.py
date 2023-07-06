@@ -308,7 +308,7 @@ class ClientWindowBase(ClientWidgetBase):
                 "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
                 }
             def validhostname(value):
-                if value not in (
+                if value in (
                     "localhost",
                     "localhost.localdomain",
                     "",
