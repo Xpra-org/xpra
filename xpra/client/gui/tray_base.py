@@ -125,7 +125,7 @@ class TrayBase:
         xs, ys = set(), set()
         xs.add(x)
         ys.add(y)
-        #walk though all of them in reverse (and stop when one does not fit):
+        #walk through all of them in reverse (and stop when one does not fit):
         for tx, ty in reversed(self.tray_event_locations):
             minx = min(xs)
             miny = min(ys)

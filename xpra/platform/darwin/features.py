@@ -5,7 +5,7 @@
 
 REINIT_WINDOWS = True
 
-# we access the GUI when running as a server (tray, etc)
+# we access the GUI when running as a server (tray, etc.)
 # and so we cannot daemonize
 CAN_DAEMONIZE = False
 

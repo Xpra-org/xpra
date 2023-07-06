@@ -189,8 +189,8 @@ class WindowIconSource:
         max_w, max_h = self.window_icon_max_size
         icon = self.choose_icon(icons, max_w, max_h)
         if not icon:
-            #try again, without size restrictions:
-            #(we'll downscale it)
+            # try again, without size restrictions:
+            # (we'll downscale it)
             icon = self.choose_icon(icons)
         if not icon:
             if not self.window_icon_greedy:

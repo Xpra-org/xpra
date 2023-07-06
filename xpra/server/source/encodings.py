@@ -184,8 +184,8 @@ class EncodingsMixin(StubSourceMixin):
             delay = wdelay // wdimsum
             self.global_batch_config.last_delays.append((now, delay))
             self.global_batch_config.delay = delay
-            #store the delay as a normalized value per megapixel
-            #so we can adapt it to different window sizes:
+            # store the delay as a normalized value per megapixel,
+            # so we can adapt it to different window sizes:
             avg_size = tsize // tcount
             ratio = sqrt(1000000.0 / avg_size)
             normalized_delay = int(delay * ratio)

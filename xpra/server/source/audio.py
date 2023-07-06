@@ -506,7 +506,8 @@ class AudioMixin(StubSourceMixin):
             return
         if not self.audio_sink:
             if not self.audio_loop_check("microphone"):
-                #make a fake object so we don't fire the audio loop check warning repeatedly
+                # make a fake object,
+                # so we don't fire the audio loop check warning repeatedly
                 self.audio_sink = FakeSink(codec)
                 return
             try:

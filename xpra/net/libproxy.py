@@ -86,10 +86,10 @@ class ProxyFactory(object):
         Regarding performance: this method always blocks and may be called
         in a separate thread (is thread-safe).  In most cases, the time
         required to complete this function call is simply the time required
-        to read the configuration (e.g  from GConf, Kconfig, etc).
+        to read the configuration (e.g.  from GConf, Kconfig, etc.).
 
         In the case of PAC, if no valid PAC is found in the cache (i.e.
-        configuration has changed, cache is invalid, etc), the PAC file is
+        configuration has changed, cache is invalid, etc.), the PAC file is
         downloaded and inserted into the cache. This is the most expensive
         operation as the PAC is retrieved over the network. Once a PAC exists
         in the cache, it is merely a JavaScript invocation to evaluate the PAC.

@@ -70,8 +70,8 @@ def nox() -> str:
     DISPLAY = os.environ.get("DISPLAY")
     if DISPLAY is not None:
         del os.environ["DISPLAY"]
-    # This is an error on Fedora/RH, so make it an error everywhere so it will
-    # be noticed:
+    # This is an error on Fedora/RH, so make it an error everywhere
+    # to ensure that it will be noticed:
     import warnings
     warnings.filterwarnings("error", "could not open display")
     return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
@@ -172,8 +172,8 @@ def configure_logging(options, mode) -> None:
         to = sys.stdout
     else:
         to = sys.stderr
-    #a bit naughty here, but it's easier to let xpra.log initialize
-    #the logging system every time, and just undo things here..
+    # a bit naughty here, but it's easier to let xpra.log initialize
+    # the logging system every time, and just undo things here..
     from xpra.log import (
         setloghandler, enable_color, enable_format,
         LOG_FORMAT, NOPREFIX_FORMAT,
@@ -484,8 +484,8 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
             #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
         elif args and parse_bool("attach", options.attach) is True:
-            #maybe the server is already running
-            #and we don't need to bother trying to start it:
+            # maybe the server is already running,
+            # and we don't need to bother trying to start it:
             try:
                 display = pick_display(error_cb, options, args, cmdline)
             except Exception:
@@ -2154,7 +2154,7 @@ def find_x11_display_sockets(max_display_no:int=0) -> Dict[str,str]:
         except ValueError:
             warn(f"{x} does not parse as a display number")
             continue
-        #arbitrary: only shadow automatically displays below 10..
+        # arbitrary limit: we only shadow automatically displays below 10...
         if max_display_no and display_no>max_display_no:
             #warn("display no %i too high (max %i)" % (v, max_display_no))
             continue
@@ -2451,13 +2451,14 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=
 
 
 def start_macos_shadow(cmd, env, cwd) -> None:
-    #launch the shadow server via launchctl so it will have GUI access:
+    # launch the shadow server via launchctl,
+    # so it can have GUI access:
     LAUNCH_AGENT = "org.xpra.Agent"
     LAUNCH_AGENT_FILE = f"/Library/LaunchAgents/{LAUNCH_AGENT}.plist"
     try:
         os.stat(LAUNCH_AGENT_FILE)
     except Exception as e:
-        #ignore access denied error, launchctl runs as root
+        # ignore access denied error, launchctl runs as root
         import errno
         if e.args[0]!=errno.EACCES:
             warn("Error: shadow may not start,\n"

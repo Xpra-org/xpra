@@ -14,7 +14,7 @@ __version__ = (b"Python", 5, 0)
 import codecs
 from typing import Union, Callable, Dict, List, Any
 
-#idiotic py3k unicode mess makes us reinvent the wheel again:
+# idiotic Python 3 unicode mess makes us reinvent the wheel again:
 def strindex(s : bytes, char : str, start : int):
     i = start
     while s[i] != ord(char):

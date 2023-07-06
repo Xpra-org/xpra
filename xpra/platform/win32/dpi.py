@@ -49,7 +49,7 @@ def init_dpi():
         log(" (not available on MS Windows before version 8.1)")
     actual_w, actual_h = GetSystemMetrics(0), GetSystemMetrics(1)
     if actual_w!=w or actual_h!=h:
-        #MS Windows is going to lie to us..
+        # MS Windows is going to lie to us...
         global DPI_SCALING
         DPI_SCALING = round(100*((actual_w/w) + (actual_h/h)))/200
         log("DPI_SCALING=%s", DPI_SCALING)

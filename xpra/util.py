@@ -92,7 +92,7 @@ WORKSPACE_NAMES = {
                    }
 
 #this default value is based on 0.15.x clients,
-#later clients should provide the 'metadata.supported" capability instead
+#later clients should provide the `metadata.supported` capability instead
 DEFAULT_METADATA_SUPPORTED = (
     "title", "icon-title", "pid", "iconic",
     "size-hints", "class-instance", "client-machine",
@@ -162,7 +162,7 @@ def disconnect_is_an_error(reason) -> bool:
 
 
 def dump_exc():
-    """Call this from a except: clause to print a nice traceback."""
+    """Call this from an except: clause to print a nice traceback."""
     print("".join(traceback.format_exception(*sys.exc_info())))
 
 def noerr(fn, *args):

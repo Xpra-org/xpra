@@ -74,9 +74,9 @@ class Worker_Thread(Thread):
                 log.error("Error in worker thread processing item %s", item, exc_info=True)
         log("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
-#only one worker thread for now:
+# only one worker thread for now:
 singleton : Optional[Worker_Thread]= None
-#locking to ensure multi-threaded code doesn't create more than one
+# locking to ensure multithreaded code doesn't create more than one
 lock = Lock()
 
 def get_worker(create:bool=True) -> Optional[Worker_Thread]:

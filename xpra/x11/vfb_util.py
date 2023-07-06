@@ -237,7 +237,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
     tmp_xorg_log_file = None
     if xorg_log_file:
         if use_display_fd:
-            #keep track of it so we can rename it later:
+            # keep track of it, so that we can rename it later:
             tmp_xorg_log_file = xorg_log_file
         #make sure the Xorg log directory exists:
         xorg_log_dir = os.path.dirname(xorg_log_file)

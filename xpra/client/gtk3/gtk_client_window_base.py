@@ -363,7 +363,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         targets = list(x.name() for x in context.list_targets())
         draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
         if not targets:
-            #this happens on macos, but we can still get the data..
+            #this happens on macOS, but we can still get the data...
             draglog("Warning: no targets provided, continuing anyway")
         elif "text/uri-list" not in targets:
             draglog("Warning: cannot handle targets:")
@@ -475,7 +475,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("init-focus", self.do_init_focus)
 
     def do_init_focus(self) -> None:
-        #hook up the X11 gdk event notifications so we can get focus-out when grabs are active:
+        # hook up the X11 gdk event notifications,
+        # so we can get focus-out when grabs are active:
         if is_X11():
             try:
                 from xpra.x11.gtk3.gdk_bindings import add_event_receiver
@@ -605,7 +606,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #don't bother if the new limit is greater than 16k:
             if maxw>=16*1024 and maxh>=16*1024:
                 return
-            #only take into account the current max-window-size if non zero:
+            #only take into account the current max-window-size if non-zero:
             mww, mwh = self.max_window_size
             if mww>0:
                 maxw = min(mww, maxw)
@@ -1492,7 +1493,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if window:
             root = window.get_screen().get_root_window()
         else:
-            #if we are called during init.. we don't have a window
+            # if we are called during init...
+            # we don't have a window
             root = get_default_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
@@ -1930,13 +1932,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         ww, wh = self.get_size()
         w = c.cx(ww)
         h = c.cy(wh)
-        #add grey semi-opaque layer on top:
+        # add grey semi-opaque layer on top:
         context.set_operator(OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
-        #we can't use the area as rectangle with:
-        #context.rectangle(area)
-        #because those would be unscaled dimensions
-        #it's easier and safer to repaint the whole window:
+        # we can't use the area as rectangle with:
+        # context.rectangle(area)
+        # because those would be unscaled dimensions
+        # it is easier and safer to repaint the whole window:
         context.rectangle(0, 0, w, h)
         context.fill()
         #add spinner:

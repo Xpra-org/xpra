@@ -78,7 +78,7 @@ class StartNewCommand:
             self.command_combo.connect("changed", self.command_changed)
             #this will populate the command combo:
             self.category_changed()
-        #always show the command as text so it can be edited:
+        # always show the command as text so that it can be edited:
         entry_label = Gtk.Label(label="Command to run:")
         entry_label.modify_font(Pango.FontDescription("sans 14"))
         entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)

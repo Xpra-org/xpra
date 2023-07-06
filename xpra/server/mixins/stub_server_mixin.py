@@ -126,7 +126,7 @@ class StubServerMixin:
     def cleanup_protocol(self, protocol) -> None:
         """
         Cleanup method for a specific connection.
-        (to cleanup / free up resources associated with a specific client or connection)
+        (to clean up / free up resources associated with a specific client or connection)
         """
 
 

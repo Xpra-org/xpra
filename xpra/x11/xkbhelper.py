@@ -63,9 +63,9 @@ def do_set_keymap(layout:str, variant:str, options, query_struct) -> None:
         layout is the generic layout name (used on non posix platforms)
             defaults to `us`
         variant is the layout variant (optional)
-        query_struct is the output of "setxkbmap -query" on the client
+        query_struct is the output of `setxkbmap -query` on the client
         parsed into a dictionary
-        Use those to try to setup the correct keyboard map for the client
+        Use those to try to set up the correct keyboard map for the client
         so that all the keycodes sent will be mapped
     """
     #First we try to use data from setxkbmap -query,
@@ -228,13 +228,13 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
 def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers):
     """
         Clients that have access to raw x11 keycodes should provide
-        an xkbmap_x11_keycodes map, we otherwise fallback to using
-        the xkbmap_keycodes gtk keycode list.
+        a `xkbmap_x11_keycodes` map, we otherwise fall back to using
+        the `xkbmap_keycodes` gtk keycode list.
         We try to preserve the initial keycodes if asked to do so,
         we retrieve them from the current server keymap and combine
         them with the given keycodes.
-        The modifiers dict can be obtained by calling
-        get_modifiers_from_meanings or get_modifiers_from_keycodes.
+        The `modifiers` dict can be obtained by calling
+        `get_modifiers_from_meanings` or `get_modifiers_from_keycodes`.
         We use it to ensure that two modifiers are not
         mapped to the same keycode (which is not allowed).
         We return a translation map for keycodes after setting them up,
@@ -468,10 +468,10 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
                 server_keycode = -1
         if server_keycode>0:
             l("set_keycodes key %s (%s) mapped to keycode=%s", keycode, tuple(entries), server_keycode)
-            #can't use it any more!
+            # can't use it anymore!
             if server_keycode in free_keycodes:
                 free_keycodes.remove(server_keycode)
-            #record it in trans map:
+            # record it in trans map:
             for name, _ in entries:
                 if keycode>=0 and server_keycode!=keycode:
                     keycode_trans[(keycode, name)] = server_keycode
@@ -735,7 +735,8 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
                 if keyname not in keynames:
                     keynames.append(keyname)
             elif modifier in ["shift", "lock", "control", "mod1", "mod2"] or keyname=="ISO_Level3_Shift":
-                #these ones we always add them, even if a record for this modifier already exists
+                # these are always added,
+                # even if a record for the modifier already exists
                 keynames = matches.setdefault(modifier, [])
                 if keyname not in keynames:
                     keynames.append(keyname)

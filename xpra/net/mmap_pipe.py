@@ -45,7 +45,7 @@ def xpra_group() -> int:
 
 def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, Any, int, Any, str]:
     """
-        Initializes an mmap area, writes the token in it and returns:
+        Initializes a mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
@@ -119,7 +119,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
                     log.error("Error: cannot create mmap temporary file:")
                     log.estr(e)
                     return rerr()
-                #keep a reference to it so it does not disappear!
+                #keep a reference to it, so it does not disappear!
                 mmap_temp_file = temp
                 mmap_filename = temp.name
                 fd = temp.file.fileno()

@@ -505,7 +505,7 @@ class WindowVideoSource(WindowSource):
         if text_hint and not TEXT_USE_VIDEO:
             return nonvideo(100, info="text content-type")
 
-        #ensure the dimensions we use for decision making are the ones actually used:
+        #ensure the dimensions we use for decision-making are the ones actually used:
         cww = w & self.width_mask
         cwh = h & self.height_mask
         if cww<64 or cwh<64:
@@ -805,7 +805,7 @@ class WindowVideoSource(WindowSource):
 
     def send_regions(self, damage_time, regions, coding : str, options):
         """
-            Overridden here so we can try to intercept the video_subregion if one exists.
+            Overridden here so that we can try to intercept the `video_subregion` if one exists.
         """
         vr = self.video_subregion.rectangle
         #overrides the default method for finding the encoding of a region
@@ -1123,7 +1123,7 @@ class WindowVideoSource(WindowSource):
                     self.make_data_packet_cb(*item)
                     done_packet = True
                 else:
-                    #we only process only one item per call (see "done_packet")
+                    #we only process one item per call (see "done_packet")
                     #and just keep track of extra ones:
                     still_due.append(int(1000*(due-now)))
         except Exception:
@@ -1214,7 +1214,7 @@ class WindowVideoSource(WindowSource):
         """
             This is called when we want to force a full re-init (force_reload=True)
             or from the timer that allows to tune the quality and speed.
-            (this tuning is done in WindowSource.reconfigure)
+            (this tuning is done in `WindowSource.reconfigure`)
             Here we re-evaluate if the csc and video pipeline we are currently using
             is really the best one, and if not we invalidate it.
             This uses get_video_pipeline_options() to get a list of pipeline
@@ -1365,8 +1365,8 @@ class WindowVideoSource(WindowSource):
             First, we try with direct encoders (for those that support the
             source pixel format natively), then we try all the combinations
             using csc encoders to convert to an intermediary format.
-            Each solution is rated and we return all of them in descending
-            score (best solution comes first).
+            Each solution is rated, and we return all of them in descending
+            score (the best solution comes first).
             Because this function is expensive to call, we cache the results.
             This allows it to run more often from the timer thread.
 

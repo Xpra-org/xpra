@@ -45,7 +45,7 @@ class GlobalPerformanceStatistics:
         # mmap state:
         self.mmap_size = 0
         self.mmap_bytes_sent = 0
-        self.mmap_free_size = 0                             #how much of the mmap space is left (may be negative if we failed to write the last chunk)
+        self.mmap_free_size = 0                             #how much of the mmap space is left (it may be negative if we failed to write the last chunk)
         # queue statistics:
         self.compression_work_qsizes = d()                  #size of the compression_work_queue before we add a new record to it
                                                             #(event_time, size)

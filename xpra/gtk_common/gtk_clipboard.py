@@ -96,7 +96,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not (self._want_targets or self._greedy_client):
             send_token()
             return
-        #we need the targets:
+        # we need the targets:
         targets = self.clipboard.wait_for_targets()
         if not targets:
             send_token()
@@ -104,12 +104,12 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._greedy_client:
             send_token(targets)
             return
-        #for now we only handle text targets:
+        # for now, we only handle text targets:
         text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
         if text_targets:
             text = self.clipboard.wait_for_text()
             if text:
-                #should verify the target is actually utf8...
+                # should verify the target is actually utf8...
                 text_target = text_targets[0]
                 send_token(targets, (text_target, "UTF8_STRING", 8, text))
                 return

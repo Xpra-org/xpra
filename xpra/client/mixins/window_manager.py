@@ -1217,8 +1217,8 @@ class WindowClient(StubClientMixin):
         elif self.window_close_action=="shutdown":
             self.send("shutdown-server", "shutdown on window close")
         elif self.window_close_action=="auto":
-            #forward unless this looks like a desktop
-            #this allows us behave more like VNC:
+            # forward unless this looks like a desktop,
+            # this allows us to behave more like VNC:
             window = self._id_to_window.get(wid)
             log("window_close_event(%i) window=%s", wid, window)
             if self.server_is_desktop:

@@ -90,8 +90,8 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
-    #remove transparency if it cannot be handled,
-    #and deal with non 24-bit formats:
+    # remove transparency if it cannot be handled,
+    # and deal with non-24-bit formats:
     if pixel_format=="r210":
         stride = image.get_rowstride()
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport pylint: disable=import-outside-toplevel
@@ -136,9 +136,9 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
-        #it is safe to use frombuffer() here since the convert()
-        #calls below will not convert and modify the data in place
-        #and we save the compressed data then discard the image
+        # it is safe to use frombuffer() here since the convert()
+        # calls below will not convert and modify the data in place,
+        # and we save the compressed data then discard the image
         im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
     except Exception as e:
         log("Image.frombuffer%s", (rgb, (w, h), len(pixels),

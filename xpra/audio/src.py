@@ -353,7 +353,7 @@ def main() -> int:
                 log.info("using default codec: %s", codec)
 
         #in case we're running against pulseaudio,
-        #try to setup the env:
+        #try to set up the env:
         try:
             from xpra.platform.paths import get_icon_filename
             f = get_icon_filename("xpra.png")

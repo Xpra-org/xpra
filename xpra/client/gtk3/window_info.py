@@ -36,7 +36,7 @@ def geom_str(geom) -> str:
     return "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
 
 def hsc(sc) -> str:
-    #make the dict more human readable
+    #make the dict more human-readable
     ssc = dict((bytestostr(k),v) for k,v in sc.items())
     ssc.pop("gravity", None)
     return dict_str(ssc)

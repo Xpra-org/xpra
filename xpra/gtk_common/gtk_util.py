@@ -781,7 +781,7 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
 dsinit : bool = False
 def init_display_source() -> None:
     """
-    On X11, we want to be able to access the bindings
+    On X11, we want to be able to access the bindings,
     so we need to get the X11 display from GDK.
     """
     global dsinit

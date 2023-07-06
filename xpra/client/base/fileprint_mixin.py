@@ -100,8 +100,8 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
 
     def send_printers(self, *args) -> None:
         printlog("send_printers%s timer=%s", args, self.send_printers_timer)
-        #dbus can fire dozens of times for a single printer change
-        #so we wait a bit and fire via a timer to try to batch things together:
+        # dbus can fire dozens of times for a single printer change,
+        # so we wait a bit and fire via a timer to try to batch things together:
         if self.send_printers_timer:
             return
         self.send_printers_timer = self.timeout_add(500, self.do_send_printers)

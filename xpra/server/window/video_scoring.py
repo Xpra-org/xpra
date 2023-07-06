@@ -87,7 +87,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
                        current_csce, current_ve,
                        score_delta : int, ffps : int, detection=True):
     """
-        Given an optional csc step (csc_format and csc_spec), and
+        Given an optional csc step (csc_format and csc_spec),
         and a required encoding step (encoder_spec and width/height),
         we calculate a score of how well this matches our requirements:
         * our quality target "self._currend_quality"

@@ -106,10 +106,10 @@ class WindowModel(BaseWindowModel):
                                  "Should the requested position be honoured?", "",
                                  False,
                                  GObject.ParamFlags.READWRITE),
-        # Toggling this property does not actually make the window iconified,
+        # Toggling this property does not actually make the window `iconified`,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
-        # whether or not the window is iconified.
+        # whether or not the window is `iconified`.
         "iconic": (GObject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
@@ -169,7 +169,7 @@ class WindowModel(BaseWindowModel):
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         self.saved_events = -1
-        #extra state attributes so we can unmanage() the window cleanly:
+        # extra state attributes so we can `unmanage()` the window cleanly:
         self.in_save_set : bool = False
         self.client_reparented : bool = False
         self.kill_count : int = 0
@@ -423,7 +423,7 @@ class WindowModel(BaseWindowModel):
         assert event.window==self.xid
         # The client window got unmapped.  The question is, though, was that
         # because it was withdrawn/destroyed, or was it because we unmapped it
-        # going into IconicState?
+        # going into `IconicState`?
         #
         # Also, if we receive a *synthetic* UnmapNotify event, that always
         # means that the client has withdrawn the window (even if it was not

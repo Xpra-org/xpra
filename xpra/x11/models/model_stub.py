@@ -96,7 +96,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     def _updateprop(self, name : str, value) -> bool:
         """ Updates the property and fires notify(),
             but only if the value has changed
-            and if the window has finished setting up and it is still managed.
+            and if the window has finished setting up, and it is still managed.
             Can only be used for AutoPropGObjectMixin properties.
         """
         l = self.get_logger(name)
@@ -113,7 +113,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         return False
 
     def get(self, name : str, default_value=None) -> object:
-        """ Allows us the avoid defining all the attributes we may ever query,
+        """ Allows us to avoid defining all the attributes we may ever query,
             returns the default value if the property does not exist.
         """
         l = self.get_logger(name)

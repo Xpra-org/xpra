@@ -618,7 +618,7 @@ class ClipboardProtocolHelperCore:
             request_id, selection, name, target)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
-            #err, we were asked about a clipboard we don't handle..
+            #err, we were asked about a clipboard we don't handle...
             log.error("Error: clipboard request for '%s' (no proxy, ignored)", name)
             no_contents()
             return

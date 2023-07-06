@@ -1584,7 +1584,7 @@ class WindowSource(WindowIconSource):
         if resize_elapsed<500:
             try:
                 #batch more when recently resized,
-                #but only if this is is not the first recent resize event:
+                #but only if this is not the first recent resize event:
                 if now-self.statistics.resize_events[-2]<1:
                     delay += (500-resize_elapsed)//2
             except IndexError:
@@ -1697,8 +1697,8 @@ class WindowSource(WindowIconSource):
             #there aren't too many regions soft expired yet
             #so use the "soft timer":
             self.soft_expired += 1
-            #we have already waited for "expire delay" to get here,
-            #wait gradually more as we soft expire more regions:
+            # we have already waited for "expire delay" to get here,
+            # wait gradually more as we soft-expire more regions:
             soft_delay = self.soft_expired*target_delay
             self.soft_timer = self.timeout_add(soft_delay, self.delayed_region_soft_timeout)
         else:
@@ -2325,7 +2325,8 @@ class WindowSource(WindowIconSource):
 
     def refresh_timer_function(self, damage_options) -> bool:
         """ Must be called from the UI thread:
-            this makes it easier to prevent races and we're allowed to use the window object.
+            this makes it easier to prevent races,
+            and we're also allowed to use the window object.
             And for that reason, it may re-schedule itself safely here too.
             We figure out if now is the right time to do the refresh,
             and if not re-schedule.

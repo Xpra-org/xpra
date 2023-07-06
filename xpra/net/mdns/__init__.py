@@ -21,11 +21,11 @@ def get_listener_class():
     log = get_util_logger()
     log("mdns.get_listener_class() AVAHI=%s, ZEROCONF=%s", AVAHI, ZEROCONF)
     if ZEROCONF:
-        #workaround for MacOS Big Sur which broke ctypes,
+        #workaround for macOS Big Sur which broke ctypes,
         #ctypes is used in the ifaddr module which is imported by zeroconf:
         if sys.platform.startswith("darwin"):
             import xpra.platform    #pylint: disable=import-outside-toplevel
-            #on MacOS, an import side-effect is to patch the ctypes loader
+            #on macOS, an import side effect is to patch the ctypes loader
             assert xpra.platform
         try:
             from xpra.net.mdns.zeroconf_listener import ZeroconfListener

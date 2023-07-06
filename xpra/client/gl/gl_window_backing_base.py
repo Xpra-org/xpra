@@ -294,9 +294,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.bit_depth : int = self.get_bit_depth(pixel_depth)
         self.init_formats()
         self.draw_needs_refresh : bool = DRAW_REFRESH
-        #the correct check would be this:
-        #self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh
-        #but we're meant to be using double-buffered everywhere, so don't bother:
+        # the correct check would be this:
+        # self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh
+        # but we're meant to be using double-buffered everywhere, so don't bother:
         self.repaint_all : bool = True
         self._backing.show()
 
@@ -423,8 +423,8 @@ class GLWindowBackingBase(WindowBackingBase):
         self.copy_fbo(w, h, sx, sy, dx, dy)
         #make tmp the new offscreen:
         self.swap_fbos()
-        #now we don't need the old tmp fbo contents any more,
-        #and we can re-initialize it with the correct size:
+        # now we don't need the old tmp fbo contents anymore,
+        # and we can re-initialize it with the correct size:
         mag_filter = self.get_init_magfilter()
         self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
         self._backing.queue_draw_area(0, 0, bw, bh)
@@ -665,9 +665,9 @@ class GLWindowBackingBase(WindowBackingBase):
             if w<=0 or h<=0:
                 fail(f"invalid scroll area size: {w}x{h}")
                 continue
-            #these should be errors,
-            #but desktop-scaling can cause a mismatch between the backing size
-            #and the real window size server-side.. so we clamp the dimensions instead
+            # these should be errors,
+            # but desktop-scaling can cause a mismatch between the backing size
+            # and the real window size server-side... so we clamp the dimensions instead
             if x+w>bw:
                 w = bw-x
             if y+h>bh:
@@ -1057,7 +1057,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return "copy:bytes", img_data
         if hasattr(img_data, "raw"):
             return "zerocopy:mmap", img_data.raw
-        #everything else.. copy to bytes (aka str):
+        # everything else: copy to bytes (aka str):
         return f"copy:bytes({type(img_data)})", strtobytes(img_data)
 
     def set_alignment(self, width : int, rowstride : int, pixel_format:str) -> None:

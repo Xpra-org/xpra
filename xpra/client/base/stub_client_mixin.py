@@ -94,8 +94,8 @@ class StubClientMixin:
         Dummy utility method for compressing data.
         Actual client implementations will provide compression
         based on the client and server capabilities (lz4, zlib).
+        subclasses should override this method.
         """
-        #sub-classes should override this
         assert level>=0
         return Compressed("raw %s" % datatype, data, can_inline=True)
 

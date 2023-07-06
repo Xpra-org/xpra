@@ -76,16 +76,16 @@ class ServerWebSocketConnection(XpraQuicConnection):
         if stream_id is not None:
             #already allocated substream:
             return stream_id
-        #allocate a new one and record it
-        #(even if it fails so we don't retry to allocate it again and again):
+        # allocate a new one and record it
+        # (even if it fails, so we don't retry to allocate it again and again):
         stream_id = self.allocate_new_stream_id(stream_type) or self.stream_id
         self._packet_type_streams[stream_type] = stream_id
         return stream_id
 
     def allocate_new_stream_id(self, stream_type) -> int:
         log(f"allocate_new_stream_id({stream_type!r})")
-        #should use more "correct" values here
-        #(we don't need those headers,
+        # should use more "correct" values here
+        # (we don't need those headers,
         # but the client would drop the packet without them..)
         headers = binary_headers({
             ":method" : self.scope.get("method", "CONNECT"),

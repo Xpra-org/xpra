@@ -40,7 +40,7 @@ def get_full_audio_command():
 def get_audio_wrapper_env():
     env = {}
     if WIN32:
-        #disable bencoder to skip warnings with the py3k Sound subapp
+        #disable bencoder to skip warnings with the Python 3 Sound sub-app
         env["XPRA_USE_BENCODER"] = "0"
         #we don't want the output to go to a log file
         env["XPRA_REDIRECT_OUTPUT"] = "0"
@@ -235,8 +235,8 @@ def _add_debug_args(command:List[str]):
 class audio_subprocess_wrapper(subprocess_caller):
     """ This utility superclass deals with the caller side of the audio subprocess wrapper:
         * starting the wrapper subprocess
-        * handling state-changed signal so we have a local copy of the current value ready
-        * handle "info" packets so we have a cached copy
+        * handling state-changed signal, so we have a local copy of the current value ready
+        * handle "info" packets, so we have a cached copy
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
     def __init__(self, description):

@@ -96,9 +96,9 @@ def encode(coding : str, image, options : Dict) -> Tuple[str,Compressed,Dict[str
         elif can_inline and isinstance(pixels, memoryview):
             assert isinstance(cwrapper, Compressed)
             assert cwrapper.data==pixels
-            #compression either did not work or was not enabled
-            #and memoryview pixel data cannot be handled by the packet encoders
-            #so we convert it to bytes so it can still be inlined with the packet data:
+            # compression either did not work or was not enabled
+            # and memoryview pixel data cannot be handled by the packet encoders,
+            # so we convert it to bytes so it can still be inlined with the packet data:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
     else:
         #can't pass a raw buffer to bencode / rencode,

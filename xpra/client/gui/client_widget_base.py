@@ -46,10 +46,10 @@ class ClientWidgetBase:
         return info
 
     def make_new_backing(self, backing_class:Type, ww:int, wh:int, bw:int, bh:int):
-        #size of the backing (same as server window source):
+        # size of the backing, which should be the same as the server's window source:
         bw = max(1, bw)
         bh = max(1, bh)
-        #actual size of window (may be different when scaling):
+        # actual size of window, which may be different when scaling:
         ww = max(1, ww)
         wh = max(1, wh)
         if ww>=32768 or wh>=32768:

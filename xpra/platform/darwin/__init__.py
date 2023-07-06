@@ -21,7 +21,7 @@ def do_init_env():
     init_env_common()
     if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
         os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
-    #GStreamer paths:
+    # GStreamer's paths:
     bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
     if bundle_contents:
         rsc_dir = os.path.join(bundle_contents, "Resources")

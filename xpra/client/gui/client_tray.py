@@ -20,7 +20,7 @@ SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 
 class ClientTray(ClientWidgetBase):
     """
-        This acts like a widget and we use the TrayBacking
+        This acts like a widget, we use the `TrayBacking`
         to capture the tray pixels and forward them
         to the real tray widget class.
     """
@@ -203,8 +203,8 @@ class ClientTray(ClientWidgetBase):
 
 class TrayBacking(WindowBackingBase):
     """
-        This backing only stores the rgb pixels so
-        we can use them with the real widget.
+        This backing only stores the rgb pixels,
+        so that we can use them with the real widget.
     """
 
     #keep it simple: only accept 32-bit RGB(X),

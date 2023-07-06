@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# oh gods it's threads
+# oh gods, it's threads
 
 # but it works on win32, for whatever that's worth.
 
@@ -568,9 +568,9 @@ class SocketProtocol:
                 if not item.can_inline or l>INLINE_SIZE:
                     il = 0
                     if isinstance(item, LevelCompressed):
-                        #unlike Compressed (usually pixels, decompressed in the paint thread),
-                        #LevelCompressed is decompressed by the network layer
-                        #so we must tell it how to do that and pass the level flag
+                        # unlike `Compressed` (usually pixels, decompressed in the paint thread),
+                        # `LevelCompressed` is decompressed by the network layer
+                        # so we must tell it how to do that and using the level flag:
                         il = item.level
                     packets.append((0, i, il, item.data))
                     packet[i] = b''
@@ -1102,7 +1102,7 @@ class SocketProtocol:
     def flush_then_close(self, encoder:Optional[Callable]=None,
                          last_packet=None,
                          done_callback:Optional[Callable]=None) -> None:    #pylint: disable=method-hidden
-        """ Note: this is best effort only
+        """ Note: this is best-effort only
             the packet may not get sent.
 
             We try to get the write lock,

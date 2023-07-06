@@ -75,7 +75,7 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> List[str]:
 def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[str,List]:
     """
     if none are defined, add this as default
-    it would be nicer to specify it via OptionParser in main
+    it would be nicer to specify it via OptionParser in main,
     but then it would always have to be there with no way of removing it
     whereas now it is enough to define one (any shortcut)
     """

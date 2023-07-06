@@ -141,9 +141,9 @@ class WindowPerformanceStatistics:
             mayaddfac(*calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
         ldet = self.last_damage_event_time
         if ldet:
-            #If nothing happens for a while then we can reduce the batch delay,
-            #however we must ensure this is not caused by a high system latency
-            #so we ignore short elapsed times.
+            # If nothing happens for a while then we can reduce the batch delay,
+            # however we must ensure this is not caused by a high system latency,
+            # so we ignore short elapsed times.
             elapsed = monotonic()-ldet
             mtime = max(0.0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:

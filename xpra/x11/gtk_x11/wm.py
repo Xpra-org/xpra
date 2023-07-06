@@ -233,9 +233,9 @@ class Wm(GObject.GObject):
         rxid = root.get_xid()
         add_event_receiver(rxid, self)
         add_fallback_receiver("xpra-client-message-event", self)
-        #when reparenting, the events may get sent
-        #to a window that is already destroyed
-        #and we don't want to miss those events, so:
+        # when reparenting, the events may get sent
+        # to a window that is already destroyed,
+        # and we don't want to miss those events, so:
         add_fallback_receiver("child-map-request-event", self)
         X11Window.substructureRedirect(rxid)
 
@@ -243,7 +243,7 @@ class Wm(GObject.GObject):
         log(f"root window children: {children}")
         for xid in children:
             # ignore windows we have created ourselves (ie: the world window),
-            # unmapped or OR windows:
+            # unmapped or `OR` windows:
             if xid==wxid:
                 continue
             if X11Window.is_override_redirect(xid):
@@ -383,7 +383,7 @@ class Wm(GObject.GObject):
         elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS" and FRAME_EXTENTS:
             #if we're here, that means the window model does not exist
             #(or it would have processed the event)
-            #so this must be a an unmapped window
+            #so this must be an unmapped window
             frame = None
             with xswallow:
                 xid = event.window
@@ -486,8 +486,8 @@ class Wm(GObject.GObject):
         # NB, GDK will do strange things to this window.  We don't want to use
         # it for anything.  (In particular, it will call XSelectInput on it,
         # which is fine normally when GDK is running in a client, but since it
-        # happens to be using the same connection as we the WM, it will
-        # clobber any XSelectInput calls that *we* might have wanted to make
+        # happens to be using the same connection as we, the WM, it will
+        # clobber any `XSelectInput` calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
         root = get_default_root_window()

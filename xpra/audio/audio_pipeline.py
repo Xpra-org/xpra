@@ -101,7 +101,8 @@ class AudioPipeline(Pipeline):
         if self.stream_compressor:
             self.info["stream-compressor"] = self.stream_compressor
         self.emit_info()
-        #we may never get the stream start, synthesize codec event so we get logging:
+        # we may never get the stream start,
+        # so we synthesize a codec event to get the log message in all cases:
         parts = self.codec.split("+")
         self.timeout_add(1000, self.new_codec_description, parts[0])
         if len(parts)>1 and parts[1]!=self.stream_compressor:

@@ -463,7 +463,7 @@ class TopSessionClient(InfoTimerClient):
             self.log(f"error logging message: {e}")
     def td(self, d):
         d = typedict(d)
-        #override warning method so we don't corrupt the curses output
+        # override warning method so that we don't corrupt the curses output
         d.warn = self.dictwarn
         return d
 

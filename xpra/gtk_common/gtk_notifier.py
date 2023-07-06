@@ -239,9 +239,9 @@ class Popup(Gtk.Window):
         self.wait_timer = 0
         self.fade_out_timer = 0
         self.fade_in_timer = GLib.timeout_add(100, self.fade_in)
-        #populate the window:
+        # populate the window:
         self.set_content(title, message, actions, image)
-        #ensure we dont show it in the taskbar:
+        # ensure we don't show it in the taskbar:
         self.realize()
         self.get_window().set_skip_taskbar_hint(True)
         self.get_window().set_skip_pager_hint(True)
@@ -278,15 +278,15 @@ class Popup(Gtk.Window):
 
     def get_x(self, w):
         x = self.stack.get_origin_x() - w//2
-        if (x + w) >= self.stack.max_width:    #dont overflow on the right
+        if (x + w) >= self.stack.max_width:    # don't overflow on the right
             x = self.stack.max_width - w
-        x = max(0, x)                          #or on the left
+        x = max(0, x)                          # or on the left
         log("get_x(%s)=%s", w, x)
         return    x
 
     def get_y(self, h):
         y = self.stack.get_origin_y()
-        if y >= (self.stack.max_height//2):        #if near bottom, subtract window height
+        if y >= (self.stack.max_height//2):        # if near bottom, subtract window height
             y = y - h
         if (y + h) >= self.stack.max_height:
             y = self.stack.max_height - h

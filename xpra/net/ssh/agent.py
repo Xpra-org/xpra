@@ -14,9 +14,9 @@ def ssh_dir_path() -> str:
     return os.path.join(session_dir, "ssh")
 
 def setup_ssh_auth_sock() -> str:
-    #the 'ssh' dir contains agent socket symlinks to the real agent socket
-    #and we can just update the "agent" symlink
-    #which is the one that applications are told to use
+    # the 'ssh' dir contains agent socket symlinks to the real agent socket,
+    # so we can just update the "agent" symlink
+    # which is the one that applications are told to use
     ssh_dir = ssh_dir_path()
     if not os.path.exists(ssh_dir):
         os.mkdir(ssh_dir, 0o700)

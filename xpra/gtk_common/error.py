@@ -24,7 +24,7 @@
 # do another XSync).
 #
 # (In this modern world, with WM's either on the same machine or over
-# super-fast connections to the X server, everything running on fast
+# superfast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
 import traceback

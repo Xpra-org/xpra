@@ -278,7 +278,7 @@ class X11ServerCore(GTKServerBase):
             cleanup_x11_filter()
             #try a few times:
             #errors happen because windows are being destroyed
-            #(even more so when we cleanup)
+            #(even more so when we call `cleanup`)
             #and we don't really care too much about this
             for l in (log, log, log, log, log.warn):
                 try:
@@ -735,10 +735,10 @@ class X11ServerCore(GTKServerBase):
             return root_w, root_h
         try:
             if (w==root_w and h==root_h) and xinerama_changed:
-                #xinerama was changed, but the RandR resolution will not be...
-                #and we need a RandR change to force applications to re-query it
-                #so we temporarily switch to another resolution to force
-                #the change! (ugly! but this works)
+                # `xinerama` was changed, but the `RandR` resolution will not be...
+                # and we need a `RandR` change to force applications to re-query it,
+                # so we temporarily switch to another resolution to force
+                # the change! (ugly! but this works)
                 with xsync:
                     temp = {}
                     for tw,th in self.get_all_screen_sizes():
@@ -1014,7 +1014,7 @@ class X11ServerCore(GTKServerBase):
         return x, y
 
     def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
-        #(this is called within an xswallow context)
+        # (this is called within a `xswallow` context)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         self.device_move_pointer(device_id, wid, (x, y), props)
 

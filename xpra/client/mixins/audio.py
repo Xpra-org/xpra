@@ -426,7 +426,11 @@ class AudioClient(StubClientMixin):
             log("start_receiving_audio() done, speaker_enabled=%s", enabled)
 
     def stop_receiving_audio(self, tell_server:bool=True) -> None:
-        """ ask the server to stop sending audio, toggle flag so we ignore further packets and emit client signal """
+        """
+            ask the server to stop sending audio
+            and toggle the flag so that we ignore further packets
+            and emit the `new-sequence` client signal
+        """
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, self.audio_sink)
         ss = self.audio_sink
         if self.speaker_enabled:

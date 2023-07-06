@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# simple wrapper script so we can execute python commands with the same python interpreter
+# simple wrapper script,
+# so we can execute python commands with the same python interpreter
 # and environment which is used by the xpra.exe / xpra_cmd.exe process.
 
 import sys

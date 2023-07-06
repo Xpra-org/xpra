@@ -167,7 +167,7 @@ class ClipboardClient(StubClientMixin):
             log("clipboard helper=%s", ch)
             if self.clipboard_enabled:
                 #tell the server about which selections we really want to sync with
-                #(could have been translated, or limited if the client only has one, etc)
+                #(could have been translated, or limited if the client only has one, etc.)
                 self.send_clipboard_selections(ch.get_remote_selections())
                 ch.send_all_tokens()
         #ui may want to know this is now set:

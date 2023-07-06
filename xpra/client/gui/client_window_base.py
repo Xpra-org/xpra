@@ -299,7 +299,7 @@ class ClientWindowBase(ClientWidgetBase):
             if title.find("@")<0:
                 return title
             #perform metadata variable substitutions:
-            #full of py3k unicode headaches that don't need to be
+            #full of Python 3 unicode headaches that don't need to be
             UNKNOWN_MACHINE = "<unknown machine>"
             remote_hostname = getattr(self._client, "_remote_hostname", None)
             remote_display = getattr(self._client, "_remote_display", None)
@@ -661,7 +661,7 @@ class ClientWindowBase(ClientWidgetBase):
             #(in practice this code should never fire, just here as a reminder)
             for x in ("max_width", "max_height"):
                 hints.pop(x, None)
-            #bug 2214: GTK3 on win32 gets confused if we specify a large max-size
+            # bug 2214: GTK3 on win32 gets confused if we specify a large max-size,
             # and it will mess up maximizing the window
             if not WIN32 or (maxw<32000 or maxh<32000):
                 hints["max_width"] = maxw

@@ -50,8 +50,9 @@ def get_core_encodings():
                     core_encodings.append(e)
     if SCROLL_ENCODING:
         core_encodings.append("scroll")
-    #we enable all the video decoders we know about,
-    #what will actually get used by the server will still depend on the csc modes supported
+    # we enable all the video decoders we know about,
+    # but what will actually get used by the server will still depend
+    # on the csc modes supported by the client
     video_decodings = getVideoHelper().get_decodings()
     log("video_decodings=%s", video_decodings)
     for encoding in video_decodings:

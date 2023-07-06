@@ -12,11 +12,11 @@ from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
-#all the compressors we know about, in best compatibility order:
+# all the compressors we know about, in best compatibility order:
 ALL_COMPRESSORS : Tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
-#order for performance:
+# order for performance:
 PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "zlib", "brotli")
-#require compression (disallow 'none'):
+# require compression (disallow 'none'):
 PERFORMANCE_COMPRESSION : Tuple[str, ...] = ("lz4", "zlib", "brotli")
 
 Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])

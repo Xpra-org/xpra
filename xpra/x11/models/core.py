@@ -110,7 +110,7 @@ class CoreX11WindowModel(WindowModelStub):
         The utility superclass for all GTK2 / X11 window models,
         it wraps an X11 window (the "client-window").
         Defines the common properties and signals,
-        sets up the composite helper so we get the damage events.
+        sets up the composite helper, so we get the damage events.
         The x11_property_handlers sync X11 window properties into Python objects,
         the py_property_handlers do it in the other direction.
     """
@@ -270,7 +270,7 @@ class CoreX11WindowModel(WindowModelStub):
             * makes sure it still exists
               (by querying its geometry which may raise an XError)
             * setup composite redirection
-            * calls setup
+            * calls `setup`
             The difficulty comes from X11 errors and synchronization:
             we want to catch errors and undo what we've done.
             The mix of GTK and pure-X11 calls is not helping.
@@ -819,7 +819,7 @@ class CoreX11WindowModel(WindowModelStub):
             if FORCE_QUIT:
                 log.info("window %#x ('%s') does not support WM_DELETE_WINDOW", xid, title)
                 log.info(" using force quit")
-                # You don't wanna play ball?  Then no more Mr. Nice Guy!
+                # You don't want to play ball?  Then no more Mr. Nice Guy!
                 self.force_quit()
             else:
                 log.warn("window %#x ('%s') cannot be closed,", xid, title)
@@ -839,8 +839,8 @@ class CoreX11WindowModel(WindowModelStub):
         machine = self.get_property("client-machine")
         pid = self.get_property("pid")
         if pid<=0:
-            #we could fallback to _NET_WM_PID
-            #but that would be unsafe
+            # we could fall back to _NET_WM_PID
+            # but that would be unsafe
             log.warn("Warning: cannot terminate window %#x, no pid found", self.xid)
             if machine:
                 log.warn(" WM_CLIENT_MACHINE=%s", machine)

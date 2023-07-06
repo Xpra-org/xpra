@@ -50,7 +50,7 @@ def get_network_logger():
 
 def create_unix_domain_socket(sockpath:str, socket_permissions:int=0o600):
     assert POSIX
-    #convert this to a umask!
+    #convert this to a `umask`!
     umask = (0o777-socket_permissions) & 0o777
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

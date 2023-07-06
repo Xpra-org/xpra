@@ -258,7 +258,7 @@ def get_console_position(handle):
         csbi = CONSOLE_SCREEN_BUFFER_INFO()
         GetConsoleScreenBufferInfo(handle, byref(csbi))
         cpos = csbi.dwCursorPosition
-        #wait for input if this is a brand new console:
+        #wait for input if this is a brand-new console:
         return cpos.X and cpos.Y
     except Exception:
         e = sys.exc_info()[1]
@@ -292,17 +292,17 @@ def should_wait_for_input():
     if wfi is not None:
         return wfi!="0"
     if is_wine():
-        #don't wait for input when running under wine
-        #(which usually does not popup a new shell window)
+        # don't wait for input when running under wine
+        # (which usually does not pop up a new shell window)
         return False
     if os.environ.get("TERM", "")=="xterm":
-        #msys, cygwin and git bash environments don't popup a new shell window
-        #and they all set TERM=xterm
+        # msys, cygwin and git bash environments don't pop up a new shell window,
+        # and they all set TERM=xterm
         return False
     handle = GetStdHandle(STD_OUTPUT_HANDLE)
     if not_a_console(handle):
         return False
-    #wait for input if this is a brand new console:
+    #wait for input if this is a brand-new console:
     return get_console_position(handle)==(0, 0)
 
 
@@ -382,7 +382,7 @@ def do_init_env():
                 if os.path.exists(tdir):
                     os.environ["GTK_THEME"] = theme
                     break
-        #GStreamer plugins:
+        #GStreamer's plugins:
         gst_dir = os.path.join(libdir, "gstreamer-1.0")   #ie: C:\Program Files\Xpra\lib\gstreamer-1.0
         os.environ["GST_PLUGIN_PATH"] = gst_dir
 
