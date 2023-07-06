@@ -37,12 +37,14 @@ MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 
-DESKTOPSERVER_BASES : List[Type] = [GObject.GObject]
-if server_features.rfb:
-    from xpra.server.rfb.rfb_server import RFBServer
-    DESKTOPSERVER_BASES.append(RFBServer)
-DESKTOPSERVER_BASES.append(X11ServerBase)
-DESKTOPSERVER_BASES = tuple(DESKTOPSERVER_BASES)
+def get_desktop_server_base_classes() -> Tuple[Type,...]:
+    classes : List[Type] = [GObject.GObject]
+    if server_features.rfb:
+        from xpra.server.rfb.rfb_server import RFBServer
+        classes.append(RFBServer)
+    classes.append(X11ServerBase)
+    return tuple(classes)
+DESKTOPSERVER_BASES = get_desktop_server_base_classes()
 DesktopServerBaseClass : Type[X11ServerBase] = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
@@ -190,7 +192,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         for model in self._id_to_window.values():
             self.send_new_desktop_model(model, ss, sharing)
 
-    def send_new_desktop_model(self, model, ss, sharing:bool=False) -> None:
+    def send_new_desktop_model(self, model, ss, _sharing:bool=False) -> None:
         x, y, w, h = model.get_geometry()
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid)

@@ -397,7 +397,7 @@ class SSHServer(paramiko.ServerInterface):
         channel.proxy_process = proc
 
 
-def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, password_auth:bool=None):
+def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, password_auth:Optional[Callable]=None):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options)
     DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)

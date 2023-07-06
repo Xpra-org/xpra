@@ -9,7 +9,7 @@ import browser_cookie3  # @UnresolvedImport
 from xpra.os_util import strtobytes
 
 
-def get_headers(host:str, port:int) -> Dict[bytes,bytes]:    #pylint: disable=unused-argument
+def get_headers(host:str, _port:int) -> Dict[bytes,bytes]:    #pylint: disable=unused-argument
     cookie_domain = host
     cookie_string = ''
     # get cookies for domain and all parent domains except tld

@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-def get_enabled_mixins() -> Tuple[StubSourceMixin,...]:
+def get_enabled_mixins() -> Tuple[Type,...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
     mixins : List[Type] = [ClientInfoMixin]

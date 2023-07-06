@@ -77,7 +77,7 @@ def load_dir(d):
     log("load_dir(%s)", d)
     menu = {}
     for x in listdir(d):
-        log(" %s" % (x))
+        log(f" {x}")
         if x.endswith(".ini"):
             continue
         name = os.path.join(d, x)

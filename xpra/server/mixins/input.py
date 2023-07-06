@@ -207,7 +207,7 @@ class InputServer(StubServerMixin):
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
         keylog("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
-        if pressed and (wid is not None) and (wid not in self._id_to_window):
+        if pressed and wid and wid not in self._id_to_window:
             keylog("window %s is gone, ignoring key press", wid)
             return
         if keycode<0:
@@ -276,7 +276,7 @@ class InputServer(StubServerMixin):
             return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         keyname = bytestostr(keyname)
-        modifiers = tuple(bytestostr(x) for x in modifiers)
+        modifiers = [bytestostr(x) for x in modifiers]
         group = 0
         if len(packet)>=7:
             group = packet[6]

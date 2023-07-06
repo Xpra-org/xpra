@@ -623,6 +623,7 @@ class WindowClient(StubClientMixin):
         traylog("make_system_tray%s system tray classes=%s", args, tc)
         return make_instance(tc, self, *args)
 
+    # noinspection PyMethodMayBeStatic
     def get_system_tray_classes(self) -> Tuple[Optional[Type],...]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method

@@ -213,7 +213,7 @@ class CaptureAndEncode(Capture):
 GObject.type_register(CaptureAndEncode)
 
 
-def selftest(full=False) -> None:
+def selftest(_full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
     from gi.repository import GLib  # @UnresolvedImport
     from xpra.gtk_common.gtk_util import get_root_size

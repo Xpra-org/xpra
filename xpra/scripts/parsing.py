@@ -584,7 +584,7 @@ def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
     for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
         x = f"ssl-{k}"
         incmdline = (
-            (f"--{x}") in cmdline or (f"--no-{x}") in cmdline or
+            f"--{x}" in cmdline or f"--no-{x}" in cmdline or
             any(c.startswith(f"--{x}=") for c in cmdline)
         )
         if incmdline or k not in ssl_options:

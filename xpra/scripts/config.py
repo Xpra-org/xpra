@@ -1476,7 +1476,7 @@ def fixup_packetencoding(options) -> None:
 
 def fixup_keyboard(options) -> None:
     #variants and layouts can be specified as CSV, convert them to lists:
-    def p(v):
+    def p(v) -> List[str]:
         try:
             r = remove_dupes(x.strip() for x in v.split(","))
             #remove empty string if that's the only value:

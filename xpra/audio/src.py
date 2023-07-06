@@ -235,7 +235,7 @@ class AudioSource(AudioPipeline):
         if self.min_timestamp>0 and pts<self.min_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (min-timestamp=%s)", pts, self.min_timestamp)
             return GST_FLOW_OK
-        if self.max_timestamp>0 and pts>self.max_timestamp:
+        if self.max_timestamp and pts>self.max_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (max-timestamp=%s)", pts, self.max_timestamp)
             return GST_FLOW_OK
         size = buf.get_size()

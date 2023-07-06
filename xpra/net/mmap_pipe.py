@@ -43,7 +43,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, Any, int, Any, str]:
+def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)

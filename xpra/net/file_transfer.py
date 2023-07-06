@@ -1032,6 +1032,6 @@ class FileTransferHandler(FileTransferAttributes):
     def compressed_wrapper(self, datatype, data, level=5):
         raise NotImplementedError()
 
-    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0.0, position=0, total=0, error=None) -> None:
+    def transfer_progress_update(self, send=True, transfer_id:str="", elapsed=0.0, position=0, total=0, error=None) -> None:
         #this method is overridden in the gtk client:
         filelog("transfer_progress_update%s", (send, transfer_id, elapsed, position, total, error))

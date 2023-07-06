@@ -87,6 +87,7 @@ class X11ServerBase(X11ServerCore):
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
 
+    # noinspection PyMethodMayBeStatic
     def save_pid(self) -> None:
         root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
 

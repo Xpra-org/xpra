@@ -923,6 +923,7 @@ class WindowBackingBase:
             else:
                 raise
 
+    # noinspection PyMethodMayBeStatic
     def do_draw_region(self, _x:int, _y:int, _width:int, _height:int, coding:str, _img_data, _rowstride:int, _options, callbacks):
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)

@@ -274,7 +274,7 @@ class Encoder(VideoPipeline):
 GObject.type_register(Encoder)
 
 
-def selftest(full=False):
+def selftest(_full=False):
     log("gstreamer encoder selftest: %s", get_info())
     from xpra.codecs.codec_checks import test_encoder_spec, DEFAULT_TEST_SIZE
     W, H = DEFAULT_TEST_SIZE

@@ -76,6 +76,7 @@ log("gdkdll=%s", gdkdll)
 
 
 shell32 = WinDLL("shell32", use_last_error=True)
+set_window_group : Optional[Callable] = None
 try:
     from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
 except ImportError as e:
@@ -83,7 +84,6 @@ except ImportError as e:
     log.warn("Warning: propsys support missing:")
     log.warn(" %s", e)
     log.warn(" window grouping is not available")
-    set_window_group = None
 
 
 try:

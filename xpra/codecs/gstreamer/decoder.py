@@ -82,7 +82,7 @@ CODECS = find_codecs(get_codecs_options())
 def get_encodings() -> Tuple[str,...]:
     return tuple(CODECS.keys())
 
-def get_min_size(encoding:str):
+def get_min_size(_encoding:str):
     return 48, 16
 
 def get_input_colorspaces(encoding:str) -> Tuple[str,...]:

@@ -10,7 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Dict, Any, List, Type
+from typing import Dict, Any, List, Type, Tuple
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -1336,7 +1336,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("Error loading OpenGL support:", e)
 
-    def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool):
+    def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool) -> Tuple[Type,...]:
         log("get_client_window_class%s ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             (w, h, metadata, override_redirect),
             self.ClientWindowClass, self.GLClientWindowClass,

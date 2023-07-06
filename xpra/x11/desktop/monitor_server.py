@@ -268,7 +268,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def _adjust_monitor(self, model, delta_x : int, delta_y : int) -> None:
         screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
-        if (delta_x==0 and delta_y==0):
+        if delta_x==0 and delta_y==0:
             return
         x, y = model.get_geometry()[:2]
         new_x = max(0, x+delta_x)

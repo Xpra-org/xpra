@@ -831,7 +831,7 @@ def _do_run_server(script_file:str, cmdline,
         session = sessions.get(display_name)
         if session:
             socket_path = session.get("socket-path")
-            uri = (f"socket://{socket_path}") if socket_path else display_name
+            uri = f"socket://{socket_path}" if socket_path else display_name
             if request_exit(uri):
                 #the server has terminated as we had requested
                 use_display = True
@@ -926,9 +926,9 @@ def _do_run_server(script_file:str, cmdline,
             stderr.write("Error: failed to import pam module\n")
             stderr.write(f" {e}\n")
             del e
-            PAM_OPEN = False
-    if PAM_OPEN:
-        pam = pam_session(username)
+        else:
+            pam = pam_session(username)
+    if pam:
         env = {
                #"XDG_SEAT"               : "seat1",
                #"XDG_VTNR"               : "0",

@@ -96,7 +96,7 @@ class SysAuthenticatorBase:
     def requires_challenge(self) -> bool:
         return True
 
-    def req_xor(self, digests) -> Tuple[bytes,str]:
+    def req_xor(self, digests):
         self.req_challenge(digests, "xor")
 
     def req_challenge(self, digests, required="xor") -> None:
@@ -125,7 +125,7 @@ class SysAuthenticatorBase:
     def get_password(self) -> str:
         return ""
 
-    def check(self, value:str) -> bool:
+    def check(self, value:bytes) -> bool:
         try:
             password = value.decode("utf8")
         except UnicodeDecodeError:

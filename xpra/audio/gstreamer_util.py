@@ -759,7 +759,7 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
     plugin = audio_source_plugin.split(":")[0]
     options_str = (audio_source_plugin+":").split(":",1)[1].rstrip(":")
-    simple_str = (plugin).lower().strip()
+    simple_str = plugin.lower().strip()
     if not simple_str:
         simple_str = get_default_source()
         if not simple_str:

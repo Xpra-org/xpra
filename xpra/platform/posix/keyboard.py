@@ -224,6 +224,11 @@ class Keyboard(KeyboardBase):
 
 
     def get_layout_spec(self):
+        def s(v) -> str:
+            try:
+                return v.decode("latin1")
+            except Exception:
+                return str(v)
         layout = ""
         layouts = []
         variant = ""
@@ -231,27 +236,22 @@ class Keyboard(KeyboardBase):
         if self.keyboard_bindings:
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()
-            v = props.get("layout")
-            variant = props.get("variant", "")
-            options = props.get("options", "")
+            v = s(props.get("layout"))
+            variant = s(props.get("variant", ""))
+            options = s(props.get("options", ""))
         else:
             locale = self.get_locale_status()
-            v = locale.get("X11 Layout")
+            v = s(locale.get("X11 Layout", ""))
         if not v:
             #fallback:
-            v = self.get_xkb_rules_names_property()
+            props = self.get_xkb_rules_names_property()
             #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
-            if v and len(v)>=3:
-                v = v[2]
+            if props and len(props)>=3:
+                v = s(props[2])
         if v:
             layouts = v.split(",")
             layout = v
-        def s(v):
-            try:
-                return v.decode("latin1")
-            except Exception:
-                return str(v)
-        return s(layout), [s(x) for x in layouts], variant, None, options
+        return layout, [x for x in layouts], variant, [], options
 
 
     def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:

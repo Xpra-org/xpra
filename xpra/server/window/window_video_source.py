@@ -370,6 +370,7 @@ class WindowVideoSource(WindowSource):
                 self.ve_clean(ve)
             self.call_in_encode_thread(False, clean)
 
+    # noinspection PyMethodMayBeStatic
     def csc_clean(self, csce) -> None:
         if csce:
             csce.clean()
@@ -1500,7 +1501,7 @@ class WindowVideoSource(WindowSource):
                 return int(pixels/(width*height)/(now - otime))
         return 0
 
-    def calculate_scaling(self, width : int, height : int, max_w : int=4096, max_h : int=4096):
+    def calculate_scaling(self, width : int, height : int, max_w : int=4096, max_h : int=4096) -> Tuple[int,int]:
         if width==0 or height==0:
             return (1, 1)
         now = monotonic()

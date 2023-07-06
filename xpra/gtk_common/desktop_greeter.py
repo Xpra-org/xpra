@@ -164,7 +164,7 @@ class DesktopGreeter(Gtk.Window):
         self.desktop_combo.set_active(0)
 
 
-def main(options=None): # pragma: no cover
+def main(_options=None): # pragma: no cover
     # pylint: disable=import-outside-toplevel
     assert POSIX and not OSX
     from xpra.platform import program_context

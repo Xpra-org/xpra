@@ -466,6 +466,7 @@ class Wm(GObject.GObject):
         if event.detail in (NotifyPointerRoot, NotifyDetailNone) and self._world_window:
             self._world_window.reset_x_focus()
 
+    # noinspection PyMethodMayBeStatic
     def do_xpra_focus_out_event(self, event) -> None:
         focuslog("wm.do_xpra_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 

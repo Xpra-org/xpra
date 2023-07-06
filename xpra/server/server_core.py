@@ -2067,7 +2067,7 @@ class ServerCore:
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
+                auth_failed(str(ConnectionMessage.AUTHENTICATION_FAILED))
                 return
         client_expects_challenge = c.strget("challenge") is not None
         if client_expects_challenge:

@@ -18,7 +18,7 @@ class QueueScheduler:
     __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
     def __init__(self):
-        self.main_queue : Queue[Tuple[Callable,Tuple[Any,...],Dict[str,Any]]] = Queue()
+        self.main_queue : Queue[Optional[Tuple[Callable,Tuple[Any,...],Dict[str,Any]]]] = Queue()
         self.exit = False
         self.timer_id = AtomicInteger()
         self.timers : Dict[int,Union[Timer,None]] = {}
@@ -60,7 +60,7 @@ class QueueScheduler:
         if tid not in self.timers:  # pragma: no cover
             return      #cancelled
         #add to run queue:
-        mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
+        mqargs = (tid, timeout, fn, fn_args, fn_kwargs)
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
     def timeout_repeat_call(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs) -> bool:

@@ -53,6 +53,25 @@ ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
 
+window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
+    "",
+    "_NORMAL",
+    "_DESKTOP",
+    "_DOCK",
+    "_TOOLBAR",
+    "_MENU",
+    "_UTILITY",
+    "_SPLASH",
+    "_DIALOG",
+    "_DROPDOWN_MENU",
+    "_POPUP_MENU",
+    "_TOOLTIP",
+    "_NOTIFICATION",
+    "_COMBO",
+    "_DND",
+    "_NORMAL"
+))
+
 
 class XTestPointerDevice:
     __slots__ = ()
@@ -203,28 +222,11 @@ class X11ServerCore(GTKServerBase):
         return 0
 
 
+    # noinspection PyMethodMayBeStatic
     def init_x11_atoms(self) -> None:
         #some applications (like openoffice), do not work properly
         #if some x11 atoms aren't defined, so we define them in advance:
-        atom_names = tuple("_NET_WM_WINDOW_TYPE"+wtype for wtype in (
-            "",
-            "_NORMAL",
-            "_DESKTOP",
-            "_DOCK",
-            "_TOOLBAR",
-            "_MENU",
-            "_UTILITY",
-            "_SPLASH",
-            "_DIALOG",
-            "_DROPDOWN_MENU",
-            "_POPUP_MENU",
-            "_TOOLTIP",
-            "_NOTIFICATION",
-            "_COMBO",
-            "_DND",
-            "_NORMAL"
-            ))
-        X11Core.intern_atoms(atom_names)
+        X11Core.intern_atoms(window_type_atoms)
 
 
     def set_keyboard_layout_group(self, grp:int) -> None:
@@ -303,6 +305,7 @@ class X11ServerCore(GTKServerBase):
     def clean_x11_properties(self) -> None:
         self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")
 
+    # noinspection PyMethodMayBeStatic
     def do_clean_x11_properties(self, *properties) -> None:
         root = get_default_root_window()
         for prop in properties:
@@ -467,6 +470,7 @@ class X11ServerCore(GTKServerBase):
         return 0
 
 
+    # noinspection PyMethodMayBeStatic
     def get_keyboard_config(self, props=None):
         p = props or typedict()
         from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -517,6 +521,7 @@ class X11ServerCore(GTKServerBase):
         #(there should not be any - but we want to be certain)
         clean_keyboard_state()
 
+    # noinspection PyMethodMayBeStatic
     def get_cursor_image(self):
         #must be called from the UI thread!
         with xlog:
@@ -860,6 +865,7 @@ class X11ServerCore(GTKServerBase):
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()
 
+    # noinspection PyMethodMayBeStatic
     def X11_ungrab(self) -> None:
         grablog("X11_ungrab")
         with xsync:
@@ -867,6 +873,7 @@ class X11ServerCore(GTKServerBase):
             X11Core.UngrabPointer()
 
 
+    # noinspection PyMethodMayBeStatic
     def fake_key(self, keycode, press) -> None:
         keylog("fake_key(%s, %s)", keycode, press)
         mink, maxk = X11Keyboard.get_minmax_keycodes()
@@ -1076,7 +1083,8 @@ class X11ServerCore(GTKServerBase):
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 
-    def make_screenshot_packet_from_regions(self, regions) -> Tuple[str,int,int,str,int,Any]:
+    @staticmethod
+    def make_screenshot_packet_from_regions(regions) -> Tuple[str,int,int,str,int,Any]:
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")

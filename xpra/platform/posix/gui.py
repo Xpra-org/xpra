@@ -135,8 +135,8 @@ def _try_load_appindicator() -> Optional[Type]:
     return None
 
 
-def get_native_notifier_classes() -> List[Type]:
-    ncs : List[Type] = []
+def get_native_notifier_classes() -> List[Callable]:
+    ncs : List[Callable] = []
     try:
         from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)

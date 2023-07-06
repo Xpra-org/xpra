@@ -52,7 +52,7 @@ def main():
         print("Layouts:    %s" % csv("'%s'" % bytestostr(x) for x in (layouts or [])))
         print("Variant:    '%s'" % bytestostr(variant or b""))
         print("Variants:   %s" % csv("'%s'" % bytestostr(x) for x in (variants or [])))
-        print("Options:    %s" % (options))
+        print("Options:    %s" % (options, ))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))
         if verbose and POSIX:

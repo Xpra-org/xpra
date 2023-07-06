@@ -103,6 +103,7 @@ class UIXpraClient(ClientBaseClass):
         if c!=XpraClientBase:
             __signals__ += c.__signals__
 
+    # noinspection PyMissingConstructor
     def __init__(self):  # pylint: disable=super-init-not-called
         log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
         #mmap_enabled belongs in the MmapClient mixin,

@@ -197,12 +197,12 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
 
-    def get_notifier_classes(self) -> List[Type]:
+    def get_notifier_classes(self) -> Tuple[Type,...]:
         #subclasses will generally add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
         if not NATIVE_NOTIFIER:
-            return []
+            return ()
         return get_native_notifier_classes()
 
     def notify_new_user(self, ss) -> None:

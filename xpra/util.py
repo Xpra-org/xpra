@@ -314,7 +314,7 @@ class AtomicInteger:
 
 
 class MutableInteger(object):
-    __slots__ = ("counter")
+    __slots__ = ("counter", )
     def __init__(self, integer : int = 0):
         self.counter : int = integer
 

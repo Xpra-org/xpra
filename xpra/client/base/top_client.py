@@ -700,9 +700,9 @@ class TopSessionClient(InfoTimerClient):
         except Exception as e:
             self.err(e)
 
-    def slidictget(self, *parts):
+    def slidictget(self, *parts) -> Dict:
         return self.dictget(self.server_last_info, *parts)
-    def dictget(self, dictinstance, *parts):
+    def dictget(self, dictinstance, *parts) -> Dict:
         d = dictinstance
         for part in parts:
             d = self.td(d.dictget(part, {}))

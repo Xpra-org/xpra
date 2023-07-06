@@ -538,7 +538,7 @@ class ProxyInstance:
             else:
                 #client may have already responded to the challenge,
                 #so we have to handle authentication from this end
-                server_salt = bytestostr(packet[1])
+                server_salt = strtobytes(packet[1])
                 l = len(server_salt)
                 digest = bytestostr(packet[3])
                 salt_digest = "xor"
