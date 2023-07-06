@@ -358,7 +358,7 @@ def is_distribution_variant(variant=b"Debian") -> bool:
         d = get_linux_distribution()[0]
         if d==variant:
             return True
-        if variant==b"RedHat" and d.startswith(variant):
+        if variant==b"RedHat" and d.startswith(bytestostr(variant)):
             return True
     except Exception:
         pass
@@ -427,7 +427,7 @@ def is_arm() -> bool:
 
 
 _linux_distribution = None
-def get_linux_distribution():
+def get_linux_distribution() -> Tuple[str,str,str]:
     global _linux_distribution
     if LINUX and not _linux_distribution:
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
@@ -452,7 +452,7 @@ def get_linux_distribution():
                     d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
             v = [d.get(x) for x in ("distributor_id", "release", "codename")]
             if None not in v:
-                return tuple([bytestostr(x) for x in v])
+                return tuple(bytestostr(x) for x in v)
     return _linux_distribution
 
 def is_unity() -> bool:
@@ -688,7 +688,7 @@ def path_permission_info(filename : str, ftype=None) -> Tuple[str, ...]:
 #"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
 #ideally we would redirect to a buffer so we could still capture and show these messages in debug out
 class HideStdErr:
-    __slots__ = ("savedstderr")
+    __slots__ = ("savedstderr", )
     def __init__(self, *_args):
         self.savedstderr = None
 
@@ -708,7 +708,7 @@ class HideStdErr:
             os.dup2(self.savedstderr, 2)
 
 class HideSysArgv:
-    __slots__ = ("savedsysargv")
+    __slots__ = ("savedsysargv", )
     def __init__(self, *_args):
         self.savedsysargv = None
 
