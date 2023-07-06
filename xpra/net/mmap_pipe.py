@@ -51,7 +51,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
         This is used by the client.
     """
     def rerr():
-        return False, False, None, 0, None, None
+        return False, False, None, 0, None, ""
     log("init_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
     mmap_temp_file = None

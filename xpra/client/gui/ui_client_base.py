@@ -169,7 +169,6 @@ class UIXpraClient(ClientBaseClass):
         self._on_handshake : List[Callable] = []
         self._on_server_setting_changed : Dict[str,List[Callable]] = {}
 
-
     def init(self, opts) -> None:
         """ initialize variables from configuration """
         self.init_aliases()
@@ -187,7 +186,6 @@ class UIXpraClient(ClientBaseClass):
 
     def client_toolkit(self) -> str:
         raise NotImplementedError()
-
 
     def init_ui(self, opts):
         """ initialize user interface """

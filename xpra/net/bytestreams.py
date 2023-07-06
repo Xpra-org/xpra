@@ -297,7 +297,8 @@ class SocketConnection(Connection):
                     if WIN32:
                         sock = self.get_raw_socket()
                         if sock:
-                            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))  #@UndefinedVariable pylint: disable=no-member
+                            #@UndefinedVariable pylint: disable=no-member
+                            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))
                     elif OSX:
                         TCP_KEEPALIVE = 0x10
                         self._setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval)

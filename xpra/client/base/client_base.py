@@ -1104,7 +1104,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_gibberish(self, packet) -> None:
         log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
-        from xpra.net.socket_util import guess_packet_type #pylint: disable=import-outside-toplevel
+        from xpra.net.socket_util import guess_packet_type  #pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(data)
         p = self._protocol
         exit_code = ExitCode.PACKET_FAILURE

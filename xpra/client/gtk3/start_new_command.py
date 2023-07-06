@@ -146,7 +146,6 @@ class StartNewCommand:
             command = udict(command_props).strget("command", "")
         self.entry.set_text(command)
 
-
     def show(self):
         log("show()")
         self.window.show()
@@ -166,7 +165,6 @@ class StartNewCommand:
         if self.window:
             self.window.destroy()
             self.window = None
-
 
     def run(self):
         log("run()")

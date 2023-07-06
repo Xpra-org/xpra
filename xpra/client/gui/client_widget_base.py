@@ -82,7 +82,7 @@ class ClientWidgetBase:
     def workspace_changed(self) -> None:            # pragma: no cover
         pass
 
-    def set_cursor_data(self, cursor_data) -> None: # pragma: no cover
+    def set_cursor_data(self, cursor_data) -> None:     # pragma: no cover
         pass
 
     def new_backing(self, w:int, h:int):          # pragma: no cover
