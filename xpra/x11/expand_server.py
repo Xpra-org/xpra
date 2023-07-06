@@ -103,7 +103,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         self.evdi_setup()
         #self.evdi_device.handle_all_events()
         self.fd_source = self.evdi_device.get_event_fd()
-        self.evdi_channel = GLib.IOChannel.unix_new(self.fd_source)
+        self.evdi_channel = GLib.IOChannel.unix_new(fd=self.fd_source)
         self.evdi_channel.set_encoding(None)
         self.evdi_channel.set_buffered(False)
         self.evdi_channel.set_close_on_unref(True)

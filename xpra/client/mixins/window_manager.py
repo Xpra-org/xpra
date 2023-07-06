@@ -1419,7 +1419,7 @@ class WindowClient(StubClientMixin):
     def resume(self) -> None:
         elapsed = 0.0
         if self._suspended_at>0:
-            elapsed = max(0, time()-self._suspended_at)
+            elapsed = max(0.0, time()-self._suspended_at)
             self._suspended_at = 0
         self.send_refresh_all()
         if elapsed<1:

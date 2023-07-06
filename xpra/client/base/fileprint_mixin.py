@@ -140,7 +140,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             for k,v in printers.items():
                 device_uri = v.get("device-uri", "")
                 if device_uri:
-                    #this is cups specific.. oh well
+                    # this is specific to the `cups` backend:
                     printlog("send_printers_thread() device-uri(%s)=%s", k, device_uri)
                     if device_uri.startswith("xpraforwarder"):
                         printlog("do_send_printers() skipping xpra forwarded printer=%s", k)

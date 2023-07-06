@@ -13,7 +13,7 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 class ShellServer(StubServerMixin):
     """
-    Mixin for adding shell support
+    Mixin for adding `shell` support
     """
     def init(self, _opts) -> None:
         self.counter = 0

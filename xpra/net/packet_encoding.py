@@ -19,7 +19,7 @@ from xpra.net.protocol.header import (
 from xpra.os_util import strtobytes
 from xpra.util import envbool
 
-#all the encoders we know about, in best compatibility order:
+#all the encoders we know about, in the best compatibility order:
 ALL_ENCODERS : Tuple[str, ...] = ("rencode", "bencode", "yaml", "rencodeplus", "none")
 #order for performance:
 PERFORMANCE_ORDER : Tuple[str, ...] = ("rencodeplus", "rencode", "bencode", "yaml")

@@ -54,7 +54,7 @@ class WebTransportHandler(XpraQuicConnection):
     def send_close(self, code : int = 403, reason : str = ""):
         if not self.accepted:
             self.closed = True
-            self.send_headers(0, {":status", code})
+            self.send_headers(0, {":status" : code})
             self.transmit()
 
     def send_datagram(self, data):

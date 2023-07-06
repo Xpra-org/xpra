@@ -124,7 +124,7 @@ class GTKStatusIconTray(TrayBase):
             log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s",
                 self.geometry_guess)
             return self.geometry_guess or (0, 0, 0, 0)
-        # `GTK3` adds an extra argument.. at the beginning
+        # `GTK3` adds an extra argument.. at the beginning,
         # so we index from the end of the array:
         geom = ag[-2]
         x, y, w, h = geom.x, geom.y, geom.width, geom.height

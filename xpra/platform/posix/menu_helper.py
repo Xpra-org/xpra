@@ -253,9 +253,9 @@ def noicondata(d:Dict) -> Dict:
 
 
 def load_xdg_entry(de) -> Dict[str,Any]:
-    #not exposed:
-    #"MimeType" is an re
-    #"Version" is a float
+    # not exposed:
+    # * `MimeType` is a `re`
+    # * `Version` is a `float`
     props : Dict[str,Any] = export(de, (
         "Type", "VersionString", "Name", "GenericName", "NoDisplay",
         "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
@@ -383,10 +383,10 @@ def load_xdg_menu_data():
             if cd is True and not os.environ.pop("XDG_CONFIG_DIRS", ""):
                 #was already unset
                 continue
-            #see ticket #2174,
-            #things may break if the prefix is not set,
-            #and it isn't set when logging in via ssh
-            #so we have to guess!
+            # see ticket #2174,
+            # things may break if the prefix is not set,
+            # and it isn't set when logging in via ssh,
+            # so we have to guess!
             config_dirs = []
             #XDG_CONFIG_HOME takes precedence so add it first:
             if xdg_home:

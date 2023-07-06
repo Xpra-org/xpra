@@ -169,7 +169,7 @@ class WindowModel(BaseWindowModel):
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         self.saved_events = -1
-        # extra state attributes so we can `unmanage()` the window cleanly:
+        # these extra state attributes allow us to `unmanage()` the window cleanly:
         self.in_save_set : bool = False
         self.client_reparented : bool = False
         self.kill_count : int = 0
@@ -337,8 +337,8 @@ class WindowModel(BaseWindowModel):
             self.corral_xid = 0
             remove_event_receiver(cxid, self)
             geom = None
-            #use a new context so we will XSync right here
-            #and detect if the window is already gone:
+            # use a new context, so we will XSync right here
+            # and detect if the window is already gone:
             with xswallow:
                 geom = X11Window.getGeometry(self.xid)
             if geom is not None:
@@ -811,7 +811,7 @@ class WindowModel(BaseWindowModel):
         #   -- independently, the WM_TAKE_FOCUS protocol determines whether
         #      the WM should send a WM_TAKE_FOCUS ClientMessage.
         # If both are set, both methods MUST be used together. For example,
-        # GTK+ apps respect WM_TAKE_FOCUS alone but I'm not sure they handle
+        # GTK+ apps respect WM_TAKE_FOCUS alone, but I'm not sure they handle
         # XSetInputFocus well, while Qt apps ignore (!!!) WM_TAKE_FOCUS
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.

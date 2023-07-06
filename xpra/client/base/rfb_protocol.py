@@ -232,7 +232,7 @@ class RFBClientProtocol(RFBProtocol):
             "desktop_size"  : (w, h),
             "protocol"      : "rfb",
             }])
-        #simulate an xpra window packet:
+        # simulate an xpra window packet:
         metadata = {
             "title" : session_name,
             "size-constraints" : {

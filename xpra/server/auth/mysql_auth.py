@@ -52,7 +52,8 @@ class Authenticator(SQLAuthenticator):
         db = db_from_uri(self.uri)
         cursor = db.cursor()
         cursor.execute(*sqlargs)
-        #keep reference to db so it doesn't get garbage collected just yet:
+        # keep reference to db,
+        # so it doesn't get garbage collected just yet:
         cursor.db = db
         log("db_cursor(%s)=%s", sqlargs, cursor)
         return cursor

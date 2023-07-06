@@ -287,7 +287,7 @@ def main(_args) -> int:
         os.environ["XPRA_HIDE_DOCK"] = "1"
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
-        Gtk.Window.set_auto_startup_notification(False)
+        Gtk.Window.set_auto_startup_notification(setting=False)
         w = SplashScreen()
         add_close_accel(w, Gtk.main_quit)
         return w.run()

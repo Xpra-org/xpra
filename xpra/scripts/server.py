@@ -178,8 +178,8 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, ims
          "IMSETTINGS_MODULE"  : imsettings_module,        #or "xim"?
          "XMODIFIERS"         : xmodifiers,
          #not really sure what to do with those:
-         #"IMSETTINGS_DISABLE_DESKTOP_CHECK"   : "true",   #
-         #"IMSETTINGS_INTEGRATE_DESKTOP" : "no"}           #we're not a real desktop
+         #"IMSETTINGS_DISABLE_DESKTOP_CHECK"    : "true",
+         #"IMSETTINGS_INTEGRATE_DESKTOP"        : "no"           #we're not a real desktop
         }
     os.environ.update(v)
     return v
@@ -376,7 +376,7 @@ def get_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int) -> st
             for d in ROOT_FALLBACK:
                 if os.path.exists(d):
                     if mode=="proxy" and (display_name or "").lstrip(":").split(",")[0]=="14500":
-                        #stash the system wide proxy session files in a 'proxy' subdirectory:
+                        #stash the system-wide proxy session files in a 'proxy' subdirectory:
                         return os.path.join(d, "proxy")
                     #otherwise just use the display as subdirectory name:
                     return os.path.join(d, (display_name or "").lstrip(":"))
@@ -946,10 +946,10 @@ def _do_run_server(script_file:str, cmdline,
                 items["XAUTHDATA"] = xauth_data
             pam.set_items(items)
             if pam.open():
-                #we can't close it, because we're not going to be root any more,
-                #but since we're the process leader for the session,
-                #terminating will also close the session
-                #atexit.register(pam.close)
+                # we can't close it, because we're not going to be root anymore,
+                # but since we're the process leader for the session,
+                # terminating will also close the session
+                # atexit.register(pam.close)
                 protected_env = pam.get_envlist()
                 os.environ.update(protected_env)
 
@@ -1158,8 +1158,9 @@ def _do_run_server(script_file:str, cmdline,
                     #accessed OK:
                     start_vfb = False
                 else:
-                    #verify failed but we can stat the X11 server socket...
-                    #perhaps we need to re-add an xauth entry
+                    # we can't connect to the X11 display,
+                    # but we can still `stat` its socket...
+                    # perhaps we need to re-add an xauth entry
                     if not xauth_data:
                         xauth_data = get_hex_uuid()
                         if pam:
@@ -1425,9 +1426,9 @@ def _do_run_server(script_file:str, cmdline,
 
     def server_not_started(msg="server not started"):
         progress(100, msg)
-        #check the initial 'mode' value instead of "upgrading" or "upgrading_desktop"
-        #as we may have switched to "starting=True"
-        #if the existing server has exited as we requested)
+        # check the initial 'mode' value instead of "upgrading" or "upgrading_desktop"
+        # as we may have switched to "starting=True"
+        # if the existing server has exited as we requested
         if mode.startswith("upgrade") or use_display:
             #something abnormal occurred,
             #don't kill the vfb on exit:

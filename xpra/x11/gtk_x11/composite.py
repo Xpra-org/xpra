@@ -72,7 +72,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         # means "mapped, and all ancestors are also mapped".)  But
         # there is no X event that will tell you when a window's
         # viewability changes!
-        # Instead we have to find all ancestors,
+        # Instead, we have to find all ancestors,
         # and watch all of them for unmap and reparent events.  But
         # what about races?  I hear you cry.  By doing things in the
         # exact order:

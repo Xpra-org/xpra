@@ -135,6 +135,64 @@ def noop(*args):
 # pylint: disable=import-outside-toplevel
 
 
+def get_connection_modes():
+    modes = [MODE_SSH, MODE_NESTED_SSH]
+    try:
+        import ssl
+        assert ssl
+        modes.append(MODE_SSL)
+    except ImportError:
+        pass
+    #assume crypto is available
+    try:
+        from xpra.net.crypto import get_modes
+        for mode in get_modes():
+            modes.append(f"tcp + aes-{mode.lower()}")
+    except ImportError:
+        pass
+    modes.append(MODE_TCP)
+    modes.append(MODE_WS)
+    modes.append(MODE_WSS)
+    return modes
+
+
+def image_button(label="", tooltip="", icon_pixbuf=None, clicked_cb=None):
+    icon = Gtk.Image()
+    icon.set_from_pixbuf(icon_pixbuf)
+    return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
+
+
+def button(tooltip, icon_name, callback):
+    button = Gtk.Button()
+    theme = Gtk.IconTheme.get_default()
+    try:
+        pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
+    except Exception:
+        pixbuf = None
+    if not pixbuf:
+        pixbuf = get_icon_pixbuf(f"{icon_name}.png")
+        if pixbuf:
+            for size in (16, 32, 48):
+                scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+                Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
+            try:
+                builtin_reload = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
+            except Exception:
+                log("button: failed to load icon after adding to builtins", exc_info=True)
+                size = 32
+                pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+            else:
+                pixbuf = builtin_reload
+    if pixbuf:
+        image = Gtk.Image.new_from_pixbuf(pixbuf)
+        button.add(image)
+    button.set_tooltip_text(tooltip)
+    def clicked(*_args):
+        callback()
+    button.connect("clicked", clicked)
+    return button
+
+
 class ApplicationWindow:
 
     def __init__(self):
@@ -158,26 +216,6 @@ class ApplicationWindow:
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
-    def get_connection_modes(self):
-        modes = [MODE_SSH, MODE_NESTED_SSH]
-        try:
-            import ssl
-            assert ssl
-            modes.append(MODE_SSL)
-        except ImportError:
-            pass
-        #assume crypto is available
-        try:
-            from xpra.net.crypto import get_modes
-            for mode in get_modes():
-                modes.append(f"tcp + aes-{mode.lower()}")
-        except ImportError:
-            pass
-        modes.append(MODE_TCP)
-        modes.append(MODE_WS)
-        modes.append(MODE_WSS)
-        return modes
-
     def get_launcher_validation(self):
         #TODO: since "mode" is not part of global options
         #this validation should be injected from the launcher instead
@@ -185,14 +223,8 @@ class ApplicationWindow:
             if x in options:
                 return None
             return "must be in "+csv(options)
-        modes = self.get_connection_modes()
+        modes = get_connection_modes()
         return {"mode"              : lambda x : validate_in_list(x, modes)}
-
-
-    def image_button(self, label="", tooltip="", icon_pixbuf=None, clicked_cb=None):
-        icon = Gtk.Image()
-        icon.set_from_pixbuf(icon_pixbuf)
-        return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
 
     def create_window_with_config(self):
         self.do_create_window()
@@ -215,7 +247,7 @@ class ApplicationWindow:
         hb.set_show_close_button(True)
         hb.props.title = "Session Launcher"
         self.window.set_titlebar(hb)
-        hb.add(self.button("About", "help-about", about))
+        hb.add(button("About", "help-about", about))
         self.bug_tool = None
         def bug(*_args):
             if self.bug_tool is None:
@@ -223,7 +255,7 @@ class ApplicationWindow:
                 self.bug_tool = BugReport()
                 self.bug_tool.init(show_about=False)
             self.bug_tool.show()
-        hb.add(self.button("Bug Report", "bugs", bug))
+        hb.add(button("Bug Report", "bugs", bug))
         if has_mdns():
             self.mdns_gui = None
             def mdns(*_args):
@@ -236,7 +268,7 @@ class ApplicationWindow:
                     self.mdns_gui.do_quit = close_mdns
                 else:
                     self.mdns_gui.present()
-            hb.add(self.button("Browse Sessions", "mdns", mdns))
+            hb.add(button("Browse Sessions", "mdns", mdns))
         hb.show_all()
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
@@ -250,7 +282,7 @@ class ApplicationWindow:
         # Mode:
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
         self.mode_combo = Gtk.ComboBoxText()
-        for x in self.get_connection_modes():
+        for x in get_connection_modes():
             self.mode_combo.append_text(x.upper())
         self.mode_combo.connect("changed", self.mode_changed)
         hbox.pack_start(Gtk.Label(label="Mode: "), False, False)
@@ -308,7 +340,7 @@ class ApplicationWindow:
         self.pkey_hbox = hbox
         self.proxy_key_label = Gtk.Label(label="Proxy private key path (PPK):")
         self.proxy_key_entry = Gtk.Entry()
-        self.proxy_key_browse = Gtk.Button("Browse")
+        self.proxy_key_browse = Gtk.Button(label="Browse")
         self.proxy_key_browse.connect("clicked", self.proxy_key_browse_clicked)
         hbox.pack_start(self.proxy_key_label, False, False)
         hbox.pack_start(self.proxy_key_entry, True, True)
@@ -318,13 +350,13 @@ class ApplicationWindow:
         # Check boxes
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
         self.check_boxes_hbox = hbox
-        self.password_scb = Gtk.CheckButton("Server password same as proxy")
+        self.password_scb = Gtk.CheckButton(label="Server password same as proxy")
         self.password_scb.set_mode(True)
         self.password_scb.set_active(True)
         self.password_scb.connect("toggled", self.validate)
         align_password_scb = Gtk.Alignment(xalign = 1.0)
         align_password_scb.add(self.password_scb)
-        self.username_scb = Gtk.CheckButton("Server username same as proxy")
+        self.username_scb = Gtk.CheckButton(label="Server username same as proxy")
         self.username_scb.set_mode(True)
         self.username_scb.set_active(True)
         self.username_scb.connect("toggled", self.validate)
@@ -389,7 +421,7 @@ class ApplicationWindow:
 
         #strict host key check for SSL and SSH
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
-        self.nostrict_host_check = Gtk.CheckButton("Disable Strict Host Key Check")
+        self.nostrict_host_check = Gtk.CheckButton(label="Disable Strict Host Key Check")
         self.nostrict_host_check.set_active(False)
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.nostrict_host_check)
@@ -398,7 +430,7 @@ class ApplicationWindow:
 
         #auto-connect
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
-        self.autoconnect = Gtk.CheckButton("Auto-connect")
+        self.autoconnect = Gtk.CheckButton(label="Auto-connect")
         self.autoconnect.set_active(False)
         self.autoconnect.set_tooltip_text("Connect without opening this launcher when opening the session file")
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
@@ -417,17 +449,17 @@ class ApplicationWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         #Save:
-        self.save_btn = Gtk.Button("Save")
+        self.save_btn = Gtk.Button(label="Save")
         self.save_btn.set_tooltip_text("Save settings to a session file")
         self.save_btn.connect("clicked", self.save_clicked)
         hbox.pack_start(self.save_btn)
         #Load:
-        self.load_btn = Gtk.Button("Load")
+        self.load_btn = Gtk.Button(label="Load")
         self.load_btn.set_tooltip_text("Load settings from a session file")
         self.load_btn.connect("clicked", self.load_clicked)
         hbox.pack_start(self.load_btn)
         # Connect button:
-        self.connect_btn = Gtk.Button("Connect")
+        self.connect_btn = Gtk.Button(label="Connect")
         self.connect_btn.connect("clicked", self.connect_clicked)
         connect_icon = get_icon_pixbuf("retry.png")
         if connect_icon:
@@ -437,36 +469,6 @@ class ApplicationWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-
-    def button(self, tooltip, icon_name, callback):
-        button = Gtk.Button()
-        theme = Gtk.IconTheme.get_default()
-        try:
-            pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
-        except Exception:
-            pixbuf = None
-        if not pixbuf:
-            pixbuf = get_icon_pixbuf(f"{icon_name}.png")
-            if pixbuf:
-                for size in (16, 32, 48):
-                    scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
-                    Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
-                try:
-                    builtin_reload = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
-                except Exception:
-                    log("button: failed to load icon after adding to builtins", exc_info=True)
-                    size = 32
-                    pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
-                else:
-                    pixbuf = builtin_reload
-        if pixbuf:
-            image = Gtk.Image.new_from_pixbuf(pixbuf)
-            button.add(image)
-        button.set_tooltip_text(tooltip)
-        def clicked(*_args):
-            callback()
-        button.connect("clicked", clicked)
-        return button
 
     def accel_close(self, *args):
         log("accel_close%s", args)
@@ -976,7 +978,7 @@ class ApplicationWindow:
         #mode:
         mode = (self.config.mode or "").lower()
         active = 0
-        for i,e in enumerate(self.get_connection_modes()):
+        for i,e in enumerate(get_connection_modes()):
             if e.lower()==mode:
                 active = i
                 break

@@ -622,8 +622,9 @@ class ServerCore:
                 if not (saved_env.get("DISPLAY") or saved_env.get("WAYLAND_DISPLAY")):
                     httplog.warn(" no display, cannot open a browser window")
                     return
-                #run using a subprocess so we can specify the environment:
-                #(which will run it against the correct X11 display!)
+                # run using a subprocess,
+                # so we can specify the environment:
+                # (which will run it against the correct X11 display!)
                 try:
                     exec_open(f"python{sys.version_info.major}", "-m", "webbrowser", "-t", url)
                 except Exception:
@@ -1116,7 +1117,7 @@ class ServerCore:
         return True
 
     def new_conn_err(self, conn, sock, socktype:str, socket_info, packet_type:str, msg=None) -> None:
-        #not an xpra client
+        # not an xpra client
         netlog.error("Error: %s connection failed:", socktype)
         if conn.remote:
             netlog.error(" packet from %s", pretty_socket(conn.remote))
@@ -1300,7 +1301,7 @@ class ServerCore:
         pre_read = None
         if socktype=="socket" and not peek_data:
             #try to read from this socket,
-            #so short lived probes don't go through the whole protocol instantiation
+            #so short-lived probes don't go through the whole protocol instantiation
             try:
                 sock.settimeout(0.001)
                 data = conn.read(1)

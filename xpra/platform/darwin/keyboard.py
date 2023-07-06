@@ -16,8 +16,8 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
 
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
-#a key and the keys we want to translate it into when swapping keys
-#(a list so we can hopefully find a good match, best options come first)
+# a key and the keys we want to translate it into when swapping keys
+# (in a list with the best options first)
 KEYS_TRANSLATION_OPTIONS : Dict[str,List[str]] = {
     #try to swap with "Meta" first, fallback to "Alt":
     "Control_L"     : ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],

@@ -92,7 +92,7 @@ class StartNewCommand:
         vbox.add(self.entry)
 
         if can_share:
-            self.share = Gtk.CheckButton("Shared", use_underline=False)
+            self.share = Gtk.CheckButton(label="Shared", use_underline=False)
             #Shared commands will also be shown to other clients
             self.share.set_active(True)
             vbox.add(self.share)
@@ -103,7 +103,7 @@ class StartNewCommand:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = Gtk.Button(label)
+            btn = Gtk.Button(label=label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             icon = get_icon_pixbuf(icon_name)

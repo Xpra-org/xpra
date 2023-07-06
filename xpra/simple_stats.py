@@ -49,7 +49,7 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
     if not data:
         return 0, data
     max_v = max(data)
-    #pad with None values so we have at least num_values:
+    # pad with None values:
     if len(data)<num_values:
         if isinstance(data, tuple):
             data = list(data)

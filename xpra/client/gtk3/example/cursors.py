@@ -37,7 +37,7 @@ def main():
             print("new cursor: %s" % name)
             if name:
                 gdk_cursor = cursor_types.get(name)
-                cursor = Gdk.Cursor(gdk_cursor)
+                cursor = Gdk.Cursor(cursor_type=gdk_cursor)
             else:
                 cursor = None
             window.get_window().set_cursor(cursor)

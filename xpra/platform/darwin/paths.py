@@ -76,7 +76,7 @@ def do_get_default_conf_dirs() -> List[str]:
     return [os.path.join(get_resources_dir(), "etc", "xpra")]
 
 def do_get_system_conf_dirs() -> List[str]:
-    #the system wide configuration directory
+    #the system-wide configuration directory
     dirs = []
     try:
         from Foundation import (
@@ -192,13 +192,13 @@ def _get_helpers_dir() -> str:
     return p
 
 def do_get_nodock_command() -> List[str]:
-    #try to use the subapp:
+    # try to use the sub-app:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
     subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
     if os.path.exists(subapp) and os.path.isdir(subapp):
         base = subapp
-    #appstore builds have script wrappers:
+    # AppStore builds have script wrappers:
     helper = os.path.join(base, "Resources", "scripts", "Xpra")
     if not os.path.exists(helper):
         helper = os.path.join(_get_helpers_dir(), "Xpra")

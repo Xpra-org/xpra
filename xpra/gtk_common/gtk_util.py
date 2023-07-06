@@ -623,7 +623,7 @@ def get_icon_pixbuf(icon_name):
         icon_filename = get_icon_filename(icon_name)
         log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
         if icon_filename:
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
     except Exception:
         log.error("get_icon_pixbuf(%s)", icon_name, exc_info=True)
     return None
@@ -631,7 +631,7 @@ def get_icon_pixbuf(icon_name):
 
 def imagebutton(title, icon=None, tooltip="", clicked_callback:Optional[Callable]=None, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font=None) -> Gtk.Button:
-    button = Gtk.Button(title)
+    button = Gtk.Button(label=title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
     if icon:

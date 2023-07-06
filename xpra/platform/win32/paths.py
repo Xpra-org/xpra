@@ -42,9 +42,9 @@ def _get_data_dir(roaming=True) -> str:
         return os.getcwd()
     appdata = sh_get_folder_path(CSIDL_APPDATA if roaming else CSIDL_LOCAL_APPDATA)
     if not appdata:
-        #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
-        #UAC in vista onwards will not allow us to write where the software is installed,
-        #so we place the log file (etc) in "~/Application Data"
+        # on win32 we must send stdout to a logfile to prevent an alert box on exit shown by `py2exe`
+        # UAC in vista onwards will not allow us to write where the software is installed,
+        # so we place the log file (etc) in "~/Application Data"
         appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA", "")
     if not appdata:
         #we need some kind of path..

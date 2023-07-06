@@ -1698,7 +1698,7 @@ class WindowSource(WindowIconSource):
             #so use the "soft timer":
             self.soft_expired += 1
             # we have already waited for "expire delay" to get here,
-            # wait gradually more as we soft-expire more regions:
+            # wait gradually longer as we soft-expire more regions:
             soft_delay = self.soft_expired*target_delay
             self.soft_timer = self.timeout_add(soft_delay, self.delayed_region_soft_timeout)
         else:
@@ -1813,7 +1813,7 @@ class WindowSource(WindowIconSource):
         #if not, we must either process the region now or set a timer to check again later
         def check_again(delay=actual_delay/10.0):
             #schedules a call to check again:
-            delay = int(min(self.batch_config.max_delay, max(10, delay)))
+            delay = int(min(self.batch_config.max_delay, max(10.0, delay)))
             self.may_send_timer = self.timeout_add(delay, self._may_send_delayed)
         #locked means a fixed delay we try to honour,
         #this code ensures that we don't fire too early if called from damage_packet_acked
@@ -2332,8 +2332,8 @@ class WindowSource(WindowIconSource):
             and if not re-schedule.
         """
         self.refresh_timer = 0
-        #timer is running now, clear so we don't try to cancel it somewhere else:
-        #re-do some checks that may have changed:
+        # timer is running now, clear it so that we don't try to cancel it somewhere else:
+        # re-do some checks that may have changed:
         if not self.can_refresh():
             self.refresh_event_time = 0
             return False
@@ -2422,7 +2422,7 @@ class WindowSource(WindowIconSource):
             - damage latency (via a callback once the packet is actually sent)
         """
         #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
-        width, height, coding, data, damage_packet_sequence, _, client_options = packet[4:11]
+        width:int, height:int, coding, data, damage_packet_sequence, _, client_options = packet[4:11]
         ldata = len(data)
         actual_batch_delay = process_damage_time-damage_time
         ack_pending = [0, coding, 0, 0, 0, width*height, client_options, damage_time]

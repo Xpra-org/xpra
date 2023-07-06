@@ -99,12 +99,14 @@ class Win32Hooks:
                 minh += dh
                 if not HOOK_MINMAXINFO_OVERRIDE:
                     v = info.ptMinTrackSize
+                    x = int(v.x)
+                    y = int(v.y)
                     if v:
                         log("on_getminmaxinfo ptMinTrackSize=%ix%i", v.x, v.y)
-                        if v.x>0:
-                            minw = max(minw, v.x)
-                        if  v.y>0:
-                            minh = max(minh, v.y)
+                        if x>0:
+                            minw = max(minw, x)
+                        if  y>0:
+                            minh = max(minh, y)
                 point  = POINT(minw, minh)
                 info.ptMinSize       = point
                 info.ptMinTrackSize  = point
@@ -119,11 +121,13 @@ class Win32Hooks:
                         "ptMaxTrackSize"    : info.ptMaxTrackSize,
                         }.items():
                         if v:
+                            x = int(v.x)
+                            y = int(v.y)
                             log("on_getminmaxinfo %s=%ix%i", name, v.x, v.y)
-                            if v.x>0:
-                                maxw = min(maxw, v.x)
-                            if v.y>0:
-                                maxh = min(maxh, v.y)
+                            if x>0:
+                                maxw = min(maxw, x)
+                            if y>0:
+                                maxh = min(maxh, y)
                 point  = POINT(maxw, maxh)
                 info.ptMaxSize       = point
                 info.ptMaxTrackSize  = point

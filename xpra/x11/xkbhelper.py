@@ -500,6 +500,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
             return do_assign(client_keycode, client_keycode, entries)
         if len(keysyms)==1:
             #only one keysym, replace with single entry
+            # noinspection PySetFunctionToLiteral
             entries = set([(tuple(keysyms)[0], 0)])
 
         #the candidate preserve entries: those that have at least one of the keysyms:
@@ -574,6 +575,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
             if keysym in DEBUG_KEYSYMS:
                 l = log.info
             l("found missing keysym %s for modifier %s, will add it", keysym, modifier)
+            # noinspection PySetFunctionToLiteral
             new_keycode = set([(keysym, 0)])
             server_keycode = assign(-1, new_keycode)
             l("assigned keycode %s for key '%s' of modifier '%s'", server_keycode, keysym, modifier)

@@ -585,8 +585,8 @@ class VideoSubregion:
         # * re-add some scrolling detection: the region may have moved
         # * re-try with a higher "from_time" and a higher score threshold
 
-        #try harder still: try combining all the regions we haven't discarded
-        #(flash player with firefox and youtube does stupid unnecessary repaints)
+        # try harder still: try combining all the regions we haven't discarded
+        # (Flash player with Firefox and Youtube does stupid unnecessary repaints)
         if len(damage_count)>=2:
             merged = merge_all(tuple(damage_count.keys()))
             score = score_region("merged", merged)

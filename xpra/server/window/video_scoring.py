@@ -128,7 +128,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
     csc_width = 0
     csc_height = 0
     if csc_spec:
-        #OR the masks so we have a chance of making it work
+        # OR the masks, so we have a chance of making it work
         width_mask = csc_spec.width_mask & encoder_spec.width_mask
         height_mask = csc_spec.height_mask & encoder_spec.height_mask
         csc_width = width & width_mask
@@ -170,7 +170,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
         encoder_scaling = scaling
 
     if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
-        #we need the encoder to scale but it cannot do it, fail it:
+        # we need the encoder to scale but it cannot do it, fail it:
         scorelog("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
         return None
 

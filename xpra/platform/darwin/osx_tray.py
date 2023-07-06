@@ -81,7 +81,7 @@ class OSXTray(TrayBase):
     def do_set_icon_from_file(self, filename:str) -> None:
         if not self.macapp:
             return
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
         self.icon_timestamp = monotonic()
 
@@ -119,5 +119,5 @@ class OSXTray(TrayBase):
             log.warn("Warning: cannot set dock icon, file not found!")
             return
         log("OSXTray.set_dock_icon() loading icon from %s", filename)
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)

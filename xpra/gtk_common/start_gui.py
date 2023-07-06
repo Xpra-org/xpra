@@ -315,10 +315,10 @@ class StartSession(Gtk.Window):
                 if out:
                     for line in out.decode().splitlines():
                         if line.lower().startswith("#") or line.lower().startswith("found"):
-                            #empty or header line
+                            # empty or header line
                             continue
                         if line.lower().find("mode=")>=0:
-                            #this is an xpra display, don't shadow it
+                            # this is an xpra display, don't shadow it
                             continue
                         new_display_list.append(line.lstrip(" ").split(" ")[0])
                 GLib.idle_add(self.populate_display_combo, new_display_list)
@@ -813,7 +813,7 @@ class SessionOptions(Gtk.Window):
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         #c = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, minv, maxv, 10)
-        c = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL)
+        c = Gtk.Scale.new(orientation=Gtk.Orientation.HORIZONTAL)
         c.set_range(minv, maxv)
         c.set_draw_value(True)
         c.set_digits(0)

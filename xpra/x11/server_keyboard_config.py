@@ -386,7 +386,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def add_gtk_keynames(self) -> None:
         #add the keynames we find via gtk
         #since we may rely on finding those keynames from the client
-        #(used with non native keymaps)
+        #(used with non-native keymaps)
         log("add_gtk_keynames() gtk keymap=%s", get_gtk_keymap())
         for _, keyname, keycode, _, _ in get_gtk_keymap():
             if keyname not in self.keycode_translation:
@@ -395,9 +395,10 @@ class KeyboardConfig(KeyboardConfigBase):
                     log.info("add_gtk_keynames: %s=%s", keyname, keycode)
 
     def set_default_keymap(self) -> None:
-        """ assign a default keymap based on the current X11 server keymap
-            sets up the translation tables so we can lookup keys without
-            setting a client keymap.
+        """
+        assign a default keymap based on the current X11 server keymap
+        sets up the translation tables,
+        so we can look up keys without setting a client keymap.
         """
         if not self.enabled:
             return

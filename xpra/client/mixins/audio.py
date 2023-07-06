@@ -24,6 +24,31 @@ DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
+def init_audio_tagging(tray_icon) -> None:
+    if not POSIX:
+        return
+    try:
+        from xpra import audio
+        assert audio
+    except ImportError:
+        log("no audio module, skipping pulseaudio tagging setup")
+        return
+    try:
+        from xpra.audio.pulseaudio.pulseaudio_util import set_icon_path
+        tray_icon_filename = get_icon_filename(tray_icon or "xpra")
+        set_icon_path(tray_icon_filename)
+    except ImportError as e:
+        if not OSX:
+            log.warn("Warning: failed to set pulseaudio tagging icon:")
+            log.warn(" %s", e)
+
+
+def get_matching_codecs(local_codecs, server_codecs):
+    matching_codecs = tuple(x for x in local_codecs if x in server_codecs)
+    log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
+    return matching_codecs
+
+
 class AudioClient(StubClientMixin):
     """
     Utility mixin for clients that handle audio
@@ -130,7 +155,7 @@ class AudioClient(StubClientMixin):
             except Exception:
                 log.error("Error: failed to add pulseaudio info", exc_info=True)
         #audio tagging:
-        self.init_audio_tagging(opts.tray_icon)
+        init_audio_tagging(opts.tray_icon)
 
 
     def cleanup(self) -> None:
@@ -237,29 +262,6 @@ class AudioClient(StubClientMixin):
 
     ######################################################################
     # audio:
-    def init_audio_tagging(self, tray_icon) -> None:
-        if not POSIX:
-            return
-        try:
-            from xpra import audio
-            assert audio
-        except ImportError:
-            log("no audio module, skipping pulseaudio tagging setup")
-            return
-        try:
-            from xpra.audio.pulseaudio.pulseaudio_util import set_icon_path
-            tray_icon_filename = get_icon_filename(tray_icon or "xpra")
-            set_icon_path(tray_icon_filename)
-        except ImportError as e:
-            if not OSX:
-                log.warn("Warning: failed to set pulseaudio tagging icon:")
-                log.warn(" %s", e)
-
-
-    def get_matching_codecs(self, local_codecs, server_codecs):
-        matching_codecs = tuple(x for x in local_codecs if x in server_codecs)
-        log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
-        return matching_codecs
 
     def may_notify_audio(self, summary:str, body:str) -> None:
         #overridden in UI client subclass
@@ -331,7 +333,7 @@ class AudioClient(StubClientMixin):
         def audio_source_state_changed(*_args):
             self.emit("microphone-changed")
         #find the matching codecs:
-        matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_audio_decoders)
+        matching_codecs = get_matching_codecs(self.microphone_codecs, self.server_audio_decoders)
         log("start_audio_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if not matching_codecs:
             self.no_matching_codec_error("microphone", self.server_audio_decoders, self.microphone_codecs)
@@ -406,7 +408,7 @@ class AudioClient(StubClientMixin):
             if not self.audio_loop_check("speaker"):
                 return
             #choose a codec:
-            matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_audio_encoders)
+            matching_codecs = get_matching_codecs(self.speaker_codecs, self.server_audio_encoders)
             log("start_receiving_audio() matching codecs: %s", csv(matching_codecs))
             if not matching_codecs:
                 self.no_matching_codec_error("speaker", self.server_audio_encoders, self.speaker_codecs)

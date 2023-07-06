@@ -494,7 +494,7 @@ class ProxyInstance:
             info.update(self.get_proxy_info(proto))
         elif packet_type=="lost-window":
             wid = packet[1]
-            #mark it as lost so we can drop any current/pending frames
+            #mark it as lost, so we can drop any current/pending frames
             self.lost_windows.add(wid)
             #queue it so it gets cleaned safely (for video encoders mostly):
             self.encode_queue.put(packet)
@@ -733,7 +733,7 @@ class ProxyInstance:
             #dst_formats is specified with first frame only:
             dst_formats = client_options.strtupleget("dst_formats")
             if dst_formats is not None:
-                #save it in case we timeout the video encoder,
+                #save it in case we time out the video encoder,
                 #so we can instantiate it again, even from a frame no>1
                 self.video_encoders_dst_formats = dst_formats
             else:
@@ -816,7 +816,7 @@ class ProxyInstance:
                 for spec in especs:                             #ie: video_spec("x264")
                     spec_props = spec.to_dict()
                     del spec_props["codec_class"]               #not serializable!
-                    #we want to win scoring so we get used ahead of other encoders:
+                    #we want to win scoring, so we get used ahead of other encoders:
                     spec_props["score_boost"] = 50
                     #limit to 3 video streams we proxy for (we really want 2,
                     # but because of races with garbage collection, we need to allow more)

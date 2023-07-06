@@ -133,9 +133,9 @@ class XpraMonitorServer(DesktopServerBase):
             self.reconfigure_timer = 0
 
     def do_reconfigure(self) -> None:
-        #verify that our models are up to date
-        #we look for the crtcs because that's what tools like `xrandr` can modify easily
-        # ie: xrandr --output DUMMY1 --mode 1024x768
+        # verify that our models are up-to-date,
+        # we look for the `crtcs` because that's what tools like `xrandr` can modify easily
+        #  ie: `xrandr --output DUMMY1 --mode 1024x768`
         mdefs = {}
         with xlog:
             info = RandR.get_all_screen_properties()

@@ -269,8 +269,8 @@ class Wm(GObject.GObject):
         prop_set(X11Window.get_root_xid(), *args)
 
     @staticmethod
-    def root_get(*args):
-        return prop_get(X11Window.get_root_xid(), *args)
+    def root_get(*args, **kwargs):
+        return prop_get(X11Window.get_root_xid(), *args, **kwargs)
 
     def set_workarea(self, x:int, y:int, width:int, height:int) -> None:
         v = [x, y, width, height]

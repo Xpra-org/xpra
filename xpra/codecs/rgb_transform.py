@@ -48,7 +48,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     if pixel_format in ("r210", "BGR565"):
-        #try to fallback to argb module
+        #try to fall back to argb module
         #(required for r210 which is not handled by PIL directly)
         assert argb_swap, "no argb codec"
         log("rgb_reformat: using argb_swap for %s", image)

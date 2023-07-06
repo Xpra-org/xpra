@@ -749,8 +749,8 @@ class SocketProtocol:
         self._process_read(buf)
         if not buf:
             log("read thread: eof")
-            #give time to the parse thread to call close itself
-            #so it has time to parse and process the last packet received
+            # give time to the parse thread to call close itself,
+            # so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
             return False
         self.input_raw_packetcount += 1

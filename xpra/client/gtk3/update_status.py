@@ -57,7 +57,7 @@ class UpdateStatusWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = Gtk.Button(label)
+            btn = Gtk.Button(label=label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             icon = get_icon_pixbuf(icon_name)

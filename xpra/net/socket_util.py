@@ -266,10 +266,10 @@ def looks_like_xpra_packet(data:ByteString) -> bool:
         )
     header = data.ljust(HEADER_SIZE, b"\0")
     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
-    #this normally used on the first packet, so the packet index should be 0
-    #and I don't think we can make packets smaller than 8 bytes,
-    #even with packet name aliases and rencode
-    #(and aliases should not be defined for the initial packet anyway)
+    # this normally used on the first packet, so the packet index should be 0,
+    # and I don't think we can make packets smaller than 8 bytes,
+    # even with packet name aliases and rencode
+    # (and aliases should not be defined for the initial packet anyway)
     if packet_index!=0:
         return False
     if data_size<8 or data_size>=256*1024*1024:
@@ -711,7 +711,8 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
             #wait for all the unknown ones:
             log(f"sockets in unknown state: {csv(unknown)}")
             if unknown:
-                #re-probe them using threads so we can do them in parallel:
+                # re-probe them using threads,
+                # so we can do them in parallel:
                 threads = []
                 def timeout_probe(sockpath):
                     #we need a loop because "DEAD" sockets may return immediately
@@ -791,8 +792,8 @@ def handle_socket_error(sockpath:str, sperms:int, e):
         dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
         if not os.path.exists(dirname):
             log.info(f" {dirname!r} does not exist")
-        #only show extra information if the socket permissions
-        #would have been accessible by the group:
+        # only show extra information if the socket permissions
+        # would be accessible by the group:
         elif POSIX and (sperms & 0o40):
             uid = getuid()
             username = get_username_for_uid(uid)
@@ -1182,7 +1183,7 @@ def ssl_retry(e, ssl_ca_certs) -> Optional[Dict[str,Any]]:
         return None
     if not isinstance(e, SSLVerifyFailure):
         return None
-    #we may be able to ask the user if we wants to accept this certificate
+    # we may be able to ask the user if he wants to accept this certificate
     verify_code = e.verify_code
     ssl_sock = e.ssl_sock
     msg = str(e)

@@ -24,8 +24,8 @@ def get_printers():
 def get_printer_attributes(_name):
     return []
 
-def get_default_printer():
-    return None
+def get_default_printer() -> str:
+    return ""
 
 def print_files(printer, filenames, title, options):
     raise RuntimeError("no print implementation available")

@@ -809,8 +809,8 @@ class WindowVideoSource(WindowSource):
             Overridden here so that we can try to intercept the `video_subregion` if one exists.
         """
         vr = self.video_subregion.rectangle
-        #overrides the default method for finding the encoding of a region
-        #so we can ensure we don't use the video encoder when we don't want to:
+        # overrides the default method for finding the encoding of a region,
+        # so we can ensure we don't use the video encoder when we don't want to:
         def send_nonvideo(regions=regions, encoding:str=coding, exclude_region=None,
                           get_best_encoding=self.get_best_nonvideo_encoding):
             if self.b_frame_flush_timer and exclude_region is None:
@@ -1521,8 +1521,8 @@ class WindowVideoSource(WindowSource):
                     mh = crsh
             if width<=mw and height<=mh:
                 return default_value    #no problem
-            #most encoders can't deal with that!
-            #sort them from smallest scaling to highest:
+            # most encoders can't deal with that!
+            # sort them from the smallest scaling value to the highest:
             sopts = {}
             for num, den in SCALING_OPTIONS:
                 sopts[num/den] = (num, den)
@@ -1658,7 +1658,7 @@ class WindowVideoSource(WindowSource):
             #then we will match the heuristics more quickly:
             er = sc/50.0
             if self.actual_scaling!=(1, 1):
-                #if we are already downscaling, boost so we will stick with it a bit longer:
+                #if we are already downscaling, boost the score so we will stick with it a bit longer:
                 #more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
                 er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0])
             qs = s>(q-er*10) and q<(50+er*15)
@@ -2267,8 +2267,8 @@ class WindowVideoSource(WindowSource):
                           self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        #if the client doesn't support alpha,
-        #use an rgb input format that ignores the alpha channel:
+        # if the client doesn't support alpha,
+        # use an rgb input format that ignores the alpha channel:
         if not self.supports_transparency and src_format.find("A")>=0:
             #ie: "BGRA" -> "BGRX"
             src_format = src_format.replace("A", "X")
@@ -2433,8 +2433,8 @@ class WindowVideoSource(WindowSource):
                     return self.video_fallback(image, options)
                 return ()
         else:
-            #there are no delayed frames,
-            #make sure we timeout the encoder if no new frames come through:
+            # there are no delayed frames,
+            # make sure we time out the encoder if no new frames come through:
             self.schedule_video_encoder_timer()
         actual_encoding = ve.get_encoding()
         videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %6.1f MPixels/s, client options=%s",

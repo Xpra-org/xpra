@@ -374,8 +374,8 @@ WIN32_KEYBOARDS : Dict[int, Tuple[str, str]] = {
     0x0000046a  : ("??", "Yoruba"),
     }
 
-# This is generated from the table above so we can
-# let the user choose his own layout.
+# This is generated from the table above,
+# so we can let the user choose his own layout.
 # (country,language) : (layout,variant)
 X11_LAYOUTS : Dict[Tuple[str,str],Tuple[str,Tuple[str, ...]]] = {}
 for ccode, country, language, codepage, layout, variants in WIN32_LAYOUTS.values():

@@ -295,8 +295,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.init_formats()
         self.draw_needs_refresh : bool = DRAW_REFRESH
         # the correct check would be this:
-        # self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh
-        # but we're meant to be using double-buffered everywhere, so don't bother:
+        # `self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh`
+        # but we're meant to be using double-buffered everywhere,
+        # so don't bother and just repaint everything:
         self.repaint_all : bool = True
         self._backing.show()
 

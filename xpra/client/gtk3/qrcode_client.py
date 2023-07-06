@@ -91,9 +91,9 @@ class QRCodeClient(InfoXpraClient):
         Gtk.main_quit()
 
     def quit(self, exit_code=0):
-        #only exit if we encountered an error
-        #InfoXpraClient calls quit(ExitCode.OK) on connection-lost
-        #but we don't want to exit then
+        # only exit if we encountered an error
+        # InfoXpraClient calls quit(ExitCode.OK) on `connection-lost`,
+        # but we don't want to exit then
         if exit_code!=0:
             super().quit(exit_code)
 
@@ -156,7 +156,7 @@ def do_main(opts):
         os.environ["XPRA_HIDE_DOCK"] = "1"
     from xpra.platform import program_context
     with program_context("qrcode", "QRCode"):
-        Gtk.Window.set_auto_startup_notification(False)
+        Gtk.Window.set_auto_startup_notification(setting=False)
         c = QRCodeClient(opts)
         #add_close_accel(w, Gtk.main_quit)
         return c.run()

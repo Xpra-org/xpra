@@ -151,7 +151,7 @@ class FakeApplication:
             icon_filename = get_icon_filename(icon_name)
             if not icon_filename:
                 return None
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)

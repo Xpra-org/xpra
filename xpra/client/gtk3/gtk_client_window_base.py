@@ -456,7 +456,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             user_data = (filename, True)
             gfile.load_contents_async(cancellable, got_file_data, user_data)
         try:
-            gfile = Gio.File.new_for_path(filename)
+            gfile = Gio.File.new_for_path(path=filename)
             #basename = gf.get_basename()
             FILE_QUERY_INFO_NONE = 0
             G_PRIORITY_DEFAULT = 0

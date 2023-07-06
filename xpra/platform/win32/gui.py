@@ -182,13 +182,13 @@ def get_native_tray_classes():
     return c
 
 def get_native_system_tray_classes(*_args):
-    #Win32Tray cannot set the icon from data
-    #so it cannot be used for application trays
+    # Win32Tray cannot set the icon from data,
+    # so it cannot be used for application trays
     return get_native_tray_classes()
 
 def gl_check() -> str:
-    #This is supposed to help py2exe
-    #(must be done after we setup the sys.path in platform.win32.paths):
+    # This is supposed to help `py2exe`
+    # (must be done after we set up the `sys.path` in `platform.win32.paths`):
     try:
         from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
     except ImportError as e:
@@ -492,8 +492,8 @@ def apply_geometry_hints(self, hints):
     return self.__apply_geometry_hints(hints)   #call the original saved method
 
 def cache_pointer_offset(self, event):
-    #this overrides the window._get_pointer method
-    #so we can cache the GTK position offset for synthetic wheel events
+    # this overrides the `window._get_pointer` method,
+    # so we can cache the GTK position offset for synthetic wheel events
     gtk_x, gtk_y = event.x_root, event.y_root
     pos = POINT()
     GetCursorPos(byref(pos))
@@ -528,7 +528,7 @@ def add_window_hooks(window):
     log("add_window_hooks(%s) gdk window=%s, hwnd=%#x", window, gdk_window, handle)
 
     if GROUP_LEADER:
-        #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
+        # MSWindows 7 onwards can use AppUserModel to emulate the group leader stuff:
         log("win32 hooks: set_window_group=%s", set_window_group)
         if set_window_group:
             gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
@@ -537,15 +537,15 @@ def add_window_hooks(window):
     if UNDECORATED_STYLE:
         #OR windows never have any decorations or taskbar menu
         if not window._override_redirect:
-            #the method to call to fix things up:
+            # the method to call to fix things up:
             window.fixup_window_style = types.MethodType(fixup_window_style, window)
-            #override set_decorated so we can preserve the taskbar menu for undecorated windows
+            # override `set_decorated` so we can preserve the taskbar menu for undecorated windows
             window.__set_decorated = window.set_decorated
             window.set_decorated = types.MethodType(set_decorated, window)
-            #override after_window_state_updated so we can re-add the missing style options
-            #(somehow doing it from on_realize which calls add_window_hooks is not enough)
+            # override `after_window_state_updated` so we can re-add the missing style options
+            # (somehow doing it from on_realize which calls add_window_hooks is not enough)
             window.connect("state-updated", window_state_updated)
-            #call it at least once:
+            # call it at least once:
             window.fixup_window_style()
 
     if CLIP_CURSOR:

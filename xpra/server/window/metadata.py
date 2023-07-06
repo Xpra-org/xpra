@@ -65,8 +65,8 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             return {}
         return {propname : v}
     if propname == "size-hints":
-        #just to confuse things, this is renamed
-        #and we have to filter out ratios as floats (already exported as pairs anyway)
+        # just to confuse things, this attribute is renamed,
+        # and we have to filter out ratios as floats (already exported as pairs anyway)
         v = dict(raw())
         return {"size-constraints": v}
     if propname == "strut":

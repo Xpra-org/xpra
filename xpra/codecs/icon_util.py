@@ -96,7 +96,7 @@ def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> Optional[bytes]:
         #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
         img = ImageSurface(FORMAT_ARGB32, w, h)
         ctx = Context(img)
-        handle = Rsvg.Handle.new_from_data(icondata)
+        handle = Rsvg.Handle.new_from_data(data=icondata)
         dim = handle.get_dimensions()
         ctx.scale(w/dim.width, h/dim.height)
         handle.render_cairo(ctx)

@@ -113,7 +113,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             if schema not in schemas:
                 continue
             try:
-                s = Gio.Settings.new(schema)
+                s = Gio.Settings.new(schema_id=schema)
                 restore = []
                 for attribute in attributes:
                     v = s.get_boolean(attribute)

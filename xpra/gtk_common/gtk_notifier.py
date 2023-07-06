@@ -267,7 +267,7 @@ class Popup(Gtk.Window):
 
 
     def action_button(self, action_id, action_text):
-        button = Gtk.Button(u(action_text))
+        button = Gtk.Button(label=u(action_text))
         button.set_relief(Gtk.ReliefStyle.NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()

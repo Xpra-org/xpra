@@ -66,7 +66,7 @@ class AuthDialog(Gtk.Window):
 
     @staticmethod
     def btn(label, stock_icon, callback):
-        btn = Gtk.Button(label)
+        btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)

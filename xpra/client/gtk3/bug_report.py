@@ -68,7 +68,7 @@ class BugReport:
         icon_pixbuf = get_icon_pixbuf("xpra.png")
         if icon_pixbuf and self.show_about:
             from xpra.gtk_common.about import about
-            logo_button = Gtk.Button("")
+            logo_button = Gtk.Button(label="")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
             logo_button.connect("clicked", about)
@@ -198,7 +198,7 @@ class BugReport:
             )
         self.checkboxes = {}
         for name, _, title, value_cb, sensitive, tooltip in self.toggles:
-            cb = Gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
+            cb = Gtk.CheckButton(label=title+[" (not available)", ""][bool(value_cb)])
             cb.set_active(self.includes.get(name, True))
             cb.set_sensitive(sensitive)
             cb.set_tooltip_text(tooltip)
@@ -209,7 +209,7 @@ class BugReport:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip_text, callback, icon_name=None):
-            b = Gtk.Button(label)
+            b = Gtk.Button(label=label)
             b.set_tooltip_text(tooltip_text)
             b.connect("clicked", callback)
             if icon_name:

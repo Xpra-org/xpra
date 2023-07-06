@@ -21,7 +21,7 @@ class GTK3_Notifier(NotifierBase):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
         Notify.init(app_name or "Xpra")
-        n = Notify.Notification.new(summary, body, icon_string)
+        n = Notify.Notification.new(summary=summary, body=body, icon=icon_string)
         def closed(*_args):
             self.clean_notification(nid)
         n.connect("closed", closed)

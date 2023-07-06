@@ -640,7 +640,7 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     desc["agent"] = agent_forwarding
     if agent_forwarding:
         #tell the remote proxy command which user uuid we're going to use,
-        #so it can setup the ssh agent symlink at a location
+        #so it can set up the ssh agent symlink at a location
         #that the server can find with just the uuid:
         uuid = get_user_uuid()
         args.append(f"--env=SSH_AGENT_UUID={uuid}")
@@ -665,7 +665,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> List[str]:
     if username and not is_paramiko:
         args += ["-l", username]
     if ssh_port and ssh_port!=22:
-        #grr why bother doing it different?
+        #grr, why bother doing it different?
         if is_putty:
             args += ["-P", str(ssh_port)]
         elif not is_paramiko:

@@ -109,8 +109,8 @@ def main(script_file:str, cmdline) -> int:
         defaults : XpraConfig = make_defaults_struct()
         fixup_defaults(defaults)
         options, args = do_parse_cmdline(cmdline, defaults)
-        #set_proc_title is here so we can override the cmdline later
-        #(don't ask me why this works)
+        # `set_proc_title` is set here so that we can override the cmdline later
+        # (don't ask me why this works)
         set_proc_title(" ".join(cmdline))
         if not args:
             raise InitExit(-1, "xpra: need a mode")
@@ -309,7 +309,7 @@ def check_gtk() -> None:
     gi.require_version("Gtk", "3.0")  # @UndefinedVariable
     from gi.repository import Gtk  # @UnresolvedImport
     assert Gtk
-    r = Gtk.init_check(None)
+    r = Gtk.init_check(argv=None)
     if not r[0]:
         raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
     check_display()
@@ -1550,7 +1550,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 netlog = get_network_logger()
                 netlog("new_connection%s", (socktype, sock, handle))
                 conn = accept_connection(socktype, sock)
-                #start a thread so we can sleep in peek_connection:
+                # start a new thread so that we can sleep doing IO in `peek_connection`:
                 start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn, ))
                 return True
             def handle_new_connection(conn):
@@ -2560,7 +2560,6 @@ def start_server_subprocess(script_file, args, mode, opts,
         args = [display_name]
         opts.exit_with_client = True
 
-    #get the list of existing sockets so we can spot the new ones:
     if display_name.startswith("S"):
         matching_display = None
     else:
@@ -2575,9 +2574,11 @@ def start_server_subprocess(script_file, args, mode, opts,
         assert display_name
         return proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name)
 
+    # get the current list of existing sockets,
+    # so we can spot the new ones:
     existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
-                                            matching_state=dotxpra.LIVE,
-                                            matching_display=matching_display))
+                                                matching_state=dotxpra.LIVE,
+                                                matching_display=matching_display))
     log(f"start_server_subprocess: existing_sockets={existing_sockets}")
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
@@ -3325,8 +3326,8 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> int:
             pass
     if display_descr:
         display = display_descr.get("display")
-        #args are enough to identify the display,
-        #get the display_info so we know the mode:
+        # args are enough to identify the display,
+        # get the `display_info` so that we know the mode to use:
         descr = get_display_info(display, options.sessions_dir)
     else:
         def recover_many(displays):

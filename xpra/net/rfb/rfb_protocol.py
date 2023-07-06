@@ -242,8 +242,8 @@ class RFBProtocol:
         #log("read()=%i bytes (%s)", len(buf or b""), type(buf))
         if not buf:
             log("read thread: eof")
-            #give time to the parse thread to call close itself
-            #so it has time to parse and process the last packet received
+            # give time to the parse thread to call close itself,
+            # so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
             return False
         if self.log:

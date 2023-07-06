@@ -343,14 +343,14 @@ class ServerBase(ServerBaseClass):
             return
 
         if not request and ui_client:
-            #a bit of explanation:
-            #normally these things are synchronized using xsettings, which we handle already
-            #but non-posix clients have no such thing,
-            #and we don't want to expose that as an interface
-            #(it's not very nice and it is very X11 specific)
-            #also, clients may want to override what is in their xsettings..
-            #so if the client specifies what it wants to use, we patch the xsettings with it
-            #(the actual xsettings part is done in update_all_server_settings in the X11 specific subclasses)
+            # a bit of explanation:
+            # normally these things are synchronized using xsettings, which we handle already,
+            # but non-posix clients have no such thing,
+            # and we don't want to expose that as an interface
+            # (it's not very nice and it is very X11 specific)
+            # also, clients may want to override what is in their xsettings..
+            # so if the client specifies what it wants to use, we patch the xsettings with it
+            # (the actual xsettings part is done in `update_all_server_settings` in the X11 specific subclasses)
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
                 self.dpi = 0

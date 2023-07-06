@@ -58,8 +58,8 @@ def getOSXMenuHelper(client=None):
 
 class OSXMenuHelper(GTKTrayMenuBase):
     """
-    we have to do this stuff here so we can
-    re-use the same instance,
+    we have to do this stuff here,
+    so we can re-use the same instance,
     and change the callbacks if needed.
     (that way, the launcher and the client can both change the menus)
     """
@@ -346,8 +346,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.select_clipboard_menu_option(None, direction_label, CLIPBOARD_DIRECTION_LABELS)
 
 
-    #these methods are called by the superclass
-    #but we don't have a quality or speed menu, so override and ignore
+    # these methods are called by the superclass,
+    # but we don't have a quality or speed menu,
+    # so override and ignore
     def set_qualitymenu(self, *args):
         pass    #no quality menu on MacOS
     def set_speedmenu(self, *args):

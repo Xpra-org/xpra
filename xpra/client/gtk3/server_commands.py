@@ -68,7 +68,7 @@ class ServerCommandsWindow:
         self.window.add(vbox)
 
     def btn(self, label, tooltip, callback, icon_name=None):
-        btn = Gtk.Button(label)
+        btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)

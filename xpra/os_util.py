@@ -22,7 +22,7 @@ from threading import Thread
 
 # only minimal imports go at the top
 # so that this file can be included everywhere
-# without too many side-effects
+# without too many side effects
 # pylint: disable=import-outside-toplevel
 
 SIGNAMES : Dict[int,str] = {}
@@ -278,7 +278,7 @@ def get_machine_id() -> str:
 
 def get_user_uuid() -> str:
     """
-        Try to generate a uuid string which is unique to this user.
+        Try to generate an uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
     user_uuid = os.environ.get("XPRA_USER_UUID")
@@ -430,8 +430,9 @@ _linux_distribution = None
 def get_linux_distribution() -> Tuple[str,str,str]:
     global _linux_distribution
     if LINUX and not _linux_distribution:
-        #linux_distribution is deprecated in Python 3.5 and it causes warnings,
-        #so use our own code first:
+        # linux_distribution is deprecated in Python 3.5,
+        # and it causes warnings,
+        # so we use our own code first:
         cmd = ["lsb_release", "-a"]
         try:
             p = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -682,11 +683,12 @@ def path_permission_info(filename : str, ftype=None) -> Tuple[str, ...]:
     return tuple(info)
 
 
-#code to temporarily redirect stderr and restore it afterwards, adapted from:
-#http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
-#used by the audio code to get rid of the stupid gst warning below:
-#"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
-#ideally we would redirect to a buffer so we could still capture and show these messages in debug out
+# code to temporarily redirect stderr and restore it afterwards, adapted from:
+# http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
+# used by the audio code to get rid of the stupid gst warning below:
+# "** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
+# ideally we would redirect to a buffer,
+# so we could still capture and show these messages in debug out
 class HideStdErr:
     __slots__ = ("savedstderr", )
     def __init__(self, *_args):
@@ -814,9 +816,9 @@ def find_lib_ldconfig(libname:str) -> str:
     return ""
 
 def find_lib(libname:str):
-    #it would be better to rely on dlopen to find the paths
-    #but I cannot find a way of getting ctypes to tell us the path
-    #it found the library in
+    # it would be better to rely on dlopen to find the paths,
+    # but I cannot find a way of getting ctypes to tell us the path
+    # it found the library in
     assert POSIX
     libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
     if BITS==64 and os.path.exists("/usr/lib64"):
@@ -893,8 +895,8 @@ def is_systemd_pid1() -> bool:
 
 
 def get_ssh_port() -> int:
-    #on Linux we can run "ssh -T | grep port"
-    #but this usually requires root permissions to access /etc/ssh/sshd_config
+    # on Linux, we can run "ssh -T | grep port"
+    # but this usually requires root permissions to access /etc/ssh/sshd_config
     if WIN32:
         return 0
     return 22

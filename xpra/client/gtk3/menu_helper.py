@@ -106,7 +106,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Optional[Gtk.Ima
         nstr = bytestostr(app_name).lower()
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
     def err(e):
         log("failed to load icon", exc_info=True)
         log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))

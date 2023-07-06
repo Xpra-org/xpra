@@ -206,8 +206,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return get_native_notifier_classes()
 
     def notify_new_user(self, ss) -> None:
-        #overridden here so we can show the notification
-        #directly on the screen we shadow
+        # overridden here so that we can show the notification
+        # directly on the screen we shadow
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
@@ -227,8 +227,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=NotificationID.STARTUP)
 
     def do_notify_startup(self, title:str, body:str="", replaces_nid:int=0) -> None:
-        #overridden here so we can show the notification
-        #directly on the screen we shadow
+        # this is overridden here so that we can show the notification
+        # directly on the screen we shadow
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
         if self.notifier:
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none

@@ -304,7 +304,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 if cg:
                     info["client-geometry"] = cg
             except KeyError:
-                pass        #OR or tray window
+                pass        #`OR` or tray window
         return info
 
 
@@ -451,9 +451,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
             if not window.is_managed():
                 #we keep references to windows that aren't meant to be displayed..
                 continue
-            #most of the code here is duplicated from the send functions
-            #so we can send just to the new client and request damage
-            #just for the new client too:
+            # most of the code here is duplicated from the send functions,
+            # so we can send just to the new client and request damage
+            # just for the new client too:
             if window.is_tray():
                 #code more or less duplicated from _send_new_tray_window_packet:
                 w, h = window.get_dimensions()
@@ -1309,7 +1309,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 frame = window.get_property("frame")
                 if frame and tuple(frame)!=(0, 0, 0, 0):
                     left, right, top, bottom = frame
-                    #always add a little something so we can see the edge:
+                    # always add a little something, so we can see the edge:
                     left = max(1, left)
                     right = max(1, right)
                     top = max(1, top)

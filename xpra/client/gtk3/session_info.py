@@ -647,9 +647,9 @@ class SessionInfo(Gtk.Window):
             since = monotonic()-1
             decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
             self.pixel_in_data.append(sum(decoded))
-        #update latency values
-        #there may be more than one record for each second
-        #so we have to average them to prevent the graph from "jumping":
+        # update latency values
+        # there may be more than one record for each second,
+        # so we have to average them to prevent the graph from "jumping":
         def get_ping_latency_records(src, size=25):
             recs = {}
             src_list = list(src)
@@ -1316,8 +1316,8 @@ class SessionInfoClient(InfoTimerClient):
         return "session-info"
 
     def update_screen(self):
-        #this is called every time we get the server info back
-        #log.info("server_last_info=%s", self.server_last_info)
+        # this is called every time we get the server info back
+        # log.info("server_last_info=%s", self.server_last_info)
         if not self.server_last_info:
             return
         td = typedict(self.server_last_info)
