@@ -315,7 +315,7 @@ class ClientWindowBase(ClientWidgetBase):
                 }
             metalog(f"default values: {default_values}")
             def validhostname(value):
-                if value not in (
+                if value in (
                     "localhost",
                     "localhost.localdomain",
                     "",
