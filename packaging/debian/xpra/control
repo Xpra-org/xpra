@@ -58,6 +58,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-gi-cairo
+# packet encoder:
+        ,python3-rencode
 # for opengl support:
         ,python3-opengl
 # for PNG and JPEG support:
@@ -78,8 +80,6 @@ Recommends: python3-dbus
         ,xpra-html5
 # for the proxy server:
         ,python3-setproctitle
-# packet encoder:
-        ,python3-rencode
 # packet compression:
         ,liblz4
 # text packet compression:

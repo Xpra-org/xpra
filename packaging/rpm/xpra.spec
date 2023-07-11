@@ -167,7 +167,7 @@ Requires:			ffmpeg-xpra
 Requires:			turbojpeg
 Requires:			python3-cryptography
 Requires:			python3-gobject
-Recommends:			python3-rencode
+Requires:			python3-rencode
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
