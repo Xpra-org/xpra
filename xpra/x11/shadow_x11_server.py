@@ -357,6 +357,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 fn()
             except Exception:
                 log("cleanup() failed to remove X11 attribute", exc_info=True)
+        self.do_clean_session_files("xauthority")
 
 
     def setup_capture(self):

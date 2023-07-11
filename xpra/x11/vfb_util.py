@@ -149,19 +149,19 @@ EndSection
     #Option "AccelSpeed" "-1"
     return conf_file
 
+def valid_xauth(filename:str, uid:int=getuid(), gid:int=getgid()) -> str:
+    if not filename:
+        return ""
+    if not os.path.exists(filename):
+        return ""
+    if not is_writable(filename, uid, gid):
+        log = get_vfb_logger()
+        log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
+        return ""
+    return filename
 
-def get_xauthority_path(display_name, username, uid:int, gid:int) -> str:
+def get_xauthority_path(display_name) -> str:
     assert POSIX
-    def pathexpand(s) -> str:
-        return osexpand(s, actual_username=username, uid=uid, gid=gid)
-    filename : str = os.environ.get("XAUTHORITY", "")
-    if filename:
-        filename = pathexpand(filename)
-        if os.path.exists(filename):
-            if is_writable(filename):
-                return filename
-            log = get_vfb_logger()
-            log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
     # pylint: disable=import-outside-toplevel
     from xpra.platform.posix.paths import _get_xpra_runtime_dir
     if PRIVATE_XAUTH:
@@ -173,7 +173,7 @@ def get_xauthority_path(display_name, username, uid:int, gid:int) -> str:
     else:
         d = "~/"
         filename = ".Xauthority"
-    return os.path.join(pathexpand(d), filename)
+    return os.path.join(d, filename)
 
 def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, uid:int, gid:int, username:str, uinput_uuid=None):
     if not POSIX:

@@ -43,7 +43,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, setuidgid,
     getuid, get_groups, get_group_id,
     get_hex_uuid, get_util_logger, osexpand,
-    load_binary_file,
+    load_binary_file, is_writable,
     )
 from xpra.util import envbool, unsetenv, noerr, ConnectionMessage
 from xpra.common import GROUP
@@ -55,6 +55,7 @@ DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
+SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 
 
 def deadly_signal(signum):
@@ -1110,31 +1111,67 @@ def _do_run_server(script_file:str, cmdline,
     odisplay_name = display_name
     xvfb = None
     xauthority = None
-    if start_vfb or clobber:
+    if (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland")<0:
         #XAUTHORITY
-        from xpra.x11.vfb_util import get_xauthority_path, xauth_add
-        if not shadowing or display_name.find("wayland")<0:
-            xauthority = load_session_file("xauthority")
-            if xauthority and os.path.exists(xauthority):
-                os.environ["XAUTHORITY"] = xauthority.decode("latin1")
-                log(f"found existing XAUTHORITY file {xauthority!r}")
-            else:
-                xauthority = get_xauthority_path(display_name, username, uid, gid)
-                os.environ["XAUTHORITY"] = xauthority
-                if not os.path.exists(xauthority):
-                    log(f"creating XAUTHORITY file {xauthority!r}")
-                    try:
-                        with open(xauthority, "ab") as f:
-                            os.fchmod(f.fileno(), 0o640)
-                            if ROOT and (uid!=0 or gid!=0):
-                                os.fchown(f.fileno(), uid, gid)
-                    except Exception as e:
-                        #trying to continue anyway!
-                        log.error(f"Error trying to create XAUTHORITY file {xauthority!r}")
-                        log.estr(e)
-                else:
-                    log(f"found existing XAUTHORITY file {xauthority!r}")
+        from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
+        xauthority = valid_xauth((load_session_file("xauthority") or b"").decode(), uid, gid)
+        if not xauthority:
+            # from here on, we need to save the `xauthority` session file
+            # since there is no session file, or it isn't valid
+            if SHARED_XAUTHORITY:
+                # re-using the value from the environment may not always be safe
+                # as the file may be removed when the X11 session that created it is closed,
+                # but users expect things to "just work" in most cases,
+                # and be able to run commands such as `DISPLAY=:10 xterm`,
+                # so this is enabled by default
+                xauthority = os.environ.get("XAUTHORITY", "")
+            if shadowing and not valid_xauth(xauthority, uid, gid):
+                # look for xauth files in magic directories (yuk)
+                # matching this user, see ticket #3917
+                xauth_time = 0.0
+                candidates = [
+                    "/tmp/xauth*",
+                    "/tmp/.Xauth*",
+                    "/var/run/gdm/xauth*",
+                    "/var/run/lightdm/$USER/xauthority",
+                    "$XDG_RUNTIME_DIR/xauthority",
+                    "$XDG_RUNTIME_DIR/Xauthority",
+                    "$XDG_RUNTIME_DIR/gdm/xauthority",
+                    "$XDG_RUNTIME_DIR/gdm/Xauthority",
+                ]
+                for globstr in candidates:
+                    for f in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=g)):
+                        if not os.path.isfile(f):
+                            continue
+                        try:
+                            stat_info = os.stat(filename)
+                        except OSError:
+                            continue
+                        if not ROOT and stat_info.st_uid!=uid:
+                            continue
+                        if xauth_time==0.0 or stat_info.st_mtime>xauth_time:
+                            xauthority = f
+                            xauth_time = stat_info.st_mtime
+            if not valid_xauth(xauthority, uid, gid):
+                #we can choose the path to use:
+                xauthority = get_xauthority_path(display_name)
+                xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
+            assert xauthority
+            if not os.path.exists(xauthority):
+                if os.path.islink(xauthority):
+                    #broken symlink
+                    os.unlink(xauthority)
+                log(f"creating XAUTHORITY file {xauthority!r}")
+                with open(xauthority, "ab") as f:
+                    os.fchmod(f.fileno(), 0o640)
+                    if ROOT and (uid!=0 or gid!=0):
+                        os.fchown(f.fileno(), uid, gid)
+            elif not is_writable(xauthority) and not ROOT:
+                log(f"chmoding XAUTHORITY file {xauthority!r}")
+                os.chmod(xauthority, 0o640)
             write_session_file("xauthority", xauthority)
+            log(f"using XAUTHORITY file {xauthority!r}")
+        os.environ["XAUTHORITY"] = xauthority
         #resolve use-display='auto':
         if use_display is None or upgrading:
             #figure out if we have to start the vfb or not:
