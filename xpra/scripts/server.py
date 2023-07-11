@@ -1132,7 +1132,7 @@ def _do_run_server(script_file:str, cmdline,
                 candidates = [
                     "/tmp/xauth*",
                     "/tmp/.Xauth*",
-                    "/var/run/gdm/xauth*",
+                    "/var/run/*dm/xauth*",
                     "/var/run/lightdm/$USER/xauthority",
                     "$XDG_RUNTIME_DIR/xauthority",
                     "$XDG_RUNTIME_DIR/Xauthority",
