@@ -949,6 +949,10 @@ class Protocol:
                         self.invalid_header(self, header, f"invalid size in packet header: {data_size}")
                         return
 
+                    if packet_index>=16:
+                        self.invalid_header(self, header, f"invalid packet index: {packet_index}")
+                        return
+
                     if protocol_flags & FLAGS_CIPHER:
                         if not self.cipher_in_name:
                             cryptolog.warn("Warning: received cipher block,")
