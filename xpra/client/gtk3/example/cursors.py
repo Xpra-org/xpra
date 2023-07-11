@@ -28,8 +28,8 @@ def main():
             window.set_icon(icon)
         cursor_combo = Gtk.ComboBoxText()
         cursor_combo.append_text("")
-        for name in sorted(cursor_types.keys()):
-            cursor_combo.append_text(name)
+        for cursor_name in sorted(cursor_types.keys()):
+            cursor_combo.append_text(cursor_name)
         window.add(cursor_combo)
 
         def change_cursor(*_args):

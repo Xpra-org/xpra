@@ -51,7 +51,7 @@ def get_OSXApplication():
     if macapp is None:
         import gi
         gi.require_version('GtkosxApplication', '1.0')  # @UndefinedVariable
-        from gi.repository import GtkosxApplication #@UnresolvedImport
+        from gi.repository import GtkosxApplication     # @UnresolvedImport
         macapp = GtkosxApplication.Application()
         macapp.connect("NSApplicationWillTerminate", quit_handler)
     return macapp
