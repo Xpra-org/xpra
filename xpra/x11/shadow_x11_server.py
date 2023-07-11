@@ -192,6 +192,9 @@ class XImageCapture:
     def __repr__(self):
         return f"XImageCapture({self.xwindow:x})"
 
+    def get_type(self) -> str:
+        return "XImageCapture"
+
     def clean(self) -> None:
         self.close_xshm()
 
