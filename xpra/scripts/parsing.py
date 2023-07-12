@@ -8,6 +8,7 @@
 
 #pylint: disable=import-outside-toplevel
 
+import re
 import sys
 import shlex
 import os.path
@@ -323,7 +324,13 @@ def normalize_display_name(display_name:str) -> str:
 
     #fixup the legacy format "tcp:host:port"
     pos = display_name.find(":")
-    if pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
+    legacy_ssh = re.search("^ssh:([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?):([0-9]{1,5})$", display_name)
+    if legacy_ssh:
+        #ie: "ssh:host:display" -> "ssh://host/display"
+        host = legacy_ssh.group(1)
+        display = legacy_ssh.group(3)
+        display_name = f"ssh://{host}/{display}"
+    elif pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
         #replace the first ":" with "://"
         #so we end up with parsable URL, ie: "tcp://host:port"
         display_name = display_name[:pos]+"://"+display_name[pos+1:]
