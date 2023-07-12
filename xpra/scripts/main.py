@@ -1009,11 +1009,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     dtype = display_desc["type"]
     if dtype in ("ssh", "vnc+ssh"):
         if display_desc.get("is_paramiko", False):
-            from xpra.net.ssh.paramiko_client import connect_to
-            conn = connect_to(display_desc)
+            from xpra.net.ssh import paramiko_client
+            conn = paramiko_client.connect_to(display_desc)
         else:
-            from xpra.net.ssh.exec_client import connect_to  # @Reimport
-            conn = connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+            from xpra.net.ssh import exec_client
+            conn = exec_client.connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
         if dtype=="vnc+ssh":
             conn.socktype = "vnc"
             conn.socktype_wrapped = "ssh"
