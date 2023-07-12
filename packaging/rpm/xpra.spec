@@ -119,6 +119,7 @@ Requires(postun):	systemd-units
 Recommends:		xterm
 Recommends:		libfakeXinerama
 Recommends:		mesa-dri-drivers
+Recommends:		python3-lxml
 Recommends:		redhat-menus
 Recommends:		gnome-menus
 Recommends:		gnome-icon-theme
