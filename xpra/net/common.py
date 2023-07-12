@@ -59,6 +59,7 @@ URL_MODES : Dict[str,str] = {
 PACKET_TYPES : List[str] = [
     #generic:
     "hello",
+    "challenge",
     "info", "info-response",
     #server state:
     "server-event", "startup-complete",
