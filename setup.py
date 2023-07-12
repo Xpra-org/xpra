@@ -813,7 +813,7 @@ def get_dummy_driver_version():
             out = out.split(":", 1)[1]
         print(f"dpkg-query found dummy driver version {out}")
         return out
-    return "0"
+    return "0.4.0"
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
@@ -1864,9 +1864,9 @@ else:
                 if nvfbc_ENABLED:
                     addconf("nvfbc.keys")
                 if vernum(dummy_driver_version or get_dummy_driver_version()) < (0, 4):
-                    addconf("xorg.conf")
+                    addconf("xorg-legacy.conf", "xorg.conf")
                 else:
-                    addconf("xorg-randr1.6.conf", "xorg.conf")
+                    addconf("xorg.conf")
                 for src, dst_name in etc_xpra_files.items():
                     copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
                 copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
