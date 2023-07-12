@@ -906,11 +906,6 @@ def get_defaults():
         get_download_dir, get_remote_run_xpra_scripts,
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
         )
-    try:
-        from xpra.platform.info import get_username
-        username = get_username()
-    except Exception:
-        username = ""
     conf_dirs = [os.environ.get("XPRA_CONF_DIR")]
     build_root = os.environ.get("RPM_BUILD_ROOT")
     if build_root:
@@ -951,7 +946,7 @@ def get_defaults():
     GLOBAL_DEFAULTS = {
                     "encoding"          : "auto",
                     "title"             : "@title@ on @hostinfo@",
-                    "username"          : username,
+                    "username"          : "",
                     "password"          : "",
                     "wm-name"           : DEFAULT_NET_WM_NAME,
                     "session-name"      : "",

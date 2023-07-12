@@ -424,9 +424,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 if digest not in digests:
                     digests.append(digest)
         capabilities.update(FilePrintMixin.get_caps(self))
+        if self.username:
+            #set for authentication:
+            capabilities["username"] = self.username
         capabilities.update({
                 "uuid"                  : self.uuid,
-                "username"              : self.username,    #for authentication
                 "compression_level"     : self.compression_level,
                 "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
                 "packet-types"          : tuple(self._aliases.values()),
