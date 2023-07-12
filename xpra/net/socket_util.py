@@ -1320,6 +1320,8 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
     dirs = get_ssl_hosts_config_dirs()
     host_dirname = std(server_hostname, extras="-.:#_")+f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
+    ssllog(f"save_ssl_config_file%s dirs={dirs}, host_dirname={host_dirname}, host_dirs={host_dirs}",
+          (server_hostname, port, filename, fileinfo, ellipsizer(filedata)), )
     #if there is an existing host config dir, try to use it:
     for d in [x for x in host_dirs if os.path.exists(x)]:
         f = os.path.join(d, filename)
