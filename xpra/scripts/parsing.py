@@ -16,7 +16,7 @@ from urllib import parse
 from typing import Any, List, Dict, Tuple, Optional, Callable
 
 from xpra.version_util import full_version_str
-from xpra.util import envbool, csv, parse_simple_dict, stderr_write
+from xpra.util import envbool, csv, parse_simple_dict, stderr_print
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
@@ -63,17 +63,17 @@ def audio_option(v):
 
 
 def info(msg:str):
-    if not stderr_write(msg) and POSIX:
+    if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
 def warn(msg:str):
-    if not stderr_write(msg) and POSIX:
+    if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
 
 def error(msg:str):
-    if not stderr_write(msg) and POSIX:
+    if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
 

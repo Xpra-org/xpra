@@ -8,7 +8,7 @@
 import signal
 from typing import Dict, Callable
 
-from xpra.util import dump_all_frames, dump_gc_frames, stderr_write
+from xpra.util import dump_all_frames, dump_gc_frames, stderr_print
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger
 
 
@@ -24,7 +24,7 @@ def register_os_signal(callback:Callable, commandtype:str="", signum=signal.SIGI
         if not commandtype:
             return
         try:
-            stderr_write("\n")
+            stderr_print()
             cstr = ""
             if commandtype:
                 cstr = commandtype+" "

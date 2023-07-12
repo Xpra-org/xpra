@@ -171,7 +171,7 @@ def noerr(fn, *args):
     except Exception:
         return None
 
-def stderr_write(msg:str) -> bool:
+def stderr_print(msg:str= "") -> bool:
     stderr = sys.stderr
     if stderr:
         try:

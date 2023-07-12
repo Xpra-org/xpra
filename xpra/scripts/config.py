@@ -11,7 +11,7 @@ import shlex
 from typing import Tuple, Dict, Union, List, Callable, Any, Optional
 
 from xpra.common import noop
-from xpra.util import csv, stderr_write, sorted_nicely, remove_dupes
+from xpra.util import csv, stderr_print, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
@@ -20,7 +20,7 @@ from xpra.os_util import (
     )
 
 def warn(msg:str) -> None:
-    stderr_write(msg+"\n")
+    stderr_print(msg)
 
 def nodebug(*_args) -> None:
     #can be overridden

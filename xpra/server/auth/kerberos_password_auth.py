@@ -8,7 +8,7 @@ import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
-from xpra.util import typedict, stderr_write
+from xpra.util import typedict, stderr_print
 from xpra.os_util import WIN32
 
 
@@ -65,8 +65,8 @@ def main(argv) -> int:
     from xpra.platform import program_context
     with program_context("Kerberos-Password-Auth", "Kerberos-Password-Authentication"):
         if len(argv) not in (3,4,5):
-            stderr_write("%s invalid arguments\n" % argv[0])
-            stderr_write("usage: %s username password [service [realm]]\n" % argv[0])
+            stderr_print("%s invalid arguments" % argv[0])
+            stderr_print("usage: %s username password [service [realm]]" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]
