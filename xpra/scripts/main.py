@@ -78,7 +78,7 @@ def nox() -> str:
 
 def werr(*msg) -> None:
     for x in msg:
-        stderr_write(f"{x}\n")
+        stderr_write(str(x))
 
 def add_process(*args, **kwargs):
     from xpra.child_reaper import getChildReaper
