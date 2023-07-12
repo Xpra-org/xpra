@@ -2132,7 +2132,6 @@ class ServerCore:
             self.disconnect_protocol(proto, "failed to upgrade socket to ssl")
             conn.close()
             return
-        # sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, "ssl", socket_options=options)
         ssl_conn.socktype_wrapped = socktype
         protocol_class = get_server_protocol_class(new_socktype)
