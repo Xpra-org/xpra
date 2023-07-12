@@ -356,7 +356,7 @@ def is_distribution_variant(variant=b"Debian") -> bool:
         pass
     try:
         d = get_linux_distribution()[0]
-        if d==variant:
+        if d==bytestostr(variant):
             return True
         if variant==b"RedHat" and d.startswith(bytestostr(variant)):
             return True
