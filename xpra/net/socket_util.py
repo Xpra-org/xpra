@@ -1346,9 +1346,9 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
                 os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
             os.makedirs(d, mode=0o700)
             f = os.path.join(d, filename)
-            with open(filename, "wb") as fd:
+            with open(f, "wb") as fd:
                 fd.write(filedata)
-            ssllog.info(f"saved SSL certificate to {f!r}")
+            ssllog.info(f"saved SSL {fileinfo} to {f!r}")
             return f
         except OSError:
             ssllog(f"failed to save cert data to {d!r}", exc_info=True)
