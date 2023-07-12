@@ -107,6 +107,8 @@ class WebSocketProtocol(SocketProtocol):
                 if not fin:
                     if opcode not in (OPCODE_BINARY, OPCODE_TEXT):
                         op = OPCODES.get(opcode, opcode)
+                        log(f"invalid opcode {opcode} from {buf}")
+                        log(f"parsed as {parsed}")
                         raise RuntimeError(f"cannot handle fragmented {op} frames")
                     #fragmented, keep this payload for later
                     self.ws_payload_opcode = opcode

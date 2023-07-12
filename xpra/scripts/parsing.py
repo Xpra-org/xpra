@@ -539,8 +539,9 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
         add_path()
         add_query()
+        # always parse ssl options so we can auto-upgrade:
+        desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         if protocol in ("ssl", "wss", "quic"):
-            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
             alt_scheme = "https"
         else:
             alt_scheme = "http"

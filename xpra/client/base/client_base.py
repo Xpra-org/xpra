@@ -18,7 +18,7 @@ from xpra.scripts.config import InitExit
 from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.common import may_log_packet, PACKET_TYPES
+from xpra.net.common import may_log_packet, PACKET_TYPES, SSL_UPGRADE
 from xpra.make_thread import start_thread
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -164,9 +164,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
         self.install_signal_handlers()
-        #this is now done in UI client only,
-        #most simple clients are just wasting time doing this
-        #self.init_aliases()
+        #we need this to expose the 'packet-types' capability,
+        self.init_aliases()
 
 
     def show_progress(self, pct, text=""):
@@ -333,8 +332,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         raise NotImplementedError()
 
     def setup_connection(self, conn):
-        netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
         protocol_class = get_client_protocol_class(conn.socktype)
+        netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=",
+               conn, conn.timeout, conn.socktype, protocol_class)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         #ssh channel may contain garbage initially,
         #tell the protocol to wait for a valid header:
@@ -744,6 +744,53 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(exit_code, msg)
 
 
+    def _process_ssl_upgrade(self, packet) -> None:
+        assert SSL_UPGRADE
+        ssl_attrs = typedict(packet[1])
+        start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs, ))
+
+    def ssl_upgrade(self, ssl_attrs) -> None:
+        # send ssl-upgrade request!
+        ssllog = Logger("client", "ssl")
+        ssllog(f"ssl-upgrade({ssl_attrs})")
+        conn = self._protocol._conn
+        socktype = conn.socktype
+        new_socktype = {"tcp" : "ssl", "ws" : "wss"}.get(socktype)
+        if not new_socktype:
+            raise ValueError(f"cannot upgrade {socktype} to ssl")
+        log.info(f"upgrading {conn} to {new_socktype}")
+        self.send("ssl-upgrade", {})
+        from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes, ssl_handshake
+        overrides = {
+            "verify_mode" : "none",
+            "check_hostname" : "no",
+        }
+        overrides.update(conn.options.get("ssl-options", {}))
+        ssl_options = get_ssl_attributes(None, False, overrides)
+        kwargs = dict((k.replace("-", "_"), v) for k, v in ssl_options.items())
+        # wait for the 'ssl-upgrade' packet to be sent...
+        # this should be done by watching the IO and formatting threads instead
+        import time
+        time.sleep(1)
+        def read_callback(packet):
+            if packet:
+                ssllog.error("Error: received another packet during ssl socket upgrade:")
+                ssllog.error(" %s", packet)
+                self.quit(EXIT_INTERNAL_ERROR)
+        conn = self._protocol.steal_connection(read_callback)
+        if not self._protocol.wait_for_io_threads_exit(1):
+            log.error("Error: failed to terminate network threads for ssl upgrade")
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
+        ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
+        ssl_sock = ssl_handshake(ssl_sock)
+        authlog("ssl handshake complete")
+        from xpra.net.bytestreams import SSLSocketConnection
+        ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
+        self._protocol = self.setup_connection(ssl_conn)
+        self._protocol.start()
+
+
     ########################################
     # Authentication
     def _process_challenge(self, packet) -> None:
@@ -1022,6 +1069,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.info("received hello:")
             print_nested_dict(packet[1], print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
+        self.remove_packet_handlers("ssl-upgrade")
         if not self.password_sent and self.has_password():
             p = self._protocol
             if not p or p.TYPE=="xpra":
@@ -1161,6 +1209,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._packet_handlers = {}
         self._ui_packet_handlers = {}
         self.add_packet_handler("hello", self._process_hello, False)
+        if SSL_UPGRADE:
+            self.add_packet_handler("ssl-upgrade", self._process_ssl_upgrade)
         self.add_packet_handlers({
             "challenge":                self._process_challenge,
             "disconnect":               self._process_disconnect,

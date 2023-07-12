@@ -19,6 +19,7 @@ from typing import Dict, List, Tuple, Any, ByteString, Callable, Optional, Itera
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
+from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
     FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
@@ -234,6 +235,8 @@ class SocketProtocol:
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
         self.send_flush_flag = FLUSH_HEADER and caps.boolget("flush", False)
+        set_socket_timeout(self._conn, SOCKET_TIMEOUT)
+
 
     def set_receive_aliases(self, aliases:Dict) -> None:
         self.receive_aliases = aliases

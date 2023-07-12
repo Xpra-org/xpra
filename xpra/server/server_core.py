@@ -26,7 +26,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS
+from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -41,6 +41,7 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
     )
+from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest, choose_digest
@@ -1038,6 +1039,7 @@ class ServerCore:
         self._default_packet_handlers : Dict[str,Callable] = {
             "hello":                       self._process_hello,
             "disconnect":                  self._process_disconnect,
+            "ssl-upgrade":                 self._process_ssl_upgrade,
             CONNECTION_LOST:               self._process_connection_lost,
             GIBBERISH:                     self._process_gibberish,
             INVALID:                       self._process_invalid,
@@ -2003,6 +2005,20 @@ class ServerCore:
         if auth_caps is None:
             return
 
+        # try to auto upgrade to ssl:
+        packet_types = c.strtupleget("packet-types", ())
+        if SSL_UPGRADE and not auth_caps and "ssl-upgrade" in packet_types and conn.socktype in ("tcp", ):
+            options = conn.options
+            if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
+                ssl_options = self.get_ssl_socket_options(options)
+                cert = ssl_options.get("cert")
+                if cert:
+                    log.info(f"sending ssl upgrade for {conn}")
+                    cert_data = load_binary_file(cert)
+                    ssl_attrs = {"cert-data" : cert_data}
+                    proto.send_now(("ssl-upgrade", ssl_attrs))
+                    return
+
         def send_fake_challenge() -> None:
             #fake challenge so the client will send the real hello:
             salt = get_salt()
@@ -2012,7 +2028,6 @@ class ServerCore:
 
         #skip the authentication module we have "passed" already:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
-
         authlog("processing authentication with %s, remaining=%s, digest_modes=%s, salt_digest_modes=%s",
                 proto.authenticators, remaining_authenticators, digest_modes, salt_digest_modes)
         #verify each remaining authenticator:
@@ -2090,6 +2105,39 @@ class ServerCore:
             return
         #continue processing hello packet in UI thread:
         self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
+
+
+    def _process_ssl_upgrade(self, proto, packet):
+        socktype = proto._conn.socktype
+        new_socktype = {"tcp" : "ssl", "ws" : "wss"}.get(socktype)
+        if not new_socktype:
+            raise ValueError(f"cannot upgrade {socktype} to ssl")
+        self.cancel_verify_connection_accepted(proto)
+        self.cancel_upgrade_to_rfb_timer(proto)
+        if proto in self._potential_protocols:
+            self._potential_protocols.remove(proto)
+        ssllog("ssl-upgrade: %s", packet[1:])
+        conn = proto.steal_connection()
+        # threads should be able to terminate immediately
+        # as there's no traffic yet:
+        ioe = proto.wait_for_io_threads_exit(1)
+        if not ioe:
+            self.disconnect_protocol(proto, "failed to terminate network threads for ssl upgrade")
+            conn.close()
+            return
+        options = conn.options
+        socktype = conn.socktype
+        ssl_sock = self._ssl_wrap_socket(socktype, conn._socket, options)
+        if not ssl_sock:
+            self.disconnect_protocol(proto, "failed to upgrade socket to ssl")
+            conn.close()
+            return
+        # sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
+        ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, "ssl", socket_options=options)
+        ssl_conn.socktype_wrapped = socktype
+        protocol_class = get_server_protocol_class(new_socktype)
+        proto = self.make_protocol(new_socktype, ssl_conn, options, protocol_class)
+        ssllog.info("upgraded %s to %s", conn, new_socktype)
 
 
     def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Optional[Dict[str,Any]]:

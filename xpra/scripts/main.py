@@ -1112,7 +1112,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         sock = retry_socket_connect(display_desc)
-        sock.settimeout(None)
+        # use non-blocking until the connection is finalized
+        sock.settimeout(0.1)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
                                 dtype, socket_options=display_desc)
 
