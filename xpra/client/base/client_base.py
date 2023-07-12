@@ -626,7 +626,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not pp:
             return
         self.progress_process = None
-        if pp.poll():
+        if pp.poll() is not None:
             return
         try:
             pp.terminate()
