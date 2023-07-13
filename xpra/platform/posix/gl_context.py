@@ -51,7 +51,7 @@ def c_attrs(props):
     attrs += [0, 0]
     return (c_int * len(attrs))(*attrs)
 
-def get_xdisplay() -> POINTER:
+def get_xdisplay() -> int:
     ptr = get_display_ptr()
     assert ptr, "no X11 display registered"
     # pylint: disable=import-outside-toplevel

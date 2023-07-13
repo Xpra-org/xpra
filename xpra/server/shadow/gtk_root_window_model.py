@@ -8,13 +8,13 @@ from time import monotonic
 from typing import Tuple, Optional
 from gi.repository import Gdk  # @UnresolvedImport
 
+from xpra.common import ScreenshotData
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_default_root_window
 from xpra.log import Logger
 
 log = Logger("shadow")
 
-ScreenshotData = Tuple[int,int,str,int,bytes]
 
 def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Optional[Tuple[int,int,int,int,bytes,str,int,int,int]]:
     """

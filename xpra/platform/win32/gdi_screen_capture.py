@@ -98,7 +98,7 @@ class GDICapture:
         self.metrics = None
         self.wnd, self.dc, self.memdc = None, None, None
         self.bit_depth = 32
-        self.bitblt_err_time = 0
+        self.bitblt_err_time = 0.0
         self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
 
     def __repr__(self):

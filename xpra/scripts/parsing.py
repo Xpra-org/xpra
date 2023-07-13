@@ -633,7 +633,7 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
     is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
-    desc = {}
+    desc : Dict[str,Any] = {}
     if is_paramiko:
         ssh[0] = "paramiko"
         desc["is_paramiko"] = is_paramiko

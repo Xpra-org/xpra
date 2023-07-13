@@ -659,8 +659,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from gi.repository import GLib  # @UnresolvedImport
         register_SIGUSR_signals(GLib.idle_add)
 
-    def run(self) -> None:
+    def run(self) -> int:
         self.start_protocol()
+        return 0
 
     def start_protocol(self) -> None:
         #protocol may be None in "listen" mode

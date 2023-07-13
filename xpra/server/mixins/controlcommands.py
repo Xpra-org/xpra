@@ -354,8 +354,8 @@ class ServerBaseControlCommands(StubServerMixin):
         if not os.path.exists(actual_filename):
             raise ControlError(f"file {filename!r} does not exist")
         data = load_binary_file(actual_filename)
-        if data is None:
-            raise ControlError(f"failed to load {actual_filename!r}")
+        if not data:
+            raise ControlError(f"no data loaded from {actual_filename!r}")
         #verify size:
         file_size = len(data)
         checksize(file_size)

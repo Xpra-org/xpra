@@ -167,9 +167,9 @@ class ClipboardInstance:
         #print("xid=%s, owner=%s" % (self.value_entry.get_window().xid, event.owner))
         weownit = (owner is not None)
         if weownit:
-            owner_info="(us)"
+            owner_info = "(us)"
         else:
-            owner_info = event.owner or 0
+            owner_info = str(event.owner or 0)
         self.log("Owner changed, reason: %s, new owner=%s" % (
                         event.reason, owner_info))
 
@@ -188,7 +188,7 @@ class ClipboardStateInfoWindow:
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
 
-        self.log = deque(maxlen=25)
+        self.log : deque[str] = deque(maxlen=25)
         for x in range(25):
             self.log.append("")
         self.events = Gtk.Label()

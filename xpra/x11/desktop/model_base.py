@@ -132,7 +132,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
                 iconlog("Image(%s)=%s", icon_name, img)
             if img:
                 icon_data = load_binary_file(icon_name)
-                assert icon_data
+                if not icon_data:
+                    raise ValueError(f"failed to load icon {icon_name!r}")
                 w, h = img.size
                 icon = (w, h, "png", icon_data)
                 icons = (icon,)

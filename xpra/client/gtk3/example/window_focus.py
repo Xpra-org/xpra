@@ -62,7 +62,7 @@ def make_window():
         vbox.add(al)
     window.add(vbox)
     window.show_all()
-    text = deque(maxlen=N)
+    text : deque[str] = deque(maxlen=N)
     def update(s):
         text.append("%s: %s" % (datetime.now(), s))
         for i, t in enumerate(text):

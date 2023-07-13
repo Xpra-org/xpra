@@ -28,6 +28,8 @@
 # computers... does being this careful to avoid sync's actually matter?)
 
 import traceback
+from typing import Dict
+
 import gi
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
@@ -69,15 +71,15 @@ class XError(Exception):
         return "XError: %s" % self.msg
 
 
-xerror_to_name = None
-def get_X_error(xerror):
+xerror_to_name : Dict[int,str] = {}
+def get_X_error(xerror) -> str:
     global xerror_to_name
     if not isinstance(xerror, int):
-        return xerror
+        return str(xerror)
     try:
         from xpra.x11.bindings.window import constants     #@UnresolvedImport
-        if xerror_to_name is None:
-            xerror_to_name = {}
+        if not xerror_to_name:
+            xerror_to_name[0] = "OK"
             for name,code in constants.items():  # @UndefinedVariable
                 if name=="Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
@@ -88,7 +90,7 @@ def get_X_error(xerror):
         return X11CoreBindings().get_error_text(xerror)
     except Exception as e:
         log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
-    return xerror
+    return str(xerror)
 
 
 # gdk has its own depth tracking stuff, but we have to duplicate it here to

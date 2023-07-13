@@ -4,9 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#don't bother trying to forward system tray with Ubuntu's "unity":
+from typing import Tuple
 from xpra.os_util import is_Wayland
-
 
 AUTOSTART = True
 
@@ -38,10 +37,9 @@ DEFAULT_START_ENV = (
 
 DEFAULT_SSH_CMD = "ssh"
 
-if not is_Wayland():
-    CLIPBOARDS = ("CLIPBOARD", "PRIMARY", "SECONDARY")
-    CLIPBOARD_GREEDY = False
-else:
+CLIPBOARDS: Tuple[str, ...] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+CLIPBOARD_GREEDY = False
+if is_Wayland():
     CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
     CLIPBOARD_GREEDY = True
 CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")

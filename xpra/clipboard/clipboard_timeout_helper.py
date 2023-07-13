@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List, Any
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -62,7 +62,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)
-        packet = ["clipboard-token", remote]
+        packet : List[Any] = ["clipboard-token", remote]
         if packet_data:
             #append 'TARGETS' unchanged:
             packet.append(packet_data[0])

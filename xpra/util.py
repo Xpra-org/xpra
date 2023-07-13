@@ -384,7 +384,7 @@ def checkdict(v):
 class typedict(dict):
     __slots__ = ("warn", ) # no __dict__ - that would be redundant
     @staticmethod # because this doesn't make sense as a global function.
-    def _process_args(mapping=(), **kwargs):
+    def _process_args(mapping=(), **kwargs) -> Dict[str,Any]:
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
         return dict((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))

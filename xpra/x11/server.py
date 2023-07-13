@@ -74,7 +74,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.clobber = clobber
         self.root_overlay = None
         self.repaint_root_overlay_timer = 0
-        self.configure_damage_timers = {}
+        self.configure_damage_timers : Dict[int,int] = {}
         self._tray = None
         self._has_grab = 0
         self._has_focus = 0
@@ -124,11 +124,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
-
-        self._focus_history = deque(maxlen=100)
+        self._focus_history : deque[int] = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
         root = get_default_root_window()
+        if not root:
+            raise RuntimeError("cannot access the root window")
         root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
         xid = root.get_xid()
         prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
@@ -137,7 +138,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.init_root_overlay()
         self.init_wm()
         #for handling resize synchronization between client and server (this is not xsync!):
-        self.last_client_configure_event = 0
+        self.last_client_configure_event = 0.0
         self.snc_timer = 0
 
     def init_root_overlay(self) -> None:

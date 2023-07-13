@@ -28,23 +28,21 @@ SHOW_ALL_VISUALS = False
 #try to get workarea from GTK:
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
-GTK_VERSION_INFO : Dict[str,Tuple[Any, ...]]= {}
+GTK_VERSION_INFO : Dict[str,Dict[str,Tuple]] = {}
 def get_gtk_version_info() -> Dict[str,Any]:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):
-        GTK_VERSION_INFO.setdefault(k, {})["version"] = parse_version(v)
-    def V(k, module, *fields):
-        for field in fields:
-            v = getattr(module, field, None)
-            if v is not None:
-                av(k, v)
-                return True
+        GTK_VERSION_INFO[k] = {"version" : parse_version(v)}
+    def V(k, module, attr_name):
+        v = getattr(module, attr_name, None)
+        if v is not None:
+            av(k, v)
+            return True
         return False
 
     if not GTK_VERSION_INFO:
         V("gobject",    GObject,    "pygobject_version")
-
         #this isn't the actual version, (only shows as "3.0")
         #but still better than nothing:
         V("gi",         gi,         "__version__")
@@ -52,7 +50,6 @@ def get_gtk_version_info() -> Dict[str,Any]:
         V("gdk",        Gdk,        "_version")
         V("gobject",    GObject,    "_version")
         V("pixbuf",     GdkPixbuf,     "_version")
-
         V("pixbuf",     GdkPixbuf,     "PIXBUF_VERSION")
         def MAJORMICROMINOR(name, module):
             try:
@@ -62,7 +59,6 @@ def get_gtk_version_info() -> Dict[str,Any]:
                 pass
         MAJORMICROMINOR("gtk",  Gtk)
         MAJORMICROMINOR("glib", GLib)
-
         av("cairo", parse_version(cairo.version_info))  #pylint: disable=no-member
         av("pango", parse_version(Pango.version_string()))
     return GTK_VERSION_INFO.copy()

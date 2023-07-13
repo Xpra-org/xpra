@@ -8,7 +8,7 @@ import logging
 import binascii
 from typing import Tuple, Optional
 
-from xpra.os_util import load_binary_file, strtobytes, osexpand
+from xpra.os_util import load_binary_file, strtobytes, osexpand, bytestostr
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("auth")
@@ -68,13 +68,13 @@ class Handler:
                     key_handle_filenames.append(os.path.join(d, f"u2f-keyhandle{hostinfo}.hex"))
             for filename in key_handle_filenames:
                 p = osexpand(filename)
-                key_handle_str = load_binary_file(p)
+                key_handle_str = bytestostr(load_binary_file(p).rstrip(b" \n\r"))
                 log("key_handle_str(%s)=%s", p, key_handle_str)
                 if key_handle_str:
-                    key_handle_str = key_handle_str.rstrip(b" \n\r")
                     break
             if not key_handle_str:
                 log.warn("Warning: no U2F key handle found")
                 return b""
-        log("process_challenge_u2f key_handle=%s", key_handle_str)
-        return binascii.unhexlify(key_handle_str)
+        key_handle = binascii.unhexlify(key_handle_str)
+        log("process_challenge_u2f key_handle=%s", key_handle)
+        return key_handle

@@ -49,11 +49,11 @@ class XpraProxy:
             signal.signal(signal.SIGHUP, self.signal_quit)
             signal.signal(signal.SIGPIPE, self.signal_quit)
 
-    def start_threads(self):
+    def start_threads(self) -> None:
         self._to_client.start()
         self._to_server.start()
 
-    def run(self):
+    def run(self) -> int:
         log("XpraProxy.run() %s", self._name)
         self.start_threads()
         self._to_client.join()
@@ -62,15 +62,15 @@ class XpraProxy:
         self.quit()
         return self.exit_code
 
-    def _to_client_loop(self):
+    def _to_client_loop(self) -> None:
         self._copy_loop(f"<-server {self._name}", self._server_conn, self._client_conn)
         self._closed = True
 
-    def _to_server_loop(self):
+    def _to_server_loop(self) -> None:
         self._copy_loop(f"->server {self._name}", self._client_conn, self._server_conn)
         self._closed = True
 
-    def _copy_loop(self, log_name, from_conn, to_conn):
+    def _copy_loop(self, log_name:str, from_conn, to_conn) -> None:
         #log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
         try:
             while not self._closed:
@@ -93,17 +93,16 @@ class XpraProxy:
         finally:
             self.quit()
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return not self._closed
 
-    def signal_quit(self, signum, _frame=None):
+    def signal_quit(self, signum, _frame=None) -> None:
         self.exit_code = 128+signum
         self.quit()
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
         self._closed = True
-        quit_cb = self._quit_cb
         try:
             self._client_conn.close()
         except OSError:
@@ -112,9 +111,9 @@ class XpraProxy:
             self._server_conn.close()
         except OSError:
             pass
-        if quit_cb:
-            self._quit_cb = None
-            quit_cb(self)
+        quit_cb : Callable = self._quit_cb
+        self._quit_cb = None
+        quit_cb(self)
 
-    def do_quit(self, _proxy):
+    def do_quit(self, _proxy) -> None:
         force_quit(self.exit_code)

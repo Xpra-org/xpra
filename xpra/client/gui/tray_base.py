@@ -36,7 +36,7 @@ class TrayBase:
         self.geometry_guess = None
         self.tray_event_locations = deque(maxlen=512)
         self.default_icon_extension = "png"
-        self.icon_timestamp = 0
+        self.icon_timestamp = 0.0
 
     def __repr__(self):
         return f"Tray({self.app_id}:{self.tooltip})"

@@ -394,10 +394,10 @@ class VideoSubregion:
                     outcount += x.width*x.height*int(count)
             return incount, outcount
 
-        def damaged_ratio(rect):
+        def damaged_ratio(rect:rectangle):
             if all_damaged:
                 return 1
-            rects = (rect, )
+            rects : List[rectangle] = [rect, ]
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
                 new_rects = []

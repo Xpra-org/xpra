@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple
 
 from xpra.util import csv, engs
 from xpra.log import Logger
@@ -45,7 +46,7 @@ MP3_ID3V2   = MP3+"+"+ID3V2
 
 
 #used for parsing codec names specified on the command line:
-def audio_option_or_all(name:str, options, all_values):
+def audio_option_or_all(name:str, options, all_values:Tuple[str,...]) -> Tuple[str]:
     log("audio_option_or_all%s", (name, options, all_values))
     if not options:
         v = all_values              #not specified on command line: use default
@@ -67,4 +68,4 @@ def audio_option_or_all(name:str, options, all_values):
             else:
                 log.warn("Warning: no '%ss' available", name)
     log("%s=%s", name, csv(v))
-    return v
+    return tuple(v)

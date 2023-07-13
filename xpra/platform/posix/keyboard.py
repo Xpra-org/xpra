@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Iterable, Tuple, List, Optional, Any
+from typing import Dict, Tuple, List, Optional, Any
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase
@@ -120,7 +120,7 @@ class Keyboard(KeyboardBase):
             log.error("failed to use native get_modifier_mappings", exc_info=True)
         return {}, [], []
 
-    def get_x11_keymap(self) -> Dict[int,Iterable[str]]:
+    def get_x11_keymap(self) -> Dict[int,List[str]]:
         if not self.keyboard_bindings:
             return  {}
         try:

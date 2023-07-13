@@ -21,6 +21,7 @@ USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
 DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
+# uid, gid, displays, env_options, session_options
 SessionData = Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]
 
 

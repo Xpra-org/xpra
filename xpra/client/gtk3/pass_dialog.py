@@ -31,7 +31,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.set_default_size(400, 150)
         self.set_title(title)
         add_close_accel(self, self.cancel)
-        self.password = None
+        self.password = ""
 
         icon_pixbuf = get_icon_pixbuf(icon)
         if icon_pixbuf:

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
-from typing import Optional
+from typing import Optional, List
 from zeroconf import ServiceBrowser, Zeroconf        #@UnresolvedImport
 
 from xpra.log import Logger
@@ -98,7 +98,7 @@ def main():
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
-        listeners = []
+        listeners : List[ZeroconfListener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
         def add(service_type):
             listener = ZeroconfListener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)

@@ -7,12 +7,14 @@
 #pylint: disable=wrong-import-position
 
 from time import monotonic
-from typing import List, Tuple, Dict, Callable, Any
+from types import ModuleType
+from typing import List, Tuple, Dict, Callable, Any, Optional
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
-Gst = import_gst()
-if not Gst:
+gst = import_gst()
+if not gst:
     raise ImportError("GStreamer bindings not found")
+Gst : ModuleType = gst
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import AtomicInteger, noerr, first_time
@@ -37,7 +39,7 @@ class Pipeline(GObject.GObject):
         super().__init__()
         self.bus = None
         self.bitrate : int = -1
-        self.pipeline = None
+        self.pipeline : Optional[Gst.Pipeline] = None
         self.pipeline_str = ""
         self.element_handlers : Dict[Any,List[int]] = {}
         self.start_time : float = 0
@@ -72,8 +74,8 @@ class Pipeline(GObject.GObject):
         f = self.file
         if f and buffers:
             for x in buffers:
-                self.file.write(x)
-            self.file.flush()
+                f.write(x)
+            f.flush()
 
 
     def idle_emit(self, sig, *args) -> None:
@@ -209,14 +211,17 @@ class Pipeline(GObject.GObject):
     def on_message(self, _bus, message) -> int:
         #log("on_message(%s, %s)", bus, message)
         log("on_message: %s", message)
+        p = self.pipeline
+        if not p:
+            return GST_FLOW_OK
         t = message.type
         if t == Gst.MessageType.EOS:
-            self.pipeline.set_state(Gst.State.NULL)
+            p.set_state(Gst.State.NULL)
             self.gstloginfo("EOS")
             self.update_state("stopped")
             self.idle_emit("state-changed", self.state)
         elif t == Gst.MessageType.ERROR:
-            self.pipeline.set_state(Gst.State.NULL)
+            p.set_state(Gst.State.NULL)
             err, details = message.parse_error()
             log.error("Gstreamer pipeline error: %s", err.message)
             for l in err.args:

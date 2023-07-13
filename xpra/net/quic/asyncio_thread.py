@@ -1,10 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022, 2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 import asyncio
+from typing import Any, List, Awaitable, Callable, Optional
+
 from queue import Queue
 from collections import namedtuple
 from collections.abc import Coroutine, Generator
@@ -19,14 +21,6 @@ log = Logger("quic")
 
 
 UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
-
-
-singleton = None
-def get_threaded_loop():
-    global singleton
-    if not singleton:
-        singleton = threaded_asyncio_loop()
-    return singleton
 
 
 ExceptionWrapper = namedtuple("ExceptionWrapper", "exception,args")
@@ -46,7 +40,7 @@ class threaded_asyncio_loop:
         start_thread(self.run_forever, "asyncio-thread", True)
         self.wait_for_loop()
 
-    def run_forever(self):
+    def run_forever(self) -> None:
         if UVLOOP:
             try:
                 import uvloop  # pylint: disable=import-outside-toplevel
@@ -62,7 +56,7 @@ class threaded_asyncio_loop:
         self.loop.run_forever()
         self.loop.close()
 
-    def wait_for_loop(self):
+    def wait_for_loop(self) -> None:
         now = monotonic()
         while monotonic()-now<1 and self.loop is None:
             log("waiting for asyncio event loop")
@@ -70,7 +64,7 @@ class threaded_asyncio_loop:
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")
 
-    def call(self, f):
+    def call(self, f:Callable) -> None:
         log(f"call({f})")
         def tsafe():
             log(f"creating task for {f}")
@@ -82,8 +76,8 @@ class threaded_asyncio_loop:
             self.loop.call_soon_threadsafe(f)
 
 
-    def sync(self, async_fn, *args):
-        response = Queue()
+    def sync(self, async_fn:Callable[[Any,...], Awaitable[Any]], *args) -> Any:
+        response : Queue[Any] = Queue()
 
         async def awaitable():
             log("awaitable()")
@@ -97,7 +91,7 @@ class threaded_asyncio_loop:
                 log(f"error calling async function {async_fn} with {args}", exc_info=True)
                 response.put(ExceptionWrapper(RuntimeError, (str(e), )))
 
-        def tsafe():
+        def tsafe() -> None:
             a = awaitable()
             log(f"awaitable={a}")
             f = asyncio.run_coroutine_threadsafe(a, self.loop)
@@ -117,3 +111,11 @@ class threaded_asyncio_loop:
                 raise instance
         log(f"sync: response={r}")
         return r
+
+
+singleton : Optional[threaded_asyncio_loop] = None
+def get_threaded_loop() -> threaded_asyncio_loop:
+    global singleton
+    if not singleton:
+        singleton = threaded_asyncio_loop()
+    return singleton

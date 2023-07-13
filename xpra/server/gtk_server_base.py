@@ -44,9 +44,9 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.idle_add : callable = GLib.idle_add
-        self.timeout_add : callable = GLib.timeout_add
-        self.source_remove : callable = GLib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
         self.cursor_suspended : bool = False
         self.ui_watcher = None
         self.keymap_changing_timer : int = 0

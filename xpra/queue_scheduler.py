@@ -5,7 +5,7 @@
 
 from queue import Queue
 from threading import Timer, RLock
-from typing import Callable, Dict, Union, Tuple, Any
+from typing import Callable, Dict, Union, Tuple, Any, Optional
 
 from xpra.util import AtomicInteger
 from xpra.log import Logger

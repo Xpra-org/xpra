@@ -132,15 +132,15 @@ def get_Xvfb_command(width:int=8192, height:int=4096, dpi:int=96) -> List[str]:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
-def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir=None,
-                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Optional[Callable]=warn):
+def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
+                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn) -> List[str]:
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
     depending on the platform and file attributes.
     """
     if WIN32:   # pragma: no cover
-        return ""
+        return []
     if OSX:     # pragma: no cover
         return get_Xvfb_command()
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
@@ -164,8 +164,8 @@ def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir=None,
         debug("Xdummy support unspecified, will try to detect")
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
-def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir=None,
-                          Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn):
+def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
+                          Xdummy_wrapper_ENABLED:Optional[bool]=None, warn_fn:Callable=warn) -> List[str]:
     if not POSIX or OSX:
         return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
@@ -173,8 +173,7 @@ def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir=None,
         #honour what was specified:
         use_wrapper = Xdummy_wrapper_ENABLED
     elif not xorg_bin:
-        if warn_fn:
-            warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
+        warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
         use_wrapper = True
     else:
         #auto-detect
@@ -182,8 +181,7 @@ def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir=None,
         xorg_stat = os.stat(xorg_bin)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
             if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                if warn_fn:
-                    warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
+                warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
                 return get_Xvfb_command()
             debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
             use_wrapper = True
@@ -910,7 +908,7 @@ def get_defaults():
     build_root = os.environ.get("RPM_BUILD_ROOT")
     if build_root:
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
-    bin_dir = None
+    bin_dir = ""
     if sys.argv:
         xpra_cmd = sys.argv[0]
         for strip in ("/usr/bin", "/bin"):

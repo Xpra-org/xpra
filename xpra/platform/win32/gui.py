@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@
 import os
 import sys
 import types
+from typing import Optional, Callable, List, Tuple
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -76,9 +77,10 @@ log("gdkdll=%s", gdkdll)
 
 
 shell32 = WinDLL("shell32", use_last_error=True)
-set_window_group : Optional[Callable] = None
+set_window_group : Callable = noop
 try:
-    from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
+    from xpra.platform.win32 import propsys     #@UnresolvedImport
+    set_window_group = propsys.set_window_group
 except ImportError as e:
     log("propsys missing", exc_info=True)
     log.warn("Warning: propsys support missing:")
@@ -86,12 +88,13 @@ except ImportError as e:
     log.warn(" window grouping is not available")
 
 
+DwmGetWindowAttribute : Callable = noop
 try:
     dwmapi = WinDLL("dwmapi", use_last_error=True)
     DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
 except Exception:
     #win XP:
-    DwmGetWindowAttribute = None
+    pass
 
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
@@ -345,7 +348,7 @@ def pointer_grab(window, *args):
     wrect = RECT()
     GetWindowRect(hwnd, byref(wrect))
     grablog("GetWindowRect(%i)=%s", hwnd, wrect)
-    if DwmGetWindowAttribute:
+    if DwmGetWindowAttribute!=noop:
         # Vista & 7 stuff
         rect = RECT()
         DWMWA_EXTENDED_FRAME_BOUNDS = 9
@@ -647,32 +650,32 @@ FE_FONTSMOOTHINGORIENTATIONVRGB = 0x0003
 SPI_GETFONTSMOOTHINGTYPE        = 0x200A
 FE_FONTSMOOTHINGCLEARTYPE       = 0x0002
 FE_FONTSMOOTHINGDOCKING         = 0x8000
-FE_ORIENTATION_STR = {
+FE_ORIENTATION_STR : Dict[int,str] = {
                       FE_FONTSMOOTHINGORIENTATIONBGR    : "BGR",
                       FE_FONTSMOOTHINGORIENTATIONRGB    : "RGB",
                       FE_FONTSMOOTHINGORIENTATIONVBGR   : "VBGR",
                       FE_FONTSMOOTHINGORIENTATIONVRGB   : "VRGB",
                       }
-FE_FONTSMOOTHING_STR = {
+FE_FONTSMOOTHING_STR : Dict[int,str] = {
     0                           : "Normal",
     FE_FONTSMOOTHINGCLEARTYPE   : "ClearType",
     }
 
 
-def _add_SPI(info, constant, name, convert, default=None):
+def _add_SPI(info:Dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None):
     v = GetIntSystemParametersInfo(constant)
     if v is not None:
         info[name] = convert(v)
     elif default is not None:
         info[name] = default
 
-def get_antialias_info():
-    info = {}
+def get_antialias_info() -> Dict[str,Any]:
+    info : Dict[str,Any] = {}
     try:
         _add_SPI(info, SPI_GETFONTSMOOTHING, "enabled", bool)
         #"Valid contrast values are from 1000 to 2200. The default value is 1400."
         _add_SPI(info, SPI_GETFONTSMOOTHINGCONTRAST, "contrast", int)
-        def orientation(v):
+        def orientation(v) -> str:
             return FE_ORIENTATION_STR.get(v, "unknown")
         _add_SPI(info, SPI_GETFONTSMOOTHINGORIENTATION, "orientation", orientation)
         def smoothing_type(v):
@@ -683,7 +686,7 @@ def get_antialias_info():
         log.warn("failed to query antialias info: %s", e)
     return info
 
-def get_mouse_config():
+def get_mouse_config() -> Dict[str,Any]:
     #not all are present in win32con?
     SM_CMOUSEBUTTONS = 43
     SM_CXDRAG = 68
@@ -702,7 +705,7 @@ def get_mouse_config():
     #rate for each direction:
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
-    info = {
+    info : Dict[str,Any] = {
             "present"       : bool(GetSystemMetrics(SM_MOUSEPRESENT)),
             "wheel"         : wheel_info,
             "buttons"       : GetSystemMetrics(SM_CMOUSEBUTTONS),
@@ -760,7 +763,7 @@ def get_workarea():
 #ie: for a 60 pixel bottom bar on the second monitor at 1280x800:
 # [(0,0,1920,1080), (0,0,1280,740)]
 MONITORINFOF_PRIMARY = 1
-def get_workareas():
+def get_workareas() -> List[Tuple[int,int,int,int]]:
     try:
         workareas = []
         for m in EnumDisplayMonitors():

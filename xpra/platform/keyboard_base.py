@@ -67,9 +67,9 @@ class KeyboardBase:
     def set_modifier_mappings(self, mappings) -> None:
         log("set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
-        self.modifier_keys = {}
-        self.modifier_names = {}
-        self.modifier_keycodes = {}
+        self.modifier_keys : Dict[str,str] = {}
+        self.modifier_names : Dict[str,str] = {}
+        self.modifier_keycodes : Dict[str,List[int]] = {}
         for modifier, keys in mappings.items():
             for a, b in keys:
                 self._add_modifier_mapping(a, b, modifier)

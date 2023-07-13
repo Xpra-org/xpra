@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Callable, List
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import ellipsizer
@@ -20,7 +21,7 @@ log = Logger("opengl", "paint")
 class GLDrawingArea(GLWindowBackingBase):
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
-        self.on_realize_cb = []
+        self.on_realize_cb : List[Callable] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):

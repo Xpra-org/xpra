@@ -222,7 +222,7 @@ CODEC_ORDER = (
     )
 
 
-def get_encoder_default_options(encoder:str):
+def get_encoder_default_options(encoder:str) -> Dict[str,Any]:
     #strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
@@ -230,7 +230,7 @@ def get_encoder_default_options(encoder:str):
     return options
 
 
-CODECS = None
+CODECS : Dict[str,bool] = {}
 CODEC_DEFS = Dict[str, Tuple[Any,Any,Any]]
 ENCODERS : CODEC_DEFS = {}       #(encoder, payloader, stream-compressor)
 DECODERS : CODEC_DEFS = {}       #(decoder, depayloader, stream-compressor)
@@ -245,10 +245,9 @@ def get_decoders() -> CODEC_DEFS:
 
 def init_codecs():
     global CODECS
-    if CODECS is not None or import_gst() is None:
+    if CODECS or import_gst() is None:
         return CODECS or {}
     #populate CODECS:
-    CODECS = {}
     for elements in CODEC_OPTIONS:
         if not validate_encoding(elements):
             continue
@@ -588,7 +587,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     #try to match one of the devices using the device name filters:
     if len(devices)>1:
         filters = []
-        matches = []
+        matches = {}
         for match in (device_name_match, env_device):
             if not match:
                 continue

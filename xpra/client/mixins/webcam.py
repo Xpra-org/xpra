@@ -6,7 +6,7 @@
 
 from time import monotonic
 from threading import RLock
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
@@ -52,7 +52,7 @@ class WebcamForwarder(StubClientMixin):
         self.server_encodings = []
         if not hasattr(self, "server_ping_latency"):
             from collections import deque
-            self.server_ping_latency = deque(maxlen=1000)
+            self.server_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)
 
     def cleanup(self):
         self.stop_sending_webcam()

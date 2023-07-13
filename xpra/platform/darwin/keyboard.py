@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Tuple
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -95,7 +95,7 @@ class Keyboard(KeyboardBase):
 
 
     def get_all_x11_layouts(self) -> Dict[str,str]:
-        x11_layouts = {}
+        x11_layouts : Dict[str,str] = {}
         for name, layout in APPLE_LAYOUTS.items():
             x11_layouts[layout] = name
         return x11_layouts
@@ -146,10 +146,10 @@ class Keyboard(KeyboardBase):
 
     def set_modifier_mappings(self, mappings) -> None:
         super().set_modifier_mappings(mappings)
-        self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
+        self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R") or ""
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R") or "control"
-        self.super_modifier = self.modifier_keys.get("Super_L") or self.modifier_keys.get("Super_R")
-        self.hyper_modifier = self.modifier_keys.get("Hyper_L") or self.modifier_keys.get("Hyper_R")
+        self.super_modifier = self.modifier_keys.get("Super_L") or self.modifier_keys.get("Super_R") or ""
+        self.hyper_modifier = self.modifier_keys.get("Hyper_L") or self.modifier_keys.get("Hyper_R") or ""
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
         log("set_modifier_mappings(%s) meta=%s, control=%s, super=%s, hyper=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.super_modifier, self.hyper_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:

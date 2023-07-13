@@ -6,6 +6,8 @@
 
 import os.path
 import logging
+from typing import Any
+
 from xpra.util import envbool
 
 SILENCE_COMTYPES = envbool("XPRA_SILENCE_COMTYPES", True)
@@ -14,7 +16,7 @@ if SILENCE_COMTYPES:
 COMTYPES_NOGENDIR = envbool("XPRA_COMTYPES_NOGENDIR", False)
 
 
-def comtypes_init():
+def comtypes_init() -> None:
     #pylint: disable=import-outside-toplevel
     from comtypes import client                  #@UnresolvedImport
     if COMTYPES_NOGENDIR:
@@ -23,7 +25,7 @@ def comtypes_init():
     CoInitialize()
 
 
-def find_tlb_file(filename="DirectShow.tlb"):
+def find_tlb_file(filename:str="DirectShow.tlb") -> str:
     #try to load tlb files from various directories,
     #depending on how xpra was packaged, installed locally,
     #or even run from the source directory:
@@ -41,7 +43,7 @@ def find_tlb_file(filename="DirectShow.tlb"):
     for f in filenames:
         if f and os.path.exists(f):
             return f
-    return None
+    return ""
 
 
 class QuietenLogging:
@@ -49,7 +51,7 @@ class QuietenLogging:
     def __init__(self, *_args):
         self.loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
         self.saved_levels = [x.getEffectiveLevel() for x in self.loggers]
-        self._generate = None
+        self._generate : Any = None
 
     def __enter__(self):
         if not SILENCE_COMTYPES:
@@ -68,8 +70,9 @@ class QuietenLogging:
     def __exit__(self, *_args):
         if not SILENCE_COMTYPES:
             return
-        if self.verbose is not None:
-            self._generate.__verbose__ = self.verbose
+        gen = self._generate
+        if gen and self.verbose is not None:
+            gen.__verbose__ = self.verbose
         for i, logger in enumerate(self.loggers):
             logger.setLevel(self.saved_levels[i])
 

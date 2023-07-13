@@ -6,7 +6,10 @@
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
-from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea, GLContext
+from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea
+from xpra.platform.gl_context import GLContext
+if not GLContext:
+    raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 def check_support(force_enable=False):
     import warnings  #pylint: disable=import-outside-toplevel

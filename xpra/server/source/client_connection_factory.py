@@ -98,7 +98,7 @@ def get_client_connection_class(caps):
                     if bc==ClientConnection:
                         initargs = [protocol, disconnect_cb, session_name]+list(args)
                     else:
-                        initargs = ()
+                        initargs = []
                     bc.__init__(self, *initargs)
                     bc.init_from(self, protocol, server)
                 except Exception as e:

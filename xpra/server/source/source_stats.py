@@ -239,7 +239,7 @@ class GlobalPerformanceStatistics:
         time_limit = now-60             #ignore old records (60s)
         client_latency = max(0, self.avg_frame_total_latency-
                              int((self.avg_client_ping_latency+self.avg_server_ping_latency)//2))
-        info = {
+        info : Dict[str,Any] = {
             "damage" : {
                 "events"        : self.damage_events_count,
                 "packets_sent"  : self.packet_count,
@@ -252,15 +252,18 @@ class GlobalPerformanceStatistics:
                 "frame-total-latency" : self.avg_frame_total_latency,
                 "client-latency"    : client_latency,
                 },
-            "encoding" : {"decode_errors"   : self.decode_errors},
             "connection" : self.get_connection_info(),
             }
+        einfo : Dict[str,Any] = {
+            "decode_errors" : self.decode_errors,
+        }
+        info["encoding"] = einfo
         if self.quality:
             ql = tuple(quality for _,_,quality in tuple(self.quality))
-            info["encoding"]["quality"] = get_list_stats(ql)
+            einfo["quality"] = get_list_stats(ql)
         if self.speed:
             sl = tuple(speed for _,_,speed in tuple(self.speed))
-            info["encoding"]["speed"] = get_list_stats(sl)
+            einfo["speed"] = get_list_stats(sl)
         #client pixels per second:
         #pixels per second: decode time and overall
         total_pixels = 0                #total number of pixels processed
@@ -279,13 +282,13 @@ class GlobalPerformanceStatistics:
         log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
-            info["encoding"]["pixels_decoded_per_second"] = pixels_decoded_per_second
+            einfo["pixels_decoded_per_second"] = pixels_decoded_per_second
         if start_time:
             elapsed = now-start_time
             pixels_per_second = int(total_pixels/elapsed)
-            info.setdefault("encoding", {}).update({
-                                                    "pixels_per_second"     : pixels_per_second,
-                                                    "regions_per_second"    : int(len(region_sizes)/elapsed),
-                                                    "average_region_size"   : int(total_pixels/len(region_sizes)),
-                                                    })
+            einfo.update({
+                "pixels_per_second"     : pixels_per_second,
+                "regions_per_second"    : int(len(region_sizes)/elapsed),
+                "average_region_size"   : int(total_pixels/len(region_sizes)),
+            })
         return info

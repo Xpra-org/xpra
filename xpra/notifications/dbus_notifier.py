@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict
+from typing import Dict, Tuple, Any
 
 from xpra.util import ellipsizer, csv
 from xpra.os_util import bytestostr
@@ -41,8 +41,8 @@ class DBUS_Notifier(NotifierBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.app_name_format = NOTIFICATION_APP_NAME
-        self.last_notification = None
-        self.actual_notification_id = {}
+        self.last_notification : Tuple[Any,...] = ()
+        self.actual_notification_id : Dict[int,int] = {}
         self.setup_dbusnotify()
         self.handles_actions = True
 
@@ -88,7 +88,7 @@ class DBUS_Notifier(NotifierBase):
                     app_str = app_name or "Xpra"
             self.last_notification = (
                 dbus_id, tray, nid, app_name, replaces_nid,
-                app_icon, summary, body, timeout, icon,
+                app_icon, summary, body, actions, hints, timeout, icon,
                 )
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)

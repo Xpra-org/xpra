@@ -52,7 +52,7 @@ class WebcamServer(StubServerMixin):
 
 
     def get_info(self, _proto) -> Dict[str,Any]:
-        info = {
+        info : Dict[str,Any] = {
                 ""                      : self.webcam_enabled,
                 }
         if self.webcam_enabled:

@@ -27,7 +27,7 @@ def do_get_install_prefix():
     try:
         base = site.getuserbase()
     except Exception:
-        base = site.USER_BASE
+        base = site.USER_BASE or ""
     if __file__.startswith(base):
         return base
     if sys.argv:

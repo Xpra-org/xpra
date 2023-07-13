@@ -6,7 +6,8 @@
 
 import sys
 import os
-from typing import Dict, Tuple, List, Any
+from types import ModuleType
+from typing import Dict, Tuple, List, Any, Optional
 
 from xpra.util import csv
 from xpra.log import Logger
@@ -24,14 +25,14 @@ GST_APP_STREAM_TYPE_STREAM : int = 0
 STREAM_TYPE : int = GST_APP_STREAM_TYPE_STREAM
 
 
-Gst = None
+Gst : Optional[ModuleType] = None
 def get_gst_version() -> Tuple[int,...]:
     if not Gst:
         return ()
     return tuple(Gst.version())
 
 
-def import_gst():
+def import_gst() -> Optional[ModuleType]:
     global Gst
     if Gst is not None:
         return Gst
@@ -42,9 +43,10 @@ def import_gst():
         log("import gi")
         import gi
         gi.require_version('Gst', '1.0')  # @UndefinedVariable
-        from gi.repository import Gst           #@UnresolvedImport
-        log("Gst=%s", Gst)
-        Gst.init(None)
+        from gi.repository import Gst as gst           #@UnresolvedImport
+        Gst = gst
+        log("Gst=%s", gst)
+        gst.init(None)
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")

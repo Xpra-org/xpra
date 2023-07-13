@@ -103,7 +103,7 @@ class ReceiveChunkState:
     printit : bool
     openit : bool
     filesize: int
-    options: dict
+    options: typedict
     digest: object
     written: int
     cancelled: bool
@@ -219,10 +219,10 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
-        self.pending_send_data = {}
+        self.pending_send_data : Dict[str,Tuple[str,str,str,bytes,int,bool,bool,Dict]] = {}
         self.pending_send_data_timers : Dict[str,int] = {}
-        self.send_chunks_in_progress = {}
-        self.receive_chunks_in_progress = {}
+        self.send_chunks_in_progress : Dict[str,SendChunkState] = {}
+        self.receive_chunks_in_progress : Dict[str,ReceiveChunkState] = {}
         self.file_descriptors : Set[int] = set()
         if not getattr(self, "timeout_add", None):
             from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
@@ -235,8 +235,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.source_remove(t)
         self.pending_send_data_timers = {}
         for v in self.receive_chunks_in_progress.values():
-            t = v[-2]
-            self.source_remove(t)
+            self.source_remove(v.timer)
         self.receive_chunks_in_progress = {}
         for x in tuple(self.file_descriptors):
             try:
@@ -318,7 +317,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: failed to delete uploaded file {filename}")
 
 
-    def _check_chunk_receiving(self, chunk_id:int, chunk_no:int) -> None:
+    def _check_chunk_receiving(self, chunk_id:str, chunk_no:int) -> None:
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_receiving(%s, %s) chunk_state=%s", chunk_id, chunk_no, chunk_state)
         if not chunk_state:
@@ -503,25 +502,25 @@ class FileTransferHandler(FileTransferAttributes):
         printit, openit = r
         options = typedict(options)
         if printit:
-            l = printlog
+            log = printlog
             assert self.printing
         else:
-            l = filelog
+            log = filelog
             assert self.file_transfer
-        l("receiving file: %s",
-          [basefilename, mimetype, printit, openit, filesize, f"{len(file_data)} bytes", options])
+        log("receiving file: %s",
+            (basefilename, mimetype, printit, openit, filesize, f"{len(file_data)} bytes", options))
         if filesize>self.file_size_limit:
-            l.error("Error: file '%s' is too large:", basefilename)
-            l.error(" %sB, the file size limit is %sB",
+            log.error("Error: file '%s' is too large:", basefilename)
+            log.error(" %sB, the file size limit is %sB",
                     std_unit(filesize), std_unit(self.file_size_limit))
             return
         chunk_id = options.strget("file-chunk-id")
         try:
             filename, fd = safe_open_download_file(basefilename, mimetype)
         except OSError as e:
-            filelog("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
-            filelog.error("Error: failed to save downloaded file")
-            filelog.estr(e)
+            log("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
+            log.error("Error: failed to save downloaded file")
+            log.estr(e)
             if chunk_id:
                 self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
             return
@@ -550,8 +549,8 @@ class FileTransferHandler(FileTransferAttributes):
         if not file_data:
             raise RuntimeError("no file data")
         if len(file_data)!=filesize:
-            l.error("Error: invalid data size for file '%s'", basefilename)
-            l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
+            log.error("Error: invalid data size for file '%s'", basefilename)
+            log.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
         if digest:
@@ -560,7 +559,7 @@ class FileTransferHandler(FileTransferAttributes):
             if expected_digest and digest.hexdigest()!=expected_digest:
                 self.digest_mismatch(basefilename, digest, expected_digest)
                 return
-            filelog("%s digest matches: %s", digest.name, expected_digest)
+            log("%s digest matches: %s", digest.name, expected_digest)
         try:
             os.write(fd, file_data)
         finally:
@@ -600,7 +599,7 @@ class FileTransferHandler(FileTransferAttributes):
                 return
             self._open_file(filename)
 
-    def _print_file(self, filename:str, mimetype:str, options):
+    def _print_file(self, filename:str, mimetype:str, options:typedict):
         printlog("print_file%s", (filename, mimetype, options))
         printer = options.strget("printer")
         title   = options.strget("title")

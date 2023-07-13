@@ -452,7 +452,7 @@ class XI2_Window:
         self.X11Window = X11WindowBindings()
         self.window = window
         self.xid = window.get_window().get_xid()
-        self.windows = ()
+        self.windows : Tuple[int,...] = ()
         self.motion_valuators = {}
         window.connect("configure-event", self.configured)
         self.configured()
@@ -488,7 +488,7 @@ class XI2_Window:
         self.motion_valuators = {}
 
 
-    def get_parent_windows(self, oxid:int) -> List[int]:
+    def get_parent_windows(self, oxid:int) -> Tuple[int,...]:
         windows = [oxid]
         root = self.X11Window.get_root_xid()
         xid = oxid
@@ -498,7 +498,7 @@ class XI2_Window:
                 break
             windows.append(xid)
         xinputlog("get_parent_windows(%#x)=%s", oxid, csv(hex(x) for x in windows))
-        return windows
+        return tuple(windows)
 
 
     def do_xi_button(self, event, device) -> None:

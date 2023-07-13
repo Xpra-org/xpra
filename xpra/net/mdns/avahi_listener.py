@@ -7,6 +7,7 @@
 
 import avahi  # @UnresolvedImport
 import dbus
+from typing import Any
 
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.dbus.common import init_system_bus
@@ -36,8 +37,8 @@ class AvahiListener:
         self.mdns_add = mdns_add
         self.mdns_remove = mdns_remove
         #self.mdns_update = mdns_update
-        self.server = None
-        self.sbrowser = None
+        self.server : Any = None
+        self.sbrowser : Any = None
 
     @staticmethod
     def resolve_error(*args) -> None:

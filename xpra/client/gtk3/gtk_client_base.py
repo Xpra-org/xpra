@@ -10,7 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Dict, Any, List, Type, Tuple
+from typing import Dict, Any, List, Type, Tuple, Optional
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -84,8 +84,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     for signal_name in UIXpraClient.__signals__:
         __gsignals__[signal_name] = no_arg_signal
 
-    ClientWindowClass = None
-    GLClientWindowClass = None
+    ClientWindowClass : Optional[Type] = None
+    GLClientWindowClass : Optional[Type] = None
 
     def __init__(self):
         GObjectXpraClient.__init__(self)

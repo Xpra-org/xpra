@@ -9,8 +9,10 @@ from typing import Dict
 from xpra.platform import platform_import
 
 
-def get_posix_sys_info() -> Dict[str,int]:
-    info : Dict[str,int] = {}
+def get_posix_sys_info() -> Dict[str,Dict[str,int]]:
+    info : Dict[str,Dict[str,Dict[str,int]]] = {}
+    meminfo : Dict[str,Dict[str,int]] = {}
+    info["memory"] = meminfo
     try:
         import resource
         for k, constant in {
@@ -23,7 +25,8 @@ def get_posix_sys_info() -> Dict[str,int]:
             except (NameError, AttributeError):
                 continue
             stats = resource.getrusage(v)
-            minfo = info.setdefault("memory", {}).setdefault(k, {})
+            kinfo : Dict[str,int] = {}
+            meminfo[k] = kinfo
             for var in (
                 "utime", "stime", "maxrss",
                 "ixrss", "idrss", "isrss",
@@ -35,7 +38,7 @@ def get_posix_sys_info() -> Dict[str,int]:
                 value = getattr(stats, "ru_%s" % var)
                 if isinstance(value, float):
                     value = int(value)
-                minfo[var] = value
+                kinfo[var] = value
     except Exception:   # pragma: no cover
         from xpra.os_util import get_util_logger
         get_util_logger().error("Error getting memory usage info", exc_info=True)

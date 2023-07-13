@@ -57,7 +57,10 @@ class StartNewCommand:
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(0)
 
-        self.entry = None
+        self.entry = Gtk.Entry()
+        self.entry.set_max_length(255)
+        self.entry.set_width_chars(32)
+        self.entry.connect('activate', self.run_command)
         if self.xdg_menu:
             # or use menus if we have xdg data:
             hbox = Gtk.HBox(homogeneous=False, spacing=20)
@@ -85,10 +88,6 @@ class StartNewCommand:
         entry_al.add(entry_label)
         vbox.add(entry_al)
         # Actual command:
-        self.entry = Gtk.Entry()
-        self.entry.set_max_length(255)
-        self.entry.set_width_chars(32)
-        self.entry.connect('activate', self.run_command)
         vbox.add(self.entry)
 
         if can_share:

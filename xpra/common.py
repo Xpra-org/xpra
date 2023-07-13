@@ -90,6 +90,9 @@ WINDOW_DECODE_ERROR : int = -1
 WINDOW_NOT_FOUND : int = -2
 
 
+ScreenshotData = Tuple[int,int,str,int,bytes]
+
+
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 

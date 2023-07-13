@@ -32,7 +32,7 @@ class Authenticator(FileAuthenticatorBase):
             return False
         return True
 
-    def parse_filedata(self, data:str):
+    def parse_filedata(self, data:str) -> str:
         return data
 
     def get_password(self) -> str:

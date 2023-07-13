@@ -127,6 +127,9 @@ def filt(prefix, name, inlist, all_fn, all_list):
     return apl(x for x in inclist if x not in exclist and x!="none")
 
 
+VDictEntry = Dict[str,List[str]]
+VDict = Dict[str,VDictEntry]
+
 class VideoHelper:
     """
         This class is a bit like a registry of known encoders, csc modules and decoders.
@@ -136,9 +139,9 @@ class VideoHelper:
     """
 
     def __init__(self, vencspecs=None, cscspecs=None, vdecspecs=None, init=False):
-        self._video_encoder_specs = vencspecs or {}
-        self._csc_encoder_specs = cscspecs or {}
-        self._video_decoder_specs = vdecspecs or {}
+        self._video_encoder_specs : VDict = vencspecs or {}
+        self._csc_encoder_specs : VDict = cscspecs or {}
+        self._video_decoder_specs : VDict = vdecspecs or {}
         self.video_encoders = []
         self.csc_modules = []
         self.video_decoders = []
@@ -193,7 +196,7 @@ class VideoHelper:
             self.init()
         #manual deep-ish copy: make new dictionaries and lists,
         #but keep the same codec specs:
-        def deepish_clone_dict(indict):
+        def deepish_clone_dict(indict:VDict) -> VDict:
             outd = {}
             for enc, d in indict.items():
                 for ifmt, l in d.items():
@@ -251,23 +254,23 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_encodings(self) -> Tuple:
+    def get_encodings(self) -> Tuple[str,...]:
         return tuple(self._video_encoder_specs.keys())
 
-    def get_decodings(self) -> Tuple:
+    def get_decodings(self) -> Tuple[str,...]:
         return tuple(self._video_decoder_specs.keys())
 
-    def get_csc_inputs(self) -> Tuple:
+    def get_csc_inputs(self) -> Tuple[str,...]:
         return tuple(self._csc_encoder_specs.keys())
 
 
-    def get_encoder_specs(self, encoding) -> Dict:
+    def get_encoder_specs(self, encoding) -> VDictEntry:
         return self._video_encoder_specs.get(encoding, {})
 
-    def get_csc_specs(self, src_format) -> Dict:
+    def get_csc_specs(self, src_format) -> VDictEntry:
         return self._csc_encoder_specs.get(src_format, {})
 
-    def get_decoder_specs(self, encoding) -> Dict:
+    def get_decoder_specs(self, encoding) -> VDictEntry:
         return self._video_decoder_specs.get(encoding, {})
 
 
@@ -407,7 +410,7 @@ class VideoHelper:
         """
         log("get_server_full_csc_modes(%s) decoder encodings=%s",
             client_supported_csc_modes, csv(self._video_decoder_specs.keys()))
-        full_csc_modes = {}
+        full_csc_modes : Dict[str,List[str]] = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
@@ -415,7 +418,7 @@ class VideoHelper:
                     #figure out the actual output colorspace:
                     output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
                     log("found decoder %12s for %5s with %7s mode, outputs '%s'",
-                             decoder_name, encoding, colorspace, output_colorspace)
+                        decoder_name, encoding, colorspace, output_colorspace)
                     if output_colorspace in client_supported_csc_modes:
                         encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
                         if colorspace not in encoding_colorspaces:

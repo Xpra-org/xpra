@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 from xpra.util import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 log = Logger("scaling")
 
@@ -28,25 +28,25 @@ def scaleup_value(scaling):
 def scaledown_value(scaling):
     return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10))
 
-def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> Tuple[int,int]:
+def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> Tuple[float,float]:
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
     if desktop_scaling in TRUE_OPTIONS:
         return 1, 1
     if desktop_scaling.startswith("auto"):
         #figure out if the command line includes settings to use for auto mode:
         #here are our defaults:
-        limits : Tuple[int,int,float,float] = (
+        limits : List[Tuple[int,int,float,float]] = [
             (3960, 2160, 1.0, 1.0),         #100% no auto scaling up to 4k
             (7680, 4320, 1.25, 1.25),       #125%
             (8192, 8192, 1.5, 1.5),         #150%
             (16384, 16384, 5.0/3, 5.0/3),   #166%
             (32768, 32768, 2, 2),
             (65536, 65536, 4, 4),
-            )         #200% if higher (who has this anyway?)
+            ]         #200% if higher (who has this anyway?)
         if desktop_scaling.startswith("auto:"):
             limstr = desktop_scaling[5:]    #ie: '1920x1080:1,2560x1600:1.5,...
             limp = limstr.split(",")
-            limits : List[Tuple[int,int,float,float]] = []
+            limits = []
             for l in limp:
                 try:
                     ldef = l.split(":")
@@ -69,7 +69,7 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
                     log.warn(" should use the format WIDTHxHEIGTH:SCALINGVALUE")
         elif desktop_scaling!="auto":
             log.warn(f"Warning: invalid 'auto' scaling value {desktop_scaling}")
-        sx, sy = 1, 1
+        sx, sy = 1.0, 1.0
         matched = False
         for mx, my, tsx, tsy in limits:
             if root_w*root_h<=mx*my:
@@ -78,7 +78,7 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
                 break
         log("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)
         return sx,sy
-    def parse_item(v):
+    def parse_item(v) -> Optional[Tuple[float, float]]:
         div = 1
         try:
             if v.endswith("%"):

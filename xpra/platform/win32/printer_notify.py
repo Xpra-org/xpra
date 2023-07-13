@@ -5,6 +5,7 @@
 # License:
 # https://creativecommons.org/licenses/by-sa/3.0/legalcode
 
+from typing import Optional
 import ctypes
 from ctypes import wintypes
 
@@ -356,38 +357,37 @@ kernel32.WaitForSingleObject.argtypes = (
     wintypes.DWORD)  # _In_ dwMilliseconds
 
 def wait_for_print_job(printer_filter=PRINTER_CHANGE_ADD_JOB,
-                       timeout=INFINITE,
-                       printer_name=None):
+                       timeout:int=INFINITE,
+                       printer_name:Optional[str]=None) -> int:
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()
     dwChange = wintypes.DWORD()
     winspool.OpenPrinterW(printer_name, ctypes.byref(hPrinter), None)
     try:
-        hChange = winspool.FindFirstPrinterChangeNotification(
-                    hPrinter, printer_filter, 0, None)
+        hChange = winspool.FindFirstPrinterChangeNotification(hPrinter, printer_filter, 0, None)
         try:
             if kernel32.WaitForSingleObject(hChange, timeout) != WAIT_OBJECT_0:
-                return None
-            winspool.FindNextPrinterChangeNotification(
-                hChange, ctypes.byref(dwChange), None, None)
-            return dwChange.value
+                return 0
+            winspool.FindNextPrinterChangeNotification(hChange, ctypes.byref(dwChange), None, None)
+            return int(dwChange.value)
         finally:
             winspool.FindClosePrinterChangeNotification(hChange)
     finally:
         winspool.ClosePrinter(hPrinter)
 
-DEFAULT_FIELDS = (
+DEFAULT_FIELDS : Tuple[int,...] = (
     JOB_NOTIFY_FIELD_PRINTER_NAME,
     JOB_NOTIFY_FIELD_STATUS,
     JOB_NOTIFY_FIELD_DOCUMENT,
     JOB_NOTIFY_FIELD_PRIORITY,
     JOB_NOTIFY_FIELD_POSITION,
-    JOB_NOTIFY_FIELD_SUBMITTED)
+    JOB_NOTIFY_FIELD_SUBMITTED,
+)
 
 def wait_for_print_job_info(fields=DEFAULT_FIELDS,
                             timeout=INFINITE,
-                            printer_name=None):
+                            printer_name=None) -> List:
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()
@@ -402,10 +402,9 @@ def wait_for_print_job_info(fields=DEFAULT_FIELDS,
         hChange = winspool.FindFirstPrinterChangeNotification(
                     hPrinter, 0, 0, ctypes.byref(opt))
         try:
-            if (kernel32.WaitForSingleObject(hChange, timeout) !=
-                WAIT_OBJECT_0): return result
-            winspool.FindNextPrinterChangeNotification(
-                hChange, None, None, ctypes.byref(pinfo))
+            if kernel32.WaitForSingleObject(hChange, timeout) != WAIT_OBJECT_0:
+                return result
+            winspool.FindNextPrinterChangeNotification(hChange, None, None, ctypes.byref(pinfo))
             for data in pinfo[0].aData:
                 if data.Type != JOB_NOTIFY_TYPE:
                     continue

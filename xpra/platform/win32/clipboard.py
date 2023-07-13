@@ -9,6 +9,7 @@ from ctypes import (
     get_last_error, WinError, FormatError,  # @UnresolvedImport
     sizeof, byref, cast, memset, memmove, create_string_buffer, c_char, c_void_p,
     )
+from ctypes.wintypes import HBITMAP
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.win32.common import (
@@ -187,9 +188,10 @@ def format_name(fmt):
     ulen = 128
     buf = LPCSTR(b" "*ulen)
     r = GetClipboardFormatNameA(fmt, buf, ulen-1)
-    if r==0:
+    value = buf.value
+    if r==0 or not value:
         return str(fmt)
-    return (buf.value[:r]).decode("latin1")
+    return value[:r].decode("latin1")
 
 def format_names(fmts):
     return tuple(format_name(x) for x in fmts)
@@ -223,6 +225,41 @@ def w_to_utf8(data):
     if CONVERT_LINE_ENDINGS:
         return b.decode("utf8").replace("\r\n", "\n").encode("utf8")
     return b
+
+
+def rgb_to_bitmap(img_data) -> HBITMAP:
+    from PIL import Image
+    buf = BytesIO(img_data)
+    img = Image.open(buf)
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    rgb_data = img.tobytes("raw", "BGRA")
+    w, h = img.size
+    log("rgb_to_bitmap(%s) image size=%s, BGR buffer=%i bytes",
+        ellipsizer(rgb_data), img.size, len(rgb_data))
+    header = BITMAPINFOHEADER()
+    memset(byref(header), 0, sizeof(BITMAPINFOHEADER))
+    header.biSize = sizeof(BITMAPINFOHEADER)
+    header.biWidth = w
+    header.biHeight = -h
+    header.biPlanes = 1
+    header.biBitCount = 32
+    header.biCompression = BI_RGB
+    header.biSizeImage = 0
+    header.biXPelsPerMeter = 10
+    header.biYPelsPerMeter = 10
+    bitmapinfo = BITMAPINFO()
+    bitmapinfo.bmiColors = 0
+    memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
+    rgb_buf = create_string_buffer(rgb_data)
+    pbuf = cast(byref(rgb_buf), c_void_p)
+    hdc = GetDC(None)
+    try:
+        CBM_INIT = 4
+        bitmap = CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
+    finally:
+        ReleaseDC(None, hdc)
+    return bitmap
 
 
 class Win32Clipboard(ClipboardTimeoutHelper):
@@ -565,39 +602,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 finally:
                     GlobalUnlock(data)
                 image_formats[fmt] = data_handle
-
-        #also convert it to a bitmap:
-        from PIL import Image
-        buf = BytesIO(img_data)
-        img = Image.open(buf)
-        if img.mode!="RGBA":
-            img = img.convert("RGBA")
-        rgb_data = img.tobytes("raw", "BGRA")
-        w, h = img.size
-        log("set_clipboard_image(%s, %s) image size=%s, BGR buffer=%i bytes",
-            img_format, ellipsizer(rgb_data), img.size, len(rgb_data))
-        header = BITMAPINFOHEADER()
-        memset(byref(header), 0, sizeof(BITMAPINFOHEADER ))
-        header.biSize       = sizeof(BITMAPINFOHEADER)
-        header.biWidth      = w
-        header.biHeight     = -h
-        header.biPlanes     = 1
-        header.biBitCount   = 32
-        header.biCompression    = BI_RGB
-        header.biSizeImage      = 0
-        header.biXPelsPerMeter  = 10
-        header.biYPelsPerMeter  = 10
-        bitmapinfo = BITMAPINFO()
-        bitmapinfo.bmiColors = 0
-        memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
-        rgb_buf = create_string_buffer(rgb_data)
-        pbuf = cast(byref(rgb_buf), c_void_p)
-        hdc = GetDC(None)
-        CBM_INIT = 4
-        bitmap = CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
-        ReleaseDC(None, hdc)
+        bitmap = rgb_to_bitmap(img_data)
         image_formats[win32con.CF_BITMAP] = bitmap
-
         self.do_set_clipboard_image(image_formats)
 
     def do_set_clipboard_image(self, image_formats):

@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Callable, Dict
 from ctypes import (
     Structure, cast, POINTER,
     WinDLL,  # @UnresolvedImport
@@ -53,11 +54,16 @@ HOOK_MINMAXINFO_OVERRIDE = envbool("XPRA_WIN32_MINMAXINFO_OVERRIDE", True)
 
 class Win32Hooks:
 
-    def __init__(self, hwnd):
+    def __init__(self, hwnd:int):
         self._hwnd = hwnd
-        self._message_map = {}
+        self._message_map : Dict[int,Callable] = {}
         self.max_size = None
         self.min_size = None
+        self.frame_width = 4
+        self.frame_height = 4
+        self.caption_height = 26
+        self._oldwndproc = None
+        self._newwndproc = None
         if HOOK_MINMAXINFO:
             self.add_window_event_handler(win32con.WM_GETMINMAXINFO, self.on_getminmaxinfo)
         try:
@@ -67,22 +73,18 @@ class Win32Hooks:
             self.caption_height = GetSystemMetrics(win32con.SM_CYCAPTION)
         except Exception:
             log("error querying frame attributes", exc_info=True)
-            self.frame_width = 4
-            self.frame_height = 4
-            self.caption_height = 26
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
         log("Win32Hooks: message_map=%s", self._message_map)
-        self._oldwndproc = None
 
-    def add_window_event_handler(self, event, handler):
+    def add_window_event_handler(self, event:int, handler:Callable) -> None:
         self._message_map[event] = handler
 
-    def setup(self):
+    def setup(self) -> None:
         assert self._oldwndproc is None
         self._newwndproc = WNDPROC(self._wndproc)
         self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
-    def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
+    def on_getminmaxinfo(self, hwnd:int, msg, wparam:int, lparam:int):
         if (self.min_size or self.max_size) and lparam:
             info = cast(lparam, POINTER(MINMAXINFO)).contents
             style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
@@ -150,7 +152,7 @@ class Win32Hooks:
         except Exception:
             log.error("Error: window hooks cleanup failure", exc_info=True)
 
-    def _wndproc(self, hwnd, msg, wparam, lparam):
+    def _wndproc(self, hwnd:int, msg, wparam:int, lparam:int):
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
         callback = self._message_map.get(msg)
         vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)

@@ -39,7 +39,7 @@ class KeyboardStateInfoWindow:
         label.modify_font(Pango.FontDescription("sans 13"))
         #patch pack_start:
         from xpra.gtk_common.gtk_util import pack_start
-        assert pack_start
+        assert callable(pack_start)
         vbox.pack_start(label)
 
         self.modifiers = Gtk.Label()
@@ -56,7 +56,7 @@ class KeyboardStateInfoWindow:
         self.window.add(vbox)
         GLib.timeout_add(100, self.populate_modifiers)
 
-        self.key_events = deque(maxlen=35)
+        self.key_events : deque[str] = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
         display = Gdk.Display.get_default()
@@ -113,6 +113,9 @@ class KeyboardStateInfoWindow:
     def show_keymap(self, msg="keymap changed:"):
         self.keymap_change_timer = 0
         from xpra.platform.keyboard import Keyboard
+        if not Keyboard:
+            log.warn("no keyboard support!")
+            return
         keyboard = Keyboard()      #pylint: disable=not-callable
         layout, layouts, variant, variants, options = keyboard.get_layout_spec()
         self.add_event_text(msg)

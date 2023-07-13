@@ -8,6 +8,7 @@ import os.path
 import glob
 import socket
 import errno
+from typing import Dict, Tuple
 
 from xpra.os_util import get_util_logger, osexpand, umask_context, is_socket
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
@@ -193,18 +194,18 @@ class DotXpra:
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=None, matching_state=None, matching_display=None):
-        sd = {}
+        sd : Dict[str,List[Tuple[str,str,str]]] = {}
         debug("socket_details%s sockdir=%s, sockdirs=%s",
               (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs)
-        def add_result(d, item):
-            results = sd.setdefault(d, [])
+        def add_result(d:str, item:Tuple[str,str,str]):
+            results : List[Tuple[str,str,str]] = sd.setdefault(d, [])
             if item not in results:
                 results.append(item)
-        def local(display):
+        def local(display:str):
             if display.startswith("wayland-"):
                 return display
             return DISPLAY_PREFIX+strip_display_prefix(display)
-        def add_session_dir(session_dir, display):
+        def add_session_dir(session_dir:str, display:str):
             if not os.path.exists(session_dir):
                 debug("add_session_dir%s path does not exist", (session_dir, display))
                 return

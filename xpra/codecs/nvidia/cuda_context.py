@@ -42,7 +42,7 @@ log = Logger("cuda")
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
 #record when we get failures/success:
-DEVICE_STATE = {}
+DEVICE_STATE : Dict[int,bool] = {}
 
 def record_device_failure(device_id:int):
     DEVICE_STATE[device_id] = False
@@ -200,7 +200,7 @@ def driver_init() -> bool:
     return driver_init_done
 
 
-DEVICES = None
+DEVICES : Optional[List[int]] = None
 def init_all_devices():
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:

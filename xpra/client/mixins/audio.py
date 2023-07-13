@@ -78,15 +78,15 @@ class AudioClient(StubClientMixin):
         self.audio_in_bytecount : int = 0
         self.audio_out_bytecount : int = 0
         self.server_av_sync : bool = False
-        self.server_pulseaudio_id = None
-        self.server_pulseaudio_server = None
-        self.server_audio_decoders = []
-        self.server_audio_encoders = []
-        self.server_audio_receive : int = False
-        self.server_audio_send : int = False
-        self.queue_used_sent = None
+        self.server_pulseaudio_id = ""
+        self.server_pulseaudio_server = ""
+        self.server_audio_decoders : Tuple[str,...] = ()
+        self.server_audio_encoders : Tuple[str,...] = ()
+        self.server_audio_receive : bool = False
+        self.server_audio_send : bool = False
+        self.queue_used_sent : int = 0
         #duplicated from ServerInfo mixin:
-        self._remote_machine_id = None
+        self._remote_machine_id = ""
 
     def init(self, opts) -> None:
         self.av_sync = opts.av_sync
@@ -98,8 +98,8 @@ class AudioClient(StubClientMixin):
         if self.microphone_allowed and len(mic)==2:
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
-        def nooptions(*_args):
-            return []
+        def nooptions(*_args) -> Tuple[str,...]:
+            return ()
         audio_option_fn : Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
             try:

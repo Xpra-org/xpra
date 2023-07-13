@@ -6,7 +6,8 @@
 
 import sys
 import os.path
-from typing import Tuple, List, Dict, Any
+from types import ModuleType
+from typing import Tuple, List, Dict, Any, Optional
 
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, WIN32
@@ -210,7 +211,7 @@ CODEC_OPTIONS : Dict[str,Tuple[str,str,str,str]] = {
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
-    "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
+    "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
     "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg","decoder", "decompress"),
     #video decoders:
@@ -242,9 +243,8 @@ def load_codec(name:str):
     name = name.replace("-", "_")
     if not has_codec(name):
         try:
-            option = CODEC_OPTIONS[name]
-            description, top_module, class_module = option[:3]
-            classnames = option[3:]
+            description, top_module, class_module, classnames_str = CODEC_OPTIONS[name]
+            classnames = classnames_str.split(",")
         except KeyError:
             log("load_codec(%s)", name, exc_info=True)
             log.error("Error: invalid codec name '%s'", name)
@@ -366,7 +366,7 @@ def get_encoding_help(encoding:str) -> str:
           "rgb"     : "Raw RGB pixels, lossless"
                       +f"{compressors_str}(24bpp or 32bpp for transparency)",
           "scroll"  : "motion vectors, supplemented with picture codecs",
-          }.get(encoding)
+          }.get(encoding, "")
 
 
 def encodings_help(encodings) -> List[str]:
@@ -430,8 +430,8 @@ def main(args) -> int:
         out.info("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
-            mod = codecs.get(name, "")
-            f = mod
+            mod : ModuleType = codecs.get(name, "")
+            f = str(mod)
             if mod and hasattr(mod, "__file__"):
                 f = mod.__file__
                 if f.startswith(os.getcwd()):

@@ -41,8 +41,8 @@ class EncodingServer(StubServerMixin):
         self.lossless_mode_encodings : Tuple[str,...] = ()
         self.default_encoding : str = ""
         self.scaling_control = None
-        self.video_encoders = ()
-        self.csc_modules = ()
+        self.video_encoders : Tuple[str,...] = ()
+        self.csc_modules : Tuple[str,...] = ()
 
     def init(self, opts) -> None:
         self.encoding = opts.encoding
@@ -53,8 +53,8 @@ class EncodingServer(StubServerMixin):
         self.default_min_speed = opts.min_speed
         if opts.video_scaling.lower() not in ("auto", "on"):
             self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
-        self.video_encoders = csvstrl(opts.video_encoders).split(",")
-        self.csc_modules = csvstrl(opts.csc_modules).split(",")
+        self.video_encoders = tuple(csvstrl(opts.video_encoders).split(","))
+        self.csc_modules = tuple(csvstrl(opts.csc_modules).split(","))
 
     def setup(self) -> None:
         #essential codecs, load them early:
@@ -138,19 +138,19 @@ class EncodingServer(StubServerMixin):
         log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
         def add_encoding(encoding):
             log("add_encoding(%s)", encoding)
-            e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(encoding, encoding)
+            enc = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(encoding, encoding)
             if self.allowed_encodings is not None:
-                if e not in self.allowed_encodings and encoding not in self.allowed_encodings:
+                if enc not in self.allowed_encodings and encoding not in self.allowed_encodings:
                     #not in whitelist (if it exists)
                     return
-            if e not in encs:
-                encs.append(e)
+            if enc not in encs:
+                encs.append(enc)
             if encoding not in core_encs:
                 core_encs.append(encoding)
         def add_encodings(*encodings):
             log("add_encodings%s", encodings)
-            for encoding in encodings:
-                add_encoding(encoding)
+            for enc in encodings:
+                add_encoding(enc)
 
         add_encodings("rgb24", "rgb32")
         try:
@@ -190,22 +190,22 @@ class EncodingServer(StubServerMixin):
             if codec:
                 add_encodings(*codec.get_encodings())
         #look for video encodings with lossless mode:
-        for e in ve:
-            for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
+        for enc in ve:
+            for colorspace,especs in getVideoHelper().get_encoder_specs(enc).items():
                 for espec in especs:
-                    if espec.has_lossless_mode and e not in lossless:
-                        log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
-                        lossless.append(e)
+                    if espec.has_lossless_mode and enc not in lossless:
+                        log("found lossless mode for encoding %s with %s and colorspace %s", enc, espec, colorspace)
+                        lossless.append(enc)
                         break
         #now update the variables:
         encs.append("grayscale")
-        if any(x in encs for x in STREAM_ENCODINGS):
+        if any(enc in encs for enc in STREAM_ENCODINGS):
             encs.append("stream")
         self.encodings = preforder(encs)
         self.core_encodings = preforder(core_encs)
         self.lossless_mode_encodings = preforder(lossless)
-        self.lossless_encodings = preforder(x for x in self.core_encodings
-                                   if (x.startswith("png") or x.startswith("rgb") or x=="webp"))
+        self.lossless_encodings = preforder(enc for enc in self.core_encodings
+                                   if (enc.startswith("png") or enc.startswith("rgb") or enc=="webp"))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
         self.default_encoding = self.encodings[0]

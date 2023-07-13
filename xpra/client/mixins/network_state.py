@@ -67,9 +67,9 @@ class NetworkState(StubClientMixin):
 
         #network state:
         self.server_packet_encoders : Tuple[str, ...] = ()
-        self.server_ping_latency : deque = deque(maxlen=1000)
-        self.server_load = None
-        self.client_ping_latency : deque = deque(maxlen=1000)
+        self.server_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)
+        self.server_load = (0, 0, 0)
+        self.client_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)
         self._server_ok : bool = True
         self.last_ping_echoed_time = 0
         self.ping_timer : int = 0

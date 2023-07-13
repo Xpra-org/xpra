@@ -39,6 +39,9 @@ def main():
                 print(" %s" % e)
                 #hope for the best..
 
+        if not Keyboard:
+            print("no keyboard implementation")
+            return 1
         keyboard = Keyboard()  #pylint: disable=not-callable
         mod_meanings, mod_managed, mod_pointermissing = keyboard.get_keymap_modifiers()
         print("Modifiers:")

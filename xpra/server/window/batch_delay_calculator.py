@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 from math import log as mathlog, sqrt
+from typing import Dict, Any
 
 from xpra.server.cystats import (
     queue_inspect, logp, time_weighted_average, #@UnresolvedImport
@@ -292,7 +293,7 @@ def get_target_quality(window_dimensions, batch,
     #target is the lowest value of all those limits:
     target = max(min(pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q, 1), 0)
 
-    info = {}
+    info : Dict[str,Any] = {}
     #boost based on recent compression ratio
     comp_boost = 0
     #from here on, the compression ratio integer value is in per-1000:

@@ -1,18 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #pylint: disable=import-outside-toplevel
+from typing import Tuple, Any, Callable
 
-bencode = None
-bdecode = None
-__version__ = 0
-
-def init():
-    global bencode, bdecode, __version__
+def init() -> Tuple[Callable,Callable,Tuple[Any,...]]:
     from xpra.util import envbool
-    cython_bencode_loaded = False
     if envbool("XPRA_USE_CYTHON_BENCODE", True):
         try:
             from xpra.net.bencode.cython_bencode import (
@@ -20,23 +15,18 @@ def init():
                 bdecode as cbdecode,
                 __version__ as cversion,
                 )
-            bencode = cbencode
-            bdecode = cbdecode
-            __version__ = cversion
-            cython_bencode_loaded = True
+            return cbencode, cbdecode, cversion
         except ImportError as e:
             from xpra.os_util import get_util_logger
             get_util_logger().warn("Warning: cannot load cython bencode module: %s", e)
-    if not cython_bencode_loaded:
-        from xpra.net.bencode.bencode import (
-            bencode as pbencode,
-            bdecode as pbdecode,
-            __version__ as pversion,
-            )
-        bencode = pbencode
-        bdecode = pbdecode
-        __version__ = pversion
+    from xpra.net.bencode.bencode import (
+        bencode as pbencode,
+        bdecode as pbdecode,
+        __version__ as pversion,
+        )
+    return pbencode, pbdecode, __version__
 
-init()
+
+bencode, bdecode, __version__ = init()
 
 __all__ = ['bencode', 'bdecode', "__version__"]

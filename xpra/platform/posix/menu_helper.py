@@ -74,7 +74,7 @@ def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
 MAX_THEMES : int = 2
 IconTheme : Optional[Type] = None
 Config : Optional[Type] = None
-themes : Optional[Type] = None
+themes : Dict[str,Any] = None
 IconLoadingContext : Type = DummyContextManager
 if LOAD_FROM_THEME:
     try:
@@ -87,7 +87,7 @@ if LOAD_FROM_THEME:
         class KeepCacheLoadingContext():
             __slots__ = ("cache_time", )
             def __enter__(self):
-                self.cache_time = Config.cache_time
+                self.cache_time : int = Config.cache_time
                 Config.cache_time = 9999
             def __exit__(self, *_args):
                 if self.cache_time!=9999:

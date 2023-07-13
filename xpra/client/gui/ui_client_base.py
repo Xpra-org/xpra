@@ -244,11 +244,12 @@ class UIXpraClient(ClientBaseClass):
         return get_vrefresh()
 
 
-    def run(self) -> None:
+    def run(self) -> int:
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:
             c.run(self)
+        return self.exit_code or 0
 
 
     def quit(self, exit_code:int=0) -> None:

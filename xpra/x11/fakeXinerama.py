@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import List, Any
 
 from xpra.util import prettify_plug_name
 from xpra.os_util import find_lib, find_lib_ldconfig, LINUX, POSIX
@@ -85,7 +86,7 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
             "# %s monitors:" % len(monitors),
             "%s" % len(monitors)]
     #the new config (numeric values only)
-    config = [len(monitors)]
+    config : List[Any] = [len(monitors)]
     for i, m in enumerate(monitors):
         if len(m)<7:
             return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % (m, ))

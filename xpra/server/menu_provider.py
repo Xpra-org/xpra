@@ -6,7 +6,7 @@
 
 import os.path
 from threading import Lock
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Callable
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -57,9 +57,9 @@ class MenuProvider:
         self.watch_manager = None
         self.watch_notifier = None
         self.xdg_menu_reload_timer = 0
-        self.on_reload = []
-        self.menu_data = None
-        self.desktop_sessions = None
+        self.on_reload : List[Callable] = []
+        self.menu_data : Optional[Dict[str,Any]] = None
+        self.desktop_sessions : Optional[Dict[str,Any]] = None
         self.load_lock = Lock()
 
     def setup(self) -> None:
@@ -164,7 +164,7 @@ class MenuProvider:
         if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
             menu_data = self.menu_data
             try:
-                if not self.menu_data or force_reload:
+                if self.menu_data is None or force_reload:
                     from xpra.platform.menu_helper import load_menu  #pylint: disable=import-outside-toplevel
                     self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
@@ -172,7 +172,7 @@ class MenuProvider:
                 self.load_lock.release()
         if remove_icons and self.menu_data:
             menu_data = noicondata(self.menu_data)
-        return menu_data
+        return menu_data or {}
 
     def got_menu_data(self) -> bool:
         log("got_menu_data(..) on_reload=%s", self.on_reload)
@@ -224,9 +224,9 @@ class MenuProvider:
         return app.get("IconType"), app.get("IconData")
 
 
-    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False):
+    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False) -> Dict[str,Any]:
         if not POSIX or OSX:
-            return None
+            return {}
         if force_reload or self.desktop_sessions is None:
             from xpra.platform.posix.menu_helper import load_desktop_sessions  #pylint: disable=import-outside-toplevel
             self.desktop_sessions = load_desktop_sessions()

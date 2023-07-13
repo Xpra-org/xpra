@@ -11,32 +11,32 @@ from xpra.log import Logger
 log = Logger("audio")
 
 
-def has_pa():
+def has_pa() -> bool:
     return False
 
 
-def set_source_mute(device, mute=False):
+def set_source_mute(device, mute=False) -> None:
     """ none implementation """
 
-def set_sink_mute(device, mute=False):
+def set_sink_mute(device, mute=False) -> None:
     """ none implementation """
 
-def get_default_sink():
+def get_default_sink() -> str:
     return ""
 
-def get_pulse_server():
+def get_pulse_server() -> str:
     return ""
 
-def get_pulse_id():
+def get_pulse_id() -> str:
     return ""
 
-def get_pulse_cookie_hash():
+def get_pulse_cookie_hash() -> str:
     return ""
 
-def get_pactl_server():
+def get_pactl_server() -> str:
     return ""
 
-def get_pa_device_options(*_args):
+def get_pa_device_options(*_args) -> Dict[str,Any]:
     return {}
 
 def get_info() -> Dict[str,Any]:

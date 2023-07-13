@@ -12,6 +12,7 @@ from io import BytesIO
 from typing import Tuple, List, Dict, Callable, Optional, Any, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
+from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.os_util import POSIX, bytestostr, hexstr
 from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
@@ -313,7 +314,7 @@ class ClipboardProxyCore:
 
 
 class ClipboardProtocolHelperCore:
-    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+    def __init__(self, send_packet_cb, progress_cb:Callable=noop, **kwargs):
         d = typedict(kwargs)
         self.send : Callable = send_packet_cb
         self.progress_cb : Callable = progress_cb
@@ -332,7 +333,7 @@ class ClipboardProtocolHelperCore:
                     log.error("Error: invalid clipboard filter regular expression")
                     log.error(" '%s': %s", x, e)
         self._clipboard_request_counter : int = 0
-        self._clipboard_outstanding_requests = {}
+        self._clipboard_outstanding_requests : Dict[int,Tuple[int, str, str]] = {}
         self._local_to_remote : Dict[str,str] = {}
         self._remote_to_local : Dict[str,str] = {}
         self.init_translation(kwargs)
@@ -708,14 +709,12 @@ class ClipboardProtocolHelperCore:
 
 
     def progress(self) -> None:
-        if self.progress_cb:
-            self.progress_cb(len(self._clipboard_outstanding_requests), None)
+        self.progress_cb(len(self._clipboard_outstanding_requests), None)
 
 
     def _process_clipboard_pending_requests(self, packet:Tuple) -> None:
         pending = packet[1]
-        if self.progress_cb:
-            self.progress_cb(None, pending)
+        self.progress_cb(None, pending)
 
     def _process_clipboard_enable_selections(self, packet:Tuple) -> None:
         selections = tuple(bytestostr(x) for x in packet[1])

@@ -149,6 +149,8 @@ class AGLContext:
         return bool(self._get_apfa(NSOpenGLPFADoubleBuffer))
 
     def get_paint_context(self, gdk_window) -> AGLWindowContext:
+        if not self.gl_context:
+            raise RuntimeError("no OpenGL context")
         nsview_ptr = get_nsview_ptr(gdk_window)
         if self.window_context and self.nsview_ptr!=nsview_ptr:
             log("get_paint_context(%s) nsview_ptr has changed, was %#x, now %#x - destroying window context",

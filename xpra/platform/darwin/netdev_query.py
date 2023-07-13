@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+from typing import Dict, Any
 
 from SystemConfiguration import (
     SCNetworkInterfaceCopyAll,                      #@UnresolvedImport
@@ -14,7 +15,7 @@ from SystemConfiguration import (
     )
 
 
-def get_interface_info(_fd, iface):
+def get_interface_info(_fd:int, iface) -> Dict[str,Any]:
     r = SCNetworkInterfaceCopyAll()
     if iface:
         for scnetworkinterface in r:
@@ -24,8 +25,8 @@ def get_interface_info(_fd, iface):
         return do_get_interface_info(r[0])
     return {}
 
-def do_get_interface_info(scnetworkinterface):
-    info = {}
+def do_get_interface_info(scnetworkinterface) -> Dict[str,Any]:
+    info : Dict[str,Any] = {}
     bsdname = SCNetworkInterfaceGetBSDName(scnetworkinterface)
     if bsdname:
         info["name"] = str(bsdname)
@@ -41,7 +42,7 @@ def do_get_interface_info(scnetworkinterface):
         info["protocols"] = tuple(str(x) for x in p)
     return info
 
-def get_socket_tcp_info(sock):
+def get_socket_tcp_info(sock) -> Dict[str,Any]:
     from ctypes import c_int8, c_uint8, c_uint32, c_int32, c_int64
     MACOS_TCP_INFO_FIELDS = (
         ("state",           c_uint8),
@@ -95,7 +96,7 @@ def get_socket_tcp_info(sock):
     TCP_INFO = 0x200
     return get_sockopt_tcp_info(sock, TCP_INFO, MACOS_TCP_INFO_FIELDS)
 
-def get_tcp_info(sock):
+def get_tcp_info(sock) -> Dict[str,Any]:
     info = get_socket_tcp_info(sock)
     SO_NWRITE = 0x1024  #Get number of bytes currently in send socket buffer
     #actually gives the sum of (unsent data + sent-but-not-ACK-ed data)

@@ -403,10 +403,10 @@ def session_file_path(filename:str) -> str:
         raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
 
-def load_session_file(filename:str) -> Optional[bytes]:
+def load_session_file(filename:str) -> bytes:
     return load_binary_file(session_file_path(filename))
 
-def save_session_file(filename:str, contents, uid:int=None, gid:int=None):
+def save_session_file(filename:str, contents, uid:int=-1, gid:int=-1):
     if not os.environ.get("XPRA_SESSION_DIR"):
         return None
     if not isinstance(contents, bytes):
@@ -417,7 +417,7 @@ def save_session_file(filename:str, contents, uid:int=None, gid:int=None):
         with open(path, "wb+") as f:
             if POSIX:
                 os.fchmod(f.fileno(), 0o640)
-                if getuid()==0 and uid is not None and gid is not None:
+                if getuid()==0 and uid>=0 and gid>=0:
                     os.fchown(f.fileno(), uid, gid)
             f.write(contents)
     except OSError as e:
@@ -525,8 +525,8 @@ def get_options_file_contents(opts, mode:str="seamless") -> str:
         cval = getattr(opts, aname, None)
         if dval!=cval:
             if dtype is bool:
-                BOOL_STR = {True : "yes", False : "no", None : "auto"}
-                diff_contents.append(f"{attr}="+BOOL_STR.get(cval, cval))
+                BOOL_STR = {True : "yes", False : "no"}
+                diff_contents.append(f"{attr}="+BOOL_STR.get(cval, "auto"))
             elif dtype in (tuple, list):
                 for x in cval or ():
                     diff_contents.append(f"{attr}={x}")
@@ -604,7 +604,7 @@ def reload_dbus_attributes(display_name:str):
             except ValueError:
                 pass
         if not dbus_address:
-            dbus_address = wminfo.get("dbus-address")
+            dbus_address = wminfo.get("dbus-address", "")
             if dbus_address:
                 dbus_env[b"DBUS_SESSION_BUS_ADDRESS"] = dbus_address.encode()
     if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
@@ -683,21 +683,21 @@ def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str
         return show_encoding_help(opts)
     ################################################################################
     # splash screen:
-    splash_process = None
+    splash_process : Optional[Popen]= None
     if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
         # use splash screen to show server startup progress:
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
         title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
         def stop_progress_process():
-            if splash_process.poll() is not None:
+            if not splash_process or splash_process.poll() is not None:
                 return
             try:
                 splash_process.terminate()
             except Exception:
                 pass
         def show_progress(pct, text=""):
-            if splash_process.poll() is not None:
+            if not splash_process or splash_process.poll() is not None:
                 return
             stdin = splash_process.stdin
             if stdin:
@@ -805,7 +805,7 @@ def _do_run_server(script_file:str, cmdline,
                 all_displays = dotxpra.sockets()
                 #ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
                 displays = [v[1] for v in all_displays]
-                display_name = None
+                display_name = ""
                 for x in range(1000, 20000):
                     v = f":{x}"
                     if v not in displays:
@@ -861,11 +861,11 @@ def _do_run_server(script_file:str, cmdline,
     run_xpra_script = None
     env_script = None
     if POSIX and getuid()!=0:
-        env = os.environb.copy()
+        benv = os.environb.copy()
         oenv = parse_env(opts.env)
         for k,v in oenv.items():
-            env[k.encode("utf8")] = v.encode("utf8")
-        env_script = xpra_env_shell_script(opts.socket_dir, env)
+            benv[k.encode("utf8")] = v.encode("utf8")
+        env_script = xpra_env_shell_script(opts.socket_dir, benv)
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     uid : int = int(opts.uid)
@@ -915,7 +915,7 @@ def _do_run_server(script_file:str, cmdline,
 
     clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
     start_vfb : bool = not (shadowing or proxying or clobber or expanding)
-    xauth_data : str = get_hex_uuid() if start_vfb else None
+    xauth_data : str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
     pam = None
@@ -972,7 +972,7 @@ def _do_run_server(script_file:str, cmdline,
         elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
             xrd = ""
     if not xrd:
-        xrd = os.environ.get("XDG_RUNTIME_DIR")
+        xrd = os.environ.get("XDG_RUNTIME_DIR", "")
     xrd = create_runtime_dir(xrd, uid, gid)
     if xrd:
         #this may override the value we get from pam
@@ -1140,8 +1140,8 @@ def _do_run_server(script_file:str, cmdline,
                     "$XDG_RUNTIME_DIR/gdm/Xauthority",
                 ]
                 for globstr in candidates:
-                    for f in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=g)):
-                        if not os.path.isfile(f):
+                    for filename in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=gid)):
+                        if not os.path.isfile(filename):
                             continue
                         try:
                             stat_info = os.stat(filename)
@@ -1150,7 +1150,7 @@ def _do_run_server(script_file:str, cmdline,
                         if not ROOT and stat_info.st_uid!=uid:
                             continue
                         if xauth_time==0.0 or stat_info.st_mtime>xauth_time:
-                            xauthority = f
+                            xauthority = filename
                             xauth_time = stat_info.st_mtime
             if not valid_xauth(xauthority, uid, gid):
                 #we can choose the path to use:
@@ -1162,10 +1162,10 @@ def _do_run_server(script_file:str, cmdline,
                     #broken symlink
                     os.unlink(xauthority)
                 log(f"creating XAUTHORITY file {xauthority!r}")
-                with open(xauthority, "ab") as f:
-                    os.fchmod(f.fileno(), 0o640)
+                with open(xauthority, "ab") as xauth_file:
+                    os.fchmod(xauth_file.fileno(), 0o640)
                     if ROOT and (uid!=0 or gid!=0):
-                        os.fchown(f.fileno(), uid, gid)
+                        os.fchown(xauth_file.fileno(), uid, gid)
             elif not is_writable(xauthority) and not ROOT:
                 log(f"chmoding XAUTHORITY file {xauthority!r}")
                 os.chmod(xauthority, 0o640)
@@ -1226,12 +1226,13 @@ def _do_run_server(script_file:str, cmdline,
                     return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
                 write_session_file("uinput-uuid", uinput_uuid)
-            vfb_geom = ""
+            vfb_geom : Optional[Tuple] = ()
             if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
                 vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
 
             xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
-                                                      uid, gid, username, uinput_uuid)
+                                            uid, gid, username, uinput_uuid)
+            assert xauthority
             xauth_add(xauthority, display_name, xauth_data, uid, gid)
             xvfb_pid = xvfb.pid
             xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
@@ -1254,8 +1255,8 @@ def _do_run_server(script_file:str, cmdline,
                     if new_session_dir!=session_dir:
                         try:
                             if os.path.exists(new_session_dir):
-                                for x in os.listdir(session_dir):
-                                    os.rename(os.path.join(session_dir, x), os.path.join(new_session_dir, x))
+                                for sess_e in os.listdir(session_dir):
+                                    os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
                                 os.rmdir(session_dir)
                             else:
                                 os.rename(session_dir, new_session_dir)

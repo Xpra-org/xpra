@@ -114,7 +114,7 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = uid, gid, displays, env_options, session_options
         return True
 
-    def get_sessions(self) -> SessionData:
+    def get_sessions(self) -> Optional[SessionData]:
         return self.sessions
 
     def __repr__(self):

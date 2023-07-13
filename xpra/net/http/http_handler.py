@@ -24,8 +24,8 @@ HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").sp
 DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 
 AUTH_REALM = os.environ.get("XPRA_HTTP_AUTH_REALM", "Xpra")
-AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME")
-AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD")
+AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME", "")
+AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
 
 EXTENSION_TO_MIMETYPE = {
     ".wasm" : "application/wasm",
@@ -136,7 +136,7 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
     log("translate_path(%s)=%s", s, path)
     return path
 
-def load_path(headers:Dict[str,str], path:str) -> Tuple[int,Dict[str,Any],bytes]:
+def load_path(headers:Dict[str,Any], path:str) -> Tuple[int,Dict[str,Any],bytes]:
     ext = os.path.splitext(path)[1]
     extra_headers : Dict[str,Any] = {}
     with open(path, "rb") as f:
@@ -155,7 +155,7 @@ def load_path(headers:Dict[str,str], path:str) -> Tuple[int,Dict[str,Any],bytes]
         log("guess_type(%s)=%s", path, content_type)
         if content_type:
             extra_headers["Content-type"] = content_type
-        accept = tuple(headers.get('accept-encoding', '').split(","))
+        accept = tuple(headers.get("accept-encoding", "").split(","))
         accept = tuple(x.split(";")[0].strip() for x in accept)
         content = None
         log("accept-encoding=%s", csv(accept))
@@ -234,7 +234,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
-        self.extra_headers = {}
+        self.extra_headers : Dict[str,Any] = {}
         super().__init__(sock, addr, server)
 
 
@@ -248,8 +248,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args) -> None:  #pylint: disable=arguments-differ
         if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
             fmt = '"%r" %s %s'
-            args = list(args)
-            args[0] = repr_ellipsized(args[0])
+            largs = list(args)
+            largs[0] = repr_ellipsized(args[0])
+            args = tuple(largs)
         log(fmt, *args)
 
 

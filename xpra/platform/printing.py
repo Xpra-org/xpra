@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+from typing import Dict, Any, Optional, List
 
 #default implementation uses pycups
 from xpra.platform import platform_import
@@ -18,31 +19,31 @@ log = Logger("printing")
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 
 
-def get_printers():
+def get_printers() -> Dict[str,Any]:
     return {}
 
-def get_printer_attributes(_name):
+def get_printer_attributes(_name:str) -> List:
     return []
 
 def get_default_printer() -> str:
     return ""
 
-def print_files(printer, filenames, title, options):
+def print_files(printer:str, filenames, title:str, options):
     raise RuntimeError("no print implementation available")
 
-def printing_finished(_printpid):
+def printing_finished(_printpid) -> bool:
     return True
 
-def init_printing(printers_modified_callback=None):     #pylint: disable=unused-argument
+def init_printing(printers_modified_callback=None) -> None:     #pylint: disable=unused-argument
     """ overridden in platform code """
 
-def cleanup_printing():
+def cleanup_printing() -> None:
     """ overridden in platform code """
 
 
 DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
-MIMETYPES = None
+MIMETYPES : Optional[List[str]] = None
 def get_mimetypes():
     global MIMETYPES
     if MIMETYPES is None:
@@ -66,10 +67,10 @@ def get_mimetypes():
     return MIMETYPES
 
 
-def get_info():
+def get_info() -> Dict[str,Any]:
     return default_get_info()
 
-def default_get_info():
+def default_get_info() -> Dict[str,Any]:
     return {
             "mimetypes" :   {
                 ""         : get_mimetypes(),
@@ -107,7 +108,7 @@ platform_import(globals(), "printing", False,
                 "DEFAULT_MIMETYPES")
 
 
-def main(argv):
+def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for

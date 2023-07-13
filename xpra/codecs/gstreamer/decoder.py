@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
@@ -113,7 +113,7 @@ class Decoder(VideoPipeline):
         decoder_element = CODECS.get(self.encoding)
         if not decoder_element:
             raise RuntimeError(f"invalid encoding {self.encoding}")
-        stream_attrs = {
+        stream_attrs : Dict[str,Any] = {
             "width"     : self.width,
             "height"    : self.height,
             }
@@ -157,6 +157,8 @@ class Decoder(VideoPipeline):
             Ystride = roundup(self.width, 4)
             Ysize = Ystride*roundup(self.height, 2)
             Y = mem[:Ysize]
+            planes : Tuple[memoryview,...]
+            strides : Tuple[int,...]
             if self.output_format=="YUV420P":
                 UVstride = roundup(roundup(self.width, 2)//2, 4)
                 UVsize = UVstride*roundup(self.height, 2)//2

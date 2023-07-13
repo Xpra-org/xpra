@@ -8,7 +8,7 @@ import os
 import sys
 import secrets
 from struct import pack
-from typing import Dict, Tuple, Any, Iterable
+from typing import Dict, Tuple, Any, Iterable, List
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version
@@ -48,20 +48,20 @@ if PREFERRED_PADDING not in ALL_PADDING_OPTIONS:
 if INITIAL_PADDING not in ALL_PADDING_OPTIONS:
     raise ValueError(f"invalid padding: {INITIAL_PADDING}")
 #make sure the preferred one is first in the list:
-def get_padding_options():
+def get_padding_options() -> Tuple[str,...]:
     options = [PREFERRED_PADDING]
     for x in ALL_PADDING_OPTIONS:
         if x not in options:
             options.append(x)
-    return options
-PADDING_OPTIONS = get_padding_options()
+    return tuple(options)
+PADDING_OPTIONS : Tuple[str,...] = get_padding_options()
 
 
 # pylint: disable=import-outside-toplevel
-CIPHERS = ()
-MODES = ()
-KEY_HASHES = ()
-KEY_STRETCHING = ()
+CIPHERS : Tuple[str,...] = ()
+MODES : Tuple[str,...] = ()
+KEY_HASHES : Tuple[str,...] = ()
+KEY_STRETCHING : Tuple[str,...] = ()
 def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
@@ -101,11 +101,12 @@ def patch_crypto_be_discovery() -> None:
     Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
     """
     from cryptography.hazmat import backends
+    available : List = []
     try:
         from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
+        available.append(be_cc)
     except ImportError:
         log("failed to import commoncrypto", exc_info=True)
-        be_cc = None
     try:
         import _ssl
         log("loaded _ssl=%s", _ssl)
@@ -113,11 +114,11 @@ def patch_crypto_be_discovery() -> None:
         log("failed to import _ssl", exc_info=True)
     try:
         from cryptography.hazmat.backends.openssl.backend import backend as be_ossl
+        available.append(be_ossl)
     except ImportError:
         log("failed to import openssl backend", exc_info=True)
-        be_ossl = None
     setattr(backends, "_available_backends_list", [
-        be for be in (be_cc, be_ossl) if be is not None
+        be for be in available if be is not None
     ])
 
 def get_ciphers() -> Tuple[str, ...]:

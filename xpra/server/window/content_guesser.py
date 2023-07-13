@@ -134,8 +134,7 @@ def get_content_type_properties():
     """ returns the list of window properties which can be used
         to guess the content-type.
     """
-    load_content_type_defs()
-    return content_type_defs.keys()
+    return load_content_type_defs().keys()
 
 
 def guess_content_type_from_defs(window) -> str:
@@ -187,7 +186,7 @@ def load_categories_to_type() -> Dict:
 # command mapping: using menu data
 ################################################################
 
-command_to_type = None
+command_to_type : Optional[Dict[str,str]] = None
 def load_command_to_type():
     global command_to_type
     if command_to_type is None:

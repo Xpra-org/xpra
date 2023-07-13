@@ -142,7 +142,7 @@ class Connection:
     def close(self) -> None:
         self.set_active(False)
 
-    def can_retry(self, e) -> bool:
+    def can_retry(self, e) -> Union[bool,str]:
         return can_retry(e)
 
     def untilConcludes(self, *args):

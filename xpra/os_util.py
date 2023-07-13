@@ -17,7 +17,7 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Optional, Union, Tuple, Dict, Any, Set, List
+from typing import Optional, Union, Tuple, Dict, Any, Set, List, Callable
 from threading import Thread
 
 # only minimal imports go at the top
@@ -377,10 +377,10 @@ def get_distribution_version_id() -> str:
         pass
     return ""
 
-os_release_file_data : Union[bool,bytes]= False
+os_release_file_data : Optional[bytes] = None
 def load_os_release_file() -> bytes:
     global os_release_file_data
-    if os_release_file_data is False:
+    if os_release_file_data is None:
         try:
             os_release_file_data = load_binary_file("/etc/os-release") or b""
         except OSError: # pragma: no cover
@@ -426,10 +426,10 @@ def is_arm() -> bool:
     return platform.uname()[4].startswith("arm")
 
 
-_linux_distribution = None
+_linux_distribution = ("", "", "")
 def get_linux_distribution() -> Tuple[str,str,str]:
     global _linux_distribution
-    if LINUX and not _linux_distribution:
+    if LINUX and _linux_distribution==("", "", ""):
         # linux_distribution is deprecated in Python 3.5,
         # and it causes warnings,
         # so we use our own code first:
@@ -446,14 +446,11 @@ def get_linux_distribution() -> Tuple[str,str,str]:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:
             d = {}
-            for line in strtobytes(out).splitlines():
-                line = bytestostr(line)
+            for line in bytestostr(out).splitlines():
                 parts = line.rstrip("\n\r").split(":", 1)
                 if len(parts)==2:
                     d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
-            v = [d.get(x) for x in ("distributor_id", "release", "codename")]
-            if None not in v:
-                return tuple(bytestostr(x) for x in v)
+            _linux_distribution = tuple(d.get(x,"unknown") for x in ("distributor_id", "release", "codename"))
     return _linux_distribution
 
 def is_unity() -> bool:
@@ -512,9 +509,9 @@ def filedata_nocrlf(filename:str) -> bytes:
         return b""
     return v.strip(b"\n\r")
 
-def load_binary_file(filename) -> Optional[bytes]:
+def load_binary_file(filename) -> bytes:
     if not os.path.exists(filename):
-        return None
+        return b""
     try:
         with open(filename, "rb") as f:
             return f.read()
@@ -522,14 +519,14 @@ def load_binary_file(filename) -> Optional[bytes]:
         get_util_logger().debug(f"load_binary_file({filename})", exc_info=True)
         get_util_logger().warn(f"Warning: failed to load {filename!r}")
         get_util_logger().warn(f" {e}")
-        return None
+        return b""
 
 def get_proc_cmdline(pid:int) -> Tuple[str, ...]:
     if pid and LINUX:
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
         if os.path.exists(proc_cmd_line):
-            cmdline = (load_binary_file(proc_cmd_line) or b"").rstrip(b"\0").split(b"\0")
+            cmdline = load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
             try:
                 return tuple(x.decode() for x in cmdline)
             except Exception:
@@ -755,6 +752,7 @@ class nomodule_context:
         self.module_name = module_name
     def __enter__(self):
         self.saved_module = sys.modules.get(self.module_name)
+        # noinspection PyTypeChecker
         sys.modules[self.module_name] = None
     def __exit__(self, *_args):
         if sys.modules.get(self.module_name) is None:
@@ -856,14 +854,22 @@ def find_in_PATH(command) -> Optional[str]:
             return f
     return None
 
-def which(command) -> Optional[str]:
+
+def get_which_impl() -> Callable[[Any],Optional[str]]:
     try:
-        from shutil import which as find_executable
+        from shutil import which
+        return which
     except ImportError:
-        try:
-            from distutils.spawn import find_executable  # pylint: disable=deprecated-module
-        except ImportError:
-            find_executable = find_in_PATH
+        pass
+    try:
+        from distutils.spawn import find_executable # pylint: disable=deprecated-module
+        return find_executable
+    except ImportError:
+        return find_in_PATH
+
+
+def which(command) -> Optional[str]:
+    find_executable = get_which_impl()
     try:
         return find_executable(command)
     except Exception:
@@ -891,7 +897,7 @@ def is_systemd_pid1() -> bool:
     if not POSIX:
         return False
     d = load_binary_file("/proc/1/cmdline")
-    return bool(d) and d.find(b"/systemd")>=0
+    return d.find(b"/systemd")>=0
 
 
 def get_ssh_port() -> int:

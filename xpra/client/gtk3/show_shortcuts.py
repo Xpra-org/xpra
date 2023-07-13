@@ -103,6 +103,9 @@ def main(_args):
                 log.warn(f" {e}")
                 #hope for the best..
 
+        if not Keyboard:
+            log.warn("missing keyboard support")
+            return
         keyboard = Keyboard()  #pylint: disable=not-callable
         mod_meanings = keyboard.get_keymap_modifiers()[0]
         modifier_names = get_modifier_names(mod_meanings)

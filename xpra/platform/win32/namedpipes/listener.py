@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (c) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (c) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from ctypes.wintypes import HANDLE, DWORD
 from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
 from threading import Thread
 
+from xpra.common import  noop
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.os_util import strtobytes
@@ -77,7 +78,7 @@ GENERIC_ALL = 0x10000000
 
 
 class NamedPipeListener(Thread):
-    def __init__(self, pipe_name, new_connection_cb=None):
+    def __init__(self, pipe_name:str, new_connection_cb:Callable=noop):
         log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
         self.pipe_name = pipe_name
         self.new_connection_cb = new_connection_cb or self.new_connection
@@ -98,11 +99,11 @@ class NamedPipeListener(Thread):
     def __repr__(self):
         return "NamedPipeListener(%s)" % self.pipe_name
 
-    def stop(self):
+    def stop(self) -> None:
         log("%s.stop()", self)
         self.exit_loop = True
 
-    def run(self):
+    def run(self) -> None:
         log("%s.run()", self)
         try:
             self.do_run()
@@ -110,13 +111,13 @@ class NamedPipeListener(Thread):
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
         tp = self.token_process
         if tp:
-            self.token_process = None
+            self.token_process = 0
             CloseHandle(tp)
         self.tokens = []
         self.security_attributes = None
         self.security_descriptor = None
 
-    def do_run(self):
+    def do_run(self) -> None:
         pipe_handle = None
         while not self.exit_loop:
             if not pipe_handle:
@@ -145,7 +146,7 @@ class NamedPipeListener(Thread):
             if self.exit_loop:
                 break
             if r==0:
-                err : int = GetLastError()
+                err = GetLastError()
                 log("GetLastError()=%s (%i)", FormatMessageSystem(err).rstrip("\n\r"), err)
                 if err==ERROR_PIPE_CONNECTED:
                     "non-zero, but OK!"
@@ -176,18 +177,18 @@ class NamedPipeListener(Thread):
         if pipe_handle:
             self.close_handle(pipe_handle)
 
-    def close_handle(self, pipe_handle):
+    def close_handle(self, pipe_handle:HANDLE) -> None:
         try:
             log("CloseHandle(%#x)", pipe_handle)
             CloseHandle(pipe_handle)
         except Exception:
             log("CloseHandle(%#x)", pipe_handle, exc_info=True)
 
-    def new_connection(self, listener, pipe_handle):
-        log.info("new_connection(%s, %#x)", listener, pipe_handle)
+    def new_connection(self, socktype, listener, pipe_handle:HANDLE) -> None:
+        log.info("new_connection(%s, %s, %#x)", socktype, listener, pipe_handle)
         self.close_handle(pipe_handle)
 
-    def CreatePipeHandle(self):
+    def CreatePipeHandle(self) -> HANDLE:
         sa = self.CreatePipeSecurityAttributes()
         log("CreateNamedPipeA using %s (UNRESTRICTED=%s)", sa, UNRESTRICTED)
         return CreateNamedPipeA(strtobytes(self.pipe_name), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -209,7 +210,7 @@ class NamedPipeListener(Thread):
         token = cast(token_data, POINTER(token_struct)).contents
         return token
 
-    def CreatePipeSecurityAttributes(self):
+    def CreatePipeSecurityAttributes(self) -> SECURITY_ATTRIBUTES:
         user = self.GetToken(TokenUser, TOKEN_USER)
         user_SID = user.SID.contents
         log("user SID=%s, attributes=%#x", user_SID, user.ATTRIBUTES)

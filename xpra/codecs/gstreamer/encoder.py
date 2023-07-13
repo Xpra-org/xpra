@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import envbool, csv, roundup, first_time, typedict
@@ -39,23 +39,23 @@ log(f"encoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
-assert get_type #all codecs must define this function
-COLORSPACES = {}
+assert get_type() #all codecs must define this function
+COLORSPACES : Dict[str,Dict[str,List[str]]] = {}
 def get_encodings() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
-def get_input_colorspaces(encoding:str) -> Tuple[str]:
+def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     return tuple(colorspaces.keys())
 
-def get_output_colorspaces(encoding:str, input_colorspace:str) -> Tuple[str]:
+def get_output_colorspaces(encoding:str, input_colorspace:str) -> Tuple[str,...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
     assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
     log.warn(f"get_output_colorspaces({encoding}, {input_colorspace})={out_colorspaces}")
-    return out_colorspaces
+    return tuple(out_colorspaces)
 
 def ElementEncoderClass(element:str):
     class ElementEncoder(Encoder):
@@ -83,8 +83,8 @@ def make_spec(element:str, encoding:str, cs_in:str, css_out:Tuple[str,...], cpu_
     spec.gstreamer_element = element
     return spec
 
-SPECS = {}
-def get_specs(encoding, colorspace):
+SPECS : Dict[str,Dict[str,video_spec]] = {}
+def get_specs(encoding:str, colorspace:str) -> Optional[video_spec]:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
@@ -209,12 +209,12 @@ class Encoder(VideoPipeline):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
     def get_profile(self, options : typedict) -> str:
-        default_profile = {
+        default_profile : str = {
             #"x264enc"   : "constrained-baseline",
             #"vaapih264enc" : "constrained-baseline",
             #"nvh264enc" : "main",
-            "vp8enc"   : None, #0-4
-            "vp9enc"   : None, #0-4
+            "vp8enc"   : "", #0-4
+            "vp9enc"   : "", #0-4
             }.get(self.encoder_element, "")
         return get_profile(options, self.encoding, self.colorspace, default_profile)
 

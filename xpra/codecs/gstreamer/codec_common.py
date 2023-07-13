@@ -167,7 +167,7 @@ def get_gst_rgb_format(rgb_format : str) -> str:
         }[rgb_format]
 
 
-def get_video_encoder_caps(encoder:str="x264enc"):
+def get_video_encoder_caps(encoder:str="x264enc") -> Dict[str,Any]:
     if encoder=="av1enc":
         return {
             "alignment"     : "tu",
@@ -212,10 +212,10 @@ class VideoPipeline(Pipeline):
         self.frame_queue : Queue[Any] = Queue()
         self.pipeline_str : str = ""
         self.create_pipeline(options)
-        self.src = self.pipeline.get_by_name("src")
+        self.src : Gst.Element = self.pipeline.get_by_name("src")
         self.src.set_property("format", Gst.Format.TIME)
         #self.src.set_caps(Gst.Caps.from_string(CAPS))
-        self.sink = self.pipeline.get_by_name("sink")
+        self.sink : Gst.Element = self.pipeline.get_by_name("sink")
         def sh(sig:str, handler:Callable):
             self.element_connect(self.sink, sig, handler)
         sh("new-sample", self.on_new_sample)

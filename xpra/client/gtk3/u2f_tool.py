@@ -9,7 +9,7 @@ import glob
 import os.path
 
 from xpra.util import engs
-from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt
+from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt, bytestostr
 from xpra.platform.paths import get_user_conf_dirs
 from xpra.log import Logger
 
@@ -48,7 +48,7 @@ def main():
         assert key_handle_filenames
         for filename in key_handle_filenames:
             p = osexpand(filename)
-            key_handle_str = load_binary_file(p)
+            key_handle_str = bytestostr(load_binary_file(p).rstrip(b" \n\r"))
             if key_handle_str:
                 error(" found an existing key handle in file '%s':" % p,
                       #" %s" % key_handle_str,

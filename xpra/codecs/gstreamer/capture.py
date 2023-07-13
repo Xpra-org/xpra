@@ -157,7 +157,7 @@ class CaptureAndEncode(Capture):
         profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
         eopts = get_video_encoder_options(encoder, profile, options)
         vcaps = get_video_encoder_caps(encoder)
-        self.extra_client_info = vcaps.copy()
+        self.extra_client_info : Dict[str,Any] = vcaps.copy()
         if self.profile:
             vcaps["profile"] = profile
             self.extra_client_info["profile"] = profile
@@ -176,7 +176,7 @@ class CaptureAndEncode(Capture):
             ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
-        self.sink   = self.pipeline.get_by_name("sink")
+        self.sink : Gst.Element = self.pipeline.get_by_name("sink")
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)
         sh("new-sample", self.on_new_sample)

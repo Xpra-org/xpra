@@ -7,9 +7,10 @@
 import os.path
 import sys
 import time
-from typing import Dict, Optional, Callable
+from typing import Dict, Optional, Callable, Tuple
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
+from xpra.common import ScreenshotData
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
     get_display_info, get_default_root_window,
@@ -138,7 +139,8 @@ class BugReport:
                     "env"           : os.environ,
                     "config"        : read_xpra_defaults(),
                     }
-        get_screenshot, take_screenshot_fn = None, None
+        get_screenshot : Callable = noop
+        take_screenshot_fn : Callable = noop
         #screenshot: may have OS-specific code
         try:
             from xpra.platform.gui import take_screenshot
@@ -150,7 +152,7 @@ class BugReport:
             try:
                 from PIL import ImageGrab           #@UnresolvedImport
                 from io import BytesIO
-                def pillow_imagegrab_screenshot():
+                def pillow_imagegrab_screenshot() -> ScreenshotData:
                     img = ImageGrab.grab()
                     out = BytesIO()
                     img.save(out, format="PNG")

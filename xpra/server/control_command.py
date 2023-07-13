@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable
+from typing import Callable, Tuple, Any
 
 from xpra.log import (
     Logger,
@@ -59,7 +59,11 @@ class ArgsControlCommand(ControlCommand):
             self.raise_error(f"not enough arguments, minimum is {self.min_args}")
         if self.max_args is not None and len(args)>self.max_args:
             self.raise_error(f"too many arguments, maximum is {self.max_args}")
-        args = list(args)
+        args = self.get_validated_args(*args)
+        return super().run(*args)
+
+    def get_validated_args(self, *targs) -> Tuple[Any,...]:
+        args = list(targs)
         for i,validation in enumerate(self.validation):
             if i>=len(args):
                 #argument not supplied
@@ -72,7 +76,7 @@ class ArgsControlCommand(ControlCommand):
                 args[i] = validation(v)
             except ValueError as e:
                 self.raise_error(f"argument {i+1} failed validation: {e}")
-        return super().run(*args)
+        return tuple(args)
 
 
 class FixedMessageCommand(ControlCommand):

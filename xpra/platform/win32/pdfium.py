@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+from typing import Dict, Any
 from ctypes.wintypes import HDC
 from ctypes import (
     WinDLL,  # @UnresolvedImport
@@ -150,7 +151,7 @@ def print_pdf(printer_name, title, pdf_data):
 
 
 EXIT = False
-JOBS_INFO = {}
+JOBS_INFO : Dict[int, Dict[str, Any]] = {}
 def watch_print_job_status():
     from xpra.log import Logger
     log = Logger("printing", "win32")
@@ -164,10 +165,10 @@ def watch_print_job_status():
         log("wait_for_print_job_info()=%s", info)
         for nd in info:
             job_id, key, value = nd
-            if key=='job_status':
+            if key=="job_status":
                 value = job_status(value)
             log("job_id=%s, key=%s, value=%s", job_id, key, value)
-            JOBS_INFO.setdefault(job_id, {})[key] = value
+            JOBS_INFO.setdefault(int(job_id), {})[key] = value
 
 
 def main():
@@ -207,7 +208,7 @@ def main():
     if job_id<0:
         return job_id
     #wait for job to end:
-    job_status = None
+    job_status : List[str] = []
     while True:
         job_info = JOBS_INFO.get(job_id, {})
         log("job_info[%i]=%s", job_id, job_info)
