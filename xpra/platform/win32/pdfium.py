@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Dict, Any
+from typing import Dict, List, Any
 from ctypes.wintypes import HDC
 from ctypes import (
     WinDLL,  # @UnresolvedImport
