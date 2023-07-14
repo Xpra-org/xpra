@@ -5,7 +5,7 @@
 
 import struct
 from enum import IntEnum
-from typing import Dict
+from typing import Dict, Optional
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.util import envint
@@ -106,7 +106,7 @@ class SystemTray(GObject.GObject):
     def __init__(self):
         super().__init__()
         #the window where we embed all the tray icons:
-        self.tray_window = None
+        self.tray_window : Optional[GdkX11.X11Window] = None
         self.xid : int = 0
         #map xid to the gdk window:
         self.window_trays : Dict[int,Gdk.Window] = {}
@@ -131,8 +131,10 @@ class SystemTray(GObject.GObject):
             with xlog:
                 self.undock(window)
             tray_window.destroy()
-        self.tray_window.destroy()
-        self.tray_window = None
+        tw = self.tray_window
+        if tw:
+            self.tray_window = None
+            tw.destroy()
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self) -> None:
@@ -181,6 +183,7 @@ class SystemTray(GObject.GObject):
             raise
 
     def get_pywindow(self, xid:int) -> GdkX11.X11Window:
+        assert self.tray_window
         display = self.tray_window.get_display()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 

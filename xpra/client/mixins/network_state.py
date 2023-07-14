@@ -289,15 +289,15 @@ class NetworkState(StubClientMixin):
             return False
         now_ms = int(1000.0*monotonic())
         self.send("ping", now_ms)
-        wait = 2.0
-        spl = tuple(self.server_ping_latency)
-        if spl:
-            spl = tuple(x[1] for x in spl)
+        wait = 1000*MIN_PING_TIMEOUT
+        aspl = tuple(self.server_ping_latency)
+        if aspl:
+            spl : Tuple[float,...] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
-            wait = max(MIN_PING_TIMEOUT, min(MAX_PING_TIMEOUT, 1.0+avg*2.0))
-            log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs",
-                now_ms, 1000.0*avg, wait)
-        t = GLib.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+            wait = max(MIN_PING_TIMEOUT, min(MAX_PING_TIMEOUT, round(1000+avg*2000)))
+            log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
+                now_ms, round(1000*avg), wait)
+        t = GLib.timeout_add(wait, self.check_server_echo, now_ms)
         self.ping_echo_timers[now_ms] = t
         return True
 

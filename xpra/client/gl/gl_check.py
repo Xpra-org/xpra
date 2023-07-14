@@ -12,7 +12,10 @@ from typing import Any, Tuple, Dict
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
 from xpra.log import Logger, CaptureHandler
-from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
+from xpra.client.gl.gl_drivers import (
+    GL_MATCH_LIST, WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST,
+    OpenGLFatalError,
+)
 
 log = Logger("opengl")
 
@@ -92,6 +95,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
     def unsafe():
         props["safe"] = False
     # pylint: disable=import-outside-toplevel
+    redirected_loggers: Dict[str, Tuple[Logger,List,bool]] = {}
     try:
         if CRASH:
             import ctypes
@@ -101,19 +105,11 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             import time
             time.sleep(TIMEOUT)
         #log redirection:
-        def redirect_log(logger_name):
-            logger = logging.getLogger(logger_name)
-            logger.saved_handlers = logger.handlers
-            logger.saved_propagate = logger.propagate
+        for name in ("formathandler", "extensions", "acceleratesupport", "arrays", "converters"):
+            logger = logging.getLogger(f"OpenGL.{name}")
+            redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
-            return logger
-        fhlogger = redirect_log('OpenGL.formathandler')
-        elogger = redirect_log('OpenGL.extensions')
-        alogger = redirect_log('OpenGL.acceleratesupport')
-        arlogger = redirect_log('OpenGL.arrays')
-        clogger = redirect_log('OpenGL.converters')
-
         import OpenGL
         props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
@@ -236,14 +232,13 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             log("%s: %s", d, v)
             props[d] = v
 
-        def match_list(thelist, listname):
-            for k,vlist in thelist.items():
-                v = props.get(k)
-                matches = [x for x in vlist if v.find(x)>=0]
-                if matches:
-                    log("%s '%s' found in %s: %s", k, v, listname, vlist)
-                    return (k, v)
-                log("%s '%s' not found in %s: %s", k, v, listname, vlist)
+        def match_list(thelist : GL_MATCH_LIST, listname:str):
+            for k, values in thelist.items():
+                prop = str(props.get(k))
+                if prop and any(True for x in values if prop.find(x)>=0):
+                    log("%s '%s' found in %s: %s", k, prop, listname, values)
+                    return (k, prop)
+                log("%s '%s' not found in %s: %s", k, prop, listname, values)
             return None
         blacklisted = match_list(BLACKLIST, "blacklist")
         greylisted = match_list(GREYLIST, "greylist")
@@ -353,9 +348,16 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         props["max-viewport-dims"] = max_viewport_dims
         return props
     finally:
-        for x in alogger.handlers[0].records:
+        def recs(name) -> List[str]:
+            logger = redirected_loggers.get(name)
+            if not logger:
+                return []
+            records = logger.handlers[0].records
+            return list(rec.getMessage() for rec in records)
+
+        for msg in recs("acceleratesupport"):
             #strip default message prefix:
-            msg = x.getMessage().replace("No OpenGL_accelerate module loaded: ", "")
+            msg = x.replace("No OpenGL_accelerate module loaded: ", "")
             if msg=="No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
             if msg=="OpenGL_accelerate module loaded":
@@ -366,8 +368,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
         missing_handlers = []
-        for x in fhlogger.handlers[0].records:
-            msg = x.getMessage()
+        for msg in recs("formathandler"):
             p = msg.find(STRIP_LOG_MESSAGE)
             if p<0:
                 #unknown message, log it:
@@ -381,8 +382,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         if missing_handlers:
             log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
 
-        for x in elogger.handlers[0].records:
-            msg = x.getMessage()
+        for msg in recs("extensions"):
             #ignore extension messages:
             p = msg.startswith("GL Extension ") and msg.endswith("available")
             if not p:
@@ -391,8 +391,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         missing_accelerators = []
         STRIP_AR_HEAD = "Unable to load"
         STRIP_AR_TAIL = "from OpenGL_accelerate"
-        for x in arlogger.handlers[0].records+clogger.handlers[0].records:
-            msg = x.getMessage()
+        for msg in recs("arrays")+recs("converters"):
             if msg.startswith(STRIP_AR_HEAD) and msg.endswith(STRIP_AR_TAIL):
                 m = msg[len(STRIP_AR_HEAD):-len(STRIP_AR_TAIL)].strip()
                 m = m.replace("accelerators", "").replace("accelerator", "").strip()
@@ -405,14 +404,9 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         if missing_accelerators:
             log.info("OpenGL accelerate missing: %s", csv(missing_accelerators))
 
-        def restore_logger(logger):
-            logger.handlers = logger.saved_handlers
-            logger.propagate = logger.saved_propagate
-        restore_logger(fhlogger)
-        restore_logger(elogger)
-        restore_logger(alogger)
-        restore_logger(arlogger)
-        restore_logger(clogger)
+        for logger, handlers, propagate in redirected_loggers.values():
+            logger.handlers = handlers
+            logger.propagate = propagate
 
 
 def main() -> int:
@@ -431,6 +425,9 @@ def main() -> int:
         init_display_source()
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
+        if not GLContext:
+            log.warn("No OpenGL context implementation found")
+            return 1
         log("testing %s", GLContext)
         gl_context = GLContext()  #pylint: disable=not-callable
         log("GLContext=%s", gl_context)

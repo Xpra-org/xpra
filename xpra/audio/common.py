@@ -46,10 +46,10 @@ MP3_ID3V2   = MP3+"+"+ID3V2
 
 
 #used for parsing codec names specified on the command line:
-def audio_option_or_all(name:str, options, all_values:Tuple[str,...]) -> Tuple[str]:
+def audio_option_or_all(name:str, options, all_values:Tuple[str,...]) -> Tuple[str,...]:
     log("audio_option_or_all%s", (name, options, all_values))
     if not options:
-        v = all_values              #not specified on command line: use default
+        v = list(all_values)              #not specified on command line: use default
     else:
         v = []
         invalid_options = []

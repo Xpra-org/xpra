@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
@@ -30,6 +30,8 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_direction = "none"
         self.clipboard_filter_file = None
         self._clipboard_helper = None
+        self._clipboard_client = None
+        self._clipboards : Tuple[str,...] = ()
 
     def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
@@ -95,9 +97,6 @@ class ClipboardServer(StubServerMixin):
     def init_clipboard(self) -> None:
         log("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
-        self._clipboard_helper = None
-        self._clipboard_client = None
-        self._clipboards = []
         if not self.clipboard:
             return
         clipboard_filter_res = []

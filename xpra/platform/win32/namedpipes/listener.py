@@ -9,6 +9,7 @@
 from ctypes.wintypes import HANDLE, DWORD
 from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
 from threading import Thread
+from typing import Callable, Optional
 
 from xpra.common import  noop
 from xpra.log import Logger
@@ -81,14 +82,14 @@ class NamedPipeListener(Thread):
     def __init__(self, pipe_name:str, new_connection_cb:Callable=noop):
         log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
         self.pipe_name = pipe_name
-        self.new_connection_cb = new_connection_cb or self.new_connection
+        if new_connection_cb!=noop:
+            self.new_connection_cb = new_connection_cb
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
-        self.security_attributes = None
-        self.security_descriptor = None
+        self.security_attributes : Optional[SECURITY_ATTRIBUTES] = None
+        self.security_descriptor : Optional[SECURITY_DESCRIPTOR] = None
         self.token_process = HANDLE()
-        self.tokens = []
         cur_proc = GetCurrentProcess()
         log("GetCurrentProcess()=%#x", cur_proc)
         TOKEN_QUERY = 0x8
@@ -111,9 +112,8 @@ class NamedPipeListener(Thread):
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
         tp = self.token_process
         if tp:
-            self.token_process = 0
+            self.token_process = HANDLE(0)
             CloseHandle(tp)
-        self.tokens = []
         self.security_attributes = None
         self.security_descriptor = None
 
@@ -204,7 +204,6 @@ class NamedPipeListener(Thread):
                 raise WindowsError()  # @UndefinedVariable
         log("GetTokenInformation data size %#x", data_size.value)
         token_data = create_string_buffer(data_size.value)
-        self.tokens.append(token_data)
         if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value, byref(data_size)):
             raise WindowsError()    #@UndefinedVariable
         token = cast(token_data, POINTER(token_struct)).contents

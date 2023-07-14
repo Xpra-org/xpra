@@ -69,7 +69,7 @@ def init_zlib() -> Compression:
         v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
         assert not d.unconsumed_tail, "not all data was decompressed"
         return v
-    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)  # @UndefinedVariable # type: ignore  # noqa
+    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)  # type: ignore[attr-defined]
 
 def init_none() -> Compression:
     def nocompress(packet, _level):

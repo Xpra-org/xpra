@@ -36,7 +36,7 @@ class threaded_asyncio_loop:
      (for calling async functions from regular threads)
     """
     def __init__(self):
-        self.loop = None
+        self.loop : Optional[asyncio.AbstractEventLoop] = None
         start_thread(self.run_forever, "asyncio-thread", True)
         self.wait_for_loop()
 
@@ -68,15 +68,17 @@ class threaded_asyncio_loop:
         log(f"call({f})")
         def tsafe():
             log(f"creating task for {f}")
+            assert self.loop
             self.loop.create_task(f)
         log("call_soon_threadsafe")
+        assert self.loop
         if isinstance(f, (Coroutine, Generator)):
             self.loop.call_soon_threadsafe(tsafe)
         else:
             self.loop.call_soon_threadsafe(f)
 
 
-    def sync(self, async_fn:Callable[[Any,...], Awaitable[Any]], *args) -> Any:
+    def sync(self, async_fn:Callable[..., Awaitable[Any]], *args) -> Any:
         response : Queue[Any] = Queue()
 
         async def awaitable():
@@ -94,9 +96,11 @@ class threaded_asyncio_loop:
         def tsafe() -> None:
             a = awaitable()
             log(f"awaitable={a}")
+            assert self.loop
             f = asyncio.run_coroutine_threadsafe(a, self.loop)
             log(f"run_coroutine_threadsafe({a}, {self.loop})={f}")
 
+        assert self.loop
         self.loop.call_soon_threadsafe(tsafe)
         log("sync: waiting for response")
         r = response.get()

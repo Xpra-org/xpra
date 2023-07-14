@@ -114,7 +114,7 @@ def get_pulse_server(may_start_it=True) -> str:
         return bytestostr(xp or b"")
     return get_pactl_server()
 
-def get_pulse_id() -> bytes:
+def get_pulse_id() -> str:
     return get_pulse_id_x11_property()
 
 
@@ -135,27 +135,28 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
         return  {}
     return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices)
 
-def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=("bell-window-system",)):
-    device_class = None
-    device_description = None
-    name = None
-    devices = {}
-    for line in pactl_list_output.splitlines():
-        if not line.startswith(b" ") and not line.startswith(b"\t"):        #clear vars when we encounter a new section
+def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None,
+                             ignored_devices=("bell-window-system",)):
+    device_class = ""
+    device_description = ""
+    name = ""
+    devices : Dict[str,str] = {}
+    for line in bytestostr(pactl_list_output).splitlines():
+        if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
             if name and device_class:
                 if name in ignored_devices:
                     continue
                 #Verify against monitor flag if set:
                 if monitors is not None:
-                    is_monitor = device_class==b'"monitor"'
+                    is_monitor = device_class=='"monitor"'
                     if is_monitor!=monitors:
                         continue
                 #Verify against input flag (if set):
                 if input_or_output is not None:
-                    is_input = name.lower().find(b"input")>=0
+                    is_input = name.lower().find("input")>=0
                     if is_input is True and input_or_output is False:
                         continue
-                    is_output = name.lower().find(b"output")>=0
+                    is_output = name.lower().find("output")>=0
                     if is_output is True and input_or_output is True:
                         continue
                 if not device_description:
@@ -164,12 +165,12 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
             name = None
             device_class = None
         line = line.strip()
-        if line.startswith(b"Name: "):
-            name = line[len(b"Name: "):]
-        if line.startswith(b"device.class = "):
-            device_class = line[len(b"device-class = "):]
-        if line.startswith(b"device.description = "):
-            device_description = line[len(b"device.description = "):].strip(b'"')
+        if line.startswith("Name: "):
+            name = line[len("Name: "):]
+        if line.startswith("device.class = "):
+            device_class = line[len("device-class = "):]
+        if line.startswith("device.description = "):
+            device_description = line[len("device.description = "):].strip('"')
     return devices
 
 

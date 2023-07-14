@@ -29,7 +29,8 @@ class DBUS_RPC_Server(StubServerMixin):
         self.supports_dbus_proxy = opts.dbus_proxy
 
     def setup(self) -> None:
-        self.init_dbus_helper()
+        if self.supports_dbus_proxy:
+            self.init_dbus_helper()
 
 
     def get_server_features(self, _source=None) -> Dict[str,Any]:
@@ -44,8 +45,6 @@ class DBUS_RPC_Server(StubServerMixin):
 
 
     def init_dbus_helper(self) -> None:
-        if not self.supports_dbus_proxy:
-            return
         try:
             from xpra.dbus.helper import DBusHelper  # pylint: disable=import-outside-toplevel
             self.dbus_helper = DBusHelper()

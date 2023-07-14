@@ -54,7 +54,7 @@ ALL_CODECS : Tuple[str,...] = filt(*set(
 
 
 codec_errors : Dict[str,str] = {}
-codecs = {}
+codecs : Dict[str,ModuleType] = {}
 def codec_import_check(name:str, description:str, top_module, class_module, classnames):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
@@ -79,7 +79,7 @@ def codec_import_check(name:str, description:str, top_module, class_module, clas
     try:
         try:
             log(f" {top_module} found, will check for {classnames} in {class_module}")
-            ic =  __import__(class_module, {}, {}, classnames)
+            ic : ModuleType =  __import__(class_module, {}, {}, classnames)
             try:
                 #run init_module?
                 init_module = getattr(ic, "init_module", None)
@@ -430,10 +430,10 @@ def main(args) -> int:
         out.info("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
-            mod : ModuleType = codecs.get(name, "")
+            mod : ModuleType = codecs[name]
             f = str(mod)
             if mod and hasattr(mod, "__file__"):
-                f = mod.__file__
+                f = getattr(mod, "__file__", f)
                 if f.startswith(os.getcwd()):
                     f = f[len(os.getcwd()):]
                     if f.startswith(os.path.sep):

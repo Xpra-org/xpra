@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Any
 from ctypes import (
     POINTER, Structure, c_int, byref, cast, sizeof,
     WinDLL,  # @UnresolvedImport
@@ -167,10 +168,10 @@ WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
 #WTSWaitSystemEvent
 
 
-def get_session_info(session):
-    info = {
+def get_session_info(session) -> Dict[str,Any]:
+    info : Dict[str,Any] = {
         "StationName"  : session.pWinStationName.decode("latin1"),
-        "State"         : CONNECT_STATE.get(session.State, session.State),
+        "State"        : CONNECT_STATE.get(session.State, str(session.State)),
         }
     csid = session.SessionId
     buf = LPSTR()
@@ -182,7 +183,7 @@ def get_session_info(session):
         if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
             if buf.value:
                 try:
-                    info[WTS_INFO_CLASS.get(q, q)] = buf.value.decode("latin1")
+                    info[WTS_INFO_CLASS.get(q, str(q))] = buf.value.decode("latin1")
                 except UnicodeDecodeError:
                     pass
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientDisplay, byref(buf), byref(size)):

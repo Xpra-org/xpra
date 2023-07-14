@@ -94,9 +94,10 @@ class LoggingServer(StubServerMixin):
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
-        assert self.local_logging
+        ll = self.local_logging
         def local_warn(*args):
-            self.local_logging(log, logging.WARNING, *args)
+            if ll:
+                ll(log, logging.WARNING, *args)
         def local_err(message, e=None):
             if self._closing:
                 return
@@ -109,7 +110,8 @@ class LoggingServer(StubServerMixin):
             else:
                 local_warn(" (no arguments)")
             try:
-                self.local_logging(log, level, msg, *args, **kwargs)
+                if ll:
+                    ll(log, level, msg, *args, **kwargs)
             except Exception:
                 pass
             try:
@@ -156,9 +158,9 @@ class LoggingServer(StubServerMixin):
                     if self._closing:
                         return
                     local_warn("Warning: failed to send log message to %s: %s", source, e)
-            if self.log_both:
+            if self.log_both and ll:
                 try:
-                    self.local_logging(log, level, msg, *args, **kwargs)
+                    ll(log, level, msg, *args, **kwargs)
                 except Exception:
                     pass
         finally:

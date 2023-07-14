@@ -85,7 +85,7 @@ def get_X_error(xerror) -> str:
                     xerror_to_name[code] = name
             log("get_X_error(..) initialized error names: %s", xerror_to_name)
         if xerror in xerror_to_name:
-            return xerror_to_name.get(xerror)
+            return xerror_to_name.get(xerror) or str(xerror)
         from xpra.x11.bindings.core import X11CoreBindings     #@UnresolvedImport
         return X11CoreBindings().get_error_text(xerror)
     except Exception as e:

@@ -7,7 +7,7 @@
 
 import os
 from time import sleep
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Callable
 from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -41,7 +41,7 @@ class NetworkStateServer(StubServerMixin):
         self.ping_timer : int = 0
         self.mem_bytes = 0
         self.cpu_info : Dict = {}
-        self.print_memleaks = None
+        self.print_memleaks : Optional[Callable] = None
 
     def init(self, opts) -> None:
         self.pings = opts.pings
@@ -91,11 +91,12 @@ class NetworkStateServer(StubServerMixin):
 
     def init_leak_detection(self) -> None:
         if DETECT_MEMLEAKS:
-            self.print_memleaks = detect_leaks()
+            pm = detect_leaks()
+            self.print_memleaks = pm
             if bool(self.print_memleaks):
                 def leak_thread():
                     while not self._closing:
-                        self.print_memleaks()
+                        pm()
                         sleep(DETECT_MEMLEAKS)
                 from xpra.make_thread import start_thread  # pylint: disable=import-outside-toplevel
                 start_thread(leak_thread, "leak thread", daemon=True)

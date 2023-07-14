@@ -7,7 +7,7 @@
 import os
 import time
 from time import monotonic
-from typing import Dict, Tuple, Any, Optional, Callable, Iterable
+from typing import Dict, Tuple, Any, Optional, Callable, Iterable, List
 from gi.repository import GLib  # @UnresolvedImport
 
 from OpenGL import version as OpenGL_version
@@ -265,8 +265,8 @@ or offscreen window movement.
 """
 class GLWindowBackingBase(WindowBackingBase):
 
-    RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
-    HAS_ALPHA = GL_ALPHA_SUPPORTED
+    RGB_MODES : List[str] = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
+    HAS_ALPHA : bool = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
         self.wid : int = wid
@@ -340,7 +340,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def init_formats(self):
         self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
         if self.bit_depth>32:
-            self.internal_format = GL_RGBA16
+            self.internal_format : int = GL_RGBA16
             self.RGB_MODES.append("r210")
             #self.RGB_MODES.append("GBRP16")
         elif self.bit_depth==30:
@@ -1411,7 +1411,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=options.get("pbo"))
 
             # Update FBO texture
-            x_scale, y_scale = 1, 1
+            x_scale, y_scale = 1.0, 1.0
             if scaling:
                 x_scale = width/enc_width
                 y_scale = height/enc_height
@@ -1522,7 +1522,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV_to_RGB_SHADER):
+    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1.0, y_scale=1.0, shader:int=YUV_to_RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):

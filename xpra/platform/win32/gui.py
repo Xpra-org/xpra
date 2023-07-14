@@ -9,7 +9,7 @@
 import os
 import sys
 import types
-from typing import Optional, Callable, List, Tuple
+from typing import Optional, Callable, List, Tuple, Dict, Any
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -533,9 +533,8 @@ def add_window_hooks(window):
     if GROUP_LEADER:
         # MSWindows 7 onwards can use AppUserModel to emulate the group leader stuff:
         log("win32 hooks: set_window_group=%s", set_window_group)
-        if set_window_group:
-            gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
-            log("hooked group leader override using %s", set_window_group)
+        gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
+        log("hooked group leader override using %s", set_window_group)
 
     if UNDECORATED_STYLE:
         #OR windows never have any decorations or taskbar menu
@@ -765,7 +764,7 @@ def get_workarea():
 MONITORINFOF_PRIMARY = 1
 def get_workareas() -> List[Tuple[int,int,int,int]]:
     try:
-        workareas = []
+        workareas : List[Tuple[int,int,int,int]] = []
         for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             screenlog("get_workareas() GetMonitorInfo(%s)=%s", m, mi)
@@ -1146,7 +1145,7 @@ class ClientExtras:
                            win32con.VK_RWIN   : "Super_R",
                            win32con.VK_TAB    : "Tab",
                            }.get(vk_code)
-                modifiers = []
+                modifiers : List[str] = []
                 kh = self.client.keyboard_helper
                 key_event_type = ALL_KEY_EVENTS.get(wParam)
                 #log("low_level_keyboard_handler(%s, %s, %s) vk_code=%i, scan_code=%i, keyname=%s, key_event_type=%s, focused=%s, keyboard_grabbed=%s", nCode, wParam, lParam, vk_code, scan_code, keyname, key_event_type, focused, self.client.keyboard_grabbed)
@@ -1341,18 +1340,8 @@ def main():
         log.info("Event loop is running")
         loop = GLib.MainLoop()
 
-        def suspend():
-            log.info("suspend event")
-        def resume():
-            log.info("resume event")
-        fake_client = AdHocStruct()
-        fake_client._focused = False
-        fake_client.keyboard_grabbed = False
-        fake_client.window_with_grab = None
-        fake_client.suspend = suspend
-        fake_client.resume = resume
-        fake_client.keyboard_helper = None
-        fake_client.timeout_add = noop
+        from xpra.client.gui.fake_client import FakeClient
+        fake_client = FakeClient()
         def signal_quit(*_args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit

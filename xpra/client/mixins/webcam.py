@@ -42,14 +42,8 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_lock = RLock()
         self.server_webcam = False
         self.server_virtual_video_devices = 0
-        if not hasattr(self, "send"):
-            def nosend(*_args):
-                """
-                pretend to have a send method for testing
-                """
-            self.send = nosend
         #duplicated from encodings mixin:
-        self.server_encodings = []
+        self.server_encodings : Tuple[str,...] = ()
         if not hasattr(self, "server_ping_latency"):
             from collections import deque
             self.server_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)

@@ -78,7 +78,8 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
                 break
         log("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)
         return sx,sy
-    def parse_item(v) -> Optional[Tuple[float, float]]:
+    del x, y
+    def parse_item(v) -> float:
         div = 1
         try:
             if v.endswith("%"):
@@ -102,31 +103,31 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
         except (ValueError, ZeroDivisionError):
             pass
         log.warn("Warning: failed to parse scaling value '%s'", v)
-        return None
+        return 0
     if desktop_scaling.find("x")>0 and desktop_scaling.find(":")>0:
         log.warn("Warning: found both 'x' and ':' in desktop-scaling fixed value")
         log.warn(" maybe the 'auto:' prefix is missing?")
         return 1, 1
     #split if we have two dimensions: "1600x1200" -> ["1600", "1200"], if not: "2" -> ["2"]
     values = desktop_scaling.replace(",", "x").split("x", 1)
-    x = parse_item(values[0])
-    if x is None:
+    sx = parse_item(values[0])
+    if not sx:
         return 1, 1
     if len(values)==1:
         #just one value: use the same for X and Y
-        y = x
+        sy = sx
     else:
-        y = parse_item(values[1])
-        if y is None:
+        sy = parse_item(values[1])
+        if sy is None:
             return 1, 1
-    log("parse_scaling(%s) parsed items=%s", desktop_scaling, (x, y))
+    log("parse_scaling(%s) parsed items=%s", desktop_scaling, (sx, sy))
     #normalize absolute values into floats:
-    if x>max_scaling or y>max_scaling:
+    if sx>max_scaling or sy>max_scaling:
         log(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
-        x = float(x) / root_w
-        y = float(y) / root_h
-    if x<min_scaling or y<min_scaling or x>max_scaling or y>max_scaling:
-        log.warn("Warning: scaling values %sx%s are out of range", x, y)
+        sx /= root_w
+        sy /= root_h
+    if sx<min_scaling or sy<min_scaling or sx>max_scaling or sy>max_scaling:
+        log.warn("Warning: scaling values %sx%s are out of range", sx, sy)
         return 1, 1
-    log("parse_scaling(%s)=%s", desktop_scaling, (x, y))
-    return x, y
+    log("parse_scaling(%s)=%s", desktop_scaling, (sx, sy))
+    return sx, sy

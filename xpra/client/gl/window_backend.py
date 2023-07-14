@@ -7,16 +7,19 @@
 import sys
 from io import BytesIO
 from math import cos, sin
+from typing import Type, Tuple, Dict, Any
 
-from xpra.util import typedict, envint, AdHocStruct, AtomicInteger
+from xpra.common import noop
+from xpra.util import typedict, envint, AtomicInteger
 from xpra.os_util import WIN32, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
+from xpra.client.gui.fake_client import FakeClient
 
 log = Logger("opengl", "paint")
 
 
-def get_gl_client_window_module(force_enable=False):
+def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
     log("get_gl_client_window_module()")
     try:
         from xpra.client.gl.gtk3 import nativegl_client_window
@@ -31,64 +34,8 @@ def get_gl_client_window_module(force_enable=False):
         return opengl_props, nativegl_client_window
     return {}, None
 
-def no_scaling(*args):
-    if len(args)==1:
-        return args[0]
-    return args
-def get_None(*_args):
-    return None
-def no_idle_add(fn, *args, **kwargs):
-    fn(*args, **kwargs)
-def no_timeout_add(*_args, **_kwargs):
-    raise RuntimeError("timeout_add should not have been called")
-def no_source_remove(*_args, **_kwargs):
-    raise RuntimeError("source_remove should not have been called")
 
-class FakeClient(AdHocStruct):
-    def __init__(self):
-        self.sp = self.sx = self.sy = self.srect = no_scaling
-        self.cx = self.cy = no_scaling
-        self.xscale = self.yscale = 1
-        self.server_window_decorations = True
-        self.mmap_enabled = False
-        self.mmap = None
-        self.readonly = False
-        self.encoding_defaults = {}
-        self.get_window_frame_sizes = get_None
-        self._focused = None
-        self._remote_server_mode = "seamless"
-        self.wheel_smooth = False
-        self.pointer_grabbed = None
-        def noop(*_args):
-            """ pretend this method exists and does something """
-        self.find_window = noop
-        self.request_frame_extents = noop
-        self.server_window_states = ()
-        self.server_window_frame_extents = False
-        self.server_readonly = False
-        self.server_pointer = False
-        self.update_focus = noop
-        self.has_focus = noop
-        self.handle_key_action = noop
-        self.window_ungrab = noop
-        self.idle_add = no_idle_add
-        self.timeout_add = no_timeout_add
-        self.source_remove = no_source_remove
-
-    def send(self, *args):
-        log("send%s", args)
-    def get_current_modifiers(self):
-        return ()
-    def get_raw_mouse_position(self):
-        return 0, 0
-    def get_mouse_position(self):
-        return 0, 0
-    def server_ok(self):
-        return True
-    def mask_to_names(self, *_args):
-        return ()
-
-def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
     draw_result = {}
     window = None
@@ -115,9 +62,9 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
-        window_backing.idle_add = no_idle_add
-        window_backing.timeout_add = no_timeout_add
-        window_backing.source_remove = no_source_remove
+        window_backing.idle_add = noop
+        window_backing.timeout_add = noop
+        window_backing.source_remove = noop
         window.realize()
         window_backing.paint_screen = True
         pixel_format = "BGRX"

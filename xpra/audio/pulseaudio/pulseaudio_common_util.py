@@ -8,6 +8,7 @@ import os
 import sys
 
 from xpra.util import envbool
+from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("audio")
 
@@ -62,18 +63,18 @@ def get_x11_property(atom_name:str) -> bytes:
             log.estr(e)
     return b""
 
-def get_pulse_server_x11_property() -> bytes:
-    return get_x11_property("PULSE_SERVER")
+def get_pulse_server_x11_property() -> str:
+    return bytestostr(get_x11_property("PULSE_SERVER"))
 
-def get_pulse_id_x11_property() -> bytes:
-    return get_x11_property("PULSE_ID")
+def get_pulse_id_x11_property() -> str:
+    return bytestostr(get_x11_property("PULSE_ID"))
 
 
 def main():
     if "-v" in sys.argv:
         log.enable_debug()
-    print("PULSE_SERVER=%s" % get_pulse_server_x11_property())
-    print("PULSE_ID=%s" % get_pulse_id_x11_property())
+    print("PULSE_SERVER=%r" % get_pulse_server_x11_property())
+    print("PULSE_ID=%r" % get_pulse_id_x11_property())
 
 
 if __name__ == "__main__":

@@ -762,14 +762,15 @@ SUBLANG_DEFAULT = 0x01
 LANG_ENGLISH = 0x09
 SUBLANG_ENGLISH_US = 0x01
 
-def MAKELANGID(primary, sublang):
+def MAKELANGID(primary, sublang) -> int:
     return (primary & 0xFF) | (sublang & 0xFF) << 16
+
 
 LCID_ENGLISH = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)
 LCID_DEFAULT = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
 LCID_NEUTRAL = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
 
-def FormatMessageSystem(message_id, langid=LCID_ENGLISH):
+def FormatMessageSystem(message_id, langid:int=LCID_ENGLISH) -> str:
     from xpra.platform.win32.constants import FORMAT_MESSAGE_ALLOCATE_BUFFER, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS
     sys_flag = FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS
     bufptr = LPWSTR()
@@ -778,6 +779,8 @@ def FormatMessageSystem(message_id, langid=LCID_ENGLISH):
         chars = FormatMessageW(sys_flag, None, message_id, LCID_NEUTRAL, byref(bufptr), 0, None)
         if not chars:
             return str(message_id)
+    if not bufptr.value:
+        return str(message_id)
     val = bufptr.value[:chars]
     LocalFree(bufptr)
-    return val
+    return str(val)

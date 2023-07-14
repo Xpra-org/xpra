@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from __future__ import annotations
+
 import os
 import subprocess
 import hashlib
@@ -104,7 +106,7 @@ class ReceiveChunkState:
     openit : bool
     filesize: int
     options: typedict
-    digest: object
+    digest: Optional[hashlib._Hash]
     written: int
     cancelled: bool
     send_id: str
@@ -113,7 +115,7 @@ class ReceiveChunkState:
 @dataclass
 class SendChunkState:
     start: float
-    data: object
+    data: bytes
     chunk_size: int
     timer: int
     chunk: int
@@ -525,7 +527,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
             return
         self.file_descriptors.add(fd)
-        digest = None
+        digest : Optional[hashlib._Hash] = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
             if options.get(hash_fn):
                 digest = getattr(hashlib, hash_fn)()

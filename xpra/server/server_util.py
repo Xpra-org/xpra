@@ -157,7 +157,7 @@ def xpra_env_shell_script(socket_dir, env) -> bytes:
             pathsep = os.pathsep.encode()
             pval = value.split(pathsep)      #ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
             seen = set()
-            value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))
+            value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))     # type: ignore[func-returns-value]
             script.append(b"%s=%s:\"$%s\"; export %s"
                           % (var, sh_quotemeta(value), var, var))
         else:

@@ -26,7 +26,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
                  stream_id: int, transmit: Callable[[], None]) -> None:
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.scope: Dict = scope
-        self._packet_type_streams = {}
+        self._packet_type_streams : Dict[str,int] = {}
         self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)
 
     def get_info(self) -> Dict[str,Any]:

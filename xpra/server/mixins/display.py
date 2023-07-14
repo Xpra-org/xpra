@@ -32,12 +32,12 @@ class DisplayManager(StubServerMixin):
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
-        self.antialias = {}
+        self.antialias : Dict[str,Any] = {}
         self.cursor_size = 0
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.opengl = False
-        self.opengl_props = {}
+        self.opengl = "no"
+        self.opengl_props : Dict[str,Any] = {}
         self.refresh_rate = "auto"
 
     def init(self, opts) -> None:
@@ -138,7 +138,7 @@ class DisplayManager(StubServerMixin):
 
 
     def get_caps(self, source)  -> Dict[str,Any]:
-        caps = {
+        caps : Dict[str,Any] = {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
             }

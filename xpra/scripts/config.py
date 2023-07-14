@@ -144,8 +144,7 @@ def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
     if OSX:     # pragma: no cover
         return get_Xvfb_command()
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
-        if warn_fn:
-            warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
+        warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return get_Xvfb_command()
     #if is_arm():
         #arm used to struggle to launch Xdummy because of
@@ -904,7 +903,7 @@ def get_defaults():
         get_download_dir, get_remote_run_xpra_scripts,
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
         )
-    conf_dirs = [os.environ.get("XPRA_CONF_DIR")]
+    conf_dirs = [os.environ.get("XPRA_CONF_DIR", "")]
     build_root = os.environ.get("RPM_BUILD_ROOT")
     if build_root:
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))

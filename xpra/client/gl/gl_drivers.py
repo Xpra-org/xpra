@@ -5,42 +5,48 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Tuple, TypeAlias
+
 #These chipsets will use OpenGL,
 #there will not be any warnings, even if the vendor is greylisted:
-WHITELIST = {
-    "renderer"  : ["Haswell", "Skylake", "Kabylake", "Cannonlake",
-                   "Whiskeylake", "Amberlake", "Cascadelake", "Cometlake",
-                   "Icelake", "Cooperlake"],
-    }
+GL_MATCH_LIST : TypeAlias = Dict[str, Tuple[str,...]]
+
+WHITELIST : GL_MATCH_LIST = {
+    "renderer"  : (
+        "Haswell", "Skylake", "Kabylake", "Cannonlake",
+        "Whiskeylake", "Amberlake", "Cascadelake", "Cometlake",
+        "Icelake", "Cooperlake",
+    ),
+}
 
 #Chipsets from these vendors will trigger warnings,
 #but OpenGL will still be enabled:
-GREYLIST = {
-    "vendor"    : ["Intel", ]
-    }
+GREYLIST : GL_MATCH_LIST = {
+    "vendor"    : ("Intel", )
+}
 
 #Versions older than this will trigger warnings:
 VERSION_REQ = {
-   "nouveau" : [3, 0],      #older versions have issues
-   }
+   "nouveau" : (3, 0),      #older versions have issues
+}
 
 #These chipsets will be disabled by default:
-BLACKLIST = {
+BLACKLIST : GL_MATCH_LIST = {
     "renderer" :
-        [
+        (
             "SVGA3D",
             "Software Rasterizer",
-        ],
-    "vendor"    : [
+        ),
+    "vendor"    : (
         #"VMware, Inc.",
         #"Humper",
         #to disable nvidia, uncomment this:
         #"NVIDIA Corporation",
-        ],
-    "platform"  : [
+    ),
+    "platform"  : (
         #"darwin",
-        ],
-    }
+    ),
+}
 
 
 #for testing:

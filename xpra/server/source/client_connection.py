@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Tuple, Callable, Union
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -33,6 +33,8 @@ assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i
 YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
+
+ENCODE_WORK_ITEM = Optional[Tuple[bool, Callable, Tuple[Any,...]]]
 
 
 class ClientConnection(StubSourceMixin):
@@ -76,7 +78,7 @@ class ClientConnection(StubSourceMixin):
         #this queue will hold functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
         #the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue = None
+        self.encode_work_queue : Queue[Union[None,Tuple[bool,Callable,Tuple[Any,...]]]] = Queue()
         self.encode_thread = None
         self.ordinary_packets = []
         self.socket_dir = socket_dir
@@ -88,10 +90,10 @@ class ClientConnection(StubSourceMixin):
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
         self.bandwidth_detection = bandwidth_detection
+        self.queue_encode : Callable[ENCODE_WORK_ITEM, None] = self.start_queue_encode
 
     def run(self):
         # ready for processing:
-        self.queue_encode = self.start_queue_encode
         self.protocol.set_packet_source(self.next_packet)
 
     def __repr__(self) -> str:
@@ -103,7 +105,7 @@ class ClientConnection(StubSourceMixin):
         self.info_namespace = False
         self.share = False
         self.lock = False
-        self.control_commands = ()
+        self.control_commands : Tuple[str,...] = ()
         self.xdg_menu = True
         self.xdg_menu_update = False
         self.bandwidth_limit = self.server_bandwidth_limit
@@ -241,29 +243,25 @@ class ClientConnection(StubSourceMixin):
     #
     # The encode thread loop management:
     #
-    def start_queue_encode(self, item):
+    def start_queue_encode(self, item:ENCODE_WORK_ITEM) -> None:
         #start the encode work queue:
         #holds functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
         #the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue = Queue()
         self.queue_encode = self.encode_work_queue.put
         self.queue_encode(item)
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
     def encode_queue_size(self) -> int:
-        ewq = self.encode_work_queue
-        if ewq is None:
-            return 0
-        return ewq.qsize()
+        return self.encode_work_queue.qsize()
 
-    def call_in_encode_thread(self, *fn_and_args):
+    def call_in_encode_thread(self, optional:bool, fn:Callable, *args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
         """
         self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
-        self.queue_encode(fn_and_args)
+        self.queue_encode((optional, fn, args))
 
     def queue_packet(self, packet, wid=0, pixels=0,
                      start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
@@ -291,19 +289,19 @@ class ClientConnection(StubSourceMixin):
             those that are marked as optional will be skipped when is_closed()
         """
         while True:
-            fn_and_args = self.encode_work_queue.get(True)
-            if fn_and_args is None:
+            item = self.encode_work_queue.get(True)
+            if item is None:
                 return              #empty marker
             #some function calls are optional and can be skipped when closing:
             #(but some are not, like encoder clean functions)
-            optional_when_closing = fn_and_args[0]
+            optional_when_closing, fn, args = item
             if optional_when_closing and self.is_closed():
                 continue
             try:
-                fn_and_args[1](*fn_and_args[2:])
+                fn(*args)
             except Exception as e:
                 if self.is_closed():
-                    log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
+                    log("ignoring encoding error calling %s because the source is already closed:", item)
                     log(" %s", e)
                 else:
                     log.error("Error during encoding:", exc_info=True)
@@ -322,7 +320,7 @@ class ClientConnection(StubSourceMixin):
                 packet, synchronous, fail_cb, will_have_more = self.ordinary_packets.pop(0)
             elif self.packet_queue:
                 packet, _, _, start_send_cb, end_send_cb, fail_cb, will_have_more = self.packet_queue.popleft()
-            have_more = packet is not None and (self.ordinary_packets or self.packet_queue)
+            have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
         return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
     def send(self, *parts, **kwargs):

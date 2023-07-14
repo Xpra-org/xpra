@@ -15,6 +15,7 @@ import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
+from threading import Thread
 from typing import Dict, List, Tuple, Any, Type, Callable, Optional
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -143,8 +144,8 @@ class WindowClient(StubClientMixin):
         self.max_window_size : Tuple[int, int] = (0, 0)
 
         #draw thread:
-        self._draw_queue = None
-        self._draw_thread = None
+        self._draw_queue = Queue()
+        self._draw_thread : Optional[Thread] = None
         self._draw_counter : int = 0
 
         #statistics and server info:
@@ -289,7 +290,6 @@ class WindowClient(StubClientMixin):
                         log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
                         log.estr(e)
         traylog("overlay_image=%s", self.overlay_image)
-        self._draw_queue = Queue()
 
 
     def parse_border(self):
@@ -693,7 +693,7 @@ class WindowClient(StubClientMixin):
             else:
                 if pid:
                     for tray in trays:
-                        metadata = getattr(tray, "_metadata", typedict())
+                        metadata : typedict = getattr(tray, "_metadata", typedict())
                         if metadata.intget("pid")==pid:
                             traylog("tray window: matched pid=%i", pid)
                             return tray.tray_widget
@@ -1335,7 +1335,7 @@ class WindowClient(StubClientMixin):
         self.send("focus", wid, self.get_current_modifiers())
 
     def has_focus(self, wid:int) -> bool:
-        return self._focused and self._focused==wid
+        return bool(self._focused) and self._focused==wid
 
     def update_focus(self, wid:int, gotit:bool) -> bool:
         focused = self._focused

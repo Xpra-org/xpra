@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,7 @@ import os.path
 import ctypes
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer  # @UnresolvedImport
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
+from typing import Union
 
 from xpra.util import envbool
 from xpra.platform.win32 import constants as win32con
@@ -189,15 +190,18 @@ def fix_unicode_out():
                                 _complain("%s.flush: %r from %r" % (self.name, e, self._stream))
                                 raise
 
-                def write(self, text):
+                def write(self, value:Union[str,bytes]):
                     try:
                         if self._hConsole is None:
-                            if isinstance(text, str):
-                                text = text.encode('utf-8')
-                            self._stream.write(text)
+                            if isinstance(value, str):
+                                self._stream.write(value.encode('utf-8'))
+                            else:
+                                self._stream.write(value)
                         else:
-                            if not isinstance(text, str):
-                                text = str(text).decode('utf-8')
+                            if isinstance(value, str):
+                                text = str(value)
+                            else:
+                                text = value.decode('utf-8')
                             remaining = len(text)
                             while remaining:
                                 n = DWORD(0)

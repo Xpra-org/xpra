@@ -28,7 +28,7 @@ def get_printer_attributes(_name:str) -> List:
 def get_default_printer() -> str:
     return ""
 
-def print_files(printer:str, filenames, title:str, options):
+def print_files(printer:Dict, filenames, title:str, options):
     raise RuntimeError("no print implementation available")
 
 def printing_finished(_printpid) -> bool:
@@ -91,7 +91,7 @@ if not WIN32:
             cleanup_printing,
             get_info,
             )
-        assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
+        assert get_printers and print_files and printing_finished and init_printing, cleanup_printing   # type: ignore[truthy-function]
     except Exception as pycupse:
         log("cannot load pycups", exc_info=True)
         log.warn("Warning: printer forwarding disabled:")

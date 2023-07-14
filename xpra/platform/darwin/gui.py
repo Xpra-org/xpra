@@ -509,7 +509,6 @@ __osx_open_signal = False
 #or the GURLHandler.
 OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
 def add_open_handlers(open_file_cb:Callable, open_url_cb:Callable) -> None:
-    assert open_file_cb and open_url_cb
 
     def idle_add(fn, *args):
         GLib.idle_add(fn, *args)
@@ -534,8 +533,6 @@ def wait_for_open_handlers(show_cb:Callable,
                            open_file_cb:Callable,
                            open_url_cb:Callable,
                            delay:int=OPEN_SIGNAL_WAIT) -> None:
-    assert show_cb and open_file_cb and open_url_cb
-
     add_open_handlers(open_file_cb, open_url_cb)
     def may_show():
         global __osx_open_signal
@@ -580,7 +577,7 @@ class AppDelegate(NSObject):
 
     def init(self) -> None:
         super().init()
-        self.callbacks = {}
+        self.callbacks : Dict[str,Callable] = {}
         self.workspace = None
         self.notificationCenter = None
 
@@ -620,7 +617,7 @@ class AppDelegate(NSObject):
     @objc.python_method
     def register_sleep_handlers(self):
         log("register_sleep_handlers()")
-        self.workspace          = NSWorkspace.sharedWorkspace()
+        self.workspace : NSWorkspace = NSWorkspace.sharedWorkspace()
         self.notificationCenter = self.workspace.notificationCenter()
         def add_observer(fn, val):
             self.notificationCenter.addObserver_selector_name_object_(self, fn, val, None)

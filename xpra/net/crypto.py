@@ -83,7 +83,7 @@ def crypto_backend_init():
         log("backends=%s", getattr(backend, "_backends", []))
         from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
         from cryptography.hazmat.primitives import hashes
-        assert Cipher and algorithms and modes and hashes
+        assert Cipher and algorithms and modes and hashes   # type: ignore[truthy-function]
         validate_backend()
         return cryptography
     except ImportError:
@@ -224,7 +224,7 @@ def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_
 
 def get_crypto_caps(full=True) -> Dict[str,Any]:
     crypto_backend_init()
-    caps = {
+    caps : Dict[str,Any] = {
             "padding"       : {"options"    : PADDING_OPTIONS},
             "modes"         : {"options"    : MODES},
             "stretch"       : {"options"    : KEY_STRETCHING},
@@ -275,7 +275,7 @@ def get_cipher_decryptor(key, iv:str, mode:str):
             return int(s)
         except ValueError:
             return 0
-    version = cryptography.__version__
+    version = cryptography.__version__      # type: ignore[union-attr]
     supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
     log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
         version, supports_memoryviews)

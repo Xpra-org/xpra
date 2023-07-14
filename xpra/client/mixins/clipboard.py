@@ -18,7 +18,7 @@ from xpra.log import Logger
 
 log = Logger("clipboard")
 
-CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
+CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
 
 
 class ClipboardClient(StubClientMixin):
@@ -35,7 +35,6 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled : bool = False
         self.server_clipboard_direction : str = "both"
         self.server_clipboard : bool = False
-        self.server_clipboard_direction : str = ""
         self.server_clipboard_preferred_targets : Tuple[str, ...] = ()
         self.server_clipboards : Tuple[str,...] = ()
         self.server_clipboard_greedy : bool = False

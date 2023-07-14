@@ -147,6 +147,7 @@ class InputMixin(StubSourceMixin):
             wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
         if not self.mouse_show:
             return
-        if self.mouse_last_position!=(x, y, rx, ry):
-            self.mouse_last_position = (x, y, rx, ry)
+        if self.mouse_last_position!=(x, y) or self.mouse_last_relative_position!=(rx, ry):
+            self.mouse_last_position = (x, y)
+            self.mouse_last_position = (rx, ry)
             self.send_async("pointer-position", wid, x, y, rx, ry)

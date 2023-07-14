@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional
+from typing import Optional, Dict, List, Callable
 from ctypes import (
     sizeof, byref,
     WinError, get_last_error,  # @UnresolvedImport
@@ -89,13 +89,14 @@ for x in dir(win32con):
 
 WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
+EVENT_CALLBACK_TYPE = Callable[[int,int],None]
 
 class Win32EventListener:
 
     def __init__(self):
         assert singleton is None
         self.hwnd = None
-        self.event_callbacks = {}
+        self.event_callbacks : Dict[int,List[EVENT_CALLBACK_TYPE]] = {}
         self.ignore_events = IGNORE_EVENTS
         self.log_events = LOG_EVENTS
 
@@ -151,27 +152,25 @@ class Win32EventListener:
                 log.error("Error during cleanup of event window instance:")
                 log.estr(e)
 
-            wc = self.wc
-            self.wc = None
             try:
-                UnregisterClassW(wc.lpszClassName, wc.hInstance)
+                UnregisterClassW(self.wc.lpszClassName, self.wc.hInstance)
             except Exception as e:
                 log.error("Error during cleanup of event window class:")
                 log.estr(e)
 
 
-    def add_event_callback(self, event, callback):
+    def add_event_callback(self, event:int, callback:EVENT_CALLBACK_TYPE):
         self.event_callbacks.setdefault(event, []).append(callback)
 
-    def remove_event_callback(self, event, callback):
+    def remove_event_callback(self, event:int, callback:EVENT_CALLBACK_TYPE):
         l = self.event_callbacks.get(event)
         if l and callback in l:
             l.remove(callback)
 
 
-    def WndProc(self, hWnd, msg, wParam, lParam):
+    def WndProc(self, hWnd:int, msg:int, wParam:int, lParam:int):
         callbacks = self.event_callbacks.get(msg)
-        event_name = KNOWN_WM_EVENTS.get(msg, hex(int(msg)))
+        event_name = KNOWN_WM_EVENTS.get(msg, hex(msg))
         log("callbacks for event %s: %s", event_name, callbacks)
         if hWnd==self.hwnd:
             if callbacks:

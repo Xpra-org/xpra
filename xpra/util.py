@@ -717,7 +717,7 @@ def dump_frames(frames, logger=None) -> None:
                 logger("%s", l)
 
 
-def detect_leaks():
+def detect_leaks() -> Callable[[], None]:
     import tracemalloc
     tracemalloc.start()
     last_snapshot = [tracemalloc.take_snapshot()]

@@ -587,7 +587,7 @@ class PeekableSocketConnection(SocketConnection):
 class SSLSocketConnection(PeekableSocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
-    def can_retry(self, e) -> bool:
+    def can_retry(self, e) -> Union[bool,str]:
         if getattr(e, "library", None)=="SSL":
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):

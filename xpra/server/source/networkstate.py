@@ -34,7 +34,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.ping_timer = 0
         self.bandwidth_limit = 0
         self.client_load = (0,0,0)
-        self.client_connection_data = {}
+        self.client_connection_data : Dict[str,Any] = {}
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()

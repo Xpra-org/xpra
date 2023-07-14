@@ -259,6 +259,7 @@ def main():
     with program_context("Screen-Capture", "Screen Capture"):
         capture = GDICapture()
         image = capture.take_screenshot()
+        assert image, "failed to capture screenshot"
         from xpra.platform.paths import get_download_dir
         filename = os.path.join(get_download_dir(), "gdi-screenshot-%i.png" % time.time())
         with open(filename, "wb") as f:

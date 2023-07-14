@@ -82,7 +82,9 @@ CurrentTime = constants["CurrentTime"]
 # have gone wonky.
 
 def root_set(*args):
-    xid = get_default_root_window().get_xid()
+    root = get_default_root_window()
+    assert root
+    xid = root.get_xid()
     prop_set(xid, *args)
 
 world_window = None

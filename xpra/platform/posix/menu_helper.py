@@ -461,13 +461,14 @@ def load_xdg_menu_data():
     entries = load_applications(menu_data)
     if entries:
         #add an 'Applications' menu if we don't have one:
-        md = menu_data.get("Applications")
-        if not md:
-            md = {
+        app_menu = menu_data.get("Applications")
+        if app_menu:
+            app_menu.setdefault("Entries", {}).update(entries)
+        else:
+            menu_data["Applications"] = {
                 "Name" : "Applications",
+                "Entries" : entries,
                 }
-            menu_data["Applications"] = md
-        md.setdefault("Entries", {}).update(entries)
     return menu_data
 
 def load_applications(menu_data=None):

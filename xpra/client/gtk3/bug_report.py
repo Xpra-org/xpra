@@ -10,7 +10,7 @@ import time
 from typing import Dict, Optional, Callable, Tuple
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
-from xpra.common import ScreenshotData
+from xpra.common import ScreenshotData, noop
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
     get_display_info, get_default_root_window,

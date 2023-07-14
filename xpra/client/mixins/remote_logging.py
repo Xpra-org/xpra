@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,7 +25,7 @@ class RemoteLogging(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.remote_logging = False
+        self.remote_logging = "no"
         self.in_remote_logging = False
         self.local_logging = None
         self.logging_lock = Lock()
@@ -75,14 +75,14 @@ class RemoteLogging(StubClientMixin):
                 self.after_handshake(self.start_receiving_logging)  #pylint: disable=no-member
         return True
 
-    def start_receiving_logging(self):
+    def start_receiving_logging(self) -> None:
         self.add_packet_handler("logging", self._process_logging, False)
         self.send("logging-control", "start")
 
     #def stop_receiving_logging(self):
     #    self.send("logging-control", "stop")
 
-    def _process_logging(self, packet):
+    def _process_logging(self, packet) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level, msg = packet[1:3]
         prefix = "server: "
@@ -102,18 +102,20 @@ class RemoteLogging(StubClientMixin):
             log.error(" %s", repr_ellipsized(msg))
             log.estr(e)
 
-    def do_log(self, level, line):
+    def do_log(self, level:int, line) -> None:
         with self.logging_lock:
             log.log(level, line)
 
 
-    def remote_logging_handler(self, logger_log, level, msg, *args, **kwargs):
+    def remote_logging_handler(self, logger_log, level:int, msg:str, *args, **kwargs) -> None:
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
         self.in_remote_logging = True
+        ll = self.local_logging
         def local_warn(*args):
-            self.local_logging(logger_log, logging.WARNING, *args)
+            if ll:
+                ll(logger_log, logging.WARNING, *args)
         try:
             dtime = int(1000*(monotonic() - self.monotonic_start_time))
             if args:
@@ -137,8 +139,8 @@ class RemoteLogging(StubClientMixin):
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
                 self.send("logging", level, f"{etypeinfo}: {exc_info[1]}", dtime)
-            if self.log_both:
-                self.local_logging(logger_log, level, msg, *args, **kwargs)
+            if self.log_both and ll:
+                ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
             if self.exit_code is not None:
                 #errors can happen during exit, don't care
@@ -150,10 +152,11 @@ class RemoteLogging(StubClientMixin):
                 local_warn(f" {len(args)} arguments: {args}")
             else:
                 local_warn(" (no arguments)")
-            try:
-                self.local_logging(logger_log, level, msg, *args, **kwargs)
-            except Exception:
-                pass
+            if ll:
+                try:
+                    ll(logger_log, level, msg, *args, **kwargs)
+                except Exception:
+                    pass
             try:
                 exc_info = sys.exc_info()
                 for x in traceback.format_tb(exc_info[2]):

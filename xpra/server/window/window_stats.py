@@ -55,7 +55,7 @@ class WindowPerformanceStatistics:
         self.damage_in_latency : Deque[Tuple[float,int,int,float]] = deque(maxlen=NRECS)
         #records how long it took for a damage request to be processed
         #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_out_latency : Deque[Tuple[float,int,int,float]] = deque(maxlen=NRECS)
+        self.damage_out_latency : Deque[Tuple[float,int,float,float]] = deque(maxlen=NRECS)
         self.damage_ack_pending : Dict[int,List] = {}       #records when damage packets are sent
                                                             #so we can calculate the "client_latency" when the client sends
                                                             #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")

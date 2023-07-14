@@ -531,7 +531,7 @@ class WindowSource(WindowIconSource):
             pass
 
         #"encodings" info:
-        esinfo = {
+        esinfo : Dict[str,Any] = {
                   ""                : self.encodings,
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
@@ -2056,7 +2056,7 @@ class WindowSource(WindowIconSource):
 
     def get_damage_image(self, x:int, y:int, w:int, h:int) -> Optional[ImageWrapper]:
         self.ui_thread_check()
-        def nodata(msg, *args) -> None:
+        def nodata(msg, *args) -> Optional[ImageWrapper]:
             log("get_damage_image: "+msg, *args)
             return None
         if not self.window.is_managed():
@@ -2763,7 +2763,7 @@ class WindowSource(WindowIconSource):
         #this is a frame from a compressed stream,
         #send it to all the window sources for this window:
         cdata = Compressed(coding, data)
-        options = {}
+        options : Dict[str,Any] = {}
         x = y = 0
         w, h = self.window_dimensions
         outstride = 0

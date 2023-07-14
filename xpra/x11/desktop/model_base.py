@@ -139,7 +139,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
                 icons = (icon,)
         except Exception:
             iconlog("failed to return window icon", exc_info=True)
-        self._updateprop("icons", icons)
+        return self._updateprop("icons", icons)
 
     def uses_XShm(self) -> bool:
         return bool(self._xshm_handle)

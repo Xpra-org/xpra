@@ -3086,7 +3086,7 @@ def run_list_mdns(error_cb, extra_args) -> int:
     from xpra.dbus.common import loop_init
     from gi.repository import GLib  # @UnresolvedImport
     loop_init()
-    found : Dict[Tuple[str,str,str],Tuple] = {}
+    found : Dict[Tuple[str,str,str],List] = {}
     shown = set()
     def show_new_found():
         new_found = [x for x in found.keys() if x not in shown]

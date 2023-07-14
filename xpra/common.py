@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from xpra.util import envint, envbool, csv
 
@@ -85,6 +85,7 @@ DEFAULT_XDG_DATA_DIRS : str = ":".join(
 def noop(*_args) -> None:
     """ do nothing """
 
+
 WINDOW_DECODE_SKIPPED : int = 0
 WINDOW_DECODE_ERROR : int = -1
 WINDOW_NOT_FOUND : int = -2
@@ -95,6 +96,15 @@ ScreenshotData = Tuple[int,int,str,int,bytes]
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
+
+    def __init__(self):
+        self.modifiers : List[str] = []
+        self.keyname : str = ""
+        self.keyval : int = 0
+        self.keycode : int = 0
+        self.group : int = 0
+        self.string : str = ""
+        self.pressed : bool = True
 
     def __repr__(self):
         strattrs = csv(f"{k}="+str(getattr(self, k)) for k in KeyEvent.__slots__)

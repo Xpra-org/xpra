@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Set
 
 from xpra.util import envbool, typedict, net_utf8
 from xpra.os_util import get_machine_id
@@ -27,8 +27,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
 
     def init_state(self) -> None:
-        self.printers = {}
-        self.printers_added = set()
+        self.printers : Dict[str,Dict] = {}
+        self.printers_added : Set[str] = set()
         #duplicated from clientinfo mixin
         self.machine_id = ""
 

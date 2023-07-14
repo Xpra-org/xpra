@@ -450,7 +450,11 @@ def get_linux_distribution() -> Tuple[str,str,str]:
                 parts = line.rstrip("\n\r").split(":", 1)
                 if len(parts)==2:
                     d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
-            _linux_distribution = tuple(d.get(x,"unknown") for x in ("distributor_id", "release", "codename"))
+            _linux_distribution = (
+                d.get("distributor_id","unknown"),
+                d.get("release", "unknown"),
+                d.get("codename", "unknown"),
+            )
     return _linux_distribution
 
 def is_unity() -> bool:
@@ -753,7 +757,7 @@ class nomodule_context:
     def __enter__(self):
         self.saved_module = sys.modules.get(self.module_name)
         # noinspection PyTypeChecker
-        sys.modules[self.module_name] = None
+        sys.modules[self.module_name] = None        # type: ignore[assignment]
     def __exit__(self, *_args):
         if sys.modules.get(self.module_name) is None:
             if self.saved_module is None:

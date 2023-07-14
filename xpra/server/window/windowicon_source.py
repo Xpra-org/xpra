@@ -9,7 +9,7 @@
 import threading
 from io import BytesIO
 from time import monotonic
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Union
 
 try:
     from PIL import Image
@@ -38,7 +38,7 @@ Mixin for handling the sending of window icon pixels.
 """
 class WindowIconSource:
 
-    fallback_window_icon = False
+    fallback_window_icon : Union[bool,Tuple[int,int,str,bytes]] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
