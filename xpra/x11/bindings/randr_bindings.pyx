@@ -573,7 +573,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         log("do_add_screen_size(%s, %i, %i, %i)", name, w, h, vrefresh)
         cdef XRRModeInfo *new_mode = self.calculate_mode(name, w, h, vrefresh)
         assert new_mode!=NULL
-        cdef RRMode mode = 0
+        cdef RRMode mode = self._added_modes.get(name, 0)
+        if mode:
+            return mode
         cdef Window window = XDefaultRootWindow(self.display)
         try:
             mode = XRRCreateMode(self.display, window, new_mode)
