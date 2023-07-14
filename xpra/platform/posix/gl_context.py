@@ -53,7 +53,8 @@ def c_attrs(props):
 
 def get_xdisplay() -> int:
     ptr = get_display_ptr()
-    assert ptr, "no X11 display registered"
+    if not ptr:
+        raise RuntimeError("no X11 display registered")
     # pylint: disable=import-outside-toplevel
     from OpenGL.raw.GLX._types import struct__XDisplay
     return cast(ptr, POINTER(struct__XDisplay))

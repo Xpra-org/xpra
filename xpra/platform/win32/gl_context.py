@@ -22,6 +22,7 @@ from xpra.platform.win32.common import (
     )
 from xpra.platform.win32.glwin32 import (
     wglCreateContext, wglMakeCurrent, wglDeleteContext,
+    HGLRC,
     PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL,
     PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_SUPPORT_COMPOSITION, PFD_MAIN_PLANE,
     PAINTSTRUCT,
@@ -38,11 +39,11 @@ def DefWndProc(hwnd, msg, wParam, lParam):
 
 class WGLWindowContext:
 
-    def __init__(self, hwnd, hdc, context):
+    def __init__(self, hwnd:int, hdc:int, context):
         self.hwnd = hwnd
         self.hdc = hdc
         self.context = context
-        self.ps = None
+        self.ps = PAINTSTRUCT()
         self.paint_hdc = None
 
     def __enter__(self):
@@ -129,10 +130,10 @@ class WGLContext:
     def get_bit_depth(self):
         return 0
 
-    def is_double_buffered(self):
+    def is_double_buffered(self) -> bool:
         return DOUBLE_BUFFERED  #self.pixel_format_props.get("double-buffered", False)
 
-    def get_paint_context(self, gdk_window):
+    def get_paint_context(self, gdk_window) -> WGLWindowContext:
         hwnd = get_window_handle(gdk_window)
         if self.hwnd!=hwnd:
             #(this shouldn't happen)
@@ -142,7 +143,7 @@ class WGLContext:
             self.context = self.create_wgl_context(hwnd)
         return WGLWindowContext(hwnd, self.hdc, self.context)
 
-    def create_wgl_context(self, hwnd):
+    def create_wgl_context(self, hwnd:int) -> HGLRC:
         bpc = 8
         self.hwnd = hwnd
         self.pixel_format_props = {}

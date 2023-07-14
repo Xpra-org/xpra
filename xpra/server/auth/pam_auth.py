@@ -55,7 +55,7 @@ class Authenticator(SysAuthenticator):
 
     def get_challenge(self, digests) -> Tuple[bytes,str]:
         self.req_xor(digests)
-        return super().get_challenge(["xor"])
+        return super().do_get_challenge(["xor"])
 
     def __repr__(self):
         return "PAM"

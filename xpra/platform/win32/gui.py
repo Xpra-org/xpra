@@ -9,7 +9,7 @@
 import os
 import sys
 import types
-from typing import Optional, Callable, List, Tuple, Dict, Any
+from typing import Optional, Callable, List, Tuple, Dict, Any, Type
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -119,7 +119,7 @@ log("win32 gui settings: FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
     FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
 
 
-def do_init():
+def do_init() -> None:
     from xpra.platform.win32.dpi import init_dpi
     init_dpi()
     if APP_ID:
@@ -131,7 +131,7 @@ def do_init():
         log.error("Error: failed to setup dwm window color matching", exc_info=True)
 
 
-def init_appid():
+def init_appid() -> None:
     SetCurrentProcessExplicitAppUserModelID = shell32.SetCurrentProcessExplicitAppUserModelID
     SetCurrentProcessExplicitAppUserModelID.restype = HRESULT
     SetCurrentProcessExplicitAppUserModelID.argtypes = [LPCWSTR]
@@ -139,7 +139,7 @@ def init_appid():
         log.warn("Warning: failed to set process app ID")
 
 
-def use_stdin():
+def use_stdin() -> bool:
     if os.environ.get("MSYSCON") or os.environ.get("CYGWIN"):
         return False
     stdin = sys.stdin
@@ -157,12 +157,12 @@ def use_stdin():
     return True
 
 
-def get_clipboard_native_class():
+def get_clipboard_native_class() -> str:
     #"xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
     return "xpra.platform.win32.clipboard.Win32Clipboard"
 
 
-def get_native_notifier_classes():
+def get_native_notifier_classes() -> List[Type]:
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier
         return [Win32_Notifier]
@@ -205,7 +205,7 @@ def gl_check() -> str:
     return ""
 
 
-def get_monitor_workarea_for_window(handle):
+def get_monitor_workarea_for_window(handle:int):
     try:
         monitor = MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
         mi = GetMonitorInfo(monitor)
@@ -227,7 +227,7 @@ def get_monitor_workarea_for_window(handle):
         return None
 
 
-def get_window_handle(window):
+def get_window_handle(window) -> int:
     """ returns the win32 hwnd from a gtk.Window or gdk.Window """
     gdk_window = window
     try:
@@ -241,7 +241,7 @@ def get_window_handle(window):
     #log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)
     return hwnd
 
-def get_desktop_name():
+def get_desktop_name() -> str:
     try:
         desktop = OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
         if desktop:
@@ -254,10 +254,10 @@ def get_desktop_name():
     except Exception as e:
         log.warn("Warning: failed to get desktop name")
         log.warn(" %s", e)
-    return None
+    return ""
 
 
-def get_session_type():
+def get_session_type() -> str:
     try:
         b = c_bool()
         retcode = dwmapi.DwmIsCompositionEnabled(byref(b))
@@ -309,7 +309,7 @@ def win32_propsys_set_group_leader(self, leader):
         log.error("Error: failed to set group leader")
         log.estr(e)
 
-WS_NAMES = {
+WS_NAMES : Dict[int,str] = {
             win32con.WS_BORDER              : "BORDER",
             win32con.WS_CAPTION             : "CAPTION",
             win32con.WS_CHILD               : "CHILD",
@@ -336,10 +336,10 @@ WS_NAMES = {
             win32con.WS_VSCROLL             : "VSCROLL",
             }
 
-def style_str(style):
+def style_str(style) -> str:
     return csv(s for c,s in WS_NAMES.items() if (c & style)==c)
 
-def pointer_grab(window, *args):
+def pointer_grab(window, *args) -> bool:
     hwnd = get_window_handle(window)
     grablog("pointer_grab%s window=%s, hwnd=%s", args, window, hwnd)
     if not hwnd:
@@ -369,7 +369,7 @@ def pointer_grab(window, *args):
     window._client.pointer_grabbed = window.wid
     return True
 
-def pointer_ungrab(window, *args):
+def pointer_ungrab(window, *args) -> bool:
     hwnd = get_window_handle(window)
     client = window._client
     grablog("pointer_ungrab%s window=%s, hwnd=%s, pointer_grabbed=%s",
@@ -381,7 +381,7 @@ def pointer_ungrab(window, *args):
     client.pointer_grabbed = None
     return True
 
-def fixup_window_style(self, *_args):
+def fixup_window_style(self, *_args) -> None:
     """ a fixup function we want to call from other places """
     hwnd = get_window_handle(self)
     if not hwnd:
@@ -431,7 +431,7 @@ def fixup_window_style(self, *_args):
     except Exception:
         log.warn("failed to fixup window style", exc_info=True)
 
-def set_decorated(self, decorated):
+def set_decorated(self, decorated:bool):
     """ override method which ensures that we call
         fixup_window_style whenever decorations are toggled """
     self.__set_decorated(decorated)         #call the original saved method
@@ -442,7 +442,7 @@ def window_state_updated(window):
     log("window_state_updated(%s)", window)
     fixup_window_style(window)
 
-def apply_maxsize_hints(window, hints):
+def apply_maxsize_hints(window, hints:Dict[str,Any]):
     """ extracts the max-size hints from the hints,
         and passes it to the win32hooks class which can implement it
         (as GTK2 does not honour it properly on win32)
@@ -489,7 +489,7 @@ def apply_maxsize_hints(window, hints):
         hints.pop(x, None)
     window_state_updated(window)
 
-def apply_geometry_hints(self, hints):
+def apply_geometry_hints(self, hints:Dict):
     log("apply_geometry_hints(%s)", hints)
     apply_maxsize_hints(self, hints)
     return self.__apply_geometry_hints(hints)   #call the original saved method
@@ -508,7 +508,7 @@ def cache_pointer_offset(self, event):
 def no_set_group(*_args):
     """ provide a dummy implementation """
 
-def add_window_hooks(window):
+def add_window_hooks(window) -> None:
     log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s",
             window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE)
     log(" MAX_SIZE_HINT=%s, MAX_SIZE_HINT=%s", MAX_SIZE_HINT, MAX_SIZE_HINT)
@@ -613,7 +613,7 @@ def add_window_hooks(window):
             win32hooks.add_window_event_handler(win32con.WM_MOUSEHWHEEL, mousehwheel)
 
 
-def remove_window_hooks(window):
+def remove_window_hooks(window) -> None:
     try:
         win32hooks = getattr(window, "win32hooks", None)
         if win32hooks:
@@ -624,14 +624,14 @@ def remove_window_hooks(window):
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 
-def get_xdpi():
+def get_xdpi() -> int:
     try:
         return _get_device_caps(win32con.LOGPIXELSX)
     except Exception as e:
         log.warn("failed to get xdpi: %s", e)
     return -1
 
-def get_ydpi():
+def get_ydpi() -> int:
     try:
         return _get_device_caps(win32con.LOGPIXELSY)
     except Exception as e:
@@ -661,7 +661,7 @@ FE_FONTSMOOTHING_STR : Dict[int,str] = {
     }
 
 
-def _add_SPI(info:Dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None):
+def _add_SPI(info:Dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None) -> None:
     v = GetIntSystemParametersInfo(constant)
     if v is not None:
         info[name] = convert(v)
@@ -986,7 +986,7 @@ def getTaskbar():
     return taskbar
 
 
-def set_window_progress(window, pct):
+def set_window_progress(window, pct:int):
     taskbar = getattr(window, "taskbar", None)
     if not taskbar:
         taskbar = getTaskbar()
@@ -1006,7 +1006,7 @@ WTS_SESSION_LOGOFF          = 0x6
 WTS_SESSION_LOCK            = 0x7
 WTS_SESSION_UNLOCK          = 0x8
 WTS_SESSION_REMOTE_CONTROL  = 0x9
-WTS_SESSION_EVENTS = {
+WTS_SESSION_EVENTS : Dict[int, str] = {
                       WTS_CONSOLE_CONNECT       : "CONSOLE CONNECT",
                       WTS_CONSOLE_DISCONNECT    : "CONSOLE_DISCONNECT",
                       WTS_REMOTE_CONNECT        : "REMOTE_CONNECT",
@@ -1062,10 +1062,10 @@ class ClientExtras:
             from xpra.make_thread import start_thread
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
 
-    def ready(self):
+    def ready(self) -> None:
         """ nothing specific to do here """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("ClientExtras.cleanup()")
         self._exit = True
         cha = self._console_handler_added
@@ -1092,7 +1092,7 @@ class ClientExtras:
         log("ClientExtras.cleanup() ended")
         #self.client = None
 
-    def get_keyboard_layout_id(self):
+    def get_keyboard_layout_id(self) -> int:
         name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
         if not GetKeyboardLayoutName(name_buf):
             return 0
@@ -1104,14 +1104,14 @@ class ClientExtras:
             log.warn("Warning: failed to parse keyboard layout code '%s'", name_buf.value)
         return 0
 
-    def poll_layout(self):
+    def poll_layout(self) -> None:
         self.keyboard_poll_timer = 0
         klid = self.get_keyboard_layout_id()
         if klid and klid!=self.keyboard_id:
             self.keyboard_id = klid
             self.client.window_keyboard_layout_changed()
 
-    def init_keyboard_listener(self):
+    def init_keyboard_listener(self) -> None:
         class KBDLLHOOKSTRUCT(Structure):
             _fields_ = [("vk_code", DWORD),
                         ("scan_code", DWORD),
@@ -1126,7 +1126,7 @@ class ClientExtras:
                           win32con.WM_KEYUP         : "KEYUP",
                           win32con.WM_SYSKEYUP      : "SYSKEYUP",
                           }
-        def low_level_keyboard_handler(nCode, wParam, lParam):
+        def low_level_keyboard_handler(nCode:int, wParam:int, lParam:int):
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
             kh = getattr(self.client, "keyboard_helper", None)
             locked = getattr(kh, "locked", False)
@@ -1223,7 +1223,7 @@ class ClientExtras:
             keylog("DispatchMessageA(%#x)=%s", lpmsg, r)
 
 
-    def wm_move(self, wParam, lParam):
+    def wm_move(self, wParam:int, lParam:int) -> None:
         c = self.client
         log("WM_MOVE: %s/%s client=%s", wParam, lParam, c)
         if c:
@@ -1231,7 +1231,7 @@ class ClientExtras:
             #but we do want to process it as such (see window reinit code)
             c.screen_size_changed()
 
-    def end_session(self, wParam, lParam):
+    def end_session(self, wParam:int, lParam:int):
         log("WM_ENDSESSION")
         c = self.client
         if not c:
@@ -1249,8 +1249,8 @@ class ClientExtras:
             return
         c.disconnect_and_quit(ExitCode.OK, reason)
 
-    def session_change_event(self, event, session):
-        event_name = WTS_SESSION_EVENTS.get(event, event)
+    def session_change_event(self, event:int, session:int):
+        event_name = WTS_SESSION_EVENTS.get(event) or str(event)
         log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
         c = self.client
         if not c:
@@ -1265,11 +1265,11 @@ class ClientExtras:
             GLib.idle_add(c.unfreeze)
 
 
-    def inputlangchange(self, wParam, lParam):
+    def inputlangchange(self, wParam:int, lParam:int):
         keylog("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
         self.poll_layout()
 
-    def inichange(self, wParam, lParam):
+    def inichange(self, wParam:int, lParam:int):
         if lParam:
             from ctypes import c_char_p
             log("WM_WININICHANGE: %#x=%s", lParam, c_char_p(lParam).value)
@@ -1277,7 +1277,7 @@ class ClientExtras:
             log("WM_WININICHANGE: %i, %i", wParam, lParam)
 
 
-    def activateapp(self, wParam, lParam):
+    def activateapp(self, wParam:int, lParam:int) -> None:
         c = self.client
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
         if not c:
@@ -1294,7 +1294,7 @@ class ClientExtras:
                 fixup_window_style()
 
 
-    def power_broadcast_event(self, wParam, lParam):
+    def power_broadcast_event(self, wParam:int, lParam:int):
         c = self.client
         log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, c)
         #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
@@ -1306,7 +1306,7 @@ class ClientExtras:
             c.resume()
 
 
-    def handle_console_event(self, event):
+    def handle_console_event(self, event:int) -> int:
         c = self.client
         event_name = KNOWN_EVENTS.get(event, event)
         log("handle_console_event(%s) client=%s, event_name=%s", event, c, event_name)

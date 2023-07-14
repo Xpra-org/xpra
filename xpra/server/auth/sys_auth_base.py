@@ -108,6 +108,12 @@ class SysAuthenticatorBase:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
+        return self.do_get_challenge(digests)
+
+    def do_get_challenge(self, digests) -> Tuple[bytes,str]:
+        if self.salt is not None:
+            log.error("Error: authentication challenge already sent!")
+            return None
         self.salt = get_salt()
         self.digest = choose_digest(digests)
         self.challenge_sent = True

@@ -39,6 +39,11 @@ VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8
 class PipewireWindowModel(RootWindowModel):
     __slots__ = ("pipewire_id", "pipewire_props")
 
+    def __init__(self, root_window, capture, title:str, geometry, node_id:int, props:typedict):
+        super().__init__(root_window=root_window, capture=capture, title=title, geometry=geometry)
+        self.pipewire_id = node_id
+        self.pipewire_props = props
+
 
 class PortalShadow(GTKShadowServerBase):
     def __init__(self, multi_window=True):
@@ -258,7 +263,7 @@ class PortalShadow(GTKShadowServerBase):
                     log.info(f"cannot use {encoding}: {e}")
         return Capture(el, pixel_format="BGRX", width=w, height=h)
 
-    def start_pipewire_capture(self, node_id, props) -> None:
+    def start_pipewire_capture(self, node_id:int, props:typedict) -> None:
         log(f"start_pipewire_capture({node_id}, {props})")
         if not isinstance(node_id, int):
             raise ValueError(f"node-id is a {type(node_id)}, must be an int")
@@ -282,9 +287,7 @@ class PortalShadow(GTKShadowServerBase):
         source_type = props.intget("source_type")
         title = f"{AvailableSourceTypes(source_type)} {node_id}"
         geometry = (x, y, w, h)
-        model = PipewireWindowModel(self.root, self.capture, title, geometry)
-        model.pipewire_id = node_id
-        model.pipewire_props = props
+        model = PipewireWindowModel(self.root, self.capture, title, geometry, node_id, props)
         #must be called from the main thread:
         log(f"new model: {model}")
         self.do_add_new_window_common(node_id, model)

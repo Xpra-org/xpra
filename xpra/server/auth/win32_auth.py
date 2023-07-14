@@ -44,9 +44,9 @@ class Authenticator(SysAuthenticator):
 
     def get_challenge(self, digests) -> Tuple[bytes,str]:
         self.req_xor(digests)
-        return super().get_challenge(["xor"])
+        return super().do_get_challenge(["xor"])
 
-    def check(self, password:str) -> bool:
+    def check(self, password:bytes) -> bool:
         token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
         if LOG_CREDENTIALS:

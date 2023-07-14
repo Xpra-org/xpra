@@ -75,8 +75,9 @@ def main():
                   "%s" % (str(e) or type(e)))
             return 1
 
+        from pyu2f.model import RegisteredKey
         info("Please activate your U2F device now to generate a new key")
-        registered_keys = []
+        registered_keys : List[RegisteredKey] = []
         challenge= b'01234567890123456789012345678901'  #unused
         rr = dev.Register(APP_ID, challenge, registered_keys)
         b = rr.registration_data

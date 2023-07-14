@@ -44,7 +44,7 @@ class Authenticator(SysAuthenticator):
         self.proc = None
         self.timeout_event = False
         if not self.command:
-            self.command = get_default_auth_dialog()
+            self.command = [get_default_auth_dialog(), ]
         connection = kwargs.get("connection")
         if not connection:
             raise ValueError("connection object is missing")

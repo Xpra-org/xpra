@@ -41,12 +41,12 @@ class SQLAuthenticator(SysAuthenticator):
         return self.parse_session_data(data)
 
     def parse_session_data(self, data) -> Optional[SessionData]:
+        displays = []
+        env_options = {}
+        session_options = {}
         try:
             uid = int(data[0] or "0")
             gid = int(data[1] or "0")
-            displays = []
-            env_options = {}
-            session_options = {}
             if len(data)>2:
                 displays = [x.strip() for x in str(data[2]).split(",")]
             if len(data)>3:
@@ -57,7 +57,8 @@ class SQLAuthenticator(SysAuthenticator):
             log("parse_session_data() error on row %s", data, exc_info=True)
             log.error("Error: sqlauth database row parsing problem:")
             log.estr(e)
-            return None
+            uid = self.get_uid()
+            gid = self.get_gid()
         return uid, gid, displays, env_options, session_options
 
 
@@ -90,7 +91,7 @@ class DatabaseUtilBase:
 
     def remove_user(self, username:str, password:str="") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
-        sqlargs = (username, )
+        sqlargs : Tuple[str,...] = (username, )
         if password:
             sql += " AND password=%s" % self.param
             sqlargs = (username, password)

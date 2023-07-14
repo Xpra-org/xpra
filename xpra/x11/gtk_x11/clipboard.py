@@ -361,7 +361,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 else:
                     #maybe even delete the property?
                     #X11Window.XDeleteProperty(xid, prop)
-                    prop = None
+                    prop = ""
                 X11Window.sendSelectionNotify(requestor, self._selection, target, prop, time)
         except XError as e:
             log("failed to set selection", exc_info=True)
@@ -397,7 +397,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         xid = 0
         if event.owner:
             xid = event.owner
-        self.owned = xid and xid==self.xid
+        self.owned = bool(xid) and xid==self.xid
         log("do_selection_notify_event(%s) owned=%s, was %s (owner=%#x, xid=%#x), enabled=%s, can-send=%s",
             event, self.owned, owned, xid, self.xid, self._enabled, self._can_send)
         if not self._enabled:
