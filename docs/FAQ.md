@@ -9,10 +9,10 @@ Emphatically [NO](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages)
 See [versions](https://github.com/Xpra-org/xpra/wiki/Versions) and [platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
 ### Why do I get a GPG signature warning when I try to install
 You probably forgot to import the GPG key before installing the package.\
-The key signature is: `c11c 0a4d f702 edf6 c04f 458c 18ad b31c f18a d6bb`.
+The key to use is `0x17978FAF`, its signature is `B499 3B57 3231 48E3 7977 E5D8 7325 4CAD 1797 8FAF`.
 ### I get a GPG error: `KEYEXPIRED 1273837137`
-The key had expired. Try re-importing the [updated key](https://xpra.org/xpra.asc).\
-On Debian you may have to delete the key (`apt-key -d`) before adding it again.
+This key had expired.
+Please use the [new key](https://lists.devloop.org.uk/pipermail/shifter-users/2023-June/002981.html).\
 ### Debian's APT says *Origin changed*, *this must be accepted explicitly...* when updating
 Run `apt-get update --allow-releaseinfo-change`.
 ### Debian's Aptitude says *Some index files failed to download* when updating
