@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
@@ -189,7 +190,7 @@ class Wm(GObject.GObject):
         self._wm_name = wm_name
         self._ewmh_window = None
 
-        self._windows = {}
+        self._windows : Dict[int,Any] = {}
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []
@@ -427,10 +428,10 @@ class Wm(GObject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
-        gdkwindow = get_pywindow(event.window)
-        if not gdkwindow:
+        xid = event.window
+        if not xid:
             return
-        model = self._windows.get(gdkwindow)
+        model = self._windows.get(xid)
         if model:
             #the window has been reparented already,
             #but we're getting the configure request event on the root window
@@ -442,7 +443,6 @@ class Wm(GObject.GObject):
         log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
             event, configure_bits(event.value_mask))
         with xswallow:
-            xid = event.window
             x, y, w, h = X11Window.getGeometry(xid)[:4]
             if event.value_mask & CWX:
                 x = event.x
