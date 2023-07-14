@@ -108,7 +108,6 @@ class Authenticator(SysAuthenticatorBase):
             return True
         except INVALID_CREDENTIALS:
             log("check(..)", exc_info=True)
-            return False
         except SERVER_DOWN as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: LDAP %sserver at %s:%i is unreachable", ["", "TLS "][self.tls], self.host, self.port)
@@ -117,7 +116,7 @@ class Authenticator(SysAuthenticatorBase):
             log("check(..)", exc_info=True)
             log.warn("Error: ldap authentication failed:")
             emsg(e)
-            return False
+        return False
 
 
 def main(argv) -> int:
