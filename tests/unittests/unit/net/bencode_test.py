@@ -11,6 +11,7 @@ import os
 import sys
 import unittest
 import binascii
+from typing import Callable
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.util import repr_ellipsized
@@ -150,8 +151,8 @@ def noop(_input):
 class TestBencoderFunctions:
 
     def setUp(self):
-        self.encode = noop
-        self.decode = noop
+        self.encode : Callable = noop
+        self.decode : Callable = noop
 
     def test_decoding(self):
 
