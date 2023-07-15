@@ -5,25 +5,9 @@
 # later version. See the file COPYING for details.
 
 from typing import Tuple
-from ctypes import (
-    byref, addressof, POINTER,
-    windll, FormatError, GetLastError,  # @UnresolvedImport
-    )
-from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
+from xpra.platform.win32.auth import check
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
-from xpra.util import envbool
-from xpra.platform.win32.common import CloseHandle
-
-LOG_CREDENTIALS = envbool("XPRA_LOG_CREDENTIALS", False)
-
-MAX_COMPUTERNAME_LENGTH = 15
-LOGON32_LOGON_NETWORK_CLEARTEXT = 8
-LOGON32_PROVIDER_DEFAULT = 0
-
-LogonUser = windll.Advapi32.LogonUserW
-LogonUser.argtypes = [LPCWSTR, LPCWSTR, LPCWSTR, DWORD, DWORD, POINTER(HANDLE)]
-LogonUser.restype = BOOL
 
 
 class Authenticator(SysAuthenticator):
@@ -47,22 +31,10 @@ class Authenticator(SysAuthenticator):
         return super().do_get_challenge(["xor"])
 
     def check(self, password:bytes) -> bool:
-        token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
-        if LOG_CREDENTIALS:
-            log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
-                self.username, domain, password, addressof(token))
-        status = LogonUser(self.username, domain, password,
-                     LOGON32_LOGON_NETWORK_CLEARTEXT,
-                     LOGON32_PROVIDER_DEFAULT,
-                     byref(token))
-        log("LogonUser(..)=%#x", status)
-        if status:
-            CloseHandle(token)
+        if check(domain, self.username, password):
             self.password = password
             return True
-        log.error("Error: win32 authentication failed:")
-        log.error(" %s", FormatError(GetLastError()))
         return False
 
     def __repr__(self):
@@ -85,8 +57,7 @@ def main(argv) -> int:
             return 1
         username = argv[1]
         password = argv[2]
-        a = Authenticator(username=username)
-        if a.check(password):
+        if check("", username, password):
             log.info("authentication succeeded")
             return 0
         log.error("authentication failed")
