@@ -289,6 +289,7 @@ def check_gtk_client() -> None:
     if POSIX and not OSX and not os.environ.get("GDK_BACKEND"):
         if os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" or os.environ.get("SSH_TTY"):
             os.environ["GDK_BACKEND"] = "x11"
+            os.environ["PYOPENGL_PLATFORM"] = "x11"
         else:
             try:
                 from xpra.x11.bindings.xwayland import isX11, isxwayland
@@ -297,6 +298,7 @@ def check_gtk_client() -> None:
             else:
                 if isX11() and not isxwayland():
                     os.environ["GDK_BACKEND"] = "x11"
+                    os.environ["PYOPENGL_PLATFORM"] = "x11"
     check_gtk()
     try:
         from xpra.client import gui, gtk3
