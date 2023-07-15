@@ -38,6 +38,29 @@ WAN_JITTER : int = envint("XPRA_WAN_JITTER", 20)
 WIRELESS_JITTER : int = envint("XPRA_WIRELESS_JITTER", 1000)
 
 
+def parse_speed(v):
+    return parse_with_unit("speed", v)
+
+
+def get_device_value(coptions : Dict, device_info : Dict, attr: str, conv: Callable = str, default_value: Any = ""):
+    # first try an env var:
+    v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
+    # next try device options (ie: from connection URI)
+    if v is None:
+        v = coptions.get("socket.%s" % attr)
+    # last: the OS may know:
+    if v is None:
+        v = device_info.get(attr)
+    if v is not None:
+        try:
+            return conv(v)
+        except (ValueError, TypeError) as e:
+            log("get_device_value%s", (coptions, device_info, attr, conv, default_value), exc_info=True)
+            log.warn("Warning: invalid value for network attribute '%s'", attr)
+            log.warn(" %r: %s", v, e)
+    return default_value
+
+
 class NetworkState(StubClientMixin):
     """
     Mixin for adding server / network state monitoring functions:
@@ -123,25 +146,8 @@ class NetworkState(StubClientMixin):
         except AttributeError:
             coptions = {}
         log("get_caps() device_info=%s, connection options=%s", device_info, coptions)
-        def device_value(attr:str, conv:Callable=str, default_value:Any=""):
-            #first try an env var:
-            v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
-            #next try device options (ie: from connection URI)
-            if v is None:
-                v = coptions.get("socket.%s" % attr)
-            #last: the OS may know:
-            if v is None:
-                v = device_info.get(attr)
-            if v is not None:
-                try:
-                    return conv(v)
-                except (ValueError, TypeError) as e:
-                    log("device_value%s", (attr, conv, default_value), exc_info=True)
-                    log.warn("Warning: invalid value for network attribute '%s'", attr)
-                    log.warn(" %r: %s", v, e)
-            return default_value
-        def parse_speed(v):
-            return parse_with_unit("speed", v)
+        def device_value(attr: str, conv: Callable = str, default_value: Any = ""):
+            return get_device_value(coptions, device_info, attr, conv, default_value)
         #network interface speed:
         socket_speed = device_value("speed", parse_speed, 0)
         log("get_caps() found socket_speed=%s", socket_speed)
