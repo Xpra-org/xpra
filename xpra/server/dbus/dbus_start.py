@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
-def start_dbus(dbus_launch):
+def start_dbus(dbus_launch) -> Tuple[int,Dict]:
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}
@@ -35,31 +35,31 @@ def start_dbus(dbus_launch):
             ))
         cmd = shlex.split(dbus_launch)
         log("start_dbus(%s) env=%s", dbus_launch, env)
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True, universal_newlines=True)
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
-        dbus_env = {}
+        dbus_env : Dict[str,str] = {}
         log("out(%s)=%r", cmd, out)
         for l in out.splitlines():
-            if l.startswith(b"export "):
+            if l.startswith("export "):
                 continue
-            sep = b"="
-            if l.startswith(b"setenv "):
-                l = l[len(b"setenv "):]
+            sep = "="
+            if l.startswith("setenv "):
+                l = l[len("setenv "):]
                 sep = b" "
-            if l.startswith(b"set "):
-                l = l[len(b"set "):]
+            if l.startswith("set "):
+                l = l[len("set "):]
             parts = l.split(sep, 1)
             if len(parts)!=2:
                 continue
             k,v = parts
-            if v.startswith(b"'") and v.endswith(b"';"):
+            if v.startswith("'") and v.endswith("';"):
                 v = v[1:-2]
-            elif v.endswith(b";"):
+            elif v.endswith(";"):
                 v = v[:-1]
             dbus_env[k] = v
-        dbus_pid = int(dbus_env.get(b"DBUS_SESSION_BUS_PID", 0))
+        dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
         log("dbus_pid=%i, dbus-env=%s", dbus_pid, dbus_env)
         return dbus_pid, dbus_env
     except Exception as e:

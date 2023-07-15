@@ -575,24 +575,29 @@ def apply_config(opts, mode:str, cmdline:str) -> str:
     return mode
 
 
-def reload_dbus_attributes(display_name:str):
+def reload_dbus_attributes(display_name:str) -> Tuple[int,Dict[str,str]]:
     from xpra.log import Logger
     dbuslog = Logger("dbus")
     try:
         dbus_pid = int(load_session_file("dbus.pid") or 0)
+        dbuslog(f"reload_dbus_attributes({display_name}) found dbus_pid={dbus_pid}")
     except ValueError:
         dbus_pid = 0
-    dbus_env_data = load_session_file("dbus.env")
-    dbuslog(f"reload_dbus_attributes({display_name}) found dbus_pid={dbus_pid}, dbus_env_data={dbus_env_data}")
+    try:
+        dbus_env_data = load_session_file("dbus.env").decode("utf8")
+        dbuslog(f"reload_dbus_attributes({display_name}) dbus_env_data={dbus_env_data}")
+    except UnicodeDecodeError:
+        dbuslog.error("Error decoding dbus.env file", exc_info=True)
+        dbus_env_data = ""
     dbus_env = {}
     if dbus_env_data:
         for line in dbus_env_data.splitlines():
-            if not line or line.startswith(b"#") or line.find(b"=")<0:
+            if not line or line.startswith("#") or line.find("=")<0:
                 continue
-            parts = line.split(b"=", 1)
+            parts = line.split("=", 1)
             dbus_env[parts[0]] = parts[1]
     dbuslog(f"reload_dbus_attributes({display_name}) dbus_env={dbus_env}")
-    dbus_address = dbus_env.get(b"DBUS_SESSION_BUS_ADDRESS")
+    dbus_address = dbus_env.get("DBUS_SESSION_BUS_ADDRESS")
     if not (dbus_pid and dbus_address):
         #less reliable: get it from the wminfo output:
         from xpra.scripts.main import exec_wminfo
@@ -600,16 +605,17 @@ def reload_dbus_attributes(display_name:str):
         if not dbus_pid:
             try:
                 dbus_pid = int(wminfo.get("dbus-pid", 0))
-                dbus_env[b"DBUS_SESSION_BUS_PID"] = ("%s" % dbus_pid).encode("latin1")
             except ValueError:
                 pass
         if not dbus_address:
             dbus_address = wminfo.get("dbus-address", "")
-            if dbus_address:
-                dbus_env[b"DBUS_SESSION_BUS_ADDRESS"] = dbus_address.encode()
     if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
         dbuslog(f"dbus pid {dbus_pid} is no longer valid")
         dbus_pid = 0
+    if dbus_pid:
+        dbus_env["DBUS_SESSION_BUS_PID"] = str(dbus_pid)
+    if dbus_address:
+        dbus_env["DBUS_SESSION_BUS_ADDRESS"] = dbus_address
     if dbus_pid and dbus_address:
         dbuslog(f"retrieved dbus pid: {dbus_pid}, environment: {dbus_env}")
     return dbus_pid, dbus_env
@@ -861,11 +867,9 @@ def _do_run_server(script_file:str, cmdline,
     run_xpra_script = None
     env_script = None
     if POSIX and getuid()!=0:
-        benv = os.environb.copy()
-        oenv = parse_env(opts.env)
-        for k,v in oenv.items():
-            benv[k.encode("utf8")] = v.encode("utf8")
-        env_script = xpra_env_shell_script(opts.socket_dir, benv)
+        save_env = os.environ.copy()
+        save_env.update(parse_env(opts.env))
+        env_script = xpra_env_shell_script(opts.socket_dir, save_env)
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     uid : int = int(opts.uid)
@@ -1348,7 +1352,8 @@ def _do_run_server(script_file:str, cmdline,
         log(f"chdir({opts.chdir})")
         os.chdir(osexpand(opts.chdir))
 
-    dbus_pid, dbus_env = 0, {}
+    dbus_pid = 0
+    dbus_env : Dict[str,str] = {}
     if not shadowing and POSIX and not OSX:
         dbuslog = Logger("dbus")
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
@@ -1368,10 +1373,10 @@ def _do_run_server(script_file:str, cmdline,
                 if dbus_env:
                     dbuslog(f"started new dbus instance: {dbus_env}")
                     write_session_file("dbus.pid", f"{dbus_pid}")
-                    dbus_env_data = b"\n".join(b"%s=%s" % (k, v) for k,v in dbus_env.items())+b"\n"
-                    write_session_file("dbus.env", dbus_env_data)
+                    dbus_env_data = "\n".join("%s=%s" % (k, v) for k,v in dbus_env.items())+"\n"
+                    write_session_file("dbus.env", dbus_env_data.encode("utf8"))
         if dbus_env:
-            os.environb.update(dbus_env)
+            os.environ.update(dbus_env)
 
     if SSH_AGENT_DISPATCH and (not shadowing or proxying):
         progress(50, "setup ssh agent forwarding")

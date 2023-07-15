@@ -130,53 +130,53 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
     return env
 
 
-def sh_quotemeta(s:bytes) -> bytes:
-    return b"'" + s.replace(b"'", b"'\\''") + b"'"
+def sh_quotemeta(s:str) -> str:
+    return "'" + s.replace("'", "'\\''") + "'"
 
-def xpra_env_shell_script(socket_dir, env) -> bytes:
-    script = [b"#!/bin/sh", b""]
+def xpra_env_shell_script(socket_dir, env : Dict[str,str]) -> str:
+    script = ["#!/bin/sh", ""]
     for var, value in env.items():
         # these aren't used by xpra, and some should not be exposed
         # as they are either irrelevant or simply do not match
         # the new environment used by xpra
         # TODO: use a whitelist
-        if var in (b"XDG_SESSION_COOKIE", b"LS_COLORS", b"DISPLAY"):
+        if var in ("XDG_SESSION_COOKIE", "LS_COLORS", "DISPLAY"):
             continue
         #XPRA_SOCKET_DIR is a special case, it is handled below
-        if var==b"XPRA_SOCKET_DIR":
+        if var=="XPRA_SOCKET_DIR":
             continue
-        if var.startswith(b"BASH_FUNC"):
+        if var.startswith("BASH_FUNC"):
             #some versions of bash will apparently generate functions
             #that cannot be reloaded using this script
             continue
         # :-separated envvars that people might change while their server is
         # going:
-        if var in (b"PATH", b"LD_LIBRARY_PATH", b"PYTHONPATH"):
+        if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
             #prevent those paths from accumulating the same values multiple times,
             #only keep the first one:
-            pathsep = os.pathsep.encode()
+            pathsep = os.pathsep
             pval = value.split(pathsep)      #ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
             seen = set()
             value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))     # type: ignore[func-returns-value]
-            script.append(b"%s=%s:\"$%s\"; export %s"
-                          % (var, sh_quotemeta(value), var, var))
+            qval = sh_quotemeta(value)+f':"${var}"'
         else:
-            script.append(b"%s=%s; export %s"
-                          % (var, sh_quotemeta(value), var))
+            qval = sh_quotemeta(value)
+        script.append(f"{var}={qval}; export {var}")
     #XPRA_SOCKET_DIR is a special case, we want to honour it
     #when it is specified, but the client may override it:
     if socket_dir:
-        script.append(b'if [ -z "${XPRA_SOCKET_DIR}" ]; then')
-        script.append(b'    XPRA_SOCKET_DIR="%s"; export XPRA_SOCKET_DIR' %
-                      sh_quotemeta(os.path.expanduser(socket_dir).encode()))
-        script.append(b'fi')
-    script.append(b"")
-    return b"\n".join(script)
+        script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then')
+        qdir = sh_quotemeta(os.path.expanduser(socket_dir))
+        script.append(f'    XPRA_SOCKET_DIR="{qdir}"; export XPRA_SOCKET_DIR')
+        script.append('fi')
+    script.append("")
+    return "\n".join(script)
 
-def xpra_runner_shell_script(xpra_file, starting_dir) -> bytes:
+def xpra_runner_shell_script(xpra_file:str, starting_dir:str) -> str:
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
-    script = [b"cd %s" % sh_quotemeta(starting_dir.encode())]
+    qdir = sh_quotemeta(starting_dir)
+    script = [f"cd {qdir}"]
     if OSX:
         #OSX contortions:
         #The executable is the python interpreter,
@@ -185,8 +185,8 @@ def xpra_runner_shell_script(xpra_file, starting_dir) -> bytes:
         bini = sexec.rfind("Resources/bin/")
         if bini>0:
             sexec = os.path.join(sexec[:bini], "Resources", "MacOS", "Xpra")
-        script.append(b"_XPRA_SCRIPT=%s\n" % (sh_quotemeta(sexec.encode()),))
-        script.append(b"""
+        script.append(f"_XPRA_SCRIPT={sh_quotemeta(sexec)}\n")
+        script.append("""
 if command -v "$_XPRA_SCRIPT" > /dev/null; then
     # Happypath:
     exec "$_XPRA_SCRIPT" "$@"
@@ -196,9 +196,9 @@ else
 fi
 """)
     else:
-        script.append(b"_XPRA_PYTHON=%s" % (sh_quotemeta(sys.executable.encode()),))
-        script.append(b"_XPRA_SCRIPT=%s" % (sh_quotemeta(xpra_file.encode()),))
-        script.append(b"""
+        script.append("_XPRA_PYTHON=%s" % (sh_quotemeta(sys.executable),))
+        script.append("_XPRA_SCRIPT=%s" % (sh_quotemeta(xpra_file),))
+        script.append("""
 if command -v "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
     # Happypath:
     exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
@@ -211,9 +211,9 @@ END
     exec xpra "$@"
 fi
 """)
-    return b"\n".join(script)
+    return "\n".join(script)
 
-def write_runner_shell_scripts(contents:bytes, overwrite:bool=True) -> None:
+def write_runner_shell_scripts(contents:str, overwrite:bool=True) -> None:
     assert POSIX
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -247,7 +247,7 @@ def write_runner_shell_scripts(contents:bytes, overwrite:bool=True) -> None:
             with umask_context(0o022):
                 h = os.open(scriptpath, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, MODE)
                 try:
-                    os.write(h, contents)
+                    os.write(h, contents.encode())
                 finally:
                     os.close(h)
         except Exception as e:

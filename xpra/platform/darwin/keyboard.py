@@ -186,7 +186,9 @@ class Keyboard(KeyboardBase):
                 #below is for compatibility with older servers,
                 #(we may be able to remove some of this code already)
                 #look for a tuple of (keycode, keysym):
-                if type(keycode_def) not in (list, tuple) or len(keycode_def)!=2:
+                if not isintance(keycode_def, (list, tuple)):
+                    continue
+                if len(keycode_def)!=2:
                     continue
                 if type(keycode_def[0])!=int or type(keycode_def[1])!=str:
                     continue
