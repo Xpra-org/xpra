@@ -870,6 +870,14 @@ class ServerBase(ServerBaseClass):
             self.ui_driver = None
         else:
             self.ui_driver = source.uuid
+        if SSH_AGENT_DISPATCH:
+            try:
+                from xpra.net.ssh.agent import set_ssh_agent
+            except ImportError as e:
+                pass
+            else:
+                ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
+                set_ssh_agent(ssh_auth_sock)
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.set_session_driver(self, source)
