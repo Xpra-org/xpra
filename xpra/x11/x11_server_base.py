@@ -154,7 +154,7 @@ class X11ServerBase(X11ServerCore):
                     ("PID",         int,            _save_int),
                     ("WINDOW_ID",   int,            _save_int)):
                 k = f"DBUS_SESSION_BUS_{n}"
-                v = dbus_env.get(k)
+                v = dbus_env.get(strtobytes(k))
                 if v is None:
                     continue
                 try:
