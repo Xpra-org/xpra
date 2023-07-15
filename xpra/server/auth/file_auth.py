@@ -26,7 +26,6 @@ class Authenticator(FileAuthenticatorBase):
             log.warn("Warning: authentication failed")
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return False
-        log.error(f"verify_digest({self.digest}, {password}, {salt}, {challenge_response})")
         if not verify_digest(self.digest, password, salt, challenge_response):
             log.warn(f"Warning: {self.digest!r} challenge for {self.username!r} does not match")
             return False
