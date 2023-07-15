@@ -342,7 +342,8 @@ class ServerBase(ServerBaseClass):
             self._process_shutdown_server(proto)
             return
 
-        if not request and ui_client:
+        send_ui = ui_client and not request
+        if send_ui:
             # a bit of explanation:
             # normally these things are synchronized using xsettings, which we handle already,
             # but non-posix clients have no such thing,
@@ -375,9 +376,6 @@ class ServerBase(ServerBaseClass):
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
-            if SSH_AGENT_DISPATCH:
-                #deal with ssh agent forwarding:
-                self.accept_client_ssh_agent(c.strget("uuid"), c.strget("ssh-auth-sock"))
         self.accept_client(proto, c)
         #use blocking sockets from now on:
         if not WIN32:
@@ -396,14 +394,15 @@ class ServerBase(ServerBaseClass):
         log("process_hello clientconnection=%s", ss)
         try:
             ss.parse_hello(c)
-        except:
+        except Exception:
             #close it already
             ss.close()
             raise
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
+        if uuid and send_ui and SSH_AGENT_DISPATCH:
+            self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
         #process ui half in ui thread:
-        send_ui = ui_client and not request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def get_client_connection_class(self, caps) -> Type:
@@ -411,45 +410,15 @@ class ServerBase(ServerBaseClass):
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
 
-    def accept_client_ssh_agent(self, uuid:str, ssh_auth_sock:str):
-        sshlog = Logger("server", "ssh")
-        if not uuid:
-            sshlog("cannot setup ssh agent without client uuid")
-            return
+    def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
         try:
-            from xpra.net.ssh.agent import get_ssh_agent_path, set_ssh_agent
+            from xpra.net.ssh.agent import setup_client_ssh_agent_socket, set_ssh_agent
         except ImportError as e:
-            sshlog.error("Error: cannot setup ssh agent:")
-            sshlog.estr(e)
+            sshlog("no agent forwarding: {e}")
             return
-        #perhaps the agent sock path for this uuid already exists:
-        #ie: /run/user/1000/xpra/10/$UUID
-        sockpath = get_ssh_agent_path(uuid)
-        sshlog(f"get_ssh_agent_path({uuid})={sockpath}")
-        if not os.path.exists(sockpath) or not is_socket(sockpath):
-            if os.path.islink(sockpath):
-                #dead symlink
-                try:
-                    os.unlink(sockpath)
-                except OSError as e:
-                    sshlog(f"os.unlink({sockpath!r})", exc_info=True)
-                    sshlog.error("Error: removing the broken ssh agent symlink")
-                    sshlog.estr(e)
-            #perhaps this is a local client,
-            #and we can find its agent socket and create the symlink now:
-            sshlog(f"client supplied ssh-auth-sock={ssh_auth_sock}")
-            if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
-                try:
-                    os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
-                except OSError as e:
-                    sshlog(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
-                    sshlog.error("Error setting up ssh agent socket symlink")
-                    sshlog.estr(e)
-                    sockpath = None
-        if sockpath and os.path.exists(sockpath):
-            sshlog(f"setting ssh agent link to: {uuid}")
+        sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock)
+        if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
             set_ssh_agent(uuid)
-
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int) -> None:
         def reject(message="server is shutting down") -> None:
