@@ -123,7 +123,8 @@ class ServerBase(ServerBaseClass):
         self.client_shutdown : bool = CLIENT_CAN_SHUTDOWN
 
         if SSH_AGENT_DISPATCH and "ssh" not in self.session_files:
-            self.session_files.append("ssh/*")
+            self.session_files.append("ssh/agent")
+            self.session_files.append("ssh/agent.default")
             self.session_files.append("ssh")
 
         self.init_packet_handlers()
@@ -825,16 +826,19 @@ class ServerBase(ServerBaseClass):
             else:
                 self.set_ui_driver(None)
         if SSH_AGENT_DISPATCH:
-            agent = None
-            for ss in remaining_sources:
-                if ss.uuid and ss.ssh_auth_sock:
-                    agent = ss.uuid
-                    break
             try:
-                from xpra.net.ssh.agent import set_ssh_agent
+                from xpra.net.ssh.agent import set_ssh_agent, clean_agent_socket
             except ImportError:
                 pass
             else:
+                if source.uuid:
+                    clean_agent_socket(source.uuid)
+                agent = ""
+                for ss in remaining_sources:
+                    ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
+                    if ss.uuid and ssh_auth_sock:
+                        agent = ss.uuid
+                        break
                 set_ssh_agent(agent)
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)

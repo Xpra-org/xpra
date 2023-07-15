@@ -9,6 +9,8 @@ from typing import Iterable, Optional
 from xpra.os_util import is_socket
 from xpra.log import Logger
 
+log = Logger("server", "ssh")
+
 
 def ssh_dir_path() -> str:
     session_dir = os.environ["XPRA_SESSION_DIR"]
@@ -43,8 +45,6 @@ def get_ssh_agent_path(filename:str) -> str:
     return os.path.join(ssh_dir, filename or "agent.default")
 
 def set_ssh_agent(filename:str="") -> None:
-    from xpra.log import Logger
-    log = Logger("server", "ssh")
     ssh_dir = ssh_dir_path()
     if filename and os.path.isabs(filename):
         sockpath = filename
@@ -67,18 +67,26 @@ def set_ssh_agent(filename:str="") -> None:
         log.estr(e)
 
 
+def clean_agent_socket(uuid:str="") -> None:
+    sockpath = get_ssh_agent_path(uuid)
+    try:
+        log(f"removing ssh agent socket {sockpath!r}")
+        os.unlink(sockpath)
+    except OSError:
+        log.error(f"Error: failed to remove ssh agent socket path {sockpath!r}")
+        log.estr(e)
+
+
 def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str=os.environ.get("SSH_AUTH_SOCK", "")) -> str:
-    from xpra.log import Logger
-    sshlog = Logger("ssh")
-    sshlog(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
+    log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     #this is the socket path that the ssh client wants us to use:
     #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
     if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
-        sshlog(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
+        log(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
         return ""
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
-        sshlog(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
+        log(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
         return ""
     #locate the ssh agent uuid,
     #which is used to derive the agent path symlink
@@ -91,61 +99,60 @@ def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str=os.environ.get("
             break
     #prevent illegal paths:
     if not agent_uuid or agent_uuid.find("/")>=0 or agent_uuid.find(".")>=0:
-        sshlog(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
+        log(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
         return ""
     #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
     agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
     if os.path.exists(agent_uuid_sockpath) or os.path.islink(agent_uuid_sockpath):
         if is_socket(agent_uuid_sockpath):
-            sshlog(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
+            log(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")
             #keep the existing socket unchanged - somehow it still works?
             return agent_uuid_sockpath
-        sshlog(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
+        log(f"setup_proxy_ssh_socket removing invalid symlink / socket {agent_uuid_sockpath!r}")
         try:
             os.unlink(agent_uuid_sockpath)
         except OSError as e:
-            sshlog(f"os.unlink({agent_uuid_sockpath!r})", exc_info=True)
-            sshlog.error("Error: removing the broken ssh agent symlink")
-            sshlog.estr(e)
-    sshlog(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
+            log(f"os.unlink({agent_uuid_sockpath!r})", exc_info=True)
+            log.error("Error: removing the broken ssh agent symlink")
+            log.estr(e)
+    log(f"setup_proxy_ssh_socket {agent_uuid_sockpath!r} -> {auth_sock!r}")
     try:
         os.symlink(auth_sock, agent_uuid_sockpath)
     except OSError as e:
-        sshlog(f"os.link({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
-        sshlog.error("Error creating ssh agent socket symlink")
-        sshlog.estr(e)
+        log(f"os.link({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
+        log.error("Error creating ssh agent socket symlink")
+        log.estr(e)
         return ""
     return agent_uuid_sockpath
 
 
 def setup_client_ssh_agent_socket(uuid:str, ssh_auth_sock:str) -> str:
-    sshlog = Logger("server", "ssh")
     if not uuid:
-        sshlog("cannot setup ssh agent without client uuid")
+        log("cannot setup ssh agent without client uuid")
         return ""
     #perhaps the agent sock path for this uuid already exists:
     #ie: /run/user/1000/xpra/10/$UUID
     sockpath = get_ssh_agent_path(uuid)
-    sshlog(f"get_ssh_agent_path({uuid})={sockpath}")
+    log(f"get_ssh_agent_path({uuid})={sockpath}")
     if not os.path.exists(sockpath) or not is_socket(sockpath):
         if os.path.islink(sockpath):
             #dead symlink
             try:
                 os.unlink(sockpath)
             except OSError as e:
-                sshlog(f"os.unlink({sockpath!r})", exc_info=True)
-                sshlog.error("Error: removing the broken ssh agent symlink")
-                sshlog.estr(e)
+                log(f"os.unlink({sockpath!r})", exc_info=True)
+                log.error("Error: removing the broken ssh agent symlink")
+                log.estr(e)
         #perhaps this is a local client,
         #and we can find its agent socket and create the symlink now:
-        sshlog(f"client supplied ssh-auth-sock={ssh_auth_sock}")
+        log(f"client supplied ssh-auth-sock={ssh_auth_sock}")
         if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
             try:
                 #ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
                 os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
             except OSError as e:
-                sshlog(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
-                sshlog.error("Error setting up ssh agent socket symlink")
-                sshlog.estr(e)
+                log(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
+                log.error("Error setting up ssh agent socket symlink")
+                log.estr(e)
                 sockpath = ""
     return sockpath
