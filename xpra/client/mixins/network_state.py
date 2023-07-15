@@ -51,7 +51,7 @@ def get_NM_adapter_type(device_name) -> str:
         import gi
         gi.require_version("NM", "1.0")
         from gi.repository import NM
-    except ImportError:
+    except (ImportError, ValueError):
         log("get_NM_adapter_type() no network-manager bindings")
         return ""
     nmclient = NM.Client.new(None)
