@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import shlex
 from subprocess import Popen, PIPE
+from typing import Tuple
 
 from xpra.os_util import POSIX
 from xpra.scripts.config import FALSE_OPTIONS
