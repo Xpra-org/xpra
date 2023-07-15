@@ -136,21 +136,6 @@ def sh_quotemeta(s:str) -> str:
 def xpra_env_shell_script(socket_dir, env : Dict[str,str]) -> str:
     script = ["#!/bin/sh", ""]
     for var, value in env.items():
-        # these aren't used by xpra, and some should not be exposed
-        # as they are either irrelevant or simply do not match
-        # the new environment used by xpra
-        # TODO: use a whitelist
-        if var in ("XDG_SESSION_COOKIE", "LS_COLORS", "DISPLAY"):
-            continue
-        #XPRA_SOCKET_DIR is a special case, it is handled below
-        if var=="XPRA_SOCKET_DIR":
-            continue
-        if var.startswith("BASH_FUNC"):
-            #some versions of bash will apparently generate functions
-            #that cannot be reloaded using this script
-            continue
-        # :-separated envvars that people might change while their server is
-        # going:
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
             #prevent those paths from accumulating the same values multiple times,
             #only keep the first one:
@@ -159,8 +144,16 @@ def xpra_env_shell_script(socket_dir, env : Dict[str,str]) -> str:
             seen = set()
             value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))     # type: ignore[func-returns-value]
             qval = sh_quotemeta(value)+f':"${var}"'
-        else:
+        elif var in (
+            #whitelist:
+            "XDG_MENU_PREFIX", "XDG_RUNTIME_DIR",
+            "XAUTHORITY",
+            "HOSTNAME", "HOME", "USERNAME", "USER",
+            "SSH_ASKPASS",
+        ):
             qval = sh_quotemeta(value)
+        else:
+            continue
         script.append(f"{var}={qval}; export {var}")
     #XPRA_SOCKET_DIR is a special case, we want to honour it
     #when it is specified, but the client may override it:
@@ -176,7 +169,9 @@ def xpra_runner_shell_script(xpra_file:str, starting_dir:str) -> str:
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
     qdir = sh_quotemeta(starting_dir)
-    script = [f"cd {qdir}"]
+    script = [
+        "",
+        f"cd {qdir}"]
     if OSX:
         #OSX contortions:
         #The executable is the python interpreter,
