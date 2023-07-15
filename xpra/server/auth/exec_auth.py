@@ -17,7 +17,6 @@ from xpra.platform.features import EXECUTABLE_EXTENSION
 
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
-
 def get_default_auth_dialog() -> str:
     if os.name == "posix":
         auth_dialog = "/usr/libexec/xpra/auth_dialog"
@@ -67,7 +66,7 @@ class Authenticator(SysAuthenticator):
             return True
         return super().validate_caps(caps)
 
-    def authenticate_check(self, caps : typedict) -> bool:
+    def default_authenticate_check(self, caps : typedict) -> bool:
         info = f"Connection request from {self.connection_str}"
         subs = {
             "auth_dialog"   : get_default_auth_dialog(),

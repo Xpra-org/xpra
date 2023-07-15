@@ -15,6 +15,7 @@ from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, bytestostr, POSIX
 from xpra.log import Logger
+
 log = Logger("auth")
 
 USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
