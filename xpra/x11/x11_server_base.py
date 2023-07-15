@@ -134,7 +134,7 @@ class X11ServerBase(X11ServerCore):
         return root_w, root_h
 
 
-    def init_dbus(self, dbus_pid:int, dbus_env:Dict[str,str]) -> None:
+    def init_dbus(self, dbus_pid:int, dbus_env:Dict[bytes,bytes]) -> None:
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environb.update(dbus_env)
@@ -234,7 +234,7 @@ class X11ServerBase(X11ServerCore):
         return info
 
     def get_icc_info(self) -> Dict[str,Any]:
-        icc_info = {
+        icc_info : Dict[str,Any] = {
             "sync"  : SYNC_ICC,
             }
         if SYNC_ICC:

@@ -21,7 +21,7 @@ log = Logger("opengl", "paint")
 class GLDrawingArea(GLWindowBackingBase):
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
-        self.on_realize_cb : List[Callable] = []
+        self.on_realize_cb : List[Tuple[Callable,Tuple[Any,...]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
@@ -30,14 +30,14 @@ class GLDrawingArea(GLWindowBackingBase):
     def idle_add(self, *args, **kwargs):
         GLib.idle_add(*args, **kwargs)
 
-    def init_gl_config(self):
+    def init_gl_config(self) -> None:
         self.context = GLContext(self._alpha_enabled)  #pylint: disable=not-callable
         self.window_context = None
 
-    def is_double_buffered(self):
+    def is_double_buffered(self) -> bool:
         return self.context.is_double_buffered()
 
-    def init_backing(self):
+    def init_backing(self) -> None:
         da = Gtk.DrawingArea()
         da.connect_after("realize", self.on_realize)
         #da.connect('configure_event', self.on_configure_event)
@@ -49,7 +49,7 @@ class GLDrawingArea(GLWindowBackingBase):
         da.show()
         self._backing = da
 
-    def on_realize(self, *args):
+    def on_realize(self, *args) -> None:
         onrcb = self.on_realize_cb
         log("GLDrawingArea.on_realize%s callbacks=%s", args, tuple(ellipsizer(x) for x in onrcb))
         self.on_realize_cb = []
@@ -61,7 +61,7 @@ class GLDrawingArea(GLWindowBackingBase):
                 except Exception:
                     log.error("Error calling realize callback %s", ellipsizer(x), exc_info=True)
 
-    def with_gl_context(self, cb, *args):
+    def with_gl_context(self, cb:Callable, *args):
         da = self._backing
         if da and da.get_mapped():
             gl_context = self.gl_context()
@@ -75,7 +75,7 @@ class GLDrawingArea(GLWindowBackingBase):
             self.on_realize_cb.append((cb, args))
 
 
-    def get_bit_depth(self, pixel_depth=0):
+    def get_bit_depth(self, pixel_depth=0) -> int:
         return pixel_depth or self.context.get_bit_depth() or 24
 
     def gl_context(self):
@@ -88,7 +88,7 @@ class GLDrawingArea(GLWindowBackingBase):
         self.window_context = self.context.get_paint_context(gdk_window)
         return self.window_context
 
-    def do_gl_show(self, rect_count):
+    def do_gl_show(self, rect_count) -> None:
         if self.is_double_buffered():
             # Show the backbuffer on screen
             log("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
@@ -97,13 +97,13 @@ class GLDrawingArea(GLWindowBackingBase):
             #glFlush was enough
             pass
 
-    def close_gl_config(self):
+    def close_gl_config(self) -> None:
         c = self.context
         if c:
             self.context = None
             c.destroy()
 
-    def draw_fbo(self, _context):
+    def draw_fbo(self, _context) -> None:
         w, h = self.size
         with self.gl_context():
             self.gl_init()

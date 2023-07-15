@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Set
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
@@ -256,9 +257,9 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                     log.info("set_all_keycodes() keysym_to_modifier[%s]=%s", keysym, modifier)
     log("keysym_to_modifier=%s", keysym_to_modifier)
 
-    def modifiers_for(entries):
+    def modifiers_for(entries) -> Set[str]:
         """ entries can only point to a single modifier - verify """
-        modifiers = set()
+        modifiers : Set[str] = set()
         l = log
         for keysym, _ in entries:
             modifier = keysym_to_modifier.get(keysym)
@@ -325,7 +326,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     keycodes = filter_mappings(keycodes)
 
     #now lookup the current keycodes (if we need to preserve them)
-    preserve_keycode_entries = {}
+    preserve_keycode_entries : Dict[int,List[str]] = {}
     if preserve_server_keycodes:
         preserve_keycode_entries = X11Keyboard.get_keycode_mappings()
         log("preserved mappings:")

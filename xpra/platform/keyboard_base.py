@@ -19,10 +19,10 @@ class KeyboardBase:
         self.init_vars()
 
     def init_vars(self) -> None:
+        self.modifier_keys : Dict[str,str] = {}
+        self.modifier_names : Dict[str,str] = {}
+        self.modifier_keycodes : Dict[str,List[int]] = {}
         self.modifier_mappings = {}
-        self.modifier_keys = {}
-        self.modifier_names = {}
-        self.modifier_keycodes = {}
         #FIXME: this only allows a single modifier per mask
         #and in some cases we want to allow other modifier names
         #to use the same mask... (ie: META on OSX)
@@ -67,9 +67,9 @@ class KeyboardBase:
     def set_modifier_mappings(self, mappings) -> None:
         log("set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
-        self.modifier_keys : Dict[str,str] = {}
-        self.modifier_names : Dict[str,str] = {}
-        self.modifier_keycodes : Dict[str,List[int]] = {}
+        self.modifier_keys = {}
+        self.modifier_names = {}
+        self.modifier_keycodes = {}
         for modifier, keys in mappings.items():
             for a, b in keys:
                 self._add_modifier_mapping(a, b, modifier)
@@ -90,7 +90,7 @@ class KeyboardBase:
     def get_keymap_spec(self) -> Dict[str,Any]:
         return {}
 
-    def get_x11_keymap(self) -> Dict[str,Any]:
+    def get_x11_keymap(self) -> Dict[int,List[str]]:
         return {}
 
     def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:

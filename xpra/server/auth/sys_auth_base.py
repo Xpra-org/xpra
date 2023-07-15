@@ -80,6 +80,7 @@ class SysAuthenticatorBase:
         self.challenge_sent = False
         self.passed = False
         self.password_used = None
+        self.authenticate_check : Callable[[typedict],bool] = self.default_authenticate_check
         #we can't warn about unused options
         #because the options are shared with other socket options (nodelay, cork, etc)
         #unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
@@ -111,9 +112,6 @@ class SysAuthenticatorBase:
         return self.do_get_challenge(digests)
 
     def do_get_challenge(self, digests) -> Tuple[bytes,str]:
-        if self.salt is not None:
-            log.error("Error: authentication challenge already sent!")
-            return None
         self.salt = get_salt()
         self.digest = choose_digest(digests)
         self.challenge_sent = True
@@ -200,7 +198,7 @@ class SysAuthenticatorBase:
             obsc(repr(challenge_response)))
         return value
 
-    def authenticate_check(self, caps : typedict) -> bool:
+    def default_authenticate_check(self, caps : typedict) -> bool:
         value : bytes = self.unxor_response(caps)
         #warning: enabling logging here would log the actual system password!
         #log.info("authenticate(%s, %s) password=%s (%s)",
@@ -256,7 +254,7 @@ class SysAuthenticatorBase:
             log.error(f"Error: cannot get the list of sessions for {self.username!r}:")
             log.estr(e)
             displays = []
-        v = uid, gid, displays, {}, {}
+        v : SessionData = uid, gid, displays, {}, {}
         log(f"{self}.get_sessions()={v}")
         return v
 

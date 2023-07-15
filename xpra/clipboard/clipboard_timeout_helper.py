@@ -29,7 +29,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-        self._clipboard_outstanding_requests : Dict[int, Tuple] = {}
+        self._clipboard_outstanding_requests : Dict[int, Tuple[int,str,str]] = {}
 
     def cleanup(self) -> None:
         #reply to outstanding requests with "no data":

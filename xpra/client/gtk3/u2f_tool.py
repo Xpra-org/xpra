@@ -7,6 +7,7 @@
 import sys
 import glob
 import os.path
+from typing import List
 
 from xpra.util import engs
 from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt, bytestostr

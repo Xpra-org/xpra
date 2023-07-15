@@ -7,7 +7,7 @@
 
 import sys
 import logging
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, List
 
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
@@ -349,10 +349,10 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         return props
     finally:
         def recs(name) -> List[str]:
-            logger = redirected_loggers.get(name)
-            if not logger:
+            rlog = redirected_loggers.get(name)
+            if not rlog:
                 return []
-            records = logger.handlers[0].records
+            records = rlog[0].handlers[0].records
             return list(rec.getMessage() for rec in records)
 
         for msg in recs("acceleratesupport"):

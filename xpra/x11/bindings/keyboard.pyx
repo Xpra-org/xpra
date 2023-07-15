@@ -1,11 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+from typing import Dict, List
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
@@ -416,7 +417,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             "layout"   : "us",
             }
 
-    def getXkbProperties(self):
+    def getXkbProperties(self) -> Dict[str,str]:
         self.context_check("getXkbProperties")
         if not self.hasXkb():
             log.warn("Warning: no Xkb support")
@@ -492,7 +493,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 XFreeModifiermap(xmodmap)
 
 
-    def get_xkb_keycode_mappings(self):
+    def get_xkb_keycode_mappings(self) -> Dict[int,List[str]]:
         self.context_check("get_xkb_keycode_mappings")
         if not self.hasXkb():
             return {}
@@ -695,7 +696,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFree(keyboard_map)
         return mappings
 
-    def get_keycode_mappings(self):
+    def get_keycode_mappings(self) -> Dict[str,List[str]]:
         """
         the mappings from _get_raw_keycode_mappings are in raw format
         (keysyms as numbers), so here we convert into names:

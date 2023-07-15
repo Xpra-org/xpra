@@ -35,7 +35,7 @@ class PyNotify_Notifier(NotifierBase):
 
     def clean_notification(self, nid : int) -> None:
         PyNotify_Notifier.CACHE.pop(nid, None)
-        super.clean_notification(nid)
+        super().clean_notification(nid)
 
     def close_notify(self, nid:int) -> None:
         n = PyNotify_Notifier.CACHE.pop(nid, None)

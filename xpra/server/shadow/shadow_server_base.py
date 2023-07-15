@@ -214,8 +214,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
-            actions = []
-            hints = {}
+            actions : List = []
+            hints : Dict[str,Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)

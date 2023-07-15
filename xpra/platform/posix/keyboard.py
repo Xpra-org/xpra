@@ -128,7 +128,7 @@ class Keyboard(KeyboardBase):
                 return self.keyboard_bindings.get_keycode_mappings()
         except Exception:
             log.error("Error: failed to use raw x11 keymap", exc_info=True)
-        return  {}
+        return {}
 
     def get_locale_status(self) -> Dict[str,str]:
         #parse the output into a dictionary:
@@ -148,7 +148,7 @@ class Keyboard(KeyboardBase):
         log("locale(%s)=%s", out, locale)
         return locale
 
-    def get_keymap_spec(self) -> Dict[str,Any]:
+    def get_keymap_spec(self) -> Dict[str,str]:
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if is_Wayland() or not self.keyboard_bindings:
             locale = self.get_locale_status()

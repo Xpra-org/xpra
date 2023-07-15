@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
@@ -25,5 +26,6 @@ class GLClientWindow(GLClientWindowBase):
 
     def get_backing_class(self):
         return GLDrawingArea
+
 
 GObject.type_register(GLClientWindow)

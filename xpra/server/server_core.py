@@ -2135,7 +2135,7 @@ class ServerCore:
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, "ssl", socket_options=options)
         ssl_conn.socktype_wrapped = socktype
         protocol_class = get_server_protocol_class(new_socktype)
-        proto = self.make_protocol(new_socktype, ssl_conn, options, protocol_class)
+        self.make_protocol(new_socktype, ssl_conn, options, protocol_class)
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
 

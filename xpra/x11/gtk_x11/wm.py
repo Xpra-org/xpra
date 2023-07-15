@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict
+from typing import Dict, Any
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
