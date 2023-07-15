@@ -194,6 +194,7 @@ Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
 Recommends: python3-socks
+            ,gir1.2-nm-1.0
             ,xpra-client-gtk3 (= ${binary:Version})
 Suggests: python-psutil
 # external ssh transport:

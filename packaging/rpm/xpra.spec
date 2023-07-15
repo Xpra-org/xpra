@@ -267,6 +267,7 @@ BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
 Recommends:			python3-cups
 Recommends:		    python3-pysocks
+Recommends:         NetworkManager-libnm
 Suggests:			sshpass
 %description client
 This package contains the xpra client.
