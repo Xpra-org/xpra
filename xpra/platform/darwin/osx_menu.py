@@ -71,7 +71,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.hidden_window = None
         self.menus = {}             #all the "top-level" menu items we manage
         self.app_menus = {}         #the ones added to the app_menu via insert_app_menu_item (which cannot be removed!)
+        self.dock_menu = None
+        self.window_menu = None
         self.window_menu_item = None
+        self.numlock_menuitem = None
         self.full = False
         self.set_client(client)
         self._clipboard_change_pending = False
@@ -361,26 +364,26 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):
-            v = self.swapkeys_menuitem.get_active()
+            v = swapkeys_menuitem.get_active()
             keyboard = self._get_keyboard()
             log("swapkeys_toggled(%s) keyboard=%s, swap keys enabled=%s", args, keyboard, v)
             if keyboard:
                 keyboard.swap_keys = v
-        self.swapkeys_menuitem = self.checkitem("Control/Command Key Swap", swapkeys_toggled)
+        swapkeys_menuitem = self.checkitem("Control/Command Key Swap", swapkeys_toggled)
         def set_swapkeys_menuitem(*args):
             keyboard = self._get_keyboard()
             if keyboard:
                 log("set_swapkeys_menuitem(%s) keyboard=%s, swap_keys=%s", args, keyboard, keyboard.swap_keys)
-                self.swapkeys_menuitem.set_active(keyboard.swap_keys)
+                swapkeys_menuitem.set_active(keyboard.swap_keys)
             else:
                 log("set_swapkeys_menuitem(%s) no keyboard!", args)
-                self.swapkeys_menuitem.set_sensitive(False)
+                swapkeys_menuitem.set_sensitive(False)
         self.client.after_handshake(set_swapkeys_menuitem)
-        return self.swapkeys_menuitem
+        return swapkeys_menuitem
 
     def make_invertmousewheelmenuitem(self):
         def invert_toggled(*args):
-            v = self.mousewheel_menuitem.get_active()
+            v = mousewheel_menuitem.get_active()
             log("invert_toggled(%s) invert enabled=%s", args, v)
             if v:
                 self.client.wheel_map[4] = 5
@@ -388,9 +391,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
             else:
                 self.client.wheel_map[4] = 4
                 self.client.wheel_map[5] = 5
-        self.mousewheel_menuitem = self.checkitem("Invert Mouse Wheel", invert_toggled)
-        self.mousewheel_menuitem.set_active(self.client.wheel_map.get(4)!=4)
-        return self.mousewheel_menuitem
+        mousewheel_menuitem = self.checkitem("Invert Mouse Wheel", invert_toggled)
+        mousewheel_menuitem.set_active(self.client.wheel_map.get(4)!=4)
+        return mousewheel_menuitem
 
     def make_numlockmenuitem(self):
         def numlock_toggled(*args):
@@ -408,7 +411,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 self.numlock_menuitem.set_active(keyboard.num_lock_state)
             else:
                 log("set_numlock_menuitem(%s) no keyboard!", args)
-                self.swapkeys_menuitem.set_sensitive(False)
+                self.numlock_menuitem.set_sensitive(False)
         self.client.after_handshake(set_numlock_menuitem)
         return self.numlock_menuitem
 

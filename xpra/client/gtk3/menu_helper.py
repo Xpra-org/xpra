@@ -452,7 +452,7 @@ class MenuHelper:
         def show(*_args):
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
-        self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
+        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
         try:
             from xpra.net.qrcode.qrencode import encode_image
         except ImportError as e:
@@ -463,13 +463,13 @@ class MenuHelper:
             def with_connection(*_args):
                 uri = self.client.display_desc.get("display_name")
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
-                    set_sensitive(self.qr_menuitem, False)
-                    self.qr_menuitem.set_tooltip_text("server uri is not shareable")
+                    set_sensitive(qr_menuitem, False)
+                    qr_menuitem.set_tooltip_text("server uri is not shareable")
             self.after_handshake(with_connection)
         else:
-            set_sensitive(self.qr_menuitem, False)
-            self.qr_menuitem.set_tooltip_text("qrencode library is missing")
-        return self.qr_menuitem
+            set_sensitive(qr_menuitem, False)
+            qr_menuitem.set_tooltip_text("qrencode library is missing")
+        return qr_menuitem
 
     def make_sessioninfomenuitem(self) -> Gtk.ImageMenuItem:
         def show_session_info_cb(*_args):
