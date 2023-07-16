@@ -57,6 +57,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = None
         self._remote_version = None
         self._remote_revision = None
+        self._remote_branch = ""
         self._remote_modifications = 0
         self._remote_commit = None
         self._remote_build_date = ""
