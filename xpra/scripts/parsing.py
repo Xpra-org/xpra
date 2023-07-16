@@ -324,7 +324,7 @@ def normalize_display_name(display_name:str) -> str:
 
     #fixup the legacy format "tcp:host:port"
     pos = display_name.find(":")
-    legacy_ssh = re.search("^ssh:([\w\d]([\w\d-]{0,61}[\w\d])?):([\d]{1,5})$", display_name)
+    legacy_ssh = re.search("^ssh:([\w]([\w-]{0,61}[\w])?):([\d]{1,5})$", display_name)
     if legacy_ssh:
         #ie: "ssh:host:display" -> "ssh://host/display"
         host = legacy_ssh.group(1)
