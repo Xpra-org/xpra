@@ -303,9 +303,9 @@ class GTKServerBase(ServerBase):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
 
-    def get_notification_icon(self, icon_string:str):
+    def get_notification_icon(self, icon_string:str) -> Optional[Tuple[str,int,int,bytes]]:
         try:
             from xpra.notifications.common import get_notification_icon
         except ImportError:
-            return ()
+            return None
         return get_notification_icon(icon_string)

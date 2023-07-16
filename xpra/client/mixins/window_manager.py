@@ -1106,7 +1106,7 @@ class WindowClient(StubClientMixin):
                 decoder_lock.release()
 
 
-    def get_group_leader(self, _wid:int, _metadata, _override_redirect):
+    def get_group_leader(self, _wid:int, _metadata, _override_redirect) -> Any:
         #subclasses that wish to implement the feature may override this method
         return None
 

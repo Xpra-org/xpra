@@ -504,9 +504,9 @@ def main() -> int:
             data = f.read()
         print("loaded %s bytes from %s" % (len(data), filename))
         #force no leak since we push all the data at once
-        global QUEUE_LEAK, QUEUE_SILENT
-        QUEUE_LEAK = GST_QUEUE_NO_LEAK
-        QUEUE_SILENT = True
+        from xpra.audio import gstreamer_util
+        gstreamer_util.QUEUE_LEAK = GST_QUEUE_NO_LEAK
+        gstreamer_util.QUEUE_SILENT = True
         ss = AudioSink(codecs=codecs)
         def eos(*args):
             print("eos%s" % (args,))

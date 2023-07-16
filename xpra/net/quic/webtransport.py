@@ -61,7 +61,7 @@ class WebTransportHandler(XpraQuicConnection):
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
 
-    def write(self, stream_id : int, data : bytes):
+    def write(self, stream_id : int, data : bytes) -> None:
         self.connection._quic.send_stream_data(stream_id=stream_id, data=data)
         self.transmit()
 

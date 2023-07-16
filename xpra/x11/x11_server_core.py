@@ -95,6 +95,7 @@ class XTestPointerDevice:
         return False
 
 
+# noinspection PyUnreachableCode
 class X11ServerCore(GTKServerBase):
     """
         Base class for X11 servers,

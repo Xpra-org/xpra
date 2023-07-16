@@ -31,6 +31,7 @@ class ClientTray(ClientWidgetBase):
     def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_enabled, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
         super().__init__(client, 0, wid, True)
+        self._size = w, h
         self._metadata = metadata
         self.title = metadata.strget("title", "")
         self.tray_widget = tray_widget

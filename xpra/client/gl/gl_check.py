@@ -357,7 +357,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
 
         for msg in recs("acceleratesupport"):
             #strip default message prefix:
-            msg = x.replace("No OpenGL_accelerate module loaded: ", "")
+            msg = msg.replace("No OpenGL_accelerate module loaded: ", "")
             if msg=="No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
             if msg=="OpenGL_accelerate module loaded":

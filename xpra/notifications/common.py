@@ -5,13 +5,15 @@
 
 import os.path
 from io import BytesIO
-from typing import Tuple, Optional
+from typing import Tuple, Optional, TypeAlias
 
 from xpra.util import first_time
 from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")
+
+IconData : TypeAlias = Tuple[str,int,int,bytes]
 
 
 def PIL_Image():
@@ -24,9 +26,8 @@ def PIL_Image():
             log.info("using notification icons requires python-pillow")
         return None
 
-ImageData = Tuple[str,int,int,bytes]
 
-def parse_image_data(data) -> Optional[ImageData]:
+def parse_image_data(data) -> Optional[IconData]:
     try:
         width, height, rowstride, has_alpha, bpp, channels, pixels = data
         log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)",
@@ -53,7 +54,7 @@ def parse_image_data(data) -> Optional[ImageData]:
         log.estr(e)
     return None
 
-def parse_image_path(path:str) -> Optional[ImageData]:
+def parse_image_path(path:str) -> Optional[IconData]:
     if path and os.path.exists(path):
         Image = PIL_Image()
         if not Image:
@@ -71,7 +72,7 @@ def parse_image_path(path:str) -> Optional[ImageData]:
             log.error(f" {estr}")
     return None
 
-def image_data(img) -> ImageData:
+def image_data(img) -> IconData:
     buf = BytesIO()
     img.save(buf, "png")
     data = buf.getvalue()
@@ -80,7 +81,7 @@ def image_data(img) -> ImageData:
     return ("png", w, h, data)
 
 
-def get_notification_icon(icon_string):
+def get_notification_icon(icon_string:str) -> Optional[IconData]:
     #this method *must* be called from the UI thread
     #since we may end up calling svg_to_png which uses Cairo
     #
@@ -116,34 +117,40 @@ def get_notification_icon(icon_string):
             icon_string = os.path.splitext(os.path.basename(icon_string))[0]
     if not img:
         #try to find it in the theme:
-        try:
-            import gi
-            gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-            from gi.repository import Gtk  #pylint: disable=no-name-in-module
-            theme = Gtk.IconTheme.get_default()
-        except ImportError:
-            theme = None
-        if theme:
-            try:
-                icon = theme.load_icon(icon_string, Gtk.IconSize.BUTTON, 0)
-            except Exception as e:
-                log("failed to load icon '%s' from default theme: %s", icon_string, e)
-            else:
-                data = icon.get_pixels()
-                w = icon.get_width()
-                h = icon.get_height()
-                rowstride = icon.get_rowstride()
-                mode = "RGB"
-                if icon.get_has_alpha():
-                    mode = "RGBA"
-                img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
-    if img:
-        if w>MAX_SIZE or h>MAX_SIZE:
-            img = img.resize((MAX_SIZE, MAX_SIZE), Image.Resampling.LANCZOS)
-            w = h = MAX_SIZE
-        buf = BytesIO()
-        img.save(buf, "PNG")
-        cpixels = buf.getvalue()
-        buf.close()
-        return "png", w, h, cpixels
-    return ()
+        img = get_gtk_theme_icon(icon_string)
+    if not img:
+        return None
+    if w>MAX_SIZE or h>MAX_SIZE:
+        img = img.resize((MAX_SIZE, MAX_SIZE), Image.Resampling.LANCZOS)
+        w = h = MAX_SIZE
+    buf = BytesIO()
+    img.save(buf, "PNG")
+    cpixels = buf.getvalue()
+    buf.close()
+    return "png", w, h, cpixels
+
+
+def get_gtk_theme_icon(icon_string:str):
+    # try to find it in the theme:
+    try:
+        import gi
+        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
+        from gi.repository import Gtk  # pylint: disable=no-name-in-module
+        theme = Gtk.IconTheme.get_default()
+    except ImportError:
+        return None
+    if not theme:
+        return None
+    try:
+        icon = theme.load_icon(icon_string, Gtk.IconSize.BUTTON, 0)
+    except Exception as e:
+        log("failed to load icon '%s' from default theme: %s", icon_string, e)
+        return None
+    data = icon.get_pixels()
+    w = icon.get_width()
+    h = icon.get_height()
+    rowstride = icon.get_rowstride()
+    mode = "RGB"
+    if icon.get_has_alpha():
+        mode = "RGBA"
+    return Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)

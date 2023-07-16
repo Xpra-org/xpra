@@ -142,7 +142,7 @@ class NotificationForwarder(StubServerMixin):
             log.estr(e)
 
     def get_notification_icon(self, _icon_string:str):
-        return []
+        return None
 
     def notify_close_callback(self, nid:int) -> None:
         assert self.notifications_forwarder

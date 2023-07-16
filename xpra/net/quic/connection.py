@@ -98,7 +98,7 @@ class XpraQuicConnection(Connection):
             headers=binary_headers(headers),
             end_stream=self.closed)
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type=None) -> int:
         log("quic.write(%s, %s)", ellipsizer(buf), packet_type)
         return self.stream_write(buf, packet_type)
 

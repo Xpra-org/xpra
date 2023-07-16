@@ -211,6 +211,7 @@ class TOKEN_SOURCE(ctypes.Structure):
     _fields_ = (('SourceName', CHAR * TOKEN_SOURCE_LENGTH),
                 ('SourceIdentifier', LUID))
     def __init__(self, SourceName=None, SourceIdentifier=None):
+        super().__init__()
         if SourceName is not None:
             if not isinstance(SourceName, bytes):
                 SourceName = SourceName.encode('mbcs')
@@ -321,6 +322,7 @@ class ContiguousUnicode(ctypes.Structure):
 class AuthInfo(ContiguousUnicode):
     # _message_type_: from a logon-submit-type enumeration
     def __init__(self):
+        super().__init__()
         self.MessageType = self._message_type_
 
 class MSV1_0_INTERACTIVE_LOGON(AuthInfo):
@@ -369,6 +371,7 @@ PKERB_S4U_LOGON = ctypes.POINTER(KERB_S4U_LOGON)
 class ProfileBuffer(ContiguousUnicode):
     # _message_type_
     def __init__(self):
+        super().__init__()
         self.MessageType = self._message_type_
 
 class MSV1_0_INTERACTIVE_PROFILE(ProfileBuffer):

@@ -44,8 +44,8 @@ DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
 APPLICATION_STATUS = AppIndicator3.IndicatorCategory.APPLICATION_STATUS
-def Indicator(tooltip, filename, status):
-    return AppIndicator3.Indicator.new(tooltip, filename, status)
+def Indicator(tooltip:str, filename:str, status:AppIndicator3.IndicatorStatus):
+    return AppIndicator3.Indicator.new(id=tooltip, icon_name=filename, category=status)
 
 
 class AppindicatorTray(TrayBase):
@@ -54,7 +54,7 @@ class AppindicatorTray(TrayBase):
         super().__init__(*args, **kwargs)
         filename = get_icon_filename(self.default_icon_filename) or "xpra.png"
         self._has_icon = False
-        self.tmp_filename = None
+        self.tmp_filename = ""
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
@@ -73,24 +73,24 @@ class AppindicatorTray(TrayBase):
         #no way to tell :(
         return None
 
-    def hide(self):
+    def hide(self) -> None:
         self.tray_widget.set_status(PASSIVE)
 
-    def show(self):
+    def show(self) -> None:
         self.tray_widget.set_status(ACTIVE)
 
-    def set_blinking(self, on):
+    def set_blinking(self, on:bool) -> None:
         #"I'm Afraid I Can't Do That"
         pass
 
-    def set_tooltip(self, tooltip=None):
+    def set_tooltip(self, tooltip="") -> None:
         #we only use this if we haven't got an icon
         #as with appindicator this creates a large text label
         #next to where the icon is/should be
         if not self._has_icon:
             self.tray_widget.set_label(tooltip or "Xpra")
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
+    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, _options=None) -> None:
         #use a temporary file (yuk)
         self.clean_last_tmp_icon()
         # pylint: disable=import-outside-toplevel
@@ -117,7 +117,7 @@ class AppindicatorTray(TrayBase):
                 os.close(fd)
         self.do_set_icon_from_file(self.tmp_filename)
 
-    def do_set_icon_from_file(self, filename):
+    def do_set_icon_from_file(self, filename:str) -> None:
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon(filename)
             self._has_icon = True
@@ -136,15 +136,15 @@ class AppindicatorTray(TrayBase):
         self._has_icon = True
         self.icon_timestamp = monotonic()
 
-    def clean_last_tmp_icon(self):
+    def clean_last_tmp_icon(self) -> None:
         if self.tmp_filename and DELETE_TEMP_FILE:
             try:
                 os.unlink(self.tmp_filename)
             except OSError:
                 log("failed to remove tmp icon", exc_info=True)
-            self.tmp_filename = None
+            self.tmp_filename = ""
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.clean_last_tmp_icon()
         super().cleanup()
 
