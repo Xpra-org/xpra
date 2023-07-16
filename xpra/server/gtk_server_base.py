@@ -10,7 +10,7 @@
 
 import sys
 from time import monotonic
-from typing import Dict, Tuple, Any, Callable
+from typing import Dict, Tuple, Any, Callable, Optional
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
