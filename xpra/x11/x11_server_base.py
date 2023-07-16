@@ -134,10 +134,10 @@ class X11ServerBase(X11ServerCore):
         return root_w, root_h
 
 
-    def init_dbus(self, dbus_pid:int, dbus_env:Dict[bytes,bytes]) -> None:
+    def init_dbus(self, dbus_pid:int, dbus_env:Dict[str,str]) -> None:
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
-            os.environb.update(dbus_env)
+            os.environ.update(dbus_env)
             self.dbus_pid = dbus_pid
             self.dbus_env = dbus_env
             #now we can save values on the display
@@ -154,7 +154,7 @@ class X11ServerBase(X11ServerCore):
                     ("PID",         int,            _save_int),
                     ("WINDOW_ID",   int,            _save_int)):
                 k = f"DBUS_SESSION_BUS_{n}"
-                v = dbus_env.get(strtobytes(k))
+                v = dbus_env.get(k)
                 if v is None:
                     continue
                 try:

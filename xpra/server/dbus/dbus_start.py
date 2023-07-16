@@ -7,7 +7,7 @@
 import os
 import shlex
 from subprocess import Popen, PIPE
-from typing import Tuple
+from typing import Tuple, Dict
 
 from xpra.os_util import POSIX
 from xpra.scripts.config import FALSE_OPTIONS
