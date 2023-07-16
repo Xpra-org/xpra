@@ -48,7 +48,7 @@ def start_dbus(dbus_launch) -> Tuple[int,Dict]:
             sep = "="
             if l.startswith("setenv "):
                 l = l[len("setenv "):]
-                sep = b" "
+                sep = " "
             if l.startswith("set "):
                 l = l[len("set "):]
             parts = l.split(sep, 1)
