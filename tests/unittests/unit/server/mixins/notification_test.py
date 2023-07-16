@@ -29,7 +29,7 @@ class NotificationForwarderMixinTest(ServerMixinTest):
             dbus_pid, dbus_env = start_dbus("dbus-launch --sh-syntax --close-stderr")
             try:
                 if dbus_env:
-                    os.environb.update(dbus_env)
+                    os.environ.update(dbus_env)
 
                 from xpra.server.mixins import notification
                 opts = AdHocStruct()
