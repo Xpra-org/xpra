@@ -423,7 +423,7 @@ class ServerBase(ServerBaseClass):
         try:
             from xpra.net.ssh.agent import setup_client_ssh_agent_socket, set_ssh_agent
         except ImportError as e:
-            sshlog("no agent forwarding: {e}")
+            sshlog(f"no agent forwarding: {e}")
             return
         sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock)
         if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
@@ -881,7 +881,7 @@ class ServerBase(ServerBaseClass):
         if SSH_AGENT_DISPATCH:
             try:
                 from xpra.net.ssh.agent import set_ssh_agent
-            except ImportError as e:
+            except ImportError:
                 pass
             else:
                 ssh_auth_sock = getattr(source, "ssh_auth_sock", "")

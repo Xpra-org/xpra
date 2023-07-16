@@ -58,7 +58,7 @@ def set_ssh_agent(filename:str="") -> None:
     try:
         if os.path.islink(agent_sockpath):
             os.unlink(agent_sockpath)
-        log(f"setting ssh agent link:")
+        log("setting ssh agent link:")
         log(f" {filename!r} -> {agent_sockpath!r}")
         os.symlink(filename, agent_sockpath)
     except OSError as e:
