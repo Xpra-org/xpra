@@ -35,6 +35,8 @@ fi
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+# RHEL8 setuptools bug?
+rm -fr %{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %clean
