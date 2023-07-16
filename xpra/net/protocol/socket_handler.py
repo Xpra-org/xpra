@@ -156,6 +156,8 @@ class SocketProtocol:
         self._source_has_more = Event()
         self.receive_pending = False
         self.wait_for_header = False
+        self.source_has_more = self.source_has_more_start
+        self.flush_then_close = self.do_flush_then_close
 
     STATE_FIELDS : Tuple[str,...] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
@@ -331,7 +333,7 @@ class SocketProtocol:
         self._get_packet_cb = packet_cb
         self.source_has_more()
 
-    def source_has_more(self) -> None:      #pylint: disable=method-hidden
+    def source_has_more_start(self) -> None:      #pylint: disable=method-hidden
         shm = self._source_has_more
         if not shm or self._closed:
             return
@@ -1111,7 +1113,7 @@ class SocketProtocol:
                 self._process_packet_cb(self, packet)
                 del packet
 
-    def flush_then_close(self, encoder:Optional[Callable]=None,
+    def do_flush_then_close(self, encoder:Optional[Callable]=None,
                          last_packet=None,
                          done_callback:Callable=noop) -> None:    #pylint: disable=method-hidden
         """ Note: this is best-effort only

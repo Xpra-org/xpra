@@ -7,7 +7,7 @@
 import socket
 from time import sleep, time, monotonic
 from queue import Queue
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Queue, Tuple
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
@@ -87,6 +87,9 @@ class ProxyInstance:
         self.lost_windows = None
         self.encode_queue = None            #holds draw packets to encode
         self.encode_thread = None
+        #setup protocol wrappers:
+        self.server_packets : Queue[Tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets : Queue[Tuple] = Queue(PROXY_QUEUE_SIZE)
         self.video_encoding_defs = None
         self.video_encoders = None
         self.video_encoders_last_used_time = None
@@ -105,9 +108,6 @@ class ProxyInstance:
     def run(self) -> None:
         self.video_init()
 
-        #setup protocol wrappers:
-        self.server_packets = Queue(PROXY_QUEUE_SIZE)
-        self.client_packets = Queue(PROXY_QUEUE_SIZE)
         #server connection tweaks:
         self.server_protocol.large_packets += ["input-devices", "draw", "window-icon",
                                                "keymap-changed", "server-settings"]

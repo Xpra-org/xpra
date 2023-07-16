@@ -21,6 +21,8 @@ RESOLUTION_ALIASES : Dict[str,Tuple[int,int]] = {
     "8K"    : (7680, 4320),
     }
 
+VIDEO_MAX_SIZE : Tuple[int,int] = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
+
 from enum import IntEnum
 
 class Gravity(IntEnum):

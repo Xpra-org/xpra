@@ -163,6 +163,7 @@ class ServerCore:
     def __init__(self):
         log("ServerCore.__init__()")
         self.start_time = time()
+        self.uuid = ""
         self.auth_classes = {}
         self.child_reaper = None
         self.original_desktop_display = None
@@ -180,6 +181,7 @@ class ServerCore:
         self._ssl_attributes : Dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
         self.ssl_mode : str = ""
+        self.ssh_upgrade = False
         self._html : bool = False
         self._http_scripts : Dict[str,Callable] = {}
         self._www_dir : str = ""
@@ -210,6 +212,7 @@ class ServerCore:
             "tmp/*", "tmp",
             ]
         self.splash_process = None
+        self.control_commands : Dict[str,Any] = {}
 
         self.session_name = ""
 
@@ -234,6 +237,7 @@ class ServerCore:
         self.menu_provider = None
 
         self.init_uuid()
+        self._default_packet_handlers : Dict[str,Callable] = {}
 
     def get_server_mode(self) -> str:
         return "core"
@@ -1036,7 +1040,7 @@ class ServerCore:
 
     def init_packet_handlers(self) -> None:
         netlog("initializing packet handlers")
-        self._default_packet_handlers : Dict[str,Callable] = {
+        self._default_packet_handlers = {
             "hello":                       self._process_hello,
             "disconnect":                  self._process_disconnect,
             "ssl-upgrade":                 self._process_ssl_upgrade,

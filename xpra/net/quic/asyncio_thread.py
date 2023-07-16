@@ -66,13 +66,13 @@ class threaded_asyncio_loop:
 
     def call(self, f:Callable) -> None:
         log(f"call({f})")
-        def tsafe():
-            log(f"creating task for {f}")
-            assert self.loop
-            self.loop.create_task(f)
         log("call_soon_threadsafe")
         assert self.loop
         if isinstance(f, (Coroutine, Generator)):
+            def tsafe():
+                log(f"creating task for {f}")
+                assert self.loop
+                self.loop.create_task(f)
             self.loop.call_soon_threadsafe(tsafe)
         else:
             self.loop.call_soon_threadsafe(f)

@@ -151,6 +151,9 @@ class UIXpraClient(ClientBaseClass):
         self.server_lock_toggle : bool = False
         self.server_keyboard : bool = True
         self.server_pointer : bool = True
+        self.server_commands_info = False
+        self.server_commands_signals : Tuple[str,...] = ()
+        self.server_readonly = False
 
         self.client_supports_opengl : bool = False
         self.client_supports_sharing : bool = False
@@ -158,10 +161,13 @@ class UIXpraClient(ClientBaseClass):
 
         #helpers and associated flags:
         self.client_extras = None
+        self._mouse_position_delay = 5
         self.keyboard_helper_class : Type = KeyboardHelper
         self.keyboard_helper = None
         self.keyboard_grabbed : bool = False
         self.keyboard_sync : bool = False
+        self.key_repeat_delay = -1
+        self.key_repeat_interval = -1
         self.kh_warning : bool = False
         self.menu_helper = None
 

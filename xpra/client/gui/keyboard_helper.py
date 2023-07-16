@@ -69,13 +69,13 @@ class KeyboardHelper:
     def reset_state(self) -> None:
         self.keycodes = []
         self.x11_keycodes = {}
-        self.mod_meanings = {}
-        self.mod_managed = []
-        self.mod_pointermissing = []
+        self.mod_meanings : Dict[str,Any] = {}
+        self.mod_managed : List[str] = []
+        self.mod_pointermissing : List[str] = []
         self.layout = ""
-        self.layouts = []
+        self.layouts : List[str] = []
         self.variant = ""
-        self.variants = []
+        self.variants : List[str] = []
         self.options = ""
         self.query = ""
         self.query_struct = {}

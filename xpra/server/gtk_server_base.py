@@ -50,6 +50,7 @@ class GTKServerBase(ServerBase):
         self.cursor_suspended : bool = False
         self.ui_watcher = None
         self.keymap_changing_timer : int = 0
+        self.cursor_sizes = self.get_cursor_sizes()
         super().__init__()
 
     def watch_keymap_changes(self) -> None:
@@ -189,18 +190,17 @@ class GTKServerBase(ServerBase):
             ss.send_cursor()
 
 
-    def get_cursor_sizes(self) -> Tuple:
+    def get_cursor_sizes(self) -> Tuple[int,int]:
         display = Gdk.Display.get_default()
-        return display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        if not display:
+            return (0, 0)
+        return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
 
 
     def send_initial_cursors(self, ss, _sharing=False) -> None:
         #cursors: get sizes and send:
-        display = Gdk.Display.get_default()
-        if display:
-            self.cursor_sizes = int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
-            cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
-            ss.send_cursor()
+        cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
+        ss.send_cursor()
 
     def get_ui_cursor_info(self) -> Dict[str,Any]:
         #(from UI thread)

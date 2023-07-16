@@ -39,9 +39,11 @@ class NetworkStateServer(StubServerMixin):
     def __init__(self):
         self.pings = False
         self.ping_timer : int = 0
+        self.bandwidth_limit = 0
         self.mem_bytes = 0
         self.cpu_info : Dict = {}
         self.print_memleaks : Optional[Callable] = None
+        self.fds : Set[int] = set()
 
     def init(self, opts) -> None:
         self.pings = opts.pings

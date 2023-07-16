@@ -78,6 +78,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         WindowModelStub.__init__(self)
         self.update_wm_name()
         self.update_icon()
+        self._depth = 24
         self.resize_timer = 0
         self.resize_value = (1, 1)
 

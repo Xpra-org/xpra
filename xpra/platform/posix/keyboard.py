@@ -44,7 +44,7 @@ class Keyboard(KeyboardBase):
         self.__input_sources : Dict[str,int] = {}
         self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
 
-    def _store_input_sources(self, input_sources):
+    def _store_input_sources(self, input_sources) -> None:
         log("_store_input_sources(%s)", input_sources)
         for layout_info in input_sources.values():
             index = int(layout_info["index"])
@@ -52,10 +52,10 @@ class Keyboard(KeyboardBase):
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
 
-    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None):
+    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) ->None:
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
-        def ok_cb(success, res):
+        def ok_cb(success, res) -> None:
             try:
                 if not dbus_to_native(success):
                     log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, success)
@@ -65,7 +65,7 @@ class Keyboard(KeyboardBase):
             except Exception:
                 log("_dbus_gnome_shell_eval_ism(%s)", cmd, exc_info=True)
 
-        def err_cb(msg):
+        def err_cb(msg) -> None:
             log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, msg)
 
         self.__dbus_helper.call_function(

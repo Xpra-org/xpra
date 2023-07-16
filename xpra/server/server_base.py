@@ -118,6 +118,14 @@ class ServerBase(ServerBaseClass):
         self.sharing : Optional[bool] = None
         self.lock : Optional[bool] = None
 
+        self.start_after_connect_done = True
+        self.bandwidth_detection = False
+        self.dpi = self.xdpi = self.ydpi = 0
+        self.double_click_time = -1
+        self.double_click_distance = (-1, -1)
+        self.antialias = {}
+        self.cursor_size = 0
+
         self.idle_timeout : int = 0
         #duplicated from Server Source...
         self.client_shutdown : bool = CLIENT_CAN_SHUTDOWN

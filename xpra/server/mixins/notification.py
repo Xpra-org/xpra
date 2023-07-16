@@ -141,7 +141,7 @@ class NotificationForwarder(StubServerMixin):
             log.error("Error processing notification:")
             log.estr(e)
 
-    def get_notification_icon(self, _icon_string:str):
+    def get_notification_icon(self, _icon_string:str) -> Any:
         return None
 
     def notify_close_callback(self, nid:int) -> None:

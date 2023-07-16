@@ -113,6 +113,15 @@ class X11ServerCore(GTKServerBase):
         self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added : List[Tuple[int,int]] = []
+
+        self.initial_resolutions = ()
+        self.randr = False
+        self.randr_exact_size = False
+        self.fake_xinerama = "no"      #only enabled in seamless server
+        self.current_xinerama_config = None
+        self.current_keyboard_group = 0
+        self.key_repeat_delay = -1
+        self.key_repeat_interval = -1
         super().__init__()
         log("XShape=%s", X11Window.displayHasXShape())
 
@@ -131,13 +140,13 @@ class X11ServerCore(GTKServerBase):
         try:
             self.initial_resolutions = parse_resolutions(opts.resize_display, opts.refresh_rate)
         except ValueError:
-            self.initial_resolutions = None
+            self.initial_resolutions = ()
         self.randr = opts.resize_display not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
         #x11 keyboard bits:
-        self.current_keyboard_group = None
+        self.current_keyboard_group = 0
 
 
     def x11_init(self) -> None:

@@ -349,6 +349,7 @@ class Logger:
             caller = None
         if caller not in ("__main__", None, "importlib._bootstrap"):
             self.categories.insert(0, caller)
+        self.level = logging.INFO
         self.level_override = 0
         self._logger = logging.getLogger(".".join(self.categories))
         self.setLevel(default_level)

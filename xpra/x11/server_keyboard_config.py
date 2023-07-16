@@ -54,6 +54,7 @@ class KeyboardConfig(KeyboardConfigBase):
         super().__init__()
         self.raw : bool = False
         self.query_struct = None
+        self.modifier_map : Dict[str,int] = {}
         self.mod_meanings = {}
         self.mod_managed = []
         self.mod_pointermissing = []

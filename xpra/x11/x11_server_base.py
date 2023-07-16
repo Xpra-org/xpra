@@ -73,6 +73,7 @@ class X11ServerBase(X11ServerCore):
         self._xsettings_enabled : bool = False
         self.display_pid : int = 0
         self.icc_profile : bytes = b""
+        self.input_devices = "xtest"
 
     def do_init(self, opts) -> None:
         super().do_init(opts)

@@ -79,6 +79,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._has_grab = 0
         self._has_focus = 0
         self._wm = None
+        self.wm_name = ""
+        self.sync_xvfb = 0
+        self.fake_xinerama = ""
         self.last_raised = None
         self.system_tray = False
         GObject.GObject.__init__(self)

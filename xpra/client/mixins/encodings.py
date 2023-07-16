@@ -11,7 +11,7 @@ from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.net import compression
 from xpra.util import envint, envbool, updict, csv, typedict
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -23,7 +23,6 @@ B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
-VIDEO_MAX_SIZE = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 
 #we assume that any server will support at least those:

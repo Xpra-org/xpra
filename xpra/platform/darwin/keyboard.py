@@ -81,14 +81,15 @@ class Keyboard(KeyboardBase):
     def init_vars(self) -> None:
         super().init_vars()
         self.swap_keys = True
-        self.meta_modifier = None
+        self.meta_modifier = ""
         self.control_modifier = "control"
-        self.super_modifier = None
-        self.hyper_modifier = None
-        self.num_lock_modifier = None
+        self.super_modifier = ""
+        self.hyper_modifier = ""
+        self.num_lock_modifier = ""
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
         self.key_translations : Dict[str,Tuple[int,str]] = {}
+
 
     def __repr__(self):
         return "darwin.Keyboard"

@@ -24,7 +24,7 @@ from xpra.os_util import (
     hexstr, load_binary_file, osexpand,
     WIN32, OSX, POSIX, is_Wayland,
     )
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk_common.cursor_names import cursor_types
@@ -118,6 +118,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
+        self._window_with_grab = 0
+        self.video_max_size = VIDEO_MAX_SIZE
         try:
             self.connect("scaling-changed", self.reset_windows_cursors)
         except TypeError:
@@ -1116,7 +1118,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         etime = Gtk.get_current_event_time()
         Gdk.pointer_ungrab(etime)
         Gdk.keyboard_ungrab(etime)
-        self._window_with_grab = None
+        self._window_with_grab = 0
 
 
     def window_bell(self, window, device, percent:int, pitch:int, duration:int, bell_class, bell_id:int, bell_name:str) -> None:

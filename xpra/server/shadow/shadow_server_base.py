@@ -55,6 +55,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.pointer_last_position = None
         self.pointer_poll_timer = 0
         self.last_cursor_data = None
+        self.session_name = "shadow"
+        self.keyboard_config = None
         batch_config.ALWAYS = True             #always batch
 
     def init(self, opts) -> None:
@@ -66,7 +68,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.make_notifier()
         log("init(..) session_name=%s", opts.session_name)
         if opts.session_name:
-            self.session_name : str = opts.session_name
+            self.session_name = opts.session_name
         else:
             self.guess_session_name()
 

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Tuple, Union
+
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
@@ -74,6 +76,7 @@ class UpdateStatusWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
+        self.newer_version : Union[None,bool,Tuple[int,...]] = None
 
 
     def check(self):
