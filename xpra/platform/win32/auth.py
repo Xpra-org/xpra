@@ -25,7 +25,7 @@ LOGON32_PROVIDER_DEFAULT = 0
 
 def check(domain="", username:str="", password:bytes=b"") -> bool:
     token = HANDLE()
-    domain = '' #os.environ.get('COMPUTERNAME')
+    #domain = os.environ.get('COMPUTERNAME')
     if LOG_CREDENTIALS:
         log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
             username, domain, password, addressof(token))
