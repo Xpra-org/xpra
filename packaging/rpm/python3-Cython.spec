@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:		python3-Cython
-Version:	3.0.0rc2
+Version:	3.0.0
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -21,7 +21,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "46c14e829a5bb0b9599176ccfd598bd2d3da2bedd43427c8fd05ebf0d61b6f06" ]; then
+if [ "${sha256}" != "1acaf0abe3edfad06cc98b4ab2499b20714a6fe11c4ef1afb4751f2a8e9208af" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
