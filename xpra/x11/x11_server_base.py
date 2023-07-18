@@ -116,7 +116,8 @@ class X11ServerBase(X11ServerCore):
                 self.do_clean_session_files(
                     "xvfb.pid",
                     "xauthority",
-                    "Xorg.log*",
+                    "Xorg.log",
+                    "Xorg.log.old",
                     "xorg.conf.d/*"
                     "xorg.conf.d"
                     )
