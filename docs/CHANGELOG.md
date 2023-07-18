@@ -1,7 +1,38 @@
 # Changelog
 
-## [5.0] 2022-10-02
-* TODO
+## [5.0] 2023-07-18
+* Major improvements:
+    * [QUIC transport](https://github.com/Xpra-org/xpra/issues/3376)
+    * [split packaging][https://github.com/Xpra-org/xpra/issues/3802]
+    * [freedesktop screencast / remotedesktop](https://github.com/Xpra-org/xpra/issues/3750) for X11 and Wayland
+    * ease of use: [easier basic commands](https://github.com/Xpra-org/xpra/issues/3841), [open html5 client](https://github.com/Xpra-org/xpra/issues/3842)
+* Platforms, build and packaging:
+    * [MacOS workarounds](https://github.com/Xpra-org/xpra/issues/3777)
+    * [side buttons with MS Windows shadow servers](https://github.com/Xpra-org/xpra/pull/3865)
+    * [Python 3.12](https://github.com/Xpra-org/xpra/issues/3807)
+    * [disable all audio features](https://github.com/Xpra-org/xpra/issues/3835)
+    * [replace Python2 builds](https://github.com/Xpra-org/xpra/issues/3652)
+    * [LTS feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
+* Server:
+    * [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/a42e2343ee572ff2edb28ece0b38904969c75470) 
+    * [exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
+* Client:
+    * [allow keyboard shortcuts in readonly mode](https://github.com/Xpra-org/xpra/issues/3899)
+    * [show decoder statistics](https://github.com/Xpra-org/xpra/issues/3796)
+* Minor:
+    * [generic exec authentication module](https://github.com/Xpra-org/xpra/issues/3790) 
+    * [audio `removesilence`](https://github.com/Xpra-org/xpra/issues/3709)
+    * [use urrlib for parsing](https://github.com/Xpra-org/xpra/issues/3599)
+* Network:
+    * [smaller handshake packet](https://github.com/Xpra-org/xpra/issues/3812)
+    * [better IPv6](https://github.com/Xpra-org/xpra/issues/3853)
+    * [ssh agent forwarding automatic switching when sharing](https://github.com/Xpra-org/xpra/issues/3593)
+    * [use libnm to query network devices](https://github.com/Xpra-org/xpra/issues/3623)
+* Encodings:
+    * [use intra refresh](https://github.com/Xpra-org/xpra/issues/3830)
+    * [`stream` encoding for desktop mode](https://github.com/Xpra-org/xpra/issues/3872)
+    * [GStreamer codecs](https://github.com/Xpra-org/xpra/issues/3706)
+
 
 ## [4.4] 2022-10-01
 * Platforms, build and packaging:
