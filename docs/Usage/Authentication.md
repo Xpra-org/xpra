@@ -13,13 +13,25 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 
 ***
 
-### Authentication Modules
+## Server Syntax
+Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
+ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
+```shell
+xpra start --start=xterm -d auth
+     --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
+```
+So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
+```shell
+xpra start --start=xterm -d auth \
+     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt \
+     --bind-tcp=0.0.0.0:10001,auth=sys
+```
+
+### Server Authentication Modules
 Xpra supports many authentication modules.
 Some of these modules require extra [dependencies](../Build/Dependencies.md).
-
-Here is the full list:
 <details>
-  <summary>list of modules</summary>
+  <summary>server authentication modules</summary>
 
 | Module                                                                                                       | Result                                                                                  | Purpose                                                                             |
 |--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
@@ -48,21 +60,6 @@ Here is the full list:
 | [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/u2f_auth.py)                             | [Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)              | [#1789](https://github.com/Xpra-org/xpra/issues/1789)                               |
 </details>
 
-***
-
-### Syntax
-Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
-ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a file:
-```shell
-xpra start --start=xterm -d auth
-     --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
-```
-So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
-```shell
-xpra start --start=xterm -d auth \
-     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt --bind 
-     --bind-tcp=0.0.0.0:10001,auth=sys
-```
 <details>
   <summary>more examples</summary>
 
@@ -85,6 +82,38 @@ The syntax with older versions used a dedicated switch for each socket type:
 etc
 
 For more information on the different socket types, see [network examples](../Network)
+</details>
+
+***
+
+## Client Syntax
+
+By default, `challenge-handlers=all` which means that the python client will try all authentication handlers available until one succeeds.  
+If the server is configured with multiple authentications modules for the same socket, the client will do the same.
+
+### Basic examples
+Authenticating as username `foo` with password `bar` using the URI:
+```shell
+xpra attach tcp://foo:bar@host:port/
+```
+For a more secure option, storing the password value in a file, with debugging enabled:
+```shell
+echo -n "foo" > ./password.txt
+xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt --debug auth
+```
+
+<details>
+  <summary>client challenge handlers</summary>
+
+| Module                                                                                        | Behaviour and options                                                                                    |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [env](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/env_handler.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
+| [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/file_handler.py)         | `filename` specifies the file containing the passowrd                                                    |
+| [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/gss_handler.py)           | use `gss-services` to specify the name of the security context                                           |
+| [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/kerberos_handler.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
+| [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/prompt_handler.py)     | GUI clients should see a dialog, console users a text prompt                                             |
+| [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/u2f_handler.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
+| [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/uri_handler.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                   |
 </details>
 
 ***
