@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t
 from libc.stdio cimport printf
