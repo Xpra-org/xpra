@@ -35,6 +35,43 @@ def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
     return {}, None
 
 
+def get_test_gl_icon():
+    data = b""
+    encoding = "png"
+    w = 32
+    h = 32
+    stride = w * 4
+    gl_icon = get_icon_filename("opengl", ext="png")
+    if gl_icon:
+        try:
+            from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
+        except ImportError as e:
+            log(f"testing without icon: {e}")
+        else:
+            img = Image.open(gl_icon)
+            img.load()
+            w, h = img.size
+            stride = w * 4
+            noalpha = Image.new("RGB", img.size, (255, 255, 255))
+            noalpha.paste(img, mask=img.split()[3])  # 3 is the alpha channel
+            buf = BytesIO()
+            try:
+                noalpha.save(buf, format="JPEG")
+                data = buf.getvalue()
+                buf.close()
+                encoding = "jpeg"
+            except KeyError as e:
+                log("save()", exc_info=True)
+                log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
+                data = load_binary_file(gl_icon)
+    if not data:
+        data = bytes([0]) * stride * h
+        encoding  = "rgb32"
+    return encoding, w, h, stride, data
+
+def no_idle_add(fn, *args, **kwargs):
+    fn(*args, **kwargs)
+
 def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
     draw_result = {}
@@ -43,7 +80,7 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
         x, y = -100, -100
         if show:
             x, y = 100, 100
-        w, h = 250, 250
+        ww, wh = 250, 250
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
         from xpra.client.gui.window_border import WindowBorder
@@ -58,11 +95,11 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
                 """ pretend to add the header bar """
             def schedule_recheck_focus(self):
                 """ pretend to handle focus checks """
-        window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, w, h, w, h,
+        window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, ww, wh, ww, wh,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
-        window_backing.idle_add = noop
+        window_backing.idle_add = no_idle_add
         window_backing.timeout_add = noop
         window_backing.source_remove = noop
         window.realize()
@@ -70,8 +107,6 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
         pixel_format = "BGRX"
         bpp = len(pixel_format)
         options = typedict({"pixel_format" : pixel_format})
-        stride = bpp*w
-        coding = "rgb32"
         widget = window_backing._backing
         widget.realize()
         def paint_callback(success, message=""):
@@ -79,51 +114,23 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
             draw_result["success"] = success
             if message:
                 draw_result["message"] = message.replace("\n", " ")
-        log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
         pix = AtomicInteger(0x7f)
         REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show)*16)
-        gl_icon = get_icon_filename("opengl", ext="png")
-        icon_data = None
-        if gl_icon:
-            try:
-                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-            except ImportError as e:
-                log(f"testing without icon: {e}")
-            else:
-                img = Image.open(gl_icon)
-                img.load()
-                icon_w, icon_h = img.size
-                icon_stride = icon_w * 4
-                noalpha = Image.new("RGB", img.size, (255, 255, 255))
-                noalpha.paste(img, mask=img.split()[3]) # 3 is the alpha channel
-                buf = BytesIO()
-                try:
-                    noalpha.save(buf, format="JPEG")
-                    icon_data = buf.getvalue()
-                    buf.close()
-                    icon_format = "jpeg"
-                except KeyError as e:
-                    log("save()", exc_info=True)
-                    log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
-                    icon_data = load_binary_file(gl_icon)
-                    icon_format = "png"
-        if not icon_data:
-            icon_w = 32
-            icon_h = 32
-            icon_stride = icon_w * 4
-            icon_data = bytes([0])*icon_stride*icon_h
-            icon_format = "rgb32"
+
+        coding, w, h, stride, icon_data = get_test_gl_icon()
+        log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
         def draw():
             v = pix.increase()
-            img_data = bytes([v % 256]*stride*h)
+            img_data = bytes([v % 256]*w*4*h)
             options["flush"] = 1
-            window.draw_region(0, 0, w, h, coding, img_data, stride, v, options, [paint_callback])
+            window.draw_region(0, 0, w, h, "rgb32", img_data, w*4, v, options, [paint_callback])
             options["flush"] = 0
-            mx = w//2-icon_w//2
-            my = h//2-icon_h//2
-            x = round(mx*(1+sin(v/100)))
-            y = round(my*(1+cos(v/100)))
-            window.draw_region(x, y, icon_w, icon_h, icon_format, icon_data, icon_stride, v, options, [paint_callback])
+            mx = ww//2-w//2
+            my = wh//2-h//2
+            draw_x = round(mx*(1+sin(v/100)))
+            draw_y = round(my*(1+cos(v/100)))
+            log("calling draw_region for test gl icon")
+            window.draw_region(draw_x, draw_y, w, h, coding, icon_data, stride, v, options, [paint_callback])
             return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
         #so we can check the present_fbo() result:
