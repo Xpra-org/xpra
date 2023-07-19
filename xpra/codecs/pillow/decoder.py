@@ -108,7 +108,7 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> Tuple[str,bytes,
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):
-        raise ValueError(f"expected {coding} image data but received "+(actual or "unknown"))
+        raise ValueError(f"expected {coding!r} image data but received %r" % (actual or "unknown"))
     buf = BytesIO(img_data)
     img = Image.open(buf)
     assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), f"invalid image mode: {img.mode}"
