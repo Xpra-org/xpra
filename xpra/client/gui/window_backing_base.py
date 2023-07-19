@@ -888,12 +888,12 @@ class WindowBackingBase:
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 #avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.strget("rgb_format")
+                rgb_format = options.strget("rgb_format", "")
                 if not rgb_format:
                     rgb_format = {
                         "rgb24" : "RGB",
                         "rgb32" : "RGBX",
-                        }.get(coding)
+                        }.get(coding, "RGB")
                 if rowstride==0:
                     rowstride = width * len(rgb_format)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
