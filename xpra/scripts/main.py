@@ -2385,6 +2385,7 @@ def do_run_glcheck(opts, show=False) -> Dict[str,Any]:
             if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
                 pixel_depth = 0
             draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show)
+            log(f"draw result={draw_result}")
             opengl_props.update(draw_result)
             if not draw_result.get("success", False):
                 opengl_props["safe"] = False
@@ -2406,7 +2407,7 @@ def do_run_glcheck(opts, show=False) -> Dict[str,Any]:
 def run_glcheck(opts) -> int:
     log = Logger("opengl")
     if POSIX and not OSX:
-        with OSEnvContext(GDK_BACKEND="x11"):
+        with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
             try:
                 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
                 init_gdk_display_source()
@@ -2414,14 +2415,14 @@ def run_glcheck(opts) -> int:
                 log(f"no gtk3 x11 bindings: {e}")
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
-    try:
-        check_gtk_client()
-        props = do_run_glcheck(opts)
-    except Exception as e:
-        props = {
-            "error"     : str(e).replace("\n", " "),
-            "success"   : False,
-            }
+        try:
+            check_gtk_client()
+            props = do_run_glcheck(opts)
+        except Exception as e:
+            props = {
+                "error"     : str(e).replace("\n", " "),
+                "success"   : False,
+                }
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
