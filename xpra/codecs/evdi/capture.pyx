@@ -93,17 +93,17 @@ cdef extern from "evdi_lib.h":
         uint8_t *buffer
 
     ctypedef struct evdi_event_context:
-        void (*dpms_handler)(int dpms_mode, void *user_data)
-        void (*mode_changed_handler)(evdi_mode mode, void *user_data)
-        void (*update_ready_handler)(int buffer_to_be_updated, void *user_data)
-        void (*crtc_state_handler)(int state, void *user_data)
-        void (*cursor_set_handler)(evdi_cursor_set cursor_set, void *user_data)
-        void (*cursor_move_handler)(evdi_cursor_move cursor_move, void *user_data)
-        void (*ddcci_data_handler)(evdi_ddcci_data ddcci_data, void *user_data)
+        void (*dpms_handler)(int dpms_mode, void *user_data) noexcept
+        void (*mode_changed_handler)(evdi_mode mode, void *user_data) noexcept
+        void (*update_ready_handler)(int buffer_to_be_updated, void *user_data) noexcept
+        void (*crtc_state_handler)(int state, void *user_data) noexcept
+        void (*cursor_set_handler)(evdi_cursor_set cursor_set, void *user_data) noexcept
+        void (*cursor_move_handler)(evdi_cursor_move cursor_move, void *user_data) noexcept
+        void (*ddcci_data_handler)(evdi_ddcci_data ddcci_data, void *user_data) noexcept
         void *user_data
 
     ctypedef struct evdi_logging:
-        void (*function)(void *user_data, const char *fmt, ...)
+        void (*function)(void *user_data, const char *fmt, ...) noexcept
         void *user_data;
 
     #define EVDI_INVALID_HANDLE NULL
@@ -154,7 +154,7 @@ def get_version():
     return (version.version_major, version.version_minor, version.version_patchlevel)
 
 
-cdef void evdi_logging_function(void *user_data, const char *fmt, ...):
+cdef void evdi_logging_function(void *user_data, const char *fmt, ...) noexcept:
     s = bytestostr(fmt)
     log(f"evdi: {s}")
 
@@ -175,44 +175,44 @@ def reset_logging():
 #maps device numbers to our device object:
 devices = {}
 
-cdef void dpms_handler(int dpms_mode, void *user_data):
+cdef void dpms_handler(int dpms_mode, void *user_data) noexcept:
     log(f"dpms_handler({dpms_mode}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.dpms_handler(dpms_mode)
 
-cdef void mode_changed_handler(evdi_mode mode, void *user_data):
+cdef void mode_changed_handler(evdi_mode mode, void *user_data) noexcept:
     log(f"mode_changed_handler({mode.width}x{mode.height}-{mode.bits_per_pixel}@{mode.refresh_rate}, %#x)",
         <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.mode_changed_handler(mode)
 
-cdef void update_ready_handler(int buffer_to_be_updated, void *user_data):
+cdef void update_ready_handler(int buffer_to_be_updated, void *user_data) noexcept:
     log(f"update_ready_handler({buffer_to_be_updated}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.update_ready_handler(buffer_to_be_updated)
 
-cdef void crtc_state_handler(int state, void *user_data):
+cdef void crtc_state_handler(int state, void *user_data) noexcept:
     log(f"crtc_state_handler({state}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.crtc_state_handler(state)
 
-cdef void cursor_set_handler(evdi_cursor_set cursor_set, void *user_data):
+cdef void cursor_set_handler(evdi_cursor_set cursor_set, void *user_data) noexcept:
     log(f"cursor_set_handler({cursor_set.width}x{cursor_set.height}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_set_handler(cursor_set)
 
-cdef void cursor_move_handler(evdi_cursor_move cursor_move, void *user_data):
+cdef void cursor_move_handler(evdi_cursor_move cursor_move, void *user_data) noexcept:
     log(f"cursor_move_handler({cursor_move.x}x{cursor_move.y}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
         evdi_device.cursor_move_handler(cursor_move)
 
-cdef void ddcci_data_handler(evdi_ddcci_data ddcci_data, void *user_data):
+cdef void ddcci_data_handler(evdi_ddcci_data ddcci_data, void *user_data) noexcept:
     log(f"ddcci_data_handler({ddcci_data.address:x}, %#x)", <uintptr_t> user_data)
     cdef EvdiDevice evdi_device = devices.get(<uintptr_t> user_data)
     if evdi_device:
@@ -267,7 +267,7 @@ cdef class EvdiDevice:
             evdi_close(h)
 
 
-    cdef void dpms_handler(self, int dpms_mode):
+    cdef void dpms_handler(self, int dpms_mode) noexcept:
         log(f"dpms_handler({dpms_mode}) %s", MODE_STR.get(dpms_mode, "INVALID"))
         if self.dpms_mode==dpms_mode:
             #unchanged
