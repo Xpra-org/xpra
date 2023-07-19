@@ -198,11 +198,11 @@ class Encoder(VideoPipeline):
             "caps"          : CAPS,
             #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
             })
-        gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "h265"
+        gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "video/x-h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),
             get_element_str(self.encoder_element, eopts),
-            get_caps_str(f"video/x-{gst_encoding}", vcaps),
+            get_caps_str(gst_encoding, vcaps),
             get_element_str("appsink", get_default_appsink_attributes())
             ]
         if not self.setup_pipeline_and_bus(elements):

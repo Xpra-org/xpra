@@ -141,6 +141,7 @@ class CaptureAndEncode(Capture):
         #we are overloading "pixel_format" as "encoding":
         encoding = self.pixel_format
         encoder = {
+            "jpeg"  : "jpegenc",
             "h264"  : "x264enc",
             "vp8"   : "vp8enc",
             "vp9"   : "vp9enc",
@@ -154,14 +155,14 @@ class CaptureAndEncode(Capture):
             "speed" : 100,
             "quality" : 100,
             })
-        profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
-        eopts = get_video_encoder_options(encoder, profile, options)
+        self.profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
+        eopts = get_video_encoder_options(encoder, self.profile, options)
         vcaps = get_video_encoder_caps(encoder)
         self.extra_client_info : Dict[str,Any] = vcaps.copy()
         if self.profile:
             vcaps["profile"] = profile
             self.extra_client_info["profile"] = profile
-        gst_encoding = get_gst_encoding(encoding)  #ie: "hevc" -> "h265"
+        gst_encoding = get_gst_encoding(encoding)  #ie: "hevc" -> "video/x-h265"
         elements = [
             capture_element,   #ie: ximagesrc or pipewiresrc
             #"videorate",
@@ -170,7 +171,7 @@ class CaptureAndEncode(Capture):
             "videoconvert",
             "queue leaky=2",
             get_element_str(encoder, eopts),
-            get_caps_str(f"video/x-{gst_encoding}", vcaps),
+            get_caps_str(gst_encoding, vcaps),
             #"appsink name=sink emit-signals=true max-buffers=1 drop=false sync=false async=true qos=true",
             get_element_str("appsink", get_default_appsink_attributes()),
             ]

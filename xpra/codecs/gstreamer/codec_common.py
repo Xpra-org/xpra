@@ -168,6 +168,8 @@ def get_gst_rgb_format(rgb_format : str) -> str:
 
 
 def get_video_encoder_caps(encoder:str="x264enc") -> Dict[str,Any]:
+    if encoder=="jpeg":
+        return {}
     if encoder=="av1enc":
         return {
             "alignment"     : "tu",
@@ -194,7 +196,10 @@ def get_video_encoder_options(encoder:str="x264", profile:str="", options:Option
     return eopts
 
 def get_gst_encoding(encoding:str) -> str:
-    return {"hevc" : "h265"}.get(encoding, encoding)
+    if encoding in ("jpeg", "png"):
+        return f"image/{encoding}"
+    video = {"hevc" : "h265"}.get(encoding, encoding)
+    return f"video/x-{video}"
 
 
 class VideoPipeline(Pipeline):
