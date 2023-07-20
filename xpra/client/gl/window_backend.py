@@ -105,7 +105,6 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
         window.realize()
         window_backing.paint_screen = True
         pixel_format = "BGRX"
-        bpp = len(pixel_format)
         options = typedict({"pixel_format" : pixel_format})
         widget = window_backing._backing
         widget.realize()

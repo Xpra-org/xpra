@@ -77,13 +77,13 @@ class RemoteDesktop(PortalShadow):
     def _process_key_action(self, proto, packet) -> None:
         if self.readonly or not self.input_devices or not self.keymap:
             return
-        wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]  # @UnusedVariable
+        keyname = net_utf8(packet[2])
+        pressed = bool(packet[3])
+        keyval = int(packet[5])
+        keystr = net_utf8(packet[6])
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        keyname = net_utf8(keyname)
-        keystr = net_utf8(keystr)
-        # modifiers = list(net_utf8(x) for x in modifiers)
         self.set_ui_driver(ss)
         keylog(f"key: name={keyname}, keyval={keyval}, keystr={keystr}")
         options = native_to_dbus([], "{sv}")

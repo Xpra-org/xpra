@@ -74,7 +74,7 @@ def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
 MAX_THEMES : int = 2
 IconTheme : Optional[Type] = None
 Config : Optional[Type] = None
-themes : Dict[str,Any] = None
+themes : Dict[str,Any] = {}
 IconLoadingContext : Type = DummyContextManager
 if LOAD_FROM_THEME:
     try:
