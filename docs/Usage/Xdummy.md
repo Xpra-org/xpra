@@ -73,9 +73,9 @@ The alternative is often to disable `OpenGL` altogether, more information here: 
   <summary>Debian and Ubuntu</summary>
 
 Debian and Ubuntu do weird things with their Xorg server which prevents it from running Xdummy (tty permission issues).  
-Warning: this may also interfere with other sessions running on the same server when they should be completely isolated from each other.
+Warning: this may also interfere with other sessions running on the same server when they should be completely isolated from each other.  
+[Crashing other X11 sessions](https://github.com/Xpra-org/xpra/issues/2834) is a serious security issue, caused by Debian's packaging and still left unsolved after many years.
 
-YMMV.
 </details>
 
 <details>
