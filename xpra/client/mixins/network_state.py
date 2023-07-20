@@ -323,10 +323,9 @@ class NetworkState(StubClientMixin):
             #no longer connected!
             return False
         last = self._server_ok
+        self._server_ok = self.last_ping_echoed_time >= ping_sent_time
         if FAKE_BROKEN_CONNECTION>0:
-            self._server_ok = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
-        else:
-            self._server_ok = self.last_ping_echoed_time>=ping_sent_time
+            self._server_ok = self._server_ok and (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
                 self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT*1000,
@@ -367,7 +366,7 @@ class NetworkState(StubClientMixin):
         if aspl:
             spl : Tuple[float,...] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
-            wait = max(MIN_PING_TIMEOUT, min(MAX_PING_TIMEOUT, round(1000+avg*2000)))
+            wait = max(1000*MIN_PING_TIMEOUT, min(1000*MAX_PING_TIMEOUT, round(1000+avg*2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
                 now_ms, round(1000*avg), wait)
         t = GLib.timeout_add(wait, self.check_server_echo, now_ms)
