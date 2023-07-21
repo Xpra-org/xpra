@@ -155,8 +155,16 @@ class NotificationClient(StubClientMixin):
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self._ui_event()
-        dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
-        icon, actions, hints = None, [], {}
+        dbus_id = packet[1]
+        nid = int(packet[2])
+        app_name = net_utf8(packet[3])
+        replaces_nid = int(packet[4])
+        app_icon = packet[5]
+        summary = net_utf8(packet[6])
+        body = net_utf8(packet[7])
+        expire_timeout = int(packet[8])
+        icon = None
+        actions, hints = [], {}
         if len(packet)>=10:
             icon = packet[9]
         if len(packet)>=12:
@@ -168,9 +176,6 @@ class NotificationClient(StubClientMixin):
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
         #this one of the few places where we actually do care about character encoding:
-        summary = net_utf8(summary)
-        body = net_utf8(body)
-        app_name = net_utf8(app_name)
         tray = self.get_tray_window(app_name, hints)
         log("get_tray_window(%s)=%s", app_name, tray)
         self.notifier.show_notify(dbus_id, tray, nid,

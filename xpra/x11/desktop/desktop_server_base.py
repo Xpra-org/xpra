@@ -231,7 +231,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def _process_map_window(self, proto, packet : PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+        wid, x, y, w, h = (int(x) for x in packet[1:6])
         window = self._id_to_window.get(wid)
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
@@ -246,7 +246,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def _process_unmap_window(self, proto, packet : PacketType) -> None:
-        wid = packet[1]
+        wid = int(packet[1])
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
@@ -262,9 +262,9 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def _process_configure_window(self, proto, packet : PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+        wid, x, y, w, h = (int(x) for x in packet[1:6])
         if len(packet)>=13 and server_features.input_devices and not self.readonly:
-            pwid = packet[10]
+            pwid = int(packet[10])
             pointer = packet[11]
             modifiers = packet[12]
             device_id = -1
