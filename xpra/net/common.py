@@ -33,7 +33,7 @@ PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,
 
 try:
     from typing import Unpack
-    PacketType : TypeAlias = tuple[str, *tuple[PacketElement, ...]]
+    PacketType : TypeAlias = Tuple[str, Unpack[Tuple[PacketElement, ...]]]
 except ImportError:
     PacketType: TypeAlias = Tuple
 
