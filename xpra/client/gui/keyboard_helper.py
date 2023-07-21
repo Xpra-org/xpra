@@ -67,7 +67,7 @@ class KeyboardHelper:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:
-        self.keycodes = []
+        self.keycodes : Tuple[Tuple[int,str,int,int,int],...] = ()
         self.x11_keycodes = {}
         self.mod_meanings : Dict[str,Any] = {}
         self.mod_managed : List[str] = []
@@ -330,8 +330,8 @@ class KeyboardHelper:
                 hashadd(self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
-    def get_full_keymap(self):
-        return []
+    def get_full_keymap(self) -> Tuple[Tuple[int,str,int,int,int],...]:
+        return ()
 
 
     def get_prefixed_keymap_properties(self, skip=()):

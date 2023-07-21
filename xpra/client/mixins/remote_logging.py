@@ -85,7 +85,8 @@ class RemoteLogging(StubClientMixin):
 
     def _process_logging(self, packet : PacketType) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
-        level, msg = packet[1:3]
+        level = int(packet[1])
+        msg = packet[2]
         prefix = "server: "
         if len(packet)>=4:
             dtime = packet[3]

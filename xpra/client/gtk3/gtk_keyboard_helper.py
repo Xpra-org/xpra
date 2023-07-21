@@ -86,7 +86,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash!=self.hash
 
-    def get_full_keymap(self):
+    def get_full_keymap(self) -> Tuple[Tuple[int,str,int,int,int],...]:
         return get_gtk_keymap()
 
     def cleanup(self):

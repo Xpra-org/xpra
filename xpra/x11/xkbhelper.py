@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Set
+from typing import Set, Dict, List
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
@@ -139,7 +139,7 @@ def apply_xmodmap(instructions):
     return unset
 
 
-def get_keycode_mappings():
+def get_keycode_mappings() -> Dict[str,List[str]]:
     if XKB and X11Keyboard.hasXkb():
         return X11Keyboard.get_xkb_keycode_mappings()
     return X11Keyboard.get_keycode_mappings()
@@ -376,7 +376,7 @@ def indexed_mappings(raw_mappings):
     return indexed
 
 
-def gtk_keycodes_to_mappings(gtk_mappings):
+def gtk_keycodes_to_mappings(gtk_mappings) : Dict:
     """
         Takes gtk keycodes as obtained by get_gtk_keymap, in the form:
         #[(keyval, keyname, keycode, group, level), ..]

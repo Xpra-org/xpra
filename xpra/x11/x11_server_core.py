@@ -348,7 +348,7 @@ class X11ServerCore(GTKServerBase):
                 X11Keyboard.set_key_repeat_rate(500, 30)
                 keylog("keyboard repeat disabled")
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source=None) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if "features" in source.wants:
