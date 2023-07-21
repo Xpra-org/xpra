@@ -376,7 +376,7 @@ def indexed_mappings(raw_mappings):
     return indexed
 
 
-def gtk_keycodes_to_mappings(gtk_mappings) : Dict:
+def gtk_keycodes_to_mappings(gtk_mappings) -> Dict:
     """
         Takes gtk keycodes as obtained by get_gtk_keymap, in the form:
         #[(keyval, keyname, keycode, group, level), ..]
