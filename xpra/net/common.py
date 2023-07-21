@@ -5,7 +5,7 @@
 
 import os
 import threading
-from typing import Tuple, Callable, List, Dict, TypeAlias, Type, Any, ByteString, Union
+from typing import Tuple, Callable, List, Dict, TypeAlias, Type, Any, ByteString, Union, Unpack
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.util import repr_ellipsized, envint, envbool
@@ -28,7 +28,9 @@ DEFAULT_PORTS : Dict[str,int] = {
 PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
 
 # packet type followed by attributes:
-PacketType : TypeAlias = Tuple[str, Any, ...]
+# in 3.11: tuple[str, *tuple[int, ...]]
+# tuple[str, Unpack[tuple[int, ...]] for older versions
+PacketType : TypeAlias = Tuple[str, Unpack[Tuple[PacketElement, ...]]]
 
 # client packet handler:
 PacketHandlerType = Callable[[PacketType], None]
