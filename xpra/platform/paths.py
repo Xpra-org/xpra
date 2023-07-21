@@ -174,7 +174,7 @@ def default_get_app_dir() -> str:
             sys.exec_prefix,
             "/usr",
             "/usr/local",
-            ):
+        ):
             if not prefix:
                 continue
             adir = os.path.join(prefix, "share", "xpra")

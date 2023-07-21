@@ -34,7 +34,7 @@ class XpraDesktopServer(DesktopServerBase):
         self.gsettings_modified = {}
         self.root_prop_watcher = None
 
-    def server_init(self):
+    def server_init(self) -> None:
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
         screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
@@ -50,7 +50,7 @@ class XpraDesktopServer(DesktopServerBase):
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
 
-    def configure_best_screen_size(self):
+    def configure_best_screen_size(self) -> Tuple[int,int]:
         """ for the first client, honour desktop_mode_size if set """
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
@@ -73,7 +73,7 @@ class XpraDesktopServer(DesktopServerBase):
             return root_w, root_h
         return self.set_screen_size(w, h, ss.screen_resize_bigger)
 
-    def resize(self, w, h):
+    def resize(self, w:int, h:int) -> None:
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -85,7 +85,7 @@ class XpraDesktopServer(DesktopServerBase):
         if not self.resize_timer:
             self.resize_timer = self.timeout_add(250, self.do_resize)
 
-    def do_resize(self):
+    def do_resize(self) -> None:
         self.resize_timer = 0
         rw, rh = self.resize_value
         try:
@@ -104,17 +104,17 @@ class XpraDesktopServer(DesktopServerBase):
             geomlog.estr(e)
 
 
-    def get_server_mode(self):
+    def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source):
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities["desktop"] =True
         return capabilities
 
 
-    def load_existing_windows(self):
+    def load_existing_windows(self) -> None:
         with xsync:
             model = ScreenDesktopModel(self.randr_exact_size)
             model.setup()
@@ -124,7 +124,7 @@ class XpraDesktopServer(DesktopServerBase):
             model.managed_connect("resized", self.send_updated_screen_size)
             model.managed_connect("motion", self._motion_signaled)
 
-    def send_updated_screen_size(self, model):
+    def send_updated_screen_size(self, model) -> None:
         #the vfb has been resized
         wid = self._window_to_id[model]
         x, y, w, h = model.get_geometry()

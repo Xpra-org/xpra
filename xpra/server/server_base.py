@@ -511,7 +511,7 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(f, c.get_server_features(self, server_source))
         return f
 
-    def make_hello(self, source=None) -> Dict[str,Any]:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c!=ServerCore:

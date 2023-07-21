@@ -141,7 +141,7 @@ class GTKServerBase(ServerBase):
         log("do_run() end of gtk.main()")
 
 
-    def make_hello(self, source=None) -> Dict[str,Any]:
+    def make_hello(self, source) -> Dict[str,Any]:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()

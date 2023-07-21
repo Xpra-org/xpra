@@ -2306,7 +2306,7 @@ class ServerCore:
         self.clean_quit(False)
 
 
-    def make_hello(self, source=None) -> Dict[str,Any]:
+    def make_hello(self, source) -> Dict[str,Any]:
         now = time()
         ncaps = get_network_caps(FULL_INFO)
         ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
