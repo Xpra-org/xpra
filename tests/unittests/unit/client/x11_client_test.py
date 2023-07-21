@@ -95,6 +95,7 @@ class X11ClientTest(X11ClientTestUtil):
 
     def do_test_control_send_file(self, data):
         f = self._temp_file(data)
+        client = xvfb = server = None
         try:
             display = self.find_free_display()
             server = self.check_fast_start_server(display, "--file-transfer=yes")
@@ -115,11 +116,13 @@ class X11ClientTest(X11ClientTestUtil):
             readback = load_binary_file(filename)
             assert readback==data, "file data corrupted"
             os.unlink(filename)
-            #cleanup:
-            client.terminate()
-            xvfb.terminate()
-            server.terminate()
         finally:
+            if client:
+                client.terminate()
+            if xvfb:
+                xvfb.terminate()
+            if server:
+                server.terminate()
             f.close()
 
     def test_control_send_file(self):
