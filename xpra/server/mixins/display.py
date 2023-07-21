@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Any
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
+from xpra.net.common import PacketType
 from xpra.version_util import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
@@ -179,13 +180,13 @@ class DisplayManager(StubServerMixin):
             }
 
 
-    def _process_set_cursors(self, proto, packet) -> None:
+    def _process_set_cursors(self, proto, packet : PacketType) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_cursors = bool(packet[1])
 
-    def _process_set_bell(self, proto, packet) -> None:
+    def _process_set_bell(self, proto, packet : PacketType) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
@@ -337,7 +338,7 @@ class DisplayManager(StubServerMixin):
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
 
-    def _process_desktop_size(self, proto, packet) -> None:
+    def _process_desktop_size(self, proto, packet : PacketType) -> None:
         log("new desktop size from %s: %s", proto, packet)
         ss = self.get_server_source(proto)
         if ss is None:
@@ -381,7 +382,7 @@ class DisplayManager(StubServerMixin):
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
-    def _process_configure_display(self, proto, packet) -> None:
+    def _process_configure_display(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -448,7 +449,7 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # screenshots:
-    def _process_screenshot(self, proto, _packet) -> None:
+    def _process_screenshot(self, proto, _packet : PacketType) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:

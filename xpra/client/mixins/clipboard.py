@@ -10,6 +10,7 @@ from typing import Tuple, Dict, Any
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
+from xpra.net.common import PacketType
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util import flatten_dict, typedict
@@ -238,13 +239,13 @@ class ClipboardClient(StubClientMixin):
         return None
 
 
-    def _process_clipboard_packet(self, packet) -> None:
+    def _process_clipboard_packet(self, packet : PacketType) -> None:
         ch = self.clipboard_helper
         log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
         if ch:
             ch.process_clipboard_packet(packet)
 
-    def _process_clipboard_enabled_status(self, packet) -> None:
+    def _process_clipboard_enabled_status(self, packet: PacketType) -> None:
         clipboard_enabled, reason = packet[1:3]
         if self.clipboard_enabled!=clipboard_enabled:
             log.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])

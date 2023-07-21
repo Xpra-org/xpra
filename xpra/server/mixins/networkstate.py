@@ -13,6 +13,7 @@ from gi.repository import GLib
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
+from xpra.net.common import PacketType
 from xpra.os_util import livefds, POSIX
 from xpra.util import envbool, envint, detect_leaks, typedict
 from xpra.log import Logger
@@ -144,12 +145,12 @@ class NetworkStateServer(StubServerMixin):
                 log.info("%ix %s", count, brand)
 
 
-    def _process_connection_data(self, proto, packet) -> None:
+    def _process_connection_data(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.update_connection_data(packet[1])
 
-    def _process_bandwidth_limit(self, proto, packet) -> None:
+    def _process_bandwidth_limit(self, proto, packet : PacketType) -> None:
         log("_process_bandwidth_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)
         if not ss:
@@ -184,12 +185,12 @@ class NetworkStateServer(StubServerMixin):
                 ss.ping()
         return True
 
-    def _process_ping_echo(self, proto, packet) -> None:
+    def _process_ping_echo(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.process_ping_echo(packet)
 
-    def _process_ping(self, proto, packet) -> None:
+    def _process_ping(self, proto, packet : PacketType) -> None:
         time_to_echo = packet[1]
         sid = ""
         if len(packet)>=4:

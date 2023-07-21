@@ -26,7 +26,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE
+from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -1846,7 +1846,7 @@ class ServerCore:
     def cleanup_protocol(self, protocol:SocketProtocol) -> None:
         """ some subclasses perform extra cleanup here """
 
-    def _process_disconnect(self, proto:SocketProtocol, packet) -> None:
+    def _process_disconnect(self, proto:SocketProtocol, packet:PacketType) -> None:
         info = bytestostr(packet[1])
         if len(packet)>2:
             info += " (%s)" % csv(bytestostr(x) for x in packet[2:])
@@ -1862,7 +1862,7 @@ class ServerCore:
         #overridden in server_base in case there is more than one protocol
         return ""
 
-    def _process_connection_lost(self, proto:SocketProtocol, packet) -> None:
+    def _process_connection_lost(self, proto:SocketProtocol, packet:PacketType) -> None:
         netlog("process_connection_lost(%s, %s)", proto, packet)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
@@ -1872,13 +1872,13 @@ class ServerCore:
             self._potential_protocols.remove(proto)
         self.cleanup_protocol(proto)
 
-    def _process_gibberish(self, proto:SocketProtocol, packet) -> None:
+    def _process_gibberish(self, proto:SocketProtocol, packet : PacketType) -> None:
         message, data = packet[1:3]
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
         netlog(" data: %s", ellipsizer(data))
         self.disconnect_client(proto, message)
 
-    def _process_invalid(self, protocol:SocketProtocol, packet) -> None:
+    def _process_invalid(self, protocol:SocketProtocol, packet : PacketType) -> None:
         message, data = packet[1:3]
         netlog(f"Received invalid packet: {message}")
         netlog(" data: %s", ellipsizer(data))
@@ -1893,7 +1893,7 @@ class ServerCore:
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
-    def _process_hello(self, proto:SocketProtocol, packet) -> None:
+    def _process_hello(self, proto:SocketProtocol, packet:PacketType) -> None:
         capabilities = packet[1]
         c = typedict(capabilities)
         if LOG_HELLO:
@@ -2111,7 +2111,7 @@ class ServerCore:
         self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
 
-    def _process_ssl_upgrade(self, proto, packet):
+    def _process_ssl_upgrade(self, proto:SocketProtocol, packet:PacketType):
         socktype = proto._conn.socktype
         new_socktype = {"tcp" : "ssl", "ws" : "wss"}.get(socktype)
         if not new_socktype:

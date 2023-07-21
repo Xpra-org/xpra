@@ -9,6 +9,7 @@ from typing import Callable, Any, List, Dict
 
 from xpra.util import typedict
 from xpra.os_util import WIN32
+from xpra.net.common import ServerPacketHandlerType
 
 
 class StubServerMixin:
@@ -147,10 +148,10 @@ class StubServerMixin:
         return {}
 
 
-    def add_packet_handler(self, packet_type, handler, main_thread=True) -> None:
+    def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
         """ register a packet handler """
 
-    def add_packet_handlers(self, defs, main_thread=True) -> None:
+    def add_packet_handlers(self, defs : Dict[str,ServerPacketHandlerType], main_thread=True) -> None:
         """ register multiple packet handlers """
 
     def get_server_source(self, proto):

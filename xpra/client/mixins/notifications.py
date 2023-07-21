@@ -8,6 +8,7 @@ from typing import Dict, Any
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
+from xpra.net.common import PacketType
 from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict, net_utf8
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -149,7 +150,7 @@ class NotificationClient(StubClientMixin):
         else:
             self.idle_add(show_notification)
 
-    def _process_notify_show(self, packet):
+    def _process_notify_show(self, packet : PacketType):
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
@@ -176,7 +177,7 @@ class NotificationClient(StubClientMixin):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notify_close(self, packet):
+    def _process_notify_close(self, packet : PacketType):
         if not self.notifications_enabled:
             return
         assert self.notifier

@@ -23,6 +23,7 @@ from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
     )
+from xpra.net.common import PacketType
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_exec_command
 from xpra.scripts.config import FALSE_OPTIONS
@@ -426,7 +427,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # pointer:
-    def _process_pointer_position(self, packet) -> None:
+    def _process_pointer_position(self, packet : PacketType) -> None:
         wid, x, y = packet[1:4]
         if len(packet)>=6:
             rx, ry = packet[4:6]
@@ -551,7 +552,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # cursor:
-    def _process_cursor(self, packet) -> None:
+    def _process_cursor(self, packet : PacketType) -> None:
         if not self.cursors_enabled:
             return
         if len(packet)==2:
@@ -562,7 +563,7 @@ class WindowClient(StubClientMixin):
             if len(packet)<9:
                 raise ValueError(f"invalid cursor packet: only {len(packet)} items")
             #trim packet-type:
-            new_cursor = packet[1:]
+            new_cursor = list(packet[1:])
             encoding = u(new_cursor[0])
             setdefault = encoding.startswith("default:")
             if setdefault:
@@ -599,7 +600,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # system tray
-    def _process_new_tray(self, packet) -> None:
+    def _process_new_tray(self, packet : PacketType) -> None:
         assert self.client_supports_system_tray
         self._ui_event()
         wid, w, h = packet[1:4]
@@ -814,7 +815,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # regular windows:
-    def _process_new_common(self, packet, override_redirect):
+    def _process_new_common(self, packet : PacketType, override_redirect):
         self._ui_event()
         wid, x, y, w, h = packet[1:6]
         assert 0<=w<32768 and 0<=h<32768
@@ -1115,10 +1116,10 @@ class WindowClient(StubClientMixin):
         return (self.ClientWindowClass,)
 
 
-    def _process_new_window(self, packet) -> None:
+    def _process_new_window(self, packet : PacketType) -> None:
         return self._process_new_common(packet, False)
 
-    def _process_new_override_redirect(self, packet) -> None:
+    def _process_new_override_redirect(self, packet : PacketType) -> None:
         if self.modal_windows:
             #find any modal windows and remove the flag
             #so that the OR window can get the focus
@@ -1132,14 +1133,14 @@ class WindowClient(StubClientMixin):
         return self._process_new_common(packet, True)
 
 
-    def _process_initiate_moveresize(self, packet) -> None:
+    def _process_initiate_moveresize(self, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
             x_root, y_root, direction, button, source_indication = packet[2:7]
             window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
 
-    def _process_window_metadata(self, packet) -> None:
+    def _process_window_metadata(self, packet : PacketType) -> None:
         wid, metadata = packet[1:3]
         metalog("metadata update for window %i: %s", wid, metadata)
         window = self._id_to_window.get(wid)
@@ -1147,7 +1148,7 @@ class WindowClient(StubClientMixin):
             metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
-    def _process_window_icon(self, packet) -> None:
+    def _process_window_icon(self, packet : PacketType) -> None:
         wid, w, h, coding, data = packet[1:6]
         img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
@@ -1157,7 +1158,7 @@ class WindowClient(StubClientMixin):
             window.update_icon(img)
             self.set_tray_icon()
 
-    def _process_window_move_resize(self, packet) -> None:
+    def _process_window_move_resize(self, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         ax = self.sx(x)
         ay = self.sy(y)
@@ -1172,7 +1173,7 @@ class WindowClient(StubClientMixin):
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
-    def _process_window_resized(self, packet) -> None:
+    def _process_window_resized(self, packet : PacketType) -> None:
         wid, w, h = packet[1:4]
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
@@ -1184,16 +1185,16 @@ class WindowClient(StubClientMixin):
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_raise_window(self, packet) -> None:
+    def _process_raise_window(self, packet : PacketType) -> None:
         #implemented in gtk subclass
         pass
 
-    def _process_restack_window(self, packet) -> None:
+    def _process_restack_window(self, packet : PacketType) -> None:
         #implemented in gtk subclass
         pass
 
 
-    def _process_configure_override_redirect(self, packet) -> None:
+    def _process_configure_override_redirect(self, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         ax = self.sx(x)
@@ -1251,7 +1252,7 @@ class WindowClient(StubClientMixin):
             log.warn("unknown close-window action: %s", self.window_close_action)
 
 
-    def _process_lost_window(self, packet) -> None:
+    def _process_lost_window(self, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
@@ -1320,7 +1321,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # bell
-    def _process_bell(self, packet) -> None:
+    def _process_bell(self, packet : PacketType) -> None:
         if not self.bell_enabled:
             return
         (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
@@ -1394,14 +1395,14 @@ class WindowClient(StubClientMixin):
         #ungrab via dedicated server packet:
         self.send_force_ungrab(wid)
 
-    def _process_pointer_grab(self, packet) -> None:
+    def _process_pointer_grab(self, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         grablog("grabbing %s: %s", wid, window)
         if window:
             self.window_grab(wid, window)
 
-    def _process_pointer_ungrab(self, packet) -> None:
+    def _process_pointer_ungrab(self, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         grablog("ungrabbing %s: %s", wid, window)
@@ -1476,13 +1477,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # painting windows:
-    def _process_draw(self, packet) -> None:
+    def _process_draw(self, packet : PacketType) -> None:
         if PAINT_DELAY>=0:
             GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
-    def _process_eos(self, packet) -> None:
+    def _process_eos(self, packet : PacketType) -> None:
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid:int, packet_sequence, width, height, decode_time, message="") -> None:
@@ -1630,7 +1631,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        for packet_type, handler in {
+        self.add_packet_handlers({
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
@@ -1650,5 +1651,4 @@ class WindowClient(StubClientMixin):
             "pointer-position":     self._process_pointer_position,
             "pointer-grab":         self._process_pointer_grab,
             "pointer-ungrab":       self._process_pointer_ungrab,
-            }.items():
-            self.add_packet_handler(packet_type, handler)
+        })

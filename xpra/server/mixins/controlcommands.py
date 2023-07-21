@@ -11,6 +11,7 @@ from typing import List
 
 from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict, ConnectionMessage
 from xpra.os_util import load_binary_file
+from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -791,7 +792,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
 
-    def _process_command_request(self, _proto, packet) -> None:
+    def _process_command_request(self, _proto, packet : PacketType) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet)>=2, "invalid command request packet (too small!)"
         #packet[0] = "control"

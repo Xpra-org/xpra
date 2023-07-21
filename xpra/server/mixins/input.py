@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional
 
 from xpra.os_util import bytestostr
 from xpra.util import typedict, net_utf8, envbool
+from xpra.net.common import PacketType
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -128,7 +129,7 @@ class InputServer(StubServerMixin):
         return info
 
 
-    def _process_layout(self, proto, packet) -> None:
+    def _process_layout(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         layout, variant = packet[1:3]
@@ -140,7 +141,7 @@ class InputServer(StubServerMixin):
         if ss and ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
-    def _process_keymap(self, proto, packet) -> None:
+    def _process_keymap(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         props = typedict(packet[1])
@@ -163,7 +164,7 @@ class InputServer(StubServerMixin):
         #only actually implemented in X11ServerBase
         pass
 
-    def _process_key_action(self, proto, packet) -> None:
+    def _process_key_action(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
@@ -268,7 +269,7 @@ class InputServer(StubServerMixin):
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
-    def _process_key_repeat(self, proto, packet) -> None:
+    def _process_key_repeat(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -305,7 +306,7 @@ class InputServer(StubServerMixin):
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
         ss.user_event()
 
-    def _process_keyboard_sync_enabled_status(self, proto, packet) -> None:
+    def _process_keyboard_sync_enabled_status(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -364,7 +365,7 @@ class InputServer(StubServerMixin):
                             return [ax, ay]+list(pointer[2:])
         return pointer
 
-    def _process_mouse_common(self, proto, device_id:int, wid:int, opointer, props=None):
+    def process_mouse_common(self, proto, device_id:int, wid:int, opointer, props=None):
         pointer = self._adjust_pointer(proto, device_id, wid, opointer)
         if not pointer:
             return None
@@ -375,7 +376,7 @@ class InputServer(StubServerMixin):
     def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
         return True
 
-    def _process_pointer_button(self, proto, packet) -> None:
+    def _process_pointer_button(self, proto, packet : PacketType) -> None:
         mouselog("process_pointer_button(%s, %s)", proto, packet)
         if self.readonly:
             return
@@ -394,7 +395,7 @@ class InputServer(StubServerMixin):
             self.pointer_sequence[device_id] = seq
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
-    def _process_button_action(self, proto, packet) -> None:
+    def _process_button_action(self, proto, packet : PacketType) -> None:
         mouselog("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
             return
@@ -420,7 +421,7 @@ class InputServer(StubServerMixin):
     def _update_modifiers(self, proto, wid, modifiers) -> None:
         """ servers subclasses may change the modifiers state """
 
-    def _process_pointer(self, proto, packet) -> None:
+    def _process_pointer(self, proto, packet : PacketType) -> None:
         #v5 packet format
         mouselog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
@@ -444,13 +445,13 @@ class InputServer(StubServerMixin):
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
-        if self._process_mouse_common(proto, device_id, wid, pdata, props):
+        if self.process_mouse_common(proto, device_id, wid, pdata, props):
             modifiers = props.get("modifiers")
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
 
 
-    def _process_pointer_position(self, proto, packet) -> None:
+    def _process_pointer_position(self, proto, packet : PacketType) -> None:
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
@@ -471,13 +472,13 @@ class InputServer(StubServerMixin):
         device_id = -1
         if len(packet)>=6:
             device_id = packet[5]
-        if self._process_mouse_common(proto, device_id, wid, pdata, props):
+        if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
 
 
     ######################################################################
     # input devices:
-    def _process_input_devices(self, _proto, packet) -> None:
+    def _process_input_devices(self, _proto, packet : PacketType) -> None:
         self.input_devices_format = packet[1]
         self.input_devices_data = packet[2]
         from xpra.util import print_nested_dict

@@ -11,6 +11,7 @@ from typing import Dict, Any, Tuple
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
+from xpra.net.common import PacketType
 from xpra.os_util import OSEnvContext, WIN32
 from xpra.util import envint, envbool, csv, typedict, NotificationID
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -41,6 +42,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
         self.server_webcam = False
+        self.server_webcam_encodings : Tuple[str,...] = ()
         self.server_virtual_video_devices = 0
         #duplicated from encodings mixin:
         self.server_encodings : Tuple[str,...] = ()
@@ -291,13 +293,13 @@ class WebcamForwarder(StubClientMixin):
 
     ######################################################################
     #packet handlers
-    def _process_webcam_stop(self, packet):
+    def _process_webcam_stop(self, packet : PacketType):
         device_no = packet[1]
         if device_no!=self.webcam_device_no:
             return
         self.stop_sending_webcam()
 
-    def _process_webcam_ack(self, packet):
+    def _process_webcam_ack(self, packet : PacketType):
         log("process_webcam_ack: %s", packet)
         with self.webcam_lock:
             if self.webcam_device:

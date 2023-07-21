@@ -21,6 +21,7 @@ from xpra.os_util import (
     OSX, WIN32, POSIX,
     )
 from xpra.util import envint, csv, ellipsizer, u, typedict
+from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
@@ -373,7 +374,7 @@ class ChildCommandServer(StubServerMixin):
                 self.mdns_update()
 
 
-    def _process_start_command(self, proto, packet:Tuple) -> None:
+    def _process_start_command(self, proto, packet : PacketType) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
@@ -395,7 +396,7 @@ class ChildCommandServer(StubServerMixin):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_command_signal(self, _proto, packet:Tuple) -> None:
+    def _process_command_signal(self, _proto, packet : PacketType) -> None:
         pid = packet[1]
         signame = bytestostr(packet[2])
         if signame not in COMMAND_SIGNALS:

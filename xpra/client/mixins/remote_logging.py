@@ -12,6 +12,7 @@ from threading import Lock
 from xpra.util import csv, typedict, repr_ellipsized, net_utf8
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
+from xpra.net.common import PacketType
 
 log = Logger("client")
 
@@ -82,7 +83,7 @@ class RemoteLogging(StubClientMixin):
     #def stop_receiving_logging(self):
     #    self.send("logging-control", "stop")
 
-    def _process_logging(self, packet) -> None:
+    def _process_logging(self, packet : PacketType) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level, msg = packet[1:3]
         prefix = "server: "

@@ -12,6 +12,7 @@ from dbus.types import UInt32, Int32
 
 from xpra.util import net_utf8
 from xpra.dbus.helper import native_to_dbus
+from xpra.net.common import PacketType
 from xpra.platform.posix.fd_portal import REMOTEDESKTOP_IFACE
 from xpra.platform.posix.fd_portal_shadow import PortalShadow
 from xpra.log import Logger
@@ -74,7 +75,7 @@ class RemoteDesktop(PortalShadow):
             dbus_interface=REMOTEDESKTOP_IFACE)
 
 
-    def _process_key_action(self, proto, packet) -> None:
+    def _process_key_action(self, proto, packet : PacketType) -> None:
         if self.readonly or not self.input_devices or not self.keymap:
             return
         keyname = net_utf8(packet[2])

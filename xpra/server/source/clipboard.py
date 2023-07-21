@@ -12,6 +12,7 @@ from gi.repository import GLib
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
+from xpra.net.common import PacketType
 from xpra.util import envint, typedict
 from xpra.log import Logger
 
@@ -125,9 +126,9 @@ class ClipboardConnection(StubSourceMixin):
                     log.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
                 return
         #call compress_clibboard via the encode work queue:
-        self.queue_encode((True, self.compress_clipboard, packet))
+        self.queue_encode((True, self.compress_clipboard, (packet, )))
 
-    def compress_clipboard(self, packet) -> None:
+    def compress_clipboard(self, packet : PacketType) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         #Note: this runs in the 'encode' thread!

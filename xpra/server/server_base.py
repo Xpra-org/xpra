@@ -13,7 +13,7 @@ from typing import Type, Dict, List, Tuple, Callable, Any, Optional
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO
-from xpra.net.common import may_log_packet
+from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, csv,
@@ -221,7 +221,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet=()) -> None:
+    def _process_exit_server(self, _proto, packet : PacketType=()) -> None:
         reason = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet)>1:
@@ -231,7 +231,7 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
-    def _process_shutdown_server(self, _proto, _packet=()) -> None:
+    def _process_shutdown_server(self, _proto, _packet:PacketType=()) -> None:
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
@@ -412,7 +412,7 @@ class ServerBase(ServerBaseClass):
         if uuid and send_ui and SSH_AGENT_DISPATCH:
             self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
         #process ui half in ui thread:
-        self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
+        self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def get_client_connection_class(self, caps) -> Type:
         # pylint: disable=import-outside-toplevel
@@ -429,7 +429,7 @@ class ServerBase(ServerBaseClass):
         if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
             set_ssh_agent(uuid)
 
-    def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int) -> None:
+    def process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int) -> None:
         def reject(message="server is shutting down") -> None:
             p = ss.protocol
             if p:
@@ -455,7 +455,7 @@ class ServerBase(ServerBaseClass):
                 return
         except Exception:
             #log exception but don't disclose internal details to the client
-            log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
+            log("process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
             reject("error accepting new connection")
 
@@ -593,7 +593,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # info:
-    def _process_info_request(self, proto, packet) -> None:
+    def _process_info_request(self, proto, packet:PacketType) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)
@@ -713,7 +713,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def _process_server_settings(self, proto, packet) -> None:
+    def _process_server_settings(self, proto, packet:PacketType) -> None:
         #only used by x11 servers
         pass
 
@@ -752,7 +752,7 @@ class ServerBase(ServerBaseClass):
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
 
-    def _process_set_deflate(self, proto, packet) -> None:
+    def _process_set_deflate(self, proto, packet:PacketType) -> None:
         level = packet[1]
         log("client has requested compression level=%s", level)
         proto.set_compression_level(level)
@@ -761,7 +761,7 @@ class ServerBase(ServerBaseClass):
         if ss:
             ss.set_deflate(level)
 
-    def _process_sharing_toggle(self, proto, packet) -> None:
+    def _process_sharing_toggle(self, proto, packet:PacketType) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
         if not ss:
@@ -775,7 +775,7 @@ class ServerBase(ServerBaseClass):
                     self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                            f"client {ss.counter} no longer wishes to share the session")
 
-    def _process_lock_toggle(self, proto, packet) -> None:
+    def _process_lock_toggle(self, proto, packet:PacketType) -> None:
         assert self.lock is None
         ss = self.get_server_source(proto)
         if ss:
@@ -925,11 +925,11 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # packets:
-    def add_packet_handlers(self, defs, main_thread=True) -> None:
+    def add_packet_handlers(self, defs : Dict[str,ServerPacketHandlerType], main_thread=True) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type, handler, main_thread=True) -> None:
+    def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
         netlog("add_packet_handler%s", (packet_type, handler, main_thread))
         if main_thread:
             handlers = self._authenticated_ui_packet_handlers

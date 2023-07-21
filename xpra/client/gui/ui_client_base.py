@@ -16,6 +16,7 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type,
 from xpra.common import FULL_INFO, noop
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
+from xpra.net.common import PacketType
 from xpra.net.net_util import get_info as get_net_info
 from xpra.child_reaper import reaper_cleanup
 from xpra.platform.info import get_sys_info
@@ -542,7 +543,7 @@ class UIXpraClient(ClientBaseClass):
         self.handshake_complete()
 
 
-    def _process_startup_complete(self, packet):
+    def _process_startup_complete(self, packet : PacketType):
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
@@ -563,7 +564,7 @@ class UIXpraClient(ClientBaseClass):
                 msg += ", %i tray%s" % (trays, engs(trays))
         log.info(msg)
 
-    def _process_new_window(self, packet):
+    def _process_new_window(self, packet : PacketType):
         window = super()._process_new_window(packet)
         if self.desktop_fullscreen and any(self._remote_server_mode.find(x)>=0 for x in ("desktop", "monitor", "shadow")):
             from gi.repository import Gdk  # @UnresolvedImport
@@ -595,13 +596,13 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # server messages:
-    def _process_server_event(self, packet):
+    def _process_server_event(self, packet : PacketType):
         log(": ".join((str(x) for x in packet[1:])))
 
     def on_server_setting_changed(self, setting:str, cb:Callable):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
-    def _process_setting_change(self, packet):
+    def _process_setting_change(self, packet : PacketType):
         setting, value = packet[1:3]
         setting = bytestostr(setting)
         #convert "hello" / "setting" variable names to client variables:
@@ -646,7 +647,7 @@ class UIXpraClient(ClientBaseClass):
         log("get_control_commands_caps()=%s", caps)
         return {"" : caps}
 
-    def _process_control(self, packet):
+    def _process_control(self, packet : PacketType):
         command = bytestostr(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)

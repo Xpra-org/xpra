@@ -14,6 +14,7 @@ from typing import Dict, Any, Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
+from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
@@ -381,12 +382,12 @@ class AudioServer(StubServerMixin):
         return info
 
 
-    def _process_sound_control(self, proto, packet) -> None:
+    def _process_sound_control(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_control(*packet[1:])
 
-    def _process_sound_data(self, proto, packet) -> None:
+    def _process_sound_data(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_data(*packet[1:])

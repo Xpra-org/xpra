@@ -18,6 +18,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
+from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
 from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -886,7 +887,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             win._update_client_geometry()
 
 
-    def _process_map_window(self, proto, packet) -> None:
+    def _process_map_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -917,7 +918,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _process_unmap_window(self, proto, packet) -> None:
+    def _process_unmap_window(self, proto, packet : PacketType) -> None:
         wid = packet[1]
         window = self._lookup_window(wid)
         if not window:
@@ -978,7 +979,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet) -> None:
+    def _process_configure_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -1022,7 +1023,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     pwid = -1
                 device_id = -1
                 mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
-                if self._process_mouse_common(proto, device_id, pwid, pointer):
+                if self.process_mouse_common(proto, device_id, pwid, pointer):
                     #only update modifiers if the window is in focus:
                     if self._has_focus==wid:
                         self._update_modifiers(proto, wid, modifiers)
@@ -1130,7 +1131,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         super()._move_pointer(device_id, wid, pos, props)
 
 
-    def _process_close_window(self, proto, packet) -> None:
+    def _process_close_window(self, proto, packet : PacketType) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]
@@ -1143,7 +1144,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.repaint_root_overlay()
 
 
-    def _process_window_signal(self, proto, packet) -> None:
+    def _process_window_signal(self, proto, packet : PacketType) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]

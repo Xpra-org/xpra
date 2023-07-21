@@ -20,6 +20,7 @@ from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 from xpra.util import flatten_dict, envbool
 from xpra.version_util import dict_version_trim
 from xpra.common import FULL_INFO
+from xpra.net.common import PacketType
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
@@ -290,16 +291,16 @@ class GTKServerBase(ServerBase):
         raise NotImplementedError
 
 
-    def _process_map_window(self, proto, packet) -> None:
+    def _process_map_window(self, proto, packet : PacketType) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet) -> None:
+    def _process_unmap_window(self, proto, packet : PacketType) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet) -> None:
+    def _process_close_window(self, proto, packet : PacketType) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet) -> None:
+    def _process_configure_window(self, proto, packet : PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
 

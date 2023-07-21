@@ -13,6 +13,7 @@ from xpra.platform.features import (
     CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
     )
 from xpra.util import csv
+from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -189,7 +190,7 @@ class ClipboardServer(StubServerMixin):
         self.set_clipboard_source(source)
 
 
-    def _process_clipboard_packet(self, proto, packet) -> None:
+    def _process_clipboard_packet(self, proto, packet : PacketType) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -210,7 +211,7 @@ class ClipboardServer(StubServerMixin):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         self.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_enabled_status(self, proto, packet) -> None:
+    def _process_clipboard_enabled_status(self, proto, packet : PacketType) -> None:
         assert self.clipboard
         if self.readonly:
             return

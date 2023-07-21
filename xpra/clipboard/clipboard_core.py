@@ -14,6 +14,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
+from xpra.net.common import PacketType
 from xpra.os_util import POSIX, bytestostr, hexstr
 from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
@@ -477,7 +478,7 @@ class ClipboardProtocolHelperCore:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
 
-    def _process_clipboard_token(self, packet:Tuple) -> None:
+    def _process_clipboard_token(self, packet : PacketType) -> None:
         selection = bytestostr(packet[1])
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
@@ -604,7 +605,7 @@ class ClipboardProtocolHelperCore:
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
-    def _process_clipboard_request(self, packet:Tuple) -> None:
+    def _process_clipboard_request(self, packet : PacketType) -> None:
         request_id, selection, target = packet[1:4]
         selection = bytestostr(selection)
         target = bytestostr(target)
@@ -685,7 +686,7 @@ class ClipboardProtocolHelperCore:
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
-    def _process_clipboard_contents(self, packet:Tuple) -> None:
+    def _process_clipboard_contents(self, packet : PacketType) -> None:
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:7]
         selection = bytestostr(selection)
         wire_encoding = bytestostr(wire_encoding)
@@ -698,7 +699,7 @@ class ClipboardProtocolHelperCore:
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
-    def _process_clipboard_contents_none(self, packet:Tuple) -> None:
+    def _process_clipboard_contents_none(self, packet : PacketType) -> None:
         log("process clipboard contents none")
         request_id = packet[1]
         assert isinstance(request_id, int)
@@ -712,16 +713,16 @@ class ClipboardProtocolHelperCore:
         self.progress_cb(len(self._clipboard_outstanding_requests), None)
 
 
-    def _process_clipboard_pending_requests(self, packet:Tuple) -> None:
+    def _process_clipboard_pending_requests(self, packet : PacketType) -> None:
         pending = packet[1]
         self.progress_cb(None, pending)
 
-    def _process_clipboard_enable_selections(self, packet:Tuple) -> None:
+    def _process_clipboard_enable_selections(self, packet : PacketType) -> None:
         selections = tuple(bytestostr(x) for x in packet[1])
         self.enable_selections(selections)
 
 
-    def process_clipboard_packet(self, packet:Tuple) -> None:
+    def process_clipboard_packet(self, packet : PacketType) -> None:
         packet_type = bytestostr(packet[0])
         handler = self._packet_handlers.get(packet_type)
         if handler:

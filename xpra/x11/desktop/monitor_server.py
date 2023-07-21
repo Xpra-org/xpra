@@ -9,6 +9,7 @@ from typing import Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
+from xpra.net.common import PacketType
 from xpra.x11.desktop.desktop_server_base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.mixins.window import WindowsMixin
@@ -374,7 +375,7 @@ class XpraMonitorServer(DesktopServerBase):
                 continue
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, proto, packet) -> None:
+    def _process_configure_monitor(self, proto, packet : PacketType) -> None:
         action = packet[1]
         if action=="remove":
             identifier = packet[2]

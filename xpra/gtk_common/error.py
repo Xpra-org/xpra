@@ -38,7 +38,7 @@ from xpra.util import envbool
 from xpra.os_util import is_main_thread
 from xpra.log import Logger
 
-__all__ = ["XError", "trap", "xsync", "xswallow", "xlog"]
+__all__ = ["XError", "trap", "xsync", "xswallow", "xlog", "verify_sync"]
 
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)

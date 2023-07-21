@@ -28,6 +28,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
     MAX_PACKET_SIZE, FLUSH_HEADER,
+    PacketType, NetPacketType,
     )
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -108,7 +109,7 @@ class SocketProtocol:
         self.read_buffer_size : int = READ_BUFFER_SIZE
         self.hangup_delay : int = 1000
         self._conn = conn
-        self._process_packet_cb : Callable = process_packet_cb
+        self._process_packet_cb : Callable[[PacketType],None] = process_packet_cb
         self.make_chunk_header : Callable = self.make_xpra_header
         self.make_frame_header : Callable[[str,Iterable], ByteString] = self.noframe_header
         self._write_queue : Queue[Tuple] = Queue(1)
@@ -316,7 +317,7 @@ class SocketProtocol:
         packet = ["disconnect"]+[str(x) for x in reasons]
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
-    def send_now(self, packet) -> None:
+    def send_now(self, packet : PacketType) -> None:
         if self._closed:
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
@@ -360,7 +361,7 @@ class SocketProtocol:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet,
+    def _add_packet_to_queue(self, packet : PacketType,
                              start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None, fail_cb:Optional[Callable]=None,
                              synchronous=True, has_more=False, wait_for_more=False) -> None:
         if not has_more:
@@ -370,8 +371,8 @@ class SocketProtocol:
         if packet is None:
             return
         #log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
-        packet_type = packet[0]
-        chunks = self.encode(packet)
+        packet_type : Union[str,int] = packet[0]
+        chunks : NetPacketType = self.encode(packet)
         with self._write_lock:
             if self._closed:
                 return
@@ -523,7 +524,7 @@ class SocketProtocol:
         log(f"enable_compressor({compressor}): {self._compress}")
 
 
-    def encode(self, packet_in) -> List:
+    def encode(self, packet_in : PacketType) -> List[NetPacketType]:
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
@@ -537,7 +538,7 @@ class SocketProtocol:
             (0,                 0, bencoded/rencoded(["blah", '', "hello", 200]))
         ]
         """
-        packets = []
+        packets : List[NetPacketType] = []
         packet = list(packet_in)
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE
@@ -805,10 +806,10 @@ class SocketProtocol:
 
     #delegates to invalid_header()
     #(so this can more easily be intercepted and overridden)
-    def invalid_header(self, proto, data, msg="invalid packet header") -> None:
+    def invalid_header(self, proto, data:ByteString, msg="invalid packet header") -> None:
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, proto, data, msg="invalid packet header") -> None:
+    def _invalid_header(self, proto, data:ByteString, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
                proto, len(data or ""), msg, ellipsizer(data))
         guess = guess_packet_type(data)
@@ -971,6 +972,7 @@ class SocketProtocol:
                     # incomplete packet, wait for the rest to arrive
                     break
 
+                data : ByteString
                 buf = read_buffers[0]
                 if len(buf)==payload_size:
                     #exact match, consume it all:
@@ -1110,7 +1112,7 @@ class SocketProtocol:
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", bytestostr(packet_type))
-                self._process_packet_cb(self, packet)
+                self._process_packet_cb(self, tuple(packet))
                 del packet
 
     def do_flush_then_close(self, encoder:Optional[Callable]=None,

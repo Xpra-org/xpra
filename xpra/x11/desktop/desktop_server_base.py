@@ -9,6 +9,7 @@ from typing import Dict, Any, Tuple, List, Type
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
+from xpra.net.common import PacketType
 from xpra.server import server_features
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -229,7 +230,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         return 0, 0
 
 
-    def _process_map_window(self, proto, packet) -> None:
+    def _process_map_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
@@ -244,7 +245,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.refresh_window_area(window, 0, 0, w, h)
 
 
-    def _process_unmap_window(self, proto, packet) -> None:
+    def _process_unmap_window(self, proto, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if not window:
@@ -260,14 +261,14 @@ class DesktopServerBase(DesktopServerBaseClass):
         #iconified = len(packet)>=3 and bool(packet[2])
 
 
-    def _process_configure_window(self, proto, packet) -> None:
+    def _process_configure_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         if len(packet)>=13 and server_features.input_devices and not self.readonly:
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
             device_id = -1
-            if self._process_mouse_common(proto, device_id, pwid, pointer):
+            if self.process_mouse_common(proto, device_id, pwid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
@@ -321,12 +322,12 @@ class DesktopServerBase(DesktopServerBaseClass):
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
 
-    def _process_close_window(self, proto, packet) -> None:
+    def _process_close_window(self, proto, packet : PacketType) -> None:
         #disconnect?
         pass
 
 
-    def _process_desktop_size(self, proto, packet) -> None:
+    def _process_desktop_size(self, proto, packet : PacketType) -> None:
         pass
     def calculate_workarea(self, w:int, h:int):
         pass

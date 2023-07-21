@@ -11,6 +11,7 @@ from gi.repository import GLib
 
 from xpra.os_util import OSX, POSIX
 from xpra.util import ellipsizer
+from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -151,13 +152,13 @@ class NotificationForwarder(StubServerMixin):
             ss.notify_close(int(nid))
 
 
-    def _process_set_notify(self, proto, packet) -> None:
+    def _process_set_notify(self, proto, packet : PacketType) -> None:
         assert self.notifications, "cannot toggle notifications: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_notifications = bool(packet[1])
 
-    def _process_notification_close(self, proto, packet) -> None:
+    def _process_notification_close(self, proto, packet : PacketType) -> None:
         assert self.notifications
         nid, reason, text = packet[1:4]
         ss = self.get_server_source(proto)
@@ -177,7 +178,7 @@ class NotificationForwarder(StubServerMixin):
                     assert int(reason)>=0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
 
-    def _process_notification_action(self, proto, packet) -> None:
+    def _process_notification_action(self, proto, packet : PacketType) -> None:
         assert self.notifications
         nid, action_key = packet[1:3]
         ss = self.get_server_source(proto)

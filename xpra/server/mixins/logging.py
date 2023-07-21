@@ -14,6 +14,7 @@ from typing import Dict, Any, Optional, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized, net_utf8
+from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -167,7 +168,7 @@ class LoggingServer(StubServerMixin):
             self.in_remote_logging = False
 
 
-    def _process_logging_control(self, proto, packet) -> None:
+    def _process_logging_control(self, proto, packet : PacketType) -> None:
         action = bytestostr(packet[1])
         if action=="start":
             self.add_logging_client(proto)
@@ -176,7 +177,7 @@ class LoggingServer(StubServerMixin):
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
 
-    def _process_logging(self, proto, packet) -> None:
+    def _process_logging(self, proto, packet : PacketType) -> None:
         assert self.remote_logging_receive
         ss = self.get_server_source(proto)
         if ss is None:

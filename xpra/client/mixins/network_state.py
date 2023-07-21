@@ -15,6 +15,7 @@ from gi.repository import GLib
 from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
 from xpra.exit_codes import ExitCode
+from xpra.net.common import PacketType
 from xpra.net.packet_encoding import ALL_ENCODERS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
@@ -293,7 +294,7 @@ class NetworkState(StubClientMixin):
 
     ######################################################################
     # info:
-    def _process_info_response(self, packet) -> None:
+    def _process_info_response(self, packet : PacketType) -> None:
         self.info_request_pending = False
         self.server_last_info = packet[1]
         log("info-response: %s", self.server_last_info)
@@ -373,7 +374,7 @@ class NetworkState(StubClientMixin):
         self.ping_echo_timers[now_ms] = t
         return True
 
-    def _process_ping_echo(self, packet) -> None:
+    def _process_ping_echo(self, packet : PacketType) -> None:
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
@@ -384,7 +385,7 @@ class NetworkState(StubClientMixin):
             self.client_ping_latency.append((monotonic(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
-    def _process_ping(self, packet) -> None:
+    def _process_ping(self, packet : PacketType) -> None:
         echotime = packet[1]
         l1,l2,l3 = 0,0,0
         sid = ""

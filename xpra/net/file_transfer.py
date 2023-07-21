@@ -18,6 +18,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
+from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
 from xpra.log import Logger
@@ -367,7 +368,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
-    def _process_send_file_chunk(self, packet) -> None:
+    def _process_send_file_chunk(self, packet : PacketType) -> None:
         chunk_id, chunk, file_data, has_more = packet[1:5]
         chunk_id = net_utf8(chunk_id)
         #if len(file_data)<1024:
@@ -478,7 +479,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return (printit, openit)
 
-    def _process_send_file(self, packet) -> None:
+    def _process_send_file(self, packet : PacketType) -> None:
         #the remote end is sending us a file
         start = monotonic()
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
@@ -727,7 +728,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.files_requested[filename] = openit
 
 
-    def _process_open_url(self, packet):
+    def _process_open_url(self, packet : PacketType):
         send_id = net_utf8(packet[2])
         url = net_utf8(packet[1])
         if not self.open_url:
@@ -814,7 +815,7 @@ class FileTransferHandler(FileTransferAttributes):
         return send_id
 
 
-    def _process_send_data_request(self, packet) -> None:
+    def _process_send_data_request(self, packet : PacketType) -> None:
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
         options = {}
         if len(packet)>=9:
@@ -878,7 +879,7 @@ class FileTransferHandler(FileTransferAttributes):
         v = self.accept_data(send_id, dtype, url, printit, openit)
         cb_answer(v)
 
-    def _process_send_data_response(self, packet) -> None:
+    def _process_send_data_response(self, packet : PacketType) -> None:
         send_id, accept = packet[1:3]
         send_id = net_utf8(send_id)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
@@ -989,7 +990,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             self.source_remove(timer)
 
-    def _process_ack_file_chunk(self, packet) -> None:
+    def _process_ack_file_chunk(self, packet : PacketType) -> None:
         #the other end received our send-file or send-file-chunk,
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])

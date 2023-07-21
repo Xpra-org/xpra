@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any, Optional, Tuple, Callable, Union, TypeAlias
+from typing import Dict, Any, Optional, Tuple, Callable, Union, TypeAlias, List
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -16,6 +16,7 @@ from queue import Queue
 from xpra.make_thread import start_thread
 from xpra.common import FULL_INFO
 from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.net.common import PacketType
 from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -80,7 +81,7 @@ class ClientConnection(StubSourceMixin):
         #the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue : Queue[Union[None,Tuple[bool,Callable,Tuple[Any,...]]]] = Queue()
         self.encode_thread = None
-        self.ordinary_packets = []
+        self.ordinary_packets : List[Tuple[PacketType,bool,Callable,Callable]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect

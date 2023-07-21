@@ -24,6 +24,7 @@ from xpra.os_util import (
     hexstr, load_binary_file, osexpand,
     WIN32, OSX, POSIX, is_Wayland,
     )
+from xpra.net.common import PacketType
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
@@ -272,7 +273,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return ncs
 
 
-    def _process_startup_complete(self, packet) -> None:
+    def _process_startup_complete(self, packet : PacketType) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
 
@@ -1133,7 +1134,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             Gdk.beep()
 
 
-    def _process_raise_window(self, packet) -> None:
+    def _process_raise_window(self, packet : PacketType) -> None:
         wid = packet[1]
         window = self._id_to_window.get(wid)
         focuslog(f"going to raise window {wid} - {window}")
@@ -1143,7 +1144,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return
             window.present()
 
-    def _process_restack_window(self, packet) -> None:
+    def _process_restack_window(self, packet : PacketType) -> None:
         wid, detail, other_wid = packet[1:4]
         above = bool(detail==0)
         window = self._id_to_window.get(wid)

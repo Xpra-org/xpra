@@ -10,6 +10,7 @@ from typing import Dict, Tuple, Any
 
 from xpra.os_util import OSX, POSIX, bytestostr
 from xpra.util import engs
+from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -114,7 +115,7 @@ class WebcamServer(StubServerMixin):
         log.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)
 
-    def _process_webcam_start(self, proto, packet) -> None:
+    def _process_webcam_start(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         assert self.webcam_enabled
@@ -125,7 +126,7 @@ class WebcamServer(StubServerMixin):
         device_id, w, h = packet[1:4]
         ss.start_virtual_webcam(device_id, w, h)
 
-    def _process_webcam_stop(self, proto, packet) -> None:
+    def _process_webcam_stop(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -135,7 +136,7 @@ class WebcamServer(StubServerMixin):
         device_id, message = (list(packet)+[""])[1:3]
         ss.stop_virtual_webcam(device_id, message)
 
-    def _process_webcam_frame(self, proto, packet) -> None:
+    def _process_webcam_frame(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)

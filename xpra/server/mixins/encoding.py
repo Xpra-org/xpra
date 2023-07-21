@@ -10,6 +10,7 @@ from typing import Dict, Any, Tuple
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
+from xpra.net.common import PacketType
 from xpra.version_util import vtrim
 from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
@@ -217,7 +218,7 @@ class EncodingServer(StubServerMixin):
             self.default_encoding = self.encoding
 
 
-    def _process_encoding(self, proto, packet) -> None:
+    def _process_encoding(self, proto, packet : PacketType) -> None:
         encoding = bytestostr(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:

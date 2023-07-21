@@ -9,6 +9,7 @@ from typing import Callable, List, Dict, Any
 
 from xpra.util import typedict
 from xpra.net.compression import Compressed
+from xpra.net.common import PacketHandlerType
 
 
 class StubClientMixin:
@@ -104,10 +105,10 @@ class StubClientMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def add_packet_handler(self, packet_type : str, handler : Callable, main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handler(self, packet_type : str, handler : PacketHandlerType, main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def add_packet_handlers(self, defs, main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handlers(self, defs : Dict[str,PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
     def show_progress(self, pct, text="") -> None:

@@ -8,6 +8,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
+from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.common import FULL_INFO
@@ -553,7 +554,7 @@ class AudioClient(StubClientMixin):
 
     ######################################################################
     #packet handlers
-    def _process_sound_data(self, packet:Tuple) -> None:
+    def _process_sound_data(self, packet : PacketType) -> None:
         codec, data, metadata = packet[1:4]
         codec = bytestostr(codec)
         metadata = typedict(metadata)

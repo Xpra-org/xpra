@@ -8,8 +8,8 @@ from time import monotonic
 from typing import Tuple, Dict, Callable
 
 from xpra.common import noop
-from xpra.util import envint, AtomicInteger
-from xpra.util import typedict
+from xpra.util import envint, AtomicInteger, typedict
+from xpra.net.common import PacketType
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -84,7 +84,7 @@ class RPCClient(StubClientMixin):
 
     ######################################################################
     #packet handlers
-    def _process_rpc_reply(self, packet) -> None:
+    def _process_rpc_reply(self, packet : PacketType) -> None:
         rpc_type, rpcid, success, args = packet[1:5]
         log("rpc_reply: %s", (rpc_type, rpcid, success, args))
         v = self.rpc_pending_requests.get(rpcid)

@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, Tuple
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows import WindowsMixin
+from xpra.net.common import PacketType
 from xpra.log import Logger
 
 log = Logger("window")
@@ -252,7 +253,7 @@ class WindowServer(StubServerMixin):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_damage_sequence(self, proto, packet) -> None:
+    def _process_damage_sequence(self, proto, packet : PacketType) -> None:
         packet_sequence, wid, width, height, decode_time = packet[1:6]
         if len(packet)>=7:
             message = packet[6]
@@ -273,7 +274,7 @@ class WindowServer(StubServerMixin):
             if damage:
                 damage(wid, window, x, y, width, height, options)
 
-    def _process_buffer_refresh(self, proto, packet) -> None:
+    def _process_buffer_refresh(self, proto, packet : PacketType) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid, _, qual = packet[1:4]
         if len(packet)>=6:
@@ -351,16 +352,16 @@ class WindowServer(StubServerMixin):
             ss.unmap_window(wid, window)
 
 
-    def _process_map_window(self, proto, packet) -> None:
+    def _process_map_window(self, proto, packet : PacketType) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet) -> None:
+    def _process_unmap_window(self, proto, packet : PacketType) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet) -> None:
+    def _process_close_window(self, proto, packet : PacketType) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet) -> None:
+    def _process_configure_window(self, proto, packet : PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def _get_window_dict(self, wids) -> Dict[int,Any]:
@@ -371,7 +372,7 @@ class WindowServer(StubServerMixin):
                 wd[wid] = window
         return wd
 
-    def _process_suspend(self, proto, packet) -> None:
+    def _process_suspend(self, proto, packet : PacketType) -> None:
         eventslog("suspend(%s)", packet[1:])
         ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
@@ -379,7 +380,7 @@ class WindowServer(StubServerMixin):
         if ss:
             ss.suspend(ui, wd)
 
-    def _process_resume(self, proto, packet) -> None:
+    def _process_resume(self, proto, packet : PacketType) -> None:
         eventslog("resume(%s)", packet[1:])
         ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
@@ -398,7 +399,7 @@ class WindowServer(StubServerMixin):
 
     ######################################################################
     # focus:
-    def _process_focus(self, proto, packet) -> None:
+    def _process_focus(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         wid = packet[1]

@@ -9,6 +9,7 @@ import os
 from typing import Dict, Any
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.net.common import PacketType
 from xpra.log import Logger
 
 log = Logger("rpc")
@@ -75,7 +76,7 @@ class DBUS_RPC_Server(StubServerMixin):
         self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
 
 
-    def _process_rpc(self, proto, packet) -> None:
+    def _process_rpc(self, proto, packet : PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)

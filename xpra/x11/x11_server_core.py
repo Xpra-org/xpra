@@ -27,6 +27,7 @@ from xpra.common import MAX_WINDOW_SIZE, FULL_INFO
 from xpra.os_util import strtobytes
 from xpra.util import typedict, envbool, first_time, NotificationID
 from xpra.net.compression import Compressed
+from xpra.net.common import PacketType
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server import server_features
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -859,7 +860,7 @@ class X11ServerCore(GTKServerBase):
         """ overridden in the seamless server """
 
 
-    def _process_server_settings(self, _proto, packet) -> None:
+    def _process_server_settings(self, _proto, packet : PacketType) -> None:
         settings = packet[1]
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
@@ -870,7 +871,7 @@ class X11ServerCore(GTKServerBase):
         log("ignoring server settings update in %s", self)
 
 
-    def _process_force_ungrab(self, proto, _packet) -> None:
+    def _process_force_ungrab(self, proto, _packet : PacketType) -> None:
         #ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()
@@ -990,7 +991,7 @@ class X11ServerCore(GTKServerBase):
                 self.pointer_device_map[deviceid] = self.touchpad_device
 
 
-    def _process_wheel_motion(self, proto, packet) -> None:
+    def _process_wheel_motion(self, proto, packet : PacketType) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
         if not ss:
@@ -1072,7 +1073,7 @@ class X11ServerCore(GTKServerBase):
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
         props = {}
-        if self._process_mouse_common(proto, device_id, wid, pointer, props):
+        if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
     def button_action(self, device_id:int, wid:int, pointer, button:int, pressed:bool, props:dict) -> None:

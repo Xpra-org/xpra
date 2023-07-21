@@ -21,6 +21,7 @@ from xpra.os_util import (
     getuid, getgid, WIN32, POSIX, OSX,
     umask_context, get_group_id,
     )
+from xpra.net.common import PacketType
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -176,7 +177,7 @@ class ProxyServer(ServerCore):
         #add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 
-    def _process_proxy_shutdown_server(self, proto, _packet) -> None:
+    def _process_proxy_shutdown_server(self, proto, _packet : PacketType) -> None:
         assert proto in self._requests
         self.clean_quit(False)
 

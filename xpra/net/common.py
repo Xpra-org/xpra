@@ -5,8 +5,9 @@
 
 import os
 import threading
-from typing import Tuple, Callable, List, Dict
+from typing import Tuple, Callable, List, Dict, TypeAlias, Type, Any, ByteString, Union
 
+from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.log import Logger
 log = Logger("network")
@@ -24,6 +25,17 @@ DEFAULT_PORTS : Dict[str,int] = {
     "quic"  : 20000,
     }
 
+PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
+
+# packet type followed by attributes:
+PacketType : TypeAlias = Tuple[str, Any, ...]
+
+# client packet handler:
+PacketHandlerType = Callable[[PacketType], None]
+# server packet handler:
+ServerPacketHandlerType = Callable[[Any, PacketType], None]
+
+NetPacketType : TypeAlias = Tuple[int, int, int, ByteString]
 
 class ConnectionClosedException(Exception):
     pass

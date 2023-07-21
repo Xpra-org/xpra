@@ -18,7 +18,11 @@ from xpra.scripts.config import InitExit
 from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.common import may_log_packet, PACKET_TYPES, SSL_UPGRADE
+from xpra.net.common import (
+    may_log_packet,
+    PACKET_TYPES, SSL_UPGRADE,
+    PacketHandlerType, PacketType,
+)
 from xpra.make_thread import start_thread
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -680,7 +684,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         assert self.server_client_shutdown
         self.send("shutdown-server")
 
-    def _process_disconnect(self, packet) -> None:
+    def _process_disconnect(self, packet : PacketType) -> None:
         #ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
         info = tuple(nonl(bytestostr(x)) for x in packet[1:])
@@ -727,7 +731,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return ExitCode.OK
 
 
-    def _process_connection_lost(self, _packet) -> None:
+    def _process_connection_lost(self, _packet : PacketType) -> None:
         p = self._protocol
         if p and p.input_raw_packetcount==0:
             props = p.get_info()
@@ -748,12 +752,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(exit_code, msg)
 
 
-    def _process_ssl_upgrade(self, packet) -> None:
+    def _process_ssl_upgrade(self, packet : PacketType) -> None:
         assert SSL_UPGRADE
         ssl_attrs = typedict(packet[1])
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs, ))
 
-    def ssl_upgrade(self, ssl_attrs) -> None:
+    def ssl_upgrade(self, ssl_attrs : typedict) -> None:
         # send ssl-upgrade request!
         ssllog = Logger("client", "ssl")
         ssllog(f"ssl-upgrade({ssl_attrs})")
@@ -797,13 +801,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     ########################################
     # Authentication
-    def _process_challenge(self, packet) -> None:
+    def _process_challenge(self, packet : PacketType) -> None:
         authlog(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
             return
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet, ))
 
-    def do_process_challenge(self, packet) -> None:
+    def do_process_challenge(self, packet : PacketType) -> None:
         digest = bytestostr(packet[3])
         authlog(f"challenge handlers: {self.challenge_handlers}, digest: {digest}")
         while self.challenge_handlers:
@@ -1068,7 +1072,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return keydata.strip(b"\n\r")
         raise InitExit(ExitCode.ENCRYPTION, "no encryption key")
 
-    def _process_hello(self, packet) -> None:
+    def _process_hello(self, packet : PacketType) -> None:
         if LOG_HELLO:
             netlog.info("received hello:")
             print_nested_dict(packet[1], print_fn=netlog.info)
@@ -1143,17 +1147,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 return False
         return True
 
-    def _process_set_deflate(self, packet) -> None:
+    def _process_set_deflate(self, packet : PacketType) -> None:
         #legacy, should not be used for anything
         pass
 
-    def _process_startup_complete(self, packet) -> None:
+    def _process_startup_complete(self, packet : PacketType) -> None:
         #can be received if we connect with "xpra stop" or other command line client
         #as the server is starting up
         self.completed_startup = packet
 
 
-    def _process_gibberish(self, packet) -> None:
+    def _process_gibberish(self, packet : PacketType) -> None:
         log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
         from xpra.net.socket_util import guess_packet_type  #pylint: disable=import-outside-toplevel
@@ -1191,7 +1195,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error(f" packet no {pcount} data: {repr_ellipsized(data)}")
         self.quit(exit_code)
 
-    def _process_invalid(self, packet) -> None:
+    def _process_invalid(self, packet : PacketType) -> None:
         message, data = packet[1:3]
         netlog.info(f"Received invalid packet: {message}")
         netlog(" data: %s", ellipsizer(data))
@@ -1210,8 +1214,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 d.pop(k, None)
 
     def init_packet_handlers(self) -> None:
-        self._packet_handlers = {}
-        self._ui_packet_handlers = {}
+        self._packet_handlers : Dict[str,PacketHandlerType] = {}
+        self._ui_packet_handlers : Dict[str,PacketHandlerType] = {}
         self.add_packet_handler("hello", self._process_hello, False)
         if SSL_UPGRADE:
             self.add_packet_handler("ssl-upgrade", self._process_ssl_upgrade)

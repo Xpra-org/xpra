@@ -13,6 +13,7 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
+from xpra.net.common import PacketType
 from xpra.os_util import is_Wayland
 from xpra.util import envint, envbool, ConnectionMessage, NotificationID
 from xpra.log import Logger
@@ -410,7 +411,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.apply_refresh_rate(ss)
         return self.get_root_window_size()
 
-    def _process_desktop_size(self, proto, packet) -> None:
+    def _process_desktop_size(self, proto, packet : PacketType) -> None:
         #just record the screen size info in the source
         ss = self.get_server_source(proto)
         if ss and len(packet)>=4:
@@ -461,12 +462,12 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
 
-    def _process_window_common(self, wid:int):
+    def process_window_common(self, wid:int):
         return self._id_to_window.get(wid)
 
-    def _process_map_window(self, proto, packet) -> None:
+    def _process_map_window(self, proto, packet : PacketType) -> None:
         wid, x, y, width, height = packet[1:6]
-        window = self._process_window_common(wid)
+        window = self.process_window_common(wid)
         if not window:
             #already gone
             return
@@ -476,9 +477,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self._set_client_properties(proto, wid, window, packet[6])
         self.start_refresh(wid)
 
-    def _process_unmap_window(self, proto, packet) -> None:
+    def _process_unmap_window(self, proto, packet : PacketType) -> None:
         wid = packet[1]
-        window = self._process_window_common(wid)
+        window = self.process_window_common(wid)
         if not window:
             #already gone
             return
@@ -488,9 +489,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if len(self._server_sources)<=1 and len(self._id_to_window)<=1:
             self.stop_refresh(wid)
 
-    def _process_configure_window(self, proto, packet) -> None:
+    def _process_configure_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
-        window = self._process_window_common(wid)
+        window = self.process_window_common(wid)
         if not window:
             #already gone
             return
@@ -499,9 +500,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
 
-    def _process_close_window(self, proto, packet) -> None:
+    def _process_close_window(self, proto, packet : PacketType) -> None:
         wid = packet[1]
-        window = self._process_window_common(wid)
+        window = self.process_window_common(wid)
         if not window:
             #already gone
             return
