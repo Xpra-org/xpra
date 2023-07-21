@@ -263,7 +263,6 @@ class ShadowServer(GTKShadowServerBase):
 
     def __init__(self, display=None, multi_window=True):
         super().__init__(multi_window)
-        self.keycodes = {}
         self.pixel_depth = 32
         self.cursor_handle = None
         self.cursor_data = None
