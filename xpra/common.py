@@ -21,7 +21,17 @@ RESOLUTION_ALIASES : Dict[str,Tuple[int,int]] = {
     "8K"    : (7680, 4320),
     }
 
-VIDEO_MAX_SIZE : Tuple[int,int] = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
+def get_default_video_max_size() -> Tuple[int,int]:
+    svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
+    if len(svalues)==2:
+        try:
+            return int(svalues[0]), int(svalues[0])
+        except (TypeError, ValueError):
+            pass
+    return 4096, 4096
+
+
+VIDEO_MAX_SIZE = get_default_video_max_size()
 
 from enum import IntEnum
 
