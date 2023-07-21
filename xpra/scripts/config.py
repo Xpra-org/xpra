@@ -1033,7 +1033,7 @@ def get_defaults():
                     "min-speed"         : 1,
                     "compression_level" : 1,
                     "dpi"               : 0,
-                    "file-size-limit"   : "100M",
+                    "file-size-limit"   : "1G",
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : None,
@@ -1205,7 +1205,7 @@ def print_number(i, auto_value=0) -> str:
         return "auto"
     return str(i)
 
-def parse_with_unit(numtype, v, subunit="bps", min_value:int=250000):
+def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int:
     if isinstance(v, int):
         return v
     #special case for bandwidth-limit, which can be specified using units:

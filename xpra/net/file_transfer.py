@@ -132,7 +132,7 @@ class FileTransferAttributes:
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
-    def init_attributes(self, file_transfer="no", file_size_limit="100M", printing="no",
+    def init_attributes(self, file_transfer="no", file_size_limit="1G", printing="no",
                         open_files="no", open_url="no", open_command=None, can_ask=True) -> None:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
@@ -281,14 +281,12 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_caps()
 
     def dump_remote_caps(self) -> None:
-        filelog("file transfer remote caps: file-transfer=%-5s   (ask=%s)",
-                self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog("file transfer remote caps: printing=%-5s        (ask=%s)",
-                self.remote_printing, self.remote_printing_ask)
-        filelog("file transfer remote caps: open-files=%-5s      (ask=%s)",
-                self.remote_open_files, self.remote_open_files_ask)
-        filelog("file transfer remote caps: open-url=%-5s        (ask=%s)",
-                self.remote_open_url, self.remote_open_url_ask)
+        filelog("file transfer remote caps:")
+        filelog(" file-transfer=%-5s   (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
+        filelog(" printing=%-5s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
+        filelog(" open-files=%-5s      (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
+        filelog(" open-url=%-5s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
+        filelog(" file-size-limit=%s", self.remote_file_size_limit)
 
     def get_info(self) -> Dict[str,Any]:
         info = super().get_info()
