@@ -47,7 +47,7 @@ USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
-LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 4096)
+LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 8192)
 LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
