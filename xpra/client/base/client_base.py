@@ -784,11 +784,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if packet:
                 ssllog.error("Error: received another packet during ssl socket upgrade:")
                 ssllog.error(" %s", packet)
-                self.quit(EXIT_INTERNAL_ERROR)
+                self.quit(ExitCode.INTERNAL_ERROR)
         conn = self._protocol.steal_connection(read_callback)
         if not self._protocol.wait_for_io_threads_exit(1):
             log.error("Error: failed to terminate network threads for ssl upgrade")
-            self.quit(EXIT_INTERNAL_ERROR)
+            self.quit(ExitCode.INTERNAL_ERROR)
             return
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
         ssl_sock = ssl_handshake(ssl_sock)
