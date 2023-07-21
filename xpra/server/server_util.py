@@ -111,7 +111,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         log(f" stdout={out!r} ({type(out)})")
         log(f" stderr={err!r} ({type(err)})")
         log.error(f"Error running source script {file_to_source_path!r}")
-        if proc and proc.returncode is not None:        #@SuppressWarnings("python:S5727")
+        if proc and proc.returncode is not None:        #NOSONAR @SuppressWarnings("python:S5727")
             log.error(f" exit code: {proc.returncode}")
         log.error(f" {e}")
         return {}

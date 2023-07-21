@@ -359,9 +359,8 @@ class SessionsGUI(Gtk.Window):
                 uri = "%s://%s@%s" % (mode, username, address)
         else:
             uri = "%s://%s" % (mode, address)
-        #@SuppressWarnings("python:S1066")
         if port>0:
-            if DEFAULT_PORTS.get(mode, 0)!=port:
+            if DEFAULT_PORTS.get(mode, 0)!=port:        # NOSONAR @SuppressWarnings("python:S1066")
                 uri += ":%s" % port
         if protocol not in ("socket", "namedpipe"):
             uri += "/"
