@@ -337,7 +337,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def setup_connection(self, conn):
         protocol_class = get_client_protocol_class(conn.socktype)
-        netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=",
+        netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         #ssh channel may contain garbage initially,
