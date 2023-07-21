@@ -24,18 +24,22 @@ PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'
 
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 pushd $SRC_DIR
-$PYTHON ./setup.py install --without-printing --without-docs --with-scripts --with-cython_tracing --prefix=$INSTALL_ROOT --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
+$PYTHON ./setup.py install --without-printing --without-docs --with-scripts --with-cython_tracing --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
 
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
 #why is every workaround for setuptools so cumbersome?
-export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
+
+export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -wholename "*/site-packages/xpra"`
+if [ -z "${XPRA_MODULE_DIR}" ]; then
+	export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
+fi
 export PYTHONPATH=".:`dirname $XPRA_MODULE_DIR`"
 echo "PYTHONPATH=${PYTHONPATH}"
 export PATH=$INSTALL_ROOT/bin:$PATH
-export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/bin/xpra}
+export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/usr/bin/xpra}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
 export XPRA_APP_DIR=${XPRA_APP_DIR:-$INSTALL_ROOT/usr/share/xpra/}
 

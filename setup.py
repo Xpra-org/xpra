@@ -1807,6 +1807,9 @@ else:
             if root_prefix.endswith("/usr"):
                 #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
+            for x in sys.argv:
+                if x.startswith("--root="):
+                    root_prefix = x[len("--root="):]
             print(f"install_data_override.run() root_prefix={root_prefix}")
             build_xpra_conf(root_prefix)
 
