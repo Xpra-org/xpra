@@ -132,7 +132,7 @@ class FileTransferAttributes:
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
-    def init_attributes(self, file_transfer="no", file_size_limit=10, printing="no",
+    def init_attributes(self, file_transfer="no", file_size_limit="100M", printing="no",
                         open_files="no", open_url="no", open_command=None, can_ask=True) -> None:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
