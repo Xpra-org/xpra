@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, Any
 
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,

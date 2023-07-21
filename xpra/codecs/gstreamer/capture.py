@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from queue import Queue, Empty, Full
+from typing import Dict, Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.util import typedict

@@ -377,6 +377,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 log.warn(" client %s file size limit is %sB (file is %sB)",
                          ss, std_unit(ss.file_size_limit), std_unit(file_size))
             else:
+                log(f"sending {filename} to {ss}")
                 ss.send_file(filename, "", data, file_size, *send_file_args)
         return f"{command_type} of {filename!r} to {client_uuids} initiated"
 

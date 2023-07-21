@@ -17,7 +17,7 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Optional, Union, Tuple, Dict, Any, Set, List, Callable
+from typing import Optional, Tuple, Dict, Any, Set, List, Callable
 from threading import Thread
 
 # only minimal imports go at the top

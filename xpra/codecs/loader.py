@@ -7,7 +7,7 @@
 import sys
 import os.path
 from types import ModuleType
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any
 
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, WIN32

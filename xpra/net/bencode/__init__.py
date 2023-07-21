@@ -14,7 +14,7 @@ def init() -> Tuple[Callable[[Any],bytes],Callable[[bytes],Any],Tuple[Any,...]]:
         except ImportError as e:
             from xpra.os_util import get_util_logger
             get_util_logger().warn("Warning: cannot load cython bencode module: %s", e)
-    from xpra.net.bencode import python_bencode as bencoder
+            from xpra.net.bencode import python_bencode as bencoder
     return bencoder.bencode, bencoder.bdecode, bencoder.__version__
 
 

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple, List, Optional, Any
+from typing import Dict, Tuple, List, Optional
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase

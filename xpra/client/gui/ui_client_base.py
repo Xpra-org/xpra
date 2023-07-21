@@ -7,7 +7,7 @@
 
 import os
 import sys
-from typing import Type, Dict, List, Any, Callable
+from typing import Type, Dict, List, Any, Callable, Tuple
 
 from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix

@@ -7,7 +7,7 @@
 # Simple statistical functions
 
 import math
-from typing import List, Any, Optional
+from typing import List, Optional
 
 def to_std_unit(v, unit=1000):
     if v>=unit**3:

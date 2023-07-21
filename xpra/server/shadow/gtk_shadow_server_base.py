@@ -6,7 +6,7 @@
 
 import os
 import gi
-from typing import List, Dict, Type, Any, Optional
+from typing import List, Dict, Type, Any, Optional, Tuple
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")

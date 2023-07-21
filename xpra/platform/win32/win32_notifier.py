@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Optional, Type
 
 from xpra.util import envbool
 from xpra.notifications.notifier_base import NotifierBase, log

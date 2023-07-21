@@ -9,7 +9,6 @@
 #pylint: disable=import-outside-toplevel
 
 import re
-import sys
 import shlex
 import os.path
 import optparse

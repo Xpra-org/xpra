@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Dict, Any, Tuple, List, Callable, Union, Iterable
+from typing import Dict, Any, Tuple, Callable, Union, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read

@@ -5,7 +5,7 @@
 
 import os
 from collections import deque
-from typing import Tuple, Deque, List, Dict, Optional
+from typing import Tuple, Deque, List, Dict, Optional, Callable
 
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
@@ -255,7 +255,7 @@ class SysAuthenticatorBase:
             log.error(f"Error: cannot get the list of sessions for {self.username!r}:")
             log.estr(e)
             displays = []
-        v : SessionData = uid, gid, displays, {}, {}
+        v : SessionData = (uid, gid, displays, {}, {})
         log(f"{self}.get_sessions()={v}")
         return v
 

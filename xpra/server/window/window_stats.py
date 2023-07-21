@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple, List, Deque, Any
+from typing import Dict, Tuple, List, Deque, Any
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats

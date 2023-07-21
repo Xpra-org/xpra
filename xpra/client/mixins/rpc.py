@@ -28,7 +28,7 @@ class RPCClient(StubClientMixin):
         #rpc / dbus:
         self.rpc_counter = AtomicInteger()
         self.server_dbus_proxy = False
-        self.server_rpc_types : Tuples[str,...] = ()
+        self.server_rpc_types : Tuple[str,...] = ()
         self.rpc_filter_timers : Dict[int,int] = {}
         self.rpc_pending_requests : Dict[int,Tuple[float, str, Tuple, Callable, Callable]] = {}
 

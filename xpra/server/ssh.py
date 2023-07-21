@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Tuple, ByteString
+from typing import Tuple, ByteString, Optional, Callable
 import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection

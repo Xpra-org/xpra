@@ -17,7 +17,7 @@ from xpra.audio.gstreamer_util import (
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
-from xpra.os_util import WIN32, OSX, POSIX, BITS, bytestostr
+from xpra.os_util import WIN32, OSX, POSIX, BITS
 from xpra.util import typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger

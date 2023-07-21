@@ -7,7 +7,7 @@ import os
 from xpra.util import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 log = Logger("scaling")
 

@@ -5,7 +5,7 @@
 
 import sys
 import time
-from typing import Callable, List, Dict, Any
+from typing import List, Dict, Any
 
 from xpra.util import typedict
 from xpra.net.compression import Compressed

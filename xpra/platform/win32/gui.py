@@ -9,7 +9,7 @@
 import os
 import sys
 import types
-from typing import Optional, Callable, List, Tuple, Dict, Any, Type
+from typing import Callable, List, Tuple, Dict, Any, Type
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -43,7 +43,7 @@ from xpra.platform.win32.common import (
     GetKeyboardLayoutName,
     )
 from xpra.common import KeyEvent
-from xpra.util import AdHocStruct, csv, envint, envbool, typedict
+from xpra.util import csv, envint, envbool, typedict
 from xpra.os_util import get_util_logger
 from xpra.log import Logger
 

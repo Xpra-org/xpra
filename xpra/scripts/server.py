@@ -1220,7 +1220,7 @@ def _do_run_server(script_file:str, cmdline,
         use_uinput = has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing
         if start_vfb:
             progress(40, "starting a virtual display")
-            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add
+            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:

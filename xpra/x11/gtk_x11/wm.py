@@ -23,7 +23,6 @@ from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
 from xpra.x11.gtk3.gdk_bindings import (
     add_event_receiver,
     add_fallback_receiver, remove_fallback_receiver,
-    get_pywindow,
     )
 from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
