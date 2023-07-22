@@ -109,13 +109,14 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.send_error(400, "Client did not send Host: header")
             return
         server_address = self.headers["Host"]
-        for upgrade_string in (
+        upgrade_string = (
             b"HTTP/1.1 301 Moved Permanently",
             b"Connection: close",
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
             b"",
-            ):
-            self.wfile.write(b"%s\r\n" % upgrade_string)
+            )
+        bdata = b"\r\n".join(ugrade_string)
+        self.wfile.write(bdata)
         self.wfile.flush()
 
     def handle_request(self) -> None:
