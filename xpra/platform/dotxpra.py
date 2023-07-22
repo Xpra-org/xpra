@@ -17,17 +17,17 @@ from xpra.platform import platform_import
 DISPLAY_PREFIX = ":"
 
 
-def norm_makepath(dirpath, name):
+def norm_makepath(dirpath:str, name:str) -> str:
     if DISPLAY_PREFIX and name.startswith(DISPLAY_PREFIX):
         name = name[len(DISPLAY_PREFIX):]
     return os.path.join(dirpath, PREFIX + name)
 
-def strip_display_prefix(s):
+def strip_display_prefix(s:str) -> str:
     if s.startswith(DISPLAY_PREFIX):
         return s[len(DISPLAY_PREFIX):]
     return s
 
-def debug(msg, *args, **kwargs):
+def debug(msg:str, *args, **kwargs) -> None:
     log = get_util_logger()
     log(msg, *args, **kwargs)
 
@@ -46,15 +46,15 @@ class DotXpra:
         elif sockdir not in sockdirs:
             sockdirs.insert(0, sockdir)
         self._sockdir = self.osexpand(sockdir)
-        self._sockdirs = [self.osexpand(x) for x in sockdirs]
+        self._sockdirs : List[str] = [self.osexpand(x) for x in sockdirs]
 
-    def osexpand(self, v):
+    def osexpand(self, v:str) -> str:
         return osexpand(v, self.username, self.uid, self.gid)
 
     def __repr__(self):
         return f"DotXpra({self._sockdir}, {self._sockdirs} - {self.uid}:{self.gid} - {self.username})"
 
-    def mksockdir(self, d, mode=0o700, uid=None, gid=None):
+    def mksockdir(self, d:str, mode=0o700, uid=None, gid=None) -> None:
         if not d:
             return
         if not os.path.exists(d):
@@ -88,13 +88,13 @@ class DotXpra:
             except OSError:
                 get_util_logger().error("Error: mksockdir%s", (d, mode, uid, gid), exc_info=True)
 
-    def socket_expand(self, path):
+    def socket_expand(self, path:str) -> str:
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
 
-    def norm_socket_paths(self, local_display_name):
+    def norm_socket_paths(self, local_display_name:str) -> List[str]:
         return [norm_makepath(x, local_display_name) for x in self._sockdirs]
 
-    def socket_path(self, local_display_name):
+    def socket_path(self, local_display_name:str) -> str:
         return norm_makepath(self._sockdir, local_display_name)
 
     LIVE = LIVE
@@ -102,7 +102,7 @@ class DotXpra:
     UNKNOWN = UNKNOWN
     INACCESSIBLE = INACCESSIBLE
 
-    def get_server_state(self, sockpath, timeout=5):
+    def get_server_state(self, sockpath:str, timeout=5) -> str:
         if not os.path.exists(sockpath):
             return DotXpra.DEAD
         sock = socket.socket(socket.AF_UNIX)
@@ -133,15 +133,15 @@ class DotXpra:
                 debug("%s.close()", sock, exc_info=True)
 
 
-    def displays(self, check_uid=None, matching_state=None):
+    def displays(self, check_uid=None, matching_state=None) -> List[str]:
         return list(set(v[1] for v in self.sockets(check_uid, matching_state)))
 
-    def sockets(self, check_uid=None, matching_state=None):
+    def sockets(self, check_uid=None, matching_state=None) -> List:
         #flatten the dictionary into a list:
         return list(set((v[0], v[1]) for details_values in
                         self.socket_details(check_uid, matching_state).values() for v in details_values))
 
-    def socket_paths(self, check_uid=None, matching_state=None, matching_display=None):
+    def socket_paths(self, check_uid=None, matching_state=None, matching_display=None) -> List[str]:
         paths = []
         for details in self.socket_details(check_uid, matching_state, matching_display).values():
             for _, _, socket_path in details:
@@ -169,7 +169,7 @@ class DotXpra:
                 continue
             yield real_dir
 
-    def get_display_state(self, display):
+    def get_display_state(self, display:str) -> str:
         state = None
         for d in self._unique_sock_dirs():
             #look for a 'socket' in the session directory
@@ -250,7 +250,7 @@ class DotXpra:
                     add_result(d, (state, display, sockpath))
         return sd
 
-    def is_socket_match(self, sockpath, check_uid=None, matching_state=None):
+    def is_socket_match(self, sockpath:str, check_uid=None, matching_state=None):
         if not is_socket(sockpath, check_uid):
             return None
         state = self.get_server_state(sockpath)

@@ -122,7 +122,7 @@ class ServerTestUtil(ProcessTestUtil):
     def check_start_server(self, display, *args):
         return self.check_server("start", display, *args)
 
-    def check_server(self, subcommand, display, *args):
+    def check_server(self, subcommand:str, display:str, *args):
         cmd = [subcommand]
         if display:
             cmd.append(display)
@@ -134,6 +134,7 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_error(server_proc, "server failed to start")
         if display:
             #wait until the socket shows up:
+            live : List[str] = []
             for _ in range(20):
                 live = self.dotxpra.displays()
                 if display in live:
@@ -146,6 +147,7 @@ class ServerTestUtil(ProcessTestUtil):
             time.sleep(1)
         #query it:
         version = None
+        r = 0
         for _ in range(20):
             if version is None:
                 args = ["version"]
