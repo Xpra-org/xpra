@@ -42,6 +42,9 @@ export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/usr/bin/xpra}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
 export XPRA_APP_DIR=${XPRA_APP_DIR:-$INSTALL_ROOT/usr/share/xpra/}
+#create a fake html5 client directory:
+mkdir -p ${XPRA_APP_DIR}/www >& /dev/null
+echo "<html><head><title>fake html client</title></head><body>nothing here</body></html>" > ${XPRA_APP_DIR}/www/index.html
 
 
 pushd $UNITTESTS_DIR
