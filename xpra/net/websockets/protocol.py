@@ -15,7 +15,7 @@ from xpra.net.websockets.common import (
     )
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util import first_time, envbool
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, hexstr
 from xpra.log import Logger
 
 log = Logger("websocket")
@@ -55,9 +55,9 @@ class WebSocketProtocol(SocketProtocol):
 
     def make_wsframe_header(self, packet_type, items) -> ByteString:
         payload_len = sum(len(item) for item in items)
-        log("make_wsframe_header(%s, %i items) %i bytes, ms_mask=%s",
-            packet_type, len(items), payload_len, self.ws_mask)
         header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
+        log("make_wsframe_header(%s, %i items) %i bytes, ws_mask=%s, header=0x%s (%i bytes)",
+            packet_type, len(items), payload_len, self.ws_mask, hexstr(header), len(header))
         if self.ws_mask:
             mask = os.urandom(4)
             #now mask all the items:
@@ -79,7 +79,7 @@ class WebSocketProtocol(SocketProtocol):
         while ws_data and not self._closed:
             parsed = decode_hybi(ws_data)
             if parsed is None:
-                log("parse_ws_frame(%i bytes) not enough data", len(ws_data))
+                log("parse_ws_frame(%i bytes) not enough data: %r", len(ws_data), ws_data)
                 #not enough data to get a full websocket frame,
                 #save it for later:
                 self.ws_data = ws_data
