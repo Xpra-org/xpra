@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import unittest
+from time import sleep
 
 from xpra.os_util import pollwait, strtobytes, OSX, POSIX
 from xpra.exit_codes import ExitCode
@@ -50,9 +51,13 @@ class ServerAuthTest(ServerTestUtil):
                 self.delete_temp_file(f)
         if client.poll() is None:
             client.terminate()
-        server.terminate()
+        try:
+            server.terminate()
+        finally:
+            sleep(2)
+            self.run_xpra(["clean-sockets"])
         if r!=exit_code:
-            raise RuntimeError(f"expected info client to return {estr(exit_code)} but got {estr(r)}")
+            raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)} but got {estr(r)}")
 
     def test_fail(self):
         self._test_auth("fail", "", ExitCode.CONNECTION_FAILED)
