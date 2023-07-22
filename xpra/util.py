@@ -403,8 +403,8 @@ class typedict(dict):
             return super().get(kstr, default)
         #try to locate this value in a nested dictionary:
         d = self
-        while k.find(".")>0:
-            prefix, k = k.split(".", 1)
+        while kstr.find(".")>0:
+            prefix, k = kstr.split(".", 1)
             if prefix not in d:
                 return default
             d = self.get(prefix)
