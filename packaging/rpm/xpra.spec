@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.4.6
+%define version 4.4.7
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -637,6 +637,8 @@ fi
 
 
 %changelog
+* Sat Jul 22 2023 Antoine Martin <antoine@xpra.org> 4.4.7-10
+- TODO
 * Thu Jun 15 2023 Antoine Martin <antoine@xpra.org> 4.4.6-10
 - major fixes:
    OpenGL sanity check regression introduced in 4.4.5

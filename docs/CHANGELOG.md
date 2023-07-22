@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.4.7] 2023-07-22
+* TODO
+
 ## [4.4.6] 2023-06-15
 * major fixes:
     * [OpenGL sanity check regression introduced in 4.4.5](https://github.com/Xpra-org/xpra/commit/a5bccfca2cae9b64528b140e90568d2fa899fd97)
