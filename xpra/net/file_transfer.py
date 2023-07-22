@@ -253,6 +253,7 @@ class FileTransferHandler(FileTransferAttributes):
         fc = c.dictget("file")
         if fc:
             fc = typedict(fc)
+            filelog("parse_file_transfer_caps: %s", fc)
             #v5 with "file" namespace:
             self.remote_file_transfer = fc.boolget("enabled")
             self.remote_file_transfer_ask = fc.boolget("ask")
@@ -263,7 +264,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.remote_open_url = fc.boolget("open-url")
             self.remote_open_url_ask = fc.boolget("open-url-ask")
             self.remote_file_ask_timeout = fc.intget("ask-timeout")
-            self.remote_file_size_limit = fc.intget("max-file-size")
+            self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
             self.remote_file_chunks = max(0, fc.intget("chunks"))
         else:
             #legacy - to be removed:
