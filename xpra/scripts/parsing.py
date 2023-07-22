@@ -417,8 +417,6 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     def add_host_port(default_port=DEFAULT_PORT) -> Tuple[str,int]:
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or default_port
-        if port<=0 or port>=65536:
-            raise ValueError(f"invalid port number {port}")
         desc["host"] = host
         desc["local"] = is_local(host)
         desc["port"] = port

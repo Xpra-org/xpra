@@ -1470,6 +1470,11 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
                 cmdline[i] = uri.replace(opts.password, "********")
                 set_proc_title(" ".join(cmdline))
         connect_to_server(app, display_desc, opts)
+    except ValueError as e:
+        einfo = str(e) or type(e)
+        app.show_progress(100, f"error: {einfo}")
+        app.cleanup()
+        raise InitExit(ExitCode.FAILURE, f"invalid value: {einfo}")
     except Exception as e:
         einfo = str(e) or type(e)
         app.show_progress(100, f"error: {einfo}")
