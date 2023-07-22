@@ -10,6 +10,7 @@ import unittest
 import tempfile
 from time import monotonic
 from subprocess import Popen
+from typing import List
 
 from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
@@ -21,6 +22,8 @@ from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
 SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT*2)
+
+NOVERIFY = "--ssl-server-verify-mode=none"
 
 
 class GenSSLCertContext:
@@ -173,13 +176,14 @@ class ServerSocketsTest(ServerTestUtil):
             raise RuntimeError("SSL test skipped, cannot run "+" ".join(openssl_command))
         return certfile
 
-    def verify_connect(self, uri, exit_code, *client_args):
+    def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
         client = self.run_xpra(cmd)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
             client.terminate()
-        assert r==exit_code, "expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll()))
+        if r!=exit_code:
+            raise RuntimeError("expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll())))
 
     def test_quic_socket(self):
         port = get_free_tcp_port()
@@ -202,12 +206,11 @@ class ServerSocketsTest(ServerTestUtil):
                     )
                 def tc(exit_code, *client_args):
                     self.verify_connect(f"quic://127.0.0.1:{port}/", exit_code, *client_args)
-                noverify = "--ssl-server-verify-mode=none"
                 nohostname = "--ssl-check-hostname=no"
                 #asyncio makes it too difficult to emit the correct exception here:
                 #we should be getting ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE..
                 tc(ExitCode.CONNECTION_FAILED)
-                tc(0, noverify, nohostname)
+                tc(ExitCode.OK, NOVERIFY, nohostname)
             finally:
                 if server:
                     server.terminate()
@@ -220,47 +223,59 @@ class ServerSocketsTest(ServerTestUtil):
         ws_port = get_free_tcp_port()
         wss_port = get_free_tcp_port()
         ssl_port = get_free_tcp_port()
+        proto_ports = {
+            "tcp"   : tcp_port,
+            "ws"    : ws_port,
+            "wss"   : wss_port,
+            "ssl"   : ssl_port,
+        }
+        ports_proto = dict((v,k) for k,v in proto_ports.items())
         with GenSSLCertContext() as genssl:
             try:
                 server_args = ["--ssl=on", "--html=on", f"--ssl-cert={genssl.certfile}"]
-                for bind_mode, port in {
-                    "tcp"   : tcp_port,
-                    "ws"    : ws_port,
-                    "wss"   : wss_port,
-                    "ssl"   : ssl_port,
-                    }.items():
-                    server_args.append(f"--bind-{bind_mode}=0.0.0.0:{port},auth=allow")
+                for bind_mode, bind_port in proto_ports.items():
+                    server_args.append(f"--bind-{bind_mode}=0.0.0.0:{bind_port},auth=allow")
                 log("starting test ssl server on %s", display)
                 server = self.start_server(display, *server_args)
 
                 #test it with openssl client:
-                for port in (tcp_port, ssl_port, ws_port, wss_port):
+                for verify_port in (tcp_port, ssl_port, ws_port, wss_port):
                     openssl_verify_command = (
                         "openssl", "s_client", "-connect",
-                        "127.0.0.1:%i" % port, "-CAfile", genssl.certfile,
+                        "127.0.0.1:%i" % verify_port, "-CAfile", genssl.certfile,
                         )
                     devnull = os.open(os.devnull, os.O_WRONLY)
                     openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
                     r = pollwait(openssl, 10)
                     assert r==0, "openssl certificate verification failed, returned %s" % r
-
-                def tc(mode, port, exit_code, *client_args):
-                    self.verify_connect(f"{mode}://foo:bar@127.0.0.1:{port}/", exit_code, *client_args)
-                noverify = "--ssl-server-verify-mode=none"
+                errors : List[str] = []
+                def tc(mode:str, port:int):
+                    uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
+                    stype = ports_proto.get(port, "").rjust(5)
+                    try:
+                        self.verify_connect(uri, ExitCode.OK, NOVERIFY)
+                    except RuntimeError as e:
+                        err = f"failed to connect to {stype} port using uri {uri}: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
+                    #without NOVERIFY, should fail with SSL failure:
+                    try:
+                        self.verify_connect(uri, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
+                    except RuntimeError as e:
+                        err = f"connect to {stype} port using uri {uri} should fail: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
                 #connect to ssl socket:
-                tc("ssl", ssl_port, ExitCode.OK, noverify)
+                tc("ssl", ssl_port)
                 #tcp socket should upgrade to ssl:
-                tc("ssl", tcp_port, ExitCode.OK, noverify)
+                tc("ssl", tcp_port)
                 #tcp socket should upgrade to ws and ssl:
-                tc("wss", tcp_port, ExitCode.OK, noverify)
+                tc("wss", tcp_port)
                 #ws socket should upgrade to ssl:
-                tc("wss", ws_port, ExitCode.OK, noverify)
-
-                #self signed cert should fail without noverify:
-                tc("ssl", ssl_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("ssl", tcp_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("wss", ws_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
-                tc("wss", wss_port, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
+                tc("wss", ws_port)
+                if errors:
+                    msg = "\n* ".join(errors)
+                    raise RuntimeError(f"{len(errors)} errors testing ssl sockets:\n* {msg}")
             finally:
                 if server:
                     server.terminate()
