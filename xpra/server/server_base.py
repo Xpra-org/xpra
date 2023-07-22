@@ -508,7 +508,9 @@ class ServerBase(ServerBaseClass):
             }
         for c in SERVER_BASES:
             if c!=ServerCore:
-                merge_dicts(f, c.get_server_features(self, server_source))
+                bf = c.get_server_features(self, server_source)
+                log(f"get_server_features({c})={bf}")
+                merge_dicts(f, bf)
         return f
 
     def make_hello(self, source) -> Dict[str,Any]:
