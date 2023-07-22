@@ -1205,7 +1205,7 @@ def print_number(i, auto_value=0) -> str:
         return "auto"
     return str(i)
 
-def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int:
+def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> Union[int,None]:
     if isinstance(v, int):
         return v
     #special case for bandwidth-limit, which can be specified using units:
