@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import os
 import time
 import tempfile
 import subprocess
+from typing import List, Dict
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
@@ -22,12 +23,12 @@ SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
 
 
-def log_gap(N=10):
+def log_gap(N=10) -> None:
     for _ in range(N):
         log("")
 
 
-def estr(r):
+def estr(r) -> str:
     return exit_str(r)
 
 
@@ -47,7 +48,7 @@ class ServerTestUtil(ProcessTestUtil):
         ProcessTestUtil.setUpClass()
         tmpdir = tempfile.gettempdir()
         cls.dotxpra = DotXpra(tmpdir, [tmpdir])
-        cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
+        cls.default_xpra_args : List[str] = ["--speaker=no", "--microphone=no"]
         if not WIN32:
             cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]
             for x in cls.dotxpra._sockdirs:
@@ -88,7 +89,7 @@ class ServerTestUtil(ProcessTestUtil):
 
 
     @classmethod
-    def get_xpra_cmd(cls):
+    def get_xpra_cmd(cls) -> List[str]:
         return ProcessTestUtil.get_xpra_cmd() + cls.default_xpra_args
 
 
@@ -98,8 +99,8 @@ class ServerTestUtil(ProcessTestUtil):
         server.display = display
         return server
 
-    def check_fast_start_server(self, display, *args):
-        defaults = dict((k, "no") for k in (
+    def check_fast_start_server(self, display:str, *args):
+        defaults : Dict[str,str] = dict((k, "no") for k in (
             "av-sync", "remote-logging",
             "windows",
             "mdns",
@@ -119,7 +120,7 @@ class ServerTestUtil(ProcessTestUtil):
         args = [f"--{k}={v}" for k,v in defaults.items()] + list(args)
         return self.check_server("start", display, *args)
 
-    def check_start_server(self, display, *args):
+    def check_start_server(self, display:strs, *args):
         return self.check_server("start", display, *args)
 
     def check_server(self, subcommand:str, display:str, *args):
@@ -168,7 +169,7 @@ class ServerTestUtil(ProcessTestUtil):
                 display, exit_str(r)))
         return server_proc
 
-    def stop_server(self, server_proc, subcommand, *connect_args):
+    def stop_server(self, server_proc, subcommand:str, *connect_args) -> None:
         assert subcommand in ("stop", "exit"), "invalid stop subcommand '%s'" % subcommand
         if server_proc.poll() is not None:
             raise Exception("cannot stop server, it has already exited, returncode=%i" % server_proc.poll())
@@ -181,7 +182,7 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_error(stopit, "%s server error" % subcommand)
             raise Exception("server process %s failed to '%s'" % (server_proc, subcommand))
 
-    def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
+    def check_stop_server(self, server_proc, subcommand="stop", display=":99999") -> None:
         log("check_stop_server%s", (server_proc, subcommand, display))
         self.stop_server(server_proc, subcommand, display)
         if not display:
@@ -195,7 +196,7 @@ class ServerTestUtil(ProcessTestUtil):
         raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
 
     @classmethod
-    def get_server_info(cls, display):
+    def get_server_info(cls, display:str):
         #wait for client to own the clipboard:
         cmd = cls.get_xpra_cmd()+["info", display]
         out = cls.get_command_output(cmd)
