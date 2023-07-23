@@ -120,7 +120,7 @@ class ServerTestUtil(ProcessTestUtil):
         args = [f"--{k}={v}" for k,v in defaults.items()] + list(args)
         return self.check_server("start", display, *args)
 
-    def check_start_server(self, display:strs, *args):
+    def check_start_server(self, display:str, *args):
         return self.check_server("start", display, *args)
 
     def check_server(self, subcommand:str, display:str, *args):
