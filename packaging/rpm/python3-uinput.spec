@@ -44,6 +44,8 @@ CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
 %install
 %{__python3} setup.py install --skip-build --root %{buildroot}
 chmod a-x examples/*
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files

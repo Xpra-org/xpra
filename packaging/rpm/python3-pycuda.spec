@@ -82,6 +82,8 @@ LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py
 %install
 CUDA=/opt/cuda
 LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean
 rm -rf %{buildroot}

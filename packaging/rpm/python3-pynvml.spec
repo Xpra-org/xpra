@@ -37,6 +37,8 @@ fi
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
 rm -f %{buildroot}/%{python3_sitelib}/example.py
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean
 rm -rf %{buildroot}

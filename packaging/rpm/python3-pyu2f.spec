@@ -34,6 +34,8 @@ fi
 
 %install
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean
 rm -rf %{buildroot}

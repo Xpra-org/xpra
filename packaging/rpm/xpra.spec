@@ -458,6 +458,8 @@ find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
+# RHEL stream setuptools bug?
+rm -fr %{RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %clean

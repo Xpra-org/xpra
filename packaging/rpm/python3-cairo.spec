@@ -50,6 +50,8 @@ fi
 
 %install
 %py3_install
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %check
 %if !0%{?ol8}
