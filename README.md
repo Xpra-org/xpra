@@ -39,8 +39,10 @@ For more information, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki
 git clone https://github.com/Xpra-org/xpra; cd xpra
 python3 ./setup.py install
 ```
-For more details, see [building from source](https://github.com/Xpra-org/xpra/tree/master/docs/Build).
-
+For more details, see [building from source](https://github.com/Xpra-org/xpra/tree/master/docs/Build).  
+To contribute to the project, please try to use pull-requests and follow our [code of conduct](./CODE_OF_CONDUCT.md).  
+Unit test status:  
+[![xpra](https://github.com/Xpra-org/xpra/actions/workflows/test.yml/badge.svg)](https://github.com/Xpra-org/xpra/actions/workflows/test.yml)
 ---
 
 # Usage
