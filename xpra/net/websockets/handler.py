@@ -60,20 +60,24 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             raise ValueError("Missing Sec-WebSocket-Key header")
         accept = make_websocket_accept_hash(key)
         log(f"websocket hash for key {key!r} = {accept!r}")
-        for upgrade_string in (
+        self.write_byte_strings(
             b"HTTP/1.1 101 Switching Protocols",
             b"Upgrade: websocket",
             b"Connection: Upgrade",
             b"Sec-WebSocket-Accept: %s" % accept,
             b"Sec-WebSocket-Protocol: %s" % b"binary",
             b"",
-            ):
-            self.wfile.write(b"%s\r\n" % upgrade_string)
-        self.wfile.flush()
+            )
         self.new_websocket_client(self)
         #don't use our finish method that closes the socket,
         #but do call the superclass's finish() method:
         self.finish = super().finish
+
+    def write_byte_strings(self, *bstrings):
+        bdata = b"\r\n".join(bstrings)
+        self.wfile.write(bdata)
+        self.wfile.flush()
+
 
     def do_GET(self) -> None:
         log(f"do_GET() path={self.path!r}, headers={self.headers!r}")
@@ -109,15 +113,12 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.send_error(400, "Client did not send Host: header")
             return
         server_address = self.headers["Host"]
-        upgrade_string = (
+        self.write_byte_strings(
             b"HTTP/1.1 301 Moved Permanently",
             b"Connection: close",
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
             b"",
             )
-        bdata = b"\r\n".join(ugrade_string)
-        self.wfile.write(bdata)
-        self.wfile.flush()
 
     def handle_request(self) -> None:
         if self.only_upgrade:
