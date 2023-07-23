@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://xpra.org
+Suites: mantic
+Components: main
+Signed-By: /usr/share/keyrings/xpra.asc
+Architectures: amd64 arm64
