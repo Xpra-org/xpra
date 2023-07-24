@@ -168,6 +168,7 @@ if "--minimal" in sys.argv:
 skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1]
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
+RISCV = ARCH.startswith("riscv")
 print(f"ARCH={ARCH}")
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
@@ -2454,7 +2455,7 @@ if ext_modules:
             "profile" : True,
             })
 
-    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM) else os.cpu_count()))
+    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM or RISCV) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,
                                              nthreads=nthreads,
                                              gdb_debug=debug_ENABLED,
