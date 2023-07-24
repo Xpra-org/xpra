@@ -33,6 +33,10 @@
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 
+%ifarch aarch64 riscv5
+%{!?nthreads: %global nthreads 1}
+%endif
+
 %if 0%{?el7}
 echo CentOS / RHEL 7.x is no longer supported
 %endif
