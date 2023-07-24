@@ -1,2 +1,2 @@
 deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ sid main
-deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/beta/ sid main
+deb [arch=amd64,arm64,riscv64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/beta/ sid main
