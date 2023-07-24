@@ -15,7 +15,11 @@ ln -sf ../xserver-xorg-video-dummy ./debian
 mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
 rm -f xserver-xorg-video-dummy-build-deps*
 
-debuild -us -uc -b --no-lintian -Zxz
+if [ `arch` == "aarch64" ]; then
+  debuild -us -uc -b --no-lintian -Zxz
+else
+  debuild -us -uc -b -Zxz
+fi
 ls -la ../xserver-xorg-video-dummy*deb
 mv ../xserver-xorg-video-dummy*deb ../xserver-xorg-video-dummy*changes "$REPO_ARCH_PATH"
 popd
