@@ -16,6 +16,7 @@ from xpra.codecs.gstreamer.codec_common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
+    get_default_decoder_options,
     )
 from xpra.os_util import WIN32
 from xpra.util import roundup, typedict
@@ -71,11 +72,13 @@ def get_codecs_options() -> Dict[str,Tuple[str,...]]:
 def find_codecs(options) -> Dict[str,str]:
     codecs : Dict[str,str] = {}
     for encoding, elements in options.items():
-        if encoding in FORMATS and elements and has_plugins(*elements):
-            codecs[encoding] = elements[0]
-            break
+        if encoding in FORMATS and elements:
+            found = [x for x in elements if has_plugins(x)]
+            if found:
+                codecs[encoding] = found[0]
     log(f"find_codecs({options})={codecs}")
     return codecs
+
 
 CODECS = find_codecs(get_codecs_options())
 
@@ -111,21 +114,24 @@ class Decoder(VideoPipeline):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
-        decoder_element = CODECS.get(self.encoding)
-        if not decoder_element:
+        decoder = CODECS.get(self.encoding)
+        if not decoder:
             raise RuntimeError(f"invalid encoding {self.encoding}")
         stream_attrs : Dict[str,Any] = {
             "width"     : self.width,
             "height"    : self.height,
             }
-        for k,v in {
-            "profile"       : "main",
-            "stream-format" : "byte-stream",
-            "alignment"     : "au",
-            }.items():
+        eopts = get_default_decoder_options().get(decoder, {})
+        if not eopts:
+            eopts = {
+                "profile"       : "main",
+                "stream-format" : "byte-stream",
+                "alignment"     : "au",
+            }
+        for k,v in eopts.items():
             stream_attrs[k] = options.strget(k, v)
         stream_caps = get_caps_str(f"video/x-{self.encoding}", stream_attrs)
-        if decoder_element.startswith("nv"):
+        if decoder.startswith("nv"):
             gst_format = "NV12"
             self.output_format = "NV12"
         else:
@@ -138,7 +144,7 @@ class Decoder(VideoPipeline):
             })
         elements = [
             f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}",
-            f"{decoder_element} name=decoder",
+            f"{decoder} name=decoder",
             f"appsink name=sink emit-signals=1 max-buffers=10 drop=false sync=false async=true qos=false caps={output_caps}",
             ]
         if not self.setup_pipeline_and_bus(elements):

@@ -93,11 +93,11 @@ def get_default_encoder_options() -> Dict[str,Dict[str,Any]]:
             "zero-reorder-delay"    : True,
             },
         "svtav1enc" : {
-        #    "speed"         : 12,
-        #    "gop-size"      : 251,
+            # "speed"         : 12,
+            # "gop-size"      : 251,
             "intra-refresh" : 1,    #open gop
-        #    "lookahead"     : 0,
-        #    "rc"            : 1,    #vbr
+            # "lookahead"     : 0,
+            # "rc"            : 1,    #vbr
             },
         "svtvp9enc" : {
             },
@@ -125,6 +125,15 @@ def get_default_encoder_options() -> Dict[str,Dict[str,Any]]:
             encoder_options = parse_simple_dict(enc_options_str)
             log(f"user overridden options for {element}: {encoder_options}")
             options[element] = encoder_options
+    return options
+
+def get_default_decoder_options() -> Dict[str,Dict[str,Any]]:
+    options : Dict[str,Dict[str,Any]] = {
+        "av1dec"    : {
+            "stream-format": "obu-stream",
+            "alignment": "tu",
+        },
+    }
     return options
 
 
