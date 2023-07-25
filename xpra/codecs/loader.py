@@ -430,7 +430,7 @@ def main(args) -> int:
         out.info("modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
-            mod : ModuleType = codecs[name]
+            mod : Optional[ModuleType] = codecs.get(name)
             f = str(mod)
             if mod and hasattr(mod, "__file__"):
                 f = getattr(mod, "__file__", f)
