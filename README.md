@@ -43,6 +43,7 @@ For more details, see [building from source](https://github.com/Xpra-org/xpra/tr
 To contribute to the project, please try to use pull-requests and follow our [code of conduct](./CODE_OF_CONDUCT.md).  
 Unit test status:  
 [![xpra](https://github.com/Xpra-org/xpra/actions/workflows/test.yml/badge.svg)](https://github.com/Xpra-org/xpra/actions/workflows/test.yml)
+
 ---
 
 # Usage
