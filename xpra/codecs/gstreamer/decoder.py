@@ -26,8 +26,10 @@ log = Logger("decoder", "gstreamer")
 
 log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
+FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
-def get_default_mappings():
+
+def get_default_mappings() -> Dict[str,Tuple[str,...]]:
     #should always be available:
     m : Dict[str,Tuple[str,...]] = {
         "vp8"   : ("vp8dec", ),
@@ -69,10 +71,9 @@ def get_codecs_options() -> Dict[str,Tuple[str,...]]:
 def find_codecs(options) -> Dict[str,str]:
     codecs : Dict[str,str] = {}
     for encoding, elements in options.items():
-        for element in elements:
-            if has_plugins(element):
-                codecs[encoding] = element
-                break
+        if encoding in FORMATS and elements and has_plugins(*elements):
+            codecs[encoding] = elements[0]
+            break
     log(f"find_codecs({options})={codecs}")
     return codecs
 
