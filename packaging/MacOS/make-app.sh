@@ -78,7 +78,7 @@ fi
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details)"
-${PYTHON} ./setup.py install --single-version-externally-managed --root=/ --prefix=$JHBUILD_PREFIX ${BUILD_ARGS} >& ${INSTALL_LOG}
+${PYTHON} ./setup.py install --single-version-externally-managed --root=$JHBUILD_PREFIX ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
