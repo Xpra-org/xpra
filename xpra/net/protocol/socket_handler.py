@@ -140,6 +140,10 @@ class SocketProtocol:
         self.compressor = "none"
         self._compress = compression.get_compressor("none")
         self.compression_level = 0
+        self.authenticators = ()
+        self.encryption = ""
+        self.keyfile = ""
+        self.keydata = b""
         self.cipher_in = None
         self.cipher_in_name = None
         self.cipher_in_block_size = 0
