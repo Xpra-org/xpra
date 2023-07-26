@@ -16,7 +16,7 @@ from typing import Dict, Any, Optional, Callable, Set, Tuple
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
+from xpra.util import typedict, csv, envint, envbool, engs, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
@@ -369,7 +369,6 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file_chunk(self, packet : PacketType) -> None:
         chunk_id, chunk, file_data, has_more = packet[1:5]
-        chunk_id = net_utf8(chunk_id)
         #if len(file_data)<1024:
         #    from xpra.os_util import hexstr
         #    filelog.warn("file_data=%s", hexstr(file_data))
@@ -484,10 +483,7 @@ class FileTransferHandler(FileTransferAttributes):
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
         send_id = ""
         if len(packet)>=9:
-            send_id = net_utf8(packet[8])
-        #basefilename should be utf8:
-        basefilename = net_utf8(basefilename)
-        mimetype = net_utf8(mimetype)
+            send_id = str(packet[8])
         if filesize<=0:
             filelog.error("Error: invalid file size: %s", filesize)
             filelog.error(" file transfer aborted for %r", basefilename)
@@ -728,8 +724,8 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def _process_open_url(self, packet : PacketType):
-        send_id = net_utf8(packet[2])
-        url = net_utf8(packet[1])
+        send_id = str(packet[2])
+        url = str(packet[1])
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
@@ -820,9 +816,6 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet)>=9:
             options = packet[8]
         #filenames and url are always sent encoded as utf8:
-        url = net_utf8(url)
-        dtype = net_utf8(dtype)
-        send_id = net_utf8(send_id)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
 
@@ -880,7 +873,6 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_data_response(self, packet : PacketType) -> None:
         send_id, accept = packet[1:3]
-        send_id = net_utf8(send_id)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
@@ -889,8 +881,8 @@ class FileTransferHandler(FileTransferAttributes):
         if v is None:
             filelog.warn("Warning: cannot find send-file entry")
             return
-        dtype = net_utf8(v[0])
-        url = net_utf8(v[1])
+        dtype = str(v[0])
+        url = str(v[1])
         if accept==DENY:
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
@@ -994,10 +986,10 @@ class FileTransferHandler(FileTransferAttributes):
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
         chunk_id, state, error_message, chunk = packet[1:5]
-        chunk_id = net_utf8(chunk_id)
+        chunk_id = str(chunk_id)
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
-            filelog.info(" %s", net_utf8(error_message))
+            filelog.info(" %s", error_message)
             self.cancel_sending(chunk_id)
             return
         chunk_state = self.send_chunks_in_progress.get(chunk_id)

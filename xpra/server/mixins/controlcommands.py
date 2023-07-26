@@ -9,7 +9,7 @@ import os.path
 from time import monotonic
 from typing import List
 
-from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict, ConnectionMessage
+from xpra.util import parse_scaling_value, csv, from0to100, typedict, ConnectionMessage
 from xpra.os_util import load_binary_file
 from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
@@ -319,7 +319,6 @@ class ServerBaseControlCommands(StubServerMixin):
         #we always get the values as strings from the command interface,
         #but those may actually be utf8 encoded binary strings,
         #so we may have to do an ugly roundtrip:
-        filename = net_utf8(filename)
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 

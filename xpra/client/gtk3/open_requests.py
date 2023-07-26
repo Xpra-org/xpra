@@ -10,7 +10,7 @@ import subprocess
 from time import monotonic
 import gi
 
-from xpra.util import envint, net_utf8
+from xpra.util import envint
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.child_reaper import getChildReaper
@@ -103,14 +103,14 @@ class OpenRequestsWindow:
         return btn
 
 
-    def add_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit, timeout):
+    def add_request(self, cb_answer, send_id:str, dtype:str, url:str, filesize:int, printit:bool, openit:bool, timeout:int):
         expires = monotonic()+timeout
-        self.requests.append((cb_answer, net_utf8(send_id), net_utf8(dtype), net_utf8(url), filesize, printit, openit, expires))
+        self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
         self.populate_table()
         if not self.populate_timer:
             self.schedule_timer()
 
-    def update_expires_label(self):
+    def update_expires_label(self) -> bool:
         expired = 0
         for label, expiry in self.expire_labels.values():
             seconds = max(0, expiry-monotonic())

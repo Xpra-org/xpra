@@ -10,7 +10,7 @@ from time import monotonic
 from typing import List, Dict, Any, Optional
 
 from xpra.os_util import bytestostr
-from xpra.util import typedict, net_utf8, envbool
+from xpra.util import typedict, envbool
 from xpra.net.common import PacketType
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -171,9 +171,9 @@ class InputServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        keyname = net_utf8(keyname)
-        keystr = net_utf8(keystr)
-        modifiers = list(net_utf8(x) for x in modifiers)
+        keyname = str(keyname)
+        keystr = str(keystr)
+        modifiers = list(str(x) for x in modifiers)
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)

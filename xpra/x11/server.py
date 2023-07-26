@@ -15,7 +15,7 @@ from typing import Dict, Any, Tuple, Optional
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.net.common import PacketType
@@ -359,7 +359,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             name = "Main" if i==0 else f"Desktop {i+1}"
             for ss in sources:
                 if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
-                    v = net_utf8(ss.desktop_names[i])
+                    v = ss.desktop_names[i]
                     if v!="0" or i!=0:
                         name = v
             names.append(name)

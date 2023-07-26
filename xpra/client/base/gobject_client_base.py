@@ -12,7 +12,7 @@ from typing import Dict, Any
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import (
-    u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
+    u, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized, ConnectionMessage, stderr_print,
     )
@@ -577,7 +577,7 @@ class ShellXpraClient(SendCommandConnectClient):
             stream = sys.stderr
         else:
             raise ValueError(f"invalid file descriptor f{fd}")
-        s = net_utf8(message)
+        s = str(message)
         if s.endswith("\n"):
             s = s[:-1]
         stream.write("%s" % s)

@@ -680,7 +680,7 @@ class ClipboardProtocolHelperCore:
         if isinstance(wire_data, (str, bytes)) and l>=MIN_CLIPBOARD_COMPRESS_SIZE:
             if isinstance(wire_data, str):
                 #compression requires bytes:
-                #but this would require the receiving end to use net_utf8()
+                #but this would require the receiving end to know it needs to decode the bytes
                 wire_data = wire_data.encode("utf8")
                 log("encoded %i characters to %i utf8 bytes", l, len(wire_data))
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)

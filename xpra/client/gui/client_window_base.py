@@ -14,7 +14,7 @@ from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.common import GravityStr
-from xpra.util import net_utf8, typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
 log = Logger("window")
@@ -356,7 +356,7 @@ class ClientWindowBase(ClientWidgetBase):
                 value = metadata.get(var) or self._metadata.get(var)
                 if value is None:
                     return default_values.get(var, "<unknown %s>" % var)
-                return net_utf8(value)
+                return str(value)
             def metadata_replace(match):
                 atvar = match.group(0)          #ie: '@title@'
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
@@ -390,7 +390,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title", "")
-            self.set_icon_name(net_utf8(icon_title))
+            self.set_icon_name(icon_title)
             #the DE may have reset the icon now,
             #force it to use the one we really want:
             self.reset_icon()

@@ -10,7 +10,6 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk
 from dbus.types import UInt32, Int32
 
-from xpra.util import net_utf8
 from xpra.dbus.helper import native_to_dbus
 from xpra.net.common import PacketType
 from xpra.platform.posix.fd_portal import REMOTEDESKTOP_IFACE
@@ -78,10 +77,10 @@ class RemoteDesktop(PortalShadow):
     def _process_key_action(self, proto, packet : PacketType) -> None:
         if self.readonly or not self.input_devices or not self.keymap:
             return
-        keyname = net_utf8(packet[2])
+        keyname = str(packet[2])
         pressed = bool(packet[3])
         keyval = int(packet[5])
-        keystr = net_utf8(packet[6])
+        keystr = str(packet[6])
         ss = self.get_server_source(proto)
         if ss is None:
             return

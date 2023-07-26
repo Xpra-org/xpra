@@ -68,7 +68,7 @@ from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO
 from xpra.util import (
-    first_time, noerr, net_utf8,
+    first_time, noerr,
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
@@ -2129,7 +2129,7 @@ class ServerCore:
         self.auth_verified(proto, c, auth_caps)
 
     def auth_verified(self, proto:SocketProtocol, caps:typedict, auth_caps:Dict) -> None:
-        command_req = tuple(net_utf8(x) for x in caps.tupleget("command_request"))
+        command_req = tuple(str(x) for x in caps.tupleget("command_request"))
         if command_req:
             #call from UI thread:
             authlog(f"auth_verified(..) command request={command_req}")

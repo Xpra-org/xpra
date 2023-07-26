@@ -7,7 +7,7 @@
 from typing import List, Tuple, Any, Optional, Dict, Iterable, Callable
 
 from xpra.os_util import bytestostr
-from xpra.util import get_screen_info, first_time, typedict, net_utf8
+from xpra.util import get_screen_info, first_time, typedict
 from xpra.common import MIN_DPI, MAX_DPI
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -71,7 +71,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
-        desktop_names = tuple(net_utf8(x) for x in c.tupleget("desktop.names"))
+        desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
         self.icc = c.dictget("icc", {})
@@ -159,7 +159,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_desktops(self, desktops:int, desktop_names) -> None:
         self.desktops = desktops or 1
-        self.desktop_names = tuple(net_utf8(d) for d in (desktop_names or ()))
+        self.desktop_names = tuple(str(d) for d in (desktop_names or ()))
 
     def updated_desktop_size(self, root_w:int, root_h:int, max_w:int, max_h:int) -> bool:
         log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)

@@ -13,7 +13,7 @@ from threading import Lock
 from typing import Dict, Any, Optional, Callable
 
 from xpra.os_util import bytestostr
-from xpra.util import repr_ellipsized, net_utf8
+from xpra.util import repr_ellipsized
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -192,9 +192,9 @@ class LoggingServer(StubServerMixin):
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(net_utf8(x) for x in msg)
+                dmsg = " ".join(str(x) for x in msg)
             else:
-                dmsg = net_utf8(msg)
+                dmsg = str(msg)
             for l in dmsg.splitlines():
                 self.do_log(level, prefix+l)
         except Exception as e:

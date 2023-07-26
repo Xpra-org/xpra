@@ -9,7 +9,7 @@ import traceback
 from time import monotonic
 from threading import Lock
 
-from xpra.util import csv, typedict, repr_ellipsized, net_utf8
+from xpra.util import csv, typedict, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 from xpra.net.common import PacketType
@@ -93,9 +93,9 @@ class RemoteLogging(StubClientMixin):
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(net_utf8(x) for x in msg)
+                dmsg = " ".join(str(x) for x in msg)
             else:
-                dmsg = net_utf8(msg)
+                dmsg = str(msg)
             for l in dmsg.splitlines():
                 self.do_log(level, prefix+l)
         except Exception as e:

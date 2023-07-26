@@ -14,7 +14,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
-from xpra.util import ellipsizer, envint, net_utf8
+from xpra.util import ellipsizer, envint
 from xpra.log import Logger
 
 
@@ -78,7 +78,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 dtype, dformat, data = target_data.get(text_target)
                 if dformat!=8:
                     continue
-                text = net_utf8(data)
+                text = str(data)
                 log("setting text data %s / %s of size %i: %s",
                     dtype, dformat, len(text), ellipsizer(text))
                 self._owner_change_embargo = monotonic()

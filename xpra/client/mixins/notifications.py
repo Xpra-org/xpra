@@ -9,7 +9,7 @@ from typing import Dict, Any
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.net.common import PacketType
-from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict, net_utf8
+from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -157,11 +157,11 @@ class NotificationClient(StubClientMixin):
         self._ui_event()
         dbus_id = packet[1]
         nid = int(packet[2])
-        app_name = net_utf8(packet[3])
+        app_name = str(packet[3])
         replaces_nid = int(packet[4])
         app_icon = packet[5]
-        summary = net_utf8(packet[6])
-        body = net_utf8(packet[7])
+        summary = str(packet[6])
+        body = str(packet[7])
         expire_timeout = int(packet[8])
         icon = None
         actions, hints = [], {}

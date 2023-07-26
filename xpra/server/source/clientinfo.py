@@ -6,7 +6,7 @@
 
 from typing import Dict, List, Any, Tuple
 
-from xpra.util import std, typedict, net_utf8
+from xpra.util import std, typedict
 from xpra.common import FULL_INFO
 from xpra.version_util import vparts
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -76,7 +76,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_revision = c.strget("build.revision")
         self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
-        self.client_wm_name = c.conv_get("wm_name", "", net_utf8)
+        self.client_wm_name = c.strget("wm_name", "")
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
         self.client_setting_change = c.boolget("setting-change")

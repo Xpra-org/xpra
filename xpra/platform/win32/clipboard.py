@@ -35,7 +35,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import net_utf8, csv, ellipsizer, envint, envbool, roundup
+from xpra.util import csv, ellipsizer, envint, envbool, roundup
 from xpra.os_util import bytestostr
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
@@ -570,7 +570,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", ellipsizer(data))
-            self.set_clipboard_text(net_utf8(data))
+            self.set_clipboard_text(bytestostr(data))
         elif dformat==8 and dtype.startswith("image/"):
             img_format = dtype.split("/")[-1]   #ie: 'png'
             self.set_clipboard_image(img_format, data)

@@ -18,7 +18,7 @@ from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
 from xpra.util import (
-    typedict, envint, envbool, csv, first_time, net_utf8, MoveResize,
+    typedict, envint, envbool, csv, first_time, MoveResize,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
@@ -1089,8 +1089,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def set_command(self, command) -> None:
-        v = net_utf8(command)
-        self.set_x11_property("WM_COMMAND", "latin1", v)
+        self.set_x11_property("WM_COMMAND", "latin1", command)
 
     def set_x11_property(self, prop_name:str, dtype=None, value=None) -> None:
         if not HAS_X11_BINDINGS:

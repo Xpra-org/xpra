@@ -7,7 +7,7 @@
 import os
 from typing import Dict, Any, Set
 
-from xpra.util import envbool, typedict, net_utf8
+from xpra.util import envbool, typedict
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -114,8 +114,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             #prefer sockets in public paths:
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
-        for name,props in printers.items():
-            printer = net_utf8(name)
+        for printer,props in printers.items():
             if printer not in self.printers:
                 self.setup_printer(printer, props, attributes)
 
@@ -161,8 +160,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, name) -> None:
-        printer = net_utf8(name)
+    def remove_printer(self, printer:str) -> None:
         try:
             self.printers_added.remove(printer)
         except KeyError:
