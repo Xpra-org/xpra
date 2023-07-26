@@ -21,18 +21,8 @@ Build-Depends: debhelper (>= 8)
 # even unstable ships an oudated version!
 # (hopefully this can be enabled some day)
 #              ,libevdi0-dev
-#jammy:              ,libavif-dev
-#lunar:              ,libavif-dev
-#mantic:              ,libavif-dev
-#bookworm:              ,libavif-dev
-#trixie:              ,libavif-dev
-#sid:              ,libavif-dev
-#jammy:              ,libyuv-dev
-#lunar:              ,libyuv-dev
-#mantic:              ,libyuv-dev
-#bookworm:              ,libyuv-dev
-#trixie:              ,libyuv-dev
-#sid:              ,libyuv-dev
+              ,libavif-dev
+              ,libyuv-dev
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
@@ -272,6 +262,7 @@ Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
+              ,libyuv0
 #lunar:              ,libspng0
 #mantic:              ,libspng0
 #bookworm:              ,libspng0
@@ -283,12 +274,6 @@ Depends: xpra-common (= ${binary:Version})
 #bookworm:              ,libavif15
 #trixie:              ,libavif15
 #sid:              ,libavif15
-#jammy:              ,libyuv0
-#lunar:              ,libyuv0
-#mantic:              ,libyuv0
-#bookworm:              ,libyuv0
-#trixie:              ,libyuv0
-#sid:              ,libyuv0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,python3-opencv

@@ -37,8 +37,8 @@
 %{!?nthreads: %global nthreads 1}
 %endif
 
-%if 0%{?el7}
-echo CentOS / RHEL 7.x is no longer supported
+%if 0%{?el7}%{?el8}
+echo CentOS / RHEL 7.x and 8.x are no longer supported
 %endif
 
 %if 0%{?xpra_revision_no}
@@ -103,10 +103,6 @@ BuildRequires:		which
 Requires:			python3
 Requires:			python3-gobject
 Requires:			python3-typing-extensions
-%if 0%{?el8}
-BuildRequires:		python3-dataclasses
-Requires:			python3-dataclasses
-%endif
 Recommends:			python3-pillow
 Recommends:			python3-cryptography
 Recommends:			python3-rencode
@@ -121,7 +117,7 @@ Suggests:			python3-ldap
 Suggests:			python3-ldap3
 #Suggests:           python3-cpuinfo
 Recommends:			python3-aioquic
-%if 0%{?el8}%{?el9}
+%if 0%{?el9}
 Recommends:			python3-avahi
 %endif
 %if 0%{?fedora}
@@ -295,7 +291,7 @@ Recommends:         python3-psutil
 Suggests:			python3-opencv
 Suggests:			sshpass
 #without this, the system tray is unusable with gnome!
-%if 0%{?el8}%{?el9}
+%if 0%{?el9}
 Recommends:			gnome-shell-extension-topicons-plus
 %else
 Suggests:			gnome-shell-extension-appindicator
