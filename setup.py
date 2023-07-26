@@ -2257,34 +2257,14 @@ if nvidia_ENABLED:
                 nvcc_cmd.append("-std=c++11")
             if gcc_version>=(12, 0):
                 nvcc_cmd.append("--allow-unsupported-compiler")
-            if nvcc_version>=(11, 5):
-                nvcc_cmd += ["-arch=all",
-                        "-Wno-deprecated-gpu-targets",
-                        ]
-                if nvcc_version>=(11, 6):
-                    nvcc_cmd += ["-Xnvlink", "-ignore-host-info"]
-                return nvcc_cmd
-            #older versions, add every arch we know about:
-            comp_code_options = []
-            if nvcc_version>=(7, 5):
-                comp_code_options.append((52, 52))
-                comp_code_options.append((53, 53))
-            if nvcc_version>=(8, 0):
-                comp_code_options.append((60, 60))
-                comp_code_options.append((61, 61))
-                comp_code_options.append((62, 62))
-            if nvcc_version>=(9, 0):
-                comp_code_options.append((70, 70))
-            if nvcc_version>=(10, 0):
-                comp_code_options.append((75, 75))
-            if nvcc_version>=(11, 0):
-                comp_code_options.append((80, 80))
-            if nvcc_version>=(11, 1):
-                comp_code_options.append((86, 86))
-            #if nvcc_version>=(11, 6):
-            #    comp_code_options.append((87, 87))
-            for arch, code in comp_code_options:
-                nvcc_cmd.append(f"-gencode=arch=compute_{arch},code=sm_{code}")
+            if nvcc_version<(11, 6):
+                raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
+            nvcc_cmd += [
+                "-arch=all",
+                "-Wno-deprecated-gpu-targets",
+                "-Xnvlink",
+                "-ignore-host-info",
+            ]
             return nvcc_cmd
         nvcc_args = get_nvcc_args()
         #first compile the cuda kernels
