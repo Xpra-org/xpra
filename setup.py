@@ -797,23 +797,6 @@ def get_gcc_version():
 def vernum(s):
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
 
-def get_dummy_driver_version():
-    #try various rpm names:
-    for rpm_name in ("xorg-x11-drv-dummy", "xf86-video-dummy"):
-        r, out, err = get_status_output(["rpm", "-q", "--queryformat", "%{VERSION}", rpm_name])
-        if r==0:
-            print(f"rpm query found dummy driver version {out}")
-            return out
-        print(f"rpm query: out={out}, err={err}")
-    r, out, _ = get_status_output(["dpkg-query", "--showformat=${Version}", "--show", "xserver-xorg-video-dummy"])
-    if r==0:
-        if out.find(":")>=0:
-            #ie: "1:0.3.8-2" -> "0.3.8"
-            out = out.split(":", 1)[1]
-        print(f"dpkg-query found dummy driver version {out}")
-        return out
-    return "0.4.0"
-
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
@@ -1859,10 +1842,7 @@ else:
                     addconf("nvenc.keys")
                 if nvfbc_ENABLED:
                     addconf("nvfbc.keys")
-                if vernum(dummy_driver_version or get_dummy_driver_version()) < (0, 4):
-                    addconf("xorg-legacy.conf", "xorg.conf")
-                else:
-                    addconf("xorg.conf")
+                addconf("xorg.conf")
                 for src, dst_name in etc_xpra_files.items():
                     copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
                 copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
