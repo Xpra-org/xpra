@@ -331,8 +331,6 @@ Requires:			xorg-x11-server-utils
 Requires:			xorg-x11-drv-dummy
 Requires:			xorg-x11-xauth
 Recommends:			xterm
-BuildRequires:		libfakeXinerama
-Recommends:			libfakeXinerama
 Recommends:			mesa-dri-drivers
 Recommends:         python3-lxml
 %description x11

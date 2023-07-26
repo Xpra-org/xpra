@@ -27,12 +27,6 @@ input-method=auto
 # sync-xvfb = 0
 sync-xvfb = auto
 
-# Fake Xinerama:
-#fake-xinerama=no
-#fake-xinerama=auto
-#fake-xinerama=/path/to/libfakeXinerama.so
-fake-xinerama = %(fake_xinerama)s
-
 # Virtual display command:
 # - Xvfb option (limited DPI support)
 # xvfb = Xvfb -nolisten tcp -noreset \

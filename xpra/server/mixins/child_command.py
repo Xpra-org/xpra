@@ -212,7 +212,7 @@ class ChildCommandServer(StubServerMixin):
 
 
     def get_child_env(self) -> Dict[str,str]:
-        #subclasses may add more items (ie: fakexinerama)
+        #subclasses may add more
         env = restore_script_env(super().get_child_env())
         env.update(self.source_env)
         env.update(self.start_env)

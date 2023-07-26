@@ -1014,7 +1014,6 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
                       help="Exits the server when idle (0 to disable)."
                       +" Default: %s seconds" % defaults.server_idle_timeout)
-    legacy_bool_parse("fake-xinerama")
     legacy_bool_parse("use-display")
     group.add_option("--use-display", action="store", metavar="yes|no|auto",
                       dest="use_display", default=defaults.use_display,
@@ -1029,12 +1028,6 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="displayfd", default=defaults.displayfd,
                       help="The xpra server will write the display number back on this file descriptor"
                       +" as a newline-terminated string.")
-    group.add_option("--fake-xinerama", action="store", metavar="path|auto|no",
-                      dest="fake_xinerama",
-                      default=defaults.fake_xinerama,
-                      help="Setup fake xinerama support for the session. "+
-                      "You can specify the path to the libfakeXinerama.so library or a boolean."
-                      +" Default: %s." % enabled_str(defaults.fake_xinerama))
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no|widthxheight[@HZ]",
                       help="Whether the server display should be resized to match the client resolution."

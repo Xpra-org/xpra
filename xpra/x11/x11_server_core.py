@@ -19,7 +19,6 @@ from xpra.gtk_common.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid, save_mode
 from xpra.x11.vfb_util import parse_resolutions
-from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk3.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk3.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
@@ -110,7 +109,6 @@ class X11ServerCore(GTKServerBase):
         self.touchpad_device = None
         self.pointer_device_map : dict = {}
         self.keys_pressed : Dict[int,Any] = {}
-        self.libfakeXinerama_so : str = ""
         self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added : List[Tuple[int,int]] = []
@@ -118,8 +116,6 @@ class X11ServerCore(GTKServerBase):
         self.initial_resolutions = ()
         self.randr = False
         self.randr_exact_size = False
-        self.fake_xinerama = "no"      #only enabled in seamless server
-        self.current_xinerama_config = None
         self.current_keyboard_group = 0
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -144,8 +140,6 @@ class X11ServerCore(GTKServerBase):
             self.initial_resolutions = ()
         self.randr = opts.resize_display not in FALSE_OPTIONS
         self.randr_exact_size = False
-        self.fake_xinerama = "no"      #only enabled in seamless server
-        self.current_xinerama_config = None
         #x11 keyboard bits:
         self.current_keyboard_group = 0
 
@@ -153,7 +147,6 @@ class X11ServerCore(GTKServerBase):
     def x11_init(self) -> None:
         if FAKE_X11_INIT_ERROR:
             raise RuntimeError("fake x11 init error")
-        self.init_fake_xinerama()
         with xlog:
             clean_keyboard_state()
         with xlog:
@@ -178,14 +171,6 @@ class X11ServerCore(GTKServerBase):
 
     def save_mode(self) -> None:
         save_mode(self.get_server_mode())
-
-    def init_fake_xinerama(self) -> None:
-        if self.fake_xinerama in FALSE_OPTIONS:
-            self.libfakeXinerama_so = ""
-        elif os.path.isabs(self.fake_xinerama):
-            self.libfakeXinerama_so = self.fake_xinerama
-        else:
-            self.libfakeXinerama_so = find_libfakeXinerama()
 
     def init_randr(self) -> None:
         self.randr = RandR.has_randr()
@@ -277,13 +262,6 @@ class X11ServerCore(GTKServerBase):
         self.input_devices = "xtest"
 
 
-    def get_child_env(self) -> Dict[str,str]:
-        #adds fakeXinerama:
-        env = super().get_child_env()
-        if self.fake_xinerama and self.libfakeXinerama_so:
-            env["LD_PRELOAD"] = self.libfakeXinerama_so
-        return env
-
     def do_cleanup(self) -> None:
         log("do_cleanup() x11_filter=%s", self.x11_filter)
         if self.x11_filter:
@@ -302,8 +280,6 @@ class X11ServerCore(GTKServerBase):
                         break
                 except Exception as e:
                     l("failed to remove event receivers: %s", e)
-        if self.fake_xinerama:
-            cleanup_fakeXinerama()
         with xlog:
             clean_keyboard_state()
         #prop_del does its own xsync:
@@ -390,11 +366,7 @@ class X11ServerCore(GTKServerBase):
         start = monotonic()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
-        sinfo.update({
-            "type"                  : "Python/gtk/x11",
-            "fakeXinerama"          : bool(self.libfakeXinerama_so),
-            "libfakeXinerama"       : self.libfakeXinerama_so or "",
-            })
+        sinfo["type"] = "Python/gtk/x11"
         if FULL_INFO>1:
             try:
                 from xpra.codecs.drm.drm import query  # pylint: disable=import-outside-toplevel
@@ -681,7 +653,7 @@ class X11ServerCore(GTKServerBase):
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
             return root_w,root_h
-        if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
+        if desired_w==root_w and desired_h==root_h:
             return root_w,root_h    #unlikely: perfect match already!
         #clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
         xdpi = self.xdpi or self.dpi
@@ -730,46 +702,16 @@ class X11ServerCore(GTKServerBase):
         #try to find the best screen size to resize to:
         w, h = self.get_best_screen_size(desired_w, desired_h, bigger)
 
-        #fakeXinerama:
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         source = None
         screen_sizes = []
         if len(ui_clients)==1:
             source = ui_clients[0]
             screen_sizes = source.screen_sizes
-        else:
-            screenlog("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
-        xinerama_changed = save_fakeXinerama_config(self.fake_xinerama and len(ui_clients)==1, source, screen_sizes)
-        with xsync:
-            if RandR.is_dummy16():
-                #don't bother - randr16 does it better
-                xinerama_changed = False
-        #we can only keep things unchanged if xinerama was also unchanged
-        #(many apps will only query xinerama again if they get a randr notification)
-        if (w==root_w and h==root_h) and not xinerama_changed:
+        if w==root_w and h==root_h:
             screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return root_w, root_h
         try:
-            if (w==root_w and h==root_h) and xinerama_changed:
-                # `xinerama` was changed, but the `RandR` resolution will not be...
-                # and we need a `RandR` change to force applications to re-query it,
-                # so we temporarily switch to another resolution to force
-                # the change! (ugly! but this works)
-                with xsync:
-                    temp = {}
-                    for tw,th in self.get_all_screen_sizes():
-                        if tw!=w or th!=h:
-                            #use the number of extra pixels as key:
-                            #(so we can choose the closest resolution)
-                            temp[abs((tw*th) - (w*h))] = (tw, th)
-                if not temp:
-                    screenlog.warn("cannot find a temporary resolution for Xinerama workaround!")
-                else:
-                    k = sorted(temp.keys())[0]
-                    tw, th = temp[k]
-                    screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
-                    with xsync:
-                        RandR.set_screen_size(tw, th)
             with xsync:
                 RandR.get_screen_size()
             #Xdummy with randr 1.2:

@@ -82,7 +82,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._wm = None
         self.wm_name = ""
         self.sync_xvfb = 0
-        self.fake_xinerama = ""
         self.last_raised = None
         self.system_tray = False
         GObject.GObject.__init__(self)
@@ -97,7 +96,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.system_tray = opts.system_tray
         self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
-        self.fake_xinerama = opts.fake_xinerama
         def log_server_event(_, event):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)

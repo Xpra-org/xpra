@@ -3908,7 +3908,7 @@ def run_showconfig(options, args) -> int:
             #these options don't make sense on win32 or osx:
             HIDDEN += ["socket-dirs", "socket-dir",
                        "wm-name", "pulseaudio-command", "pulseaudio", "xvfb", "input-method",
-                       "socket-permissions", "fake-xinerama", "dbus-proxy", "xsettings",
+                       "socket-permissions", "dbus-proxy", "xsettings",
                        "exit-with-children", "start-new-commands",
                        "start", "start-child",
                        "start-after-connect", "start-child-after-connect",

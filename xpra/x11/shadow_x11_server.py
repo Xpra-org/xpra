@@ -335,11 +335,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.do_init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
-    def init_fake_xinerama(self) -> None:
-        #don't enable fake xinerama with shadow servers,
-        #we want to keep whatever settings they have
-        self.libfakeXinerama_so = None
-
 
     def set_keymap(self, server_source, force:bool=False) -> None:
         if self.readonly:

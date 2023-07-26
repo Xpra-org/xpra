@@ -1027,10 +1027,6 @@ def build_xpra_conf(install_dir):
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     xdummy_command = detect_xdummy_setup(install_dir)
-    fake_xinerama = "no"
-    if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
-        from xpra.x11.fakeXinerama import find_libfakeXinerama
-        fake_xinerama = find_libfakeXinerama() or "auto"
     from xpra.platform.features import DEFAULT_START_ENV, DEFAULT_ENV, SOURCE
     def bstr(b):
         if b is None:
@@ -1079,7 +1075,6 @@ def build_xpra_conf(install_dir):
     SUBS = {
         'xvfb_command'          : wrap_cmd_str(xvfb_command),
         'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
-        'fake_xinerama'         : fake_xinerama,
         'ssh_command'           : "auto",
         'key_shortcuts'         : "".join(f"key-shortcut = {x}\n" for x in get_default_key_shortcuts()),
         'remote_logging'        : "both",

@@ -611,7 +611,6 @@ OPTION_TYPES = {
                     "start-via-proxy"   : bool,
                     "attach"            : bool,
                     "use-display"       : str,
-                    "fake-xinerama"     : str,
                     "resize-display"    : str,
                     "reconnect"         : bool,
                     "tray"              : bool,
@@ -793,7 +792,7 @@ PROXY_START_OVERRIDABLE_OPTIONS : List[str] = [
     "audio", "microphone", "speaker", "audio-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
     "use-display",
-    "fake-xinerama", "resize-display", "dpi", "pixel-depth",
+    "resize-display", "dpi", "pixel-depth",
     "readonly", "keyboard-sync", "cursors", "bell", "notifications", "xsettings",
     "system-tray", "sharing", "lock", "windows", "webcam", "html", "http-scripts",
     "terminate-children", "exit-with-children", "exit-with-client", "exit-with-windows",
@@ -932,16 +931,6 @@ def get_defaults():
 
     ssl_protocol = "TLSv1_2"
 
-    if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
-        #try to find it quickly:
-        try:
-            import glob
-            fake_xinerama = sorted_nicely(glob.glob("/lib*/libfakeXinerama.so.*"))[-1]
-        except Exception:
-            fake_xinerama = "auto"
-    else:
-        fake_xinerama = "no"
-
     GLOBAL_DEFAULTS = {
                     "encoding"          : "auto",
                     "title"             : "@title@ on @hostinfo@",
@@ -1049,7 +1038,6 @@ def get_defaults():
                     "start-via-proxy"   : False,
                     "attach"            : None,
                     "use-display"       : "auto",
-                    "fake-xinerama"     : fake_xinerama,
                     "resize-display"    : ["no", "yes"][not OSX and not WIN32],
                     "reconnect"         : True,
                     "tray"              : True,
