@@ -214,7 +214,7 @@ class AudioClient(StubClientMixin):
         if FULL_INFO<2:
             #only expose these specific keys:
             sp = dict((k,v) for k,v in sp.items() if k in (
-                "encoders", "decoders", "muxers", "demuxers", "bundle-metadata", "ogg-latency-fix",
+                "encoders", "decoders", "muxers", "demuxers",
                 ))
         caps.update(sp)
         log("audio capabilities: %s", caps)

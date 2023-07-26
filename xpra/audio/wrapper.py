@@ -174,7 +174,6 @@ def run_audio(mode, error_cb, options, args):
                  "python.version"   : sys.version_info[:3],
                  "python.bits"      : BITS,
                 })
-            d["bundle-metadata"] = True
             for k,v in d.items():
                 if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)

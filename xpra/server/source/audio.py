@@ -138,7 +138,7 @@ class AudioMixin(StubSourceMixin):
         if FULL_INFO<2:
             #only expose these specific keys:
             audio_props = dict((k,v) for k,v in audio_props.items() if k in (
-                "muxers", "demuxers", "bundle-metadata", "ogg-latency-fix",
+                "muxers", "demuxers",
                 ))
         audio_props.update({
             "codec-full-names"  : True,
