@@ -204,7 +204,6 @@ class Encodings(StubClientMixin):
         else:
             video_b_frames = ()
         caps = {
-            "flush"                     : PAINT_FLUSH,      #v4 servers assume this is available
             "video_scaling"             : True,             #v4 servers assume this is available
             "video_b_frames"            : video_b_frames,
             "video_max_size"            : self.video_max_size,
