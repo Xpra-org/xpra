@@ -371,7 +371,7 @@ class ProxyInstance:
         # make the packet data mutable and replace the contents at `index`:
         assert index>0
         lpacket = list(packet)
-        list_packet[index] = Compressed("file-data", packet[index])
+        lpacket[index] = Compressed("file-data", packet[index])
         # noinspection PyTypeChecker
         return tuple(lpacket)
 
@@ -641,7 +641,7 @@ class ProxyInstance:
         #we can only use video encoders on RGB data:
         if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
             #this prevents compression and inlining of pixel data:
-            packet[7] = Compressed(f"{encoding} pixels", pixels)
+            packet = self.replace_packet_item(packet, 7, Compressed(f"{encoding} pixels", pixels))
             return True
         client_options = typedict(client_options)
         #we have a proxy video packet:
@@ -650,9 +650,9 @@ class ProxyInstance:
 
         def send_updated(encoding, compressed_data, updated_client_options) -> bool:
             #update the packet with actual encoding data used:
-            packet[6] = encoding
-            packet[7] = compressed_data
-            packet[10] = updated_client_options
+            packet = self.replace_packet_item(packet, 6, encoding)
+            packet = self.replace_packet_item(packet, 7, compressed_data)
+            packet = self.replace_packet_item(packet, 10, updated_client_options)
             enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), updated_client_options)
             return wid not in self.lost_windows
 
@@ -668,7 +668,7 @@ class ProxyInstance:
                     c = chr(255)
                     for i in range(len(pixels)//4):
                         newdata[i*4+Xindex] = c
-                    packet[9] = client_options.intget("rowstride", 0)
+                    packet = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
                     cdata = bytes(newdata)
                 else:
                     cdata = pixels
@@ -688,7 +688,7 @@ class ProxyInstance:
         if not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
-            packet[7] = Compressed(f"{encoding} pixels", packet[7])
+            packet = self.replace_packet_item(packet, 7, Compressed(f"{encoding} pixels", packet[7]))
             return True
 
         #video encoding: find existing encoder
