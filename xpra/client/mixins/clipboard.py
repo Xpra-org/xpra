@@ -90,7 +90,7 @@ class ClipboardClient(StubClientMixin):
     def get_caps(self) -> Dict[str, Any]:
         if not self.client_supports_clipboard:
             return {}
-        ccaps : Dict[str, Any] = {
+        caps : Dict[str, Any] = {
             ""                          : True,
             "enabled"                   : True,
             "notifications"             : True,
@@ -103,11 +103,7 @@ class ClipboardClient(StubClientMixin):
             "set_enabled"               : True,     #v4 servers no longer use or show this flag
             "contents-slice-fix"        : True,     #fixed in v2.4, removed check in v4.3
             }
-        #legacy flat format:
-        caps = flatten_dict({"clipboard" : ccaps})
-        #v4.4 uses namespace:
-        caps["clipboard"] = ccaps
-        return caps
+        return {"clipboard" : caps}
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         try:

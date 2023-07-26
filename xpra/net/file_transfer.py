@@ -168,7 +168,6 @@ class FileTransferAttributes:
         return {
                 "file-transfer"     : self.file_transfer,
                 "file-transfer-ask" : self.file_transfer_ask,
-                "file-size-limit"   : self.file_size_limit//1024//1024,     #legacy name (use max-file-size)
                 "max-file-size"     : self.file_size_limit,
                 "file-chunks"       : self.file_chunks,
                 "open-files"        : self.open_files,
@@ -250,35 +249,20 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def parse_file_transfer_caps(self, c) -> None:
-        fc = c.dictget("file")
-        if fc:
-            fc = typedict(fc)
-            filelog("parse_file_transfer_caps: %s", fc)
-            #v5 with "file" namespace:
-            self.remote_file_transfer = fc.boolget("enabled")
-            self.remote_file_transfer_ask = fc.boolget("ask")
-            self.remote_printing = fc.boolget("printing")
-            self.remote_printing_ask = fc.boolget("printing-ask")
-            self.remote_open_files = fc.boolget("open")
-            self.remote_open_files_ask = fc.boolget("open-ask")
-            self.remote_open_url = fc.boolget("open-url")
-            self.remote_open_url_ask = fc.boolget("open-url-ask")
-            self.remote_file_ask_timeout = fc.intget("ask-timeout")
-            self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
-            self.remote_file_chunks = max(0, fc.intget("chunks"))
-        else:
-            #legacy - to be removed:
-            self.remote_file_transfer = c.boolget("file-transfer")
-            self.remote_file_transfer_ask = c.boolget("file-transfer-ask")
-            self.remote_printing = c.boolget("printing")
-            self.remote_printing_ask = c.boolget("printing-ask")
-            self.remote_open_files = c.boolget("open-files")
-            self.remote_open_files_ask = c.boolget("open-files-ask")
-            self.remote_open_url = c.boolget("open-url")
-            self.remote_open_url_ask = c.boolget("open-url-ask")
-            self.remote_file_ask_timeout = c.intget("file-ask-timeout")
-            self.remote_file_size_limit = c.intget("max-file-size") or c.intget("file-size-limit")*1024*1024
-            self.remote_file_chunks = max(0, min(self.remote_file_size_limit, c.intget("file-chunks")))
+        fc = typedict(c.dictget("file") or {})
+        filelog("parse_file_transfer_caps: %s", fc)
+        #v5 with "file" namespace:
+        self.remote_file_transfer = fc.boolget("enabled")
+        self.remote_file_transfer_ask = fc.boolget("ask")
+        self.remote_printing = fc.boolget("printing")
+        self.remote_printing_ask = fc.boolget("printing-ask")
+        self.remote_open_files = fc.boolget("open")
+        self.remote_open_files_ask = fc.boolget("open-ask")
+        self.remote_open_url = fc.boolget("open-url")
+        self.remote_open_url_ask = fc.boolget("open-url-ask")
+        self.remote_file_ask_timeout = fc.intget("ask-timeout")
+        self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
+        self.remote_file_chunks = max(0, fc.intget("chunks"))
         self.dump_remote_caps()
 
     def dump_remote_caps(self) -> None:
@@ -393,9 +377,6 @@ class FileTransferHandler(FileTransferAttributes):
             osclose(fd)
             progress(-1, "chunk no mismatch")
             return
-        #this is for legacy packet encoders only:
-        if isinstance(file_data, str):
-            file_data = strtobytes(file_data)
         #update chunk number:
         chunk_state.chunk = chunk
         try:

@@ -415,7 +415,6 @@ class NetworkState(StubClientMixin):
         p = self._protocol
         if p and p.TYPE=="xpra":
             self._protocol.set_compression_level(self.compression_level)
-            self.send("set_deflate", self.compression_level)
 
 
     def send_bandwidth_limit(self) -> None:

@@ -241,8 +241,7 @@ class DisplayClient(StubClientMixin):
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
         self.server_multi_monitors = c.boolget("multi-monitors", False)
         self.server_monitors = c.dictget("monitors")
-        log("server multi-monitors=%s, monitors=%s",
-                              self.server_multi_monitors, self.server_monitors)
+        log("server multi-monitors=%s, monitors=%s", self.server_multi_monitors, self.server_monitors)
         return True
 
     def process_ui_capabilities(self, c : typedict) -> None:
