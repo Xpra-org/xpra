@@ -146,6 +146,7 @@ class ProxyServer(ServerCore):
                     with umask_context(0):
                         os.mkdir(d, SOCKET_DIR_MODE)
                     stat = os.stat(d)
+                    # noinspection PyChainedComparisons
                     if xpra_group_id>=0 and stat.st_gid!=xpra_group_id:
                         os.lchown(d, stat.st_uid, xpra_group_id)
                 mode = os.stat(d).st_mode
@@ -313,7 +314,7 @@ class ProxyServer(ServerCore):
                 return
             self._requests.add(proto)
             #send a hello back and the client should then send its "shutdown-server" packet
-            capabilities = self.make_hello()
+            capabilities = self.make_hello(None)
             proto.send_now(("hello", capabilities))
             def force_exit_request_client():
                 try:
