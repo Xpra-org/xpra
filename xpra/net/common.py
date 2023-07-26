@@ -95,7 +95,7 @@ PACKET_TYPES : List[str] = [
     #audio:
     "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
     #display:
-    "show-desktop", "desktop_size",
+    "show-desktop",
     #windows and trays:
     "new-window", "new-override-redirect", "new-tray",
     "raise-window", "initiate-moveresize", "window-move-resize", "window-resized", "window-metadata",

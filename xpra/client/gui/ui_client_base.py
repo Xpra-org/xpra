@@ -10,7 +10,7 @@ import sys
 from typing import Type, Dict, List, Any, Callable, Tuple
 
 from xpra.client.base.client_base import XpraClientBase
-from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix
+from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO, noop
@@ -428,8 +428,6 @@ class UIXpraClient(ClientBaseClass):
             if FULL_INFO==1:
                 op = skipkeys(op, "extensions", "GLU.extensions")
                 pi = skipkeys(pi, "release", "sysrelease", "platform", "processor", "architecture")
-            #legacy mode:
-            u("platform", pi)
             caps["platform"] = pi
             caps["opengl"] = op
             caps["session-type"] = get_session_type()
@@ -765,11 +763,7 @@ class UIXpraClient(ClientBaseClass):
             caps["keyboard"] = True
             caps["modifiers"] = self.get_current_modifiers()
             skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
-            keymap = kh.get_keymap_properties(skip)
-            #legacy, prefixed with underscore:
-            caps.update(add_xkbmap_legacy_prefix(keymap))
-            #newer versions understand this:
-            caps["keymap"] = keymap
+            caps["keymap"] = kh.get_keymap_properties(skip)
             #show the user a summary of what we have detected:
             self.keyboard_helper.log_keyboard_info()
             delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval

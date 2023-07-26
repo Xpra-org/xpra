@@ -39,7 +39,6 @@ PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 0)
 #for testing only: passthrough as RGB:
 PASSTHROUGH_RGB = envbool("XPRA_PROXY_PASSTHROUGH_RGB", False)
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
-LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 
 PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5))*1000
@@ -553,10 +552,8 @@ class ProxyInstance:
                 if len(packet)>=5:
                     salt_digest = bytestostr(packet[4])
                 if salt_digest in ("xor", "des"):
-                    if not LEGACY_SALT_DIGEST:
-                        self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
-                        return
-                    log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
+                    self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
+                    return
                 if salt_digest=="xor":
                     #with xor, we have to match the size
                     if l<16:

@@ -189,10 +189,6 @@ class AudioClient(StubClientMixin):
         d : Dict[str,Any] = {}
         avcaps = self.get_avsync_capabilities()
         acaps = self.get_audio_capabilities()
-        #legacy flat format:
-        updict(d, "av-sync", avcaps)
-        updict(d, "audio", acaps)
-        #v4.4 namespace:
         d["av-sync"] = avcaps
         d["audio"] = acaps
         return d
@@ -200,10 +196,7 @@ class AudioClient(StubClientMixin):
     def get_audio_capabilities(self) -> Dict[str,Any]:
         if not self.audio_properties:
             return {}
-        #we don't know if the server supports new codec names,
-        #so always add legacy names in hello:
         caps : Dict[str,Any] = {
-            "codec-full-names"  : True,
             "decoders"   : self.speaker_codecs,
             "encoders"   : self.microphone_codecs,
             "send"       : self.microphone_allowed,

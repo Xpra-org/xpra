@@ -19,10 +19,6 @@ log = Logger("keyboard")
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 DEBUG_KEY_EVENTS = tuple(x.lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(","))
 
-def add_xkbmap_legacy_prefix(props):
-    #legacy format: flat with 'xkbmap_' prefix:
-    return dict((f"xkbmap_{k}", v) for k, v in props.items())
-
 
 class KeyboardHelper:
 
@@ -310,10 +306,7 @@ class KeyboardHelper:
 
     def send_keymap(self):
         log("send_keymap()")
-        keymap = self.get_keymap_properties()
-        #legacy format: flat with 'xkbmap_' prefix:
-        props = add_xkbmap_legacy_prefix(keymap)
-        props["keymap"] = keymap
+        props = {"keymap" : self.get_keymap_properties()}
         self.send("keymap-changed", props)
 
 
@@ -333,11 +326,6 @@ class KeyboardHelper:
     def get_full_keymap(self) -> Tuple[Tuple[int,str,int,int,int],...]:
         return ()
 
-
-    def get_prefixed_keymap_properties(self, skip=()):
-        key_props = self.get_keymap_properties(skip)
-        #legacy format: flat with 'xkbmap_' prefix:
-        return dict((f"xkbmap_{k}", v) for k, v in key_props.items())
 
     def get_keymap_properties(self, skip=()):
         props = {}

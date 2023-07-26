@@ -96,7 +96,6 @@ main_thread = threading.current_thread()
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", 0.1)
-LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
@@ -2107,10 +2106,8 @@ class ServerCore:
                     return
                 salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):
-                    if not LEGACY_SALT_DIGEST:
-                        auth_failed(f"insecure salt digest {salt_digest!r} rejected")
-                        return
-                    authlog.warn(f"Warning: using legacy support for {salt_digest!r} salt digest")
+                    auth_failed(f"insecure salt digest {salt_digest!r} rejected")
+                    return
                 authlog(f"sending challenge {authenticator.prompt!r}")
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return

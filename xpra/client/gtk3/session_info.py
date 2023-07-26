@@ -983,11 +983,6 @@ class SessionInfo(Gtk.Window):
                     iget = v.intget
                     return iget("cur"), iget("min"), iget("avg"), iget("90p"), iget("max")
 
-        #legacy servers: sum up the values for all the windows found
-        def avg(values):
-            if not values:
-                return ""
-            return sum(values) // len(values)
         def getv(suffix, op):
             if self.client.server_last_info is None:
                 return ""

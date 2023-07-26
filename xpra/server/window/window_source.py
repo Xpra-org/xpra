@@ -767,8 +767,6 @@ class WindowSource(WindowIconSource):
         #and if not, don't bother doing the potentially expensive update_encoding_selection()
         for k in ("workspace", "screen"):
             properties.pop(k, None)
-            #for legacy packet encoders:
-            properties.pop(k.encode("latin1"), None)
         if properties:
             self.do_set_client_properties(properties)
 

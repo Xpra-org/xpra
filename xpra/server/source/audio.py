@@ -41,8 +41,7 @@ class AudioMixin(StubSourceMixin):
         if isinstance(audio, dict):
             audio = typedict(audio)
             return audio.boolget("send") or audio.boolget("receive")
-        #legacy:
-        return caps.boolget("sound.send") or caps.boolget("sound.receive")
+        return False
 
 
     def __init__(self):

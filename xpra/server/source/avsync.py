@@ -21,15 +21,11 @@ class AVSyncMixin(StubSourceMixin):
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
         audio = caps.get("audio")
-        if isinstance(audio, dict):
-            audio = typedict(audio)
-            if not (audio.boolget("send") or audio.boolget("receive")):
-                return False
-        else:
-            #legacy:
-            if not (caps.boolget("sound.send") or caps.boolget("sound.receive")):
-                #no audio!
-                return False
+        if not isinstance(audio, dict):
+            return False
+        audio = typedict(audio)
+        if not (audio.boolget("send") or audio.boolget("receive")):
+            return False
         return caps.boolget("av-sync") and caps.boolget("windows")
 
     def __init__(self):
