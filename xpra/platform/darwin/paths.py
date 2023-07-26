@@ -133,6 +133,9 @@ def do_get_default_log_dirs():
     dirs.append(tempfile.gettempdir())
     return dirs
 
+def do_get_sessions_dir():
+    return "~/.xpra/sessions"
+
 def do_get_socket_dirs():
     #return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
     import tempfile
