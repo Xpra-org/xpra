@@ -104,7 +104,6 @@ class ClientConnection(StubSourceMixin):
 
     def init_state(self):
         self.hello_sent = False
-        self.info_namespace = False
         self.share = False
         self.lock = False
         self.control_commands : Tuple[str,...] = ()
@@ -198,7 +197,6 @@ class ClientConnection(StubSourceMixin):
 
     def parse_client_caps(self, c : typedict):
         #general features:
-        self.info_namespace = c.boolget("info-namespace", True)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")

@@ -279,8 +279,6 @@ class InfoXpraClient(CommandConnectClient):
     def __init__(self, opts):
         super().__init__(opts)
         self.hello_extra["request"] = "info"
-        if FLATTEN_INFO>=1:
-            self.hello_extra["info-namespace"] = True
 
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
@@ -357,7 +355,6 @@ class ConnectTestXpraClient(CommandConnectClient):
             "request"                   : "connect_test",
             #tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
-            "info-namespace"            : True,
             })
         self.hello_extra.update(kwargs)
 
@@ -393,7 +390,6 @@ class MonitorXpraClient(SendCommandConnectClient):
             self.hello_extra[f"wants_{x}"] = True
             self.hello_extra.setdefault("wants", []).append(x)
         self.hello_extra["request"] = "event"
-        self.hello_extra["info-namespace"] = True
 
     def timeout(self, *args):
         pass

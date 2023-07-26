@@ -205,7 +205,6 @@ class NetworkState(StubClientMixin):
     def get_caps(self) -> Dict[str,Any]:
         caps : Dict[str, Any] = {
             "network-state" : True,
-            "info-namespace" : True,            #v4 servers assume this is always supported
             }
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
