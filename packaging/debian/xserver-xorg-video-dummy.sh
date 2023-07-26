@@ -16,9 +16,9 @@ mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' 
 rm -f xserver-xorg-video-dummy-build-deps*
 
 if [ `arch` == "aarch64" ]; then
-  debuild -us -uc -b --no-lintian -Zxz
+  debuild -us -uc -b --no-lintian
 else
-  debuild -us -uc -b -Zxz
+  debuild -us -uc -b
 fi
 ls -la ../xserver-xorg-video-dummy*deb
 mv ../xserver-xorg-video-dummy*deb ../xserver-xorg-video-dummy*changes "$REPO_ARCH_PATH"
