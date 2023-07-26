@@ -56,7 +56,7 @@ class MMAP_Connection(StubSourceMixin):
         import os
         from xpra.os_util import WIN32
         mmap_caps = c.dictget("mmap")
-        c = typedict(mmap_caps)
+        c = typedict(mmap_caps or {})
         mmap_filename = c.strget("file")
         if not mmap_filename:
             return
