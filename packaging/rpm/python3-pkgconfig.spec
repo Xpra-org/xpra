@@ -44,6 +44,7 @@ sed -i -e s/distutils.core/setuptools/ setup.py
 
 %install
 %py3_install
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files -n python3-%{srcname}

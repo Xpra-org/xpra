@@ -27,6 +27,7 @@ CFLAGS="%{optflags}" %{__python3} setup.py build
 
 %install
 %{__python3} setup.py install -O1 --skip-build --root %{buildroot}
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %files
 %{python3_sitelib}/pbr*

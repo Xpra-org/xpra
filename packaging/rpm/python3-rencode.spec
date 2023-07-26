@@ -43,6 +43,7 @@ CFLAGS="%{optflags}" %{__python3} setup.py build
 %{__python3} setup.py install --skip-build --root %{buildroot}
 #fix permissions on shared objects
 chmod 0755 %{buildroot}%{python3_sitearch}/rencode/_rencode.cpython-*.so
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %check
 pushd tests

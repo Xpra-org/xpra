@@ -44,6 +44,7 @@ rm lz4libs/lz4*.[ch]
 # Fix permissions on shared objects
 find %{buildroot}%{python3_sitearch} -name 'lz4*.so' \
     -exec chmod 0755 {} \;
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %check

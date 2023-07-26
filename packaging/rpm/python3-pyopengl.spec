@@ -83,6 +83,7 @@ find %{buildroot}%{python3_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 7
 pushd %{buildroot}%{python3_sitelib}/OpenGL/arrays
 sed -i -e '/^#! \//, 1d' buffers.py _buffers.py
 popd
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files
