@@ -152,7 +152,7 @@ def get_client_connection_class(caps):
         def parse_hello(self, c : typedict):
             self.ui_client = c.boolget("ui_client", True)
             self.wants : List[str] = list(c.strtupleget("wants", self.wants))
-            for x, default_value in {
+            for x, enabled in {
                 "encodings" : self.ui_client,
                 "display"   : self.ui_client,
                 "events"    : False,
@@ -161,7 +161,7 @@ def get_client_connection_class(caps):
                 "features"  : True,
                 "default_cursor"    : False,
                 }.items():
-                if c.boolget(f"wants_{x}", default_value):
+                if enabled:
                     self.wants.append(x)
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)

@@ -107,7 +107,7 @@ class AudioMixin(StubSourceMixin):
 
 
     def parse_client_caps(self, c:typedict) -> None:
-        self.wants_audio = c.boolget("wants_sound", True) or "sound" in c.strtupleget("wants") or "audio" in c.strtupleget("wants")
+        self.wants_audio = "audio" in c.strtupleget("wants")
         audio = c.dictget("audio")
         if audio:
             audio = typedict(audio)
