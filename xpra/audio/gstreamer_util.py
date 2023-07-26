@@ -109,9 +109,6 @@ CODEC_OPTIONS : Tuple[Tuple[str,str,str,str,str,str],...] = (
         #this can cause "could not link opusenc0 to webmmux0"
         (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux",    ""),
         (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux",    ""),
-        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux",         ""),
-        (WAVPACK    , "wavpackenc",      "",            "wavpackparse ! wavpackdec",    "",                 ""),
-        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux",          ""),
         (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux",          ""),
         (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux",          ""),
             )
@@ -159,9 +156,6 @@ ENCODER_DEFAULT_OPTIONS_COMMON : Dict[str,Dict[str,Any]] = {
                                },
             "avenc_aac"     : {
                                #"compliance" : 1,
-                               "perfect-timestamp"  : 1,
-                               },
-            "faac"          : {
                                "perfect-timestamp"  : 1,
                                },
             #"vorbisenc"     : {"perfect-timestamp" : 1},
