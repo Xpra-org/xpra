@@ -644,6 +644,8 @@ OPTION_TYPES = {
                     "forward-xdg-open"  : bool,
                     "modal-windows"     : bool,
                     "bandwidth-detection" : bool,
+                    "ssl-upgrade"       : bool,
+                    "websocket-upgrade" : bool,
                     "ssh-upgrade"       : bool,
                     "splash"            : bool,
                     #arrays of strings:
@@ -1088,6 +1090,8 @@ def get_defaults():
                     "forward-xdg-open"  : None,
                     "modal-windows"     : False,
                     "bandwidth-detection" : False,
+                    "ssl-upgrade"       : True,
+                    "websocket-upgrade" : True,
                     "ssh-upgrade"       : True,
                     "splash"            : None,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],

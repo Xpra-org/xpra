@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Tuple, Dict, Any, Type, Union, Optional
+from typing import Callable, List, Tuple, Dict, Any, Type, Union, Optional, ByteString
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -153,6 +153,16 @@ def proto_crypto_caps(proto)-> Dict[str,Any]:
     return {}
 
 
+def has_websocket_handler():
+    try:
+        from xpra.net.websockets.handler import WebSocketRequestHandler
+        assert WebSocketRequestHandler
+        return True
+    except ImportError:
+        httplog("importing WebSocketRequestHandler", exc_info=True)
+    return False
+
+
 class ServerCore:
     """
         This is the simplest base class for servers.
@@ -181,6 +191,8 @@ class ServerCore:
         self._ssl_attributes : Dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
         self.ssl_mode : str = ""
+        self.ssl_upgrade = False
+        self.websocket_upgrade = has_websocket_handler()
         self.ssh_upgrade = False
         self._html : bool = False
         self._http_scripts : Dict[str,Callable] = {}
@@ -276,6 +288,8 @@ class ServerCore:
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
+        self.ssl_upgrade = opts.ssl_upgrade
+        self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
         self.pidfile = osexpand(opts.pidfile)
@@ -284,6 +298,7 @@ class ServerCore:
             #must be initialized before calling init_html_proxy
             self.menu_provider = get_menu_provider()
         self.init_html_proxy(opts)
+        self.init_http_scripts(opts.http_scripts)
         self.init_auth(opts)
         self.init_ssl(opts)
         if self.pidfile:
@@ -664,11 +679,12 @@ class ServerCore:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
         #opts.html can contain a boolean, "auto" or the path to the webroot
         www_dir = None
-        if opts.html and os.path.isabs(opts.html):
-            www_dir = opts.html
+        html = opts.html or ""
+        if html and os.path.isabs(html):
+            www_dir = html
             self._html = True
-        elif not opts.html or (opts.html.lower() in FALSE_OPTIONS or opts.html.lower() in TRUE_OPTIONS or opts.html.lower()=="auto"):
-            self._html = parse_bool("html", opts.html)
+        elif not html or (html.lower() in FALSE_OPTIONS or html.lower() in TRUE_OPTIONS or html.lower()=="auto"):
+            self._html = parse_bool("html", html)
         else:
             #assume that the html option is a request to open a browser
             self._html = True
@@ -680,7 +696,7 @@ class ServerCore:
                 "ssl"   : opts.bind_ssl,
                 }.items():
                 if bind:    #ie: ["0.0.0.0:10000", "127.0.0.1:20000"]
-                    self.open_html_url(opts.html, mode, bind[0])
+                    self.open_html_url(html, mode, bind[0])
                     break
             else:
                 log.warn("Warning: cannot open html client in a browser")
@@ -693,20 +709,15 @@ class ServerCore:
                     httplog.error("Error: cannot use the html server without a socket")
                 self._html = False
         httplog("init_html_proxy(..) html=%s", self._html)
-        if self._html is not False:
-            try:
-                from xpra.net.websockets.handler import WebSocketRequestHandler
-                assert WebSocketRequestHandler
-                self._html = True
-            except ImportError as e:
-                httplog("importing WebSocketRequestHandler", exc_info=True)
-                if self._html is None:  #auto mode
-                    httplog.info("html server unavailable, cannot find websocket module")
-                else:
-                    httplog.error("Error: cannot import websocket connection handler:")
-                    httplog.estr(e)
-                    httplog.error(" the html server will not be available")
-                self._html = False
+        if not has_websocket_handler():
+            if self._html is None:  #auto mode
+                httplog.info("html server unavailable, cannot find websocket module")
+            elif self._html:
+                httplog.error("Error: cannot import websocket connection handler:")
+                httplog.estr(e)
+                httplog.error(" the html server will not be available")
+            self._html = False
+            self.websocket_upgrade = False
         #make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
         if www_dir:
@@ -729,6 +740,8 @@ class ServerCore:
             httplog.error("Error: cannot find the html web root")
             httplog.error(f" {self._www_dir!r} does not exist")
             httplog.error(" install the `xpra-html5` package")
+            httplog.error(" or turn off the builtin web server using `html=no`")
+            self._www_dir = "/usr/share/xpra/www/"
             self._html = False
         if self._html:
             httplog.info(f"serving html content from {self._www_dir!r}")
@@ -739,7 +752,9 @@ class ServerCore:
                 for d in get_user_conf_dirs():
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
-        if opts.http_scripts.lower() not in FALSE_OPTIONS:
+
+    def init_http_scripts(self, http_scripts:str):
+        if http_scripts.lower() not in FALSE_OPTIONS:
             script_options : Dict[str,Callable] = {
                 "/Status"           : self.http_status_request,
                 "/Info"             : self.http_info_request,
@@ -754,10 +769,10 @@ class ServerCore:
                 "/DesktopMenu"      : self.http_desktop_menu_request,
                 "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
                 })
-            if opts.http_scripts.lower() in ("all", "*"):
+            if http_scripts.lower() in ("all", "*"):
                 self._http_scripts = script_options
             else:
-                for script in opts.http_scripts.split(","):
+                for script in http_scripts.split(","):
                     if not script.startswith("/"):
                         script = "/"+script
                     handler = script_options.get(script)
@@ -765,7 +780,7 @@ class ServerCore:
                         httplog.warn("Warning: unknown script '%s'", script)
                     else:
                         self._http_scripts[script] = handler
-        httplog("http_scripts(%s)=%s", opts.http_scripts, self._http_scripts)
+        httplog("init_http_scripts(%s)=%s", http_scripts, self._http_scripts)
 
 
     ######################################################################
@@ -898,7 +913,7 @@ class ServerCore:
         mdns_recs = {}
         for sock_def, options in self._socket_info.items():
             socktype, _, info, _ = sock_def
-            socktypes = self.get_mdns_socktypes(socktype)
+            socktypes = self.get_mdns_socktypes(socktype, options)
             mdns_option = options.get("mdns")
             if mdns_option:
                 v = parse_bool("mdns", mdns_option, False)
@@ -931,31 +946,55 @@ class ServerCore:
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 
-    def get_mdns_socktypes(self, socktype:str) -> Tuple[str,...]:
+    def can_upgrade(self, socktype:str, tosocktype:str, options:Dict[str,str]):
+        to_option_str = options.get(tosocktype, "")
+        to_option = to_option_str.lower() in TRUE_OPTIONS
+        if tosocktype in ("ws", "wss") and not has_websocket_handler():
+            return False
+        if tosocktype=="rfb":
+            #only available with the RFBServer
+            return getattr(self, "_rfb_upgrade", False)
+        if socktype in ("tcp", "socket", "vsock", "named-pipe"):
+            if tosocktype=="ssl":
+                if to_option_str:
+                    return to_option
+                return self.ssl_upgrade
+            if tosocktype=="ws":
+                if to_option_str:
+                    return to_option
+                return self.websocket_upgrade
+            if tosocktype=="wss":
+                if to_option_str:
+                    return to_option
+                return self.websocket_upgrade and self.ssl_upgrade
+        if socktype=="ws" and tosocktype=="wss":
+            if to_option_str:
+                return to_option
+            return self.ssl_upgrade
+        if socktype=="ssl" and tosocktype=="wss":
+            if to_option_str:
+                return to_option
+            return self.websocket_upgrade
+        if tosocktype=="ssh":
+            if to_option_str:
+                return to_option
+            return self.ssh_upgrade
+        return False
+
+    def get_mdns_socktypes(self, socktype:str, options:Dict[str,str]) -> Tuple[str,...]:
         #for a given socket type,
         #what socket types we should expose via mdns
         if socktype in ("vsock", "named-pipe"):
             #cannot be accessed remotely
             return ()
-        ssh_access = get_ssh_port()>0   #and opts.ssh.lower().strip() not in FALSE_OPTIONS
-        ssl = bool(self._ssl_attributes)
-        #only available with the RFBServer
-        rfb_upgrades = getattr(self, "_rfb_upgrade", False)
         socktypes = [socktype]
         if socktype=="tcp":
-            if ssl:
-                socktypes.append("ssl")
-            if self._html:
-                socktypes.append("ws")
-            if self._html and ssl:
-                socktypes.append("wss")
-            if self.ssh_upgrade:
-                socktypes.append("ssh")
-            if rfb_upgrades:
-                socktypes.append("rfb")
-        elif socktype=="ws" and ssl:
+            for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb"):
+                if self.can_upgrade(socktype, tosocktype, options):
+                    socktypes.append(tosocktype)
+        elif socktype in ("ws", "ssl") and self.can_upgrade(socktype, "wss", options):
             socktypes.append("wss")
-        elif socktype=="socket" and ssh_access:
+        elif socktype=="socket" and self.ssh_upgrade and get_ssh_port()>0:
             socktypes = ["ssh"]
         return tuple(socktypes)
 
@@ -1173,7 +1212,7 @@ class ServerCore:
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
 
-        netlog("handle_new_connection%s sockname=%s, target=%s",
+        netlog.warn("handle_new_connection%s sockname=%s, target=%s",
                (conn, socket_info, socket_options), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra / wrapped traffic:
@@ -1188,11 +1227,11 @@ class ServerCore:
         if timeout>0:
             peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
-        netlog("socket peek=%s", ellipsizer(peek_data, limit=512))
-        netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-        netlog("socket peek line1=%s", ellipsizer(line1))
+        netlog.warn("socket peek=%s", ellipsizer(peek_data, limit=512))
+        netlog.warn("socket peek hex=%s", hexstr(peek_data[:128]))
+        netlog.warn("socket peek line1=%s", ellipsizer(line1))
         packet_type = guess_packet_type(peek_data)
-        netlog("guess_packet_type(..)=%s", packet_type)
+        netlog.warn("guess_packet_type(..)=%s", packet_type)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
@@ -1203,6 +1242,9 @@ class ServerCore:
             ssllog("ssl_wrap()=%s", ssl_conn)
             return ssl_conn
 
+        def can_upgrade_to(to_socktype:str):
+            return self.can_upgrade(socktype, to_socktype, socket_options)
+
         if socktype in ("ssl", "wss"):
             #verify that this isn't plain HTTP / xpra:
             if packet_type not in ("ssl", ""):
@@ -1212,36 +1254,23 @@ class ServerCore:
             ssl_conn = ssl_wrap()
             if not ssl_conn:
                 return
+            http = False
             if socktype=="wss":
                 http = True
             else:
                 assert socktype=="ssl"
-                wss = socket_options.get("wss", None)
-                if wss is not None:
-                    if wss=="auto":
-                        http = None
+                if can_upgrade_to("wss") and self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode=="auto":
+                    #look for HTTPS request to handle:
+                    if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/")>0:
+                        http = True
                     else:
-                        http = wss.lower() in TRUE_OPTIONS
-                    netlog("socket option wss=%s, http=%s", wss, http)
-                else:
-                    #no "wss" option, fallback to "ssl_mode" option:
-                    if self.ssl_mode.lower()=="auto":
-                        http = None
-                    else:
-                        http = self.ssl_mode.lower()=="wss"
-                    netlog("ssl-mode=%s, http=%s", self.ssl_mode, http)
-            if http is None:
-                #look for HTTPS request to handle:
-                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/")>0:
-                    http = True
-                else:
-                    ssl_conn.enable_peek()
-                    peek_data = peek_connection(ssl_conn)
-                    line1 = peek_data.split(b"\n")[0]
-                    http = line1.find(b"HTTP/")>0
-                    netlog("looking for 'HTTP' in %r: %s", line1, http)
+                        ssl_conn.enable_peek()
+                        peek_data = peek_connection(ssl_conn)
+                        line1 = peek_data.split(b"\n")[0]
+                        http = line1.find(b"HTTP/")>0
+                        netlog("looking for 'HTTP' in %r: %s", line1, http)
             if http:
-                if not self._html:
+                if not self.websocket_upgrade:
                     self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
                                       "the builtin http server is not enabled")
                     return
@@ -1254,13 +1283,7 @@ class ServerCore:
 
         if socktype=="ws":
             if peek_data:
-                #honour socket option, fallback to "ssl_mode" attribute:
-                wss = socket_options.get("wss", "").lower()
-                if wss:
-                    wss_upgrade = wss in TRUE_OPTIONS
-                else:
-                    wss_upgrade = self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode.lower() in ("auto", "wss")
-                if wss_upgrade and packet_type=="ssl":
+                if packet_type=="ssl" and can_upgrade_to("wss"):
                     ssllog("ws socket receiving ssl, upgrading to wss")
                     conn = ssl_wrap()
                     if conn is None:
@@ -1272,7 +1295,7 @@ class ServerCore:
             return
 
         if socktype=="rfb":
-            if peek_data and peek_data[:4]!=b"RFB ":
+            if peek_data and peek_data[:4]!=b"RFB " and can_upgrade_to("rfb"):
                 self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                 return
             self.handle_rfb_connection(conn)
@@ -1483,7 +1506,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:Dict, peek_data=b""):
+    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:Dict, peek_data=b"") -> Tuple[bool,Any,bytes]:
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -1503,34 +1526,32 @@ class ServerCore:
         frominfo = pretty_socket(conn.remote)
         netlog("may_wrap_socket(..) peek_data=%s from %s", ellipsizer(peek_data), frominfo)
         netlog("may_wrap_socket(..) packet_type=%s", packet_type)
+        def can_upgrade_to(to_socktype:str):
+            return self.can_upgrade(socktype, to_socktype, socket_options)
         def conn_err(msg):
             self.new_conn_err(conn, conn._socket, socktype, socket_info, packet_type, msg)
-            return False, None, None
+            return False, None, b""
         if packet_type=="ssh":
-            ssh_upgrade = socket_options.get("ssh", self.ssh_upgrade) in TRUE_OPTIONS
-            if not ssh_upgrade:
+            if not can_upgrade_to("ssh"):
                 conn_err("ssh upgrades are not enabled")
-                return False, None, None
+                return False, None, b""
             conn = self.handle_ssh_connection(conn, socket_options)
-            return conn is not None, conn, None
+            return conn is not None, conn, b""
         if packet_type=="ssl":
-            ssl_mode = socket_options.get("ssl", self.ssl_mode)
-            if ssl_mode in FALSE_OPTIONS:
-                conn_err("ssl upgrades are not enabled")
-                return False, None, None
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
-                return False, None, None
+                return False, None, b""
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             http = False
+            ssl_mode = (socket_options.get("ssl-mode", "") or self.ssl_mode).lower()
             if ssl_mode=="tcp":
                 http = False
             elif ssl_mode=="www":
                 http = True
-            elif ssl_mode=="auto" or ssl_mode in TRUE_OPTIONS:
+            elif ssl_mode=="auto" or ssl_mode in TRUE_OPTIONS and can_upgrade_to("wss"):
                 #use the header to guess:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
                     http = True
@@ -1540,23 +1561,29 @@ class ServerCore:
                     line1 = peek_data.split(b"\n")[0]
                     http = line1.find(b"HTTP/")>0
             ssllog("may_wrap_socket SSL: %s, ssl mode=%s, http=%s", conn, ssl_mode, http)
+            to_socktype = "wss" if http else "ssl"
+            if not can_upgrade_to(to_socktype):
+                conn_err(f"{to_socktype} upgrades are not enabled for this socket")
+                return False, None, b""
             is_ssl = True
         else:
             http = line1.find(b"HTTP/")>0
             is_ssl = False
         if http:
-            http_protocol = "https" if is_ssl else "http"
-            http_upgrade = socket_options.get(http_protocol, self._html) not in FALSE_OPTIONS
-            if not http_upgrade:
-                conn_err(f"{http_protocol} upgrades are not enabled")
-                return False, None, None
+            if not has_websocket_handler():
+                conn_err(f"websocket module is not installed")
+                return False, None, b""
+            ws_protocol = "wss" if is_ssl else "ws"
+            if not can_upgrade_to(ws_protocol):
+                conn_err(f"{ws_protocol} upgrades are not enabled for this socket")
+                return False, None, b""
             self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
-            return False, conn, None
+            return False, conn, b""
         return True, conn, peek_data
 
     def invalid_header(self, proto:SocketProtocol, data:bytes, msg="") -> None:
-        netlog("invalid header: %s, input_packetcount=%s, html=%s, ssl=%s",
-               ellipsizer(data), proto.input_packetcount, self._html, bool(self._ssl_attributes))
+        netlog("invalid header: %s, input_packetcount=%s, websocket_upgrade=%s, ssl=%s",
+               ellipsizer(data), proto.input_packetcount, self.websocket_upgrade, bool(self._ssl_attributes))
         if data==b"RFB " and self._rfb_upgrade>0:
             netlog("RFB header, trying to upgrade protocol")
             self.cancel_upgrade_to_rfb_timer(proto)
@@ -1587,7 +1614,7 @@ class ServerCore:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype:str, conn, socket_options, is_ssl:bool, req_info, line1, frominfo) -> None:
+    def start_http(self, socktype:str, conn, socket_options:Dict, is_ssl:bool, req_info:str, line1:bytes, frominfo:str) -> None:
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dirs)
@@ -1604,7 +1631,8 @@ class ServerCore:
             conn.socktype = "wss" if is_ssl else "ws"
             redirect_https = False
             if HTTP_HTTPS_REDIRECT and req_info not in ("ws", "wss"):
-                redirect_https = not is_ssl and self.ssl_mode.lower() in TRUE_OPTIONS
+                ssl_mode = (socket_options.get("ssl-mode", "") or self.ssl_mode).lower()
+                redirect_https = not is_ssl and ssl_mode in TRUE_OPTIONS
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
                                     self._www_dir, self._http_headers_dirs, scripts,
                                     redirect_https)
@@ -2481,6 +2509,7 @@ class ServerCore:
                        "packet-handlers" : self.get_packet_handlers_info(),
                        "www"    : {
                            ""                   : self._html,
+                           "websocket-upgrade"  : self.websocket_upgrade,
                            "dir"                : self._www_dir or "",
                            "http-headers-dirs"   : self._http_headers_dirs or "",
                            },
@@ -2517,7 +2546,7 @@ class ServerCore:
             if (address, port) not in addresses:
                 addresses.append((address, port))
             if socktype=="tcp":
-                if self._html:
+                if self.websocket_upgrade:
                     add_address("ws", address, port)
                 if self._ssl_attributes:
                     add_address("ssl", address, port)

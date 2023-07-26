@@ -1584,6 +1584,12 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--sessions-dir", action="store",
                       dest="sessions_dir", default=defaults.sessions_dir,
                       help="Directory to place/look for the sessions files in. Default: '%s'." % defaults.sessions_dir)
+    group.add_option("--ssl-upgrade", action="store",
+                      dest="ssl_upgrade", default=defaults.ssl_upgrade,
+                      help="Upgrade WebSocket and TCP sockets to handle SSL connections. Default: '%default'.")
+    group.add_option("--websocket-upgrade", action="store",
+                      dest="websocket_upgrade", default=defaults.websocket_upgrade,
+                      help="Upgrade TCP and SSL sockets to handle Websocket connections. Default: '%default'.")
     group.add_option("--ssh-upgrade", action="store",
                       dest="ssh_upgrade", default=defaults.ssh_upgrade,
                       help="Upgrade TCP sockets to handle SSH connections. Default: '%default'.")

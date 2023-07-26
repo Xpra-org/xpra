@@ -48,6 +48,7 @@ NetPacketType : TypeAlias = Tuple[int, int, int, ByteString]
 class ConnectionClosedException(Exception):
     pass
 
+
 MAX_PACKET_SIZE : int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER : bool = envbool("XPRA_FLUSH_HEADER", True)
 SSL_UPGRADE : bool = envbool("XPRA_SSL_UPGRADE", True)
