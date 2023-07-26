@@ -1212,7 +1212,7 @@ class ServerCore:
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
 
-        netlog.warn("handle_new_connection%s sockname=%s, target=%s",
+        netlog("handle_new_connection%s sockname=%s, target=%s",
                (conn, socket_info, socket_options), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra / wrapped traffic:
@@ -1227,11 +1227,11 @@ class ServerCore:
         if timeout>0:
             peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
-        netlog.warn("socket peek=%s", ellipsizer(peek_data, limit=512))
-        netlog.warn("socket peek hex=%s", hexstr(peek_data[:128]))
-        netlog.warn("socket peek line1=%s", ellipsizer(line1))
+        netlog("socket peek=%s", ellipsizer(peek_data, limit=512))
+        netlog("socket peek hex=%s", hexstr(peek_data[:128]))
+        netlog("socket peek line1=%s", ellipsizer(line1))
         packet_type = guess_packet_type(peek_data)
-        netlog.warn("guess_packet_type(..)=%s", packet_type)
+        netlog("guess_packet_type(..)=%s", packet_type)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
@@ -1432,7 +1432,7 @@ class ServerCore:
             netlog("try_upgrade_to_rfb() protocol is already closed")
             return False
         conn = proto._conn
-        netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
+        netlog("try_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
         if conn.input_bytecount==0:
             self.upgrade_protocol_to_rfb(proto)
         return False
