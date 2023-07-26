@@ -399,8 +399,3 @@ class ClientConnection(StubSourceMixin):
     def send_client_command(self, *args):
         if self.hello_sent:
             self.send_more("control", *args)
-
-
-    def rpc_reply(self, *args):
-        if self.hello_sent:
-            self.send("rpc-reply", *args)

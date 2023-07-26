@@ -932,16 +932,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.window_keyboard_layout_changed(self)
 
 
-    def dbus_call(self, *args, **kwargs) -> None:
-        #alias for rpc_call using dbus as rpc_type, see UIXpraClient.dbus_call
-        if not self._client.server_dbus_proxy:
-            log.error("Error: cannot send remote dbus call:")
-            log.error(" this server does not support dbus-proxying")
-            return
-        rpc_args = [self.wid]+list(args)
-        self._client.rpc_call("dbus", rpc_args, **kwargs)
-
-
     def get_mouse_event_wid(self, *_args) -> int:
         #used to be overridden in GTKClientWindowBase
         return self.wid

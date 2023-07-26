@@ -119,8 +119,6 @@ PACKET_TYPES : List[str] = [
     "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
     #notifications:
     "notify_show", "notify_close",
-    #rpc:
-    "rpc-reply",
     ]
 
 def get_log_packets(exclude=False) -> Tuple[str, ...]:

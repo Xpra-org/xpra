@@ -55,9 +55,6 @@ if mixin_features.clipboard:
 if mixin_features.notifications:
     from xpra.client.mixins.notifications import NotificationClient
     CLIENT_BASES.append(NotificationClient)
-if mixin_features.dbus:
-    from xpra.client.mixins.rpc import RPCClient
-    CLIENT_BASES.append(RPCClient)
 if mixin_features.mmap:
     from xpra.client.mixins.mmap import MmapClient
     CLIENT_BASES.append(MmapClient)

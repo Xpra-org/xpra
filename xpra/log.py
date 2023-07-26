@@ -159,7 +159,6 @@ STRUCT_KNOWN_FILTERS : Dict[str,Dict[str,str]] = {
                 "fps"           : "Frames per second",
                 "xsettings"     : "XSettings synchronization",
                 "dbus"          : "DBUS calls",
-                "rpc"           : "Remote Procedure Calls",
                 "menu"          : "Menus",
                 "events"        : "System and window events",
                 },

@@ -51,9 +51,6 @@ def get_server_base_classes() -> Tuple[Type,...]:
     if server_features.input_devices:
         from xpra.server.mixins.input import InputServer
         classes.append(InputServer)
-    if server_features.dbus:
-        from xpra.server.mixins.dbusrpc import DBUS_RPC_Server
-        classes.append(DBUS_RPC_Server)
     if server_features.encoding:
         from xpra.server.mixins.encoding import EncodingServer
         classes.append(EncodingServer)
