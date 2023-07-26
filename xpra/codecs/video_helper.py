@@ -63,6 +63,7 @@ def try_import_modules(prefix:str, *codec_names) -> List[str]:
             names.append(codec_name)
     return names
 
+
 #all the codecs we know about:
 ALL_VIDEO_ENCODER_OPTIONS : Tuple[str,...] = ("x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
 HARDWARE_ENCODER_OPTIONS : Tuple[str,...] = ("nvenc", "nvjpeg")
@@ -108,23 +109,30 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS):
 def filt(prefix, name, inlist, all_fn, all_list):
     #log("filt%s", (prefix, name, inlist, all_fn, all_list))
     def ap(v):
+        if v.startswith("-"):
+            return "-"+autoprefix(prefix, v[1:])
         return autoprefix(prefix, v)
     def apl(l):
         return [ap(v) for v in l]
-    inlist = csvstrl(inlist or ()).split(",")
-    if "all" in inlist:
-        inlist = all_fn()
-    exclist = [x[1:] for x in inlist if x and x.startswith("-")]
-    inclist = [x for x in inlist if x and not x.startswith("-")]
+    inlist = [x for x in csvstrl(inlist or ()).split(",") if x.strip()]
+    while "all" in inlist:
+        i = inlist.index("all")
+        inlist = inlist[:i]+all_fn()+inlist[i+1:]
+    exclist = apl(x[1:] for x in inlist if x and x.startswith("-"))
+    inclist = apl(x for x in inlist if x and not x.startswith("-"))
+    if not inclist and exclist:
+        inclist = apl(all_fn())
     lists = exclist + inclist
     all_list = apl(all_list)
     unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE and x.lower()!="none")
     if unknown:
-        log.warn("Warning: ignoring unknown %s: %s", name, csv(unknown))
+        log.warn(f"Warning: ignoring unknown {name}: "+csv(unknown))
     notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown and x!="none"))
     if notfound:
-        log.warn("Warning: %s not found: %s", name, csv(notfound))
-    return apl(x for x in inclist if x not in exclist and x!="none")
+        log.warn(f"Warning: {name} not found: "+csv(notfound))
+    r = apl(x for x in inclist if x not in exclist and x!="none")
+    #log("filt%s=%s", (prefix, name, inlist, all_fn, all_list), r)
+    return r
 
 
 VDictEntry = Dict[str,List[str]]
