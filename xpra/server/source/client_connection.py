@@ -108,7 +108,6 @@ class ClientConnection(StubSourceMixin):
         self.lock = False
         self.control_commands : Tuple[str,...] = ()
         self.xdg_menu = True
-        self.xdg_menu_update = False
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
         self.bandwidth_warnings = True
@@ -201,7 +200,6 @@ class ClientConnection(StubSourceMixin):
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")
         self.xdg_menu = c.boolget("xdg-menu", True)
-        self.xdg_menu_update = c.boolget("xdg-menu-update")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         server_bandwidth_limit = self.server_bandwidth_limit
         if self.server_bandwidth_limit is None:
@@ -376,7 +374,6 @@ class ClientConnection(StubSourceMixin):
             "lock"  : bool(self.lock),
             "share" : bool(self.share),
             "xdg-menu" : bool(self.xdg_menu),
-            "xdg-menu-udpate" : bool(self.xdg_menu_update),
             }
         return info
 

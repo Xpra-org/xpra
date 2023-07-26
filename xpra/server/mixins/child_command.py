@@ -135,7 +135,6 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "server-commands-signals"   : COMMAND_SIGNALS,
             "server-commands-info"      : not WIN32 and not OSX,
-            "xdg-menu-update"           : POSIX and not OSX,
             }
 
 
@@ -154,8 +153,6 @@ class ChildCommandServer(StubServerMixin):
         wants = getattr(source, "wants", [])
         if "feature" in wants and getattr(source, "ui_client", False):
             caps["xdg-menu"] = {}
-            if not source.xdg_menu_update:
-                log.warn("Warning: outdated client does not support xdg-menu update")
             caps["subcommands"] = get_subcommands()
         return caps
 
@@ -163,10 +160,9 @@ class ChildCommandServer(StubServerMixin):
     def send_initial_data(self, ss, caps:typedict, send_ui:bool, share_count:int) -> None:
         if not getattr(ss, "xdg_menu", False):
             return
-        if ss.xdg_menu_update:
-            #this method may block if the menus are still being loaded,
-            #so do it in a throw-away thread:
-            start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
+        #this method may block if the menus are still being loaded,
+        #so do it in a throw-away thread:
+        start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
 
     def send_xdg_menu_data(self, ss) -> None:
         if ss.is_closed():
@@ -179,7 +175,7 @@ class ChildCommandServer(StubServerMixin):
         log("send_updated_menu(%s)", ellipsizer(xdg_menu))
         for source in tuple(self._server_sources.values()):
             #some sources don't have this attribute (ie: RFBSource does not):
-            if getattr(source, "xdg_menu_update", False):
+            if getattr(source, "send_setting_change", False):
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
 

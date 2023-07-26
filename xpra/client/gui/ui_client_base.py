@@ -408,7 +408,7 @@ class UIXpraClient(ClientBaseClass):
                 log("skipped server uuid lookup", exc_info=True)
         for x in (#generic feature flags:
             "wants_events", "setting-change",
-            "xdg-menu-update", "mouse",
+            "mouse",
             ):
             caps[x] = True
         caps.setdefault("wants", []).append("events")
