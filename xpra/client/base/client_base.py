@@ -66,12 +66,10 @@ EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
-LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
-LEGACY_PACKET_TYPES = envbool("XPRA_LEGACY_PACKET_TYPES", False)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
@@ -458,8 +456,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             updict(capabilities, prefix, d)
         vi = self.get_version_info()
         capabilities["build"] = vi
-        #legacy format:
-        up("build", vi)
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
@@ -904,10 +900,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if len(packet)>=5:
             salt_digest = bytestostr(packet[4])
         if salt_digest in ("xor", "des"):
-            if not LEGACY_SALT_DIGEST:
-                self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
-                return False
-            log.warn(f"Warning: server using legacy support for {salt_digest!r} salt digest")
+            self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
+            return False
         return True
 
     def get_challenge_prompt(self, prompt="password"):
@@ -984,28 +978,21 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     ########################################
     # Encryption
     def set_server_encryption(self, caps, key):
-        enc_caps = caps.dictget("encryption")
-        if enc_caps:
-            #v5, proper namespace
-            caps = typedict(enc_caps)
-            prefix = ""
-        else:
-            #legacy string prefix:
-            prefix = "cipher."
+        caps = typedict(caps.dictget("encryption") or {})
         cipher = caps.strget("cipher")
-        cipher_mode = caps.strget(f"{prefix}mode", DEFAULT_MODE)
-        cipher_iv = caps.strget(f"{prefix}iv")
-        key_salt = caps.strget(f"{prefix}key_salt")
-        key_hash = caps.strget(f"{prefix}key_hash", DEFAULT_KEY_HASH)
-        key_size = caps.intget(f"{prefix}key_size", DEFAULT_KEYSIZE)
-        key_stretch = caps.strget(f"{prefix}key_stretch", DEFAULT_KEY_STRETCH)
-        iterations = caps.intget(f"{prefix}key_stretch_iterations")
-        padding = caps.strget(f"{prefix}padding", DEFAULT_PADDING)
+        cipher_mode = caps.strget("mode", DEFAULT_MODE)
+        cipher_iv = caps.strget("iv")
+        key_salt = caps.strget("key_salt")
+        key_hash = caps.strget("key_hash", DEFAULT_KEY_HASH)
+        key_size = caps.intget("key_size", DEFAULT_KEYSIZE)
+        key_stretch = caps.strget("key_stretch", DEFAULT_KEY_STRETCH)
+        iterations = caps.intget("key_stretch_iterations")
+        padding = caps.strget("padding", DEFAULT_PADDING)
         ciphers = get_ciphers()
         key_hashes = get_key_hashes()
         #server may tell us what it supports,
         #either from hello response or from challenge packet:
-        self.server_padding_options = caps.strtupleget(f"{prefix}padding.options", (DEFAULT_PADDING,))
+        self.server_padding_options = caps.strtupleget("padding.options", (DEFAULT_PADDING,))
         def fail(msg):
             self.warn_and_quit(ExitCode.ENCRYPTION, msg)
             return False
@@ -1128,8 +1115,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
-        if not LEGACY_PACKET_TYPES:
-            self.server_packet_types = caps.strtupleget("packet-types")
+        self.server_packet_types = caps.strtupleget("packet-types")
         netlog(f"self.server_packet_types={self.server_packet_types}")
         return True
 
@@ -1145,10 +1131,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if not self.set_server_encryption(caps, key):
                 return False
         return True
-
-    def _process_set_deflate(self, packet : PacketType) -> None:
-        #legacy, should not be used for anything
-        pass
 
     def _process_startup_complete(self, packet : PacketType) -> None:
         #can be received if we connect with "xpra stop" or other command line client
@@ -1221,7 +1203,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.add_packet_handlers({
             "challenge":                self._process_challenge,
             "disconnect":               self._process_disconnect,
-            "set_deflate":              self._process_set_deflate,
             "startup-complete":         self._process_startup_complete,
             CONNECTION_LOST:            self._process_connection_lost,
             GIBBERISH:                  self._process_gibberish,
