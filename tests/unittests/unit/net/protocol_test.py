@@ -159,7 +159,7 @@ class ProtocolTest(unittest.TestCase):
 
     def test_encoders_and_compressors(self):
         for encoder in ("rencodeplus", ):
-            for compressor in ("lz4", "zlib"):
+            for compressor in ("lz4", ):
                 p = self.make_memory_protocol()
                 p.enable_encoder(encoder)
                 p.enable_compressor(compressor)

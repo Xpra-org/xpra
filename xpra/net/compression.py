@@ -12,8 +12,10 @@ from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
-# all the compressors we know about, in the best compatibility order:
+# all the compressors we know about:
 ALL_COMPRESSORS : Tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
+# the compressors we may want to use, in the best compatibility order:
+TRY_COMPRESSORS : Tuple[str, ...] = ("lz4", "brotli", "none")
 # order for performance:
 PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "zlib", "brotli")
 # require compression (disallow 'none'):
@@ -55,22 +57,6 @@ def init_brotli() -> Compression:
         return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
-def init_zlib() -> Compression:
-    #pylint: disable=import-outside-toplevel
-    import zlib
-    from xpra.net.protocol.header import ZLIB_FLAG
-    def zlib_compress(packet, level):
-        level = min(9, max(1, level))
-        if not isinstance(packet, (bytes, bytearray, memoryview)):
-            packet = bytes(str(packet), 'UTF-8')
-        return level + ZLIB_FLAG, zlib.compress(packet, level)
-    def zlib_decompress(data):
-        d = zlib.decompressobj()
-        v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
-        assert not d.unconsumed_tail, "not all data was decompressed"
-        return v
-    return Compression("zlib", zlib.__version__, zlib_compress, zlib_decompress)  # type: ignore[attr-defined]
-
 def init_none() -> Compression:
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
@@ -101,7 +87,7 @@ def init_compressors(*names) -> None:
             logger(f"no {x}", exc_info=True)
 
 def init_all() -> None:
-    init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
+    init_compressors(*(list(TRY_COMPRESSORS)+["none"]))
 
 
 def use(compressor) -> bool:
@@ -110,7 +96,7 @@ def use(compressor) -> bool:
 
 def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
     caps : Dict[str,Any] = {}
-    for x in ALL_COMPRESSORS:
+    for x in TRY_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:
             continue
@@ -120,7 +106,7 @@ def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
         ccaps[""] = True
     return caps
 
-def get_enabled_compressors(order=ALL_COMPRESSORS) -> Tuple[str,...]:
+def get_enabled_compressors(order=TRY_COMPRESSORS) -> Tuple[str,...]:
     return tuple(x for x in order if x in COMPRESSION)
 
 def get_compressor(name) -> Callable:

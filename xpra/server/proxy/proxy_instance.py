@@ -252,7 +252,6 @@ class ProxyInstance:
         OPTION_WHITELIST : Dict[str,Callable] = {
             "compression_level" : number,
             "lz4"               : parse_bool,
-            "zlib"              : parse_bool,
             "rencodeplus"       : parse_bool,
             "yaml"              : parse_bool,
             }
@@ -393,7 +392,7 @@ class ProxyInstance:
         if len(data)<MIN_COMPRESS_SIZE:
             return packet
         #this is ugly and not generic!
-        kw = dict((k, self.caps.boolget(k)) for k in ("zlib", "lz4"))
+        kw = {"lz4" : self.caps.boolget("lz4")}
         return self.replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
 
 

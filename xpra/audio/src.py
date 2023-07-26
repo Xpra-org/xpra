@@ -266,7 +266,6 @@ class AudioSource(AudioPipeline):
     def _emit_buffer(self, data, metadata) -> int:
         if self.stream_compressor and data:
             cdata = compressed_wrapper("audio", data, level=9, can_inline=True,
-                                       zlib=False,
                                        lz4=self.stream_compressor=="lz4")
             if len(cdata)<len(data)*90//100:
                 log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(data), len(cdata))

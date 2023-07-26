@@ -54,7 +54,6 @@ class EncodingsMixin(StubSourceMixin):
         self.default_encoding_options = typedict()
         self.auto_refresh_delay : int = 0
 
-        self.zlib = True
         self.lz4 = use("lz4")
 
         #for managing the recalculate_delays work:
@@ -249,11 +248,9 @@ class EncodingsMixin(StubSourceMixin):
             return v
 
         #general features:
-        self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and use("lz4")
         self.brotli = c.boolget("brotli", False) and use("brotli")
-        log("compressors: zlib=%s, lz4=%s, brotli=%s",
-            self.zlib, self.lz4, self.brotli)
+        log("compressors: lz4=%s, brotli=%s", self.lz4, self.brotli)
 
         delay = batch_config.START_DELAY
         dbc = self.default_batch_config
@@ -292,15 +289,15 @@ class EncodingsMixin(StubSourceMixin):
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention,
-        #or because we want to pass default values (zlib/lz4):
+        #or because we want to pass default values (ie: lz4):
         for k,ek in {"initial_quality"          : "initial_quality",
                      "quality"                  : "quality",
                      }.items():
             if k in c:
                 self.encoding_options[ek] = c.intget(k)
-        for k,ek in {"zlib"                     : "rgb_zlib",
-                     "lz4"                      : "rgb_lz4",
-                     }.items():
+        for k,ek in {
+                 "lz4"                      : "rgb_lz4",
+            }.items():
             if k in c:
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
@@ -312,7 +309,7 @@ class EncodingsMixin(StubSourceMixin):
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency",
-                                  "rgb_zlib", "rgb_lz4",
+                                  "rgb_lz4",
                                   ):
                     v = c.boolget(k)
                 elif stripped_k in ("initial_quality", "initial_speed",

@@ -146,8 +146,8 @@ class ClientConnection(StubSourceMixin):
 
 
     def compressed_wrapper(self, datatype, data, **kwargs):
-        #set compression flags based on self.zlib and self.lz4:
-        kw = dict((k, getattr(self, k, False)) for k in ("zlib", "lz4"))
+        #set compression flags based on self.lz4:
+        kw = {"lz4" : getattr(self, "lz4", False)}
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 

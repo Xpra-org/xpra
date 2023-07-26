@@ -525,7 +525,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #brotli is not enabled by default as a generic compressor
             #but callers may choose to enable it via kwargs:
             for algo, defval in {
-                "zlib" : True,
                 "lz4" : True,
                 "brotli" : False,
                 }.items():
@@ -1117,7 +1116,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 log.info(f"server capabilities rejected by {bc}")
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
-        self.server_compressors = c.strtupleget("compressors", ("zlib",))
+        self.server_compressors = c.strtupleget("compressors", )
         return True
 
     def parse_network_capabilities(self, caps : typedict) -> bool:

@@ -510,7 +510,7 @@ class SocketProtocol:
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         compressors = caps.strtupleget("compressors")
         log(f"enable_compressor_from_caps(..) options={opts}, compressors from caps={compressors}")
-        for c in opts:      #ie: [zlib, lz4]
+        for c in opts:      #ie: ["lz4", "none"]
             if c=="none":
                 continue
             if c in compressors or caps.boolget(c):
@@ -538,7 +538,7 @@ class SocketProtocol:
         ie: ["blah", [large binary data], "hello", 200]
         may get converted to:
         [
-            (1, compression_level, [large binary data now zlib compressed]),
+            (1, compression_level, [large binary data now lz4 compressed]),
             (0,                 0, rencoded(["blah", '', "hello", 200]))
         ]
         """

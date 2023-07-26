@@ -13,7 +13,7 @@ class TestCompression(unittest.TestCase):
 
     def test_main(self):
         compression.init_all()
-        assert compression.use("zlib")
+        assert compression.use("lz4")
         assert compression.get_compression_caps()
         assert compression.get_enabled_compressors()
         for x in compression.get_enabled_compressors():
@@ -57,7 +57,7 @@ class TestCompression(unittest.TestCase):
         r = compression.compressed_wrapper("test", b"a"*(compression.MIN_COMPRESS_SIZE+1))
         if not r.datatype.startswith("raw"):
             raise Exception(f"should not be able to use the wrapper without enabling a compressor, but got {r!r}")
-        for x in ("lz4", "brotli", "zlib", "none"):
+        for x in ("lz4", "brotli", "none"):
             if not compression.use(x):
                 continue
             kwargs = {x : True}

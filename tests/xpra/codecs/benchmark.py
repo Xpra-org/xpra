@@ -58,7 +58,6 @@ def main(argv):
                             "quality"       : quality,
                             "speed"         : speed,
                             "rgb_formats"   : ("BGRX", "BGRA", "RGBA", "RGBX", "RGB", "BGR"),
-                            "zlib"          : True,
                             "lz4"           : True,
                             "alpha"         : True,
                             }
