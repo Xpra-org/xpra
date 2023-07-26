@@ -38,7 +38,7 @@ def filt(*values) -> Tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
 
-CSC_CODECS : Tuple[str,...] = filt("csc_swscale", "csc_cython", "csc_libyuv")
+CSC_CODECS : Tuple[str,...] = filt("csc_cython", "csc_libyuv")
 ENCODER_CODECS : Tuple[str,...] = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 ENCODER_VIDEO_CODECS : Tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_gstreamer")
 DECODER_CODECS : Tuple[str,...] = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
