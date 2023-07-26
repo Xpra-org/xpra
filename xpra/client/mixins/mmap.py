@@ -64,22 +64,15 @@ class MmapClient(StubClientMixin):
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         mmap_caps = c.dictget("mmap")
-        if mmap_caps:
-            #new format with namespace
-            c = typedict(mmap_caps)
-            def iget(attrname, default_value=0):
-                return c.intget(attrname, default_value)
-        else:
-            def iget(attrname, default_value=0):
-                #legacy format: try different forms, at top level:
-                return c.intget(f"mmap.{attrname}") or c.intget(f"mmap_{attrname}", default_value)
-        self.mmap_enabled = bool(self.supports_mmap and self.mmap_enabled and iget("enabled"))
+        #new format with namespace
+        c = typedict(mmap_caps or {})
+        self.mmap_enabled = bool(self.supports_mmap and self.mmap_enabled and c.intget("enabled"))
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_BYTES
-            mmap_token = iget("token")
-            mmap_token_index = iget("token_index", 0)
-            mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
+            mmap_token = c.intget("token")
+            mmap_token_index = c.intget("token_index", 0)
+            mmap_token_bytes = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
             token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             if token!=mmap_token:
                 log.error("Error: mmap token verification failed!")
@@ -107,16 +100,9 @@ class MmapClient(StubClientMixin):
     def get_caps(self) -> Dict[str,Any]:
         if not self.mmap_enabled:
             return {}
-        raw_caps = self.get_raw_caps()
-        caps : Dict[str,Any] = {
-            "mmap" : raw_caps,
+        return {
+            "mmap" : self.get_raw_caps(),
             }
-        #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
-        for k,v in raw_caps.items():
-            caps["mmap_%s" % k] = v
-        caps["mmap.namespace"] = True   #this client understands "mmap.ATTRIBUTE" format
-        log(f"mmap caps={caps}")
-        return caps
 
     def get_raw_caps(self) -> Dict[str,Any]:
         return {

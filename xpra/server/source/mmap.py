@@ -42,7 +42,6 @@ class MMAP_Connection(StubSourceMixin):
         self.mmap_client_token = 0                   #the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
-        self.mmap_client_namespace = False
 
     def cleanup(self) -> None:
         mmap = self.mmap
@@ -57,21 +56,13 @@ class MMAP_Connection(StubSourceMixin):
         import os
         from xpra.os_util import WIN32
         mmap_caps = c.dictget("mmap")
-        if mmap_caps:
-            self.mmap_client_namespace = True
-            c = typedict(mmap_caps)
-            prefix = ""
-        else:
-            #legacy:
-            self.mmap_client_namespace = c.boolget("mmap.namespace", False)
-            sep = "." if self.mmap_client_namespace else "_"
-            prefix = f"mmap{sep}"
-        mmap_filename = c.strget(f"{prefix}file")
+        c = typedict(mmap_caps)
+        mmap_filename = c.strget("file")
         if not mmap_filename:
             return
-        mmap_size = c.intget(f"{prefix}size", 0)
+        mmap_size = c.intget("size", 0)
         log("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget(f"{prefix}token")
+        mmap_token = c.intget("token")
         log(f"mmap supported={self.supports_mmap}, token={mmap_token:x}")
         if self.mmap_filename:
             if os.path.isdir(self.mmap_filename):
@@ -98,8 +89,8 @@ class MMAP_Connection(StubSourceMixin):
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
             if self.mmap_size>0 and self.mmap is not None:
-                index = c.intget(f"{prefix}token_index", 0)
-                count = c.intget(f"{prefix}token_bytes", DEFAULT_TOKEN_BYTES)
+                index = c.intget("token_index", 0)
+                count = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)
                 if v!=mmap_token:
                     log.warn("Warning: mmap token verification failed, not using mmap area!")
@@ -128,19 +119,16 @@ class MMAP_Connection(StubSourceMixin):
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> Dict[str,Any]:
-        sep = "." if self.mmap_client_namespace else "_"
-        mmap_caps : Dict[str, Any] = {}
-        caps : Dict [str, Any] = {"mmap" : mmap_caps}
-        def mmapattr(name:str, value) -> None:
-            #easy: just send both for now
-            mmap_caps[name] = value
-            caps[f"mmap{sep}{name}"] = value
-        mmapattr("enabled", self.mmap_size>0)
+        mmap_caps : Dict[str, Any] = {
+            "enabled" : self.mmap_size>0,
+        }
         if self.mmap_client_token:
-            mmapattr("token",       self.mmap_client_token)
-            mmapattr("token_index", self.mmap_client_token_index)
-            mmapattr("token_bytes", self.mmap_client_token_bytes)
-        return caps
+            mmap_caps.update({
+                "token"         : self.mmap_client_token,
+                "token_index"   : self.mmap_client_token_index,
+                "token_bytes"   : self.mmap_client_token_bytes,
+            })
+        return {"mmap" : mmap_caps}
 
     def get_info(self) -> Dict[str,Any]:
         return {

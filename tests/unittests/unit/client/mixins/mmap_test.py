@@ -48,14 +48,15 @@ class MixinsTest(ClientMixinTest):
 	def make_caps(self, caps=None):
 		d = super().make_caps(caps)
 		x = self.mixin
-		d.update({
-			"mmap_enabled"		: True,
-			"mmap.token"		: x.mmap_token,
-			"mmap.token_bytes"	: x.mmap_token_bytes,
-			"mmap.token_index"	: x.mmap_token_index,
-			})
+		index = x.mmap_token_index
 		if x.mmap_filename and x.mmap_filename.find("fail")>=0:
-			d["mmap.token_index"] = x.mmap_token_index-10
+			index -= 10
+		d["mmap"] = {
+			"enabled"		: True,
+			"token"			: x.mmap_token,
+			"token_bytes"	: x.mmap_token_bytes,
+			"token_index"	: index,
+		}
 		return d
 
 
