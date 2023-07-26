@@ -260,8 +260,6 @@ jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
-ffmpeg_ENABLED          = DEFAULT and BITS==64
-enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
@@ -269,9 +267,6 @@ keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.9", "evdi")
 drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdrm")
-#ffmpeg 3.1 or later is required
-dec_avcodec2_ENABLED    = ffmpeg_ENABLED and pkg_config_version("57", "libavcodec")
-csc_swscale_ENABLED     = ffmpeg_ENABLED and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
 nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
@@ -310,7 +305,6 @@ CODEC_SWITCHES = [
     "jpeg_encoder", "jpeg_decoder",
     "avif", "argb",
     "v4l2", "evdi", "drm",
-    "ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg",
     "csc_cython", "csc_libyuv", "gstreamer",
     ]
 SWITCHES = [
@@ -339,7 +333,6 @@ SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
     "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
-    "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     "cython"    : ("cython", "codecs",
                    "server", "client", "shadow",
                    "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
@@ -1177,10 +1170,6 @@ def clean():
                    "xpra/codecs/spng/decoder.c",
                    "xpra/codecs/jpeg/encoder.c",
                    "xpra/codecs/jpeg/decoder.c",
-                   "xpra/codecs/ffmpeg/encoder.c",
-                   "xpra/codecs/ffmpeg/av_log.c",
-                   "xpra/codecs/ffmpeg/colorspace_converter.c",
-                   "xpra/codecs/ffmpeg/decoder.c",
                    "xpra/codecs/openh264/encoder.c",
                    "xpra/codecs/openh264/decoder.c",
                    "xpra/codecs/v4l2/pusher.c",
@@ -1507,10 +1496,6 @@ if WIN32:
                 #for websocket browser cookie:
                 "browser_cookie3", "pyaes", "pbkdf2", "keyring",
                 ]
-
-        if dec_avcodec2_ENABLED:
-            #why isn't this one picked up automatically?
-            add_DLLs("x265")
 
         #hopefully, cx_Freeze will fix this horror:
         #(we shouldn't have to deal with DLL dependencies)
@@ -2325,12 +2310,6 @@ tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
 toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
-#swscale and avcodec2 use libav_common/av_log:
-toggle_packages(ffmpeg_ENABLED, "xpra.codecs.ffmpeg")
-tace(ffmpeg_ENABLED, "xpra.codecs.ffmpeg.av_log", "libavutil")
-tace(dec_avcodec2_ENABLED, "xpra.codecs.ffmpeg.decoder", "libavcodec,libavutil,libavformat")
-tace(csc_swscale_ENABLED, "xpra.codecs.ffmpeg.colorspace_converter", "libswscale,libavutil")
-tace(enc_ffmpeg_ENABLED, "xpra.codecs.ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.colorspace_converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")

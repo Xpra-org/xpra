@@ -74,7 +74,6 @@ See [picture encodings](../Usage/Encodings.md)
 | Project | Source Download Link | Purpose | Client or Server |
 |---------|----------------------|---------|------------------|
 |[x264](http://www.videolan.org/developers/x264.html)|ftp://ftp.videolan.org/pub/x264/snapshots/|h264 encoding|server|
-|[ffmpeg](http://www.ffmpeg.org/)|http://ffmpeg.org/releases/|h264, h265, vp8 and vp9 decoding|client|
 |[vpx]([http://www.webmproject.org/tools/](https://github.com/webmproject/libvpx/))|[http://downloads.webmproject.org/releases/webm/index.html](https://github.com/webmproject/libvpx/)|vp8 and vp9 codecs|both|
 |[webp](https://code.google.com/p/webp/)|http://downloads.webmproject.org/releases/webp/index.html|webp codec|both|
 |[libpng](http://www.libpng.org/pub/png/libpng.html)|ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/|png encoding|both|

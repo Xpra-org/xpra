@@ -31,7 +31,7 @@ dnf install xorg-x11-server-Xvfb
 
 For extra video encoding support, install the following development headers from [rpmfusion.org](https://rpmfusion.org/) and / or [EPEL](https://docs.fedoraproject.org/en-US/epel/):
 ```shell
-dnf install libvpx-devel libyuv-devel ffmpeg-devel x264-devel
+dnf install libvpx-devel libyuv-devel x264-devel
 ```
 </details>
 <details>

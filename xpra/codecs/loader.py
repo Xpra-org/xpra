@@ -19,7 +19,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "dec_openh264", "enc_ffmpeg", "enc_gstreamer", "dec_gstreamer", "csc_cython"]
+NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "dec_openh264", "enc_gstreamer", "dec_gstreamer", "csc_cython"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -37,11 +37,12 @@ if OSX:
 def filt(*values) -> Tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
+
 CSC_CODECS : Tuple[str,...] = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS : Tuple[str,...] = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS : Tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_ffmpeg", "enc_gstreamer")
+ENCODER_VIDEO_CODECS : Tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_gstreamer")
 DECODER_CODECS : Tuple[str,...] = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
-DECODER_VIDEO_CODECS : Tuple[str,...] = filt("dec_vpx", "dec_avcodec2", "dec_openh264", "nvdec")
+DECODER_VIDEO_CODECS : Tuple[str,...] = filt("dec_vpx", "dec_openh264", "nvdec")
 SOURCES : Tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS : Tuple[str,...] = filt(*set(
@@ -201,10 +202,8 @@ CODEC_OPTIONS : Dict[str,Tuple[str,str,str,str]] = {
     "enc_x265"      : ("x265 encoder",      "x265",         "encoder", "Encoder"),
     "enc_openh264"  : ("openh264 encoder",  "openh264",     "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
-    "enc_ffmpeg"    : ("ffmpeg encoder",    "ffmpeg",       "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     #csc:
-    "csc_swscale"   : ("swscale colorspace conversion", "ffmpeg", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "colorspace_converter", "ColorspaceConverter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
@@ -216,7 +215,6 @@ CODEC_OPTIONS : Dict[str,Tuple[str,str,str,str]] = {
     "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg","decoder", "decompress"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
-    "dec_avcodec2"  : ("avcodec2 decoder",  "ffmpeg",       "decoder", "Decoder"),
     "dec_openh264"  : ("openh264 decoder",  "openh264",     "decoder", "Decoder"),
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),

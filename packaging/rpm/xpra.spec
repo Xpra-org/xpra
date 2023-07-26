@@ -192,10 +192,6 @@ Summary:			Extra picture and video codecs for xpra clients and servers.
 Recommends:			x264
 BuildRequires:		pkgconfig(x264)
 %endif
-Recommends:			ffmpeg
-BuildRequires:		pkgconfig(libavutil)
-BuildRequires:		pkgconfig(libavformat)
-BuildRequires:		pkgconfig(libavcodec)
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
 #appsrc, videoconvert:

@@ -46,10 +46,6 @@ for using [NVENC](../Usage/NVENC.md)
 ```shell
 apt-get install libnvidia-encode1 python3-numpy
 ```
-ffmpeg based video codecs
-```shell
-apt-get install libavformat-dev libavcodec-dev libswscale-dev
-```
 </details>
 
 <details>

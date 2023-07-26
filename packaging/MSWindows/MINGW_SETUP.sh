@@ -18,7 +18,7 @@ PACMAN="pacman"
 #most packages get installed here: (python, gtk, etc):
 $PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify
 #media libraries (more than we actually need):
-$PACMAN --noconfirm --needed -S ${XPKG}ffmpeg ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN --noconfirm --needed -S ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
 $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #python GStreamer bindings:

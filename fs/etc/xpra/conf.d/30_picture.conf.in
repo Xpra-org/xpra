@@ -23,7 +23,7 @@ encoding = auto
 # video-encoders = none
 # video-encoders = all
 # video-encoders = all,-x265
-video-encoders = all,-gstreamer,-ffmpeg
+video-encoders = all,-gstreamer
 
 # Used by both the client and server for colourspace conversion:
 # csc-modules = swscale, cython, libyuv
@@ -32,7 +32,7 @@ video-encoders = all,-gstreamer,-ffmpeg
 csc-modules = all
 
 # Used by the client for decoding:
-# video-decoders = avcodec2, vpx
+# video-decoders = vpx
 # video-decoders = none
 # video-decoders = all
 video-decoders = all

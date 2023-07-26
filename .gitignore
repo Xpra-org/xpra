@@ -117,10 +117,6 @@ tests/unittests/test-file*
 /xpra/codecs/argb/argb.c
 /xpra/codecs/csc_cython/colorspace_converter.c
 /xpra/codecs/libyuv/colorspace_converter.cpp
-/xpra/codecs/ffmpeg/encoder.c
-/xpra/codecs/ffmpeg/colorspace_converter.c
-/xpra/codecs/ffmpeg/decoder.c
-/xpra/codecs/ffmpeg/av_log.c
 /xpra/codecs/openh264/decoder.cpp
 /xpra/codecs/openh264/encoder.cpp
 /xpra/codecs/x264/encoder.c

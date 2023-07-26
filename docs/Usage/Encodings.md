@@ -62,7 +62,6 @@ Xpra ships the following encoder modules:
 | `x264`                | `h264`              | fast                        |
 | `x265`                | `hevc`              | slower                      |
 | [`nvenc`](./NVENC.md) | `h264`, `hevc`      | fastest (requires hardware) |
-| `ffmpeg`              | all                 | capabilities vary           |
 
 Which encodings are actually supported by each encoder may vary, depending on the version used, the build options, hardware capabilities, etc.
 
@@ -81,7 +80,6 @@ These modules are used for:
 | Codename  | Colorspaces supported                                                                                     | Notes                                         |
 |-----------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------|
 | `cython`  | `r210`, `BGR48`, `GBRP10`, `YUV444P10`                                                                    | slow but useful for some high bit depth modes |
-| `swscale` | `RGB24`, `BGR24`, `0RGB`, `BGR0`, `ARGB`, `BGRA`, `ABGR`, `YUV420P`, `YUV422P`, `YUV444P`, `GBRP`, `NV12` | fast                                          |
 | `libyuv`  | `BGRX`, `YUV420P`, `NV12`                                                                                 | fastest                                       |
 
 You can choose which colorspace conversion modules are loaded at runtime using the `csc-modules` option.
@@ -92,7 +90,7 @@ You can choose which colorspace conversion modules are loaded at runtime using t
 Xpra ships the following decoder modules:
 |Codename|Encodings supported|
 |--------|-------------------|
-|`avcodec2`|all|
+|`openh264`|`h264`|
 |`vpx`|`vp8`, `vp9`|
 
 You can choose which video decoders are loaded at runtime using the `video-decoders` option.

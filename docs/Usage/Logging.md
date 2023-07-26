@@ -111,9 +111,6 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | libyuv                               | libyuv CSC module                                                  |
 | decoder                              | all decoders                                                       |
 | encoder                              | all encoders                                                       |
-| avcodec                              | avcodec decoder                                                    |
-| libav                                | libav common code (used by swscale, avcodec and ffmpeg)            |
-| ffmpeg                               | ffmpeg encoder                                                     |
 | pillow                               | pillow encoder and decoder                                         |
 | jpeg                                 | JPEG codec                                                         |
 | vpx                                  | libvpx encoder and decoder                                         |

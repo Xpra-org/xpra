@@ -38,10 +38,6 @@ Build-Depends: debhelper (>= 8)
               ,python-gi-dev
               ,cython3
               ,gcc
-              ,libavcodec-dev [!i386]
-              ,libavformat-dev [!i386]
-              ,libavutil-dev [!i386]
-              ,libswscale-dev [!i386]
               ,dh-python
               ,libsystemd-dev
               ,libpam0g-dev
