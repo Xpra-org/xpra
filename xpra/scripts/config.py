@@ -1096,7 +1096,7 @@ def get_defaults():
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
                     "proxy-video-encoders" : ["none"],
-                    "video-encoders"    : ["all", "-gstreamer"],
+                    "video-encoders"    : ["all", "-gstreamer", "-ffmpeg"],
                     "csc-modules"       : ["all"],
                     "video-decoders"    : ["all"],
                     "speaker-codec"     : [],
