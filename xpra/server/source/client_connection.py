@@ -7,8 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any, Optional, Tuple, Callable, Union, List
-from typing_extensions import TypeAlias
+from typing import Dict, Any, Optional, Tuple, Callable, Union, List, TypeAlias
 from time import sleep, monotonic
 from threading import Event
 from collections import deque

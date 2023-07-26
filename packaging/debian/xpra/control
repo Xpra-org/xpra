@@ -96,7 +96,6 @@ Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
         ,gir1.2-glib-2.0
-        ,python3-typing-extensions
 Recommends:
         ,${x11:Depends}
 # generate QR codes for authentication and connection URLs:

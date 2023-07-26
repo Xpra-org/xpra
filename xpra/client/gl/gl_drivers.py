@@ -5,8 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
-from typing_extensions import TypeAlias
+from typing import Dict, Tuple, TypeAlias
 
 #These chipsets will use OpenGL,
 #there will not be any warnings, even if the vendor is greylisted:

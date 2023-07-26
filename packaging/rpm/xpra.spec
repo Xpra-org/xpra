@@ -102,7 +102,6 @@ BuildRequires:		pandoc
 BuildRequires:		which
 Requires:			python3
 Requires:			python3-gobject
-Requires:			python3-typing-extensions
 Recommends:			python3-pillow
 Recommends:			python3-cryptography
 Recommends:			python3-inotify
