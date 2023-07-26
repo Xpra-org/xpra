@@ -17,9 +17,9 @@ ALL_COMPRESSORS : Tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
 # the compressors we may want to use, in the best compatibility order:
 TRY_COMPRESSORS : Tuple[str, ...] = ("lz4", "brotli", "none")
 # order for performance:
-PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "zlib", "brotli")
+PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION : Tuple[str, ...] = ("lz4", "zlib", "brotli")
+PERFORMANCE_COMPRESSION : Tuple[str, ...] = ("lz4", "brotli")
 
 Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])
 
@@ -73,9 +73,12 @@ def init_compressors(*names) -> None:
         if not envbool("XPRA_"+x.upper(), True):
             continue
         attr = globals().get(f"init_{x}", None)
+        if attr is None:
+            log.warn(f"Warning: invalid compressor {x} specified")
+            continue
         try:
             if not callable(attr):
-                raise ValueError(f"{attr!r} is not callable")
+                raise ValueError(f"{attr!r} for {x} is not callable")
             fn : Callable = attr
             c = fn()
             assert c
