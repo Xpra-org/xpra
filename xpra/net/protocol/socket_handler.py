@@ -9,7 +9,7 @@
 # but it works on win32, for whatever that's worth.
 
 import os
-from enum import Enum
+from enum import Enum, IntEnum
 from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
@@ -553,11 +553,11 @@ class SocketProtocol:
             item = packet[i]
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
+            if isinstance(item, IntEnum):
+                packet[i] = int(item)
+                continue
             if isinstance(item, Enum):
-                try:
-                    packet[i] = int(item)
-                except ValueError:
-                    packet[i] = str(item)
+                packet[i] = str(item)
                 continue
             if isinstance(item, (int, bool, dict, list, tuple)):
                 continue
