@@ -21,7 +21,6 @@ Those are required by almost every component.
 See [Network](../Network/README.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
-|[rencode](https://github.com/aresch/rencode)|https://pypi.python.org/pypi/rencode/|[packet encoding](./PacketEncoding)|both |(deprecated in 4.4)|
 |[pyyaml](http://pyyaml.org/)|https://pypi.python.org/pypi/PyYAML/|alternative packet encoder|both |optional (usually unused)|
 |[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Strongly recommended|
 |[aioquic](https://github.com/aiortc/aioquic)|https://pypi.org/project/aioquic/|low level network protocol|both|[quic](https://github.com/Xpra-org/xpra/issues/3376)|

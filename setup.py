@@ -231,8 +231,6 @@ xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
-bencode_ENABLED         = DEFAULT
-cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
 qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
@@ -320,7 +318,7 @@ SWITCHES = [
     "modules", "data",
     "codecs",
     ] + CODEC_SWITCHES + [
-    "bencode", "cython_bencode", "rencodeplus", "brotli", "qrencode",
+    "brotli", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4",
     "clipboard",
     "scripts",
@@ -344,7 +342,7 @@ SWITCH_ALIAS = {
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     "cython"    : ("cython", "codecs",
                    "server", "client", "shadow",
-                   "cython_bencode", "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
+                   "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
                    "lz4",
                    "gtk3", "x11", "gtk_x11",
                    "pam", "sd_listen", "proc",
@@ -1174,7 +1172,6 @@ def clean():
                    "xpra/platform/posix/netdev_query.c",
                    "xpra/platform/posix/proc_libproc.c",
                    "xpra/platform/posix/proc_procps.c",
-                   "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
                    "xpra/net/brotli/compressor.c",
                    "xpra/net/brotli/decompressor.c",
@@ -2381,9 +2378,6 @@ toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.
 tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
 tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
-toggle_packages(bencode_ENABLED, "xpra.net.bencode")
-toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
-tace(cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode", optimize=3)
 toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")

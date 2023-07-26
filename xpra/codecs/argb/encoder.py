@@ -101,7 +101,7 @@ def encode(coding : str, image, options : Dict) -> Tuple[str,Compressed,Dict[str
             # so we have to convert it to bytes:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
     else:
-        #can't pass a raw buffer to bencode / rencode,
+        #can't pass a raw buffer to rencodeplus,
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
         cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels), True)

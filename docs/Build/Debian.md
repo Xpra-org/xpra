@@ -75,7 +75,7 @@ apt-get install python3-opengl
 
 For more details, see [network](../Network/README.md).
 ```shell
-apt-get install python3-rencode python3-lz4 python3-dbus python3-cryptography \
+apt-get install python3-dbus python3-cryptography \
                 python3-netifaces python3-yaml python3-lzo
 ```
 [SSH](../Network/SSH.md):

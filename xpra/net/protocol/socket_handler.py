@@ -483,7 +483,7 @@ class SocketProtocol:
         opts = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
         log(f"enable_encoder_from_caps(..) options={opts}")
         for e in opts:
-            if caps.boolget(e, e=="bencode"):
+            if caps.boolget(e):
                 self.enable_encoder(e)
                 return True
             log(f"client does not support {e}")
@@ -539,7 +539,7 @@ class SocketProtocol:
         may get converted to:
         [
             (1, compression_level, [large binary data now zlib compressed]),
-            (0,                 0, bencoded/rencoded(["blah", '', "hello", 200]))
+            (0,                 0, rencoded(["blah", '', "hello", 200]))
         ]
         """
         packets : List[NetPacketType] = []

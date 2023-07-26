@@ -105,7 +105,6 @@ Requires:			python3-gobject
 Requires:			python3-typing-extensions
 Recommends:			python3-pillow
 Recommends:			python3-cryptography
-Recommends:			python3-rencode
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
@@ -143,7 +142,6 @@ BuildRequires:		pkgconfig(gtk+-3.0)
 BuildRequires:		pkgconfig(gobject-introspection-1.0)
 %if 0%{?run_tests}
 BuildRequires:		python3-cryptography
-BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
 %endif
 %description common

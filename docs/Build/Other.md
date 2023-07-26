@@ -19,7 +19,7 @@ Other packages you will need:
 * for building / downloading the source: `gcc cython subversion pkgconf`
 * X11 libraries: `libXrandr libXtst libXcomposite libXdamage`
 * GTK: `gobject-introspection gtk3`
-* strongly recommended addons: `py37-lz4 py37-rencode py37-PyOpenGL py37-PyOpenGL-accelerate`
+* strongly recommended addons: `py37-PyOpenGL py37-PyOpenGL-accelerate`
 * audio: `py37-gstreamer1 gstreamer1-plugins-flac gstreamer1-plugins-mad gstreamer1-plugins-ogg gstreamer1-plugins-opus gstreamer1-plugins-vorbis`
 
 
@@ -102,7 +102,7 @@ make install
 ```
 to be able to use most of xpra's features, you may also want to install:
 ```shell
-apt-get install python-netifaces dbus-x11 python-dbus python-rencode \
+apt-get install python-netifaces dbus-x11 python-dbus \
     hicolor-icon-theme python-avahi python-numpy \
     gstreamer1.0-x gstreamer1.0-tools \
     python-pil python-lzo python-setuptools

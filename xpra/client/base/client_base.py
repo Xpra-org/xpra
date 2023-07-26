@@ -736,7 +736,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if p and p.input_raw_packetcount==0:
             props = p.get_info()
             c = props.get("compression", "unknown")
-            e = props.get("encoder", "rencode")
+            e = props.get("encoder", "rencodeplus")
             netlog.error("Error: failed to receive anything, not an xpra server?")
             netlog.error("  could also be the wrong protocol, username, password or port")
             netlog.error("  or the session was not found")

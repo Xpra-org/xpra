@@ -43,9 +43,9 @@ compressors = none, lz4, zlib, brotli
 compression_level = 1
 
 # Packet encoders (at least one is required):
-#packet-encoders = bencode
+#packet-encoders = rencode
 #packet-encoders = all
-packet-encoders = rencodeplus, rencode, bencode, yaml
+packet-encoders = rencodeplus, yaml
 
 # Socket directories (may be specified more than once):
 #socket-dirs = /tmp

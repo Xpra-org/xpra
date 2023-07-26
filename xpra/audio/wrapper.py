@@ -40,8 +40,6 @@ def get_full_audio_command():
 def get_audio_wrapper_env():
     env = {}
     if WIN32:
-        #disable bencoder to skip warnings with the Python 3 Sound sub-app
-        env["XPRA_USE_BENCODER"] = "0"
         #we don't want the output to go to a log file
         env["XPRA_REDIRECT_OUTPUT"] = "0"
     elif POSIX and not OSX:

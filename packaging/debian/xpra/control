@@ -101,8 +101,6 @@ Recommends:
         ,${x11:Depends}
 # generate QR codes for authentication and connection URLs:
         ,${qrcode:Depends}
-# legacy packet encoder:
-        ,python3-rencode
 # text packet compression:
         ,${brotli:Depends}
 # ssh transport:

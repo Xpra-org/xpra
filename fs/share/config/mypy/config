@@ -40,9 +40,6 @@ ignore_missing_imports = True
 [mypy-yaml.*]
 ignore_missing_imports = True
 
-[mypy-rencode.*]
-ignore_missing_imports = True
-
 [mypy-avahi.*]
 ignore_missing_imports = True
 
@@ -129,9 +126,6 @@ ignore_missing_imports = True
 
 [mypy-xpra.net.rencodeplus.*]
 ignore_missing_imports = True
-
-[mypy-xpra.net.bencode.cython_bencode]
-ignore_missing_imports = True 
 
 [mypy-xpra.net.websockets.mask]
 ignore_missing_imports = True

@@ -253,9 +253,7 @@ class ProxyInstance:
             "compression_level" : number,
             "lz4"               : parse_bool,
             "zlib"              : parse_bool,
-            "rencode"           : parse_bool,
             "rencodeplus"       : parse_bool,
-            "bencode"           : parse_bool,
             "yaml"              : parse_bool,
             }
         for k,v in options.items():

@@ -19,24 +19,17 @@ from xpra.net.protocol.header import (
 from xpra.os_util import strtobytes
 from xpra.util import envbool
 
-#all the encoders we know about, in the best compatibility order:
-ALL_ENCODERS : Tuple[str, ...] = ("rencode", "bencode", "yaml", "rencodeplus", "none")
+#all the encoders we know about:
+ALL_ENCODERS : Tuple[str, ...] = ("rencodeplus", "bencode", "yaml", "rencode", "none")
+#the encoders we may have, in the best compatibility order
+TRY_ENCODERS : Tuple[str, ...] = ("rencodeplus", "yaml", "none")
 #order for performance:
-PERFORMANCE_ORDER : Tuple[str, ...] = ("rencodeplus", "rencode", "bencode", "yaml")
+PERFORMANCE_ORDER : Tuple[str, ...] = ("rencodeplus", "yaml")
 
 Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
 
 ENCODERS : Dict[str,Encoding] = {}
 
-
-def init_rencode() -> Encoding:
-    import rencode  # @UnresolvedImport
-    rencode_lock = Lock()
-    rencode_dumps = rencode.dumps
-    def do_rencode(v):
-        with rencode_lock:
-            return rencode_dumps(v), FLAGS_RENCODE
-    return Encoding("rencode", FLAGS_RENCODE, rencode.__version__, do_rencode, rencode.loads)
 
 def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus    # type: ignore[attr-defined]
@@ -44,17 +37,6 @@ def init_rencodeplus() -> Encoding:
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)  # @UndefinedVariable
-
-def init_bencode() -> Encoding:
-    from xpra.net.bencode import bencode, bdecode, __version__
-    def do_bencode(v):
-        return bencode(v), FLAGS_BENCODE
-    def do_bdecode(data):
-        packet, l = bdecode(data)
-        if len(data)!=l:
-            raise RuntimeError(f"expected {l} bytes, but got {len(data)}")
-        return packet
-    return Encoding("bencode", FLAGS_BENCODE, __version__, do_bencode, do_bdecode)
 
 def init_yaml() -> Encoding:
     #json messes with strings and unicode (makes it unusable for us)
@@ -77,7 +59,7 @@ def init_none() -> Encoding:
 
 def init_encoders(*names) -> None:
     for x in names:
-        if x not in ALL_ENCODERS:
+        if x not in TRY_ENCODERS:
             logger = Logger("network", "protocol")
             logger.warn("Warning: invalid encoder '%s'", x)
             continue
@@ -94,12 +76,12 @@ def init_encoders(*names) -> None:
             logger.debug("no %s", x, exc_info=True)
 
 def init_all() -> None:
-    init_encoders(*(list(ALL_ENCODERS)+["none"]))
+    init_encoders(*(list(TRY_ENCODERS)+["none"]))
 
 
 def get_packet_encoding_caps(full_info : int=1) -> Dict[str,Any]:
     caps : Dict[str,Any] = {}
-    for name in ALL_ENCODERS:
+    for name in TRY_ENCODERS:
         d = caps.setdefault(name, {})
         e = ENCODERS.get(name)
         d[""] = e is not None
@@ -109,7 +91,7 @@ def get_packet_encoding_caps(full_info : int=1) -> Dict[str,Any]:
             d["version"] = e.version
     return caps
 
-def get_enabled_encoders(order: Tuple[str, ...]=ALL_ENCODERS) -> Tuple[str, ...]:
+def get_enabled_encoders(order: Tuple[str, ...]=TRY_ENCODERS) -> Tuple[str, ...]:
     return tuple(x for x in order if x in ENCODERS)
 
 

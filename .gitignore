@@ -149,7 +149,6 @@ tests/unittests/test-file*
 /xpra/gtk_common/gtk3/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_bindings.c
 /xpra/net/vsock/vsock.c
-/xpra/net/bencode/cython_bencode.c
 /xpra/net/rencodeplus/rencodeplus.c
 /xpra/net/lz4/lz4.c
 /xpra/net/brotli/compressor.c
