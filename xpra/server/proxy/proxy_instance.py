@@ -12,7 +12,7 @@ from typing import Dict, Any, Callable, Tuple
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.protocol.constants import CONNECTION_LOST
-from xpra.net.common import MAX_PACKET_SIZE
+from xpra.net.common import MAX_PACKET_SIZE, PacketType
 from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -282,11 +282,11 @@ class ProxyInstance:
             fc["encoding.proxy.video.encodings"] = self.video_encoding_defs
         return fc
 
-    def filter_server_caps(self, caps) -> Dict:
+    def filter_server_caps(self, caps:Dict) -> Dict:
         self.server_protocol.enable_encoder_from_caps(caps)
         return self.filter_caps(caps, ("aliases", ), self.client_protocol)
 
-    def filter_caps(self, caps, prefixes, proto=None) -> Dict:
+    def filter_caps(self, caps:Dict, prefixes, proto=None) -> Dict:
         #removes caps that the proxy overrides / does not use:
         pcaps = {}
         removed = []
@@ -309,7 +309,7 @@ class ProxyInstance:
 
     ################################################################################
 
-    def queue_client_packet(self, packet) -> None:
+    def queue_client_packet(self, packet : PacketType) -> None:
         log("queueing client packet: %s (queue size=%s)", bytestostr(packet[0]), self.client_packets.qsize())
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
@@ -321,7 +321,7 @@ class ProxyInstance:
         log("sending to client: %s (queue size=%i)", bytestostr(p[0]), s)
         return p, None, None, None, True, s>0 or self.server_has_more
 
-    def process_client_packet(self, proto, packet) -> None:
+    def process_client_packet(self, proto, packet : PacketType) -> None:
         packet_type = bytestostr(packet[0])
         log("process_client_packet: %s", packet_type)
         if packet_type==CONNECTION_LOST:
@@ -361,13 +361,21 @@ class ProxyInstance:
             else:
                 self.stop(None, "disconnect from client", *reasons)
         elif packet_type=="send-file" and packet[6]:
-            packet[6] = Compressed("file-data", packet[6])
+            packet = self.replace_packet_item(packet, 6, Compressed("file-data", packet[6]))
         elif packet_type=="send-file-chunk" and packet[3]:
-            packet[3] = Compressed("file-chunk-data", packet[3])
+            packet = self.replace_packet_item(packet, 3, Compressed("file-chunk-data", packet[3]))
         self.queue_server_packet(packet)
 
 
-    def queue_server_packet(self, packet) -> None:
+    def replace_packet_item(self, packet : PacketType, index:int, new_value:Any) -> PacketType:
+        # make the packet data mutable and replace the contents at `index`:
+        assert index>0
+        lpacket = list(packet)
+        list_packet[index] = Compressed("file-data", packet[index])
+        # noinspection PyTypeChecker
+        return tuple(lpacket)
+
+    def queue_server_packet(self, packet : PacketType) -> None:
         log("queueing server packet: %s (queue size=%s)", bytestostr(packet[0]), self.server_packets.qsize())
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
@@ -380,14 +388,15 @@ class ProxyInstance:
         return p, None, None, None, True, s>0 or self.client_has_more
 
 
-    def _packet_recompress(self, packet, index, name) -> None:
-        if len(packet)>index:
-            data = packet[index]
-            if len(data)<MIN_COMPRESS_SIZE:
-                return
-            #this is ugly and not generic!
-            kw = dict((k, self.caps.boolget(k)) for k in ("zlib", "lz4"))
-            packet[index] = compressed_wrapper(name, data, can_inline=False, **kw)
+    def _packet_recompress(self, packet : PacketType, index:int, name:str) -> PacketType:
+        if len(packet)<=index:
+            return packet
+        data = packet[index]
+        if len(data)<MIN_COMPRESS_SIZE:
+            return packet
+        #this is ugly and not generic!
+        kw = dict((k, self.caps.boolget(k)) for k in ("zlib", "lz4"))
+        return self.replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
 
 
     def cancel_server_ping_timer(self) -> None:
@@ -429,7 +438,8 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.server_last_ping = now
-        self.queue_server_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
+        packet : PacketType = ("ping", int(now*1000), int(time()*1000), self.uuid)
+        self.queue_server_packet(packet)
         return True
 
     def send_client_ping(self) -> bool:
@@ -445,11 +455,12 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.client_last_ping = now
-        self.queue_client_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
+        packet : PacketType = ("ping", int(now*1000), int(time()*1000), self.uuid)
+        self.queue_client_packet(packet)
         return True
 
 
-    def process_server_packet(self, proto, packet) -> None:
+    def process_server_packet(self, proto, packet : PacketType) -> None:
         packet_type = bytestostr(packet[0])
         log("process_server_packet: %s", packet_type)
         if packet_type==CONNECTION_LOST:
@@ -508,7 +519,7 @@ class ProxyInstance:
             sound_data = packet[2]
             if sound_data:
                 #best if we use raw packets for the actual sound-data chunk:
-                packet[2] = Compressed("sound-data", sound_data)
+                packet = self.replace_packet_item(packet, 2, Compressed("sound-data", sound_data))
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
         elif packet_type=="cursor":
@@ -516,16 +527,16 @@ class ProxyInstance:
             #or:
             #packet = ["cursor", ""]
             if len(packet)>=8:
-                self._packet_recompress(packet, 9, "cursor")
+                packet = self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             if not isinstance(packet[5], str):
-                self._packet_recompress(packet, 5, "icon")
+                packet = self._packet_recompress(packet, 5, "icon")
         elif packet_type=="send-file":
             if packet[6]:
-                packet[6] = Compressed("file-data", packet[6])
+                packet = self.replace_packet_item(packet, 6, Compressed("file-data", packet[6]))
         elif packet_type=="send-file-chunk":
             if packet[3]:
-                packet[3] = Compressed("file-chunk-data", packet[3])
+                packet = self.replace_packet_item(packet, 3, Compressed("file-chunk-data", packet[3]))
         elif packet_type=="challenge":
             password = self.disp_desc.get("password", self.session_options.get("password"))
             log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
@@ -582,7 +593,7 @@ class ProxyInstance:
 
     def encode_loop(self) -> None:
         """ thread for slower encoding related work """
-        def delvideo(wid):
+        def delvideo(wid:int):
             self.video_encoders.pop(wid, None)
             self.video_encoders_last_used_time.pop(wid, None)
         while not self.exit:
@@ -621,7 +632,7 @@ class ProxyInstance:
                 enclog.warn("error encoding packet", exc_info=True)
 
 
-    def process_draw(self, packet) -> bool:
+    def process_draw(self, packet : PacketType) -> bool:
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
         encoding = bytestostr(encoding)
         #never modify mmap or scroll packets:
