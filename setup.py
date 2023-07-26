@@ -2241,30 +2241,25 @@ if nvidia_ENABLED:
     if cuda_kernels_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED):
         assert nvcc, "cannot find nvcc compiler!"
         def get_nvcc_args():
-            nvcc_cmd = [nvcc, "-fatbin"]
+            if nvcc_version<(11, 6):
+                raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
             gcc_version = get_gcc_version()
-            if not CC_is_clang() and gcc_version<(7, 5):
-                print("gcc versions older than 7.5 are not supported!")
+            if not CC_is_clang() and gcc_version<(9, ):
+                print("gcc versions older than 9 are not supported!")
                 for _ in range(5):
                     sleep(1)
                     print(".")
-            if (8,1)<=gcc_version<(9, ):
-                #GCC 8.1 has compatibility issues with CUDA 9.2,
-                #so revert to C++03:
-                nvcc_cmd.append("-std=c++03")
-            #GCC 6 uses C++11 by default:
-            else:
-                nvcc_cmd.append("-std=c++11")
-            if gcc_version>=(12, 0):
-                nvcc_cmd.append("--allow-unsupported-compiler")
-            if nvcc_version<(11, 6):
-                raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
-            nvcc_cmd += [
+            nvcc_cmd = [
+                nvcc,
+                "-fatbin",
+                "-std=c++11",
                 "-arch=all",
                 "-Wno-deprecated-gpu-targets",
                 "-Xnvlink",
                 "-ignore-host-info",
             ]
+            if gcc_version>=(12, 0):
+                nvcc_cmd.append("--allow-unsupported-compiler")
             return nvcc_cmd
         nvcc_args = get_nvcc_args()
         #first compile the cuda kernels
@@ -2324,8 +2319,7 @@ toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 #platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
 tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.fbc_capture_{fbcplatform}", "nvfbc", language="c++")
-tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc",
-     extra_compile_args="-Wno-error=sign-compare" if get_gcc_version()<(8, ) else "")
+tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
