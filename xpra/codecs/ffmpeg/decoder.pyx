@@ -32,9 +32,6 @@ SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
-cdef extern from "register_compat.h":
-    void register_all()
-
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
 
@@ -557,7 +554,6 @@ v = get_version()
 if v<(4, 2):
     raise ImportError(f"ffmpeg version {v} is too old")
 
-register_all()
 CODECS = []
 if avcodec_find_decoder(AV_CODEC_ID_H264):
     CODECS.append("h264")
@@ -731,8 +727,6 @@ cdef class Decoder:
             log.error(f"Error: invalid pixel format {colorspace!r}")
             return  False
         self.actual_pix_fmt = self.pix_fmt
-
-        register_all()
 
         cdef AVCodecID CodecID
         if self.encoding=="h264":

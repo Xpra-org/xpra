@@ -2382,7 +2382,7 @@ tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 #swscale and avcodec2 use libav_common/av_log:
 toggle_packages(ffmpeg_ENABLED, "xpra.codecs.ffmpeg")
 tace(ffmpeg_ENABLED, "xpra.codecs.ffmpeg.av_log", "libavutil")
-tace(dec_avcodec2_ENABLED, "xpra.codecs.ffmpeg.decoder,xpra/codecs/ffmpeg/register_compat.c", "libavcodec,libavutil,libavformat")
+tace(dec_avcodec2_ENABLED, "xpra.codecs.ffmpeg.decoder", "libavcodec,libavutil,libavformat")
 tace(csc_swscale_ENABLED, "xpra.codecs.ffmpeg.colorspace_converter", "libswscale,libavutil")
 tace(enc_ffmpeg_ENABLED, "xpra.codecs.ffmpeg.encoder", "libavcodec,libavformat,libavutil", extra_compile_args="-Wno-deprecated-declarations")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
