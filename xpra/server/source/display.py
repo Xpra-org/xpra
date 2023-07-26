@@ -27,7 +27,6 @@ class ClientDisplayMixin(StubSourceMixin):
         self.vrefresh : int = -1
         self.icc : Dict = {}
         self.display_icc : Dict = {}
-        self.randr_notify : bool = False
         self.desktop_size : Optional[Tuple[int, int]] = None
         self.desktop_mode_size : Optional[Tuple[int, int]] = None
         self.desktop_size_unscaled : Optional[Tuple[int, int]] = None
@@ -47,7 +46,6 @@ class ClientDisplayMixin(StubSourceMixin):
             "desktop_size"  : self.desktop_size or "",
             "desktops"      : self.desktops,
             "desktop_names" : self.desktop_names,
-            "randr_notify"  : self.randr_notify,
             "opengl"        : self.opengl_props,
             "monitors"      : self.monitors,
             "screens"       : len(self.screen_sizes),
@@ -61,7 +59,6 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def parse_client_caps(self, c : typedict) -> None:
         self.vrefresh = c.intget("vrefresh", -1)
-        self.randr_notify = c.boolget("randr_notify")
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
             w, h = self.desktop_size
@@ -165,11 +162,10 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_names = tuple(net_utf8(d) for d in (desktop_names or ()))
 
     def updated_desktop_size(self, root_w:int, root_h:int, max_w:int, max_h:int) -> bool:
-        log("updated_desktop_size%s randr_notify=%s, desktop_size=%s",
-            (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
+        log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)
         if not self.hello_sent:
             return False
-        if self.randr_notify and (not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h)):
+        if not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h):
             self.desktop_size_server = root_w, root_h
             self.send("desktop_size", root_w, root_h, max_w, max_h)
             return True

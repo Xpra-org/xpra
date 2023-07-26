@@ -108,7 +108,6 @@ class DisplayClient(StubClientMixin):
     # hello:
     def get_caps(self) -> Dict[str,Any]:
         caps = {
-            "randr_notify"  : True,
             "show-desktop"  : True,
             "vrefresh"      : self.get_vrefresh(),
             }
