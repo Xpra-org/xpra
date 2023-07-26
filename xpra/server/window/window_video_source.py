@@ -158,7 +158,6 @@ class WindowVideoSource(WindowSource):
         super().__init__(*args)
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.supports_scrolling : bool = False
-        self.supports_eos : bool= self.encoding_options.boolget("eos")
         self.scroll_min_percent : int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference : int = self.encoding_options.intget("scrolling.preference", 100)
         self.supports_video_b_frames : Tuple[str,...] = self.encoding_options.strtupleget("video_b_frames", ())
@@ -298,7 +297,6 @@ class WindowVideoSource(WindowSource):
                                                  "non-video"    : self.non_video_encodings,
                                                  "video"        : self.common_video_encodings,
                                                  "edge"         : self.edge_encoding,
-                                                 "eos"          : self.supports_eos,
                                                  })
         einfo = {
                  "pipeline_param" : self.get_pipeline_info(),
@@ -382,7 +380,7 @@ class WindowVideoSource(WindowSource):
             #only send eos if this video encoder is still current,
             #(otherwise, sending the new stream will have taken care of it already,
             # and sending eos then would close the new stream, not the old one!)
-            if self.supports_eos and self._video_encoder==ve:
+            if self._video_encoder==ve:
                 log("sending eos for wid %i", self.wid)
                 self.queue_packet(("eos", self.wid))
             if SAVE_VIDEO_STREAMS:
