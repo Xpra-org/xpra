@@ -7,7 +7,7 @@ if [ -z "${REPO_ARCH_PATH}" ]; then
 fi
 
 #find the latest version we can build:
-XPRA_TAR_XZ=`ls ../pkgs/xpra-5.*tar.xz | grep -v html5 | sort -V | tail -n 1`
+XPRA_TAR_XZ=`ls ../pkgs/xpra-6.*tar.xz | grep -v html5 | sort -V | tail -n 1`
 if [ -z "${XPRA_TAR_XZ}" ]; then
 	echo "no xpra source found"
 	exit 0
