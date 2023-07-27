@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from typing import Any
+from typing import Any, Dict
 from time import monotonic
 
 from libc.stdint cimport uintptr_t
@@ -219,7 +219,7 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

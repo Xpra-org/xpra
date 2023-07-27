@@ -6,6 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
+from typing import Dict
 
 from xpra.log import Logger
 log = Logger("encoder", "x265")
@@ -446,7 +447,7 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
 
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         cdef float pps
         if self.profile is None:
             return {}

@@ -6,7 +6,7 @@
 
 import traceback
 from time import monotonic
-from typing import Callable
+from typing import Callable, Dict, Set
 
 import gi
 gi.require_version('GdkX11', '3.0')
@@ -243,7 +243,7 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
 
-event_receivers_map : dict[int,set[Callable]] = {}
+event_receivers_map : Dict[int,Set[Callable]] = {}
 
 def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3) -> None:
     if not isinstance(xid, int):
@@ -271,7 +271,7 @@ def remove_event_receiver(xid:int, receiver:callable) -> None:
         event_receivers_map.pop(xid)
 
 #only used for debugging:
-def get_event_receivers(xid:int) -> set[Callable]:
+def get_event_receivers(xid:int) -> Set[Callable]:
     return event_receivers_map.get(xid)
 
 def cleanup_all_event_receivers() -> None:
@@ -279,7 +279,7 @@ def cleanup_all_event_receivers() -> None:
 
 
 #sometimes we may want to debug routing for certain X11 event types
-debug_route_events : list[int] = []
+debug_route_events : List[int] = []
 
 def get_error_text(code) -> str:
     if type(code)!=int:
@@ -298,7 +298,7 @@ def remove_debug_route_event(event_type:int) -> None:
     debug_route_events.remove(event_type)
 
 
-catchall_receivers : dict[str,list[Callable]] = {}
+catchall_receivers : Dict[str,List[Callable]] = {}
 def add_catchall_receiver(signal, handler) -> None:
     catchall_receivers.setdefault(signal, []).append(handler)
     log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
@@ -310,7 +310,7 @@ def remove_catchall_receiver(signal, handler) -> None:
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 
-fallback_receivers : dict[str,list[Callable]] = {}
+fallback_receivers : Dict[str,List[Callable]] = {}
 def add_fallback_receiver(signal, handler) -> None:
     fallback_receivers.setdefault(signal, []).append(handler)
     log("add_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)

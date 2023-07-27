@@ -5,6 +5,7 @@
 
 #cython: wraparound=False
 from time import monotonic
+from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
@@ -113,10 +114,10 @@ TJPF_STR = {
 TJPF_VAL = reverse_dict(TJPF_STR)
 
 
-def get_version() -> tuple[int,int]:
+def get_version() -> Tuple[int,int]:
     return (1, 0)
 
-def get_encodings() -> tuple[str,...]:
+def get_encodings() -> Tuple[str,...]:
     return ("jpeg", "jpega")
 
 

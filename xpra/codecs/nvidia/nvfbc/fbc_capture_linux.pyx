@@ -9,7 +9,7 @@
 import os
 from weakref import WeakSet
 from time import monotonic
-from typing import Any
+from typing import Any, Dict
 
 from xpra.util import csv, roundup, envbool
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -460,7 +460,7 @@ def get_version():
 def get_type():
     return "nvfbc"
 
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     info = {
             "type"              : "nvfbc",
             "version"           : get_version(),
@@ -524,7 +524,7 @@ cdef class NvFBC_SysCapture:
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
         raiseNvFBC(self.context, ret, msg)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -656,7 +656,7 @@ cdef class NvFBC_CUDACapture:
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
         raiseNvFBC(self.context, ret, msg)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

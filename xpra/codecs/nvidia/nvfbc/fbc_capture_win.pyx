@@ -9,7 +9,7 @@
 import os
 import sys
 from time import monotonic
-from typing import Any
+from typing import Any, Dict
 
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
@@ -541,7 +541,7 @@ def get_version():
 def get_type():
     return "nvfbc"
 
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     info = {
             "type"              : "nvfbc",
             "version"           : get_version(),
@@ -602,7 +602,7 @@ cdef class NvFBC_SysCapture:
         raiseNvFBC(res, "NvFBCToSysSetUp")
         self.setup = True
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -745,7 +745,7 @@ cdef class NvFBC_CUDACapture:
         raiseNvFBC(res, "NvFBCCudaSetup")
         self.setup = True
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

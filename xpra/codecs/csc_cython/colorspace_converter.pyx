@@ -9,7 +9,7 @@
 import os
 import sys
 import time
-from typing import Any
+from typing import Any, Tuple
 
 from xpra.log import Logger
 log = Logger("csc", "cython")
@@ -92,19 +92,19 @@ def cleanup_module() -> None:
 def get_type() -> str:
     return "cython"
 
-def get_version() -> tuple[int,int]:
+def get_version() -> Tuple[int,int]:
     return (4, 2)
 
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     info = {
             "version"   : (4, 1),
             }
     return info
 
-def get_input_colorspaces() -> tuple[str,...]:
+def get_input_colorspaces() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
-def get_output_colorspaces(input_colorspace) -> list[str]:
+def get_output_colorspaces(input_colorspace) -> List[str]:
     return COLORSPACES[input_colorspace]
 
 def get_spec(in_colorspace:str, out_colorspace:str):
@@ -437,7 +437,7 @@ cdef class ColorspaceConverter:
     def is_closed(self) -> bool:
         return self.convert_image_function is None
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,

@@ -6,7 +6,7 @@
 
 #cython: wraparound=False
 
-from typing import Any
+from typing import Any, Tuple, Dict
 from time import monotonic
 
 from xpra.log import Logger
@@ -130,7 +130,7 @@ def cleanup_module():
 def get_type() -> str:
     return "libyuv"
 
-def get_version() -> tuple[int,int]:
+def get_version() -> Tuple[int,int]:
     return (1, 0)
 
 #hardcoded for now:
@@ -140,14 +140,14 @@ COLORSPACES = {
     "BGRX" : ("YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX"),
     }
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     return {
         "version"           : get_version(),
         "formats"           : COLORSPACES,
         "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
         }
 
-def get_input_colorspaces():
+def get_input_colorspaces() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
 def get_output_colorspaces(input_colorspace):
@@ -350,7 +350,7 @@ cdef class ColorspaceConverter:
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
                 "frames"    : int(self.frames),

@@ -7,7 +7,7 @@
 
 import os
 from time import monotonic
-from typing import Any
+from typing import Any, Tuple, Dict
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
@@ -336,7 +336,7 @@ I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444]
 I444_PROFILES = [PROFILE_HIGH444]
 RGB_PROFILES = [PROFILE_HIGH444]
 
-COLORSPACE_FORMATS : dict[str,tuple] = {
+COLORSPACE_FORMATS : Dict[str,tuple] = {
     "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
     "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
@@ -348,7 +348,7 @@ if SUPPORT_24BPP:
         "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
         })
 
-COLORSPACES : dict[str,str] = {
+COLORSPACES : Dict[str,str] = {
     "YUV420P"   : "YUV420P",
     "YUV422P"   : "YUV422P",
     "YUV444P"   : "YUV444P",
@@ -370,14 +370,14 @@ def init_module() -> None:
 def cleanup_module() -> None:
     log("enc_x264.cleanup_module()")
 
-def get_version() -> tuple[int]:
+def get_version() -> Tuple[int,...]:
     return (X264_BUILD, )
 
 def get_type() -> str:
     return "x264"
 
 generation = AtomicInteger()
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
@@ -386,7 +386,7 @@ def get_info() -> dict[str,Any]:
         "formats"   : tuple(COLORSPACES.keys()),
         }
 
-def get_encodings() -> tuple[str,...]:
+def get_encodings() -> Tuple[str,...]:
     return ("h264", )
 
 def get_input_colorspaces(encoding:str):
@@ -426,7 +426,7 @@ def get_specs(encoding:str, colorspace:str):
 
 
 #maps a log level to one of our logger functions:
-LOGGERS : dict[int,Callable] = {
+LOGGERS : Dict[int,Callable] = {
            X264_LOG_ERROR   : log.error,
            X264_LOG_WARNING : log.warn,
            X264_LOG_INFO    : log.info,
@@ -434,7 +434,7 @@ LOGGERS : dict[int,Callable] = {
            }
 
 #maps a log level string to the actual constant:
-LOG_LEVEL : dict[str,int] = {
+LOG_LEVEL : Dict[str,int] = {
              "ERROR"    : X264_LOG_ERROR,
              "WARNING"  : X264_LOG_WARNING,
              "WARN"     : X264_LOG_WARNING,
@@ -671,7 +671,7 @@ cdef class Encoder:
             f.close()
 
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         cdef double pps
         if self.profile is None:
             return {}

@@ -7,7 +7,7 @@
 
 import os
 from time import monotonic
-from typing import Any
+from typing import Any, Tuple, List, Dict
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -37,7 +37,7 @@ from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
-VPX_COLOR_SPACES : dict[int,str] = {
+VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_UNKNOWN  : "unknown",
     VPX_CS_BT_601   : "BT601",
     VPX_CS_BT_709   : "BT709",
@@ -48,7 +48,7 @@ VPX_COLOR_SPACES : dict[int,str] = {
     VPX_CS_SRGB     : "SRGB",
     }
 
-VPX_COLOR_RANGES : dict[int,str] = {
+VPX_COLOR_RANGES : Dict[int,str] = {
     VPX_CR_STUDIO_RANGE : "studio",
     VPX_CR_FULL_RANGE   : " full",
     }
@@ -92,8 +92,8 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-CODECS : tuple[str, ...] = ("vp8", "vp9")
-COLORSPACES : dict[str,tuple[str,...]] = {
+CODECS : Tuple[str, ...] = ("vp8", "vp9")
+COLORSPACES : Dict[str,Tuple[str,...]] = {
     "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV444P"),
     }
@@ -110,11 +110,11 @@ def cleanup_module() -> None:
 def get_abi_version() -> int:
     return VPX_DECODER_ABI_VERSION
 
-def get_version() -> tuple[int]:
+def get_version() -> Tuple[int,...]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
-    vparts : list[int] = []
+    vparts : List[int] = []
     try:
         for x in vstr.split("."):
             vparts.append(int(x))
@@ -125,13 +125,13 @@ def get_version() -> tuple[int]:
 def get_type() -> str:
     return "vpx"
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Tuple[str, ...]:
     return CODECS
 
-def get_min_size(encoding:str) -> tuple[int, int]:
+def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
 
-def get_input_colorspaces(encoding:str) -> tuple[str,...]:
+def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
     assert encoding in CODECS
     return COLORSPACES.get(encoding)
 
@@ -143,7 +143,7 @@ def get_output_colorspace(encoding:str, csc:str) -> str:
     return csc
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     global CODECS
     info = {
             "version"       : get_version(),
@@ -216,7 +216,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         return {
                 "type"      : self.get_type(),
                 "width"     : self.get_width(),

@@ -231,7 +231,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 
 generation = AtomicInteger()
-def get_info() -> dict[str,Any]:
+def get_info() -> Dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
     info = {
@@ -469,7 +469,7 @@ cdef class Encoder:
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> Dict[str,Any]:
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

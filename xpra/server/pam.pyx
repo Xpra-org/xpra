@@ -188,7 +188,7 @@ cdef class pam_session:
             return False
         return True
 
-    def set_env(self, env : dict[str,Any]):
+    def set_env(self, env : Dict[str,Any]):
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -199,7 +199,7 @@ cdef class pam_session:
             else:
                 log("pam_putenv: %s", name_value)
 
-    def get_envlist(self) -> dict[str,str]:
+    def get_envlist(self) -> Dict[str,str]:
         assert self.pam_handle!=NULL
         cdef char **envlist = pam_getenvlist(self.pam_handle)
         log("pam_getenvlist: %#x", <uintptr_t> envlist)
@@ -216,7 +216,7 @@ cdef class pam_session:
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items : dict[str,Any]):
+    def set_items(self, items : Dict[str,Any]):
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r
