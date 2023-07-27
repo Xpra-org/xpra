@@ -56,7 +56,7 @@ class Keyboard(KeyboardBase):
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
 
-    def _dbus_gnome_shell_eval_i_dbus_gnome_shell_eval_ismsm(self, cmd, callback=None) ->None:
+    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) ->None:
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
         def ok_cb(success, res) -> None:
