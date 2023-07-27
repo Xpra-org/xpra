@@ -531,7 +531,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files codecs-extras
 %{python3_sitearch}/xpra/codecs/x26?
-%{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/gstreamer
 
 %if 0%{?nvidia_codecs}
