@@ -75,7 +75,7 @@ def get_server_base_classes() -> tuple[type,...]:
     return tuple(classes)
 
 SERVER_BASES = get_server_base_classes()
-ServerBaseClass : type[ServerCore] = type('ServerBaseClass', SERVER_BASES, {})
+ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")

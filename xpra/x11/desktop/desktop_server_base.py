@@ -46,7 +46,7 @@ def get_desktop_server_base_classes() -> tuple[type,...]:
     classes.append(X11ServerBase)
     return tuple(classes)
 DESKTOPSERVER_BASES = get_desktop_server_base_classes()
-DesktopServerBaseClass : type[X11ServerBase] = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
+DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 

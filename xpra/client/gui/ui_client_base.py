@@ -75,7 +75,7 @@ if mixin_features.tray:
     CLIENT_BASES.append(TrayClient)
 
 CLIENT_BASES : Tuple[type,...] = tuple(CLIENT_BASES)
-ClientBaseClass : type[XpraClientBase] = type('ClientBaseClass', CLIENT_BASES, {})
+ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 keylog = Logger("client", "keyboard")
