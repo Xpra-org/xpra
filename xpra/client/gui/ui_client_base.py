@@ -74,7 +74,7 @@ if mixin_features.tray:
     from xpra.client.mixins.tray import TrayClient
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES : Tuple[type,...] = tuple(CLIENT_BASES)
+CLIENT_BASES : tuple[type,...] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
