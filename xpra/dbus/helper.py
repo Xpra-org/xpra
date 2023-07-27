@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,7 +25,8 @@ def dbus_to_native(value):
         return float(value)
     if isinstance(value, list):
         return [dbus_to_native(x) for x in value]
-    if isinstance(value, dbus.Struct):
+    from dbus import Struct
+    if isinstance(value, Struct):
         return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
 
@@ -44,7 +45,7 @@ def native_to_dbus(value, signature=None):
         return types.Double(value)
     if isinstance(value, (tuple, list, bytearray)):
         if not value:
-            return dbus.Array(signature="s")
+            return types.Array(signature="s")
         keytypes = set(type(x) for x in value)
         if not signature and len(keytypes)==1:
             #just one type of key:
@@ -107,11 +108,12 @@ class DBusHelper:
             log("DBusHelper: %s", msg)
             err_cb(msg)
             return None
+        from dbus import DBusException
         try:
             #remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
             obj = self.bus.get_object(bus_name, path)
             log("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
-        except dbus.DBusException:
+        except DBusException:
             return err("failed to locate object at: %s:%s" % (bus_name, path))
         try:
             fn = obj.get_dbus_method(function, interface)
