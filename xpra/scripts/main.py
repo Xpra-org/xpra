@@ -355,6 +355,13 @@ def use_systemd_run(s) -> bool:
             r = None
     return r==0
 
+def verify_gir():
+    try:
+        from gi import repository
+        assert repository
+    except ImportError as e:
+        raise InitExit(ExitCode.FAILURE, f"the python gobject introspection bindings are missing: \n{e}")
+
 
 def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> int:
     #configure default logging handler:
@@ -412,6 +419,7 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
         "_proxy",
         ):
         configure_network(options)
+        verify_gir()
 
     if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
         xrd = "/run/user/%i" % getuid()
