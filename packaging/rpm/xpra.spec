@@ -38,7 +38,8 @@
 %endif
 
 %if 0%{?el7}%{?el8}
-echo CentOS / RHEL 7.x and 8.x are no longer supported
+echo "RHEL 7.x and 8.x are no longer supported"
+exit 1
 %endif
 
 %if 0%{?xpra_revision_no}
