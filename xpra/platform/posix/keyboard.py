@@ -40,9 +40,14 @@ class Keyboard(KeyboardBase):
         super().init_vars()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
-        self.__dbus_helper = DBusHelper()
         self.__input_sources : Dict[str,int] = {}
-        self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
+        try:
+            self.__dbus_helper = DBusHelper()
+        except ImportError as  e:
+            self.__dbus_helper = None
+            log.info(f"gnome input sources requires dbus: {e}")
+        else:
+            self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
 
     def _store_input_sources(self, input_sources) -> None:
         log("_store_input_sources(%s)", input_sources)
@@ -52,7 +57,7 @@ class Keyboard(KeyboardBase):
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
 
-    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) ->None:
+    def _dbus_gnome_shell_eval_i_dbus_gnome_shell_eval_ismsm(self, cmd, callback=None) ->None:
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
         def ok_cb(success, res) -> None:

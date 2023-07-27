@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import dbus
 
 from xpra.log import Logger
 
@@ -31,14 +30,18 @@ def dbus_to_native(value):
     return value
 
 def native_to_dbus(value, signature=None):
+    try:
+        from dbus import types
+    except ImportError as e:
+        raise RuntimeError("the dbus bindings are missing: {e}")
     if value is None:
         return None
     if isinstance(value, int):
-        return dbus.types.Int64(value)
+        return types.Int64(value)
     if isinstance(value, str):
-        return dbus.types.String(value)
+        return types.String(value)
     if isinstance(value, float):
-        return dbus.types.Double(value)
+        return types.Double(value)
     if isinstance(value, (tuple, list, bytearray)):
         if not value:
             return dbus.Array(signature="s")
@@ -58,10 +61,10 @@ def native_to_dbus(value, signature=None):
             signature = "s"
             #use strings as keys
             value = [native_to_dbus(str(v)) for v in value]
-        return dbus.types.Array(value, signature=signature)
+        return types.Array(value, signature=signature)
     if isinstance(value, dict):
         if not value:
-            return dbus.types.Dictionary({}, signature=signature or "sv")
+            return types.Dictionary({}, signature=signature or "sv")
         if signature is None:
             keytypes = set(type(x) for x in value.keys())
             sig = None
@@ -81,8 +84,8 @@ def native_to_dbus(value, signature=None):
                 #use strings as keys
                 value = dict((str(k), native_to_dbus(v)) for k,v in value.items())
             signature = f"{sig}v"
-        return dbus.types.Dictionary(value, signature=signature)
-    return dbus.types.String(value)
+        return types.Dictionary(value, signature=signature)
+    return types.String(value)
 
 
 class DBusHelper:
