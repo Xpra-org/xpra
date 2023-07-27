@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Optional, Tuple, List
+from typing import Any, Optional, Tuple, List, Dict
 from xpra.gtk_common.error import XError
 
 from xpra.x11.bindings.xlib cimport (
